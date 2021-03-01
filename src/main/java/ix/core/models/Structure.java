@@ -17,8 +17,10 @@ import ix.core.chem.Chem;
 import ix.core.chem.ChemCleaner;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
+import ix.ginas.models.converters.StereoConverter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.TypeDef;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -33,6 +35,11 @@ import java.util.*;
 @DiscriminatorValue("DEF")
 @Table(name = "ix_core_structure")
 @Slf4j
+@TypeDef(
+        name = "stereo",
+        defaultForType = StereoConverter.class,
+        typeClass = Structure.Stereo.class
+)
 public class Structure extends BaseModel {
 
 
@@ -202,13 +209,15 @@ public class Structure extends BaseModel {
 
     @JsonProperty("stereochemistry")
     @Indexable(name = "StereoChemistry", facet = true)
-    @Column(name = "stereo")
+    @Column(name = "stereo" )
+
     public Stereo stereoChemistry;
 
     @Column(name = "optical")
     public Optical opticalActivity;
     
     @Column(name = "atropi")
+    @Enumerated(EnumType.STRING)
     public NYU atropisomerism = NYU.No;
     
     @Lob

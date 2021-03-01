@@ -19,7 +19,13 @@ import javax.persistence.MappedSuperclass;
 public abstract class CommonDataElementOfCollection extends GinasCommonSubData{
 	@ManyToOne(cascade = CascadeType.PERSIST)
 	private Substance owner;
-	
+
+	public Substance getOwner(){
+		return this.owner;
+	}
+	public void setOwner(Substance s){
+		this.owner = s;
+	}
 	public Substance fetchOwner(){
 		return this.owner;
 	}

@@ -26,6 +26,7 @@ public class Glycosylation extends GinasCommonSubData {
     @Indexable(indexed=false)
 	@OneToOne(cascade= CascadeType.ALL)
     @JoinTable(
+            name = "Glycosylation_CGlycosylationSiteContainer",
             joinColumns=
                 @JoinColumn(name="c_glycosylation_sites_uuid")
         )
@@ -50,6 +51,7 @@ public class Glycosylation extends GinasCommonSubData {
     @Indexable(indexed=false)
     @OneToOne(cascade= CascadeType.ALL)
     @JoinTable(
+            name = "Glycosylation_NGlycosylationSiteContainer",
             joinColumns=
                 @JoinColumn(name="n_glycosylation_sites_uuid")
         )
@@ -76,6 +78,7 @@ public class Glycosylation extends GinasCommonSubData {
 	@OneToOne(cascade= CascadeType.ALL)
     @Indexable(indexed=false)
     @JoinTable(
+            name = "Glycosylation_OGlycosylationSiteContainer",
             joinColumns=
                 @JoinColumn(name="o_glycosylation_sites_uuid")
         )
