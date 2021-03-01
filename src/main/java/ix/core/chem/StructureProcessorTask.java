@@ -55,10 +55,7 @@ public class StructureProcessorTask {
 	}
 	
 	
-	public Structure instrument(){
-		StructureProcessor.instrument(this);
-		return this.structure;
-	}
+
 
 	private boolean standardize;
 	private boolean isQuery;

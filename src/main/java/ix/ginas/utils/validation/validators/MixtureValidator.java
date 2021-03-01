@@ -1,5 +1,6 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
@@ -21,6 +22,9 @@ import java.util.Set;
 public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
     @Autowired
     private SubstanceRepository substanceRepository;
+
+    @Autowired
+    private ReferenceRepository referenceRepository;
 
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
@@ -71,7 +75,7 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
                         .ERROR_MESSAGE("Should have at least two \"One of\" components in the mixture record"));
             }
 
-            ValidationUtils.validateReference(cs, cs.mixture, callback, ValidationUtils.ReferenceAction.FAIL);
+            ValidationUtils.validateReference(cs, cs.mixture, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
 
         }
 

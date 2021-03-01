@@ -4,7 +4,7 @@ import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.models.Structure;
 import ix.core.util.LogUtil;
-import play.Logger;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -15,6 +15,7 @@ import java.util.function.Function;
 /**
  * Chemistry utilities
  */
+@Slf4j
 public class Chem {
     private Chem () {}
 
@@ -100,7 +101,7 @@ public class Chem {
 		try{
             String o=c.toSd();
 		}catch(Exception e){
-			Logger.warn("Error exporting molecule", e);
+			log.warn("Error exporting molecule", e);
 			problem=true;
 		}
 		return problem;

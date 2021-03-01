@@ -139,13 +139,14 @@ public class SubstanceReference extends GinasCommonSubData {
     @PostLoad
     public void postLoad(){
     	//Use of the "portal gun" is not ideal
-    	Optional<SubstanceReference> osr=GinasPortalGun.getUpdatedSubstanceReference(this);
-    	if(osr.isPresent()){
-    		SubstanceReference newRef = osr.get();
-    		this.approvalID=newRef.approvalID;
-    		this.refuuid=newRef.refuuid;
-    		this.refPname=newRef.refPname;
-    	}
+        //TODO katzelda Feb 2021: not sure best way to do this yet in depenency injection
+//    	Optional<SubstanceReference> osr=GinasPortalGun.getUpdatedSubstanceReference(this);
+//    	if(osr.isPresent()){
+//    		SubstanceReference newRef = osr.get();
+//    		this.approvalID=newRef.approvalID;
+//    		this.refuuid=newRef.refuuid;
+//    		this.refPname=newRef.refPname;
+//    	}
     	
     		
     }

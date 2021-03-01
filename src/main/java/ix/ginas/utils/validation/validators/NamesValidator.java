@@ -1,15 +1,18 @@
 package ix.ginas.utils.validation.validators;
 
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.models.Keyword;
-import ix.core.util.CachedSupplier;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasUtils;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -19,6 +22,11 @@ import java.util.regex.Pattern;
  * Created by katzelda on 5/11/18.
  */
 public class NamesValidator extends AbstractValidatorPlugin<Substance> {
+
+    @Autowired
+    private ReferenceRepository referenceRepository;
+    @Autowired
+    private SubstanceRepository substanceRepository;
 
     boolean extractLocators;
     public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
@@ -35,6 +43,22 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
         return repList;
 
     });
+
+    public ReferenceRepository getReferenceRepository() {
+        return referenceRepository;
+    }
+
+    public void setReferenceRepository(ReferenceRepository referenceRepository) {
+        this.referenceRepository = referenceRepository;
+    }
+
+    public SubstanceRepository getSubstanceRepository() {
+        return substanceRepository;
+    }
+
+    public void setSubstanceRepository(SubstanceRepository substanceRepository) {
+        this.substanceRepository = substanceRepository;
+    }
 
     private static String CHANGE_REASON_DISPLAYNAME_CHANGED ="Changed Display Name";
 
@@ -164,7 +188,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
 
 
-            ValidationUtils.validateReference(s, n, callback, ValidationUtils.ReferenceAction.FAIL);
+            ValidationUtils.validateReference(s, n, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
         }
 
         if (s.names.isEmpty()) {
@@ -224,17 +248,18 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
             //nameSet.add(n.getName());
             try {
-                List<Substance> sr = ix.ginas.controllers.v1.SubstanceFactory
-                        .getSubstancesWithExactName(100, 0, n.name);
+                List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_NameIgnoreCase(n.name);
                 if (sr != null && !sr.isEmpty()) {
-                    Substance s2 = sr.iterator().next();
-                    if (!s2.getOrGenerateUUID().toString().equals(s.getOrGenerateUUID().toString())) {
+                    SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
+                    if (!s2.getUUID().equals(s.getOrGenerateUUID())) {
                         GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Name '"
                                                 + n.name
                                                 + "' collides (possible duplicate) with existing name for substance:")
-                                .addLink(GinasUtils.createSubstanceLink(s2));
+                               //TODO katzelda Feb 2021: add link back
+//                                .addLink(GinasUtils.createSubstanceLink(s2))
+                                ;
                         callback.addMessage(mes);
                     }
                 }

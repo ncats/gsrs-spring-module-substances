@@ -63,12 +63,12 @@ public abstract class GinasCommonSimplifiedSubData extends GinasCommonSubData im
 	     	return super.getAccess();
 	     }
 	 	
-	 	@JsonProperty("_self")
-	 	@JsonIgnore
-	    @Indexable(indexed=false)
-	    public String getself () {
-	 		return super.getself();
-	    }
+//	 	@JsonProperty("_self")
+//	 	@JsonIgnore
+//	    @Indexable(indexed=false)
+//	    public String getself () {
+//	 		return super.getself();
+//	    }
 	 	
 	 	
 	 	

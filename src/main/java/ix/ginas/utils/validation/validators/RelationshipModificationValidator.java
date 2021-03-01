@@ -1,6 +1,8 @@
 package ix.ginas.utils.validation.validators;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import gov.nih.ncats.common.Tuple;
+import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Role;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
@@ -8,7 +10,7 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
-import ix.utils.Tuple;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,11 +30,7 @@ public class RelationshipModificationValidator extends AbstractValidatorPlugin<S
     		return;
 		}
 
-		//disjoint returns true if collections don't have anything in common
-    	//So only those users WITHOUT any of the roles will have to have this
-    	//validation
-		if(Collections.disjoint(ALLOWED_ROLES, this.getCurrentUser().getRoles())){
-	 
+	  if(!GsrsSecurityUtils.hasAnyRoles(ALLOWED_ROLES)){
 	    	Map<UUID, Relationship> oldRelationships = Optional.ofNullable(objold.relationships)
 	    	        .map(r->r.stream())
 	    	        .orElse(Stream.empty())
@@ -42,7 +40,7 @@ public class RelationshipModificationValidator extends AbstractValidatorPlugin<S
 	    	Optional.ofNullable(s.relationships)
 			    	.map(r->r.stream())
 			        .orElse(Stream.empty())
-			        .map(r->Tuple.of(r, oldRelationships.get(r.uuid)))
+			        .map(r-> Tuple.of(r, oldRelationships.get(r.uuid)))
 			        .filter(t->t.v()!=null)
 			        .filter(t->isChanged(t.v(),t.k())) //has changed
 			        .forEach(t->{

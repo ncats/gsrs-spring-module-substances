@@ -117,11 +117,11 @@ public class Moiety extends CommonDataElementOfCollection implements Comparable<
 		}
 	}
 	
-	@Override
-	public void forceUpdate() {
-		structure.forceUpdate();
-		super.forceUpdate();
-	}
+//	@Override
+//	public void forceUpdate() {
+//		structure.forceUpdate();
+//		super.forceUpdate();
+//	}
 	
 	@Override
 	@JsonIgnore

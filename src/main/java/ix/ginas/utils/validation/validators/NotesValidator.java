@@ -1,10 +1,13 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,7 +15,19 @@ import java.util.Iterator;
 /**
  * Created by katzelda on 5/14/18.
  */
-public class NotesValidator extends AbstractValidatorPlugin<Substance>{
+public class NotesValidator extends AbstractValidatorPlugin<Substance> {
+
+    @Autowired
+    private ReferenceRepository referenceRepository;
+
+    public ReferenceRepository getReferenceRepository() {
+        return referenceRepository;
+    }
+
+    public void setReferenceRepository(ReferenceRepository referenceRepository) {
+        this.referenceRepository = referenceRepository;
+    }
+
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
 
@@ -35,7 +50,7 @@ public class NotesValidator extends AbstractValidatorPlugin<Substance>{
                 callback.addMessage(mes, () -> n.note= "");
                 continue;
             }
-            if (!ValidationUtils.validateReference(s,n, callback, ValidationUtils.ReferenceAction.ALLOW)) {
+            if (!ValidationUtils.validateReference(s,n, callback, ValidationUtils.ReferenceAction.ALLOW, referenceRepository)) {
                 //TODO should we really return here and not check the others?
                 break ;
             }

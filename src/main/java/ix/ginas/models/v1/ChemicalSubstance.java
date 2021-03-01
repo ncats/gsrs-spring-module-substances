@@ -31,7 +31,7 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
 
     @JSONEntity(isRequired = true)
     @OneToOne(cascade= CascadeType.ALL)
-    @Column(nullable=false)
+//    @Column(nullable=false)
     //@JsonSerialize(using=StructureSerializer.class)
     public GinasChemicalStructure structure;
 

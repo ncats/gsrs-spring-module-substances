@@ -1,12 +1,15 @@
 package ix.ginas.utils.validation.validators;
 
-import ix.core.controllers.AdminFactory;
+
+import gsrs.repository.GroupRepository;
 import ix.core.models.Group;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.LinkedHashSet;
 import java.util.regex.Pattern;
@@ -15,7 +18,18 @@ import java.util.regex.Pattern;
  * Created by katzelda on 5/7/18.
  */
 public class RemovePublicIndReferences extends AbstractValidatorPlugin<Substance> {
-    Pattern IND_PATTERN = Pattern.compile(".*[^A-Z]IND[^A-Z]*[0-9][0-9][0-9]*.*");
+    private static final Pattern IND_PATTERN = Pattern.compile(".*[^A-Z]IND[^A-Z]*[0-9][0-9][0-9]*.*");
+
+    @Autowired
+    private GroupRepository groupRepository;
+
+    public GroupRepository getGroupRepository() {
+        return groupRepository;
+    }
+
+    public void setGroupRepository(GroupRepository groupRepository) {
+        this.groupRepository = groupRepository;
+    }
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
@@ -40,7 +54,7 @@ public class RemovePublicIndReferences extends AbstractValidatorPlugin<Substance
 
     private void makeReferenceProtected(Reference r){
         r.publicDomain=false;
-        Group g= AdminFactory.getGroupByName("protected");
+        Group g= groupRepository.findByNameIgnoreCase("protected");
         if(g==null){
             g=new Group("protected");
 

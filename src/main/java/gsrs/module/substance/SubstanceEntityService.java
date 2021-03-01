@@ -212,13 +212,17 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
         if(result !=null){
             return Optional.of(result);
         }
-        result = repository.findByNames_NameIgnoreCase(someKindOfId);
-        if(result !=null){
-            return Optional.of(result);
+        List<SubstanceRepository.SubstanceSummary> summaries = repository.findByNames_NameIgnoreCase(someKindOfId);
+        if(summaries !=null && !summaries.isEmpty()){
+
+            //get the first?
+            return repository.findById(summaries.get(0).getUUID());
         }
-        result = repository.findByCodes_CodeIgnoreCase(someKindOfId);
-        if(result !=null){
-            return Optional.of(result);
+        summaries = repository.findByCodes_CodeIgnoreCase(someKindOfId);
+        if(summaries !=null && !summaries.isEmpty()){
+
+            //get the first?
+            return repository.findById(summaries.get(0).getUUID());
         }
         return Optional.empty();
         //from Play version

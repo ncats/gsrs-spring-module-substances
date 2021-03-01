@@ -1,6 +1,7 @@
 package ix.ginas.utils.validation.validators;
 
 import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.validator.ExceptionValidationMessage;
@@ -12,9 +13,10 @@ import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.ChemUtils;
-import ix.ginas.utils.GinasUtils;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,8 +28,29 @@ import java.util.function.Supplier;
  * Created by katzelda on 5/14/18.
  */
 public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
-	
+	@Autowired
+    private StructureProcessor structureProcessor;
+
+	@Autowired
+    private ReferenceRepository referenceRepository;
+
 	private boolean allow0AtomStructures = false;
+
+    public ReferenceRepository getReferenceRepository() {
+        return referenceRepository;
+    }
+
+    public void setReferenceRepository(ReferenceRepository referenceRepository) {
+        this.referenceRepository = referenceRepository;
+    }
+
+    public StructureProcessor getStructureProcessor() {
+        return structureProcessor;
+    }
+
+    public void setStructureProcessor(StructureProcessor structureProcessor) {
+        this.structureProcessor = structureProcessor;
+    }
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
@@ -70,7 +93,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
             List<Structure> moieties = new ArrayList<Structure>();
 						//computed, idealized structure info.
-            Structure struc = StructureProcessor.instrument(payload, moieties, true); // don't
+            Structure struc = structureProcessor.instrument(payload, moieties, true); // don't
             // standardize
 
             if(!payload.contains("M  END")){
@@ -121,7 +144,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                 callback.addMessage(mes, ()-> cs.moieties = moietiesForSub);
             } else {
                 for (Moiety m : cs.moieties) {
-                    Structure struc2 = StructureProcessor.instrument(
+                    Structure struc2 = structureProcessor.instrument(
                             m.structure.molfile, null, true); // don't
                     // standardize
 
@@ -141,7 +164,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                 callback.addMessage(mes);
             }
 
-            ValidationUtils.validateReference(s,cs.structure, callback, ValidationUtils.ReferenceAction.FAIL);
+            ValidationUtils.validateReference(s,cs.structure, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
 
             //validateStructureDuplicates(cs, callback);
         } else {
@@ -169,40 +192,40 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         //TODO noop for now pushed to 2.3.7 until we find out more for GSRS-914
     }
 
-    private static void validateStructureDuplicates(
-            ChemicalSubstance cs, ValidatorCallback callback) {
-        List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
-
-        try {
-
-            List<Substance> sr = ix.ginas.controllers.v1.SubstanceFactory
-                    .getCollsionChemicalSubstances(100, 0, cs);
-
-            if (sr != null && !sr.isEmpty()) {
-                int dupes = 0;
-                GinasProcessingMessage mes = null;
-                for (Substance s : sr) {
-
-                    if (cs.getUuid() == null
-                            || !s.getUuid().toString()
-                            .equals(cs.getUuid().toString())) {
-                        if (dupes <= 0)
-                            mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate:");
-                        dupes++;
-                        mes.addLink(GinasUtils.createSubstanceLink(s));
-                    }
-                }
-                if (dupes > 0) {
-                    if (dupes > 1)
-                        mes.message = "Structure has " + dupes
-                                + " possible duplicates:";
-                    callback.addMessage(mes);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
+//    private static void validateStructureDuplicates(
+//            ChemicalSubstance cs, ValidatorCallback callback) {
+//        List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
+//
+//        try {
+//
+//            List<Substance> sr = ix.ginas.controllers.v1.SubstanceFactory
+//                    .getCollsionChemicalSubstances(100, 0, cs);
+//
+//            if (sr != null && !sr.isEmpty()) {
+//                int dupes = 0;
+//                GinasProcessingMessage mes = null;
+//                for (Substance s : sr) {
+//
+//                    if (cs.getUuid() == null
+//                            || !s.getUuid().toString()
+//                            .equals(cs.getUuid().toString())) {
+//                        if (dupes <= 0)
+//                            mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate:");
+//                        dupes++;
+//                        mes.addLink(GinasUtils.createSubstanceLink(s));
+//                    }
+//                }
+//                if (dupes > 0) {
+//                    if (dupes > 1)
+//                        mes.message = "Structure has " + dupes
+//                                + " possible duplicates:";
+//                    callback.addMessage(mes);
+//                }
+//            }
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
     private static void validateChemicalStructure(
             GinasChemicalStructure oldstr, Structure newstr,
             ValidatorCallback callback) {

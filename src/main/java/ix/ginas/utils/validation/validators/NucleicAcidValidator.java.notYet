@@ -13,6 +13,7 @@ import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Subunit;
 import ix.ginas.utils.NucleicAcidUtils;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
 import ix.seqaln.SequenceIndexer.CutoffType;
 import ix.utils.Tuple;

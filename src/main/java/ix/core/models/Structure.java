@@ -27,7 +27,7 @@ import javax.persistence.*;
 import java.io.IOException;
 import java.util.*;
 
-@MappedSuperclass
+//@MappedSuperclass
 @Entity
 @Inheritance
 @DiscriminatorValue("DEF")

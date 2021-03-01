@@ -3,13 +3,15 @@ package ix.ginas.utils.validation.validators;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.definitional.DefinitionalElements.DefinitionalElementDiff.OP;
+import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
-import play.Logger;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +20,8 @@ import java.util.List;
 /**
  * Created by katzelda on 2/11/19.
  */
-public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substance>{
+@Slf4j
+public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substance> {
 
     /*
     When changing a structure or defining information the application should require
@@ -40,7 +43,7 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 						oldDefinitionalElements =objold.getDefinitionalElements();
 				}
 				catch(Exception e){
-						Logger.warn("Unable to access definitional elements for old substance");
+						log.warn("Unable to access definitional elements for old substance");
 						return;
 				}
 
@@ -53,11 +56,11 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 						//Arrays.equals() won't cut it. so need to do the more involved diff...
 						if(!diff.isEmpty()) {
 								if( changesContainLayer(diff, 1) && objnew.status.equals("approved")) {
-										Logger.trace("approved substance with change to layer 1 ");
+										log.trace("approved substance with change to layer 1 ");
 										// only for approved substances
 										//confirm can be a new warning that can be dismissed
-										UserProfile up=getCurrentUser();
-										if(!up.hasRole(Role.Admin)) {
+
+										if(!GsrsSecurityUtils.hasAnyRoles(Role.Admin)) {
 											/*
 											This section related to GSRS-1347 (March 2020)
 											When a user makes a change to an approved sustance (with a UNII) and the user is _not_ an admin
@@ -82,23 +85,23 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 								String message= createDiffMessage(diff);
 								callback.addMessage(GinasProcessingMessage
 										.WARNING_MESSAGE(message));
-								Logger.trace("in DefinitionalHashValidator, apending message " + message);
+								log.trace("in DefinitionalHashValidator, apending message " + message);
 						} else {
-								Logger.trace("diffs empty ");
+								log.trace("diffs empty ");
 						}
 				} else {
-					Logger.trace("Arrays equal");
+					log.trace("Arrays equal");
 				}
     }
 		
 		private boolean changesContainLayer(List<DefinitionalElements.DefinitionalElementDiff> changes, int layer) {
-			Logger.trace("changed: ");
+			log.trace("changed: ");
 			
 			boolean result= changes.stream().anyMatch(c-> (c.getOp().equals(OP.ADD) && c.getNewValue().getLayer()==layer)
 							|| (c.getOp().equals(OP.REMOVED) && (c.getOldValue().getLayer() == layer))
 							|| (c.getOp().equals(OP.CHANGED) && (c.getNewValue().getLayer() == layer || c.getOldValue().getLayer() == layer))
 							);
-			Logger.trace("changesContainLayer to return " + result);
+			log.trace("changesContainLayer to return " + result);
 			return result;
 		}
 		

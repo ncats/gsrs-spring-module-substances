@@ -1,5 +1,8 @@
 package ix.ginas.utils.validation.validators;
 
+
+import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.models.Keyword;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
@@ -7,8 +10,9 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasUtils;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Iterator;
 import java.util.List;
@@ -20,6 +24,14 @@ import java.util.Set;
 public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
     private Set<String> singletonCodeSystems;
+
+    @Autowired
+    private ReferenceRepository referenceRepository;
+
+    @Autowired
+    private SubstanceRepository substanceRepository;
+
+
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
 
@@ -70,7 +82,7 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                 }
 
 
-            if (!ValidationUtils.validateReference(s, cd, callback, ValidationUtils.ReferenceAction.ALLOW)) {
+            if (!ValidationUtils.validateReference(s, cd, callback, ValidationUtils.ReferenceAction.ALLOW, referenceRepository)) {
                 return;
             }
 
@@ -113,21 +125,23 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                     LogUtil.trace( ()->String.format("skipping code of system %s", cd.codeSystem));
                     continue;
                 }
-                List<Substance> sr = ix.ginas.controllers.v1.SubstanceFactory
-                        .getSubstancesWithExactCode(100, 0, cd.code, cd.codeSystem);
+                List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByCodes_CodeAndCodes_CodeSystem(cd.code, cd.codeSystem);
+
                 if (sr != null && !sr.isEmpty()) {
                     //TODO we only check the first hit?
                     //would be nice to say instead of possible duplicate hit say we got X hits
-                    Substance s2 = sr.iterator().next();
+                    SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
 
-                    if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
+                    if (s2.getUUID() != null && !s2.getUUID().equals(s.getUuid())) {
                         GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Code '"
                                                 + cd.code
                                                 + "'[" +cd.codeSystem
                                                 + "] collides (possible duplicate) with existing code & codeSystem for substance:")
-                                . addLink(GinasUtils.createSubstanceLink(s2));
+//                               TODO katelda Feb 2021 : add link support back!
+//                                . addLink(GinasUtils.createSubstanceLink(s2))
+                                ;
                         callback.addMessage(mes);
                     }
                 }

@@ -6,7 +6,9 @@ import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.models.Text;
 import ix.core.models.Value;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -18,19 +20,15 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@Data
 public class StructureProcessor {
+
+    @Autowired
+    private StructureStandardizer standardizer;
 
     private static StructureHasher hasher;
 
-    private static  StructureStandardizer standardizer;
 
-    public static StructureStandardizer getStandardizer() {
-        return standardizer;
-    }
-
-    public static void setStandardizer(StructureStandardizer standardizer) {
-        StructureProcessor.standardizer = standardizer;
-    }
 
     public static StructureHasher getHasher() {
         return hasher;
