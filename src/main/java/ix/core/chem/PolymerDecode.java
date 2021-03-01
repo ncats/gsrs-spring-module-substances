@@ -1,9 +1,9 @@
 package ix.core.chem;
 
 
+import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
 import ix.core.models.Structure;
-import ix.core.util.CachedSupplier;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

@@ -2,11 +2,11 @@ package ix.ginas.utils.validation.validators;
 
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
-import ix.ginas.controllers.v1.ControlledVocabularyFactory;
 import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.ControlledVocabulary;
+
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.VocabularyTerm;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 
 import java.util.List;
 import java.util.Map;

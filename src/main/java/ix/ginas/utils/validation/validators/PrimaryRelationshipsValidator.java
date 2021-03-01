@@ -1,10 +1,13 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Iterator;
 
@@ -12,6 +15,17 @@ import java.util.Iterator;
  * Created by katzelda on 5/14/18.
  */
 public class PrimaryRelationshipsValidator extends AbstractValidatorPlugin<Substance> {
+    @Autowired
+    private ReferenceRepository referenceRepository;
+
+    public ReferenceRepository getReferenceRepository() {
+        return referenceRepository;
+    }
+
+    public void setReferenceRepository(ReferenceRepository referenceRepository) {
+        this.referenceRepository = referenceRepository;
+    }
+
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
 
@@ -43,7 +57,7 @@ public class PrimaryRelationshipsValidator extends AbstractValidatorPlugin<Subst
                                 "Relationships must specify a type");
                 callback.addMessage(mes);
             }
-            if (!ValidationUtils.validateReference(s, n, callback, ValidationUtils.ReferenceAction.ALLOW)) {
+            if (!ValidationUtils.validateReference(s, n, callback, ValidationUtils.ReferenceAction.ALLOW, referenceRepository)) {
                 //TODO should we return early here or keep going and validate the rest?
                 return ;
             }

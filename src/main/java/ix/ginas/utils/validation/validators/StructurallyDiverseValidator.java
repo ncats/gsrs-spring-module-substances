@@ -1,15 +1,29 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Created by katzelda on 5/14/18.
  */
 public class StructurallyDiverseValidator extends AbstractValidatorPlugin<Substance> {
+    @Autowired
+    private ReferenceRepository referenceRepository;
+
+    public ReferenceRepository getReferenceRepository() {
+        return referenceRepository;
+    }
+
+    public void setReferenceRepository(ReferenceRepository referenceRepository) {
+        this.referenceRepository = referenceRepository;
+    }
+
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         StructurallyDiverseSubstance cs = (StructurallyDiverseSubstance)objnew;
@@ -60,7 +74,7 @@ public class StructurallyDiverseValidator extends AbstractValidatorPlugin<Substa
         }
        
         if(!cs.structurallyDiverse.part.isEmpty()) {
-            ValidationUtils.validateReference(cs, cs.structurallyDiverse, callback, ValidationUtils.ReferenceAction.FAIL);
+            ValidationUtils.validateReference(cs, cs.structurallyDiverse, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
         }
 
 

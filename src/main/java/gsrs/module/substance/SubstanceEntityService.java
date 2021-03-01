@@ -5,8 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.IdHelpers;
 
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.repository.GroupRepository;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.validator.ValidatorConfig;
+import ix.core.validator.GinasProcessingMessage;
+import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidationResponseBuilder;
+import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.JsonSubstanceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -22,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
@@ -39,6 +47,9 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private GroupRepository groupRepository;
+
 //    @Autowired
 //    private CvSearchService searchService;
 
@@ -51,6 +62,57 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     @Override
     public UUID parseIdFromString(String idAsString) {
         return UUID.fromString(idAsString);
+    }
+
+    private  GinasProcessingStrategy createAcceptApplyAllStrategy() {
+        return new GinasProcessingStrategy(groupRepository) {
+            @Override
+            public void processMessage(GinasProcessingMessage gpm) {
+                if (gpm.suggestedChange) {
+                    gpm.actionType = GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
+                } else {
+                    if (gpm.isError()) {
+                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.FAIL;
+                    } else {
+                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.IGNORE;
+                    }
+                }
+            }
+        };
+    }
+
+    @Override
+    protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
+        GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
+        ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, strategy){
+            @Override
+            public void complete() {
+                if(object instanceof Substance) {
+                    ValidationResponse<T> resp = buildResponse();
+
+                    List<GinasProcessingMessage> messages = resp.getValidationMessages()
+                            .stream()
+                            .filter(m -> m instanceof GinasProcessingMessage)
+                            .map(m -> (GinasProcessingMessage) m)
+                            .collect(Collectors.toList());
+                    messages.stream().forEach(strategy::processMessage);
+                    if (strategy.handleMessages((Substance) object, messages)) {
+                        resp.setValid(true);
+                    }
+                    strategy.addProblems((Substance) object, messages);
+
+
+                    if (GinasProcessingMessage.ALL_VALID(messages)) {
+                        resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
+                    }
+                }
+            }
+        };
+        if(type == ValidatorConfig.METHOD_TYPE.BATCH){
+            builder.allowPossibleDuplicates(true);
+        }
+
+        return builder;
     }
 
     @Override

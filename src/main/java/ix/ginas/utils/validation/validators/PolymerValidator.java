@@ -1,19 +1,33 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.PolymerSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Unit;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 
 /**
  * Created by katzelda on 5/14/18.
  */
-public class PolymerValidator extends AbstractValidatorPlugin<Substance>{
+public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
+    @Autowired
+    private ReferenceRepository referenceRepository;
+
+    public ReferenceRepository getReferenceRepository() {
+        return referenceRepository;
+    }
+
+    public void setReferenceRepository(ReferenceRepository referenceRepository) {
+        this.referenceRepository = referenceRepository;
+    }
+
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         PolymerSubstance cs = (PolymerSubstance)s;
@@ -160,7 +174,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance>{
                         .WARNING_MESSAGE("Polymer substance has no properties, typically expected at least a molecular weight"));
             }
 
-            ValidationUtils.validateReference(cs, cs.polymer, callback, ValidationUtils.ReferenceAction.FAIL);
+            ValidationUtils.validateReference(cs, cs.polymer, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
         }
         
     }

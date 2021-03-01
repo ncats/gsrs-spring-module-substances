@@ -1,11 +1,14 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.security.GsrsSecurityUtils;
+import gsrs.springUtils.GsrsSpringUtils;
+import gsrs.validator.ValidatorConfig;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
-import ix.ginas.initializers.LoadValidatorInitializer;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 
 /**
  * Created by katzelda on 5/14/18.
@@ -13,9 +16,9 @@ import ix.ginas.models.v1.Substance;
 public class NewSubstanceNonBatchLoadValidator extends AbstractValidatorPlugin<Substance> {
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
-        UserProfile up=getCurrentUser();
+
         if (objnew.isPublic()) {
-            if (!(up.hasRole(Role.Admin) || up.hasRole(Role.SuperDataEntry))) {
+            if (!GsrsSecurityUtils.hasAnyRoles(Role.Admin,Role.SuperDataEntry)) {
                 callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only superDataEntry users can make a substance public"));
             }
         }
@@ -25,8 +28,8 @@ public class NewSubstanceNonBatchLoadValidator extends AbstractValidatorPlugin<S
     }
 
     @Override
-    public boolean supports(Substance newValue, Substance oldValue, LoadValidatorInitializer.ValidatorConfig.METHOD_TYPE methodType) {
-        return methodType != LoadValidatorInitializer.ValidatorConfig.METHOD_TYPE.BATCH && oldValue ==null;
+    public boolean supports(Substance newValue, Substance oldValue, ValidatorConfig.METHOD_TYPE methodType) {
+        return methodType != ValidatorConfig.METHOD_TYPE.BATCH && oldValue ==null;
     }
 
 }

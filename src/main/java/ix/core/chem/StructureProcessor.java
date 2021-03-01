@@ -44,16 +44,16 @@ public class StructureProcessor {
     private StructureProcessor () {}
 
 
-    public static Structure instrument (byte[] buf) {
+    public Structure instrument (byte[] buf) {
         return instrument (buf, null);
     }
 
-    public static Structure instrument (byte[] buf,
+    public Structure instrument (byte[] buf,
                                         Collection<Structure> components) {
         return instrument (buf, components, true);
     }
 
-    public static Structure instrument (byte[] buf,
+    public Structure instrument (byte[] buf,
                                         Collection<Structure> components,
                                         boolean standardize) {
         try {
@@ -65,16 +65,16 @@ public class StructureProcessor {
         }
     }
 
-    public static Structure instrument (String mol) {
+    public Structure instrument (String mol) {
         return instrument (mol, null, true);
     }
 
-    public static Structure instrument
+    public Structure instrument
             (String mol, Collection<Structure> components) {
         return instrument (mol, components, true);
     }
 
-    public static Structure instrument
+    public Structure instrument
             (String mol, Collection<Structure> components, boolean standardize) {
         Structure struc = new Structure();
         struc.digest = digest (mol);
@@ -96,20 +96,20 @@ public class StructureProcessor {
         return struc;
     }
 
-    public static Structure instrument (Chemical mol) {
+    public Structure instrument (Chemical mol) {
         return instrument (mol, true);
     }
 
-    public static Structure instrument (Chemical mol, boolean standardize) {
+    public Structure instrument (Chemical mol, boolean standardize) {
         return instrument (mol, null, standardize);
     }
 
-    public static Structure instrument (Chemical mol,
+    public Structure instrument (Chemical mol,
                                         Collection<Structure> components) {
         return instrument (mol, components, true);
     }
 
-    public static Structure instrument (Chemical mol,
+    public Structure instrument (Chemical mol,
                                         Collection<Structure> components,
                                         boolean standardize) {
         Structure struc = new Structure();
@@ -117,7 +117,7 @@ public class StructureProcessor {
         return struc;
     }
 
-    static void instrument (Structure struc,
+    void instrument (Structure struc,
                             Collection<Structure> components,
                             Chemical mol) {
         instrument (struc, components, mol, true);
@@ -128,7 +128,7 @@ public class StructureProcessor {
      * All instrument calls lead to this one
      * @param settings
      */
-    static void instrument (StructureProcessorTask settings) {
+    void instrument (StructureProcessorTask settings) {
         Structure struc = settings.getStructure();
         Collection<Structure> components = settings.getComponents();
         Chemical mol = settings.getChemical().copy();
@@ -377,7 +377,7 @@ public class StructureProcessor {
      * @param mol
      * @param standardize
      */
-    static void instrument (Structure struc,
+    void instrument (Structure struc,
                             Collection<Structure> components,
                             Chemical mol,
                             boolean standardize) {
@@ -390,7 +390,7 @@ public class StructureProcessor {
         instrument(settings);
     }
 
-    static void calcStereo (Structure struc) {
+    void calcStereo (Structure struc) {
         int total = struc.stereoCenters, defined = struc.definedStereo;
         if (total == 0) {
             struc.stereoChemistry = Structure.Stereo.ACHIRAL;

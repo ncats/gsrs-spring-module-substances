@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.definitional.DefinitionalElement;
+import gsrs.springUtils.AutowireHelper;
 import ix.ginas.models.v1.Substance;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,12 +35,16 @@ public class ConfigBasedDefinitionalElementConfiguration{
            }else{
                implementation = (DefinitionalElementImplementation) mapper.convertValue(config.getParameters(), config.getImplementationClass());
            }
+           AutowireHelper.getInstance().autowire(implementation);
            list.add(implementation);
        }
        return list;
     });
 
     public void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer){
+        if(s==null){
+            return;
+        }
         for(DefinitionalElementImplementation impl : cachedInstances.getSync()){
             if(impl.supports(s)){
                 impl.computeDefinitionalElements(s, consumer);

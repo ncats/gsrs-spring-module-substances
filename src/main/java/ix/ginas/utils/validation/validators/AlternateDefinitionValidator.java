@@ -1,15 +1,21 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
-import ix.ginas.controllers.v1.SubstanceFactory;
+
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Created by katzelda on 5/14/18.
  */
 public class AlternateDefinitionValidator extends AbstractValidatorPlugin<Substance> {
+    @Autowired
+    private SubstanceRepository substanceRepository;
+
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         if (s.substanceClass == Substance.SubstanceClass.concept) {
@@ -38,7 +44,7 @@ public class AlternateDefinitionValidator extends AbstractValidatorPlugin<Substa
                     callback.addMessage(GinasProcessingMessage
                             .ERROR_MESSAGE("Alternative definitions must specify a primary substance"));
                 } else {
-                    Substance subPrimary = SubstanceFactory.getFullSubstance(sr);
+                    Substance subPrimary = substanceRepository.findBySubstanceReference(sr);
                     if (subPrimary == null) {
                         callback.addMessage(GinasProcessingMessage
                                 .ERROR_MESSAGE("Primary definition for '"

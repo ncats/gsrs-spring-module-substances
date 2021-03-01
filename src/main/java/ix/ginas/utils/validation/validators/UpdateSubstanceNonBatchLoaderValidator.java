@@ -9,18 +9,16 @@ import ix.core.models.UserProfile;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasUtils;
+import ix.ginas.utils.SubstanceApprovalIdGenerator;
 import ix.ginas.utils.validation.ValidatorPlugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.AuditorAware;
-import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 /**
  * Created by katzelda on 5/16/18.
  */
-@Component
 public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<Substance> {
 
     @Autowired
@@ -28,6 +26,8 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
     @Autowired
     private UserProfileRepository userProfileRepository;
 
+    @Autowired
+    private SubstanceApprovalIdGenerator substanceApprovalIdGenerator;
 
     @Override
     public boolean supports(Substance newValue, Substance oldValue, ValidatorConfig.METHOD_TYPE methodType) {
@@ -76,7 +76,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
                                 .WARNING_MESSAGE("The approvalID for the record has been removed. Was ('" + objold.approvalID
                                         + "'). This is strongly discouraged."));
                     } else {
-                        if(!GinasUtils.getApprovalIdGenerator().isValidId(objnew.approvalID)){
+                        if(!substanceApprovalIdGenerator.isValidId(objnew.approvalID)){
                             callback.addMessage(GinasProcessingMessage
                                     .ERROR_MESSAGE("The approvalID for the record has changed. Was ('" + objold.approvalID
                                             + "') but now is ('" + objnew.approvalID + "'). This approvalID is either a duplicate or invalid."));

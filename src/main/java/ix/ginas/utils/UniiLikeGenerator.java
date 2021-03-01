@@ -9,7 +9,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public abstract class UniiLikeGenerator extends RandomAlphaNumericIDGenerator<Substance> implements NamedIdGenerator<Substance,String> {
+public abstract class UniiLikeGenerator extends RandomAlphaNumericIDGenerator<Substance> implements SubstanceApprovalIdGenerator {
     @Autowired
     private SubstanceRepository substanceRepository;
 

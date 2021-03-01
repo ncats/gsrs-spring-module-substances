@@ -2,6 +2,7 @@ package ix.ginas.utils.validation.validators;
 
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 
 /**
  * Created by katzelda on 5/7/18.

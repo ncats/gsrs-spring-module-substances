@@ -4,6 +4,7 @@ import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup3Substance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 
 public class SSSG3Validator extends AbstractValidatorPlugin<Substance> {
     @Override

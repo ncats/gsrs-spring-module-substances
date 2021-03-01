@@ -1,7 +1,8 @@
 package ix.core.chem;
 
-import ix.core.util.CachedSupplier;
-import ix.core.util.StreamUtil;
+
+import gov.nih.ncats.common.stream.StreamUtil;
+import gov.nih.ncats.common.util.CachedSupplier;
 import ix.utils.FortranLikeParserHelper;
 import ix.utils.FortranLikeParserHelper.LineParser;
 import ix.utils.FortranLikeParserHelper.LineParser.ParsedOperation;
@@ -25,7 +26,7 @@ public class ChemCleaner {
 			.mapToObj(i->""+alpha[i])
 			.map(a->""+a+a+a+a)
 			.toArray(i->new String[i]);
-	private static LineParser CHG_LINE_PARSER=CachedSupplier.of(()->{
+	private static LineParser CHG_LINE_PARSER= CachedSupplier.of(()->{
 		StringBuilder sb = new StringBuilder();
 		sb.append("......???");
 

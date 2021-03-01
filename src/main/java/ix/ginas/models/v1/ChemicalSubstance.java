@@ -138,68 +138,68 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
         return temp;
     }
 
-    @Override
-    protected void additionalDefinitionalElements(Consumer<DefinitionalElement> consumer) {
-
-		
-        /*
-        Key->Value
-structure.properties.lychi4->"<EXAMPLE_LYCHI>"
-structure.properties.stereoChemistry->"RACEMIC"
-structure.properties.opticalActivity->"(+/-)"
-
-For each Moiety:
-structure.moieties[<lychi4>].lychi4->"<EXAMPLE_LYCHI>"
-structure.moieties[<lychi4>].stereoChemistry->"RACEMIC"
-structure.moieties[<lychi4>].opticalActivity->"(+/-)"
-structure.moieties[<lychi4>].countAmount->"4 to 5 per mol"
-         */
-
-        addStructureDefinitialElements(structure, consumer);
-    }
-
-    private void addStructureDefinitialElements(Structure structure, Consumer<DefinitionalElement> consumer) {
-        if(structure==null){
-            //shouldn't happen unless we get invalid submission
-            return;
-        }
-        log.debug("starting addStructureDefinitialElements (ChemicalSubstance)");
-        consumer.accept(DefinitionalElement.of("structure.properties.hash1",
-                structure.getStereoInsensitiveHash(), 1));
-        log.debug("structure.getStereoInsensitiveHash(): "  + structure.getStereoInsensitiveHash());
-        consumer.accept(DefinitionalElement.of("structure.properties.hash2",
-                structure.getExactHash(), 2));
-        log.debug("structure.getExactHash(): " + structure.getExactHash());
-        
-	if(structure.stereoChemistry!=null){
-		consumer.accept(DefinitionalElement.of("structure.properties.stereoChemistry",
-                	structure.stereoChemistry.toString(), 2));
-        	log.debug("structure.stereoChemistry : " + structure.stereoChemistry.toString());
-	}
-        if(structure.opticalActivity!=null){
-		consumer.accept(DefinitionalElement.of("structure.properties.opticalActivity",
-                	structure.opticalActivity.toString(), 2));
-		log.debug("structure.opticalActivity.toString(): " + structure.opticalActivity.toString());
-	}
-	if( moieties != null) {
-        for(Moiety m: moieties){
-            String mh=m.structure.getStereoInsensitiveHash();
-            log.debug("processing moiety with hash " + mh);
-            consumer.accept(DefinitionalElement.of("moiety.hash1", m.structure.getStereoInsensitiveHash(),1));
-            consumer.accept(DefinitionalElement.of("moiety.hash2", m.structure.getExactHash(),2));
-            log.debug("m.structure.getExactHash(): " + m.structure.getExactHash());
-            consumer.accept(DefinitionalElement.of("moiety[" + mh + "].stereoChemistry",
-                    m.structure.stereoChemistry.toString(), 2));
-            log.debug("m.structure.stereoChemistry.toString(): " + m.structure.stereoChemistry.toString());
-            consumer.accept(DefinitionalElement.of("moiety[" + mh + "].opticalActivity",
-                    m.structure.opticalActivity.toString(), 2));
-            log.debug("m.structure.opticalActivity.toString(): " + m.structure.opticalActivity.toString());
-            consumer.accept(DefinitionalElement.of("moiety[" + mh + "].countAmount",
-                    m.getCountAmount().toString(), 2));
-            log.debug("m.getCountAmount().toString(): " + m.getCountAmount().toString());
-        }
-	}
-    }
+//    @Override
+//    protected void additionalDefinitionalElements(Consumer<DefinitionalElement> consumer) {
+//
+//
+//        /*
+//        Key->Value
+//structure.properties.lychi4->"<EXAMPLE_LYCHI>"
+//structure.properties.stereoChemistry->"RACEMIC"
+//structure.properties.opticalActivity->"(+/-)"
+//
+//For each Moiety:
+//structure.moieties[<lychi4>].lychi4->"<EXAMPLE_LYCHI>"
+//structure.moieties[<lychi4>].stereoChemistry->"RACEMIC"
+//structure.moieties[<lychi4>].opticalActivity->"(+/-)"
+//structure.moieties[<lychi4>].countAmount->"4 to 5 per mol"
+//         */
+//
+//        addStructureDefinitialElements(structure, consumer);
+//    }
+//
+//    private void addStructureDefinitialElements(Structure structure, Consumer<DefinitionalElement> consumer) {
+//        if(structure==null){
+//            //shouldn't happen unless we get invalid submission
+//            return;
+//        }
+//        log.debug("starting addStructureDefinitialElements (ChemicalSubstance)");
+//        consumer.accept(DefinitionalElement.of("structure.properties.hash1",
+//                structure.getStereoInsensitiveHash(), 1));
+//        log.debug("structure.getStereoInsensitiveHash(): "  + structure.getStereoInsensitiveHash());
+//        consumer.accept(DefinitionalElement.of("structure.properties.hash2",
+//                structure.getExactHash(), 2));
+//        log.debug("structure.getExactHash(): " + structure.getExactHash());
+//
+//	if(structure.stereoChemistry!=null){
+//		consumer.accept(DefinitionalElement.of("structure.properties.stereoChemistry",
+//                	structure.stereoChemistry.toString(), 2));
+//        	log.debug("structure.stereoChemistry : " + structure.stereoChemistry.toString());
+//	}
+//        if(structure.opticalActivity!=null){
+//		consumer.accept(DefinitionalElement.of("structure.properties.opticalActivity",
+//                	structure.opticalActivity.toString(), 2));
+//		log.debug("structure.opticalActivity.toString(): " + structure.opticalActivity.toString());
+//	}
+//	if( moieties != null) {
+//        for(Moiety m: moieties){
+//            String mh=m.structure.getStereoInsensitiveHash();
+//            log.debug("processing moiety with hash " + mh);
+//            consumer.accept(DefinitionalElement.of("moiety.hash1", m.structure.getStereoInsensitiveHash(),1));
+//            consumer.accept(DefinitionalElement.of("moiety.hash2", m.structure.getExactHash(),2));
+//            log.debug("m.structure.getExactHash(): " + m.structure.getExactHash());
+//            consumer.accept(DefinitionalElement.of("moiety[" + mh + "].stereoChemistry",
+//                    m.structure.stereoChemistry.toString(), 2));
+//            log.debug("m.structure.stereoChemistry.toString(): " + m.structure.stereoChemistry.toString());
+//            consumer.accept(DefinitionalElement.of("moiety[" + mh + "].opticalActivity",
+//                    m.structure.opticalActivity.toString(), 2));
+//            log.debug("m.structure.opticalActivity.toString(): " + m.structure.opticalActivity.toString());
+//            consumer.accept(DefinitionalElement.of("moiety[" + mh + "].countAmount",
+//                    m.getCountAmount().toString(), 2));
+//            log.debug("m.getCountAmount().toString(): " + m.getCountAmount().toString());
+//        }
+//	}
+//    }
 
 
 }

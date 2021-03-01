@@ -1,13 +1,13 @@
 package ix.core.chem;
 
+import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
 import gov.nih.ncats.molwitch.io.ChemFormat;
 import ix.core.models.Structure;
 import ix.core.models.Text;
 import ix.core.models.Value;
-import ix.core.util.CachedSupplier;
-import ix.core.util.ConfigHelper;
+
 
 import java.io.IOException;
 import java.util.function.Consumer;
@@ -15,10 +15,18 @@ import java.util.function.Supplier;
 
 public class InchiStandardizer implements StructureStandardizer {
     private static final int ATOM_LIMIT_FOR_STANDARDIZATION = 240;
-    private static final CachedSupplier<Integer> ATOM_LIMIT_SUPPLIER = ConfigHelper.supplierOf("ix.core.structureIndex.atomLimit",ATOM_LIMIT_FOR_STANDARDIZATION);
 
     private static final ChemFormat.SmilesFormatWriterSpecification CANONICAL_SMILES_SPEC = new ChemFormat.SmilesFormatWriterSpecification()
                                                                                                     .setCanonization(ChemFormat.SmilesFormatWriterSpecification.CanonicalizationEncoding.CANONICAL);
+    private final int maxNumberOfAtoms;
+
+    public  InchiStandardizer(){
+        this(ATOM_LIMIT_FOR_STANDARDIZATION);
+    }
+
+    public InchiStandardizer(int maxNumberOfAtoms){
+        this.maxNumberOfAtoms = maxNumberOfAtoms;
+    }
     @Override
     public String canonicalSmiles(Structure s, String mol) {
         String smiles=null;
@@ -45,9 +53,9 @@ public class InchiStandardizer implements StructureStandardizer {
 
     @Override
     public Chemical standardize(Chemical orig, Supplier<String> molSupplier, Consumer<Value> valueConsumer) throws IOException {
-        int maxAtoms = ATOM_LIMIT_SUPPLIER.get();
 
-        if(orig.getAtomCount() > maxAtoms || orig.hasPseudoAtoms()){
+
+        if(orig.getAtomCount() > maxNumberOfAtoms || orig.hasPseudoAtoms()){
             return orig;
         }
         try {
