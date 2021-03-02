@@ -14,6 +14,24 @@ import java.util.List;
 @Entity
 @Table(name="ix_ginas_note")
 public class Note extends CommonDataElementOfCollection {
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JsonIgnore
+    private Substance owner;
+
+    public Substance fetchOwner(){
+        return this.owner;
+    }
+    public Substance getOwner(){
+        return this.owner;
+    }
+
+    public void setOwner(Substance owner) {
+        this.owner = owner;
+    }
+
+    public void assignOwner(Substance own){
+        this.owner=own;
+    }
 
     @JSONEntity(title = "Note")
     @Lob

@@ -29,22 +29,13 @@ public abstract class GinasCommonSimplifiedSubData extends GinasCommonSubData im
 			return super.getUuid();
 		}
 
-	 	@JsonIgnore
-	 	@JsonDeserialize(using = PrincipalDeserializer.class)
-		public Principal getCreatedBy() {
-			return super.getCreatedBy();
-		}
+
 
 	 	@JsonIgnore
 		public Date getLastEdited() {
 			return super.getLastEdited();
 		}
 
-	 	@JsonIgnore
-	 	@JsonDeserialize(using = PrincipalDeserializer.class)
-		public Principal getLastEditedBy() {
-			return super.getLastEditedBy();
-		}
 
 	 	@JsonIgnore
 		public boolean isDeprecated() {

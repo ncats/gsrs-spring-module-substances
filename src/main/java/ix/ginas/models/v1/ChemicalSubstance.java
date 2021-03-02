@@ -35,11 +35,7 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     //@JsonSerialize(using=StructureSerializer.class)
     public GinasChemicalStructure structure;
 
-    @JSONEntity(title = "Chemical Moieties", isRequired = true, minItems = 1)
-    @OneToMany(mappedBy = "owner", cascade= CascadeType.ALL)
-    @JsonView(BeanViews.Full.class)
-    @EntityMapperOptions(linkoutInCompactView = true)
-    public List<Moiety> moieties = new ArrayList<Moiety>();
+
 
 
 

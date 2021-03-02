@@ -10,6 +10,7 @@ import ix.core.chem.Chem;
 import ix.core.controllers.EntityFactory;
 import ix.core.controllers.EntityFactory.EntityMapper;
 import ix.core.models.*;
+import ix.ginas.converters.GinasAccessConverter;
 import ix.ginas.models.*;
 import ix.ginas.models.serialization.*;
 import org.springframework.data.annotation.CreatedBy;
@@ -84,6 +85,7 @@ public class GinasChemicalStructure extends Structure implements GinasAccessRefe
 	@JsonIgnore
 //	@OneToOne(cascade = CascadeType.ALL)
 	@Basic(fetch= FetchType.LAZY)
+	@Convert(converter= GinasAccessConverter.class)
     GinasAccessContainer recordAccess;
 
 

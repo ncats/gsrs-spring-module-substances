@@ -18,7 +18,25 @@ import java.util.regex.Pattern;
 @Table(name="ix_ginas_code")
 @DynamicFacet(label="codeSystem", value="code")
 public class Code extends CommonDataElementOfCollection{
-	
+	@ManyToOne(cascade = CascadeType.PERSIST)
+	@JsonIgnore
+	private Substance owner;
+
+	public Substance fetchOwner(){
+		return this.owner;
+	}
+	public Substance getOwner(){
+		return this.owner;
+	}
+
+	public void setOwner(Substance owner) {
+		this.owner = owner;
+	}
+
+	public void assignOwner(Substance own){
+		this.owner=own;
+	}
+
     @JSONEntity(title = "Code system", format = JSONConstants.CV_CODE_SYSTEM)
     @Indexable(facet=true, name="Code System")
     public String codeSystem;

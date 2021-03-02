@@ -10,12 +10,12 @@ import ix.ginas.models.serialization.ReferenceSetSerializer;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 
-import javax.persistence.MappedSuperclass;
-import javax.persistence.PreUpdate;
+import javax.persistence.*;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 @MappedSuperclass
+//@Access(AccessType.FIELD)
 public abstract class GinasCommonSubData extends GinasCommonData implements GinasAccessReferenceControlled {
 	
 	/**
@@ -24,6 +24,7 @@ public abstract class GinasCommonSubData extends GinasCommonData implements Gina
 	private static final long serialVersionUID = 1L;
 	
 	//@JsonIgnore
+    @Convert(converter = EmbeddedKeywordList.Converter.class)
 	private EmbeddedKeywordList internalReferences = new EmbeddedKeywordList();
 	
     public GinasCommonSubData() {
@@ -31,6 +32,7 @@ public abstract class GinasCommonSubData extends GinasCommonData implements Gina
     
     @JsonProperty("references")
     @JsonSerialize(using = ReferenceSetSerializer.class)
+    @Transient
     public Set<Keyword> getReferences(){
     	return new LinkedHashSet<Keyword>(internalReferences);
     }

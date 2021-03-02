@@ -93,7 +93,25 @@ public class Name extends CommonDataElementOfCollection {
 
 
     private static final String SRS_LOCATOR = "SRS_LOCATOR";
-    
+
+	@ManyToOne(cascade = CascadeType.PERSIST)
+	@JsonIgnore
+	private Substance owner;
+
+	public Substance fetchOwner(){
+		return this.owner;
+	}
+	public Substance getOwner(){
+		return this.owner;
+	}
+
+	public void setOwner(Substance owner) {
+		this.owner = owner;
+	}
+
+	public void assignOwner(Substance own){
+		this.owner=own;
+	}
 
     @JSONEntity(title = "Name", isRequired = true)
     @Column(nullable=false)
@@ -160,9 +178,18 @@ public class Name extends CommonDataElementOfCollection {
         return fullName != null ? fullName : name;
     }
 
-    @PrePersist
     @PreUpdate
-    public void tidyName () {
+	private void preUpdate(){
+    	tidyName();
+		updateImmutables();
+	}
+
+	@PrePersist
+	private void prePersist(){
+		tidyName();
+	}
+
+    private void tidyName () {
         if (name.getBytes().length > 255) {
             fullName = name;
             name = truncateString(name,254);
@@ -268,7 +295,7 @@ public class Name extends CommonDataElementOfCollection {
 	}
 	
 	
-	@PreUpdate
+
 	public void updateImmutables(){
 		super.updateImmutables();
 		this.languages= new EmbeddedKeywordList(this.languages);

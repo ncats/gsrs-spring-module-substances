@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 @JSONEntity(name = "substance", title = "Substance")
 @Entity
 @Table(name = "ix_ginas_substance")
-@Inheritance
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorValue("SUB")
 @Slf4j
 public class Substance extends GinasCommonData implements ValidationMessageHolder {
@@ -171,6 +171,12 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @DataVersion
     public String version = "1";
 
+    @JSONEntity(title = "Chemical Moieties", isRequired = true, minItems = 1)
+    //FIXME katzelda Sept 2019 changed mapped by from "owner" to the class that is the owner
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    @JsonView(BeanViews.Full.class)
+    @EntityMapperOptions(linkoutInCompactView = true)
+    public List<Moiety> moieties = new ArrayList<>();
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonSerialize(using = PrincipalSerializer.class)
@@ -584,19 +590,31 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return names;
     }
 
-
+    //katzelda Feb 2021: Hibernate requires single prepersist and preUpdate annotated methods
 
     @PrePersist
+    private void prePersist(){
+        fixstatus();
+        tidy();
+    }
+
     @PreUpdate
-    public void fixstatus(){
+    private void preUpdate(){
+        fixstatus();
+        tidy();
+        updateVersion();
+    }
+
+
+    private void fixstatus(){
         if(this.isAlternativeDefinition()){
             this.status=Substance.STATUS_ALTERNATIVE;
         }
     }
 
-    @PrePersist
-    @PreUpdate
-    public void tidy() {
+
+
+    private void tidy() {
         if (!REMOVE_INVALID_RELATIONSHIPS){
             return;
         }
@@ -959,8 +977,8 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return getName();
     }
 
-    @PreUpdate
-    public void updateVersion(){
+
+    private void updateVersion(){
         Integer i=0;
         try{
             i = Integer.parseInt(this.version);

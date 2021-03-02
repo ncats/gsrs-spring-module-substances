@@ -3,6 +3,7 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import gov.nih.ncats.molwitch.Chemical;
 import ix.core.models.Indexable;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
@@ -22,9 +23,24 @@ import java.util.UUID;
 //@JsonIgnoreProperties({ "id" })
 public class Moiety extends CommonDataElementOfCollection implements Comparable<Moiety>{
 	public static String JSON_NULL="JSON_NULL";
-	
+
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    @JsonIgnore
+    private ChemicalSubstance owner;
+
+    public ChemicalSubstance getOwner(){
+        return this.owner;
+    }
+
+    public void setOwner(ChemicalSubstance owner) {
+        this.owner = owner;
+    }
+
+    public void assignOwner(ChemicalSubstance own){
+        this.owner=own;
+    }
+
     @OneToOne(cascade= CascadeType.ALL)
-    @Column(nullable=false)
     @JsonUnwrapped //TODO: Probably not covered well
                    // by some other tools
     public GinasChemicalStructure structure;
@@ -101,14 +117,13 @@ public class Moiety extends CommonDataElementOfCollection implements Comparable<
 	public void setCountAmount(Amount amnt) {
 		count=amnt;	
 	}
-	
 	@Indexable()
 	public Amount getCountAmount() {
 		return count;
 	}
 	
 	
-	@Id
+
 	public UUID getUUID(){
 		if(this.innerUuid!=null){
 			return UUID.fromString(this.innerUuid);

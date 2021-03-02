@@ -120,11 +120,11 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
     }
 
     public T setCreatedBy(Principal p){
-        return andThen( s->{s.setCreatedBy(p);});
+        return andThen( s->{s.createdBy = p;});
     }
 
     public T setLastEditedBy(Principal p){
-        return andThen( s->{s.setLastEditedBy(p);});
+        return andThen( s->{s.lastEditedBy = p;});
     }
     
     public T setCreatedDate(Date d){

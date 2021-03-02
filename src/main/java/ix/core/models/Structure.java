@@ -35,11 +35,6 @@ import java.util.*;
 @DiscriminatorValue("DEF")
 @Table(name = "ix_core_structure")
 @Slf4j
-@TypeDef(
-        name = "stereo",
-        defaultForType = StereoConverter.class,
-        typeClass = Structure.Stereo.class
-)
 public class Structure extends BaseModel {
 
 
@@ -112,15 +107,21 @@ public class Structure extends BaseModel {
 		public static Stereo valueOf(String asText) {
 			return new Stereo(asText);
 		}
-        
-		public boolean equals(Object o){
-			if(o instanceof Stereo){
-				return ((Stereo)o).stereoType.equals(this.stereoType);
-			}
-			return false;
-		}
-		
-		public String toString(){
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof Stereo)) return false;
+            Stereo stereo = (Stereo) o;
+            return Objects.equals(stereoType, stereo.stereoType);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(stereoType);
+        }
+
+        public String toString(){
 			return this.stereoType;
 		}
     }
@@ -210,7 +211,7 @@ public class Structure extends BaseModel {
     @JsonProperty("stereochemistry")
     @Indexable(name = "StereoChemistry", facet = true)
     @Column(name = "stereo" )
-
+    @Convert(converter = StereoConverter.class)
     public Stereo stereoChemistry;
 
     @Column(name = "optical")
@@ -503,5 +504,6 @@ public class Structure extends BaseModel {
         return c;
 
     }
-    
+
+
 }
