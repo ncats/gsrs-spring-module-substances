@@ -132,7 +132,7 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                     //would be nice to say instead of possible duplicate hit say we got X hits
                     SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
 
-                    if (s2.getUUID() != null && !s2.getUUID().equals(s.getUuid())) {
+                    if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
                         GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Code '"

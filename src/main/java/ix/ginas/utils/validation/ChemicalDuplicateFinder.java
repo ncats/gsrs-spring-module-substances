@@ -23,7 +23,7 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
     public List<SubstanceReference> findPossibleDuplicatesFor(SubstanceReference subRef) {
         int max=10;
 
-        Map<UUID, SubstanceRepository.SubstanceSummary> dupMap = new LinkedHashMap<>();
+        Map<UUID, SubstanceReference> dupMap = new LinkedHashMap<>();
         Substance sub = subRef.wrappedSubstance;
         if(sub ==null){
             sub = substanceRepository.findBySubstanceReference(subRef);
@@ -35,7 +35,8 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
             dupMap = substanceRepository.findSubstanceSummaryByStructure_Properties_Term(hash)
                         .stream()
                         .limit(max)
-                        .collect(Collectors.toMap(SubstanceRepository.SubstanceSummary::getUUID, Function.identity(), (x, y) -> y, LinkedHashMap::new));
+
+                        .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new));
 //            dupeList = new LinkedHashSet<>(SubstanceFactory.finder.get()
 //                                              .where()
 //                                              .eq("structure.properties.term", hash)
@@ -48,7 +49,7 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
                 dupMap.putAll(substanceRepository.findSubstanceSummaryByMoieties_Structure_Properties_Term(hash2)
                         .stream()
                         .limit(max- dupMap.size())
-                        .collect(Collectors.toMap(SubstanceRepository.SubstanceSummary::getUUID, Function.identity(), (x, y) -> y, LinkedHashMap::new)));
+                        .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new)));
 //
 //                dupMap.addAll(SubstanceFactory.finder.get()
 //                                            .where()
@@ -60,7 +61,7 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
         }
         
         return dupMap.values().stream()
-                                .map(SubstanceRepository.SubstanceSummary::toSubstanceReference)
+
                                 .collect(Collectors.toList());
     }
     

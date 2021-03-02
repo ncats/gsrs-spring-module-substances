@@ -36,7 +36,12 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     public GinasChemicalStructure structure;
 
 
-
+    @JSONEntity(title = "Chemical Moieties", isRequired = true, minItems = 1)
+    //FIXME katzelda Sept 2019 changed mapped by from "owner" to the class that is the owner
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    @JsonView(BeanViews.Full.class)
+    @EntityMapperOptions(linkoutInCompactView = true)
+    public List<Moiety> moieties = new ArrayList<>();
 
 
     @Indexable(name="SubstanceStereochemistry", facet=true)

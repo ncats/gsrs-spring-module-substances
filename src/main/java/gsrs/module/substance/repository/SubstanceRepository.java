@@ -1,8 +1,9 @@
 package gsrs.module.substance.repository;
 
 import gsrs.repository.GsrsVersionedRepository;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.SubstanceReference;
+import ix.core.models.Keyword;
+import ix.ginas.models.v1.*;
+import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -17,54 +18,75 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         if(substanceReference ==null){
             return false;
         }
-        return existsByApprovalIDIgnoreCase(substanceReference.approvalID) || existsById(UUID.fromString(substanceReference.refuuid));
+        return existsByApprovalID(substanceReference.approvalID) || existsById(UUID.fromString(substanceReference.refuuid));
     }
     default Substance findBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
             return null;
         }
-        Substance s = findByApprovalIDIgnoreCase(substanceReference.approvalID);
+        Substance s = findByApprovalID(substanceReference.approvalID);
         if(s !=null){
             return s;
         }
         return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
     }
-    Substance findByApprovalIDIgnoreCase(String approvalID);
-    SubstanceSummary findSummaryByApprovalIDIgnoreCase(String approvalID);
+    @Query("select s from Substance s where s.approvalID= ?1")
+    Substance findByApprovalID(String approvalID);
+    @Query("select s from Substance s where s.approvalID= ?1")
+    SubstanceSummary findSummaryByApprovalID(String approvalID);
 
-    Optional<SubstanceSummary> findSummaryById(UUID uuid);
+    Optional<SubstanceSummary> findSummaryByUuid(UUID uuid);
 
     List<SubstanceSummary> findByNames_NameIgnoreCase(String name);
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
-    List<SubstanceSummary> findSubstanceSummaryByStructure_Properties_Term(String term);
-    List<SubstanceSummary> findSubstanceSummaryByMoieties_Structure_Properties_Term(String term);
+
+//    List<SubstanceSummary> findSubstanceSummaryByStructure_Properties_Term(String term);
+    default List<Substance> findSubstanceSummaryByStructure_Properties_Term(String term){
+        ChemicalSubstance example = new ChemicalSubstance();
+        example.structure = new GinasChemicalStructure();
+        example.structure.properties.add(new Keyword(null, term));
+
+        return findAll(Example.of(example));
+    }
+//    List<SubstanceSummary> findSubstanceSummaryByMoieties_Structure_Properties_Term(String term);
+
+    default List<Substance> findSubstanceSummaryByMoieties_Structure_Properties_Term(String term){
+        ChemicalSubstance example = new ChemicalSubstance();
+        Moiety moiety = new Moiety();
+        moiety.structure = new GinasChemicalStructure();
+        moiety.structure.properties.add(new Keyword(null, term));
+        example.moieties.add(moiety);
+
+        return findAll(Example.of(example));
+    }
 //moieties.structure.properties.term
     List<Substance> findByUuidStartingWith(String partialUUID);
-    boolean existsByApprovalIDIgnoreCase(String approvalID);
+    @Query("select case when count(c)> 0 then true else false end from Substance s where s.approvalID= ?1")
+    boolean existsByApprovalID(String approvalID);
 
     default Optional<SubstanceSummary> findSummaryBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
             return Optional.empty();
         }
-        SubstanceSummary s = findSummaryByApprovalIDIgnoreCase(substanceReference.approvalID);
+        SubstanceSummary s = findSummaryByApprovalID(substanceReference.approvalID);
         if(s !=null){
             return Optional.of(s);
         }
-        return findSummaryById(UUID.fromString(substanceReference.refuuid));
+        return findSummaryByUuid(UUID.fromString(substanceReference.refuuid));
     }
     interface SubstanceSummary{
-        UUID getUUID();
+        UUID getUuid();
         Substance.SubstanceClass getSubstanceClass();
-        Substance.SubstanceDefinitionType getSubstanceDefinitionType();
-        Substance.SubstanceDefinitionLevel getSubstanceDefinitionLevel();
+        Substance.SubstanceDefinitionType getDefinitionType();
+        Substance.SubstanceDefinitionLevel getDefinitionLevel();
         String getStatus();
-        String getApprovalId();
+        String getApprovalID();
 
         default SubstanceReference toSubstanceReference(){
             SubstanceReference ref = new SubstanceReference();
-            ref.approvalID = getApprovalId();
-            ref.refuuid = getUUID()==null?null: getUUID().toString();
+            ref.approvalID = getApprovalID();
+            ref.refuuid = getUuid()==null?null: getUuid().toString();
             ref.substanceClass = getSubstanceClass().toString();
 
             return ref;

@@ -251,7 +251,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_NameIgnoreCase(n.name);
                 if (sr != null && !sr.isEmpty()) {
                     SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
-                    if (!s2.getUUID().equals(s.getOrGenerateUUID())) {
+                    if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
                         GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Name '"

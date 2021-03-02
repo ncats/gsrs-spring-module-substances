@@ -171,12 +171,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @DataVersion
     public String version = "1";
 
-    @JSONEntity(title = "Chemical Moieties", isRequired = true, minItems = 1)
-    //FIXME katzelda Sept 2019 changed mapped by from "owner" to the class that is the owner
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
-    @JsonView(BeanViews.Full.class)
-    @EntityMapperOptions(linkoutInCompactView = true)
-    public List<Moiety> moieties = new ArrayList<>();
+
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonSerialize(using = PrincipalSerializer.class)

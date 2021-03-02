@@ -208,7 +208,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
             }
         }
 
-        Substance result = repository.findByApprovalIDIgnoreCase(someKindOfId);
+        Substance result = repository.findByApprovalID(someKindOfId);
         if(result !=null){
             return Optional.of(result);
         }
@@ -216,13 +216,13 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
         if(summaries !=null && !summaries.isEmpty()){
 
             //get the first?
-            return repository.findById(summaries.get(0).getUUID());
+            return repository.findById(summaries.get(0).getUuid());
         }
         summaries = repository.findByCodes_CodeIgnoreCase(someKindOfId);
         if(summaries !=null && !summaries.isEmpty()){
 
             //get the first?
-            return repository.findById(summaries.get(0).getUUID());
+            return repository.findById(summaries.get(0).getUuid());
         }
         return Optional.empty();
         //from Play version

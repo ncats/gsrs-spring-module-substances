@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @Data
 public class StructureStandardizerConfiguration {
-    @Value("ix.core.structureIndex.atomLimit")
+    @Value("${ix.core.structureIndex.atomLimit}")
     private int maxNumberOfAtoms = 240;
 
     @Bean
