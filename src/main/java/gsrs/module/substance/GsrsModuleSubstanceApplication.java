@@ -12,7 +12,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication
 @EnableConfigurationProperties
-@EnableEurekaClient
+//@EnableEurekaClient
 @EnableGsrsJpaEntities
 @EnableGsrsApi
 @EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )

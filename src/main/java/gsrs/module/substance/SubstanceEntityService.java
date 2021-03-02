@@ -173,9 +173,13 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     }
 
     @Override
-    protected Substance create(Substance controlledVocabulary) {
+    protected Substance create(Substance substance) {
         try {
-            return repository.saveAndFlush(controlledVocabulary);
+            try {
+                String s = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(substance);
+                System.out.println("about to save substance" + s);
+            }catch(Throwable t){};
+            return repository.saveAndFlush(substance);
         }catch(Throwable t){
             t.printStackTrace();
             throw t;

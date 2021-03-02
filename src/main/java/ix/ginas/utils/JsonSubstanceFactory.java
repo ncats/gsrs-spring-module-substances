@@ -82,6 +82,7 @@ public class JsonSubstanceFactory {
                 }
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
+                System.err.println(tree.toPrettyString());
                 throw new IllegalStateException("JSON parse error:" + e.getMessage());
             }
         } else {
