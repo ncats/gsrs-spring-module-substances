@@ -95,6 +95,11 @@
             <version>0.6.0</version>
         </dependency>
         <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>molwitch-cdk</artifactId>
+            <version>1.0.5-SNAPSHOT</version>
+        </dependency>
+        <dependency>
             <groupId>org.jcvi.jillion</groupId>
             <artifactId>jillion</artifactId>
             <version>5.3.3</version>
