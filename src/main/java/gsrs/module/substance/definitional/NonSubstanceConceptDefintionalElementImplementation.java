@@ -9,14 +9,14 @@ import java.util.function.Consumer;
 @Slf4j
 public class NonSubstanceConceptDefintionalElementImplementation implements DefinitionalElementImplementation {
     @Override
-    public boolean supports(Substance s) {
-        return s.isNonSubstanceConcept();
+    public boolean supports(Object s) {
+        return s instanceof Substance && ((Substance)s).isNonSubstanceConcept();
     }
 
     @Override
-    public void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer) {
+    public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
             String primaryName = "";
-            for(Name name : s.getAllNames()) {
+            for(Name name : ((Substance)s).getAllNames()) {
                 if( name.displayName ){
                     primaryName =name.name;
                 }

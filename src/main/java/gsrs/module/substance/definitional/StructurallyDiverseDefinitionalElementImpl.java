@@ -1,5 +1,6 @@
 package gsrs.module.substance.definitional;
 
+import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.Parameter;
@@ -7,19 +8,32 @@ import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 @Slf4j
 public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalElementImplementation {
+
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
+
+    public DefinitionalElementFactory getDefinitionalElementFactory() {
+        return definitionalElementFactory;
+    }
+
+    public void setDefinitionalElementFactory(DefinitionalElementFactory definitionalElementFactory) {
+        this.definitionalElementFactory = definitionalElementFactory;
+    }
+
     @Override
-    public boolean supports(Substance s) {
+    public boolean supports(Object s) {
         return s instanceof StructurallyDiverseSubstance;
     }
 
     @Override
-    public void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer) {
+    public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
             StructurallyDiverseSubstance substance = (StructurallyDiverseSubstance) s;
 
 		/*
@@ -134,9 +148,8 @@ public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalE
                 consumer.accept(devStageElement);
             }
             if( substance.modifications != null ){
-                for(DefinitionalElement e : substance.modifications.getDefinitionalElements().getElements()){
-                    consumer.accept(e);
-                }
+                definitionalElementFactory.addDefinitionalElementsFor(substance.modifications, consumer);
+
             }
 
             if( substance.properties != null ) {

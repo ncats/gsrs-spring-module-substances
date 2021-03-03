@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ConfigBasedDefinitionalElementFactory implements DefinitionalElementFactory{
     @Autowired
@@ -18,8 +19,13 @@ public class ConfigBasedDefinitionalElementFactory implements DefinitionalElemen
     @Override
     public DefinitionalElements computeDefinitionalElementsFor(Substance s) {
         List<DefinitionalElement> list = new ArrayList<>();
-        configuration.computeDefinitionalElements(s, list::add);
+        addDefinitionalElementsFor(s, list::add);
         return new DefinitionalElements(list);
+    }
+
+    @Override
+    public void addDefinitionalElementsFor(Object o, Consumer<DefinitionalElement> consumer) {
+        configuration.computeDefinitionalElements(o, consumer);
     }
 
 }

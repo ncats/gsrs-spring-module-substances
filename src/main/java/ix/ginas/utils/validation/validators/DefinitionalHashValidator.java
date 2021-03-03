@@ -3,6 +3,7 @@ package ix.ginas.utils.validation.validators;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.definitional.DefinitionalElements.DefinitionalElementDiff.OP;
+import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
@@ -12,6 +13,7 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,11 +25,22 @@ import java.util.List;
 @Slf4j
 public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substance> {
 
-    /*
-    When changing a structure or defining information the application should require
-    you to enter a new reference or reaffirm the reference or references for the structure
-    or defining information for an approved substance
-     */
+	@Autowired
+	private DefinitionalElementFactory definitionalElementFactory;
+
+	public DefinitionalElementFactory getDefinitionalElementFactory() {
+		return definitionalElementFactory;
+	}
+
+	public void setDefinitionalElementFactory(DefinitionalElementFactory definitionalElementFactory) {
+		this.definitionalElementFactory = definitionalElementFactory;
+	}
+
+	/*
+        When changing a structure or defining information the application should require
+        you to enter a new reference or reaffirm the reference or references for the structure
+        or defining information for an approved substance
+         */
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
 //				System.out.println("in def hash Validator with substance of type " + objnew.substanceClass.name());
@@ -37,10 +50,10 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
             //new substance or not approved don't validate
             return;
         }*/
-				DefinitionalElements newDefinitionalElements = objnew.getDefinitionalElements();
-				DefinitionalElements oldDefinitionalElements = new DefinitionalElements(new ArrayList<DefinitionalElement>());
+				DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(objnew);
+				DefinitionalElements oldDefinitionalElements;
 				try	{
-						oldDefinitionalElements =objold.getDefinitionalElements();
+						oldDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(objold);
 				}
 				catch(Exception e){
 						log.warn("Unable to access definitional elements for old substance");

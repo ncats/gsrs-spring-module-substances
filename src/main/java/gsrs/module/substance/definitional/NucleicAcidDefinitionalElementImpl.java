@@ -1,20 +1,34 @@
 package gsrs.module.substance.definitional;
 
+import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 import java.util.function.Consumer;
 @Slf4j
 public class NucleicAcidDefinitionalElementImpl implements DefinitionalElementImplementation {
+
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
+
+    public DefinitionalElementFactory getDefinitionalElementFactory() {
+        return definitionalElementFactory;
+    }
+
+    public void setDefinitionalElementFactory(DefinitionalElementFactory definitionalElementFactory) {
+        this.definitionalElementFactory = definitionalElementFactory;
+    }
+
     @Override
-    public boolean supports(Substance s) {
+    public boolean supports(Object s) {
         return s instanceof NucleicAcidSubstance;
     }
 
     @Override
-    public void computeDefinitionalElements(Substance substance, Consumer<DefinitionalElement> consumer) {
+    public void computeDefinitionalElements(Object substance, Consumer<DefinitionalElement> consumer) {
         NucleicAcidSubstance nucleicAcidSubstance = (NucleicAcidSubstance) substance;
         if(nucleicAcidSubstance.nucleicAcid ==null || nucleicAcidSubstance.nucleicAcid.subunits ==null){
             return;
@@ -63,9 +77,8 @@ public class NucleicAcidDefinitionalElementImpl implements DefinitionalElementIm
 
 
         if( nucleicAcidSubstance.modifications != null ){
-            for(DefinitionalElement e : nucleicAcidSubstance.modifications.getDefinitionalElements().getElements()){
-                consumer.accept(e);
-            }
+            definitionalElementFactory.addDefinitionalElementsFor(nucleicAcidSubstance.modifications, consumer);
         }
+
     }
 }

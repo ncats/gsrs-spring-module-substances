@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 
 public interface DefinitionalElementImplementation {
 
-    boolean supports(Substance s);
+    boolean supports(Object s);
 
-    void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer);
+    void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer);
 }

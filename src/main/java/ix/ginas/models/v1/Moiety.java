@@ -18,7 +18,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-
+/**
+ * Conceptually, a Moiety is a {@link GinasChemicalStructure}
+ * with an {@link Amount}.  This is how this object
+ * is represented in the JSON but for historical reasons,
+ * GSRS stores this in the database in a more complicated way.
+ */
 @JsonDeserialize(using = MoietyDeserializer.class)
 @JSONEntity(name = "moiety", title = "Moiety")
 @Entity

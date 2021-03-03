@@ -1,6 +1,7 @@
 package gsrs.module.substance.definitional;
 
 import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
@@ -20,14 +21,24 @@ public class PolymerDefinitionalElementImpl implements DefinitionalElementImplem
 
     @Autowired
     private StructureProcessor structureProcessor;
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
+
+    public DefinitionalElementFactory getDefinitionalElementFactory() {
+        return definitionalElementFactory;
+    }
+
+    public void setDefinitionalElementFactory(DefinitionalElementFactory definitionalElementFactory) {
+        this.definitionalElementFactory = definitionalElementFactory;
+    }
 
     @Override
-    public boolean supports(Substance s) {
+    public boolean supports(Object s) {
         return s instanceof PolymerSubstance;
     }
 
     @Override
-    public void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer) {
+    public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
         PolymerSubstance polymerSubstance = (PolymerSubstance)s;
 
         Polymer polymer = polymerSubstance.polymer;
@@ -93,9 +104,8 @@ public class PolymerDefinitionalElementImpl implements DefinitionalElementImplem
 
             //todo: add additional items to the definitional element list
             if (polymerSubstance.modifications != null) {
-                for (DefinitionalElement e : polymerSubstance.modifications.getDefinitionalElements().getElements()) {
-                    consumer.accept(e);
-                }
+                definitionalElementFactory.addDefinitionalElementsFor(polymerSubstance.modifications, consumer);
+
             }
 
             if (polymerSubstance.properties != null) {

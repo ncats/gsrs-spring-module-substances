@@ -1440,56 +1440,57 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
         return temp;
     }
+    //TODO katzelda Feb 2021: definitionalElements moved to factory
+//
+//    @JsonIgnore
+//    @Transient
+//    public DefinitionalElements getDefinitionalElements(){
+//        EntityWrapper.of(this).toFullJsonNode();
+//        List<DefinitionalElement> elements = new ArrayList<>();
+//
+//        //Commenting out for now, but some thought should be given to whether
+//        //we sometimes want this ...
+//        /*
+//        String approvalID = this.getApprovalID();
+//        if(approvalID !=null){
+//            elements.add(DefinitionalElement.of("approvalID", approvalID));
+//        }
+//        Optional<Name> name = getDisplayName();
+//        if(name.isPresent()){
+//            Name displayName = name.get();
+//            elements.add(DefinitionalElement.of("displayName.name", displayName.getName()));
+//        }
+//        */
+//        //because we can't add lambdas in this version of Play...
+//        additionalDefinitionalElements(new Consumer<DefinitionalElement>() {
+//            @Override
+//            public void accept(DefinitionalElement definitionalElement) {
+//                elements.add(definitionalElement);
+//            }
+//        });
+//
+//        return new DefinitionalElements(elements);
+//    }
 
-    @JsonIgnore
-    @Transient
-    public DefinitionalElements getDefinitionalElements(){
-        EntityWrapper.of(this).toFullJsonNode();
-        List<DefinitionalElement> elements = new ArrayList<>();
-
-        //Commenting out for now, but some thought should be given to whether 
-        //we sometimes want this ...
-        /*
-        String approvalID = this.getApprovalID();
-        if(approvalID !=null){
-            elements.add(DefinitionalElement.of("approvalID", approvalID));
-        }
-        Optional<Name> name = getDisplayName();
-        if(name.isPresent()){
-            Name displayName = name.get();
-            elements.add(DefinitionalElement.of("displayName.name", displayName.getName()));
-        }
-        */
-        //because we can't add lambdas in this version of Play...
-        additionalDefinitionalElements(new Consumer<DefinitionalElement>() {
-            @Override
-            public void accept(DefinitionalElement definitionalElement) {
-                elements.add(definitionalElement);
-            }
-        });
-
-        return new DefinitionalElements(elements);
-    }
-
-    /**
-     * Override this method to add any additional {@link DefinitionalElement} objects
-     * to this Substance.
-     * @param consumer the consumer to consume each of the additional {@link DefinitionalElement}
-     *                 to add for this Substance.
-     */
-    protected void additionalDefinitionalElements(Consumer<DefinitionalElement> consumer){
-
-			if( isNonSubstanceConcept()) {
-					String primaryName = "";
-					for(Name name : this.names) {
-						if( name.displayName ){
-							primaryName =name.name;
-						}
-					}
-					log.debug("going to create DE based on primary name " + primaryName);
-					consumer.accept(DefinitionalElement.of("Name", primaryName, 1));
-				}
-    }
+//    /**
+//     * Override this method to add any additional {@link DefinitionalElement} objects
+//     * to this Substance.
+//     * @param consumer the consumer to consume each of the additional {@link DefinitionalElement}
+//     *                 to add for this Substance.
+//     */
+//    protected void additionalDefinitionalElements(Consumer<DefinitionalElement> consumer){
+//
+//			if( isNonSubstanceConcept()) {
+//					String primaryName = "";
+//					for(Name name : this.names) {
+//						if( name.displayName ){
+//							primaryName =name.name;
+//						}
+//					}
+//					log.debug("going to create DE based on primary name " + primaryName);
+//					consumer.accept(DefinitionalElement.of("Name", primaryName, 1));
+//				}
+//    }
 
 //    @PostLoad
 //    public void printHash(){

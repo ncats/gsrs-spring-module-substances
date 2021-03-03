@@ -1,19 +1,32 @@
 package gsrs.module.substance.definitional;
 
+import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.function.Consumer;
 @Slf4j
 public class SSG1DefinitionalElementImpl implements DefinitionalElementImplementation {
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
+
+    public DefinitionalElementFactory getDefinitionalElementFactory() {
+        return definitionalElementFactory;
+    }
+
+    public void setDefinitionalElementFactory(DefinitionalElementFactory definitionalElementFactory) {
+        this.definitionalElementFactory = definitionalElementFactory;
+    }
+
     @Override
-    public boolean supports(Substance s) {
+    public boolean supports(Object s) {
         return s instanceof SpecifiedSubstanceGroup1Substance;
     }
 
     @Override
-    public void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer) {
+    public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
         SpecifiedSubstanceGroup1Substance ssg1 = (SpecifiedSubstanceGroup1Substance) s;
 
         if(ssg1.specifiedSubstance.constituents != null) {
@@ -47,9 +60,8 @@ public class SSG1DefinitionalElementImpl implements DefinitionalElementImplement
             log.warn("this SSG1 has no constituents");
         }
         if( ssg1.modifications != null ){
-            for(DefinitionalElement e: ssg1.modifications.getDefinitionalElements().getElements()){
-                consumer.accept(e);
-            }
+            definitionalElementFactory.addDefinitionalElementsFor(ssg1.modifications, consumer);
+
         }
 
         if( ssg1.properties != null ) {

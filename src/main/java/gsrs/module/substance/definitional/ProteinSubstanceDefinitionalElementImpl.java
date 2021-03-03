@@ -1,10 +1,12 @@
 package gsrs.module.substance.definitional;
 
+import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.residue.aa.AminoAcid;
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
 import java.util.function.Consumer;
@@ -12,8 +14,20 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class ProteinSubstanceDefinitionalElementImpl implements DefinitionalElementImplementation {
+
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
+
+    public DefinitionalElementFactory getDefinitionalElementFactory() {
+        return definitionalElementFactory;
+    }
+
+    public void setDefinitionalElementFactory(DefinitionalElementFactory definitionalElementFactory) {
+        this.definitionalElementFactory = definitionalElementFactory;
+    }
+
     @Override
-    public boolean supports(Substance s) {
+    public boolean supports(Object s) {
         return s instanceof ProteinSubstance;
     }
 
@@ -39,7 +53,7 @@ public class ProteinSubstanceDefinitionalElementImpl implements DefinitionalElem
     }
 
     @Override
-    public void computeDefinitionalElements(Substance substance, Consumer<DefinitionalElement> consumer) {
+    public void computeDefinitionalElements(Object substance, Consumer<DefinitionalElement> consumer) {
 
         ProteinSubstance proteinSubstance = (ProteinSubstance)substance;
         //this implementation is different than the version in GSRS 2.x in that
@@ -100,10 +114,8 @@ public class ProteinSubstanceDefinitionalElementImpl implements DefinitionalElem
         }
 
         if (proteinSubstance.modifications != null) {
-            //TODO as of GSRS 3.0 Modficiation definitional elements don't use subunit index so we don't need to canonicalize it
-            for(DefinitionalElement element : proteinSubstance.modifications.getDefinitionalElements().getElements()) {
-                consumer.accept(element);
-            }
+            definitionalElementFactory.addDefinitionalElementsFor(proteinSubstance.modifications, consumer);
+
         }
     }
 

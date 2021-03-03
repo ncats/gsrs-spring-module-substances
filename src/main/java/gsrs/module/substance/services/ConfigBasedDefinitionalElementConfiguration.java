@@ -43,7 +43,7 @@ public class ConfigBasedDefinitionalElementConfiguration{
        return list;
     });
 
-    public void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer){
+    public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer){
         if(s==null){
             return;
         }

@@ -11,12 +11,12 @@ import java.util.function.Consumer;
 @Slf4j
 public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalElementImplementation {
     @Override
-    public boolean supports(Substance s) {
+    public boolean supports(Object s) {
         return s instanceof ChemicalSubstance;
     }
 
     @Override
-    public void computeDefinitionalElements(Substance s, Consumer<DefinitionalElement> consumer) {
+    public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
         ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
         Structure structure = chemicalSubstance.structure;
         if(structure==null){
