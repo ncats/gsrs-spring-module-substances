@@ -7,8 +7,11 @@ import gov.nih.ncats.molwitch.Chemical;
 import ix.core.models.Indexable;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
+import ix.ginas.models.NoIdGinasCommonData;
+import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
+import org.hibernate.annotations.GenericGenerator;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -21,8 +24,13 @@ import java.util.UUID;
 @Entity
 @Table(name = "ix_ginas_moiety")
 //@JsonIgnoreProperties({ "id" })
-public class Moiety extends CommonDataElementOfCollection implements Comparable<Moiety>{
+public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
 	public static String JSON_NULL="JSON_NULL";
+	/**
+	 * The UUID of this moiety
+	 */
+	@Column(unique = true)
+	public UUID uuid;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
@@ -50,11 +58,16 @@ public class Moiety extends CommonDataElementOfCollection implements Comparable<
     private Amount count;
 
     public Moiety () {}
-    
-    @Column(unique=true)
+
+	/**
+	 * This is actually the primary key in this table
+	 * the innerUuid is actually the Structure's id.
+	 */
+	@Column(unique=true)
     @JsonIgnore
+	@Id
     public String innerUuid;
-    
+
     @PrePersist
     @PreUpdate
     public void enforce(){
@@ -62,8 +75,13 @@ public class Moiety extends CommonDataElementOfCollection implements Comparable<
     		structure.id=UUID.randomUUID();
     	}
     	this.innerUuid=structure.id.toString();
+    	if(uuid==null){
+    		uuid= UUID.randomUUID();
+		}
     }
-
+	public String fetchGlobalId() {
+		return this.uuid == null ? null : this.uuid.toString();
+	}
 	/**
 	 * Set the Count {@link Amount} only if the count
 	 * is not already set.  If you really want o
