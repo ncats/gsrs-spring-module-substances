@@ -589,12 +589,14 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
     @PrePersist
     private void prePersist(){
+        System.out.println("in pre persist");
         fixstatus();
         tidy();
     }
 
     @PreUpdate
     private void preUpdate(){
+        System.out.println("in pre update");
         fixstatus();
         tidy();
         updateVersion();
@@ -973,7 +975,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     }
 
 
-    private void updateVersion(){
+    public void updateVersion(){
         Integer i=0;
         try{
             i = Integer.parseInt(this.version);
@@ -982,6 +984,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         }
         i++;
         this.version=i+"";
+        setIsDirty("version");
     }
 
     public List<Note> getNotes(){

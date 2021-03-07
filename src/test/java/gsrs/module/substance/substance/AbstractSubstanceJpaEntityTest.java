@@ -1,0 +1,119 @@
+package gsrs.module.substance.substance;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import gov.nih.ncats.common.sneak.Sneak;
+import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.module.substance.GsrsModuleSubstanceApplication;
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.repository.EditRepository;
+import gsrs.service.GsrsEntityService;
+import gsrs.startertests.*;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import ix.core.models.Principal;
+import ix.core.models.Role;
+import ix.core.models.UserProfile;
+import ix.core.search.text.TextIndexerFactory;
+import ix.core.validator.ValidationResponse;
+import ix.ginas.models.v1.Substance;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.test.context.ActiveProfiles;
+
+import java.io.IOException;
+import java.util.Arrays;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@ActiveProfiles("test")
+@GsrsJpaTest(classes = {GsrsModuleSubstanceApplication.class, GsrsEntityTestConfiguration.class, GsrsControllerConfiguration.class})
+//@SpringBootTest
+@Import({AbstractSubstanceJpaEntityTest.TestConfig.class})
+public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEntityJunit5Test {
+    @TestConfiguration
+    public static class TestConfig{
+        @Bean
+        @Primary
+        TestGsrsValidatorFactory gsrsValidatorFactory(){
+            return new TestGsrsValidatorFactory();
+        }
+
+        @Bean
+        SubstanceEntityService substanceEntityService(){
+            return new SubstanceEntityService();
+        }
+        @Bean
+        @Primary
+        TestIndexValueMakerFactory indexValueMakerFactory(){
+            return new TestIndexValueMakerFactory();
+        }
+
+        @Bean
+        @Primary
+        TestEntityProcessorFactory entityProcessorFactory(){
+            return new TestEntityProcessorFactory();
+        }
+    }
+    @Autowired
+    protected TestEntityManager entityManager;
+
+    @Autowired
+    protected SubstanceEntityService substanceEntityService;
+
+    @Autowired
+    protected EditRepository editRepository;
+
+    protected Principal admin;
+
+    @BeforeEach
+    public void init(){
+        admin = new Principal("admin", null);
+
+        UserProfile up = new UserProfile();
+        up.setRoles(Arrays.asList(Role.values()));
+
+        up.user = admin;
+        entityManager.persistAndFlush(up);
+
+    }
+
+    protected Substance assertCreated(JsonNode json){
+        try {
+            return ensurePass(substanceEntityService.createEntity(json));
+        } catch (IOException e) {
+            return Sneak.sneakyThrow(e);
+        }
+    }
+    protected Substance assertUpdated(JsonNode json){
+        try {
+            return ensurePass(substanceEntityService.updateEntity(json));
+        } catch (Exception e) {
+            return Sneak.sneakyThrow(e);
+        }
+    }
+    protected static <T> T ensurePass(GsrsEntityService.UpdateResult<T> creationResult){
+        ValidationResponse<T> resp = creationResult.getValidationResponse();
+        assertTrue(resp.isValid(), ()->"response is not valid "+ resp.getValidationMessages());
+        assertTrue(!resp.hasError(), ()->"response has error "+ resp.getValidationMessages());
+
+        assertEquals(GsrsEntityService.UpdateResult.STATUS.UPDATED, creationResult.getStatus(), ()->"was not updated "+ resp.getValidationMessages());
+
+        return creationResult.getUpdatedEntity();
+    }
+    protected static <T> T ensurePass(GsrsEntityService.CreationResult<T> creationResult){
+        ValidationResponse<T> resp = creationResult.getValidationResponse();
+        assertTrue(resp.isValid(), ()->"response is not valid "+ resp.getValidationMessages());
+        assertTrue(!resp.hasError(), ()->"response has error "+ resp.getValidationMessages());
+
+        assertTrue(creationResult.isCreated(), ()->"was not created "+ resp.getValidationMessages());
+
+        T sub= creationResult.getCreatedEntity();
+        System.out.println("created sub uuid = " + ((Substance)sub).getUuid());
+        return sub;
+    }
+}

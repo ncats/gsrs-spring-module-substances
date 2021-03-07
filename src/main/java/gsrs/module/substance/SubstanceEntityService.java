@@ -133,8 +133,11 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     }
 
     @Override
-    protected Substance update(Substance controlledVocabulary) {
-        return repository.saveAndFlush(controlledVocabulary);
+    protected Substance update(Substance substance) {
+//        controlledVocabulary.
+        //first bump version?
+        substance.updateVersion();
+        return repository.saveAndFlush(substance);
     }
 
     @Override

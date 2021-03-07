@@ -60,7 +60,19 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 
         return findAll(Example.of(example));
     }
-//moieties.structure.properties.term
+
+    /**
+     * Find all substances that start with the uuid prefix.  This
+     * should not be used as it's a very inefficient search and is only included
+     * in this repository to help with backwards compatibility in old GSRS systems
+     * which often did lookups by only the first 8 characters of a uuid until
+     * it became clear that there were too many collisions.
+     *
+     * @param partialUUID
+     * @return
+     */
+    //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
+    @Query("select s from Substance s where CONCAT(s.uuid, '') like ?1%")
     List<Substance> findByUuidStartingWith(String partialUUID);
     @Query("select case when count(c)> 0 then true else false end from Substance s where s.approvalID= ?1")
     boolean existsByApprovalID(String approvalID);
