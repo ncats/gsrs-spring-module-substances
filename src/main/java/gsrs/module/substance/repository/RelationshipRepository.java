@@ -1,0 +1,14 @@
+package gsrs.module.substance.repository;
+
+import gsrs.repository.GsrsRepository;
+import ix.ginas.models.v1.Relationship;
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.UUID;
+@Repository
+public interface RelationshipRepository extends GsrsRepository<Relationship, UUID> {
+    List<Relationship> findByOriginatorUuid(String originatorUuid);
+
+    List<Relationship> findByRelatedSubstance_Refuuid(String refuuid);
+}
