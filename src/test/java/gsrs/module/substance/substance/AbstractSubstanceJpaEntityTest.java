@@ -72,14 +72,18 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
 
     @BeforeEach
     public void init(){
-        admin = new Principal("admin", null);
+        admin = createUser("admin", Role.values());
+
+    }
+
+    protected Principal createUser(String username, Role... roles){
+        Principal user = new Principal(username, null);
 
         UserProfile up = new UserProfile();
-        up.setRoles(Arrays.asList(Role.values()));
-
-        up.user = admin;
+        up.setRoles(Arrays.asList(roles));
+        up.user= user;
         entityManager.persistAndFlush(up);
-
+        return user;
     }
 
     protected Substance assertCreated(JsonNode json){
