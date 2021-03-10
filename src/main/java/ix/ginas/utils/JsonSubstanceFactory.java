@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.Chemical;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.v1.*;
@@ -17,13 +18,26 @@ import java.util.List;
 public class JsonSubstanceFactory {
 
     public static Substance makeSubstance(JsonNode tree){
-        Substance s= makeSubstance(tree, null);
+        Substance s= internalMakeSubstance(tree, null);
+        return fixOwners(s);
+    }
+    private static Substance fixOwners(Substance s){
+        if(s.names !=null){
+            s.names.forEach(n-> n.setOwner(s));
+        }
+        if(s.codes !=null){
+            s.codes.forEach(n-> n.setOwner(s));
+        }
+        //TODO add others
         return s;
     }
     public static Substance makeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
+        return fixOwners(internalMakeSubstance(tree, messages));
+    }
+    public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 
         JsonNode subclass = tree.get("substanceClass");
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
 
         mapper.addHandler(new GinasV1ProblemHandler(messages));
         Substance sub = null;

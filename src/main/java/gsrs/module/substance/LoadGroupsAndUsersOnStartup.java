@@ -3,7 +3,9 @@ package gsrs.module.substance;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gsrs.repository.GroupRepository;
 import gsrs.repository.UserProfileRepository;
+import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
@@ -20,7 +22,7 @@ import java.util.List;
 
 @Profile("!test")
 @Component
-public class LoadCvOnStartup implements ApplicationRunner {
+public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
 
 
@@ -28,11 +30,15 @@ public class LoadCvOnStartup implements ApplicationRunner {
     @Autowired
     private UserProfileRepository userProfileRepository;
 
+    @Autowired
+    private GroupRepository groupRepository;
 
 
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
+
+        groupRepository.save(new Group("protected"));
 
         System.out.println("RUNNING");
 

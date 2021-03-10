@@ -136,7 +136,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     protected Substance update(Substance substance) {
 //        controlledVocabulary.
         //first bump version?
-        substance.updateVersion();
+        substance.forceUpdate();
         return repository.saveAndFlush(substance);
     }
 
@@ -181,6 +181,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
             try {
                 String s = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(substance);
                 System.out.println("about to save substance" + s);
+                System.out.println("names = " + substance.names);
             }catch(Throwable t){};
             return repository.saveAndFlush(substance);
         }catch(Throwable t){
