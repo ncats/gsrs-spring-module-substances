@@ -1,6 +1,7 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.models.DynamicFacet;
 import ix.core.models.Indexable;
 import ix.ginas.models.CommonDataElementOfCollection;
@@ -20,6 +21,7 @@ import java.util.regex.Pattern;
 public class Code extends CommonDataElementOfCollection{
 	@ManyToOne(cascade = CascadeType.PERSIST)
 	@JsonIgnore
+	@SubstanceOwnerReference
 	private Substance owner;
 
 	public Substance fetchOwner(){

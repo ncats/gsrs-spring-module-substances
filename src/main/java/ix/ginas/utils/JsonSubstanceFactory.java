@@ -5,12 +5,18 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Structure;
+import ix.core.util.EntityUtils;
 import ix.core.validator.GinasProcessingMessage;
+import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.v1.*;
 
+import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by katzelda on 9/7/16.
@@ -21,13 +27,39 @@ public class JsonSubstanceFactory {
         Substance s= internalMakeSubstance(tree, null);
         return fixOwners(s);
     }
+
+    private static void setOwners(Substance substance, Object obj) throws IllegalAccessException {
+        Class<?> aClass = obj.getClass();
+        do {
+            setOwner(substance, obj, aClass);
+            aClass = aClass.getSuperclass();
+        }while(aClass !=null);
+    }
+
+    private static void setOwner(Substance substance, Object obj, Class<?> aClass) throws IllegalAccessException {
+        for(Field f : aClass.getDeclaredFields()){
+            f.setAccessible(true);
+            if(f.getAnnotation(SubstanceOwnerReference.class) !=null){
+                if(f.get(obj) == null){
+                    f.set(obj, substance);
+                }
+            }
+        }
+    }
+
     private static Substance fixOwners(Substance s){
-        if(s.names !=null){
-            s.names.forEach(n-> n.setOwner(s));
-        }
-        if(s.codes !=null){
-            s.codes.forEach(n-> n.setOwner(s));
-        }
+        Map<Integer, EntityUtils.EntityWrapper> map = new HashMap<>();
+        EntityUtils.EntityWrapper.of(s).traverse().execute((path, e)->{
+            Object o =e.getRawValue();
+            if(o !=null){
+                try {
+                    setOwners(s, o);
+                } catch (IllegalAccessException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
         //TODO add others
         return s;
     }

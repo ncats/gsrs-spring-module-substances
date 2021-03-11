@@ -2,6 +2,7 @@ package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.models.Indexable;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
@@ -22,6 +23,7 @@ public class Relationship extends CommonDataElementOfCollection {
 	public static final String ACTIVE_MOIETY_RELATIONSHIP_TYPE="ACTIVE MOIETY";
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
+    @SubstanceOwnerReference
     private Substance owner;
 
     public Substance fetchOwner(){

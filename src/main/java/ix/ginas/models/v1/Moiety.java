@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.models.Indexable;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
@@ -39,6 +40,7 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
+	@SubstanceOwnerReference
     private ChemicalSubstance owner;
 
     public ChemicalSubstance getOwner(){
