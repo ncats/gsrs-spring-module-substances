@@ -121,6 +121,7 @@ public class PersistedSubstanceProcessorTest extends AbstractSubstanceJpaEntityT
         @Override
         public void postUpdate(Substance obj) throws FailProcessingException {
             timesUpdatedCalled++;
+            System.out.println("post UPDATE substance id " + obj);
         }
 
         @Override
@@ -130,6 +131,7 @@ public class PersistedSubstanceProcessorTest extends AbstractSubstanceJpaEntityT
 
         @Override
         public void postPersist(Substance obj) throws FailProcessingException {
+            System.out.println("post persist substance id " + obj);
             timesNewCalled++;
 
         }

@@ -28,32 +28,35 @@ public class JsonSubstanceFactory {
         return fixOwners(s);
     }
 
-    private static void setOwners(Substance substance, Object obj) throws IllegalAccessException {
+    private static void setOwners(Substance substance, Object obj, boolean force) throws IllegalAccessException {
         Class<?> aClass = obj.getClass();
         do {
-            setOwner(substance, obj, aClass);
+            setOwner(substance, obj, aClass, force);
             aClass = aClass.getSuperclass();
         }while(aClass !=null);
     }
 
-    private static void setOwner(Substance substance, Object obj, Class<?> aClass) throws IllegalAccessException {
+    private static void setOwner(Substance substance, Object obj, Class<?> aClass, boolean force) throws IllegalAccessException {
         for(Field f : aClass.getDeclaredFields()){
             f.setAccessible(true);
             if(f.getAnnotation(SubstanceOwnerReference.class) !=null){
-                if(f.get(obj) == null){
+                if(force || f.get(obj) == null){
                     f.set(obj, substance);
                 }
             }
         }
     }
 
-    private static Substance fixOwners(Substance s){
+    public static Substance fixOwners(Substance s){
+        return fixOwners(s, false);
+    }
+    public static Substance fixOwners(Substance s, boolean force){
         Map<Integer, EntityUtils.EntityWrapper> map = new HashMap<>();
         EntityUtils.EntityWrapper.of(s).traverse().execute((path, e)->{
             Object o =e.getRawValue();
             if(o !=null){
                 try {
-                    setOwners(s, o);
+                    setOwners(s, o, force);
                 } catch (IllegalAccessException ex) {
                     ex.printStackTrace();
                 }

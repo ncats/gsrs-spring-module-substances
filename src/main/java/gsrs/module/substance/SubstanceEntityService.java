@@ -135,6 +135,8 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     @Override
     protected Substance update(Substance substance) {
 //        controlledVocabulary.
+
+        JsonSubstanceFactory.fixOwners(substance, true);
         //first bump version?
         substance.forceUpdate();
         return repository.saveAndFlush(substance);
@@ -177,6 +179,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
 
     @Override
     protected Substance create(Substance substance) {
+        JsonSubstanceFactory.fixOwners(substance, true);
         try {
             return repository.saveAndFlush(substance);
         }catch(Throwable t){
