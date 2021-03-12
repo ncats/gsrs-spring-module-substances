@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gsrs.repository.GroupRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
@@ -26,7 +27,8 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
 
 
-
+//    @Autowired
+//    GsrsValidatorFactory validationFactory;
     @Autowired
     private UserProfileRepository userProfileRepository;
 
