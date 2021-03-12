@@ -1,21 +1,37 @@
 package gsrs.module.substance.pojodiff;
 
+import gsrs.repository.PrincipalRepository;
+import ix.core.models.Principal;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.utils.pojopatch.PojoDiff;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+import static org.mockito.Mockito.*;
+@DataJpaTest
 public class NameRemoveTest{
+	@MockBean
+	public PrincipalRepository mockRepository;
+
+	Map<String, Principal> cache = new HashMap<>();
+	@BeforeEach
+	public void setup(){
+		when(mockRepository.findDistinctByUsernameIgnoreCase(anyString())).thenAnswer(a -> cache.computeIfAbsent(a.getArgument(0),  n->new Principal(n)));
+	}
 	@Test
     public void testSubstanceThing() throws Exception{
     	try{
