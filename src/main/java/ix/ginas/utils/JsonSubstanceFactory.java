@@ -25,6 +25,7 @@ public class JsonSubstanceFactory {
 
     public static Substance makeSubstance(JsonNode tree){
         Substance s= internalMakeSubstance(tree, null);
+
         return fixOwners(s);
     }
 
@@ -51,6 +52,9 @@ public class JsonSubstanceFactory {
         return fixOwners(s, false);
     }
     public static Substance fixOwners(Substance s, boolean force){
+        if(s ==null){
+            return null;
+        }
         Map<Integer, EntityUtils.EntityWrapper> map = new HashMap<>();
         EntityUtils.EntityWrapper.of(s).traverse().execute((path, e)->{
             Object o =e.getRawValue();

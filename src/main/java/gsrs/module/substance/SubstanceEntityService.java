@@ -84,7 +84,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     @Override
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
         GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
-        ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, strategy){
+        ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
             public void complete() {
                 if(object instanceof Substance) {
