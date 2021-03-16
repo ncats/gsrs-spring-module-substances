@@ -18,15 +18,17 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         if(substanceReference ==null){
             return false;
         }
-        return existsByApprovalID(substanceReference.approvalID) || existsById(UUID.fromString(substanceReference.refuuid));
+        return (substanceReference.approvalID !=null && existsByApprovalID(substanceReference.approvalID)) || existsById(UUID.fromString(substanceReference.refuuid));
     }
     default Substance findBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
             return null;
         }
-        Substance s = findByApprovalID(substanceReference.approvalID);
-        if(s !=null){
-            return s;
+        if(substanceReference.approvalID !=null) {
+            Substance s = findByApprovalID(substanceReference.approvalID);
+            if (s != null) {
+                return s;
+            }
         }
         return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
     }
@@ -87,9 +89,11 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         if(substanceReference ==null){
             return Optional.empty();
         }
-        SubstanceSummary s = findSummaryByApprovalID(substanceReference.approvalID);
-        if(s !=null){
-            return Optional.of(s);
+        if(substanceReference.approvalID !=null) {
+            SubstanceSummary s = findSummaryByApprovalID(substanceReference.approvalID);
+            if (s != null) {
+                return Optional.of(s);
+            }
         }
         return findSummaryByUuid(UUID.fromString(substanceReference.refuuid));
     }

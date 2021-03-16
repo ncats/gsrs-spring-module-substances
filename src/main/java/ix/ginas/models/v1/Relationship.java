@@ -6,6 +6,8 @@ import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.models.Indexable;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
+import ix.ginas.models.GinasCommonData;
+import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import ix.ginas.models.utils.RelationshipUtil;
@@ -18,7 +20,7 @@ import java.util.List;
 @JSONEntity(title = "Relationship", isFinal = true)
 @Entity
 @Table(name="ix_ginas_relationship")
-public class Relationship extends CommonDataElementOfCollection {
+public class Relationship extends /*CommonDataElementOfCollection */ GinasCommonSubData {
     
 	public static final String ACTIVE_MOIETY_RELATIONSHIP_TYPE="ACTIVE MOIETY";
     @ManyToOne(cascade = CascadeType.PERSIST)

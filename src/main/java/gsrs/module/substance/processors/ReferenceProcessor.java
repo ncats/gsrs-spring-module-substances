@@ -50,7 +50,7 @@ public class ReferenceProcessor implements EntityProcessor<Reference> {
         for(GinasAccessReferenceControlled referred : obj.getElementsReferencing()){
 //            System.out.println("referred = " + referred);
             if(referred instanceof Relationship){
-                entityProcessorFactory.getCombinedEntityProcessorFor(referred).postUpdate(referred);
+                entityProcessorFactory.getCombinedEntityProcessorFor(referred).preUpdate(referred);
 
             }
         }

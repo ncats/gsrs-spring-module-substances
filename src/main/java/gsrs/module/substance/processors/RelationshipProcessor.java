@@ -19,6 +19,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
  * to keep everything in sync.
  */
 @Slf4j
+@Transactional
 public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	@Autowired
@@ -148,7 +150,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	@Override
 	public Class<Relationship> getEntityClass() {
-		return null;
+		return Relationship.class;
 	}
 
 	@Override
@@ -320,14 +322,19 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	private Optional<Relationship> getRealInvertedRelationshipToRealRelationship(Relationship obj){
 		List<Relationship> rel;
-		if(obj.isGenerator()) {
+		try {
+			if (obj.isGenerator()) {
 //			System.out.println("Finding relationship that is child of this generator");
-			rel = relationshipRepository.findByOriginatorUuid(obj.getOrGenerateUUID().toString());
-		}else{
+				rel = relationshipRepository.findByOriginatorUuid(obj.getOrGenerateUUID().toString());
+			} else {
 //			System.out.println("Finding relationship that parent of this child non-generator");
-			rel = relationshipRepository.findByOriginatorUuid(obj.originatorUuid);
-		}
+				rel = relationshipRepository.findByOriginatorUuid(obj.originatorUuid);
+			}
 
+		}catch(Throwable t){
+			t.printStackTrace();
+			throw t;
+		}
 		return rel.stream()
 				.filter(rr->!rr.getOrGenerateUUID().equals(obj.getOrGenerateUUID()))
 				.findAny();

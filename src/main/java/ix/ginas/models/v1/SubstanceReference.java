@@ -18,6 +18,7 @@ public class SubstanceReference extends GinasCommonSubData {
 
     public static SubstanceReference newReferenceFor(Substance s){
         SubstanceReference ref = new SubstanceReference();
+
         ref.refuuid = s.getOrGenerateUUID().toString();
         ref.refPname = s.getName();
         ref.approvalID = s.approvalID;

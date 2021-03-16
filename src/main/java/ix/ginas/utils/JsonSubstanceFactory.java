@@ -42,6 +42,9 @@ public class JsonSubstanceFactory {
             f.setAccessible(true);
             if(f.getAnnotation(SubstanceOwnerReference.class) !=null){
                 if(force || f.get(obj) == null){
+                    if(obj instanceof Relationship){
+                        System.out.println("here");
+                    }
                     f.set(obj, substance);
                 }
             }
@@ -52,15 +55,18 @@ public class JsonSubstanceFactory {
         return fixOwners(s, false);
     }
     public static Substance fixOwners(Substance s, boolean force){
-        if(s ==null){
+        return fixOwners(s,s,force);
+    }
+    public static Substance fixOwners(Substance substanceToModify, Substance ownerSubstance, boolean force){
+        if(substanceToModify ==null){
             return null;
         }
         Map<Integer, EntityUtils.EntityWrapper> map = new HashMap<>();
-        EntityUtils.EntityWrapper.of(s).traverse().execute((path, e)->{
+        EntityUtils.EntityWrapper.of(substanceToModify).traverse().execute((path, e)->{
             Object o =e.getRawValue();
             if(o !=null){
                 try {
-                    setOwners(s, o, force);
+                    setOwners(ownerSubstance, o, force);
                 } catch (IllegalAccessException ex) {
                     ex.printStackTrace();
                 }
@@ -68,7 +74,7 @@ public class JsonSubstanceFactory {
         });
 
         //TODO add others
-        return s;
+        return substanceToModify;
     }
     public static Substance makeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
         return fixOwners(internalMakeSubstance(tree, messages));

@@ -23,6 +23,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import ix.utils.Util;
+import org.springframework.transaction.annotation.Transactional;
+import springfox.documentation.spring.web.json.Json;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -133,6 +135,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     }
 
     @Override
+    @Transactional
     protected Substance update(Substance substance) {
 //        controlledVocabulary.
 
@@ -157,10 +160,18 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
     }
 
     @Override
+    protected Substance fixUpdatedIfNeeded(Substance oldEntity, Substance updatedEntity) {
+        //force the "owner" on all the updated fields to point to the old version so the uuids are correct
+        JsonSubstanceFactory.fixOwners(updatedEntity, oldEntity,true);
+        return updatedEntity;
+    }
+
+    @Override
     protected Substance fromUpdatedJson(JsonNode json) throws IOException {
         //TODO should we make any edits to remove fields?
         return JsonSubstanceFactory.makeSubstance(json);
     }
+
 
     @Override
     protected List<Substance> fromUpdatedJsonList(JsonNode list) throws IOException {
