@@ -2,6 +2,7 @@ package gsrs.module.substance.substance;
 
 
 import gsrs.repository.PrincipalRepository;
+import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Principal;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -32,14 +33,14 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SubstanceBuilderTest {
 
     @MockBean
-    PrincipalRepository principalRepository;
+    PrincipalService principalRepository;
 
 
 
     @Before
     public void setup(){
         Principal fdaSrs = new Principal("FDA_SRS", null);
-        Mockito.when(principalRepository.findDistinctByUsernameIgnoreCase("FDA_SRS")).thenReturn(fdaSrs);
+        Mockito.when(principalRepository.registerIfAbsent("FDA_SRS")).thenReturn(fdaSrs);
     }
 
     @Test
