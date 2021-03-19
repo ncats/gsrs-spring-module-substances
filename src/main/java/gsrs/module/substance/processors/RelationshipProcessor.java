@@ -1,18 +1,23 @@
 package gsrs.module.substance.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import gov.nih.ncats.common.Tuple;
 import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.repository.PrincipalRepository;
 import ix.core.EntityProcessor;
 
 import ix.core.models.Edit;
 import ix.core.models.Keyword;
+import ix.core.models.Principal;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 
 import ix.core.util.SemaphoreCounter;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
@@ -289,22 +294,30 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	}
 
 	private Optional<Relationship> findCurrent(Relationship rr){
+
 		EntityWrapper<Substance> owner = EntityWrapper.of(rr.fetchOwner());
-		Optional<Edit> edit =entityPersistAdapter.getEditFor(owner.getKey());
+		EntityUtils.Key key = owner.getKey();
+		Optional<Edit> edit =entityPersistAdapter.getEditFor(key);
 
 		try{
 			if(edit.isPresent()){
 				Substance beforeS=edit.map(e->e.oldValue)
 						.map(s->{
 							try{
-								return owner.getEntityInfo().fromJson(s);
+							    System.out.println(s);
+//							    ObjectMapper mapper = new ObjectMapper();
+//								mapper.registerModule(new SimpleModule() {{
+//									addDeserializer(Principal.class, new FakePrincipalDeserializer());
+//								}});
+//								return mapper.readValue(s, Substance.class);
+								return SubstanceBuilder.from(s).build();
 							}catch(Exception e){
 								e.printStackTrace();
 								return null;
 							}
 						})
 						.filter(s->s!=null)
-						.get();
+						.orElse(null);
 
 				if(beforeS!=null){
 					return beforeS.relationships.stream().filter(rel->rel.uuid.equals(rr.uuid)).findFirst()
@@ -318,6 +331,8 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 			e.printStackTrace();
 		}
 		return Optional.empty();
+
+
 	}
 
 	private Optional<Relationship> getRealInvertedRelationshipToRealRelationship(Relationship obj){
@@ -677,6 +692,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 										}
 									}
 									if(rem!=null){
+
 										relationshipRepository.delete(rem);
 										osub2.relationships.remove(rem);
 									}

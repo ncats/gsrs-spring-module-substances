@@ -98,6 +98,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
                             .map(m -> (GinasProcessingMessage) m)
                             .collect(Collectors.toList());
                     messages.stream().forEach(strategy::processMessage);
+                    resp.setValid(false);
                     if (strategy.handleMessages((Substance) object, messages)) {
                         resp.setValid(true);
                     }
@@ -142,7 +143,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
         JsonSubstanceFactory.fixOwners(substance, true);
         //first bump version?
         substance.forceUpdate();
-        return repository.saveAndFlush(substance);
+        return repository.save(substance);
     }
 
     @Override

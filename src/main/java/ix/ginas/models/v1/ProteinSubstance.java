@@ -73,11 +73,16 @@ public class ProteinSubstance extends Substance implements GinasSubstanceDefinit
     
     public void setProtein(Protein p){
     	this.protein=p;
-    	this.protein.setProteinSubstance(this);
-    	if(_dirtyModifications){
-    		this.protein.setModifications(this.modifications);
-    		_dirtyModifications=false;
-    	}
+    	if(this.protein !=null) {
+			this.protein.setProteinSubstance(this);
+			//TODO do we still unset the dirtyMod flag if protein is null?
+			if(_dirtyModifications){
+
+				this.protein.setModifications(this.modifications);
+				_dirtyModifications=false;
+			}
+		}
+
     }
     //TODO katzelda FEb 2021: delete handled by controller
 //    @Override

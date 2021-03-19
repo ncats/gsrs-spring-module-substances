@@ -8,6 +8,8 @@ import gsrs.module.substance.processors.ReferenceProcessor;
 import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.SubstanceProcessor;
 import gsrs.repository.EditRepository;
+import gsrs.repository.PrincipalRepository;
+import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.TestEntityProcessorFactory;
@@ -27,6 +29,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
+import javax.persistence.EntityManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
@@ -54,6 +57,11 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
     @Autowired
     private EditRepository editRepository;
 
+    @Autowired
+    private EntityManager em;
+
+    @Autowired
+    private PrincipalService principalService;
 
     @TestConfiguration
     public static class Configuration{
@@ -81,6 +89,10 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         testEntityProcessorFactory.addEntityProcessor(substanceProcessor);
         testEntityProcessorFactory.addEntityProcessor(relationshipProcessor);
         testEntityProcessorFactory.addEntityProcessor(referenceProcessor);
+
+        principalService.registerIfAbsent("admin");
+
+        em.flush();
     }
     
     @Test
@@ -566,15 +578,17 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
      at com.avaje.ebeaninternal.server.persist.dml.UpdateHandler.execute(UpdateHandler.java:81) ~[org.avaje.ebeanorm.avaje-ebeanorm-3.3.4.jar:na]
 
      */
-    /*
+
     @Test
-    public void removeRelationshipWithActiveMoeityGsrs587FromOriginal(){
-        Substance parent = new SubstanceBuilder()
+    public void removeRelationshipWithActiveMoeityGsrs587FromOriginal() throws Exception{
+
+
+        UUID parentUUID = UUID.fromString(substanceEntityService.createEntity( new SubstanceBuilder()
                 .addName("parent")
                 .generateNewUUID()
-                .build();
+                .buildJson())
+                .getCreatedEntity().uuid.toString());
 
-        api.submitSubstance(parent);
         Substance inhibitor = new SubstanceBuilder()
                                         .addName("inhibitor")
                                         .addActiveMoiety()
@@ -587,35 +601,36 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
         Substance transporter = new SubstanceBuilder()
                 .addName("transporter")
+                .generateNewUUID()
                 .build();
 
-        JsonNode json = api.submitSubstance(inhibitor);
+        substanceEntityService.createEntity(inhibitor.toFullJsonNode());
+        Substance storedTransporter =SubstanceBuilder.from(
+                substanceEntityService.createEntity(transporter.toFullJsonNode()).getCreatedEntity().toFullJsonNode())
+                .build();
 
 
-        SubstanceBuilder.from(api.fetchSubstanceJsonByUuid(parent.getUuid()))
+        SubstanceBuilder.from(substanceRepository.getOne(parentUUID).toFullJsonNode())
                 .addRelationshipTo(inhibitor, "INFRASPECIFIC->PARENT ORGANISM")
-                .buildJsonAnd( js -> api.updateSubstanceJson(js));
-
-        Substance storedInhibitor = SubstanceBuilder.from(api.fetchSubstanceJsonByUuid(inhibitor.getUuid())).build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
+                .buildJsonAnd( this::assertUpdated);
 
 
-        JsonNode withRel = new SubstanceBuilder(storedInhibitor)
+
+        SubstanceBuilder.from(substanceRepository.getOne(inhibitor.getUuid()).toFullJsonNode())
                 .addRelationshipTo(storedTransporter, "INHIBITOR -> TRANSPORTER")
-                .buildJson();
+                .buildJsonAnd(this::assertUpdated);
 
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
 
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(storedTransporter.getUuid().toString(), Substance.class);
+        Substance actualTransporter = substanceRepository.findById(storedTransporter.getUuid()).get();
 
         assertEquals(1, actualTransporter.relationships.size());
+        Substance storedWithRel = SubstanceBuilder.from(substanceRepository.findById(inhibitor.getUuid()).get().toFullJsonNode()).build();
 
-        storedWithRel.relationships.remove(2);
+        Relationship removedRel = storedWithRel.relationships.remove(2);
+        System.out.println("removed relationship relatedSubstance with uuid " + removedRel.relatedSubstance.uuid + "  ref= " + removedRel.relatedSubstance);
+        assertUpdated(storedWithRel.toFullJsonNode());
 
-        api.updateSubstanceJson(new SubstanceBuilder(storedWithRel).buildJson());
-
-        Substance actualInhibitor = api.fetchSubstanceObjectByUuid(storedInhibitor.getUuid().toString(), Substance.class);
+        Substance actualInhibitor =substanceRepository.findById(inhibitor.getUuid()).get();
 
         assertEquals(2, actualInhibitor.relationships.size());
         assertFalse(actualInhibitor.relationships.stream()
@@ -623,12 +638,13 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 .findAny()
                 .isPresent());
 
-        Substance modifiedTransporter = api.fetchSubstanceObjectByUuid(storedTransporter.getUuid().toString(), Substance.class);
+        Optional<Substance> opt = substanceRepository.findById(transporter.getUuid());
+        Substance modifiedTransporter = opt.get();
         assertEquals(Collections.emptyList(), modifiedTransporter.relationships);
 
 
     }
-
+/*
     @Test
     public void removeRelationshipWithActiveMoeityGsrs587FromOtherSide(){
 

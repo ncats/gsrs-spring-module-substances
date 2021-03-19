@@ -5,10 +5,13 @@ import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.EditRepository;
+import gsrs.repository.GroupRepository;
 import gsrs.service.GsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
@@ -68,11 +71,20 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
     @Autowired
     protected EditRepository editRepository;
 
+    @Autowired
+    protected SubstanceRepository substanceRepository;
+
+    @Autowired
+    protected GroupRepository groupRepository;
+
     protected Principal admin;
 
     @BeforeEach
     public void init(){
         admin = createUser("admin", Role.values());
+
+        //some  integration tests will make validation messages which will get assigned an "admin" access group
+        groupRepository.saveAndFlush(new Group("admin"));
 
     }
 
@@ -93,6 +105,7 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
             return Sneak.sneakyThrow(e);
         }
     }
+
     protected Substance assertUpdated(JsonNode json){
         try {
             return ensurePass(substanceEntityService.updateEntity(json));
