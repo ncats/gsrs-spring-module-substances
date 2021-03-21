@@ -950,9 +950,36 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         n.note=note;
 
         this.notes.add(n);
+        this.setIsDirty("references");
         return n;
     }
 
+    public Reference addReference(Reference r){
+        this.references.add(Objects.requireNonNull(r));
+        r.setOwner(this);
+        this.setIsDirty("references");
+        return r;
+    }
+    public Relationship addRelationship(Relationship r){
+        this.relationships.add(Objects.requireNonNull(r));
+        r.setOwner(this);
+        this.setIsDirty("relationships");
+        return r;
+    }
+
+    public Reference removeReference(Reference r){
+        if(this.references.remove(r)) {
+            this.setIsDirty("references");
+        }
+        return r;
+    }
+
+    public Relationship removeRelationship(Relationship r){
+        if(this.relationships.remove(r)) {
+            this.setIsDirty("relationships");
+        }
+        return r;
+    }
 
     @JsonIgnore
     public String getDisplayStatus(){

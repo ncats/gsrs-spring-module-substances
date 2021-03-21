@@ -9,12 +9,14 @@ import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.SubstanceProcessor;
 import gsrs.repository.EditRepository;
 import gsrs.repository.PrincipalRepository;
+import gsrs.service.GsrsEntityService;
 import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.TestEntityProcessorFactory;
 import ix.core.EntityProcessor;
 import ix.core.models.Edit;
+import ix.core.models.Principal;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
@@ -90,6 +92,9 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         testEntityProcessorFactory.addEntityProcessor(relationshipProcessor);
         testEntityProcessorFactory.addEntityProcessor(referenceProcessor);
 
+        AutowireHelper.getInstance().autowire(substanceProcessor);
+        AutowireHelper.getInstance().autowire(relationshipProcessor);
+        AutowireHelper.getInstance().autowire(referenceProcessor);
         principalService.registerIfAbsent("admin");
 
         em.flush();
@@ -584,13 +589,13 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
 
         UUID parentUUID = UUID.fromString(substanceEntityService.createEntity( new SubstanceBuilder()
-                .addName("parent")
+                .addName("parent", name -> name.displayName =true)
                 .generateNewUUID()
                 .buildJson())
                 .getCreatedEntity().uuid.toString());
 
         Substance inhibitor = new SubstanceBuilder()
-                                        .addName("inhibitor")
+                                        .addName("inhibitor", name -> name.displayName =true)
                                         .addActiveMoiety()
                 .generateNewUUID()
                                         .build();
@@ -600,18 +605,18 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(1, activeMoeity.size());
 
         Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
+                .addName("transporter", name -> name.displayName =true)
                 .generateNewUUID()
                 .build();
 
-        substanceEntityService.createEntity(inhibitor.toFullJsonNode());
-        Substance storedTransporter =SubstanceBuilder.from(
-                substanceEntityService.createEntity(transporter.toFullJsonNode()).getCreatedEntity().toFullJsonNode())
-                .build();
+       GsrsEntityService.CreationResult<Substance> createdInhibitor = substanceEntityService.createEntity(inhibitor.toFullJsonNode());
+
+        em.flush();
+        Substance storedTransporter = substanceEntityService.createEntity(transporter.toFullJsonNode()).getCreatedEntity();
 
 
         SubstanceBuilder.from(substanceRepository.getOne(parentUUID).toFullJsonNode())
-                .addRelationshipTo(inhibitor, "INFRASPECIFIC->PARENT ORGANISM")
+                .addRelationshipTo(createdInhibitor.getCreatedEntity(), "INFRASPECIFIC->PARENT ORGANISM")
                 .buildJsonAnd( this::assertUpdated);
 
 
@@ -620,6 +625,10 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 .addRelationshipTo(storedTransporter, "INHIBITOR -> TRANSPORTER")
                 .buildJsonAnd(this::assertUpdated);
 
+        em.flush();
+
+        Principal admin = principalService.registerIfAbsent("admin");
+        assertNotNull(admin.id);
 
         Substance actualTransporter = substanceRepository.findById(storedTransporter.getUuid()).get();
 
@@ -629,6 +638,8 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         Relationship removedRel = storedWithRel.relationships.remove(2);
         System.out.println("removed relationship relatedSubstance with uuid " + removedRel.relatedSubstance.uuid + "  ref= " + removedRel.relatedSubstance);
         assertUpdated(storedWithRel.toFullJsonNode());
+
+
 
         Substance actualInhibitor =substanceRepository.findById(inhibitor.getUuid()).get();
 

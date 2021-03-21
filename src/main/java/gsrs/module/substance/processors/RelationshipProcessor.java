@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -48,6 +49,8 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	@Autowired
 	private EntityPersistAdapter entityPersistAdapter;
+	@Autowired
+	private SubstanceRepository substanceRepository;
 
 	@Autowired
 	private RelationshipRepository relationshipRepository;
@@ -77,9 +80,6 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	private static final String MENTION = "mention";
 
-
-	@Autowired
-	private SubstanceRepository substanceRepository;
 
 	//These fields keep track of what UUIDs we are in the middle
 	//of processing since several of these actions will trigger
@@ -201,6 +201,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 							try {
 
 								substance.forceUpdate();
+								substanceRepository.save(substance);
 //								System.out.println("updated inverse " + r.getOrGenerateUUID());
 							}catch(Throwable t){ t.printStackTrace();} finally{
 								relationshipUuidsBeingWorkedOn.remove(r.getOrGenerateUUID().toString());
@@ -240,8 +241,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 				ref1.citation="Generated from relationship on:'" + oldSub.refPname + "'";
 
 				r.addReference(ref1, newSub);
-				newSub.relationships.add(r);
-
+				newSub.addRelationship(r);
 				//GSRS-736 copy over references
 				//with new UUIDs
 
@@ -305,12 +305,11 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 						.map(s->{
 							try{
 							    System.out.println(s);
-//							    ObjectMapper mapper = new ObjectMapper();
-//								mapper.registerModule(new SimpleModule() {{
-//									addDeserializer(Principal.class, new FakePrincipalDeserializer());
-//								}});
-//								return mapper.readValue(s, Substance.class);
-								return SubstanceBuilder.from(s).build();
+							    String noCreatedBy = s.replaceAll("\"createdBy\":\".+?\",?", "");
+								String nolastEditedBy = noCreatedBy.replaceAll("\"lastEditedBy\":\".+?\",?", "");
+
+
+								return SubstanceBuilder.from(nolastEditedBy).build();
 							}catch(Exception e){
 								e.printStackTrace();
 								return null;
@@ -680,7 +679,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 							//What does this do?
 							r1.setOkToRemove();
-							final Substance osub=r1.fetchOwner();
+							final Substance osub=r1.getOwner();
 							if(osub !=null) {
 								entityPersistAdapter.performChangeOn(osub, osub2->{
 //									System.out.println("Okay, going to delete the inverse");
@@ -694,9 +693,10 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 									if(rem!=null){
 
 										relationshipRepository.delete(rem);
-										osub2.relationships.remove(rem);
+										osub2.removeRelationship(rem);
 									}
 									osub2.forceUpdate();
+									substanceRepository.save(osub2);
 //									System.out.println("Inverse should be deleted now");
 									return Optional.of(osub2);
 								});

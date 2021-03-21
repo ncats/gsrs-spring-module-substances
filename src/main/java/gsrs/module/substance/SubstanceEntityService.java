@@ -143,7 +143,8 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
         JsonSubstanceFactory.fixOwners(substance, true);
         //first bump version?
         substance.forceUpdate();
-        return repository.save(substance);
+
+        return repository.save(getEntityManager().merge(substance));
     }
 
     @Override

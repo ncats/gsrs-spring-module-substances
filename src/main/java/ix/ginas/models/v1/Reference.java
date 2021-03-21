@@ -3,6 +3,7 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
 import ix.core.models.Keyword;
@@ -31,9 +32,19 @@ import java.util.stream.Collectors;
 public class Reference extends GinasCommonData {
 
 	@ManyToOne(cascade = CascadeType.PERSIST)
+	@SubstanceOwnerReference
+	@JsonIgnore
 	private Substance owner;
-	
-    @JSONEntity(title = "Citation Text", isRequired = true)
+
+	public Substance getOwner() {
+		return owner;
+	}
+
+	public void setOwner(Substance owner) {
+		this.owner = owner;
+	}
+
+	@JSONEntity(title = "Citation Text", isRequired = true)
     @Lob
     public String citation;
     

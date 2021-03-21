@@ -80,7 +80,7 @@ public abstract class GinasCommonSubData extends GinasCommonData implements Gina
 	}
 	@Override
 	public void addReference(Reference r, Substance s){
-		s.references.add(r);
+		s.addReference(r);
 		this.addReference(r);
 	}
 	

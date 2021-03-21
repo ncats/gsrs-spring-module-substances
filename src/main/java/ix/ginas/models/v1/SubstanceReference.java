@@ -3,6 +3,7 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
+import ix.ginas.models.SubstanceReferenceEntityListener;
 import ix.ginas.models.utils.JSONEntity;
 
 import javax.persistence.*;
@@ -14,6 +15,7 @@ import java.util.Optional;
 @Entity
 @Table(name="ix_ginas_substanceref")
 @JSONEntity(name = "substanceReference", isFinal = true)
+@EntityListeners(SubstanceReferenceEntityListener.class)
 public class SubstanceReference extends GinasCommonSubData {
 
     public static SubstanceReference newReferenceFor(Substance s){
@@ -140,7 +142,7 @@ public class SubstanceReference extends GinasCommonSubData {
     @PostLoad
     public void postLoad(){
     	//Use of the "portal gun" is not ideal
-        //TODO katzelda Feb 2021: not sure best way to do this yet in depenency injection
+        //TODO katzelda Feb 2021: This is now moved to SubstanceReferenceEntityListener
 //    	Optional<SubstanceReference> osr=GinasPortalGun.getUpdatedSubstanceReference(this);
 //    	if(osr.isPresent()){
 //    		SubstanceReference newRef = osr.get();
