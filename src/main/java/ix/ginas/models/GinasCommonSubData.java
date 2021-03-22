@@ -56,6 +56,7 @@ public abstract class GinasCommonSubData extends GinasCommonData implements Gina
 					refUUID
 			));
 			setReferences(new LinkedHashSet<>(this.internalReferences));
+			setIsDirty("internalReferences");
 		}
 	}
 

@@ -101,7 +101,7 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
     protected Substance assertCreated(JsonNode json){
         try {
             return ensurePass(substanceEntityService.createEntity(json));
-        } catch (IOException e) {
+        } catch (Exception e) {
             return Sneak.sneakyThrow(e);
         }
     }

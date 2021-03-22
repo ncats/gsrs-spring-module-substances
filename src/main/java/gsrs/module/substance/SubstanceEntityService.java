@@ -4,6 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.IdHelpers;
 
+import gsrs.events.AbstractEntityCreatedEvent;
+import gsrs.events.AbstractEntityUpdatedEvent;
+import gsrs.module.substance.events.SubstanceCreatedEvent;
+import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
 import gsrs.service.AbstractGsrsEntityService;
@@ -40,7 +44,7 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
 
 
     public SubstanceEntityService() {
-        super(CONTEXT,  IdHelpers.UUID);
+        super(CONTEXT,  IdHelpers.UUID, "gsrs_exchange", "substance.created", "substance.updated");
     }
 
     @Autowired
@@ -145,6 +149,16 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
         substance.forceUpdate();
 
         return repository.save(getEntityManager().merge(substance));
+    }
+
+    @Override
+    protected AbstractEntityUpdatedEvent<Substance> newUpdateEvent(Substance updatedEntity) {
+        return new SubstanceUpdatedEvent(updatedEntity);
+    }
+
+    @Override
+    protected AbstractEntityCreatedEvent<Substance> newCreationEvent(Substance createdEntity) {
+        return new SubstanceCreatedEvent(createdEntity);
     }
 
     @Override
