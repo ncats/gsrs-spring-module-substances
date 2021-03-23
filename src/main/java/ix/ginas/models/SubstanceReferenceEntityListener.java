@@ -9,6 +9,9 @@ import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.persistence.PostLoad;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * SubstanceReference Entity Listener that on PostLoad
@@ -61,18 +64,29 @@ import javax.persistence.PostLoad;
 public class SubstanceReferenceEntityListener {
     @Autowired
     private SubstanceRepository substanceRepository;
-
+    /**
+     * Cache of the UUIDs we are currently loading to prevent infinite loops
+     * during db lookups calling PostLoad again!
+     */
+    private Map<UUID, Object> cache = new ConcurrentHashMap<>();
     private CachedSupplier initializer = CachedSupplier.ofInitializer(()-> AutowireHelper.getInstance().autowire(this));
 
     @PostLoad
     public void postLoad(SubstanceReference ref){
         initializer.get();
-        Substance fromDb = substanceRepository.findBySubstanceReference(ref);
-        if(fromDb !=null) {
-            SubstanceReference newRef = fromDb.asSubstanceReference();
-            ref.approvalID=newRef.approvalID;
-    		ref.refuuid=newRef.refuuid;
-    		ref.refPname=newRef.refPname;
+        UUID uuid = ref.uuid;
+        //the fetch from the DB will trigger another PostLoad so cache the id so we only make 1 call
+        //otherwise it will infinite loop
+        if(cache.put(uuid, Boolean.TRUE) ==null) {
+            //not in our cache so fetch it
+            Substance fromDb = substanceRepository.findBySubstanceReference(ref);
+            if (fromDb != null) {
+                SubstanceReference newRef = fromDb.asSubstanceReference();
+                ref.approvalID = newRef.approvalID;
+                ref.refuuid = newRef.refuuid;
+                ref.refPname = newRef.refPname;
+            }
+            cache.remove(uuid);
         }
     }
 
