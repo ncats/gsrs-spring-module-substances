@@ -2,6 +2,7 @@ package ix.core.chem;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
+import gsrs.module.substance.StructureProcessingConfiguration;
 import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.models.Text;
@@ -20,27 +21,18 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@Data
 public class StructureProcessor {
 
-    @Autowired
+
     private StructureStandardizer standardizer;
 
-    private static StructureHasher hasher;
+    private StructureHasher hasher;
 
-
-
-    public static StructureHasher getHasher() {
-        return hasher;
+    @Autowired
+    public StructureProcessor(StructureStandardizer standardizer, StructureHasher hasher) {
+        this.standardizer = standardizer;
+        this.hasher = hasher;
     }
-
-    public static void setHasher(StructureHasher hasher) {
-        StructureProcessor.hasher = hasher;
-    }
-
-
-    private StructureProcessor () {}
-
 
     public Structure instrument (byte[] buf) {
         return instrument (buf, null);
@@ -305,7 +297,7 @@ public class StructureProcessor {
 
         try{
             Chemical cc=polymerSimplify(stdMol);
-            getHasher().hash(cc, cc.toMol(), new BiConsumer<String, String>() {
+            hasher.hash(cc, cc.toMol(), new BiConsumer<String, String>() {
                 @Override
                 public void accept(String key, String value){
                     if(value==null || value.length() < 255) {

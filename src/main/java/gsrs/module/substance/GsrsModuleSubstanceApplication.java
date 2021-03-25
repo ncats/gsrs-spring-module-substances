@@ -5,6 +5,9 @@ import gsrs.EnableGsrsJpaEntities;
 import gsrs.EnableGsrsLegacyAuthentication;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.validator.GsrsValidatorFactory;
+import ix.core.chem.StructureHasher;
+import ix.core.chem.StructureProcessor;
+import ix.core.chem.StructureStandardizer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.boot.SpringApplication;
@@ -34,6 +37,11 @@ public class GsrsModuleSubstanceApplication {
     @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
     public GsrsFactoryConfiguration gsrsFactoryConfiguration(){
         return new GsrsFactoryConfiguration();
+    }
+
+    @Bean
+    public StructureProcessor structureProcessor(StructureStandardizer standardizer, StructureHasher hasher){
+        return new StructureProcessor(standardizer, hasher);
     }
 
     public static void main(String[] args) {
