@@ -47,7 +47,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     private SubstanceRepository substanceRepository;
 
     @Autowired
-    private SubstanceExporterConfiguration substanceExporterConfiguration;
+    private SubstanceSpreadhseetExporterConfiguration substanceExporterConfiguration;
 
     private Map<Column, ColumnValueRecipe<Substance>> DEFAULT_RECIPE_MAP;
 

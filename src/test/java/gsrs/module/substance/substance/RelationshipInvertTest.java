@@ -18,6 +18,7 @@ import ix.core.EntityProcessor;
 import ix.core.models.Edit;
 import ix.core.models.Principal;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 
@@ -636,6 +637,13 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         Substance storedWithRel = SubstanceBuilder.from(substanceRepository.findById(inhibitor.getUuid()).get().toFullJsonNode()).build();
 
         Relationship removedRel = storedWithRel.relationships.remove(2);
+        Set<UUID> uuidRefs = removedRel.getReferencesAsUUIDs();
+        Iterator<Reference> iter = storedWithRel.references.iterator();
+        while(iter.hasNext()){
+            if(uuidRefs.contains(iter.next().uuid)){
+                iter.remove();
+            }
+        }
         System.out.println("removed relationship relatedSubstance with uuid " + removedRel.relatedSubstance.uuid + "  ref= " + removedRel.relatedSubstance);
         assertUpdated(storedWithRel.toFullJsonNode());
 

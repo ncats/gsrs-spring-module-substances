@@ -26,6 +26,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -79,6 +82,9 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
 
     protected Principal admin;
 
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
     @BeforeEach
     public void init(){
         admin = createUser("admin", Role.values());
@@ -99,19 +105,27 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
     }
 
     protected Substance assertCreated(JsonNode json){
-        try {
-            return ensurePass(substanceEntityService.createEntity(json));
-        } catch (Exception e) {
-            return Sneak.sneakyThrow(e);
-        }
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        return transactionTemplate.execute( stauts -> {
+            try {
+                return ensurePass(substanceEntityService.createEntity(json));
+            } catch (Exception e) {
+                return Sneak.sneakyThrow(e);
+            }
+        });
     }
 
     protected Substance assertUpdated(JsonNode json){
-        try {
-            return ensurePass(substanceEntityService.updateEntity(json));
-        } catch (Exception e) {
-            return Sneak.sneakyThrow(e);
-        }
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        return transactionTemplate.execute( stauts -> {
+            try {
+                return ensurePass(substanceEntityService.updateEntity(json));
+            } catch (Exception e) {
+                return Sneak.sneakyThrow(e);
+            }
+        });
     }
     protected static <T> T ensurePass(GsrsEntityService.UpdateResult<T> creationResult){
         ValidationResponse<T> resp = creationResult.getValidationResponse();

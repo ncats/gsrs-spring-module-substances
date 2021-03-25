@@ -1,8 +1,6 @@
 package gsrs.module.substance.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import gov.nih.ncats.common.Tuple;
 import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.repository.RelationshipRepository;
@@ -24,9 +22,11 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import java.util.*;
@@ -44,9 +44,13 @@ import java.util.stream.Collectors;
  * to keep everything in sync.
  */
 @Slf4j
-@Transactional
 public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
+	@Autowired
+	private PlatformTransactionManager transactionManager;
+
+	@Autowired
+	private EntityManager entityManager;
 	@Autowired
 	private EntityPersistAdapter entityPersistAdapter;
 	@Autowired
@@ -97,20 +101,23 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	 */
 	@Override
 	public void prePersist(Relationship obj) {
+		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+		transactionTemplate.executeWithoutResult( stauts -> {
 //		System.out.println("Adding a relationship:" + obj.getOrGenerateUUID() + " to :" + obj.relatedSubstance.refPname);
-		String uuid = obj.getOrGenerateUUID().toString();
-		boolean isBeingDeleted = relationshipUuidsBeingDeleted.contains(uuid);
+			String uuid = obj.getOrGenerateUUID().toString();
+			boolean isBeingDeleted = relationshipUuidsBeingDeleted.contains(uuid);
 //		if(isBeingDeleted){
 //			System.out.println("And that relationship is being delted already");
 //		}else{
 //			System.out.println("And that relationship is NOT being deleted");
 //		}
-		if(notWorkingOn(uuid) || isBeingDeleted){
-			addInverse(obj);
-		}
+			if (notWorkingOn(uuid) || isBeingDeleted) {
+				addInverse(obj);
+			}
 //		else{
 //			System.out.println("But we're already doing something with that one, so don't trigger anything");
 //		}
+		});
 	}
 
 	private boolean notWorkingOn(String uuid){
@@ -438,12 +445,13 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	public void preUpdate(Relationship obj) {
 
 //		System.out.println("Going to update:" + obj.uuid);
+		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 
+		transactionTemplate.executeWithoutResult( stauts -> {
 		if(!notWorkingOn(obj.getOrGenerateUUID().toString())){
 //			System.out.println("already worked on it!!");
 			return;
 		}
-		SubstanceReference parentRef = obj.fetchOwner().asSubstanceReference();
 
 		AtomicBoolean forceToBeGenerator = new AtomicBoolean(false);
 
@@ -595,6 +603,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 														Reference newRef = EntityUtils.EntityWrapper.of(ref).getClone();
 														newRef.uuid =null;
 														r1.addReference(newRef, osub2);
+														this.entityManager.merge(newRef);
 													} catch (JsonProcessingException e) {
 														e.printStackTrace();
 													}
@@ -648,80 +657,83 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 				addInverse(obj);
 			}
 		}
+	});
 	}
-
 
 	@Override
 	public void preRemove(Relationship obj) {
 //		System.out.println("Removing a relationship:" + obj.getOrGenerateUUID() + " to :" + obj.relatedSubstance.refPname);
+		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+		transactionTemplate.executeWithoutResult(stauts -> {
+					Relationship before = findCurrent(obj).orElse(obj);
 
-		Relationship before = findCurrent(obj).orElse(obj);
 
-
-		if(notWorkingOn(before.getOrGenerateUUID().toString(),true)) {
+					if (notWorkingOn(before.getOrGenerateUUID().toString(), true)) {
 //			System.out.println("We're not doing anything with it, let's trigger inverse stuff");
-			if(before.isAutomaticInvertible()){
+						if (before.isAutomaticInvertible()) {
 //				System.out.println("It's invertible");
 
-				Optional<Tuple<Relationship, InverseMethod>> opInv= findRealExplicitOrImplicitInvertedRelationship(before);
+							Optional<Tuple<Relationship, InverseMethod>> opInv = findRealExplicitOrImplicitInvertedRelationship(before);
 
-				if(opInv.isPresent()){
-					Relationship r1=opInv.get().k();
+							if (opInv.isPresent()) {
+								Relationship r1 = opInv.get().k();
 
-					//It's a bigger deal to accidentally delete a relationship you're not sure about, so don't do it if
-					//there's some ambiguity
-					if(!opInv.get().v().equals(InverseMethod.SAME_TYPE_BEST_MATCH)){
+								//It's a bigger deal to accidentally delete a relationship you're not sure about, so don't do it if
+								//there's some ambiguity
+								if (!opInv.get().v().equals(InverseMethod.SAME_TYPE_BEST_MATCH)) {
 //						System.out.println("Found a corresponding relationship inverse");
-						if(relationshipUuidsBeingWorkedOn.remove(r1.uuid.toString())){
+									if (relationshipUuidsBeingWorkedOn.remove(r1.uuid.toString())) {
 //							System.out.println("Oh, we're already working on that one, don't do anything");
-							relationshipUuidsBeingDeleted.remove(r1.uuid.toString());
-						}else{
+										relationshipUuidsBeingDeleted.remove(r1.uuid.toString());
+									} else {
 
-							//What does this do?
-							r1.setOkToRemove();
-							final Substance osub=r1.getOwner();
-							if(osub !=null) {
-								entityPersistAdapter.performChangeOn(osub, osub2->{
+										//What does this do?
+										r1.setOkToRemove();
+										final Substance osub = r1.getOwner();
+										if (osub != null) {
+											entityPersistAdapter.performChangeOn(osub, osub2 -> {
 //									System.out.println("Okay, going to delete the inverse");
 
-									Relationship rem = null;
-									for(Relationship r:osub2.relationships){
-										if(r.uuid.equals(r1.uuid)){
-											rem=r;
-										}
-									}
-									if(rem!=null){
+												Relationship rem = null;
+												for (Relationship r : osub2.relationships) {
+													if (r.uuid.equals(r1.uuid)) {
+														rem = r;
+													}
+												}
+												if (rem != null) {
 
-										relationshipRepository.delete(rem);
-										osub2.removeRelationship(rem);
-									}
-									osub2.forceUpdate();
-									substanceRepository.save(osub2);
+													relationshipRepository.delete(rem);
+													osub2.removeRelationship(rem);
+												}
+												osub2.forceUpdate();
+												substanceRepository.save(osub2);
 //									System.out.println("Inverse should be deleted now");
-									return Optional.of(osub2);
-								});
-							}
+												return Optional.of(osub2);
+											});
+										}
 //							else{
 //								System.out.println("Can't find the owner of that relationship");
 //							}
-						}
-					}
+									}
+								}
 //					else{
 //						System.out.println("There is ambiguity on the relationship inverse. Probably shouldn't delete.");
 //					}
-				}
+							}
 //				else{
 //					System.out.println("There's no inverted relationship that can be found");
 //				}
-			}
+						}
 //			else{
 //				System.out.println("It's not invertible anyway, no need to propagate anything");
 //			}
 
-		}
+					}
 //		else{
 //			System.out.println("But we're already doing something with that one, so don't trigger anything");
 //		}
+				}
+		);
 	}
 
 }

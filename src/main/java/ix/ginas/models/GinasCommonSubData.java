@@ -32,7 +32,6 @@ public abstract class GinasCommonSubData extends GinasCommonData implements Gina
     
     @JsonProperty("references")
     @JsonSerialize(using = ReferenceSetSerializer.class)
-    @Transient
     public Set<Keyword> getReferences(){
     	return new LinkedHashSet<Keyword>(internalReferences);
     }
