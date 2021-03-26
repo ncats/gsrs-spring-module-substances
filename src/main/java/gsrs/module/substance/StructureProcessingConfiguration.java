@@ -2,6 +2,7 @@ package gsrs.module.substance;
 
 import gsrs.springUtils.AutowireHelper;
 import ix.core.chem.StructureHasher;
+import ix.core.chem.StructureProcessor;
 import ix.core.chem.StructureStandardizer;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,4 +26,8 @@ ix.structure-standardizer="ix.core.chem.LychiStandardizer"
         return (StructureHasher) Class.forName(structureHasherName).newInstance();
     }
 
+    @Bean
+    public StructureProcessor structureProcessor(StructureStandardizer standardizer, StructureHasher hasher){
+        return new StructureProcessor(standardizer, hasher);
+    }
 }

@@ -12,13 +12,11 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 @Repository
-public interface CodeRepository extends GsrsVersionedRepository<Code, UUID> {
+public interface NameRepository extends GsrsVersionedRepository<Name, UUID> {
 
-    Stream<Code> findCodesByCodeSystemAndCodeLike(String codesystem, String codeLike);
+    List<Name> findByNameIgnoreCase(String name);
 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
     @Query("select s from Name s where CONCAT(s.uuid, '') like ?1%")
-    List<Code> findByUuidStartingWith(String partialUUID);
-
-    List<Code> findByCodeIgnoreCase(String code);
+    List<Name> findByUuidStartingWith(String partialUUID);
 }

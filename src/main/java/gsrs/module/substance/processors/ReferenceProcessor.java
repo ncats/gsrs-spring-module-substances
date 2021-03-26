@@ -6,6 +6,7 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
 
@@ -33,6 +34,7 @@ public class ReferenceProcessor implements EntityProcessor<Reference> {
         return Reference.class;
     }
 
+    @Transactional
     @Override
     public void preUpdate(Reference obj) throws FailProcessingException {
 //        System.out.println("updating reference");

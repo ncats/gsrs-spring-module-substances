@@ -39,10 +39,7 @@ public class GsrsModuleSubstanceApplication {
         return new GsrsFactoryConfiguration();
     }
 
-    @Bean
-    public StructureProcessor structureProcessor(StructureStandardizer standardizer, StructureHasher hasher){
-        return new StructureProcessor(standardizer, hasher);
-    }
+
 
     public static void main(String[] args) {
         SpringApplication.run(GsrsModuleSubstanceApplication.class, args);

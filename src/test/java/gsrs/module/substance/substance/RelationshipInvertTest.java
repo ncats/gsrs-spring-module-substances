@@ -623,7 +623,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
 
         SubstanceBuilder.from(substanceRepository.getOne(inhibitor.getUuid()).toFullJsonNode())
-                .addRelationshipTo(storedTransporter, "INHIBITOR -> TRANSPORTER")
+                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
                 .buildJsonAnd(this::assertUpdated);
 
         em.flush();
@@ -653,7 +653,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
         assertEquals(2, actualInhibitor.relationships.size());
         assertFalse(actualInhibitor.relationships.stream()
-                .filter(r -> r.type.equals("INHIBITOR -> TRANSPORTER"))
+                .filter(r -> r.type.equals("INHIBITOR->TRANSPORTER"))
                 .findAny()
                 .isPresent());
 
