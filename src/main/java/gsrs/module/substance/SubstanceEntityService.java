@@ -148,7 +148,8 @@ public class SubstanceEntityService extends AbstractGsrsEntityService<Substance,
         //first bump version?
         substance.forceUpdate();
 
-        return repository.save(getEntityManager().merge(substance));
+        //postUpdate/etc only gets called on flush, apparently?
+        return repository.saveAndFlush(getEntityManager().merge(substance));
     }
 
     @Override

@@ -87,6 +87,13 @@ public class PersistedSubstanceProcessorTest extends AbstractSubstanceJpaEntityT
                     substanceEntityService.get(uuid).get()
                             .names.stream()
                             .map(Name::getName).collect(Collectors.toSet()));
+            
+            
+            
+            //version must update
+            assertEquals("2",
+                    substanceEntityService.get(uuid).get()
+                           .version);
 
 
 //            js =api.fetchSubstanceJsonByUuid(s.getUuid().toString());
