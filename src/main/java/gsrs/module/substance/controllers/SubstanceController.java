@@ -5,6 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.Bond;
+import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.molwitch.MolwitchException;
+import gov.nih.ncats.molwitch.Bond.BondType;
+import gov.nih.ncats.molwitch.Bond.Stereo;
 import gsrs.controller.*;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.SubstanceEntityService;
@@ -29,7 +36,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.validation.constraints.NotBlank;
+
+import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -40,6 +50,105 @@ import java.util.stream.Stream;
 @GsrsRestApiController(context = SubstanceEntityService.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, Long> {
 
+    private static interface SimpleStandardizer{
+        public Chemical standardize(Chemical c);
+        public static SimpleStandardizer REMOVE_HYDROGENS() {
+            return (c)->{
+                c.removeNonDescriptHydrogens();
+                return c;
+            };
+        }
+        public static SimpleStandardizer ADD_HYDROGENS() {
+            return (c)->{
+                // TODO:
+                // In CDK, this doesn't generate coordinates for the Hs, meaning you have to have an additional
+                // clean call. Also, this method doesn't do anything for query molecules in CDK.
+                // 
+                // Both of the above problems will need to be fixed for this to work well.
+                //
+                
+                c.makeHydrogensExplicit();
+                return c;
+            };
+        }
+        public static SimpleStandardizer STEREO_FLATTEN() {
+            return (c)->{
+                Chemical cc = c.copy();
+
+
+                cc.getAllStereocenters().forEach(sc->{
+                    Atom aa =sc.getCenterAtom();
+                    @SuppressWarnings("unchecked")
+                    Stream<Bond> sbonds = (Stream<Bond>) aa.getBonds().stream();
+
+                    sbonds.forEach(bb->{
+                        if(bb.getBondType().getOrder()==1) {
+                            if(!bb.getStereo().equals(Stereo.NONE)) {
+                                bb.setStereo(Stereo.NONE);
+                            }
+                        }
+                    });
+                });
+
+
+                try {
+                    //TODO molwitch bug makes this export/import
+                    //necessary
+                    return Chemical.parseMol(cc.toMol());
+                } catch (IOException e) {
+                    return cc;
+                } 
+            };
+        }
+        public static SimpleStandardizer CLEAN() {
+            return (c)->{
+                try {
+                    c.generateCoordinates();
+                } catch (MolwitchException e) {
+                    e.printStackTrace();
+                }
+                return c;
+            };
+        }
+        
+        public default SimpleStandardizer and(SimpleStandardizer std2) {
+            SimpleStandardizer _this=this;
+            return (c)->{
+                return std2.standardize(_this.standardize(c));
+            };            
+        }
+        
+        public default String standardize(String mol) {
+            
+            try {
+                Chemical c=Chemical.parseMol(mol);
+                c=this.standardize(c);
+                return c.toMol();
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                
+                return mol;
+            }
+        
+        }
+        
+    }
+    //TODO: could be its own microservice?
+    private static enum StructureStandardizerPresets{
+        REMOVE_HYDROGENS(SimpleStandardizer.REMOVE_HYDROGENS()),
+        ADD_HYDROGENS(SimpleStandardizer.ADD_HYDROGENS()),
+        STEREO_FLATTEN(SimpleStandardizer.STEREO_FLATTEN()),
+        CLEAN(SimpleStandardizer.CLEAN());        
+        public SimpleStandardizer std;        
+        StructureStandardizerPresets(SimpleStandardizer s){
+            this.std=s;
+        }        
+        public SimpleStandardizer getStandardizer() {
+            return this.std;
+        }
+    }
+    
 
     @Autowired
     private EditRepository editRepository;
@@ -66,8 +175,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         return stream;
     }
+    
     @PostGsrsRestApiMapping("/interpretStructure")
     public ResponseEntity<Object> interpretStructure(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
+        String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
+                                     .orElse("NONE")
+                                     .split(",");
+        SimpleStandardizer simpStd=Arrays.stream(standardize)
+                .filter(s->!s.equals("NONE"))
+           .map(val->val.toUpperCase())
+           .map(val->StructureStandardizerPresets.valueOf(val))
+           .map(std->std.getStandardizer())
+           .reduce(SimpleStandardizer::and).orElse(null);
+        
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
@@ -82,6 +202,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 if (payload.contains("\n") && payload.contains("M  END")) {
                     struc.molfile = payload;
                 }
+                
+                if(simpStd!=null) {
+                    struc.molfile=simpStd.standardize(struc.molfile);
+                }
+                
+                
                 ArrayNode an = mapper.createArrayNode();
                 for (Structure m : moieties) {
                     // m.save();
