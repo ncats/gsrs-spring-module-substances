@@ -16,6 +16,7 @@ import gsrs.controller.*;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.repository.EditRepository;
+import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
 import ix.core.chem.StructureProcessor;
@@ -103,9 +104,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         public static SimpleStandardizer CLEAN() {
             return (c)->{
                 try {
-                    c.generateCoordinates();
-                } catch (MolwitchException e) {
-                    e.printStackTrace();
+                    ChemAligner.align2DClean(c);
+//                    c.generateCoordinates();
+                } catch (Exception e) {
+//                    e.printStackTrace();
                 }
                 return c;
             };
