@@ -39,7 +39,9 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-
+        if(groupRepository.count() >0){
+            return;
+        }
         groupRepository.save(new Group("protected"));
 
         System.out.println("RUNNING");
