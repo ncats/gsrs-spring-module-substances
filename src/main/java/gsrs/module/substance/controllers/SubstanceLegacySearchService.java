@@ -13,4 +13,5 @@ public class SubstanceLegacySearchService extends LegacyGsrsSearchService<Substa
         super(Substance.class, repository);
     }
 
+
 }

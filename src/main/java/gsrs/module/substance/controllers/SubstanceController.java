@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
@@ -15,30 +16,46 @@ import gov.nih.ncats.molwitch.Bond.Stereo;
 import gsrs.controller.*;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.StructureRepository;
+import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.repository.EditRepository;
+import gsrs.service.PayloadService;
 import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
 import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
+import ix.core.models.Payload;
 import ix.core.models.Structure;
+import ix.core.search.SearchResultProcessor;
+import ix.core.util.EntityUtils;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
-import ix.ginas.models.v1.Amount;
-import ix.ginas.models.v1.Moiety;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.*;
+import ix.seqaln.SequenceIndexer;
+import ix.seqaln.service.SequenceIndexerService;
+import ix.utils.UUIDUtil;
+import ix.utils.Util;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.jcvi.jillion.core.Range;
+import org.jcvi.jillion.core.Ranges;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -150,7 +167,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return this.std;
         }
     }
+    @Autowired
+    private SubstanceSequenceSearchService substanceSequenceSearchService;
     
+    @Autowired
+    private StructureRepository structureRepository;
 
     @Autowired
     private EditRepository editRepository;
@@ -159,6 +180,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private StructureProcessor structureProcessor;
+
+    @Autowired
+    private PayloadService payloadService;
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -177,7 +201,168 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         return stream;
     }
-    
+
+    public static Optional<HttpServletRequest> getCurrentHttpRequest() {
+        return
+                Optional.ofNullable(
+                        RequestContextHolder.getRequestAttributes()
+                )
+                        .filter(ServletRequestAttributes.class::isInstance)
+                        .map(ServletRequestAttributes.class::cast)
+                        .map(ServletRequestAttributes::getRequest);
+    }
+
+    public String getSmiles(String id) {
+        return getSmiles(id, 0);
+    }
+
+    public String getSmiles(String id, int max) {
+        if (id != null) {
+            String seq=null;
+            if(!UUIDUtil.isUUID(id)){
+                seq= id;
+            }else{
+                Structure structure=structureRepository.findById(UUID.fromString(id)).orElse(null);
+
+                if(structure!=null){
+                    seq = structure.smiles;
+                }
+            }
+
+            if (seq != null) {
+                seq = seq.replaceAll("[\n\t\\s]", "");
+                if (max > 0 && max + 3 < seq.length()) {
+                    return seq.substring(0, max) + "...";
+                }
+                return seq;
+            }
+        }
+        return id;
+    }
+    public static String getKey (String q, double t) {
+        return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
+    }
+
+    public Optional<String> getKeyForCurrentRequest(){
+
+        Optional<HttpServletRequest> opt =  getCurrentHttpRequest();
+        if(!opt.isPresent()){
+            return Optional.empty();
+        }
+        HttpServletRequest request = opt.get();
+        String query = request.getParameter("q") + request.getParameter("order");
+        String type = request.getParameter("type");
+
+
+
+        log.debug("checkStatus: q=" + query + " type=" + type);
+        if (type != null && query != null) {
+            try {
+                String key = null;
+                if (type.toLowerCase().startsWith("sub")) {
+                    String sq = getSmiles(request.getParameter("q"));
+                    key = "substructure/"+ Util.sha1(sq + request.getParameter("order"));
+                }
+                else if (type.toLowerCase().startsWith("sim")) {
+                    String c = request.getParameter("cutoff");
+                    String sq = getSmiles(request.getParameter("q"));
+                    key = "similarity/"+getKey (sq + request.getParameter("order"), Double.parseDouble(c));
+                }
+                else if (type.toLowerCase().startsWith("seq")) {
+                    String iden = request.getParameter("identity");
+                    if (iden == null) {
+                        iden = "0.5";
+                    }
+                    String idenType = request.getParameter("identityType");
+                    if(idenType==null){
+                        idenType="GLOBAL";
+                    }
+                    key = "sequence/"+getKey (getSequence(request.getParameter("q")) +idenType + request.getParameter("order"), Double.parseDouble(iden));
+
+                }else if(type.toLowerCase().startsWith("flex")) {
+                    String sq = getSmiles(request.getParameter("q"));
+                    key = "flex/"+Util.sha1(sq + request.getParameter("order"));
+
+                    return Optional.of(signature (key, request));
+                }else if(type.toLowerCase().startsWith("exact")) {
+                    String sq = getSmiles(request.getParameter("q"));
+                    key = "exact/"+Util.sha1(sq + request.getParameter("order"));
+                    return Optional.of(signature (key, request));
+                }else{
+                    key = type + "/"+Util.sha1(query);
+                }
+
+                return Optional.of(Util.sha1(key));
+
+            }catch (Exception ex) {
+                log.error("Error creating key for request" , ex);
+            }
+        }else {
+
+            return Optional.ofNullable(signature (query, request));
+        }
+        return Optional.empty();
+    }
+
+    private String getSequence(String q) throws IOException {
+        if(UUIDUtil.isUUID(q)){
+            Payload p = new Payload();
+            p.id = UUID.fromString(q);
+            Optional<InputStream> opt = payloadService.getPayloadAsUncompressedInputStream(p);
+            if(opt.isPresent()){
+                return new String(IOUtil.toByteArray( opt.get()), "utf-8");
+            }
+        }
+        return q;
+    }
+
+    public static String signature (String q, HttpServletRequest request) {
+        Map<String, String[]> query = request.getParameterMap();
+        List<String> qfacets = new ArrayList<String>();
+        if (query.get("facet") != null) {
+            for (String f : query.get("facet"))
+                qfacets.add(f);
+
+        }
+        final boolean hasFacets = q != null
+                && q.indexOf('/') > 0 && q.indexOf("\"") < 0;
+        if (hasFacets) {
+            // treat this as facet
+            qfacets.add("MeSH/"+q);
+            query.put("facet", qfacets.toArray(new String[0]));
+        }
+        //query.put("drill", new String[]{"down"});
+
+        List<String> args = new ArrayList<String>();
+        args.add(request.getRequestURI());
+        if (q != null)
+            args.add(q);
+        for (String f : qfacets)
+            args.add(f);
+
+        if (query.get("order") != null) {
+            for (String f : query.get("order"))
+                args.add(f);
+        }
+
+        String dep = query.getOrDefault("showDeprecated", new String[]{"false"})[0];
+        args.add("dep" + dep);
+
+
+
+        Collections.sort(args);
+        return Util.sha1(args.toArray(new String[0]));
+    }
+
+    @PostGsrsRestApiMapping("/sequenceSearch")
+    public ResponseEntity<Object> sequenceSearch(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request , @RequestParam Map<String, String> queryParameters) throws IOException {
+
+        substanceSequenceSearchService.search(request.sanitize());
+        //TODO move to service
+
+        return null;
+    }
+
     @PostGsrsRestApiMapping("/interpretStructure")
     public ResponseEntity<Object> interpretStructure(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
         String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
