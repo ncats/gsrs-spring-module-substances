@@ -20,6 +20,7 @@ import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.repository.EditRepository;
 import gsrs.service.PayloadService;
+import ix.core.cache.IxCache;
 import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
@@ -27,6 +28,9 @@ import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
 import ix.core.models.Structure;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.DefaultParameters;
@@ -35,6 +39,7 @@ import ix.ginas.exporters.OutputFormat;
 import ix.ginas.models.v1.*;
 import ix.seqaln.SequenceIndexer;
 import ix.seqaln.service.SequenceIndexerService;
+import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
 import ix.utils.Util;
 import lombok.Data;
@@ -57,6 +62,9 @@ import javax.validation.constraints.NotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -184,6 +192,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private PayloadService payloadService;
 
+    @Autowired
+    private IxCache ixCache;
+
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
         return legacySearchService;
@@ -243,14 +254,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
     }
 
-    public Optional<String> getKeyForCurrentRequest(){
+    public Optional<String> getKeyForCurrentRequest(SubstanceSequenceSearchService.SanitizedSequenceSearchRequest searchRequest){
 
         Optional<HttpServletRequest> opt =  getCurrentHttpRequest();
         if(!opt.isPresent()){
             return Optional.empty();
         }
         HttpServletRequest request = opt.get();
-        String query = request.getParameter("q") + request.getParameter("order");
+        String query = searchRequest.getQ() + request.getParameter("order");
         String type = request.getParameter("type");
 
 
@@ -355,12 +366,92 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     @PostGsrsRestApiMapping("/sequenceSearch")
-    public ResponseEntity<Object> sequenceSearch(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request , @RequestParam Map<String, String> queryParameters) throws IOException {
+    public SearchResultContext sequenceSearch(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request,
+                                                 @RequestParam(value="sync", required= false, defaultValue="true") boolean sync, @RequestParam Map<String, String> queryParameters) throws IOException {
 
-        substanceSequenceSearchService.search(request.sanitize());
+        SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
+        SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
         //TODO move to service
+        SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
+        return focused;
+    }
+    static String getOrderedKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();
+    }
+    static String getKey (SearchResultContext context, SearchRequest request) {
+        return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
+    }
+    /*
+    public play.mvc.Result substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
+        context.setAdapter((srequest, ctx) -> {
+            try {
+                SearchResult sr = getResultFor(ctx, srequest,true);
 
-        return null;
+                List<Substance> rlist = new ArrayList<Substance>();
+
+                sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
+                for (Substance s : rlist) {
+                    s.setMatchContextFromID(ctx.getId());
+                }
+                return sr;
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new IllegalStateException("Error fetching search result", e);
+            }
+        });
+
+
+        if (sync) {
+            try {
+                context.getDeterminedFuture().get(1, TimeUnit.MINUTES);
+                return play.mvc.Controller.redirect(context.getResultCall());
+            } catch (TimeoutException e) {
+                log.warn("Structure search timed out!", e);
+            }
+        }
+        return Java8Util.ok(EntityFactory.getEntityMapper().valueToTree(context));
+    }
+*/
+    public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
+            throws IOException, Exception{
+
+        final String key = (preserveOrder)? getOrderedKey(ctx,req):getKey (ctx, req);
+
+        CallableUtil.TypedCallable<SearchResult> tc = CallableUtil.TypedCallable.of(() -> {
+            Collection results = ctx.getResults();
+            SearchRequest request = new SearchRequest.Builder()
+                    .subset(results)
+                    .options(req.getOptions())
+                    .skip(0)
+                    .top(results.size())
+                    .query(req.getQuery())
+                    .build();
+
+
+            SearchResult searchResult =null;
+
+            if (results.isEmpty()) {
+                searchResult= SearchResult.createEmptyBuilder(req.getOptions())
+                        .build();
+            }else{
+                //TODO katzelda this call goes through the TEXTINDEXER !!?? why it can be a sequence search?
+//                searchResult = SearchFactory.search (request);
+                log.debug("Cache misses: "
+                        +key+" size="+results.size()
+                        +" class="+searchResult);
+            }
+
+            // make an alias for the context.id to this search
+            // result
+            searchResult.setKey(ctx.getId());
+            return searchResult;
+        }, SearchResult.class);
+
+        if(ctx.isDetermined()) {
+            return ixCache.getOrElse(key, tc);
+        }else {
+            return tc.call();
+        }
     }
 
     @PostGsrsRestApiMapping("/interpretStructure")

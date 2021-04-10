@@ -29,6 +29,7 @@ import ix.seqaln.service.SequenceIndexerService;
 @SpringBootApplication
 @EnableConfigurationProperties
 //@EnableEurekaClient
+@EnableGsrsAkka
 @EnableGsrsJpaEntities
 @EnableGsrsApi
 @EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
@@ -66,11 +67,11 @@ public class GsrsModuleSubstanceApplication {
         return new LegacySubstanceSequenceSearchService(legacySequenceIndexerService, ixCache,payloadService,
                 proteinSubstanceRepository, nucleicAcidSubstanceRepository);
     }
-
-    @Bean
-    public SequenceIndexerService sequenceIndexerService(){
-        return legacySequenceIndexerService;
-    }
+//
+//    @Bean
+//    public SequenceIndexerService sequenceIndexerService(){
+//        return legacySequenceIndexerService;
+//    }
 
     public static void main(String[] args) {
         SpringApplication.run(GsrsModuleSubstanceApplication.class, args);

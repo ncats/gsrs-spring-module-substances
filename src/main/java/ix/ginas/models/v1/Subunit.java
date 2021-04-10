@@ -4,7 +4,9 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
+import ix.core.models.SequenceEntity;
 import ix.ginas.models.GinasAccessReferenceControlled;
+import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.GinasCommonSubData;
 
 import javax.persistence.*;
@@ -15,7 +17,7 @@ import java.util.List;
 @Entity
 @Table(name="ix_ginas_subunit")
 @SingleParent
-public class Subunit extends GinasCommonSubData {
+public class Subunit extends GinasCommonSubData implements SequenceEntity {
     @Lob
     @Basic(fetch= FetchType.EAGER)
     @Indexable(sequence=true)
@@ -80,5 +82,16 @@ public class Subunit extends GinasCommonSubData {
 
    		return temp;
    	}
-		
+
+    @Override
+    public SequenceType computeSequenceType() {
+        GinasCommonData p = getParent();
+        if(p instanceof Protein){
+            return SequenceType.PROTEIN;
+        }
+        if(p instanceof NucleicAcid){
+            return SequenceType.NUCLEIC_ACID;
+        }
+        return SequenceType.UNKNOWN;
+    }
 }

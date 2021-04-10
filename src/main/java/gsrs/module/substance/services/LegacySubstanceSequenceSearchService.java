@@ -3,6 +3,7 @@ package gsrs.module.substance.services;
 import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
 import gsrs.module.substance.repository.ProteinSubstanceRepository;
 import gsrs.service.PayloadService;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.cache.IxCache;
 import ix.core.search.ResultProcessor;
 import ix.core.search.SearchResultContext;
@@ -34,6 +35,8 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
     private IxCache ixCache;
     private PayloadService payloadService;
 
+
+
     public LegacySubstanceSequenceSearchService(LegacySequenceIndexerService indexerService, IxCache ixCache,
                                                 PayloadService payloadService,
                                                 ProteinSubstanceRepository proteinSubstanceRepository,
@@ -47,23 +50,31 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 
 
     @Override
-    public Object search(SanitizedSequenceSearchRequest request) throws IOException {
+    public SearchResultContext search(SanitizedSequenceSearchRequest request) throws IOException {
 
-        //TODO save sequence as payload?
-
-        SearchResultProcessor<SequenceIndexer.Result, ?> processor;
-        if("protein".equalsIgnoreCase(request.getSeqType())){
-            processor = new GinasSequenceResultProcessor(proteinSubstanceRepository, ixCache);
-        }else{
-            processor = new GinasNucleicSequenceResultProcessor(nucleicAcidSubstanceRepository, ixCache);
-        }
-        SequenceIndexer.ResultEnumeration resultEnumeration = indexerService.search(request.getQ(), request.getCutoff(), request.getType(), request.getSeqType());
+        String hashKey = request.computeKey();
         try {
-            processor.setResults(1, resultEnumeration);
+            return ixCache.getOrElse(indexerService.getLastModified() , hashKey, ()-> {
+                SearchResultProcessor<SequenceIndexer.Result, ?> processor;
+                if ("protein".equalsIgnoreCase(request.getSeqType())) {
+                    processor = new GinasSequenceResultProcessor(proteinSubstanceRepository, ixCache);
+                } else {
+                    processor = new GinasNucleicSequenceResultProcessor(nucleicAcidSubstanceRepository, ixCache);
+                }
+                AutowireHelper.getInstance().autowire(processor);
+                SequenceIndexer.ResultEnumeration resultEnumeration = indexerService.search(request.getQ(), request.getCutoff(), request.getType(), request.getSeqType());
+                try {
+                    processor.setResults(1, resultEnumeration);
+                    SearchResultContext ctx = processor.getContext();
+                    ctx.setKey(hashKey);
+                    return ctx;
+                } catch (Exception e) {
+                    throw new IOException("error setting results", e);
+                }
+            });
         } catch (Exception e) {
-            throw new IOException("error setting results", e);
+            throw new IOException("error performing search ", e);
         }
-        return null;
     }
     public interface SearcherTask{
         public String getKey();
@@ -198,7 +209,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 
         @Override
         protected NucleicAcidSubstance instrument(SequenceIndexer.Result r) throws Exception {
-            NucleicAcidSubstance nuc= null;
+//            NucleicAcidSubstance nuc= null;
 //            if(r.id.startsWith(">")){
 //                Matcher m = FASTA_FILE_PATTERN.matcher(r.id);
 //                if(m.find()){
@@ -206,10 +217,12 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 //                    nuc = SubstanceFactory.nucfinder.get().byId(UUID.fromString(parentId));
 //                }
 //            }else {
-            Optional<NucleicAcidSubstance> nucSubstance = substanceRepository.findNucleicAcidSubstanceByNucleicAcid_Subunits_Uuid(UUID.fromString(r.id))
-                                                                                    .stream().findFirst() ; // also slow
+            NucleicAcidSubstance nuc = substanceRepository.findNucleicAcidSubstanceByNucleicAcid_Subunits_Uuid(UUID.fromString(r.id))
+                                                                                    .stream()
+                                                                                    .findFirst()  // also slow
+                                                                                        .orElse(null);
 
-            nuc = !nucSubstance.isPresent() ? null : nucSubstance.get();
+
 //            }
 
             if (nuc != null) {

@@ -1,8 +1,12 @@
 package gsrs.module.substance.services;
 
+import ix.core.search.SearchResultContext;
 import ix.seqaln.SequenceIndexer;
+import ix.utils.Util;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 import org.jcvi.jillion.core.residue.aa.ProteinSequenceBuilder;
 import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
@@ -16,8 +20,15 @@ import java.io.UnsupportedEncodingException;
 
 public interface SubstanceSequenceSearchService {
 
+    enum SequenceSearchType{
+        GLOBAL,
+        LOCAL,
+        CONTAINS
+    }
     @Data
     @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
     class SequenceSearchRequest{
         private String q;
         private SequenceIndexer.CutoffType type;
@@ -27,6 +38,9 @@ public interface SubstanceSequenceSearchService {
         private Integer fdim = 10;
         private String field;
         private String seqType = "Protein";
+        private double identity = 0.5D;
+        private SequenceSearchType searchType = SequenceSearchType.GLOBAL;
+        private String order;
         /*
          Map<String, String[]> params = request().body().asFormUrlEncoded();
         String q =      getLastStringOrElse(params.get("q"), null);
@@ -37,6 +51,12 @@ public interface SubstanceSequenceSearchService {
         Integer fdim =  getLastIntegerOrElse(params.get("fdim"), 10);
         String field =  getLastStringOrElse(params.get("field"), "");
         String seqType = getLastStringOrElse(params.get("seqType"), "Protein");
+
+        String iden = request.getParameter("identity");
+                    if (iden == null) {
+                        iden = "0.5";
+                    }
+                    String idenType = request.getParameter("identityType");
          */
 
         public SanitizedSequenceSearchRequest sanitize() throws IOException {
@@ -54,19 +74,26 @@ public interface SubstanceSequenceSearchService {
         private Integer fdim;
         private String field;
         private String seqType;
+        private double identity;
+        private String order;
+        private SequenceSearchType searchType;
 
         public SanitizedSequenceSearchRequest(SequenceSearchRequest unsanitized) throws IOException {
 
-            this.type = unsanitized.type;
+            this.type = unsanitized.type == null? SequenceIndexer.CutoffType.SUB: unsanitized.type;
             this.cutoff = sanitizeCutOff(unsanitized.cutoff, 0.8D);
             this.top = sanitizeNumber(unsanitized.top, 10);
             this.skip = sanitizeNumber(unsanitized.top, 0);
             this.fdim = sanitizeNumber(unsanitized.top, 10);
             this.field = unsanitized.field;
             this.seqType = unsanitized.seqType ==null? "Protein" : unsanitized.seqType;
+            this.identity = Math.min(1, Math.max(identity, 0.5D));
+            this.order = unsanitized.order;
+            this.searchType = unsanitized.searchType ==null? SequenceSearchType.GLOBAL: unsanitized.searchType;
 
             this.q = sanitizeSequence(unsanitized.q);
         }
+
 
         private Integer sanitizeNumber(Integer i, int defaultValue) {
             if(i==null || i.intValue() <0){
@@ -128,10 +155,20 @@ public interface SubstanceSequenceSearchService {
             }
         }
 
-        boolean isProtein(){
+        public boolean isProtein(){
             return "Protein".equalsIgnoreCase(seqType);
+        }
+
+        public String computeKey(){
+
+            return Util.sha1("sequence/"+getKey (getQ() +this.searchType.name() + this.getOrder(), this.identity));
+
+        }
+
+        public static String getKey (String q, double t) {
+            return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
         }
     }
 
-    Object search(SanitizedSequenceSearchRequest request) throws IOException;
+    SearchResultContext search(SanitizedSequenceSearchRequest request) throws IOException;
 }
