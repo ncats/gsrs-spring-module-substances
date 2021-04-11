@@ -13,6 +13,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.MolwitchException;
 import gov.nih.ncats.molwitch.Bond.BondType;
 import gov.nih.ncats.molwitch.Bond.Stereo;
+import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.SubstanceEntityService;
@@ -20,7 +21,6 @@ import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.repository.EditRepository;
 import gsrs.service.PayloadService;
-import ix.core.cache.IxCache;
 import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
@@ -193,7 +193,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private PayloadService payloadService;
 
     @Autowired
-    private IxCache ixCache;
+    private GsrsCache ixCache;
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {

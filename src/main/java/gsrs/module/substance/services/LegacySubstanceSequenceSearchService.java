@@ -1,10 +1,10 @@
 package gsrs.module.substance.services;
 
+import gsrs.cache.GsrsCache;
 import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
 import gsrs.module.substance.repository.ProteinSubstanceRepository;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
-import ix.core.cache.IxCache;
 import ix.core.search.ResultProcessor;
 import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
@@ -32,12 +32,12 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 
     private ProteinSubstanceRepository proteinSubstanceRepository;
     private NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository;
-    private IxCache ixCache;
+    private GsrsCache ixCache;
     private PayloadService payloadService;
 
 
 
-    public LegacySubstanceSequenceSearchService(LegacySequenceIndexerService indexerService, IxCache ixCache,
+    public LegacySubstanceSequenceSearchService(LegacySequenceIndexerService indexerService, GsrsCache ixCache,
                                                 PayloadService payloadService,
                                                 ProteinSubstanceRepository proteinSubstanceRepository,
                                                 NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository ) {
@@ -119,9 +119,9 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
     public static class GinasSequenceResultProcessor
             extends SearchResultProcessor<SequenceIndexer.Result, ProteinSubstance> {
         private ProteinSubstanceRepository substanceRepository;
-        private IxCache ixCache;
+        private GsrsCache ixCache;
 
-        public GinasSequenceResultProcessor(ProteinSubstanceRepository substanceRepository, IxCache ixCache) {
+        public GinasSequenceResultProcessor(ProteinSubstanceRepository substanceRepository, GsrsCache ixCache) {
             this.substanceRepository = substanceRepository;
             this.ixCache = ixCache;
         }
@@ -200,9 +200,9 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
             extends SearchResultProcessor<SequenceIndexer.Result, NucleicAcidSubstance> {
 
         private NucleicAcidSubstanceRepository substanceRepository;
-        private IxCache ixCache;
+        private GsrsCache ixCache;
 
-        public GinasNucleicSequenceResultProcessor(NucleicAcidSubstanceRepository substanceRepository, IxCache ixCache) {
+        public GinasNucleicSequenceResultProcessor(NucleicAcidSubstanceRepository substanceRepository, GsrsCache ixCache) {
             this.substanceRepository = substanceRepository;
             this.ixCache = ixCache;
         }

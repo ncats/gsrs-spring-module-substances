@@ -1,16 +1,12 @@
 package gsrs.module.substance;
 
 import gsrs.*;
+import gsrs.cache.GsrsCache;
 import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
 import gsrs.module.substance.repository.ProteinSubstanceRepository;
 import gsrs.module.substance.services.LegacySubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.service.PayloadService;
-import gsrs.validator.GsrsValidatorFactory;
-import ix.core.cache.IxCache;
-import ix.core.chem.StructureHasher;
-import ix.core.chem.StructureProcessor;
-import ix.core.chem.StructureStandardizer;
 import ix.seqaln.service.LegacySequenceIndexerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -45,7 +41,7 @@ public class GsrsModuleSubstanceApplication {
     private LegacySequenceIndexerService legacySequenceIndexerService;
 
     @Autowired
-    private IxCache ixCache;
+    private GsrsCache ixCache;
 
     @Autowired
     PayloadService payloadService;
