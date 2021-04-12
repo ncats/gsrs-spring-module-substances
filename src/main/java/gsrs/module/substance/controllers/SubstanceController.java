@@ -437,7 +437,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                                          @RequestParam(value="sync", required= false, defaultValue="true") boolean sync, @RequestParam Map<String, String> queryParameters) throws IOException, ExecutionException, InterruptedException {
 
         SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
-
+/*
         String q = sanitizedRequest.getQ();
         if(!UUIDUtil.isUUID(q)){
             //store the query as a temp in the cache
@@ -446,7 +446,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             s.subunitIndex = 1;
             s.uuid = UUID.randomUUID();
             ixCache.setTemp(s.uuid.toString(), EntityUtils.EntityWrapper.of(s).toFullJson());
-            sanitizedRequest.setQ(q);
+            sanitizedRequest.setQ(s.uuid.toString());
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -467,10 +467,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 .withSelfRel())
                 .toUri().toString() );
         return new ResponseEntity<>(headers,HttpStatus.FOUND);
-//        SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
-//        //TODO move to service
-//        SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
-//        return substanceFactoryDetailedSearch(focused, sync);
+        */
+        SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
+        //TODO move to service
+        SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
+        return substanceFactoryDetailedSearch(focused, sync);
     }
     static String getOrderedKey (SearchResultContext context, SearchRequest request) {
         return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();

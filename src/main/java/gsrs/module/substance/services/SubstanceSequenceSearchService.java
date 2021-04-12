@@ -173,7 +173,7 @@ public interface SubstanceSequenceSearchService {
 
         private void putIfNotNull(String name, Object field, Map<String,String> map){
             if(field !=null){
-                map.put(name, "\""+field.toString()+"\"");
+                map.put(name, field.toString());
             }
         }
         public Map<String,String> toMap() {
