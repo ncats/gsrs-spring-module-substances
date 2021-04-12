@@ -67,6 +67,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                     processor.setResults(1, resultEnumeration);
                     SearchResultContext ctx = processor.getContext();
                     ctx.setKey(hashKey);
+
                     return ctx;
                 } catch (Exception e) {
                     throw new IOException("error setting results", e);

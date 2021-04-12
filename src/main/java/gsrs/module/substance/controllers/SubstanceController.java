@@ -15,9 +15,12 @@ import gov.nih.ncats.molwitch.Bond.BondType;
 import gov.nih.ncats.molwitch.Bond.Stereo;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
+import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.model.GsrsUrlLink;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.StructureRepository;
+import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.repository.EditRepository;
 import gsrs.service.PayloadService;
@@ -47,13 +50,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.Range;
 import org.jcvi.jillion.core.Ranges;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
@@ -194,6 +200,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private GsrsCache ixCache;
+
+    @Autowired
+    private EntityLinks entityLinks;
+
+    @Autowired
+    private SubunitRepository subunitRepository;
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -364,16 +376,101 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Collections.sort(args);
         return Util.sha1(args.toArray(new String[0]));
     }
+    //context: String, q: String ?= null, type: String ?= "GLOBAL", cutoff: Double ?= .9, top: Int ?= 10, skip: Int ?= 0, fdim: Int ?= 10, field: String ?= "", seqType: String ?="Protein")
+    @GetGsrsRestApiMapping("/sequenceSearch")
+    public ResponseEntity<Object> sequenceSearchGet(
+            @RequestParam(required= false) String q,  @RequestParam(required= false) String type, @RequestParam(required= false,  defaultValue = "0.9") Double cutoff,
+            @RequestParam(required= false) Integer top, @RequestParam(required= false) Integer skip, @RequestParam(required= false) Integer fdim, @RequestParam(required= false) String field,
+            @RequestParam(required= false, defaultValue = "Protein") String seqType,
+                                                 @RequestParam(value="sync", required= false, defaultValue="true") boolean sync,
+            @RequestParam Map<String, String> queryParameters,
+            HttpServletRequest httpServletRequest) throws IOException, ExecutionException, InterruptedException {
 
-    @PostGsrsRestApiMapping("/sequenceSearch")
-    public SearchResultContext sequenceSearch(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request,
-                                                 @RequestParam(value="sync", required= false, defaultValue="true") boolean sync, @RequestParam Map<String, String> queryParameters) throws IOException {
+        String sequenceQuery = q;
+        if(UUIDUtil.isUUID(q)){
+            //query is a uuid of a subunit look it up
+            String json = (String) ixCache.getTemp(q);
+
+            if(json !=null){
+                //get as Subunit
+                Subunit subunit = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().convertValue(json, Subunit.class);
+                sequenceQuery = subunit.sequence;
+            }else{
+                Optional<Subunit> opt = subunitRepository.findById(UUID.fromString(q));
+                if(opt.isPresent()){
+                    sequenceQuery = opt.get().sequence;
+                }
+            }
+        }
+        SubstanceSequenceSearchService.SequenceSearchRequest request = SubstanceSequenceSearchService.SequenceSearchRequest.builder()
+                .q(sequenceQuery)
+                .type(SequenceIndexer.CutoffType.valueOfOrDefault(type))
+                .cutoff(cutoff)
+                .top(top)
+                .skip(skip)
+                .fdim(fdim)
+                .field(field)
+                .seqType(seqType)
+                .build();
 
         SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
         SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
+        //we have to manually set the actual request uri here as it's the only place we know it!!
+        //for some reason the spring boot methods to get the current quest  URI don't include the parameters
+        //so we have to append them manually here from our controller
+        StringBuilder queryParamBuilder = new StringBuilder();
+        queryParameters.forEach((k,v)->{
+            if(queryParamBuilder.length()==0){
+                queryParamBuilder.append("?");
+            }else{
+                queryParamBuilder.append("&");
+            }
+            queryParamBuilder.append(k).append("=").append(v);
+        });
+        resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder.toString());
         //TODO move to service
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
-        return focused;
+        return substanceFactoryDetailedSearch(focused, sync);
+    }
+    @PostGsrsRestApiMapping("/sequenceSearch")
+    public ResponseEntity<Object> sequenceSearchPost(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request,
+                                         @RequestParam(value="sync", required= false, defaultValue="true") boolean sync, @RequestParam Map<String, String> queryParameters) throws IOException, ExecutionException, InterruptedException {
+
+        SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
+
+        String q = sanitizedRequest.getQ();
+        if(!UUIDUtil.isUUID(q)){
+            //store the query as a temp in the cache
+            Subunit s = new Subunit();
+            s.sequence = q;
+            s.subunitIndex = 1;
+            s.uuid = UUID.randomUUID();
+            ixCache.setTemp(s.uuid.toString(), EntityUtils.EntityWrapper.of(s).toFullJson());
+            sanitizedRequest.setQ(q);
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+//                String url = .toUri().toString();
+        //this feels wierd that we are do a re-direct to anothe method in this same controller but if we do a direct method call
+        //our request() object won't change to what we need to pull the data out of the request object and cache ?
+        StringBuilder builder = new StringBuilder();
+        for(Map.Entry<String,String> entry : sanitizedRequest.toMap().entrySet()){
+            if(builder.length()==0){
+                builder.append("?");
+            }else{
+                builder.append("&");
+            }
+            builder.append(entry.getKey()).append("=").append(entry.getValue());
+        }
+        headers.add("Location", GsrsLinkUtil.adapt(entityLinks.linkFor(Substance.class)
+                .slash("sequenceSearch" + builder.toString())
+                .withSelfRel())
+                .toUri().toString() );
+        return new ResponseEntity<>(headers,HttpStatus.FOUND);
+//        SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
+//        //TODO move to service
+//        SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
+//        return substanceFactoryDetailedSearch(focused, sync);
     }
     static String getOrderedKey (SearchResultContext context, SearchRequest request) {
         return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();
@@ -381,8 +478,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     static String getKey (SearchResultContext context, SearchRequest request) {
         return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
     }
-    /*
-    public play.mvc.Result substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
+
+    public ResponseEntity<Object> substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
         context.setAdapter((srequest, ctx) -> {
             try {
                 SearchResult sr = getResultFor(ctx, srequest,true);
@@ -391,7 +488,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
                 sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
                 for (Substance s : rlist) {
-                    s.setMatchContextFromID(ctx.getId());
+
+                    s.setMatchContextProperty(ixCache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey()));
                 }
                 return sr;
             } catch (Exception e) {
@@ -403,15 +501,22 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         if (sync) {
             try {
+
                 context.getDeterminedFuture().get(1, TimeUnit.MINUTES);
-                return play.mvc.Controller.redirect(context.getResultCall());
+
+//                return play.mvc.Controller.redirect(context.getResultCall());
+                HttpHeaders headers = new HttpHeaders();
+//                String url = .toUri().toString();
+                headers.add("Location", GsrsLinkUtil.adapt(context.getKey(),entityLinks.linkFor(SearchResultContext.class).slash(context.getKey()).slash("result").withSelfRel())
+                        .toUri().toString() );
+                return new ResponseEntity<>(headers,HttpStatus.FOUND);
             } catch (TimeoutException e) {
                 log.warn("Structure search timed out!", e);
             }
         }
-        return Java8Util.ok(EntityFactory.getEntityMapper().valueToTree(context));
+        return new ResponseEntity<>(context, HttpStatus.OK);
     }
-*/
+
     public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
             throws IOException, Exception{
 
@@ -436,6 +541,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }else{
                 //TODO katzelda this call goes through the TEXTINDEXER !!?? why it can be a sequence search?
 //                searchResult = SearchFactory.search (request);
+                searchResult = legacySearchService.search(request.getQuery(), request.getOptions());
                 log.debug("Cache misses: "
                         +key+" size="+results.size()
                         +" class="+searchResult);

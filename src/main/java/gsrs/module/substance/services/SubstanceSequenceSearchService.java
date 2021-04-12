@@ -17,6 +17,8 @@ import org.jcvi.jillion.testutils.NucleotideSequenceTestUtil;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.HashMap;
+import java.util.Map;
 
 public interface SubstanceSequenceSearchService {
 
@@ -167,6 +169,41 @@ public interface SubstanceSequenceSearchService {
 
         public static String getKey (String q, double t) {
             return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
+        }
+
+        private void putIfNotNull(String name, Object field, Map<String,String> map){
+            if(field !=null){
+                map.put(name, "\""+field.toString()+"\"");
+            }
+        }
+        public Map<String,String> toMap() {
+            //context: String, q: String ?= null, type: String ?= "GLOBAL", cutoff: Double ?= .9, top: Int ?= 10, skip: Int ?= 0, fdim: Int ?= 10, field: String ?= "", seqType: String ?="Protein")
+
+            Map<String,String> map = new HashMap<>();
+            putIfNotNull("q", q, map);
+            putIfNotNull("type", cutoff, map);
+            putIfNotNull("top", top, map);
+            putIfNotNull("skip", skip, map);
+            putIfNotNull("field", "".equals(field)?null :field, map);
+            putIfNotNull("fdim", fdim, map);
+            putIfNotNull("seqType", seqType, map);
+            putIfNotNull("order", order, map);
+            putIfNotNull("searchType", searchType, map);
+            map.put("cutoff", Double.toString(identity));
+/*
+private String q;
+        private SequenceIndexer.CutoffType type;
+        private Double cutoff;
+        private Integer top;
+        private Integer skip;
+        private Integer fdim;
+        private String field;
+        private String seqType;
+        private double identity;
+        private String order;
+        private SequenceSearchType searchType;
+ */
+            return map;
         }
     }
 
