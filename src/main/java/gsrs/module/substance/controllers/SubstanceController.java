@@ -541,7 +541,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }else{
                 //TODO katzelda this call goes through the TEXTINDEXER !!?? why it can be a sequence search?
 //                searchResult = SearchFactory.search (request);
-                searchResult = legacySearchService.search(request.getQuery(), request.getOptions());
+                searchResult = legacySearchService.search(request.getQuery(), request.getOptions(), request.getSubset());
                 log.debug("Cache misses: "
                         +key+" size="+results.size()
                         +" class="+searchResult);
