@@ -12,6 +12,7 @@ import java.util.List;
 @DiscriminatorValue("SSIII")
 public class SpecifiedSubstanceGroup3Substance extends Substance implements GinasSubstanceDefinitionAccess{
 	@OneToOne(cascade= CascadeType.ALL)
+	@JoinColumn(name="specified_substance_g3_uuid")
     public SpecifiedSubstanceGroup3Details specifiedSubstanceG3;
 
     public SpecifiedSubstanceGroup3Substance() {
