@@ -40,6 +40,7 @@ import ix.utils.UUIDUtil;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
@@ -65,6 +66,7 @@ import java.util.stream.Stream;
 /**
  * GSRS Rest API controller for the {@link Substance} entity.
  */
+@DependsOn("SubstanceSequenceSearchService")
 @Slf4j
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityService.CONTEXT,  idHelper = IdHelpers.UUID)
@@ -203,7 +205,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     @Override
-    public GsrsEntityService<Substance, UUID> getEntityService() {
+    protected SubstanceEntityService getEntityService() {
         return substanceEntityService;
     }
 

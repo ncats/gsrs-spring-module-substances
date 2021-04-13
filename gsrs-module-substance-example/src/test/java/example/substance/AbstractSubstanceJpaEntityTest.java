@@ -3,7 +3,6 @@ package example.substance;
 import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.module.substance.GsrsModuleSubstanceConfiguration;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.EditRepository;
@@ -35,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ActiveProfiles("test")
-@GsrsJpaTest(classes = {GsrsModuleSubstanceConfiguration.class, GsrsEntityTestConfiguration.class, GsrsControllerConfiguration.class})
+@GsrsJpaTest(classes = { GsrsEntityTestConfiguration.class, GsrsControllerConfiguration.class})
 //@SpringBootTest
 @Import({AbstractSubstanceJpaEntityTest.TestConfig.class})
 public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEntityJunit5Test {
