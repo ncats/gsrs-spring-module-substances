@@ -1,16 +1,14 @@
 package gsrs.module.substance.processors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import gov.nih.ncats.common.Tuple;
-import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.repository.PrincipalRepository;
+import gov.nih.ncats.common.Tuple;
+import gsrs.EntityPersistAdapter;
 import ix.core.EntityProcessor;
 
 import ix.core.models.Edit;
 import ix.core.models.Keyword;
-import ix.core.models.Principal;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
 
@@ -23,7 +21,6 @@ import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;

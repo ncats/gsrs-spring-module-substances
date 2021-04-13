@@ -8,8 +8,6 @@ import ix.core.util.LogUtil;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
-import org.jcvi.jillion.core.residue.aa.AminoAcid;
-import org.jcvi.jillion.core.residue.aa.ProteinSequence;
 
 import javax.persistence.*;
 import java.util.*;

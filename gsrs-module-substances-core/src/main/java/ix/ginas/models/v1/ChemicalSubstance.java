@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonView;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.EntityMapperOptions;
 import ix.core.models.BeanViews;
-import gsrs.module.substance.definitional.DefinitionalElement;
 import ix.core.models.Indexable;
 import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
@@ -19,7 +18,6 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 
 @SuppressWarnings("serial")
 @JSONEntity(name = "chemicalSubstance", title = "Chemical Substance")

@@ -2,8 +2,6 @@ package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import gsrs.model.Sizeable;
-import gsrs.module.substance.definitional.DefinitionalElement;
-import gsrs.module.substance.definitional.DefinitionalElements;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.utils.JSONEntity;

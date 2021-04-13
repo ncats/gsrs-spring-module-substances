@@ -4,7 +4,6 @@ import gsrs.module.substance.services.DefinitionalElementImplementation;
 import ix.core.models.Structure;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
-import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.function.Consumer;

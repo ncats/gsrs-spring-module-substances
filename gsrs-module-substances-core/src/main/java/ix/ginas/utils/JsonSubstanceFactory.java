@@ -10,7 +10,6 @@ import ix.core.controllers.EntityFactory;
 import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
 import ix.core.validator.GinasProcessingMessage;
-import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.v1.*;
 
 import java.lang.reflect.Field;

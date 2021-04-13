@@ -2,11 +2,11 @@ package gsrs.module.substance.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.module.substance.events.ReferenceUpdatedEvent;
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.module.substance.events.ReferenceCreatedEvent;
-import gsrs.module.substance.events.ReferenceUpdatedEvent;
 
 import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.repository.GroupRepository;

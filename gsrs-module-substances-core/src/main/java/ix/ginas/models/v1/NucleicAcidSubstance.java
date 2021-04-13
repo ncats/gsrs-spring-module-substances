@@ -1,14 +1,12 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import gsrs.module.substance.definitional.DefinitionalElement;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.*;
 import java.util.*;
-import java.util.function.Consumer;
 
 @Entity
 @Inheritance

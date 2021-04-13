@@ -11,8 +11,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.ChemicalBuilder;
-import gsrs.module.substance.definitional.DefinitionalElement;
-import gsrs.module.substance.definitional.DefinitionalElements;
 import ix.core.EntityMapperOptions;
 import ix.core.models.*;
 import ix.core.util.EntityUtils.EntityWrapper;

@@ -4,11 +4,10 @@ import gsrs.controller.EtagLegacySearchEntityController;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.IdHelpers;
 import gsrs.legacy.LegacyGsrsSearchService;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.module.substance.services.ReferenceEntityService;
 import gsrs.repository.EditRepository;
+import gsrs.service.GsrsEntityService;
 import ix.ginas.models.v1.Reference;
-import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
 
@@ -25,7 +24,8 @@ public class ReferenceController extends EtagLegacySearchEntityController<Refere
     private EditRepository editRepository;
     @Autowired
     private ReferenceLegacySearchService referenceLegacySearchService;
-
+    @Autowired
+    private ReferenceEntityService referenceEntityService;
 
     @Override
     protected Stream<Reference> filterStream(Stream<Reference> stream, boolean publicOnly, Map<String, String> parameters) {
@@ -38,6 +38,11 @@ public class ReferenceController extends EtagLegacySearchEntityController<Refere
     @Override
     protected LegacyGsrsSearchService<Reference> getlegacyGsrsSearchService() {
         return referenceLegacySearchService;
+    }
+
+    @Override
+    public GsrsEntityService<Reference, UUID> getEntityService() {
+        return referenceEntityService;
     }
 
     @Override

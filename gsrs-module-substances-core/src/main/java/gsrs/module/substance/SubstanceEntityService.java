@@ -2,13 +2,13 @@ package gsrs.module.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.controller.IdHelpers;
 
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
-import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.validator.ValidatorConfig;
@@ -28,7 +28,6 @@ import org.springframework.stereotype.Service;
 
 import ix.utils.Util;
 import org.springframework.transaction.annotation.Transactional;
-import springfox.documentation.spring.web.json.Json;
 
 import java.io.IOException;
 import java.util.ArrayList;

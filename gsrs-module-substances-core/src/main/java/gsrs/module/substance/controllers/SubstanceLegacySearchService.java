@@ -1,7 +1,7 @@
 package gsrs.module.substance.controllers;
 
-import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.legacy.LegacyGsrsSearchService;
 import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

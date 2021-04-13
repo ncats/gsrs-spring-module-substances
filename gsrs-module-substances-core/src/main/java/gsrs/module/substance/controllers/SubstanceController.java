@@ -6,23 +6,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.StructureRepository;
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
-import gov.nih.ncats.molwitch.MolwitchException;
-import gov.nih.ncats.molwitch.Bond.BondType;
 import gov.nih.ncats.molwitch.Bond.Stereo;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.legacy.LegacyGsrsSearchService;
-import gsrs.model.GsrsUrlLink;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.repository.EditRepository;
+import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
@@ -34,21 +32,13 @@ import ix.core.models.Structure;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
-import ix.core.search.SearchResultProcessor;
 import ix.core.util.EntityUtils;
-import ix.ginas.exporters.DefaultParameters;
-import ix.ginas.exporters.ExporterFactory;
-import ix.ginas.exporters.OutputFormat;
 import ix.ginas.models.v1.*;
 import ix.seqaln.SequenceIndexer;
-import ix.seqaln.service.SequenceIndexerService;
 import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
 import ix.utils.Util;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.jcvi.jillion.core.Range;
-import org.jcvi.jillion.core.Ranges;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -59,7 +49,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.function.EntityResponse;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
@@ -71,7 +60,6 @@ import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -80,7 +68,7 @@ import java.util.stream.Stream;
 @Slf4j
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityService.CONTEXT,  idHelper = IdHelpers.UUID)
-public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, Long> {
+public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
 
     private static interface SimpleStandardizer{
         public Chemical standardize(Chemical c);
@@ -207,9 +195,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private SubunitRepository subunitRepository;
 
+    @Autowired
+    private SubstanceEntityService substanceEntityService;
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
         return legacySearchService;
+    }
+
+    @Override
+    public GsrsEntityService<Substance, UUID> getEntityService() {
+        return substanceEntityService;
     }
 
     @Override

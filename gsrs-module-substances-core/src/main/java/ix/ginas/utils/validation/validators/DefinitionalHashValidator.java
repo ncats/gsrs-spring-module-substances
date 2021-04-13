@@ -1,12 +1,10 @@
 package ix.ginas.utils.validation.validators;
 
-import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.definitional.DefinitionalElements.DefinitionalElementDiff.OP;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Role;
-import ix.core.models.UserProfile;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;

@@ -13,7 +13,6 @@ import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Subunit;
 import ix.seqaln.SequenceIndexer;
-import ix.seqaln.service.LegacySequenceIndexerService;
 import ix.seqaln.service.SequenceIndexerService;
 import ix.utils.CallableUtil;
 import lombok.extern.slf4j.Slf4j;

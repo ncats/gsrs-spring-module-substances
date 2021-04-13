@@ -2,15 +2,13 @@ package gsrs.module.substance.services;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.definitional.DefinitionalElement;
+import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
-import ix.ginas.models.v1.Substance;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

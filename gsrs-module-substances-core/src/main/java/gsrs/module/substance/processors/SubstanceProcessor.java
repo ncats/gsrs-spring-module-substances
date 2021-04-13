@@ -1,8 +1,8 @@
 package gsrs.module.substance.processors;
 
-import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.EntityPersistAdapter;
 import ix.core.EntityProcessor;
 
 import ix.ginas.models.v1.Relationship;

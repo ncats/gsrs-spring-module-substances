@@ -2,12 +2,10 @@ package ix.core.chem;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
-import gsrs.module.substance.StructureProcessingConfiguration;
 import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.models.Text;
 import ix.core.models.Value;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

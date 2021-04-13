@@ -6,12 +6,9 @@ import ix.core.models.Keyword;
 import ix.ginas.models.v1.Parameter;
 import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
-import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Consumer;
 @Slf4j
 public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalElementImplementation {

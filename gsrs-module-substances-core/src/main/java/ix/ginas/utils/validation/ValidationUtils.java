@@ -1,38 +1,25 @@
 package ix.ginas.utils.validation;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.repository.ReferenceRepository;
-import ix.core.chem.Chem;
-import ix.core.chem.StructureProcessor;
 
 import ix.core.models.*;
-import ix.core.search.SearchResult;
 
 import ix.core.validator.*;
-import ix.core.validator.GinasProcessingMessage.Link;
 
-import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
-import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
-import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
-import ix.ginas.utils.ChemUtils;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.NucleicAcidUtils;
-import ix.ginas.utils.ProteinUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.URL;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 @Slf4j
 public class ValidationUtils {
 

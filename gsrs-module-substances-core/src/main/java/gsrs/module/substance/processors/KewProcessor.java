@@ -4,7 +4,6 @@ import gsrs.module.substance.kew.KewControlledPlantDataSet;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Substance;
 import org.springframework.core.io.DefaultResourceLoader;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 
 import java.io.IOException;

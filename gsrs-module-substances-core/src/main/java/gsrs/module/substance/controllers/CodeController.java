@@ -4,7 +4,9 @@ import gsrs.controller.EtagLegacySearchEntityController;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.IdHelpers;
 import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.module.substance.services.CodeEntityService;
 import gsrs.repository.EditRepository;
+import gsrs.service.GsrsEntityService;
 import ix.ginas.models.v1.Code;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -23,6 +25,8 @@ public class CodeController extends EtagLegacySearchEntityController<CodeControl
     @Autowired
     private CodeLegacySearchService codeLegacySearchService;
 
+    @Autowired
+    private CodeEntityService codeEntityService;
 
     @Override
     protected Stream<Code> filterStream(Stream<Code> stream, boolean publicOnly, Map<String, String> parameters) {
@@ -35,6 +39,11 @@ public class CodeController extends EtagLegacySearchEntityController<CodeControl
     @Override
     protected LegacyGsrsSearchService<Code> getlegacyGsrsSearchService() {
         return codeLegacySearchService;
+    }
+
+    @Override
+    public GsrsEntityService<Code, UUID> getEntityService() {
+        return codeEntityService;
     }
 
     @Override

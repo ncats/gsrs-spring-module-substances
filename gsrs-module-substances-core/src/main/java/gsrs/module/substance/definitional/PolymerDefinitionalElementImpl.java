@@ -1,18 +1,15 @@
 package gsrs.module.substance.definitional;
 
-import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
+import gov.nih.ncats.molwitch.Chemical;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Consumer;
 
 
