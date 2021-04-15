@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.repository.StructureRepository;
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
@@ -69,7 +69,7 @@ import java.util.stream.Stream;
 @DependsOn("SubstanceSequenceSearchService")
 @Slf4j
 @ExposesResourceFor(Substance.class)
-@GsrsRestApiController(context = SubstanceEntityService.CONTEXT,  idHelper = IdHelpers.UUID)
+@GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
 
     private static interface SimpleStandardizer{
@@ -198,14 +198,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private SubunitRepository subunitRepository;
 
     @Autowired
-    private SubstanceEntityService substanceEntityService;
+    private GsrsEntityService<Substance, UUID> substanceEntityService;
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
         return legacySearchService;
     }
 
     @Override
-    protected SubstanceEntityService getEntityService() {
+    protected GsrsEntityService<Substance, UUID> getEntityService() {
         return substanceEntityService;
     }
 

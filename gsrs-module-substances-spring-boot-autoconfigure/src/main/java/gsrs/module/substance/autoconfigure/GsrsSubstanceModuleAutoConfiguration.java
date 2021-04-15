@@ -5,19 +5,14 @@ import gsrs.EnableGsrsApi;
 import gsrs.EnableGsrsJpaEntities;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.cache.GsrsCache;
-import gsrs.controller.EditController2;
 import gsrs.controller.EditEntityService;
-import gsrs.module.substance.StructureProcessingConfiguration;
 import gsrs.module.substance.SubstanceCoreConfiguration;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.controllers.*;
 import gsrs.module.substance.repository.*;
 import gsrs.module.substance.services.*;
-import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.service.PayloadService;
-import gsrs.services.PrincipalService;
-import ix.core.chem.StructureProcessor;
-import ix.seqaln.service.LegacySequenceIndexerService;
 import ix.seqaln.service.SequenceIndexerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -71,10 +66,11 @@ public class GsrsSubstanceModuleAutoConfiguration {
     }
 
     //let's try creating the beans for our controllers and services
+
     @Bean
     @ConditionalOnMissingBean(SubstanceEntityService.class)
     public SubstanceEntityService substanceEntityService(){
-        return new SubstanceEntityService();
+        return new SubstanceEntityServiceImpl();
     }
     @Bean
     @ConditionalOnMissingBean(EditEntityService.class)

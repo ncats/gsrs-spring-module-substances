@@ -16,7 +16,12 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-spring-boot-starter</artifactId>
-            <version>0.6.0-SNAPSHOT</version>
+            <version>${gsrs.substance.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-fda-substance-extension</artifactId>
+            <version>${gsrs.substance.version}</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
