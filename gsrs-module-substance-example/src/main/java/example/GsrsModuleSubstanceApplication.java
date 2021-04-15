@@ -16,7 +16,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EnableGsrsLegacyPayload
 @EnableGsrsLegacySequenceSearch
 @EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
-//@EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
+@EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
 public class GsrsModuleSubstanceApplication {
 
 
