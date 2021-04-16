@@ -1,0 +1,37 @@
+package gov.nih.ncats.application;
+import gsrs.*;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.autoconfigure.*;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.*;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.*;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zaxxer.hikari.HikariDataSource;
+import javax.sql.DataSource;
+
+	@Configuration
+    @PropertySource("classpath:application.properties")
+    public class DataSourceConfiguration {        
+		@Autowired
+        Environment environment;
+		
+		@Bean
+        public DataSource datasource() {
+            System.out.println("****************** " + environment.getProperty("spring.datasource.username"));
+            DriverManagerDataSource dataSource = new DriverManagerDataSource();
+            dataSource.setDriverClassName("org.postgresql.Driver");
+            dataSource.setUrl("jdbc::postgresql://localhost:5432/gsrs2");
+            dataSource.setUsername("ginas");
+            dataSource.setPassword("ginas");
+            return dataSource;
+        }
+    }
