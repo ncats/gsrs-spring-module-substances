@@ -383,22 +383,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest) throws IOException, ExecutionException, InterruptedException {
 
-        String sequenceQuery = q;
-        if(UUIDUtil.isUUID(q)){
-            //query is a uuid of a subunit look it up
-            String json = (String) ixCache.getTemp(q);
-
-            if(json !=null){
-                //get as Subunit
-                Subunit subunit = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().convertValue(json, Subunit.class);
-                sequenceQuery = subunit.sequence;
-            }else{
-                Optional<Subunit> opt = subunitRepository.findById(UUID.fromString(q));
-                if(opt.isPresent()){
-                    sequenceQuery = opt.get().sequence;
-                }
-            }
-        }
+        String sequenceQuery = convertQueryStringToSequence(q);
         SubstanceSequenceSearchService.SequenceSearchRequest request = SubstanceSequenceSearchService.SequenceSearchRequest.builder()
                 .q(sequenceQuery)
                 .type(SequenceIndexer.CutoffType.valueOfOrDefault(type))
@@ -429,10 +414,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
     }
+
+    private String convertQueryStringToSequence(@RequestParam(required = false) String q) {
+        String sequenceQuery = q;
+        if(UUIDUtil.isUUID(q)){
+            //query is a uuid of a subunit look it up
+            String json = (String) ixCache.getTemp(q);
+
+            if(json !=null){
+                //get as Subunit
+                Subunit subunit = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().convertValue(json, Subunit.class);
+                sequenceQuery = subunit.sequence;
+            }else{
+                Optional<Subunit> opt = subunitRepository.findById(UUID.fromString(q));
+                if(opt.isPresent()){
+                    sequenceQuery = opt.get().sequence;
+                }
+            }
+        }
+        return sequenceQuery;
+    }
+
     @PostGsrsRestApiMapping("/sequenceSearch")
     public ResponseEntity<Object> sequenceSearchPost(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request,
                                          @RequestParam(value="sync", required= false, defaultValue="true") boolean sync, @RequestParam Map<String, String> queryParameters) throws IOException, ExecutionException, InterruptedException {
 
+        String querySequence= convertQueryStringToSequence(request.getQ());
+        request.setQ(querySequence);
         SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
 /*
         String q = sanitizedRequest.getQ();
