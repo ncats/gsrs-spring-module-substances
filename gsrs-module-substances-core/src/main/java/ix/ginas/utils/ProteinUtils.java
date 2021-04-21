@@ -258,7 +258,7 @@ public class ProteinUtils {
 		return total;
 	}
 	public static MolecularWeightAndFormulaContribution generateProteinWeightAndFormula(SubstanceRepository substanceRepository, ProteinSubstance ps, Set<String> unknownRes){
-		log.trace("starting in generateProteinWeightAndFormula.  Total ps.protein.subunits: " + ps.protein.subunits.size());
+		log.debug("starting in generateProteinWeightAndFormula.  Total ps.protein.subunits: " + ps.protein.subunits.size());
 		double total=0.0;
     //The next 4 items are DELTAS off the total
     double lowTotal =0.0;
@@ -275,7 +275,8 @@ public class ProteinUtils {
     List<GinasProcessingMessage> messages = new ArrayList<>();
 		for(Subunit su:ps.protein.subunits){
 			double subunitMw =getSubunitWeight(su,unknownRes);
-      log.trace(String.format("mw for subunit %d: %.4f",  su.subunitIndex, subunitMw));
+      log.debug(String.format("mw for subunit %d: %.4f",  su.subunitIndex, subunitMw));
+			System.out.println(String.format("mw for subunit %d: %.4f",  su.subunitIndex, subunitMw));
       total+=subunitMw;
 			Map<String, SingleThreadCounter> contribution = getSubunitFormulaInfo(su.sequence, unknownRes);
 			contribution.keySet().forEach(k->{
@@ -291,30 +292,35 @@ public class ProteinUtils {
 		}
 		
     double disulfideContribution = getDisulfideContribution(ps.protein);
-		log.trace(String.format("default MW: %.2f; default formula: %s; disulfideContribution: %.2f", 
+		log.debug(String.format("default MW: %.2f; default formula: %s; disulfideContribution: %.2f",
             total, makeFormulaFromMap(formulaCounts), disulfideContribution));
+		System.out.println(String.format("default MW: %.2f; default formula: %s; disulfideContribution: %.2f",
+				total, makeFormulaFromMap(formulaCounts), disulfideContribution));
     total -=disulfideContribution;
 		if( ps.hasModifications()  && ps.modifications.structuralModifications.size() > 0) {
 			log.debug("considering structuralModifications");
 			double waterMW = 18.02;//https://tripod.nih.gov/ginas/app/substances?q=water
 			//double acetylGroupWt = 43.045d;//https://en.wikipedia.org/wiki/Acetyl_group
+			int modCount=0;
 			for(StructuralModification mod :
 							ps.modifications.structuralModifications.stream()
 											.filter(m->m.molecularFragment != null && m.molecularFragment.refuuid != null 
 															&&handledModTypes.contains( m.structuralModificationType)
 															&&m.getSites().size() > 0)
 											.collect(Collectors.toSet())){
+				modCount++;
+				log.debug("total mods: " + modCount);
 				String message = 
 						String.format("mod.residueModified: %s; mod.molecularFragment.refuuid: %s, mod.molecularFragment.approvalID: %s; extent: %s, amount: %s, residue: %s, structuralModificationType: [%s]",
 						mod.residueModified, mod.molecularFragment.refuuid, mod.molecularFragment.approvalID,
 						mod.extent, (mod.extentAmount ==null) ? "null" : mod.extentAmount.toString(), mod.residueModified, mod.structuralModificationType);
-				log.trace(message);
+				log.debug(message);
 
         if (mod.extent != null && mod.extent.equalsIgnoreCase("COMPLETE")) {
           MolecularWeightAndFormulaContribution contribution= getContributionForID(substanceRepository.findById(UUID.fromString( mod.molecularFragment.refuuid)).orElse(null));
           if(contribution==null){
             //There is no computable fragment to use
-            log.info("No usable molecular weight contribution from structural modification fragment: " + mod.molecularFragment.refuuid);
+			  System.out.println("No usable molecular weight contribution from structural modification fragment: " + mod.molecularFragment.refuuid);
             messages.add(
                     GinasProcessingMessage.WARNING_MESSAGE(
                             String.format("Structural modification will not affect the molecular weight because %s has no associated molecular weight",
@@ -380,7 +386,7 @@ public class ProteinUtils {
           }
         }
         else {
-          log.trace("extent other than complete: " + mod.extent);
+			System.out.println("extent other than complete: " + mod.extent);
           messages.add( GinasProcessingMessage.WARNING_MESSAGE(
                   String.format("Note: structural modification with extent '%s' will not be counted toward the molecular weight", 
                           mod.extent !=null ? mod.extent : "[missing]")));
@@ -388,7 +394,7 @@ public class ProteinUtils {
 			}
 		}
 		else {
-			log.debug("no mods to consider");
+			System.out.println("no mods to consider");
 		}
 			
 		log.trace(String.format("final total: %.2f; highTotal: %.2f; lowTotal: %.2f; highLimitTotal: %.2f; lowLimitTotal: %.2f", total, 
