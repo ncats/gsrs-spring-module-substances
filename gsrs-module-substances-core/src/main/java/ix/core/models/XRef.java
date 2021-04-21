@@ -16,6 +16,7 @@ import java.util.UUID;
 @Entity
 @Table(name="ix_core_xref")
 @Slf4j
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_xref_seq", allocationSize = 1)
 public class XRef extends IxModel {
     /**
      * not id of the XRef instance but id of the instance for which this
