@@ -152,7 +152,7 @@ public class MolCalculationTest {
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
         contribution.getMessages().forEach(m->{
-            System.out.println(String.format( "message: %s; type: %s", m.message, m.messageType));
+            System.out.printf("message: %s; ", m.message);
         });
         double valineMw= 117.1463;
         double isoleucineMw = 113.15764;
