@@ -77,7 +77,7 @@ public class ProteinUtils {
 	private static String lookupFormula = 
 					"A	C-3;H-7;N-1;O-2\n" +
 					"R	C-6;H-14;N-4;O-2\n" +
-					"D	C-4;H-8;N-1;O-4\n" +
+					"D	C-4;H-7;N-1;O-4\n" +
 					"N	C-4;H-7;N-2;O-3\n" +
 					"C	C-3;H-7;N;O-2;S-1\n" +
 					"E	C-5;H-9;N;O-4\n" +
@@ -181,7 +181,7 @@ public class ProteinUtils {
 			}
 			else {
 				
-				residueContribution.keySet().forEach(k->{
+				for(String k: residueContribution.keySet()){
 					if( formula.containsKey(k)){
 						//log.debug(String.format("incrementing count for %s by %d", k, residueContribution.get(k).getAsLong()));
 						formula.get(k).increment(residueContribution.get(k).getAsLong());
@@ -190,11 +190,27 @@ public class ProteinUtils {
 						//log.debug(String.format("new item for %s with %d", k, residueContribution.get(k).getAsLong()));
 						formula.put(k, new SingleThreadCounter( residueContribution.get(k).getAsLong()));
 					}
-				});
+				}
 			}		
 		}
+        restoreEndWater(formula);
 		return formula;
 	}
+    
+    public static Map<String, SingleThreadCounter> restoreEndWater(Map<String, SingleThreadCounter> formula) {
+        System.out.println("starting in restoreEndWater");
+        String hydrogenSymbol = "H";
+        String oxygenSymbol ="O";
+        if(formula!=null) {
+            if( formula.containsKey(oxygenSymbol) ) {
+                formula.get(oxygenSymbol).increment();
+            }
+            if(formula.containsKey(hydrogenSymbol)) {
+                formula.get(hydrogenSymbol).increment().increment();
+            }
+        }
+        return formula;
+    }
 	
 	public static double generateProteinWeight(SubstanceRepository substanceRepository, ProteinSubstance ps, Set<String> unknownRes){
 		log.trace("starting in generateProteinWeight");

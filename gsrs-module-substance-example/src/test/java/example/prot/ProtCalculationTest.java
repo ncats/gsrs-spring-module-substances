@@ -6,6 +6,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import ix.core.validator.ValidationMessage;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.PolymerSubstanceBuilder;
+import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.MolecularWeightAndFormulaContribution;
@@ -448,9 +449,9 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         unit1.sequence ="GKLSVDTLRF";
         Map<String, SingleThreadCounter> expectedCounts = new HashMap<>();
         expectedCounts.put("C", new SingleThreadCounter(51));
-        expectedCounts.put("H", new SingleThreadCounter(84));
-        expectedCounts.put("O", new SingleThreadCounter(13));
-        expectedCounts.put("N", new SingleThreadCounter(15));
+        expectedCounts.put("H", new SingleThreadCounter(86));
+        expectedCounts.put("O", new SingleThreadCounter(15));
+        expectedCounts.put("N", new SingleThreadCounter(14));
         Set<String> unknowns = new HashSet<>();
         Map<String, SingleThreadCounter> actual = ProteinUtils.getSubunitFormulaInfo(unit1.sequence, unknowns);
         Assertions.assertTrue( expectedCounts.keySet().stream().allMatch(k-> expectedCounts.get(k).getAsInt() == actual.get(k).getAsInt()) );
@@ -459,17 +460,26 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void getSubunitFormulaInfoTinyTest(){
+        System.out.println("starting in getSubunitFormulaInfoTinyTest");
         Subunit unit1 = new Subunit();
         unit1.sequence ="GK";
         Map<String, SingleThreadCounter> expectedCounts = new HashMap<>();
         expectedCounts.put("C", new SingleThreadCounter(8));
         expectedCounts.put("H", new SingleThreadCounter(17));
         expectedCounts.put("O", new SingleThreadCounter(3));
-        expectedCounts.put("N", new SingleThreadCounter(2));
+        expectedCounts.put("N", new SingleThreadCounter(3));
         Set<String> unknowns = new HashSet<>();
         Map<String, SingleThreadCounter> actual = ProteinUtils.getSubunitFormulaInfo(unit1.sequence, unknowns);
         Assertions.assertTrue( expectedCounts.keySet().stream().allMatch(k-> expectedCounts.get(k).getAsInt() == actual.get(k).getAsInt()) );
         assertEquals(0, unknowns.size());
+    }
+
+    @Test
+    public void getMolWeightPropertiesTest() {
+        ProteinSubstance protein88ECG9H7RA = getProteinFromFile();
+        Double expectedMwValue = 23900.0;
+        List<Property> mwProps = ProteinUtils.getMolWeightProperties(protein88ECG9H7RA);
+        assertEquals(expectedMwValue, mwProps.get(0).getValue().average, 0.1);
     }
     
     private ChemicalSubstance buildTryptophan() {
@@ -517,4 +527,16 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         }
         return null;
     }
+    
+    private ProteinSubstance getProteinFromFile() {
+        try {
+            File proteinFile =new ClassPathResource("testJSON/88ECG9H7RA.json").getFile();
+            ProteinSubstanceBuilder builder =SubstanceBuilder.from(proteinFile);
+            return builder.build();
+        } catch (IOException ex) {
+            Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
 }
