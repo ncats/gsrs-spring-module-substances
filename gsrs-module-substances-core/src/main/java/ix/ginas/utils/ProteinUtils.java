@@ -613,71 +613,72 @@ public class ProteinUtils {
 		         .collect(Collectors.toList()));
 	}
 
-	private static MolecularWeightAndFormulaContribution getContributionForID(Substance referencedSubstance) {
-		if(referencedSubstance==null){
-			return null;
-		}
-		MolecularWeightAndFormulaContribution contribution = null;
-			log.trace("Found referenced substance");
-			Double mw = null;
-      Double mwHigh = 0.0d;
-      Double mwLow = 0.0d;
-      Double mwHighLimit = 0.0d;
-      Double mwLowLimit = 0.0d;
-			String formula = null;
-      boolean containsStarAtom =false;
-			if( referencedSubstance.substanceClass.equals(SubstanceClass.chemical)) {
-				ChemicalSubstance chemical = (ChemicalSubstance) referencedSubstance;
-				mw=chemical.structure.getMwt();
-        log.trace(String.format("mod substance is a chemical. mw: %,.2f", mw));
-        formula = chemical.structure.formula;
-				containsStarAtom = chemical.structure.molfile.contains(" * ");
-			}else {
+    private static MolecularWeightAndFormulaContribution getContributionForID(Substance referencedSubstance) {
+        if(referencedSubstance==null){
+            return null;
+        }
+        MolecularWeightAndFormulaContribution contribution = null;
+        log.trace("Found referenced substance");
+        Double mw = null;
+        Double mwHigh = 0.0d;
+        Double mwLow = 0.0d;
+        Double mwHighLimit = 0.0d;
+        Double mwLowLimit = 0.0d;
+        String formula = null;
+        boolean containsStarAtom =false;
+        if( referencedSubstance.substanceClass.equals(SubstanceClass.chemical)) {
+            ChemicalSubstance chemical = (ChemicalSubstance) referencedSubstance;
+            mw=chemical.structure.getMwt();
+            log.trace(String.format("mod substance is a chemical. mw: %,.2f", mw));
+            formula = chemical.structure.formula;
+            containsStarAtom = chemical.structure.molfile.contains(" * ");
+        }else {
 				//TODO: This currently only considers the average number, but that's
 				// not ideal since modifications may have ranges. However,
 				// propagation of errors is a concern here, and would need a more
 				// robust handling.
-				log.trace("other than chemical; looking at properties");
-				for(Property property : referencedSubstance.properties) {
-					if( property.getName() != null && property.getName().startsWith("MOL_WEIGHT") && property.getValue() != null) {
-						if( property.getValue().average != null) {
-							mw = property.getValue().average;
-              log.trace("retrieved average mw: " + mw);
-              mwHigh = property.getValue().high;
-              mwHighLimit = property.getValue().highLimit;
-              mwLow = property.getValue().low;
-              mwLowLimit = property.getValue().lowLimit;
-              log.trace("retrieved high mw: " + mwHigh + "; low mw: " + mwLow + "; highLimit mw: " 
-                      + mwHighLimit + "; lowLimit mw: " + mwLowLimit);
+            log.trace("other than chemical; looking at properties");
+            for(Property property : referencedSubstance.properties) {
+                if( property.getName() != null && property.getName().startsWith("MOL_WEIGHT") && property.getValue() != null) {
+                    if( property.getValue().average != null) {
+                        mw = property.getValue().average;
+                        log.trace("retrieved average mw: " + mw);
+                        mwHigh = property.getValue().high;
+                        mwHighLimit = property.getValue().highLimit;
+                        mwLow = property.getValue().low;
+                        mwLowLimit = property.getValue().lowLimit;
+                        log.trace("retrieved high mw: " + mwHigh + "; low mw: " + mwLow + "; highLimit mw: " 
+                            + mwHighLimit + "; lowLimit mw: " + mwLowLimit);
+                    }
+                }
             }
-					}
-				}
-			}
-			if( mw!=null) {
-        log.trace("referencedSubstance: " + referencedSubstance.substanceClass.name());
-        log.trace("formula: " + formula);
-				contribution= new MolecularWeightAndFormulaContribution( mw, mwHigh, mwLow, mwHighLimit, mwLowLimit, 
-                referencedSubstance.substanceClass.name(), formula);
-        log.trace("contribution: " + ((contribution ==null) ? "null" : "not null"));
-        if(mwHigh >0 || mwHighLimit > 0 || mwLow > 0 || mwLowLimit> 0) {
-          contribution.getMessages().add(GinasProcessingMessage.WARNING_MESSAGE(
-                String.format("Using range of molecular weights for substance %s in structural modification", 
-                        referencedSubstance.getName())));
         }
-			} else {
-        GinasProcessingMessage warning = GinasProcessingMessage.WARNING_MESSAGE(
+        if( mw!=null) {
+            log.trace("referencedSubstance: " + referencedSubstance.substanceClass.name());
+            log.trace("formula: " + formula);
+            contribution= new MolecularWeightAndFormulaContribution( mw, mwHigh, mwLow, mwHighLimit, mwLowLimit, 
+            referencedSubstance.substanceClass.name(), formula);
+            log.trace("contribution: " + ((contribution ==null) ? "null" : "not null"));
+            if( (mwHigh != null && mwHigh >0) ||(mwHighLimit !=null && mwHighLimit > 0)
+                || (mwLow !=null && mwLow > 0) || (mwLowLimit != null && mwLowLimit> 0)) {
+                contribution.getMessages().add(GinasProcessingMessage.WARNING_MESSAGE(
+                String.format("Using range of molecular weights for substance %s in structural modification", 
+                     referencedSubstance.getName())));
+            }
+        } else {
+            GinasProcessingMessage warning = GinasProcessingMessage.WARNING_MESSAGE(
                 String.format("Structural modification molecular fragment %s has no average molecular weight and will not be used in the molecular weight calculation", 
                         referencedSubstance.getApprovalIDDisplay()));
-        contribution= new MolecularWeightAndFormulaContribution( referencedSubstance.substanceClass.name(), warning);
-      }
-      log.trace("containsStarAtom: " + containsStarAtom);
-      if(containsStarAtom) {
-        contribution.getMessages().add(
+            contribution= new MolecularWeightAndFormulaContribution( referencedSubstance.substanceClass.name(), warning);
+        }
+        log.trace("containsStarAtom: " + containsStarAtom);
+        if(containsStarAtom) {
+            contribution.getMessages().add(
                 GinasProcessingMessage.WARNING_MESSAGE("Note: molecular fragment used in structural modifications contains '*' atom.  Molecular weight calculation may be off"));
-      }
+        }
 
-		return contribution;
-	}
+        return contribution;
+    }
 	
 	
 	

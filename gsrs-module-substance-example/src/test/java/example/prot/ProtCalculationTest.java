@@ -482,6 +482,14 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(expectedMwValue, mwProps.get(0).getValue().average, 0.1);
     }
     
+    @Test
+    public void getMolFormulaPropertiesTest(){
+        ProteinSubstance protein88ECG9H7RA = getProteinFromFile();
+        String expectedFormula = "C1030H1734O304N336S5";
+        List<Property> formulaProps = ProteinUtils.getMolFormulaProperties(protein88ECG9H7RA);
+        assertEquals(expectedFormula, formulaProps.get(0).getValue().nonNumericValue);
+    }
+    
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 
