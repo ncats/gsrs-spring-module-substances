@@ -353,22 +353,22 @@ public class ProteinUtils {
               log.trace(String.format("processing site with subunit %d; residue number %d; AA: %c; name: %s; aa mw: %.2f; net effect of site: %.2f", 
                 		site.subunitIndex, site.residueIndex, aa, acid.getName(), aaWt, siteContribution));
               total += siteContribution;
-              if(  contribution.getMwLow() >0) {
+              if( contribution.getMwLow()!= null && contribution.getMwLow() >0) {
                 double lowDelta =contribution.getMw()- contribution.getMwLow();
                 lowTotal += lowDelta;
                 log.trace(String.format("lowDelta: %.2f; lowTotal: %.2f", lowDelta, lowTotal));
               }
-              if( contribution.getMwHigh() >0.0) {
+              if( contribution.getMwHigh()!= null && contribution.getMwHigh() >0.0) {
                 double highDelta = contribution.getMwHigh() -contribution.getMw();
                 highTotal += highDelta;
                 log.trace(String.format("highDelta: %.2f; highTotal: %.2f", highDelta, highTotal));
               }
-              if( contribution.getMwHighLimit()>0){
+              if( contribution.getMwHighLimit()!= null && contribution.getMwHighLimit()>0){
                 double highLimitDelta= contribution.getMwHighLimit() -contribution.getMw();
                 highLimitTotal += highLimitDelta;
                 log.trace(String.format("highLimitDelta: %.2f; highLimitTotal: %.2f", highLimitDelta, highLimitTotal));
               }
-              if( contribution.getMwLowLimit() >0) {
+              if( contribution.getMwLowLimit()!= null && contribution.getMwLowLimit() >0) {
                 double lowLimitDelta = contribution.getMw() - contribution.getMwLowLimit();
                 lowLimitTotal+= lowLimitDelta;
                 log.trace(String.format("lowLimitDelta: %.2f; lowLimitTotal: %.2f", lowLimitDelta, lowLimitTotal));
