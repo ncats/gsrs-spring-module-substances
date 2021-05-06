@@ -11,7 +11,12 @@ import java.util.function.Supplier;
  */
 public class PolymerSubstanceBuilder extends AbstractSubstanceBuilder<PolymerSubstance, PolymerSubstanceBuilder> {
 
+    protected <S extends Substance> PolymerSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+        this.andThen = (s)-> (PolymerSubstance) builder.andThen.apply((S) s);
+    }
+    public PolymerSubstanceBuilder() {
 
+    }
     public PolymerSubstanceBuilder(Substance copy) {
         super(copy);
         if(copy instanceof PolymerSubstance){

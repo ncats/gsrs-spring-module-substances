@@ -24,6 +24,9 @@ public class ProteinSubstanceBuilder  extends AbstractSubstanceBuilder<ProteinSu
         return ProteinSubstance::new;
     }
 
+    protected <S extends Substance> ProteinSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+        this.andThen = (s)-> (ProteinSubstance) builder.andThen.apply((S) s);
+    }
     public ProteinSubstanceBuilder setProtein(Protein prot){
         return andThen(s ->{ s.setProtein(prot);});
     }

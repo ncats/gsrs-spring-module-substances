@@ -1,5 +1,6 @@
 package example.repository;
 
+import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.processors.RelationshipProcessor;
@@ -19,9 +20,9 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@GsrsJpaTest
-@ActiveProfiles("test")
-public class RelationshipRepositoryITTest extends AbstractGsrsJpaEntityJunit5Test {
+//@GsrsJpaTest
+//@ActiveProfiles("test")
+public class RelationshipRepositoryITTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
     private RelationshipRepository relationshipRepository;

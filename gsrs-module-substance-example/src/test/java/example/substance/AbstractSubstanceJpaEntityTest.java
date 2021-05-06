@@ -24,7 +24,11 @@ import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
 import ix.seqaln.service.SequenceIndexerService;
 import org.junit.jupiter.api.BeforeEach;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -71,6 +75,12 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
         @Primary
         TestEntityProcessorFactory entityProcessorFactory(){
             return new TestEntityProcessorFactory();
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        public Scheduler getScheduler() throws SchedulerException {
+            return StdSchedulerFactory.getDefaultScheduler();
         }
 
 
@@ -124,11 +134,13 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
 
     @BeforeEach
     public void init(){
-        admin = createUser("admin", Role.values());
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s-> {
+            admin = createUser("admin", Role.values());
 
-        //some  integration tests will make validation messages which will get assigned an "admin" access group
-        groupRepository.saveAndFlush(new Group("admin"));
-
+            //some  integration tests will make validation messages which will get assigned an "admin" access group
+            groupRepository.saveAndFlush(new Group("admin"));
+        });
     }
 
     protected Principal createUser(String username, Role... roles){

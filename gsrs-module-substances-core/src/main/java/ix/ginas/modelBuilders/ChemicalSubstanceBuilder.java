@@ -21,7 +21,10 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
 	public Supplier<ChemicalSubstance> getSupplier(){
 		return ChemicalSubstance::new;
 	}
-	
+
+    protected <S extends Substance> ChemicalSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+        this.andThen = (s)-> (ChemicalSubstance) builder.andThen.apply((S) s);
+    }
 	public ChemicalSubstanceBuilder setStructure(String smiles){
 		return andThen(cs->{
 			cs.structure=new GinasChemicalStructure();

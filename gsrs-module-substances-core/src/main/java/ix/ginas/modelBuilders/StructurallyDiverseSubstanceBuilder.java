@@ -1,5 +1,6 @@
 package ix.ginas.modelBuilders;
 
+import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.StructurallyDiverse;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Substance;
@@ -22,6 +23,9 @@ public class StructurallyDiverseSubstanceBuilder extends AbstractSubstanceBuilde
         }
     }
 
+    protected <S extends Substance> StructurallyDiverseSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+        this.andThen = (s)-> (StructurallyDiverseSubstance) builder.andThen.apply((S) s);
+    }
     @Override
     public Supplier<StructurallyDiverseSubstance> getSupplier() {
         return () ->{
