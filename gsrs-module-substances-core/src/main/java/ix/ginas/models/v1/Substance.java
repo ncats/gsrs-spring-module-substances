@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorValue("SUB")
 @Slf4j
+@IndexableRoot
 public class Substance extends GinasCommonData implements ValidationMessageHolder {
 
 

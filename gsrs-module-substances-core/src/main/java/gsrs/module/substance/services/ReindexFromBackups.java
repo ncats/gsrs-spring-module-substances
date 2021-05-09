@@ -15,8 +15,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
 
 public class ReindexFromBackups implements ReindexService{
 
@@ -39,8 +42,48 @@ public class ReindexFromBackups implements ReindexService{
         });
 //this is all handled now by Spring events
         int count = (int) backupRepository.count();
-
+        Map<Class, Boolean> isRootIndexCache = new ConcurrentHashMap<>();
         Set<String> seen = Collections.newSetFromMap(new ConcurrentHashMap<>(count));
+        String messageTail = " of " + count;
+        //single thread for now...
+        eventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.BEGIN));
+        try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
+            AtomicLong counter = new AtomicLong();
+            stream.forEach(be ->{
+                try {
+                    EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(be.getInstantiated());
+
+                    wrapper.traverse().execute((p, child)->{
+                        EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
+                        if(wrapped.isEntity()) {
+                            //this should speed up indexing so that we only index
+                            //things that are roots.  the actual indexing process of the root should handle any
+                            //child objects of that root.
+                            if(isRootIndexCache.computeIfAbsent(child.getEntityClass(), c->wrapped.getEntityInfo().isRootIndex())) {
+                                try {
+                                    String key = wrapped.getKey().toString();
+
+                                    //TODO add only index if it has a controller
+                                    if (seen.add(key)) {
+                                        //is this a good idea ?
+                                        IndexCreateEntityEvent event = new IndexCreateEntityEvent(wrapped);
+                                        eventPublisher.publishEvent(event);
+                                    }
+                                } catch (Throwable t) {
+                                    System.err.println("error handling " + wrapped);
+                                    t.printStackTrace();
+                                }
+                            }
+                        }
+                        l.message("Indexed:" + counter.incrementAndGet() + messageTail);
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                    });
+        }
+        eventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.END));
+        /*
         new ProcessExecutionService(1, 10).buildProcess(BackupEntity.class)
                 .before(()->{
                     eventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.BEGIN));
@@ -53,20 +96,27 @@ public class ReindexFromBackups implements ReindexService{
                 .consumer( be->{
                     try {
                         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(be.getInstantiated());
+
                         wrapper.traverse().execute((p, child)->{
                             EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
                             if(wrapped.isEntity()) {
-                                try {
-                                    String key = wrapped.getKey().toString();
+                                //this should speed up indexing so that we only index
+                                //things that are roots.  the actual indexing process of the root should handle any
+                                //child objects of that root.
+                                if(isRootIndexCache.computeIfAbsent(child.getEntityClass(), c->wrapped.getEntityInfo().isRootIndex())) {
+                                    try {
+                                        String key = wrapped.getKey().toString();
 
-                                    //TODO add only index if it has a controller
-                                    if (seen.add(key)) {
-                                        //is this a good idea ?
-                                        eventPublisher.publishEvent(new IndexCreateEntityEvent(wrapped));
+                                        //TODO add only index if it has a controller
+                                        if (seen.add(key)) {
+                                            //is this a good idea ?
+                                            IndexCreateEntityEvent event = new IndexCreateEntityEvent(wrapped);
+                                            eventPublisher.publishEvent(event);
+                                        }
+                                    } catch (Throwable t) {
+                                        System.err.println("error handling " + wrapped);
+                                        t.printStackTrace();
                                     }
-                                }catch(Throwable t){
-                                    System.err.println("error handling "+wrapped);
-                                    t.printStackTrace();
                                 }
                             }
                         });
@@ -76,5 +126,7 @@ public class ReindexFromBackups implements ReindexService{
                 })
                 .build()
                 .execute();
+
+         */
     }
 }

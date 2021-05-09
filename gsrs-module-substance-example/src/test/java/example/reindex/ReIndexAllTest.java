@@ -5,6 +5,8 @@ import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.BackupEntityProcessorListener;
 import gsrs.backup.BackupEventListener;
 import gsrs.events.BackupEvent;
+import gsrs.events.MaintenanceModeEvent;
+import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.services.ReindexFromBackups;
 import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
@@ -45,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 //@SpringBootTest(classes = {GsrsModuleSubstanceApplication.class,  GsrsEntityTestConfiguration.class})
 //@ActiveProfiles("test")
 //@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-////@GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
+//@GsrsJpaTest(dirtyMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 //@ContextConfiguration(classes ={ApplicationContextRunner.class, BackupEventListener.class})
 public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
 
@@ -133,6 +135,11 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
 //        task.run();
 //        task.get(10, TimeUnit.MINUTES);
         sut.execute(listener);
-        applicationEvents.stream().forEach(System.out::println);
+        //2 substances each with ( 1 sub, 1 name, 1 ref) = 6 indexed events
+        assertEquals(6L, applicationEvents.stream(IndexCreateEntityEvent.class).count());
+
+        assertEquals(1L, applicationEvents.stream(MaintenanceModeEvent.class).filter(e -> e.getSource().isInMaintenanceMode()).count());
+        assertEquals(1L, applicationEvents.stream(MaintenanceModeEvent.class).filter(e -> !e.getSource().isInMaintenanceMode()).count());
+
     }
 }
