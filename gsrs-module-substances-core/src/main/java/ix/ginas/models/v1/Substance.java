@@ -168,7 +168,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 //    }
 
     @DataVersion
-    public String version = "0";
+    public String version = "1";
 
 
 

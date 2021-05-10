@@ -68,7 +68,7 @@ public class LegacyAuditInfoProcessor implements EntityProcessor<Substance> {
 	}
 	public void preFlightFormat(Substance obj){
 		//If this is an old substance, don't save it.
-		if(obj.version != null && !obj.version.equals("1")){
+		if(obj.version != null && !(obj.version.equals("0") || obj.version.equals("1"))){
 			return;
 		}
 		

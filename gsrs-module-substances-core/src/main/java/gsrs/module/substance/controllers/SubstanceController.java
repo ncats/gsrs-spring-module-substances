@@ -545,7 +545,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 searchResult= SearchResult.createEmptyBuilder(req.getOptions())
                         .build();
             }else{
-                //TODO katzelda this call goes through the TEXTINDEXER !!?? why it can be a sequence search?
+                //katzelda : run it through the text indexer for the facets?
 //                searchResult = SearchFactory.search (request);
                 searchResult = legacySearchService.search(request.getQuery(), request.getOptions(), request.getSubset());
                 log.debug("Cache misses: "

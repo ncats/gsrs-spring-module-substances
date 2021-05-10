@@ -16,6 +16,8 @@ import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.startertests.jupiter.ClearAuditorBeforeEachExtension;
+import gsrs.startertests.jupiter.ResetAllEntityServicesBeforeEachExtension;
 import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
@@ -24,6 +26,7 @@ import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
 import ix.seqaln.service.SequenceIndexerService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.impl.StdSchedulerFactory;
@@ -131,6 +134,11 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
 
     @Autowired
     protected ETagRepository eTagRepository;
+
+    @Autowired
+    @RegisterExtension
+    protected ResetAllEntityServicesBeforeEachExtension resetAllEntityServicesBeforeEachExtension;
+
 
     @BeforeEach
     public void init(){

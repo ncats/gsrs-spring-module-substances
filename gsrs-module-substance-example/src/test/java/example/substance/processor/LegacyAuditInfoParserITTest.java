@@ -22,6 +22,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -105,6 +106,7 @@ public class LegacyAuditInfoParserITTest extends AbstractSubstanceJpaEntityTest 
 
 	@Test
 	@WithMockUser(username = "admin", roles="Admin")
+
 	public void tryForcingApprovedByInLegacyNoteAfterFailing() throws Exception {
 		String theName = "Simple Named Concept";
 		String forcedApprovedBy = "SOME_BLOKE";
@@ -122,7 +124,8 @@ public class LegacyAuditInfoParserITTest extends AbstractSubstanceJpaEntityTest 
 
 		assertCreated(jsn);
 
-		assertEquals(forcedApprovedBy, substanceEntityService.get(uuid).get().approvedBy.username);
+		Optional<Substance> substance = substanceEntityService.get(uuid);
+		assertEquals(forcedApprovedBy, substance.get().approvedBy.username);
 	}
 	
 	
