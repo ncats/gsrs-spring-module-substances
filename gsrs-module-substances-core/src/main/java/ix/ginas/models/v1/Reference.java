@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
+import ix.core.models.IndexableRoot;
 import ix.core.models.Keyword;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.GinasAccessReferenceControlled;
@@ -29,6 +30,7 @@ import java.util.stream.Collectors;
 @Entity
 @Table(name="ix_ginas_reference")
 @SingleParent
+@IndexableRoot
 public class Reference extends GinasCommonData {
 
 	@ManyToOne(cascade = CascadeType.PERSIST)

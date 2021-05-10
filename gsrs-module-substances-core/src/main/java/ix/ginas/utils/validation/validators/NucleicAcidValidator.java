@@ -1,38 +1,60 @@
 package ix.ginas.utils.validation.validators;
 
+import gov.nih.ncats.common.Tuple;
+import gov.nih.ncats.common.stream.StreamUtil;
+import gsrs.legacy.GsrsSearchService;
+import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
+import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import ix.core.models.Payload;
-import ix.core.plugins.PayloadPlugin;
-import ix.core.plugins.SequenceIndexerPlugin;
-import ix.core.util.CachedSupplier;
-import ix.core.util.StreamUtil;
+
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
-import ix.ginas.controllers.v1.SubstanceFactory;
-import ix.ginas.models.v1.NucleicAcid;
-import ix.ginas.models.v1.NucleicAcidSubstance;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Subunit;
+import ix.ginas.models.v1.*;
 import ix.ginas.utils.NucleicAcidUtils;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
 import ix.seqaln.SequenceIndexer.CutoffType;
-import ix.utils.Tuple;
-import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
-import play.Logger;
-import play.Play;
-import play.mvc.Call;
 
+import lombok.extern.slf4j.Slf4j;
+import org.jcvi.jillion.core.residue.nt.NucleotideSequence;
+import org.springframework.beans.factory.annotation.Autowired;
+
+
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by katzelda on 5/14/18.
  */
+@Slf4j
 public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
 
-    private CachedSupplier<PayloadPlugin> _payload = CachedSupplier.of(()-> Play.application().plugin(PayloadPlugin.class));
-    private CachedSupplier<SequenceIndexerPlugin> _seqIndexer = CachedSupplier.of(()-> Play.application().plugin(SequenceIndexerPlugin.class));
+    @Autowired
+    private SubstanceSequenceSearchService sequenceSearchService;
+
+    @Autowired
+    private SubstanceLegacySearchService searchService;
+
+    @Autowired
+    private NucleicAcidSubstanceRepository substanceRepository;
+
+    @Autowired
+    private ReferenceRepository referenceRepository;
+
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
@@ -108,8 +130,38 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
         }
 
         if(!subunits.isEmpty()) {
-            ValidationUtils.validateReference(cs, cs.nucleicAcid, callback, ValidationUtils.ReferenceAction.FAIL);
+            ValidationUtils.validateReference(cs, cs.nucleicAcid, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
         }
+    }
+    public List<Tuple<NucleicAcidSubstance, Subunit>> executeSimpleExactNucleicAcidSubunitSearch(Subunit su) throws InterruptedException, ExecutionException, TimeoutException, IOException {
+        String q = "root_nucleicAcid_subunits_sequence:" + su.sequence;
+        SearchRequest request = new SearchRequest.Builder()
+                .kind(NucleicAcidSubstance.class)
+                .fdim(0)
+                .query(q)
+                .top(Integer.MAX_VALUE)
+                .build();
+
+        SearchResult sr=searchService.search(request.getQuery(), request.getOptions());
+        Future<List> fut=sr.getMatchesFuture();
+
+
+        Stream<Tuple<NucleicAcidSubstance, Subunit>> presults =	fut.get(10_000, TimeUnit.MILLISECONDS)
+                .stream()
+                .map(s->(NucleicAcidSubstance)s)
+                .flatMap(sub->{
+                    NucleicAcidSubstance ps = (NucleicAcidSubstance)sub;
+                    return ps.nucleicAcid.getSubunits()
+                            .stream()
+                            .filter(sur->sur.sequence.equalsIgnoreCase(su.sequence))
+                            .map(sur->Tuple.of(sub,sur));
+                });
+        presults=presults.map(t->Tuple.of(t.v().uuid,t).withKEquality())
+                .distinct()
+                .map(t->t.v());
+
+        return presults.collect(Collectors.toList());
+
     }
 
     private void validateSequence(NucleicAcidSubstance s, ValidatorCallback callback){
@@ -141,6 +193,31 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
 
 
     }
+
+//    private Stream<Search> searchForMatches(String seq){
+//        try {
+//            SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = SubstanceSequenceSearchService.SequenceSearchRequest.builder()
+//                    .seqType("NucleicAcid")
+//                    .type(CutoffType.GLOBAL)
+//                    .q(seq)
+//                    .build().sanitize();
+//            SearchResultContext resultContext= sequenceSearchService
+//                    .search(sanitizedRequest);
+//            resultContext.getDeterminedFuture().get();
+//            SearchRequest request = new SearchRequest.Builder()
+//                    .subset(resultContext.getResults())
+//                    .options(sanitizedRequest.)
+//                    .skip(0)
+//                    .top(resultContext.getResults().size())
+//                    .query(seq)
+//                    .build();
+//             resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField())
+//                     .getAdapted(request).;
+//        }catch(Exception e){
+//            e.printStackTrace();
+//            return Stream.empty();
+//        }
+//    }
     
     private void validateSequenceDuplicates(
             NucleicAcidSubstance nucleicAcidSubstance, ValidatorCallback callback) {
@@ -162,9 +239,9 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
          		   Subunit su=subs.get(0);
          		   String suSet = subs.stream().map(su1->su1.subunitIndex+"").collect(Collectors.joining(","));
          		   
-         	   Payload payload = _payload.get()
-         			                     .createPayload("Sequence Search","text/plain", su.sequence);
-                
+//         	   Payload payload = _payload.get()
+//         			                     .createPayload("Sequence Search","text/plain", su.sequence);
+//
                 String msgOne = "There is 1 substance with a similar sequence to subunit ["
                         + suSet + "]:";
                 
@@ -176,7 +253,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 //Simplified searcher, using lucene direct index
                 searchers.add(seq->{
                 	try{
-                	List<Tuple<NucleicAcidSubstance, Subunit>> simpleResults=SubstanceFactory.executeSimpleExactNucleicAcidSubunitSearch(su);
+                	List<Tuple<NucleicAcidSubstance, Subunit>> simpleResults=executeSimpleExactNucleicAcidSubunitSearch(su);
                 	
                 	return simpleResults.stream()
 				                	  .map(t->{
@@ -186,32 +263,35 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
 				                      .collect(Collectors.toList());
                 	}catch(Exception e){
                 	    e.printStackTrace();
-                		Logger.warn("Problem performing sequence search on lucene index", e);
+                		log.warn("Problem performing sequence search on lucene index", e);
                 		return new ArrayList<>();
                 	}
                 });
-                
+                /*
                 //Traditional searcher using sequence indexer
                 searchers.add(seq->{
-                	return StreamUtil.forEnumeration(_seqIndexer.get()
-							.getIndexer()
-							.search(seq, SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF, CutoffType.GLOBAL, "NucleicAcid"))
-                     .map(suResult->{
-                    	 return Tuple.of(suResult.score,SubstanceFactory.getSubstanceAndSubunitFromSubunitID(suResult.id));
-                     })
-                     .filter(op->op.v().isPresent())
-                     .map(Tuple.vmap(opT->opT.get()))
-                     .filter(t->!t.v().k().getOrGenerateUUID().equals(nucleicAcidSubstance.getOrGenerateUUID()))
-                     .filter(t->(t.v().k() instanceof NucleicAcidSubstance))
-                     .map(t->{
-                    	 //TODO: could easily be cleaned up.
-                    	 NucleicAcidSubstance ps=(NucleicAcidSubstance)t.v().k();
-                    	 return Tuple.of(t.k(), Tuple.of(ps, t.v().v()));
-                     })
+                    return searchForMatches(seq)
+                            //katzelda May 2021: this commented out block should be handled by the search service
+//                     .map(suResult->{
+//                         if(suResult ==null){
+//                             return Tuple.of("ignore", Optional.empty());
+//                         }
+//                    	 return Tuple.of(suResult.score,substanceRepository.findNucleicAcidSubstanceByNucleicAcid_Subunits_Uuid(suResult.id));
+//                     })
+//                     .filter(op->op.v().isPresent())
+//                     .map(Tuple.vmap(opT->opT.get()))
+//                     .filter(t->!t.v().k().getOrGenerateUUID().equals(nucleicAcidSubstance.getOrGenerateUUID()))
+//                     .filter(t->(t.v().k() instanceof NucleicAcidSubstance))
+//                     .map(t->{
+//                    	 //TODO: could easily be cleaned up.
+//                    	 NucleicAcidSubstance ps=(NucleicAcidSubstance)t.v().k();
+//                    	 return Tuple.of(t.k(), Tuple.of(ps, t.v().v()));
+//                     })
                      //TODO: maybe sort by the similarity?
                      .collect(Collectors.toList());
-                });
-
+                }
+                );
+*/
                 searchers.stream()
                          .map(searcher->searcher.apply(su.sequence))
                          .filter(suResults->!suResults.isEmpty())
@@ -220,9 +300,11 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                          .ifPresent(suResults->{
                              List<GinasProcessingMessage.Link> links = new ArrayList<>();
                              GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
+                             /*
                              Call call = ix.ginas.controllers.routes.GinasApp
                                      .substances(payload.id.toString(), 16,1);
                              l.href = call.url() + "&type=sequence&identity=" + SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF + "&identityType=SUB&seqType=NucleicAcid";
+                             */
                              l.text = "(Perform similarity search on subunit ["
                                      + su.subunitIndex + "])";
 
@@ -247,8 +329,11 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                                      	 String globalScoreString = (int)Math.round(globalScore*100) + "%";
                                      	 
                                      	 GinasProcessingMessage.Link l2 = new GinasProcessingMessage.Link();
+                                     	 /*
                                           Call call2 = ix.ginas.controllers.routes.GinasApp.substance(tup.k().uuid.toString());
                                           l2.href = call2.url();
+
+                                     	  */
                                           if(globalScore==1){
          	                                 l2.text = "found exact duplicate (" + globalScoreString + ") sequence in " + 
          	                                          "Subunit [" +tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" " + 
@@ -271,7 +356,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             });
             
         } catch (Exception e) {
-        	Logger.error("Problem executing duplicate search function", e);
+        	log.error("Problem executing duplicate search function", e);
             callback.addMessage(GinasProcessingMessage
                     .ERROR_MESSAGE("Error performing seqeunce search on Nucleic Acid:"
                             + e.getMessage()));

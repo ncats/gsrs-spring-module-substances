@@ -8,6 +8,7 @@ import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.SingleParent;
 import ix.core.models.BeanViews;
 import ix.core.models.Indexable;
+import ix.core.models.IndexableRoot;
 import ix.core.models.Keyword;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.EmbeddedKeywordList;
@@ -26,6 +27,7 @@ import java.util.*;
 @Entity
 @Table(name="ix_ginas_name")
 @SingleParent
+@IndexableRoot
 public class Name extends CommonDataElementOfCollection {
 
 	public static enum Sorter implements  Comparator<Name> {

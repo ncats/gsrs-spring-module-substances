@@ -2,6 +2,7 @@ package ix.ginas.modelBuilders;
 
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
+import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Substance;
 
 import java.util.function.Supplier;
@@ -22,6 +23,9 @@ public class SpecifiedSubstanceGroup1SubstanceBuilder extends AbstractSubstanceB
         }
     }
 
+    protected <S extends Substance> SpecifiedSubstanceGroup1SubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+        this.andThen = (s)-> (SpecifiedSubstanceGroup1Substance) builder.andThen.apply((S) s);
+    }
     @Override
     public Supplier<SpecifiedSubstanceGroup1Substance> getSupplier() {
         return () ->{
