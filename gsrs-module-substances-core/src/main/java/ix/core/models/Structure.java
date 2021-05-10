@@ -225,7 +225,7 @@ public class Structure extends BaseModel {
     public Optical opticalActivity;
     
     @Column(name = "atropi")
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.ORDINAL)
     public NYU atropisomerism = NYU.No;
     
     @Lob
