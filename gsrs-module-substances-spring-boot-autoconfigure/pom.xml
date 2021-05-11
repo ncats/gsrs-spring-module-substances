@@ -18,5 +18,10 @@
             <artifactId>gsrs-module-substances-core</artifactId>
             <version>${gsrs.substance.version}</version>
         </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-boot-starter</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
     </dependencies>
 </project>

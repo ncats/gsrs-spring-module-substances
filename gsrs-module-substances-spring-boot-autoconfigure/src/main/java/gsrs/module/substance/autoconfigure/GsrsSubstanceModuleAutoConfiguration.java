@@ -83,6 +83,18 @@ public class GsrsSubstanceModuleAutoConfiguration {
         return new SubstanceController();
     }
     @Bean
+    @ConditionalOnMissingBean(ReIndexController.class)
+    public ReIndexController reIndexController(){
+        return new ReIndexController();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ReindexService.class)
+    public ReindexService reindexService(){
+        return new ReindexFromBackups();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(NameEntityService.class)
     public NameEntityService nameEntityService(){
         return new NameEntityService();

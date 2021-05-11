@@ -1,6 +1,7 @@
 package gsrs.module.substance.controllers;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -18,10 +19,15 @@ import gsrs.controller.*;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.repository.SubunitRepository;
+import gsrs.module.substance.services.ReindexService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.repository.EditRepository;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.security.hasAdminRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
+import gsrs.springUtils.GsrsSpringUtils;
+import ix.core.EntityMapperOptions;
 import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
@@ -38,6 +44,7 @@ import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
 import ix.utils.Util;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -46,6 +53,7 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -196,6 +204,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private SubunitRepository subunitRepository;
+
+
+
 
     @Autowired
     private GsrsEntityService<Substance, UUID> substanceEntityService;
@@ -566,7 +577,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
     }
 
-    @PostGsrsRestApiMapping("/interpretStructure")
+
+
+
+        @PostGsrsRestApiMapping("/interpretStructure")
     public ResponseEntity<Object> interpretStructure(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
         String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
                                      .orElse("NONE")

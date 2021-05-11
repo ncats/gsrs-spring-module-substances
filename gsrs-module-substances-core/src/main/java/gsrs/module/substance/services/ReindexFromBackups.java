@@ -75,8 +75,9 @@ public class ReindexFromBackups implements ReindexService{
                                 }
                             }
                         }
-                        l.message("Indexed:" + counter.incrementAndGet() + messageTail);
+
                     });
+                    l.message("Indexed:" + counter.incrementAndGet() + messageTail);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
