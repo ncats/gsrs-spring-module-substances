@@ -83,6 +83,12 @@ public class GsrsSubstanceModuleAutoConfiguration {
         return new SubstanceController();
     }
     @Bean
+    @ConditionalOnMissingBean(StructureOCRController.class)
+    public StructureOCRController ocrController(){
+        return new StructureOCRController();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(ReIndexController.class)
     public ReIndexController reIndexController(){
         return new ReIndexController();
