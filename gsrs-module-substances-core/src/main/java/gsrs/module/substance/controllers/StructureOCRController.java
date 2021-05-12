@@ -7,8 +7,6 @@ import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import ix.core.chem.StructureProcessor;
-import ix.core.chem.StructureProcessorTask;
-import ix.core.controllers.EntityFactory;
 import ix.core.models.Structure;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
