@@ -20,6 +20,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -55,6 +56,9 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	@Autowired
 	private RelationshipRepository relationshipRepository;
+
+	@Autowired
+	private ApplicationEventPublisher eventPublisher;
 
 	//TODO:
 	/*
@@ -108,9 +112,15 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 //		}else{
 //			System.out.println("And that relationship is NOT being deleted");
 //		}
-			if (notWorkingOn(uuid) || isBeingDeleted) {
+//			if (notWorkingOn(uuid) || isBeingDeleted) {
 				addInverse(obj);
-			}
+//			}
+			//check if substance reference has been added or not
+//			if(obj.relatedSubstance !=null) {
+//				if(!entityManager.contains(obj.relatedSubstance)){
+//					entityManager.merge(obj.relatedSubstance);
+//				}
+//			}
 //		else{
 //			System.out.println("But we're already doing something with that one, so don't trigger anything");
 //		}
@@ -171,28 +181,43 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	private void addInverse(final Relationship thisRelationship){
 //		System.out.println("Adding an inverse for:" + thisRelationship.toSimpleString());
-		if(thisRelationship.isAutomaticInvertible()){
-			final Substance thisSubstance=thisRelationship.fetchOwner();
-			final Substance otherSubstance=substanceRepository.findBySubstanceReference(thisRelationship.relatedSubstance); //db fetch
+		if(thisRelationship.isAutomaticInvertible()) {
+			final Substance thisSubstance = thisRelationship.fetchOwner();
+			final Substance otherSubstance = substanceRepository.findBySubstanceReference(thisRelationship.relatedSubstance); //db fetch
 
-			if(otherSubstance ==null){ //probably warn
+			if (otherSubstance == null) { //probably warn
 //				System.out.println("Related substance for inverse relationship doesn't exist!");
 				return;
 			}
-			try{
+			try {
 				//this still needs to be fixes, since there are cases where a new relationship should be added, but it won't be currently
 
-				if(!canCreateInverseFor(thisRelationship, thisSubstance.asSubstanceReference(), otherSubstance)){
+				if (!canCreateInverseFor(thisRelationship, thisSubstance.asSubstanceReference(), otherSubstance)) {
 //					System.out.println("already exists ?");
 					return;
 				}
-			}catch(Exception e){
+			} catch (Exception e) {
 				e.printStackTrace();
 				return;
 			}
+//createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub, boolean force){
+//		//doesn't exist yet
+			if (thisRelationship.isAutomaticInvertible()) {
+				CreateInverseRelationshipEvent event = new CreateInverseRelationshipEvent();
+				event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
+				event.setToSubstance(thisSubstance.getOrGenerateUUID());
+				event.setOriginatorSubstance(thisSubstance.getOrGenerateUUID());
+				if (otherSubstance != null) {
+					event.setFromSubstance(otherSubstance.getOrGenerateUUID());
 
+				}
+				event.setForceCreation(true);
+//			UUID newUUID = UUID.randomUUID();
+//			event.setNewRelationshipId(newUUID);
+				eventPublisher.publishEvent(event);
+			}
 
-
+/*
 			EntityWrapper<?> change = entityPersistAdapter.change(
 					EntityWrapper.of(otherSubstance).getKey(),
 					 s -> {
@@ -220,13 +245,29 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 //		else{
 //			System.out.println("But it's not invertible");
 //		}
+
+ */
+		}
 	}
 	public Relationship createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub){
 		return createAndAddInvertedRelationship(obj, oldSub,newSub, false);
 	}
 	private Relationship createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub, boolean force){
 		//doesn't exist yet
-		if(obj.isAutomaticInvertible()){
+		if(obj.isAutomaticInvertible()) {
+			CreateInverseRelationshipEvent event = new CreateInverseRelationshipEvent();
+			event.setRelationshipIdToInvert(obj.getOrGenerateUUID());
+			event.setToSubstance(oldSub.getOrGenerateUUID());
+			event.setOriginatorSubstance(oldSub.getOrGenerateUUID());
+			if (newSub != null) {
+				event.setFromSubstance(newSub.getOrGenerateUUID());
+			}
+			event.setForceCreation(force);
+//			UUID newUUID = UUID.randomUUID();
+//			event.setNewRelationshipId(newUUID);
+			eventPublisher.publishEvent(event);
+		}
+			/*
 			if(newSub==null){
 				//TODO: Look into this
 				obj.relatedSubstance.substanceClass=MENTION;
@@ -253,7 +294,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 					Reference origRef =obj.fetchOwner().getReferenceByUUID(kw.getValue());
 					try {
 						Reference newRef = EntityUtils.EntityWrapper.of(origRef).getClone();
-						newRef.uuid =null; //blank out UUID soit generates a new one on save
+						newRef.uuid =null; //blank out UUID so it generates a new one on save
 						r.addReference(newRef, newSub);
 					} catch (JsonProcessingException e) {
 						e.printStackTrace();
@@ -263,6 +304,9 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 			}
 		}
 		return null;
+
+			 */
+			return null;
 	}
 
 	/**
@@ -297,46 +341,46 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 		return false;
 	}
 
-	private Optional<Relationship> findCurrent(Relationship rr){
-
-		EntityWrapper<Substance> owner = EntityWrapper.of(rr.fetchOwner());
-		EntityUtils.Key key = owner.getKey();
-		Optional<Edit> edit =entityPersistAdapter.getEditFor(key);
-
-		try{
-			if(edit.isPresent()){
-				Substance beforeS=edit.map(e->e.oldValue)
-						.map(s->{
-							try{
-							    System.out.println(s);
-							    String noCreatedBy = s.replaceAll("\"createdBy\":\".+?\",?", "");
-								String nolastEditedBy = noCreatedBy.replaceAll("\"lastEditedBy\":\".+?\",?", "");
-
-
-								return SubstanceBuilder.from(nolastEditedBy).build();
-							}catch(Exception e){
-								e.printStackTrace();
-								return null;
-							}
-						})
-						.filter(s->s!=null)
-						.orElse(null);
-
-				if(beforeS!=null){
-					return beforeS.relationships.stream().filter(rel->rel.uuid.equals(rr.uuid)).findFirst()
-							.map(rr1->{
-								rr1.assignOwner(beforeS);
-								return rr1;
-							});
-				}
-			}
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-		return Optional.empty();
-
-
-	}
+//	private Optional<Relationship> findCurrent(Relationship rr){
+//
+//		EntityWrapper<Substance> owner = EntityWrapper.of(rr.fetchOwner());
+//		EntityUtils.Key key = owner.getKey();
+//		Optional<Edit> edit =entityPersistAdapter.getEditFor(key);
+//
+//		try{
+//			if(edit.isPresent()){
+//				Substance beforeS=edit.map(e->e.oldValue)
+//						.map(s->{
+//							try{
+//							    System.out.println(s);
+//							    String noCreatedBy = s.replaceAll("\"createdBy\":\".+?\",?", "");
+//								String nolastEditedBy = noCreatedBy.replaceAll("\"lastEditedBy\":\".+?\",?", "");
+//
+//
+//								return SubstanceBuilder.from(nolastEditedBy).build();
+//							}catch(Exception e){
+//								e.printStackTrace();
+//								return null;
+//							}
+//						})
+//						.filter(s->s!=null)
+//						.orElse(null);
+//
+//				if(beforeS!=null){
+//					return beforeS.relationships.stream().filter(rel->rel.uuid.equals(rr.uuid)).findFirst()
+//							.map(rr1->{
+//								rr1.assignOwner(beforeS);
+//								return rr1;
+//							});
+//				}
+//			}
+//		}catch(Exception e){
+//			e.printStackTrace();
+//		}
+//		return Optional.empty();
+//
+//
+//	}
 
 	private Optional<Relationship> getRealInvertedRelationshipToRealRelationship(Relationship obj){
 		List<Relationship> rel;
@@ -442,14 +486,24 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	public void preUpdate(Relationship obj) {
 
 //		System.out.println("Going to update:" + obj.uuid);
-		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-
-		transactionTemplate.executeWithoutResult( stauts -> {
+//		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+//
+//		transactionTemplate.executeWithoutResult( stauts -> {
 		if(!notWorkingOn(obj.getOrGenerateUUID().toString())){
 //			System.out.println("already worked on it!!");
 			return;
 		}
+		UpdateInverseRelationshipEvent.UpdateInverseRelationshipEventBuilder builder = UpdateInverseRelationshipEvent.builder();
+		builder.relationshipIdThatWasUpdated(obj.uuid);
+		builder.substanceIdToUpdate(UUID.fromString(obj.relatedSubstance.refuuid));
+		if(obj.isGenerator()){
+			builder.originatorIdToUpdate(obj.uuid);
+		}else{
+			builder.originatorIdToUpdate(UUID.fromString(obj.originatorUuid));
+		}
 
+		eventPublisher.publishEvent(builder.build());
+		/*
 		AtomicBoolean forceToBeGenerator = new AtomicBoolean(false);
 
 
@@ -655,10 +709,56 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 			}
 		}
 	});
+
+		 */
 	}
 
 	@Override
 	public void preRemove(Relationship obj) {
+		Substance s = obj.getOwner();
+		s.removeRelationship(obj);
+		//remove substance reference
+//		if(obj.relatedSubstance !=null){
+//			entityManager.remove(entityManager.contains(obj.relatedSubstance)? obj.relatedSubstance : entityManager.merge(obj.relatedSubstance));
+//		}
+//		if (notWorkingOn(obj.getOrGenerateUUID().toString(), true)) {
+//			System.out.println("We're not doing anything with it, let's trigger inverse stuff");
+			if (obj.isAutomaticInvertible()) {
+				RemoveInverseRelationshipEvent.RemoveInverseRelationshipEventBuilder builder = RemoveInverseRelationshipEvent.builder();
+				builder.relationshipIdThatWasRemoved(obj.getOrGenerateUUID());
+				builder.relationshipTypeThatWasRemoved(obj.type);
+				builder.substanceRefIdOfRemovedRelationship(obj.fetchOwner().getOrGenerateUUID().toString());
+				builder.relatedSubstanceRefId(obj.relatedSubstance.refuuid);
+				if (obj.isGenerator()) {
+					builder.relationshipOriginatorIdToRemove(obj.getOrGenerateUUID());
+				} else {
+					builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
+				}
+				eventPublisher.publishEvent(builder.build());
+			}
+//		}
+				/*
+				Optional<Tuple<Relationship, InverseMethod>> opInv = findRealExplicitOrImplicitInvertedRelationship(obj);
+				if (opInv.isPresent()) {
+					Relationship r1 = opInv.get().k();
+
+					//It's a bigger deal to accidentally delete a relationship you're not sure about, so don't do it if
+					//there's some ambiguity
+					if (!opInv.get().v().equals(InverseMethod.SAME_TYPE_BEST_MATCH)) {
+//						System.out.println("Found a corresponding relationship inverse");
+						if (relationshipUuidsBeingWorkedOn.remove(r1.uuid.toString())) {
+//							System.out.println("Oh, we're already working on that one, don't do anything");
+							relationshipUuidsBeingDeleted.remove(r1.uuid.toString());
+						} else {
+
+							eventPublisher.publishEvent(new RemoveInverseRelationshipEvent(r1.getOrGenerateUUID()));
+
+						}
+					}
+				}
+			}
+		}
+		/*
 //		System.out.println("Removing a relationship:" + obj.getOrGenerateUUID() + " to :" + obj.relatedSubstance.refPname);
 		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 		transactionTemplate.executeWithoutResult(stauts -> {
@@ -683,8 +783,9 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 //							System.out.println("Oh, we're already working on that one, don't do anything");
 										relationshipUuidsBeingDeleted.remove(r1.uuid.toString());
 									} else {
-
+										eventPublisher.publishEvent(new RemoveInverseRelationshipEvent(r1.getOrGenerateUUID()));
 										//What does this do?
+										/*
 										r1.setOkToRemove();
 										final Substance osub = r1.getOwner();
 										if (osub != null) {
@@ -708,9 +809,12 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 												return Optional.of(osub2);
 											});
 										}
+
+										 */
 //							else{
 //								System.out.println("Can't find the owner of that relationship");
 //							}
+		/*
 									}
 								}
 //					else{
@@ -731,6 +835,9 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 //		}
 				}
 		);
+	}
+
+		 */
 	}
 
 }

@@ -3,6 +3,7 @@ package gsrs.module.substance.processors;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.EntityPersistAdapter;
+import gsrs.module.substance.services.RelationshipService;
 import ix.core.EntityProcessor;
 
 import ix.ginas.models.v1.Relationship;
@@ -11,6 +12,8 @@ import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
 import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.*;
@@ -47,6 +50,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
     @Autowired
     private SubstanceRepository substanceRepository;
 
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -59,15 +64,26 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         List<Relationship> refrel = relationshipRepository.findByRelatedSubstance_Refuuid(obj.getOrGenerateUUID().toString());
 
         for(Relationship r:refrel){
-            relationshipProcessor.createAndAddInvertedRelationship(r,
-                    r.fetchOwner().asSubstanceReference(),
-                    obj);
+            Substance owner = r.fetchOwner();
+            eventPublisher.publishEvent(
+                    CreateInverseRelationshipEvent.builder()
+                            .forceCreation(true)
+                            .originatorSubstance(owner.uuid)
+                            .toSubstance(owner.uuid)
+                            .fromSubstance(obj.uuid)
+                            .relationshipIdToInvert(r.uuid)
+                            .build()
+                    );
+//            relationshipProcessor.createAndAddInvertedRelationship(r,
+//                    r.fetchOwner().asSubstanceReference(),
+//                    obj);
 
         }
     }
 
 
     @Override
+//    @Transactional
     public void prePersist(final Substance s) {
         savingSubstance(s, true);
     }

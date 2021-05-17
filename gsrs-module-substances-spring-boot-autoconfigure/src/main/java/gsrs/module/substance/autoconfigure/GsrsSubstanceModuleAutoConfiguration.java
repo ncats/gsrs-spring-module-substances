@@ -115,4 +115,10 @@ public class GsrsSubstanceModuleAutoConfiguration {
     public ReferenceEntityService referenceEntityService(){
         return new ReferenceEntityService();
     }
+
+    @Bean
+    @ConditionalOnMissingBean(RelationshipService.class)
+    public RelationshipService relationshipService(){
+        return new RelationshipService();
+    }
 }

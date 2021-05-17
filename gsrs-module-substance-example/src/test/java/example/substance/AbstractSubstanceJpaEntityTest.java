@@ -114,7 +114,7 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
     protected Principal admin;
 
     @Autowired
-    private PlatformTransactionManager transactionManager;
+    protected PlatformTransactionManager transactionManager;
 
     @MockBean
     protected SequenceIndexerService mockSequenceIndexerService;

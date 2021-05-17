@@ -14,6 +14,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -30,22 +32,23 @@ public class RelationshipRepositoryITTest extends AbstractSubstanceJpaEntityTest
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    private RelationshipProcessor relationshipProcessor;
 
-    @BeforeEach
-    public void setup(){
-        relationshipProcessor = new RelationshipProcessor();
-        AutowireHelper.getInstance().autowire(relationshipProcessor);
-    }
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
+
+
 
     @Test
     public void save(){
-        Relationship r = new Relationship();
-        r.type = "Foo -> Bar";
+        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
         UUID uuid = UUID.randomUUID();
-        r.uuid = uuid;
-        Relationship saved = relationshipRepository.save(r);
+        Relationship saved =transactionTemplate.execute( s-> {
+                    Relationship r = new Relationship();
+                    r.type = "Foo -> Bar";
 
+                    r.uuid = uuid;
+                    return relationshipRepository.save(r);
+                });
         assertEquals(uuid,saved.uuid);
         assertEquals(uuid.toString(), saved.originatorUuid);
         assertTrue(saved.isGenerator());
@@ -55,34 +58,45 @@ public class RelationshipRepositoryITTest extends AbstractSubstanceJpaEntityTest
     @Test
     public void fetchByOriginatorUUID(){
 
-        Substance s = new SubstanceBuilder()
+        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+        List<UUID> uuids = transactionTemplate.execute( status-> {
+                    Substance s = new SubstanceBuilder()
                             .addName("testSubstance")
-                .build();
-        Substance savedSubstance = substanceRepository.save(s);
+                            .build();
+                    Substance savedSubstance = assertCreated(s.toFullJsonNode());
 
-        Substance sB = new SubstanceBuilder()
-                .addName("testSubstanceB")
-                .build();
-        Substance savedSubstanceB = substanceRepository.save(sB);
-        Relationship r = new Relationship();
-        r.type = "Foo->Bar";
-        UUID uuid = UUID.randomUUID();
-        r.uuid = uuid;
-        r.relatedSubstance = savedSubstanceB.asSubstanceReference();
-        r.setOwner(savedSubstance);
+                    Substance sB = new SubstanceBuilder()
+                            .addName("testSubstanceB")
+                            .build();
+                    Substance savedSubstanceB = assertCreated(sB.toFullJsonNode());
+                    Relationship r = new Relationship();
+                    r.type = "Foo->Bar";
+                    UUID uuid = UUID.randomUUID();
+                    r.uuid = uuid;
+                    r.relatedSubstance = savedSubstanceB.asSubstanceReference();
+                    r.setOwner(savedSubstance);
 
 
-        Relationship saved = relationshipRepository.save(r);
+                    Relationship saved = relationshipRepository.save(r);
 
-        Relationship other = relationshipProcessor.createAndAddInvertedRelationship(saved, savedSubstance.asSubstanceReference(), savedSubstanceB);
+                    //Relationship other = relationshipProcessor.createAndAddInvertedRelationship(saved, savedSubstance.asSubstanceReference(), savedSubstanceB);
+                    Relationship other = new Relationship();
+                    other.type = "Bar->Foo";
+                    other.originatorUuid = uuid.toString();
+                    other.uuid = UUID.randomUUID();
+                    other.relatedSubstance = savedSubstance.asSubstanceReference();
+                    other.setOwner(savedSubstanceB);
+                    Relationship savedOther = relationshipRepository.save(other);
 
-        Relationship savedOther = relationshipRepository.save(other );
+                    return Arrays.asList(uuid, savedOther.uuid);
+                });
+        transactionTemplate.executeWithoutResult( s-> {
+            List<Relationship> list = relationshipRepository.findByOriginatorUuid(uuids.get(0).toString());
+            assertEquals(2, list.size());
+            Set<UUID> actual = list.stream().map(Relationship::getUuid).collect(Collectors.toSet());
 
-        List<Relationship> list = relationshipRepository.findByOriginatorUuid(uuid.toString());
-        assertEquals(2, list.size());
-        Set<UUID> actual =list.stream().map(Relationship::getUuid).collect(Collectors.toSet());
-
-        assertEquals(new LinkedHashSet<>(Arrays.asList(uuid, savedOther.uuid)), actual);
+            assertEquals(new LinkedHashSet<>(uuids), actual);
+        });
 
     }
 }

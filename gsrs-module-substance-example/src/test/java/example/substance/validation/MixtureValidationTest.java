@@ -10,6 +10,7 @@ import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.MixtureSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.MixtureSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.MixtureValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertTrue;
  * Created by katzelda on 7/20/18.
  */
 @WithMockUser(username = "admin", roles="Admin")
-@Transactional
+
 public class MixtureValidationTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
@@ -39,7 +40,7 @@ public class MixtureValidationTest extends AbstractSubstanceJpaEntityTest {
     public void setup(){
         ValidatorConfig config = new DefaultValidatorConfig();
         config.setValidatorClass(MixtureValidator.class);
-        config.setNewObjClass(Substance.class);
+        config.setNewObjClass(MixtureSubstance.class);
 
         factory.addValidator("substances", config);
 
@@ -47,19 +48,20 @@ public class MixtureValidationTest extends AbstractSubstanceJpaEntityTest {
                 .addName("sub1")
                 .generateNewUUID()
                 .build();
-       substanceRepository.save(s1);
+        assertCreated(s1.toFullJsonNode());
+
 
         s2 = new SubstanceBuilder()
                 .addName("sub2")
                 .generateNewUUID()
                 .build();
-        substanceRepository.save(s2);
+        assertCreated(s2.toFullJsonNode());
 
         s3 = new SubstanceBuilder()
                 .addName("sub3")
                 .generateNewUUID()
                 .build();
-        substanceRepository.save(s3);
+        assertCreated(s3.toFullJsonNode());
     }
 
 

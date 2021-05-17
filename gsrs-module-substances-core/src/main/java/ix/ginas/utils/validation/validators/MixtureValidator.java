@@ -11,6 +11,7 @@ import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -27,6 +28,7 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
     private ReferenceRepository referenceRepository;
 
     @Override
+    @Transactional(readOnly = true)
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         MixtureSubstance cs = (MixtureSubstance) objnew;
         if (cs.mixture == null) {
