@@ -5,6 +5,7 @@ import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
@@ -119,6 +120,8 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractGsrsJpaEnti
     @MockBean
     protected SequenceIndexerService mockSequenceIndexerService;
 
+    @MockBean
+    protected StructureIndexerService mockStructureIndexerService;
     @MockBean
     protected GsrsCache mockGsrsCache;
 
