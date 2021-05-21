@@ -39,15 +39,19 @@ public class SubstanceBuilder extends AbstractSubstanceBuilder<Substance, Substa
 	}
 
 	public ChemicalSubstanceBuilder asChemical(){
-		return new ChemicalSubstanceBuilder();
+		return new ChemicalSubstanceBuilder(this);
 	}
 	
 	public ProteinSubstanceBuilder asProtein(){
-		return new ProteinSubstanceBuilder();
+		return new ProteinSubstanceBuilder(this);
+	}
+
+	public PolymerSubstanceBuilder asPolymer(){
+		return new PolymerSubstanceBuilder(this);
 	}
 
 	public MixtureSubstanceBuilder asMixture() {
-		return new MixtureSubstanceBuilder();
+		return new MixtureSubstanceBuilder(this);
 	}
 
 	public NucleicAcidSubstanceBuilder asNucleicAcid(){

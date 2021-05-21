@@ -35,6 +35,9 @@ public class NucleicAcidSubstanceBuilder extends AbstractSubstanceBuilder<Nuclei
         });
     }
 
+    protected <S extends Substance> NucleicAcidSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+        this.andThen = (s)-> (NucleicAcidSubstance) builder.andThen.apply((S) s);
+    }
     public NucleicAcidSubstanceBuilder() {
     }
     public NucleicAcidSubstanceBuilder addDnaSubunit(String dna) {

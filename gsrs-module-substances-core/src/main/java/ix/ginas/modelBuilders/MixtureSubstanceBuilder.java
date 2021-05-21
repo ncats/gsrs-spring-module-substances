@@ -20,8 +20,10 @@ public class MixtureSubstanceBuilder extends AbstractSubstanceBuilder<MixtureSub
             }
         }
     }
-    
 
+    protected <S extends Substance> MixtureSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+        this.andThen = (s)-> (MixtureSubstance) builder.andThen.apply((S) s);
+    }
     public MixtureSubstanceBuilder() {
         super();
     }

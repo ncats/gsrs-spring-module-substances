@@ -5,6 +5,8 @@ import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.Subunit;
 import ix.ginas.models.v1.Sugar;
 
+import java.util.List;
+
 public class NucleicAcidUtils {
 	public static int getBaseCount(NucleicAcidSubstance nas){
 		int l=0;
@@ -30,8 +32,13 @@ public class NucleicAcidUtils {
 	}
 	public static int getActualLinkageSiteCount(NucleicAcidSubstance nas){
 		int lsites=0;
-		for(Linkage l:nas.nucleicAcid.getLinkages()){
-			lsites+=l.getSites().size();
+		if(nas.nucleicAcid !=null) {
+			List<Linkage> linkages = nas.nucleicAcid.getLinkages();
+			if(linkages !=null) {
+				for (Linkage l : linkages) {
+					lsites += l.getSites().size();
+				}
+			}
 		}
 		return lsites;
 	}

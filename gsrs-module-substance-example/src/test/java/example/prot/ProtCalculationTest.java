@@ -1,31 +1,50 @@
 package example.prot;
 
 import example.substance.AbstractSubstanceJpaEntityTest;
+import gov.nih.ncats.common.util.SingleThreadCounter;
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.module.substance.repository.SubstanceRepository;
+import ix.core.validator.ValidationMessage;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import ix.ginas.modelBuilders.PolymerSubstanceBuilder;
+import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.MolecularWeightAndFormulaContribution;
 import ix.ginas.utils.ProteinUtils;
+import java.io.File;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.junit.jupiter.api.Assertions;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.ClassPathResource;
 
 public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String CV_AMINO_ACID_SUBSTITUTION = "AMINO_ACID_SUBSTITUTION";
-
-/*    @Autowired
-    protected SubstanceRepository substanceRepository;
-*/
-
+    private static final Double CELLULOSE_SULFATE_MW =470000.0;
+    private static final Double WATER_MW = 18.015;;
+    private static final Double LARGE_PROTEIN_MW_TOLERANCE = 12.0;
+    private static final Double MW_HIGH_OFFSET =1000.0;
+    private static final Double MW_LOW_OFFSET =-1000.0;
+    private static final Double MW_HIGHLIMIT_OFFSET =1000.0;
+    private static final Double MW_LOWLIMIT_OFFSET =-1000.0;
+    
+    @TempDir
+    static File file;
+    
+    @Test
     public void mwIndoleTest() {
         System.out.println("starting mwIndoleTest");
         String indoleMolfile = "\n" +
@@ -105,6 +124,52 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
+    public void proteinMwTestDisulfides() {
+        /*
+        Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
+         */
+        System.out.println("starting proteinMwTestUnmod");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "MKKNYNPKDIEEHLYNFWEKNGFFKPNNNLNKPAFCIMMPPPNITGNLHMGHAFQQTIMD" +
+                "ILIRYNRMQGKNTLWQVGTDHAGIATQILIERQIFSEERKTKKDYSRNDFIKKIWKWKKK" +
+                "SNFSVKKQMKRLGNSVDWDREKFTLDPDISNSVKEAFIILYKNNLIYQKKRLVHWDSKLE" +
+                "TVISDLEVEHRLIKSKKWFIRYPIIKNIKNINIEYLLVATTRPETLLGDTALAINPKDDK" +
+                "YNHLIGQSVICPIVNRIIPIIADHYADMNKDTGCVKITPGHDFNDYEVGQRHKLPMINIF" +
+                "TFNGKIKSNFSIYDYQGSKSNFYDSSIPTEFQNLDILSARKKIIYEIEKLGLLEKIEECN" +
+                "FFTPYSERSGVIIQPMLTNQWYLKTSHLSQSAIDVVREKKIKFIPNQYKSMYLSWMNNIE" +
+                "DWCISRQLWWGHQIPVWYDDKKNIYVGHSEKKIREEYNISDDMILNQDNDVLDTWFSSGL" +
+                "WTFSTLGWPEKTEFLKIFHSTDVLVSGFDIIFFWIARMIMLTMYLVKDSYGNPQIPFKDV" +
+                "YITGLIRDEEGKKMSKSKGNVIDPIDMIDGISLNELIEKRTSNLLQPHLSQKIRYHTIKQ" +
+                "FPNGISATGTDALRFTFSALASNTRDIQWDMNRLKGYRNFCNKLWNASRFVLKNTKDHDY" +
+                "FNFSVNDNMLLINKWILIKFNNTVKSYRNSLDSYRFDIAANILYDFIWNVFCDWYLEFVK" +
+                "SVIKSGSYQDIYFTKNVLIHVLELLLRLSHPIMPFITEAIWQRVKIIKHIKDRTIMLQSF" +
+                "PEYNDQLFDKSTLSNINWIKKIIIFIRNTRSKMNISSTKLLSLFLKNINSEKKKVIQENK" +
+                "FILKNIASLEKISILSKQDDEPCLSLKEIIDGVDILVPVLKAIDKEIELKRLNKEIEKIK" +
+                "SKMLISEKKMSNQDFLSYAPKNIIDKEIKKLKSLNEIYLTLSQQLESLHDAFCKKNKIFN";
+        DisulfideLink dsLink = new DisulfideLink();
+        List<Site> dsSites = new ArrayList<>();
+        dsSites.add(new Site(1, 36));
+        dsSites.add(new Site(1, 251));
+        dsLink.setSites(dsSites);
+        protein.getDisulfideLinks().add(dsLink);
+        proteinSubstance.setProtein(protein);
+        Set<String> unknownResidues = new HashSet<>();
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        double expectedMw = 113269.0 -2;
+        double actual =contribution.getMw();
+        System.out.println("calculated MW: " + actual);
+
+        assertEquals(expectedMw, actual, 0.9);
+    }
+
+
+    @Test
     public void proteinMwTestMod1() {
         /*
         Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
@@ -174,6 +239,361 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(expectedMw, actual, 0.9);
     }
 
+    @Test
+    public void proteinMwTestMod2() {
+        System.out.println("starting proteinMwTestMod2");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "MKKNYNPKDIEEHLYNFWEKNGFFKPNNNLNKPAFCIMMPPPNITGNLHMGHAFQQTIMD" +
+                        "ILIRYNRMQGKNTLWQVGTDHAGIATQILIERQIFSEERKTKKDYSRNDFIKKIWKWKKK" +
+                        "SNFSVKKQMKRLGNSVDWDREKFTLDPDISNSVKEAFIILYKNNLIYQKKRLVHWDSKLE" +
+                        "TVISDLEVEHRLIKSKKWFIRYPIIKNIKNINIEYLLVATTRPETLLGDTALAINPKDDK" +
+                        "YNHLIGQSVICPIVNRIIPIIADHYADMNKDTGCVKITPGHDFNDYEVGQRHKLPMINIF" +
+                        "TFNGKIKSNFSIYDYQGSKSNFYDSSIPTEFQNLDILSARKKIIYEIEKLGLLEKIEECN" +
+                        "FFTPYSERSGVIIQPMLTNQWYLKTSHLSQSAIDVVREKKIKFIPNQYKSMYLSWMNNIE" +
+                        "DWCISRQLWWGHQIPVWYDDKKNIYVGHSEKKIREEYNISDDMILNQDNDVLDTWFSSGL" +
+                        "WTFSTLGWPEKTEFLKIFHSTDVLVSGFDIIFFWIARMIMLTMYLVKDSYGNPQIPFKDV" +
+                        "YITGLIRDEEGKKMSKSKGNVIDPIDMIDGISLNELIEKRTSNLLQPHLSQKIRYHTIKQ" +
+                        "FPNGISATGTDALRFTFSALASNTRDIQWDMNRLKGYRNFCNKLWNASRFVLKNTKDHDY" +
+                        "FNFSVNDNMLLINKWILIKFNNTVKSYRNSLDSYRFDIAANILYDFIWNVFCDWYLEFVK" +
+                        "SVIKSGSYQDIYFTKNVLIHVLELLLRLSHPIMPFITEAIWQRVKIIKHIKDRTIMLQSF" +
+                        "PEYNDQLFDKSTLSNINWIKKIIIFIRNTRSKMNISSTKLLSLFLKNINSEKKKVIQENK" +
+                        "FILKNIASLEKISILSKQDDEPCLSLKEIIDGVDILVPVLKAIDKEIELKRLNKEIEKIK" +
+                        "SKMLISEKKMSNQDFLSYAPKNIIDKEIKKLKSLNEIYLTLSQQLESLHDAFCKKNKIFN";
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+        List<Site> sites = new ArrayList<>();
+        /*Site newSite= new Site();
+        newSite.residueIndex=1;
+        newSite.subunitIndex=1;*/
+        sites.add(new Site(1,1));
+        sites.add( new Site(1,2));
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+        /*
+        use nucleic acid validation test
+         */
+        ChemicalSubstance tryptophan= buildTryptophan();
+
+        modification.molecularFragment.refuuid=tryptophan.getUuid().toString();
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            System.out.printf("message: %s; ", m.message);
+        });
+        double valineMw= 117.1463;
+        double lycineMw = 146.189;
+        double trypophanMw= 204.2;
+        double methionineMw =149.2;
+        double expectedMw = 113269.0 - methionineMw -lycineMw + 2*trypophanMw;
+        double actual =contribution.getMw();
+        System.out.println("calculated MW: " + actual);
+
+        assertEquals(expectedMw, actual, 0.9);
+    }
+
+    @Test
+    public void proteinMwTestMod3() {
+        System.out.println("starting proteinMwTestMod3");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "MKKNYNPKDIEEHLYNFWEKNGFFKPNNNLNKPAFCIMMPPPNITGNLHMGHAFQQTIMD" +
+                        "ILIRYNRMQGKNTLWQVGTDHAGIATQILIERQIFSEERKTKKDYSRNDFIKKIWKWKKK" +
+                        "SNFSVKKQMKRLGNSVDWDREKFTLDPDISNSVKEAFIILYKNNLIYQKKRLVHWDSKLE" +
+                        "TVISDLEVEHRLIKSKKWFIRYPIIKNIKNINIEYLLVATTRPETLLGDTALAINPKDDK" +
+                        "YNHLIGQSVICPIVNRIIPIIADHYADMNKDTGCVKITPGHDFNDYEVGQRHKLPMINIF" +
+                        "TFNGKIKSNFSIYDYQGSKSNFYDSSIPTEFQNLDILSARKKIIYEIEKLGLLEKIEECN" +
+                        "FFTPYSERSGVIIQPMLTNQWYLKTSHLSQSAIDVVREKKIKFIPNQYKSMYLSWMNNIE" +
+                        "DWCISRQLWWGHQIPVWYDDKKNIYVGHSEKKIREEYNISDDMILNQDNDVLDTWFSSGL" +
+                        "WTFSTLGWPEKTEFLKIFHSTDVLVSGFDIIFFWIARMIMLTMYLVKDSYGNPQIPFKDV" +
+                        "YITGLIRDEEGKKMSKSKGNVIDPIDMIDGISLNELIEKRTSNLLQPHLSQKIRYHTIKQ" +
+                        "FPNGISATGTDALRFTFSALASNTRDIQWDMNRLKGYRNFCNKLWNASRFVLKNTKDHDY" +
+                        "FNFSVNDNMLLINKWILIKFNNTVKSYRNSLDSYRFDIAANILYDFIWNVFCDWYLEFVK" +
+                        "SVIKSGSYQDIYFTKNVLIHVLELLLRLSHPIMPFITEAIWQRVKIIKHIKDRTIMLQSF" +
+                        "PEYNDQLFDKSTLSNINWIKKIIIFIRNTRSKMNISSTKLLSLFLKNINSEKKKVIQENK" +
+                        "FILKNIASLEKISILSKQDDEPCLSLKEIIDGVDILVPVLKAIDKEIELKRLNKEIEKIK" +
+                        "SKMLISEKKMSNQDFLSYAPKNIIDKEIKKLKSLNEIYLTLSQQLESLHDAFCKKNKIFN";
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+        List<Site> sites = new ArrayList<>();
+        sites.add(new Site(1, 4));
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+        /*
+        use nucleic acid validation test
+         */
+        Substance polymer = buildPolymer();
+
+        modification.molecularFragment.refuuid=polymer.getUuid().toString();
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            System.out.printf("message: %s; ", m.message);
+        });
+        double asparagineMw = 132.119; //wikipedia
+        double expectedMw = 113269.0 - asparagineMw + CELLULOSE_SULFATE_MW;
+        double actual =contribution.getMw();
+        System.out.println("calculated MW: " + actual);
+        assertEquals(expectedMw, actual, 0.9);
+    }
+
+    @Test
+    public void proteinMwTestModWithHighAndLow() {
+        System.out.println("starting proteinMwTestModWithHighAndLow");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =readSequenceFromFile();
+                //"MEEITQIKKRLSQTVRLEGKEDLLSKKDSITNLKTEEHVSVKKMVISEPKPEKKEDIQLKKKEVVAVAKKEEVLKKEVVVPSKKDEEILPLKKEVPRPPKKEEDVMPQKKEVPRPPKKEEDIVPQMRDVSLPPKEEEKIVPKKKEVPRPPKKVEEILPPKKEVHRPPKKEEDIVPQIREVSLPPKKDEEIVCEKKEVAPAKEEPSKKPKVPSLPATQREDVIEEIIHKKPTAALSKFEDVKEHEEKETFVVLKKEIIDAPTKKEMVTAKHVIVPQKEEIIPSPTQEEVVSFKRKQTVRTSKKDAVPQKKEITYTQQTLEDKEEKILKRLEVTSTPDEEEIAHIQKKLYHTVRLVEKDVFPEKEDITMLETEEFVSQEIKLVSEPKPEKEKEIQGKKKVPPVSKKEEPLHHPKMDEKIVLKQKDVTLSHRKDEETVPQKKDPILALRKDEEIVTQKKDVTPPLIKEEESVPQNKDVTRPLRKEEESVPQKKDVTRPLRKDEETIPQKKDVTLPHGKDEETVPQKKDVTRPLRKDEEIIPQKKDVTRPLRKDGETVPQKKDVTLPHRKDEEIIPQKKDVTRPLRKDGETVPQKKDVTLPHRKEEESVPQKKDVTLPPRKDEESVPQKKDTTGPLIKDEETVPQKKDVTLPHRKDEETVPQKKDVTLRKDEETVPQKKDVTLPHRKDEEIIPQKKDVILRKDEETVPQKKDVTLPHRKDEETVPQKKDVTLPLRKDKLSELTYKKKEDIIPIKEEVVAVDEKEEAILPRKKEIFLHSKKDEDIKPKKKQVAPTKVEKKPSVEPSVVPKETTVFPLEVKEHDKKAEDKDIPKPKEEKRIPTKVQSPKEAEKPRPGPKEEPVPLVQPVEAADKEPVSAPGQVKKGKVLRVKKEEEKVEMPVLKKTSRVSKDKEEDKEMIKLKKVLKTQSAEHEESQKVYVEAKTQAIITESYEAEMHLESYETIKRVEKMPSEVGKKKPIEPAQEPKQEKPESEADEKPKKEIATKVPKEDIPEEPSLALKKVKKLQLETKDEECVKLKPFEKPVKPSPEAEKAPPNDEKERKPISFEKRKEPSTSQDIEWPEKVDKTKGLDDKMVLPKKITPVKTDVTPKEDEKKPIVPQKGILPKETEEKEEITLKPIEHAKKDLKPKNIPSPRVEKTKPIETVSVEKKLSKDLAKKPKTVSPKVSLEAVTLKKVPKKVSPKEDKAKETRTISEAEKVPVMKELSPGAVELTKVPTQPEEEVFEEEAEAEAEFEAQDEDEAWGWEVASRDSYGSEGSEYLEEGALETPGMPGGRREGKPKEEVGKARQTPSPGDGGRGRGLRPGAGGDKPPGDAPIGFQLKPVPLKFVKELKDIMLQEAESVGSSVVFECQISPSTAITTWMKDGSNLRESPKHKFTSDGKDRKLAIIDVQLSDSGEYTCVGKLGNKEKTSTAKLIVEELPVKFTKDLEEEMSVIKGQPMYLSCELSKDREVVWKKDGKELKPAPGKVAINVIGLQRTVTIHDSNDDDAGVYTCECENLKTQVNVKIIEIIRDWLTKPLRDQHVKPKATATFKGDLFKDTPNWKWFKGNDEIPMEPSDKFEVKKDGKEVTLTIKNAQPGDVGEYGIEIEGRRYAAKLTLGEREAEILKPLASIEVVEKEEASFETEISEEDVVGEWKLRGQVLTRSPTCDIRMEGKKRYLTLKNVELDQAGEVSYQALNGVTSAMLTVKEIEMDFTVPLTDVTVHEKKQAKFECTITKDVPKVMWLRGSDIITSDQKYDIIDDGKKHILVINQCEFDDEGEYTIEVLGKTSPAKLTVEGMRLKVISAISDQTVKEEGDAYFTVKLQDYTAVEKDEVTLDCELSKDVPVKWFHNEAEIKASKMVSMKVDGKRRMLCIKKVEDKDKGQYACDCGTDKTAATVTIEARDIKVVRPMYGVELFDGETARFEVEISEDDVHGQWKLNGEVLSPSPDVEIIEDGAKHILTLYNCKVLQTGEISFQGANAKCSANLKVKELPITFVTPLTDVHVYEKDEARFECEVSRQPKTLRWLKGPVDITTDDKFELLQEGKRHTLVVKSAAYEDEAKYMFEAEDKKTSAKLVIQGIRLEFVRPIKDVTVKERETAEFRIELSHEKVQVSWYKNDVRLHPSKVVHLSEDGKIHTLSFKEVSLDDTSLIKVEALGKTCEAMLTVLEGEPYFTTKLQDYTAVEKDEVVLMCEVSKSAAEVKWFKDGKEIIPSKNILIKAEGKKRILTVRKAEKANIGEYLCDCGSDKTAAKLNTEERDIKIVRPLYSVEVTETETARFETEISEEDVHGNWKLKEETLHHSPDCEKKEEGTKHILILYNVRMDMAGSVDFSAANAKSRAQLRVKEPPVEFTKPLEDQTVEEEATAELECEVSRENAEVRWFKDGQEIHKTKKFDMVVDGRKRKLIIHESTIDDSKTYTCDAQKFKTSAFLNVEPPHVEFTKPLHDVEVKEKESARFECKVSRETAKVRWFKDGSEIRKGKKYEIISEGVKRILIISKSVFDDEAEYECDARTSKTSGMLTVVEEEARFTKNLANVEGTETDSVKLICEVSKPDAEVTWYKGDQELPEVGRYEHIADGKKRILIIKDLQMEDAGEYHCKLSSSQSTGSLRINELAAEFISRPQNQEVVEGEKAEFVCSVSKDTYEVKWVKGDNQLQSDDKYDIISDGKKRVLVIKSCELKDEGGFVAVIGTTRAPADLIVIEKLRIITPLKDLIANEGQETVLNCEVNTEGAKAKWLKNDETLFESSKFIMVQKDNVFSLRIKDTQKPNEGNYTIMLTNQRGEQAKSAASITVQEEDLRIIVPPEDVDTQEKRTISFSCKVNRPNVTVQWMKAGQEITFGKRILYRVDKDKHTLTIKDCTLADEGEYTVVGGADKASAELIISEAPTDFTAQLQDQTITEFEDAEFTCELSKEKAEIKWYRDGREIREGPRYQFERDGKTCRLRIKECRPDDECEYACGVDDKKTRARLFVEETPVEIIRPPADVFEPPGSDVVYEVELNKDRVEVKWLRNNMTVVQGDKYQMMSEGKIHRLQVCEIRPRDQGEYRVIAKDKDARAKLELAAVPTIKTLDQDLVTDAGKPFVMTIPYNAYPHAEAEWFFDSISLPKDNIHSSTDRTEYRLKDPKKSEEGRYKIIIQNKHGKGEAFINLKVVDVPGSVKNLQVVDTADGEVSIAWEEPDSDGGSKILAYVVERRNIKRKTWTLATDSADSTEYCVTGLQKDSKYLFRVCARNRVGSGPSIETDKAVQAKNKFDVPDPPQNVIVGNVNKFGATVSWEPPLSDGGSEITSYIIELRDRTSVNWAPVMVTKPHERTAIINDVIENKEYIFRVKAENRAGIGKPSAATNPVKIMDPIERPSPPLNLTHSEQTKDSCLLTWETPLKNGGTPITGYIIERCEEGSEKWLRCNARLSQDLVYRMSGLKFGTKYSYRVIAENAAGQSDSSNIVGPVLVDDPHFAPTLDLSAFKDGLEVIVPHPLAIRVPITGYPVPTAKWTFGETELAAGDRVSMVTKATFTELVITPSVRPDRGTYSLTLENDVTSVSGDIDVNVIASPSAPKDLKVAEVTRRHVHLMWEAPDHDGGSSITGYQVEKREVSRKTWVKVMAGLQDQEYTITDVVEGKEYLFRVIACNKCGPGEPAYIDEPVNVSSPATVPDPPENLKWRDKSASKIFLSWEPPKWDGGTVIKGYIIDKCQRGTDKWKPCGEPVPELKFEVTGLIEGQWYAYRVRALNRLGASRPCKATDEILAVDPKEPPEIQLDAKLLAGLTAKAGTKIELPADITGKPEPKVKWTKADLVLKPDDRITIDAKPGHSTLSIAKTKRDDTATYIIEAVNSSGRATATVDVNILDKPGPPAAFDISEITSESCLLSWNPPRDDGGSKVTNYIVERRALDSEIWYKLSSTVKQTTYKATKLVAFKEYVFRVYAENQFGVGAQAEHAPIIARYPFDTPGPPYKLETSDIAKDSVTLNWYEPDDDGGSPITGYWVERYEPDHDKWIRCNKLPIRDTNFRVKGLPTRKKYKFRVLAENLAGPGKPSKETDQILIKDPIDPPWAPGKPTVKDVAKTSAFLHWTKPEHDGGAKIESYIVELLKSGTDEWVRVADGIPTLEHFLRGLMEKQEYSFRVRAVNAAGESEPSEPSDPVLCKERLNPPSPPRWLLVVTSTRNSAELKWTAPERDGGSPVTNYIIEKRDVKRKGWQVVDTTVKELKYTASPLNEGSLYVFRVAAENAVGPSEYCELADSVLAKDTFGTPGPPYNLTVTEVSKSHVDLKWDAPQKDGGRPVLRYVIEKKEKLGTRWVKSGKTSGPDCHYRVTDVIEGTEVQFKVSAENEAGIGHPSEPTDIIVIEDPTGPPSPPQDLHITEAARDHISISWKAPDKNGGSPVIGYNIELCEAGTEKWMRVNSRPVKELKFRAGEEEGILPEKQYTFRVRAVNSVGASEPSEISESVYAKDSDCNPTLDFQTKDLVVVEGEKMHLPIPFRAVPAPKITWHKDGSELKADDRIFFRTEYTSCHLEIPSCLHADGGQYKVTLENGLGAASGTINVKVIGLPGPCKEIVDSEITKNSCKVSWDPPDYDGGSPVLHFVLQRREAGRRTYINVMSGENKLVWQVKDLIQNGEYYFRVRAVNKIGGGEFIELRNPVIAEDQKQRPDPPIEVETHNPTSESVTLTWKPPMYDGGSKIMGYILEKMMKGEDNFVRCNDFLVPVLSYTVKGLKEGNQYQFRVYAENAAGVSDPSRSTPLIKAIDAIDRPKVFLSGSLQSGLIVKRGEEMRLDAYISGFPYPQITWTRNNSSIWPEALKKRPEKPIRKKKEEKKEEKKEEDKEPKKEEDKKEEDKEKKEEIKEKKEEEKEQEVEQPEEPEEAYHPSLNERLTIDSKRKGESYIIVKDTIRADHGVFTIKVENDHGVASASCEVNILDTPGPPVNFSFEEVRKNSIICKWDPPLDDGGSEIFNYTLERKDNSKIELGWITVTSTLRGCRYPVTKLIEGKQYIFRVTAENKYGPGIPCISKPIIAKNPFDPPEAPEKPEIVYVTSNSMVVTWNEPNDNGSPIQGYWVEKREINSTHWARVNRIIVPDLEITVLGLLEGMTYIFRVCAENVAGPGKFSPPSEPKTAQAAIMPPGPPIPRVVETTDYSIDVEWDPPADNGGADIFGYHVDKVVAGTKDWSRATERPQKSRTFTVYGVREGAKYIVRVVAVNCAGEGAPGLTDAVIVRNPAEGPVIELDISVRNGVVVRAGEMLRIPAHVTGKPFPFLKWTKDDGDLEKDCMEVEEAGNDSTVVIKCTKRSDHGKYHIQAANPSGIKSASTRVEVMDVPGPVLDLKPVVVTRKLMMLNWSDPDDDGGSDVTGFIIERREPKMHTWRQPIETPSSKCEIVGIIEGQEYIFRVVAKNKFGCGPPVDLGPIRAVDPQGPPTSPEKFHYTERTKSSVTIEWRPPRNDGGSPIMGYIIEKKRQDQPAFQRINEELCTAQIMTIENLDELHLYEFRAKAVNAIGESEPSITMTVVIQDDEVAPSLHMLKHFKGDLIRARKNEPIEMPAEVTGLPMPKIEWLKDDVVIDMPTEKLLIETKEIDRVTSHTKLSIPGVVRLDKGTYTVNASNRLGSVSHHITVEVLDRPTPPRNIAFSNIKAESCQLTWDAPLDTGGSELTNYIVEMKDLNGEDPEKAEWVNVTNTIIERRYGVWNLETGGNYKFRVKAENKYGISEACETEEIQIRDPLALPGPPEKVTIAEYSKAHILLTWEPPMDSGGSMITGYWIEKREKGTSYWSRVNKVMVSKRGVKGWDYMVTRLIEETEYEFRVMACNAAGIGPPSATSESAIAVDPLTPPSMPAAPEIADKTRHSVTLSWTPPGKDGGRPIKGYIIEIQDEGTSEWARINDAENLHPSTLFTIPNLPELKKYRFRIIAVNEIGESEPSPRTTEVRIEDIQTAPKIFMDISAHDLLCIRAGTPFKIPATITGRSVPKVTWEFDGKAKTEKKDRLHVLPVDSQVESNDTNSTVIVPVSLRSHSGRYTITAKNKSGQKHVNVRVNVLDVPGAPKELKVTDVTRTTMRLIWKLPDNDGGERIKSYFIEKKAVNGKAWTTVSPACASMALVVPNLLEGQDYLFRIRAENRLGFGPFTETSEPVRARDPIYPPDPPTKVNINLVTKNTVTLTWVPPKNDGGAPVKHYIIERLSWDTSGPQKETWKQCNKRDVEETTFIVEDLKEGGEYEFRVKAVNDAGASRPSVTAGPVIIKDQTCPPNIDLREALEGAEGFDITIVSRIQGCPFPSLVWQKSPLDNPDDKTSVQYDKHVNKLVSDDKCTLLIQQSKRDDSAVYTLTATNSLGTASKSIKLNILGRPGVPVGPIKFEEVFAERIGLSWKPPTDDGGSKITNYVVEKREENRKTWVHVSSDPKECQYVVQRLTEGHEYEFRVMAQNKYGVGPPLYSEPEKARNLFTVPGQCDKPTVTDVALESMTVNWEEPEYDGGSPLTGYWLERKETTAKRWARVNRDPIRIRPMGVSHVVTGLMEGAIYQFRVIAMNAAGCGLPSLPSDPVVCRDPIAPPGPPTPKVTDCTKSTVDLEWIPPLVDGGSKITGYFVEYKEEGQEEWEKVKDKEIRGCKFVVPGLKELGHYRFRVRAVNAAGVGEPGEVAEVIEVKDRTIPPEVDLDASVKEKIIVHAGGVIRLLAYVSGKPAPEIIWNRDDADLPKEAVVETTSISSALVIKNCRRQHQGIYTLTAKNAGGERRKAIIVEVLDVPGPVGQPFSGENLTTDSCKLTWYSPEDDGGSAITNYIIEKREADRRGWTSVTYTVTRHNAVVQGLIDGKGYYFRIAAENIIGMGPFTETSAPVVIKDPLSVPERPEDLQVTAVTNDSISVSWRPPKYDGGSEITSYVLEVRLIGKDNFERIVADNKLMDRKFTHGGLKEGSSYEFRVSAVNQIGQGKPSFSTKPVTCKKEFEPPALDFGFRDKIVVRVGETCTLQSRYTGKPQPTIKWFKTDEELQANEEIALTSTNNILCLAIEKAKREHSGKYTVVLENSIGSRKGICNIIVVDRPQHPEGPVIFDEICRNYMVISWKPPLDDGGAAISNYIIEKRDTNRDLWMPVIESCTRTSCRVPKLIEGREYIVRICAQNIHGISDPLLSAETKARDVFRVPDAPQAPVAKEIYKDTALISWIQPADGGKPITNYIVEKKETMANTWTRAGKDRIFPNSEYWVPDILRGCEYEFRVMAENMIGVGDPSPPSKPVFAKDPIVIPSPPVLPVAIDTTKESVTLSWQPPKDSGRGKIFGYLIEYQKDDSDEWLQVNQTPDSCQETRFKVISLEDGALYRFRVKAANAAGESEPTYVPEPIRAEDRLEPPELLLDMGMPREVKAMAGTHINIIAGIKGIPFPNIIWKKNDADVPPKAEIETSGTASKLEIRYCTRADCGDYTIYVENPAGSKTATCTVLVFDKPGPVQNFRVSDVRCDSAQLSWKDPEDNGGTRITNFVVEKKDGAATQWVPVCSSSKKRSMMAKYLIEGMSYMFRVAAENQFGRSEYVETPKSIKAMNPLFPPGPPKDLHHVDVDKTEVWLQWNWPDRTGGSDITG";
+                //readSequenceFromFile();
+        System.out.println("processing seq: " + subunit1.sequence);
+        
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+        List<Site> sites = new ArrayList<>();
+        sites.add(new Site(1, 4));
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+        Substance polymer = buildPolymerWithHighAndLow();
+
+        modification.molecularFragment.refuuid=polymer.getUuid().toString();
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            System.out.printf("message: %s; ", m.message);
+        });
+        double isoleucineMw = 131.175; //wikipedia
+        double expectedAverageMw = 5047292.71 - isoleucineMw + CELLULOSE_SULFATE_MW;
+        double expectedLowMw = MW_LOW_OFFSET;
+        double expectedHighMw = MW_HIGH_OFFSET;
+        double actualAverage =contribution.getMw();
+        double actualLow = contribution.getMwLow();
+        double actualHigh = contribution.getMwHigh();
+        System.out.println("calculated MW: " + actualAverage);
+        double allowedProteinMWTolerance =12;
+        assertEquals(expectedAverageMw, actualAverage, allowedProteinMWTolerance);
+        assertEquals(expectedLowMw, actualLow, 0.9);
+        assertEquals(expectedHighMw, actualHigh, 0.9);
+    }
+
+
+    @Test
+    public void proteinMwTestModWithHighAndLowAndLims() {
+        System.out.println("starting proteinMwTestModWithHighAndLow");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =readSequenceFromFile();
+        System.out.println("processing seq: " + subunit1.sequence);
+        
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+        List<Site> sites = new ArrayList<>();
+        sites.add(new Site(1, 4));
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+        Substance polymer = buildPolymerWithHighAndLowAndLimits();
+
+        modification.molecularFragment.refuuid=polymer.getUuid().toString();
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            System.out.printf("message: %s; ", m.message);
+        });
+        double isoleucineMw = 131.175; //wikipedia
+        double expectedAverageMw = 5047292.71 - isoleucineMw + CELLULOSE_SULFATE_MW;
+        double actualAverage =contribution.getMw();
+        double actualLow = contribution.getMwLow();
+        double actualHigh = contribution.getMwHigh();
+        double actualHighLimit =contribution.getMwHighLimit();
+        double actualLowLimit =contribution.getMwLowLimit();
+        System.out.println("calculated MW: " + actualAverage);
+        assertEquals(expectedAverageMw, actualAverage, LARGE_PROTEIN_MW_TOLERANCE);
+        assertEquals(Math.abs( MW_LOW_OFFSET), actualLow, 0.9);
+        assertEquals(MW_HIGH_OFFSET, actualHigh, 0.9);
+        assertEquals(MW_HIGHLIMIT_OFFSET, actualHighLimit);
+        assertEquals(Math.abs(MW_LOWLIMIT_OFFSET), actualLowLimit);
+    }
+
+    @Test
+    public void proteinMwTestModExtent() {
+        System.out.println("starting proteinMwTestModExtent");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        //from https://www.uniprot.org/uniprot/Q9FGE9
+        
+        subunit1.sequence =
+"MELGSRRIYTTMPSKLRSSSSLLPRILLLSLLLLLFYSLILRRPITSNIASPPPCDLFSGRWVFNPETPKPLYDETCPFHRNAWNCLRNKRDNMDVINSWRWEPNGCGLSRIDPTRFLGMMRNKNVGFVGDSLNENFLVSFLCILRVADPSAIKWKKKKAWRGAYFPKFNVTVAYHRAVLLAKYQWQARSSAEANQDGVKGTYRVDVDVPANEWINVTSFYDVLIFNSGHWWGYDKFPKETPLVFYRKGKPINPPLDILPGFELVLQNMVSYIQREVPAKTLKFWRLQSPRHFYGGDWNQNGSCLLDKPLEENQLDLWFDPRNNGVNKEARKINQIIKNELQTTKIKLLDLTHLSEFRADAHPAIWLGKQDAVAIWGQDCMHWCLPGVPDTWVDILAELILTNLKTE" ;
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+        List<Site> sites = new ArrayList<>();
+        sites.add(new Site(1, 4));
+        modification.setSites(sites);
+        modification.extent="PARTIAL";
+        modification.molecularFragment = new SubstanceReference();
+        /*
+        use nucleic acid validation test
+         */
+        Substance polymer = buildPolymer();
+
+        modification.molecularFragment.refuuid=polymer.getUuid().toString();
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            System.out.printf("message: %s; ", m.message);
+        });
+        double expectedMw = 47142.0;
+        double actual =contribution.getMw();
+        System.out.println("calculated MW: " + actual);
+        assertEquals(expectedMw, actual, 0.9);
+        
+        Assertions.assertTrue(contribution.getMessages().size() >0);
+        Assertions.assertTrue(contribution.getMessages().stream().anyMatch(m->m.messageType==ValidationMessage.MESSAGE_TYPE.WARNING));
+    }
+
+    @Test
+    public void getSingleAAFormulaTest() {
+        String serineAbbreviation = "S";
+        Map<String, SingleThreadCounter> expected = new HashMap<>();
+        expected.put("C", new SingleThreadCounter(3));
+        expected.put("H", new SingleThreadCounter(7-2)); //remove 2 as in 'H2O'
+        expected.put("N", new SingleThreadCounter(1));
+        expected.put("O", new SingleThreadCounter(3-1)); //remove 1 for O in 'H2O'
+        Map<String, SingleThreadCounter> actual = ProteinUtils.getSingleAAFormula(serineAbbreviation);
+        Assertions.assertTrue( actual.keySet().stream().allMatch(k-> expected.get(k).getAsInt() == actual.get(k).getAsInt()));
+    }
+    
+    @Test
+    public void getSingleAAWeightTest() {
+        String histideAbbreviation = "H";
+        Double histidineMw = 155.156 - WATER_MW;
+        Double actual = ProteinUtils.getSingleAAWeight(histideAbbreviation);
+        assertEquals(histidineMw, actual, 0.01);
+    }
+    
+    @Test
+    public void getSubunitWeightTest() {
+        Subunit unit1 = new Subunit();
+        unit1.sequence="MKKLVIALCLMMVLAVMVEEAEAKWCFRVCYRGICYRRCRGKRNEVRQYRDRGYDVRAIPEETFFTRQDEDEDDDEE";
+        Set<String> unknowns = new HashSet<>();
+        Double expected = 9349.0;
+        Double actual = ProteinUtils.getSubunitWeight(unit1, unknowns);
+        assertEquals(expected, actual, 0.5);
+        assertEquals(0, unknowns.size());
+    }
+    
+    @Test
+    public void getSubunitWeightTest2() {
+        Subunit unit1 = new Subunit();
+        unit1.sequence="MKKLVIALCLMMVLAVMVEEAEAKWCFRVCYRGICYRRCRGKRNEVRQYRDRGYDVRAIPEETFFTRQDEDEDDDEE@";
+        Set<String> unknowns = new HashSet<>();
+        Double expected = 9349.0;
+        Double actual = ProteinUtils.getSubunitWeight(unit1, unknowns);
+        assertEquals(expected, actual, 0.4);
+        assertEquals("@", unknowns.toArray()[0]);
+    }
+
+    @Test
+    public void getSubunitFormulaInfoTest(){
+        Subunit unit1 = new Subunit();
+        unit1.sequence ="GKLSVDTLRF";
+        Map<String, SingleThreadCounter> expectedCounts = new HashMap<>();
+        expectedCounts.put("C", new SingleThreadCounter(51));
+        expectedCounts.put("H", new SingleThreadCounter(86));
+        expectedCounts.put("O", new SingleThreadCounter(15));
+        expectedCounts.put("N", new SingleThreadCounter(14));
+        Set<String> unknowns = new HashSet<>();
+        Map<String, SingleThreadCounter> actual = ProteinUtils.getSubunitFormulaInfo(unit1.sequence, unknowns);
+        Assertions.assertTrue( expectedCounts.keySet().stream().allMatch(k-> expectedCounts.get(k).getAsInt() == actual.get(k).getAsInt()) );
+        assertEquals(0, unknowns.size());
+    }
+
+    @Test
+    public void getSubunitFormulaInfoTinyTest(){
+        System.out.println("starting in getSubunitFormulaInfoTinyTest");
+        Subunit unit1 = new Subunit();
+        unit1.sequence ="GK";
+        Map<String, SingleThreadCounter> expectedCounts = new HashMap<>();
+        expectedCounts.put("C", new SingleThreadCounter(8));
+        expectedCounts.put("H", new SingleThreadCounter(17));
+        expectedCounts.put("O", new SingleThreadCounter(3));
+        expectedCounts.put("N", new SingleThreadCounter(3));
+        Set<String> unknowns = new HashSet<>();
+        Map<String, SingleThreadCounter> actual = ProteinUtils.getSubunitFormulaInfo(unit1.sequence, unknowns);
+        Assertions.assertTrue( expectedCounts.keySet().stream().allMatch(k-> expectedCounts.get(k).getAsInt() == actual.get(k).getAsInt()) );
+        assertEquals(0, unknowns.size());
+    }
+
+    @Test
+    public void getMolWeightPropertiesTest() {
+        ProteinSubstance protein88ECG9H7RA = getProteinFromFile();
+        Double expectedMwValue = 23900.0;
+        List<Property> mwProps = ProteinUtils.getMolWeightProperties(protein88ECG9H7RA);
+        assertEquals(expectedMwValue, mwProps.get(0).getValue().average, 0.1);
+    }
+    
+    @Test
+    public void getMolFormulaPropertiesTest(){
+        ProteinSubstance protein88ECG9H7RA = getProteinFromFile();
+        String expectedFormula = "C1030H1734O304N336S5";
+        List<Property> formulaProps = ProteinUtils.getMolFormulaProperties(protein88ECG9H7RA);
+        assertEquals(expectedFormula, formulaProps.get(0).getValue().nonNumericValue);
+    }
+    
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 
@@ -182,6 +602,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         GinasChemicalStructure structure= new GinasChemicalStructure();
         structure.molfile =tryMolfile;
         structure.setMwt(204.2252);
+        structure.formula ="C11H12N2O2";
         ChemicalSubstance tryptophan = builder.setStructure(structure)
                 .addName("tryptophan")
                 .addCode("FDA UNII", "8DUH1N11BX")
@@ -191,5 +612,94 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         System.out.println("mw: " + tryptophan.getMolecularWeight());
 
         return tryptophan;
+    }
+    
+    private PolymerSubstance buildPolymer() {
+        PolymerSubstanceBuilder builder = new PolymerSubstanceBuilder(new Substance());
+        builder.addName("CELLULOSE SULFATE");
+        Property mwProp = new Property();
+        mwProp.setName("MOL_WEIGHT:NUMBER");
+        Amount mwValue = new Amount();
+        mwValue.average =CELLULOSE_SULFATE_MW;
+        mwProp.setValue(mwValue);
+        mwProp.setPropertyType("PhysicoChemical");
+        builder.addProperty(mwProp);
+        PolymerSubstance polymer = builder.build();
+        substanceRepository.saveAndFlush(polymer);
+        return polymer;
+    }
+
+    private PolymerSubstance buildPolymerWithHighAndLow() {
+        PolymerSubstanceBuilder builder = new PolymerSubstanceBuilder(new Substance());
+        builder.addName("CELLULOSE SULFATE");
+        Property mwProp = new Property();
+        mwProp.setName("MOL_WEIGHT:NUMBER");
+        Amount mwValue = new Amount();
+        mwValue.average =CELLULOSE_SULFATE_MW;
+        mwValue.high =CELLULOSE_SULFATE_MW + MW_HIGH_OFFSET;
+        mwValue.low =CELLULOSE_SULFATE_MW - MW_LOW_OFFSET;
+        mwProp.setValue(mwValue);
+        mwProp.setPropertyType("PhysicoChemical");
+        builder.addProperty(mwProp);
+        PolymerSubstance polymer = builder.build();
+        substanceRepository.saveAndFlush(polymer);
+        return polymer;
+    }
+
+    private PolymerSubstance buildPolymerWithHighAndLowAndLimits() {
+        PolymerSubstanceBuilder builder = new PolymerSubstanceBuilder(new Substance());
+        builder.addName("CELLULOSE SULFATE");
+        Property mwProp = new Property();
+        mwProp.setName("MOL_WEIGHT:NUMBER");
+        Amount mwValue = new Amount();
+        mwValue.average =CELLULOSE_SULFATE_MW;
+        mwValue.high =CELLULOSE_SULFATE_MW + MW_HIGH_OFFSET;
+        mwValue.low =CELLULOSE_SULFATE_MW + MW_LOW_OFFSET;
+        mwValue.highLimit=CELLULOSE_SULFATE_MW + MW_HIGHLIMIT_OFFSET;
+        mwValue.lowLimit=CELLULOSE_SULFATE_MW + MW_LOWLIMIT_OFFSET;
+        
+        mwProp.setValue(mwValue);
+        mwProp.setPropertyType("PhysicoChemical");
+        builder.addProperty(mwProp);
+        PolymerSubstance polymer = builder.build();
+        substanceRepository.saveAndFlush(polymer);
+        return polymer;
+    }
+    
+    private Substance getPolymerFromFile() {
+        try {
+            File polymerFile =new ClassPathResource("testJSON/8OZM26QV2C.json").getFile();
+            SubstanceBuilder builder =SubstanceBuilder.from(polymerFile);
+            return builder.build();
+        } catch (IOException ex) {
+            Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+    
+    private ProteinSubstance getProteinFromFile() {
+        try {
+            File proteinFile =new ClassPathResource("testJSON/88ECG9H7RA.json").getFile();
+            ProteinSubstanceBuilder builder =SubstanceBuilder.from(proteinFile);
+            return builder.build();
+        } catch (IOException ex) {
+            Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
+    }
+
+    private String readSequenceFromFile() {
+        try {
+            File fastaFile = new ClassPathResource("testFASTA/A0A5A9P0L4.fasta").getFile();
+            
+            List<String> lines =Files.readAllLines(fastaFile.toPath());
+            lines.remove(0);
+            String sequence = String.join("", lines);
+            return sequence;
+        }
+        catch(Exception ex) {
+            Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return "";
     }
 }

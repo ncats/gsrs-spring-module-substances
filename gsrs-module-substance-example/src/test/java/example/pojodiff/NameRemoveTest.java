@@ -1,5 +1,6 @@
 package example.pojodiff;
 
+import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.repository.PrincipalRepository;
 import ix.core.models.Principal;
 import ix.core.util.EntityUtils;
@@ -17,8 +18,8 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-@DataJpaTest
-public class NameRemoveTest{
+//@DataJpaTest
+public class NameRemoveTest extends AbstractSubstanceJpaEntityTest {
 	@MockBean
 	public PrincipalRepository mockRepository;
 

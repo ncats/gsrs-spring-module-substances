@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.6.0-SNAPSHOT</version>
+        <version>0.6.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -31,6 +31,11 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>ncats-common</artifactId>
             <version>0.3.5</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>molvec</artifactId>
+            <version>0.9.8</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -87,7 +92,11 @@
             <artifactId>gsrs-spring-legacy-sequence-indexer</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-scheduled-tasks</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>

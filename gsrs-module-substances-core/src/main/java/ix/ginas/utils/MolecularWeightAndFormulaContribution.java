@@ -1,23 +1,24 @@
 package ix.ginas.utils;
 
-import gov.nih.ncats.common.util.SingleThreadCounter;
-import ix.core.validator.GinasProcessingMessage;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import gov.nih.ncats.common.util.SingleThreadCounter;
+import ix.core.validator.GinasProcessingMessage;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 public class MolecularWeightAndFormulaContribution
 {
 
-  private double mw = 0.0;
-  private double mwHigh = 0.0;
-  private double mwHighLimit = 0.0;
-  private double mwLow = 0.0;
-  private double mwLowLimit = 0.0;
+  private Double mw = 0.0;
+  private Double mwHigh = 0.0;
+  private Double mwHighLimit = 0.0;
+  private Double mwLow = 0.0;
+  private Double mwLowLimit = 0.0;
 
   private String substanceClass;
   private String formula;
@@ -110,11 +111,11 @@ public class MolecularWeightAndFormulaContribution
     return map;
   }
 
-  public double getMw() {
+  public Double getMw() {
     return mw;
   }
 
-  public void setMw(double mw) {
+  public void setMw(Double mw) {
     this.mw = mw;
   }
 
@@ -126,19 +127,19 @@ public class MolecularWeightAndFormulaContribution
     this.substanceClass = substanceClass;
   }
 
-  public MolecularWeightAndFormulaContribution(double mw, String substanceClass, Map<String, SingleThreadCounter> formulaMap) {
+  public MolecularWeightAndFormulaContribution(Double mw, String substanceClass, Map<String, SingleThreadCounter> formulaMap) {
     this.mw = mw;
     this.substanceClass = substanceClass;
     this.formulaMap = formulaMap;
   }
 
-  public MolecularWeightAndFormulaContribution(double mw, String substanceClass, String rawFormula) {
+  public MolecularWeightAndFormulaContribution(Double mw, String substanceClass, String rawFormula) {
     this.mw = mw;
     this.substanceClass = substanceClass;
     this.formulaMap = parseMapFromFormula(rawFormula);
   }
 
-  public MolecularWeightAndFormulaContribution(double avg, double mwHigh, double mwLow, String substanceClass, String rawFormula) {
+  public MolecularWeightAndFormulaContribution(Double avg, Double mwHigh, Double mwLow, String substanceClass, String rawFormula) {
     this.mw = avg;
     this.mwHigh = mwHigh;
     this.mwLow = mwLow;
@@ -148,7 +149,7 @@ public class MolecularWeightAndFormulaContribution
     }
   }
 
-  public MolecularWeightAndFormulaContribution(double avg, double mwHigh, double mwLow, double mwHighLimit, double mwLowLimit,
+  public MolecularWeightAndFormulaContribution(Double avg, Double mwHigh, Double mwLow, Double mwHighLimit, Double mwLowLimit,
           String substanceClass, String rawFormula) {
     log.trace("7-parameter constructor");
     this.mw = avg;
@@ -165,7 +166,7 @@ public class MolecularWeightAndFormulaContribution
   }
 
   public MolecularWeightAndFormulaContribution(String substanceClass, GinasProcessingMessage message) {
-    this.mw = 0;
+    this.mw = 0.0;
     this.substanceClass = substanceClass;
     this.messages.add(message);
   }
@@ -198,35 +199,35 @@ public class MolecularWeightAndFormulaContribution
     this.messages = messages;
   }
 
-  public double getMwHigh() {
+  public Double getMwHigh() {
     return mwHigh;
   }
 
-  public void setMwHigh(double mwHigh) {
+  public void setMwHigh(Double mwHigh) {
     this.mwHigh = mwHigh;
   }
 
-  public double getMwLow() {
+  public Double getMwLow() {
     return mwLow;
   }
 
-  public void setMwLow(double mwLow) {
+  public void setMwLow(Double mwLow) {
     this.mwLow = mwLow;
   }
 
-  public double getMwHighLimit() {
+  public Double getMwHighLimit() {
     return mwHighLimit;
   }
 
-  public void setMwHighLimit(double mwHighLimit) {
+  public void setMwHighLimit(Double mwHighLimit) {
     this.mwHighLimit = mwHighLimit;
   }
 
-  public double getMwLowLimit() {
+  public Double getMwLowLimit() {
     return mwLowLimit;
   }
 
-  public void setMwLowLimit(double mwLowLimit) {
+  public void setMwLowLimit(Double mwLowLimit) {
     this.mwLowLimit = mwLowLimit;
   }
 

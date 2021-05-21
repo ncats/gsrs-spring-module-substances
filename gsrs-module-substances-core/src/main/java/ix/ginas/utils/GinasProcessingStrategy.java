@@ -144,10 +144,10 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 		final String noteFailed="Imported record has some validation issues and should not be considered authoratiative at this time";
 		Map<String, Group> cache = new HashMap<>();
 		for (GinasProcessingMessage gpm : list) {
-			
-			if(gpm.isError() && gpm.appliedChange){
-				gpm.messageType= GinasProcessingMessage.MESSAGE_TYPE.WARNING;
-			}
+			//TODO katzelda May 2021 : why was this here?  was this just a combination of different strategies?
+//			if(gpm.isError() && gpm.appliedChange){
+//				gpm.messageType= GinasProcessingMessage.MESSAGE_TYPE.WARNING;
+//			}
 			
 			if (gpm.actionType == GinasProcessingMessage.ACTION_TYPE.FAIL || gpm.isError()) {
 				allow=false;

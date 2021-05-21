@@ -3,15 +3,17 @@ package example.substance;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import example.SubstanceJsonUtil;
+import gsrs.events.CreateEditEvent;
+import gsrs.junit.json.ChangeFilter;
+import gsrs.junit.json.Changes;
 import gsrs.junit.json.JsonUtil;
-import gsrs.module.substance.processors.ReferenceProcessor;
-import gsrs.module.substance.processors.RelationshipProcessor;
-import gsrs.module.substance.processors.SubstanceProcessor;
+import gsrs.module.substance.processors.*;
+import gsrs.module.substance.services.RelationshipService;
 import gsrs.repository.EditRepository;
 import gsrs.service.GsrsEntityService;
+import gsrs.services.EditEventService;
 import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.TestEntityProcessorFactory;
 import ix.core.models.Edit;
 import ix.core.models.Principal;
@@ -29,16 +31,26 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 
 import static org.junit.Assert.*;
-@GsrsJpaTest
+//@GsrsJpaTest
 @ActiveProfiles("test")
-@Import(RelationshipInvertTest.Configuration.class)
+@RecordApplicationEvents
+@Import({RelationshipInvertTest.Configuration.class, RelationEventListener.class})
 @WithMockUser(username = "admin", roles="Admin")
 public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
@@ -62,6 +74,13 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
     private PrincipalService principalService;
+
+
+    @Autowired
+    private RelationshipService relationshipService;
+
+    @Autowired
+    private EditEventService editEventService;
 
     @TestConfiguration
     public static class Configuration{
@@ -93,221 +112,328 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         AutowireHelper.getInstance().autowire(substanceProcessor);
         AutowireHelper.getInstance().autowire(relationshipProcessor);
         AutowireHelper.getInstance().autowire(referenceProcessor);
-        principalService.registerIfAbsent("admin");
 
-        em.flush();
     }
     
     @Test
-    public void addSubstanceWithRelationshipThenAddRelatedSubstanceShouldResultInBirectionalRelationship()   throws Exception {
+    public void addSubstanceWithRelationshipThenAddRelatedSubstanceShouldResultInBirectionalRelationship(@Autowired ApplicationEvents applicationEvents)   throws Exception {
+
+        applicationEvents.clear();
+        UUID uuid1 = UUID.randomUUID();
+
+        UUID uuid2 = UUID.randomUUID();
+        Substance substance2 = new SubstanceBuilder()
+                .addName("sub2")
+                .setUUID(uuid2)
+                .build();
         //submit primary, with dangling relationship
-        JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
-        String uuid = js.get("uuid").asText();
-        this.assertCreated(js);
+        new SubstanceBuilder()
+                .addName("sub1")
+                .setUUID(uuid1)
+                .addRelationshipTo(substance2, "foo->bar")
+                .buildJsonAnd(this::assertCreated);
 
-        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(js);
-        String[] parts=type1.split("->");
-        
-        //submit the dangled
-        JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
-        String uuidA = jsA.get("uuid").asText();
-        this.assertCreated(jsA);
+        //now submit with one sided reference, processors should add the other side.
+        assertCreated(substance2.toFullJsonNode());
 
-        //confirm that the dangled has a relationship to the dangler 
-        Relationship relationship = substanceEntityService.get(UUID.fromString(uuidA)).get().relationships.get(0);
 
-        assertEquals(uuid, relationship.relatedSubstance.refuuid);
-        assertEquals(parts[1] + "->" + parts[0],relationship.type);
+        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, inverseCreateEvents.size());
+        applicationEvents.clear();
+//
+//
+        TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
+        transactionTemplate.executeWithoutResult(s->
+                relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0))
+        );
+        assertEquals(0, applicationEvents.stream(CreateInverseRelationshipEvent.class).count());
+
+
+        Substance fetchedSubstance2 = substanceEntityService.get(uuid2).get();
+        Relationship relationshipA = fetchedSubstance2.relationships.get(0);
+
+        //confirm that the dangled has a relationship to the dangler
+
+        assertEquals(uuid1.toString(), relationshipA.relatedSubstance.refuuid);
+        assertEquals("bar->foo", relationshipA.type);
     }
     
 
     @Test
-    public void removeSourceRelationshipShouldRemoveInvertedRelationship()   throws Exception {
-    	
-	    	 //submit primary, with dangling relationship
-	        JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
-	        String uuid = js.get("uuid").asText();
-	       assertCreated(js);
-	        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(js);
-	        String[] parts=type1.split("->");
-	        //submit the dangled
-	
-	        JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
-	        String uuidA = jsA.get("uuid").asText();
-	        assertCreated(jsA);
+    public void removeSourceRelationshipShouldRemoveInvertedRelationship(@Autowired ApplicationEvents applicationEvents)   throws Exception {
 
-	        Substance fetchedA = substanceEntityService.get(UUID.fromString(uuidA)).get();
-	        Relationship relationshipA = fetchedA.relationships.get(0);
+        applicationEvents.clear();
+        UUID uuid1 = UUID.randomUUID();
+
+        UUID uuid2 = UUID.randomUUID();
+        Substance substance2 = new SubstanceBuilder()
+                                    .addName("sub2")
+                                    .setUUID(uuid2)
+                                    .build();
+        //submit primary, with dangling relationship
+        new SubstanceBuilder()
+                            .addName("sub1")
+                            .setUUID(uuid1)
+                            .addRelationshipTo(substance2, "foo->bar")
+                            .buildJsonAnd(this::assertCreated);
+
+        //now submit with one sided reference, processors should add the other side.
+        assertCreated(substance2.toFullJsonNode());
+
+
+	        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+                                                                            .collect(Collectors.toList());
+	        assertEquals(1, inverseCreateEvents.size());
+        applicationEvents.clear();
+//
+//
+        TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
+        transactionTemplate.executeWithoutResult(s->
+	        relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0))
+        );
+        assertEquals(0, applicationEvents.stream(CreateInverseRelationshipEvent.class).count());
+        em.flush();
+
+        Substance fetchedSubstance2 = substanceEntityService.get(uuid2).get();
+	        Relationship relationshipA = fetchedSubstance2.relationships.get(0);
+
 	        //confirm that the dangled has a relationship to the dangler 
 
-	        assertEquals(uuid, relationshipA.relatedSubstance.refuuid);
-	        assertEquals(parts[1] + "->" + parts[0], relationshipA.type);
+	        assertEquals(uuid1.toString(), relationshipA.relatedSubstance.refuuid);
+	        assertEquals("bar->foo", relationshipA.type);
 
 
 	        //Remove the primary relationship, ensure the inverse is gone
-	        JsonNode update=new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
-									.remove("/relationships/0")
-									.ignoreMissing()
-									.build();
-	        
-	       assertUpdated(update);
-	        List<Relationship> relationships = substanceEntityService.get(UUID.fromString(uuid)).get().relationships;
+	         SubstanceBuilder.from(fetchedSubstance2.toFullJsonNode())
+                                .andThen(s-> {
+                                    s.removeRelationshipByUUID(s.relationships.get(0).uuid);
+                                })
+                                .buildJsonAnd(this::assertUpdated);
 
 
-	        assertEquals(update.at("/relationships").size(),relationships.size());
+        List<RemoveInverseRelationshipEvent> inverseRemoveEvents = applicationEvents.stream(RemoveInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
 
-	        
-	        assertEquals(0,substanceEntityService.get(UUID.fromString(uuidA)).get().relationships.size());
-	     
+//        System.out.println(inverseRemoveEvents);
+        assertEquals(1, inverseRemoveEvents.size());
+        applicationEvents.clear();
+        transactionTemplate.executeWithoutResult(s->
+                relationshipService.removeInverseRelationshipFor(inverseRemoveEvents.get(0))
+        );
+        Substance substance = substanceEntityService.get(uuid1).get();
+        List<Relationship> relationships = substance.relationships;
+        assertEquals(0, relationships.size());
+
+//        System.out.println("final app events = " + applicationEvents.stream().collect(Collectors.toList()));
     }
     
 
     @Test
-    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationship()   throws Exception {
-    	
-        //submit primary
-        JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
-        JsonNode newRelate = js.at("/relationships/0");
-        js=new JsonUtil.JsonNodeBuilder(js)
-			.remove("/relationships/1")
-			.remove("/relationships/0")
-			.ignoreMissing()
-			.build();
-        
-        String uuid = js.get("uuid").asText();
-        assertCreated(js);
+    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndIncrementVersion(@Autowired ApplicationEvents applicationEvents)   throws Exception {
 
-        
-        
-        //submit alternative
-        JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
-        String uuidA = jsA.get("uuid").asText();
-        assertCreated(jsA);
+        applicationEvents.clear();
+        UUID uuid1 = UUID.randomUUID();
 
-        
+        UUID uuid2 = UUID.randomUUID();
+        Substance substance2 = new SubstanceBuilder()
+                .addName("sub2")
+                .setUUID(uuid2)
+                .build();
+        //submit primary, with dangling relationship
+        new SubstanceBuilder()
+                .addName("sub1")
+                .setUUID(uuid1)
+                .buildJsonAnd(this::assertCreated);
+
+        //now submit with one sided reference, processors should add the other side.
+        assertCreated(substance2.toFullJsonNode());
+
         //add relationship
-        JsonNode updated=new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
-                        .add("/relationships/-", newRelate)
-                        .ignoreMissing().build();
-        assertUpdated(updated);
-        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updated);
-        String[] parts=type1.split("->");
-        
-        //check inverse relationship with primary
-        List<Relationship> relationships = substanceEntityService.get(UUID.fromString(uuidA)).get().relationships;
-        Relationship rel = relationships.get(0);
-       assertEquals(uuid, rel.relatedSubstance.refuuid);
+        Substance substance1 = substanceEntityService.get(uuid1).get();
+        assertEquals("1", substance1.version);
 
-        assertEquals(parts[1] + "->" + parts[0],rel.type);
-    
+        SubstanceBuilder.from(substance1.toFullJsonNode())
+                        .addRelationshipTo(substance2, "foo->bar")
+                        .buildJsonAnd(this::assertUpdated);
+
+        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, inverseCreateEvents.size());
+        applicationEvents.clear();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
+        transactionTemplate.executeWithoutResult(s->
+                relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0))
+        );
+
+        Substance substance = substanceEntityService.get(uuid2).get();
+        assertEquals("2", substance.version);
+        List<Relationship> relationships = substance.relationships;
+        assertEquals(1, relationships.size());
+
+        assertEquals("bar->foo", relationships.get(0).type);
+        assertEquals(uuid1.toString(), relationships.get(0).relatedSubstance.refuuid);
+
+        assertEquals(0L, applicationEvents.stream(CreateInverseRelationshipEvent.class)
+                .count());
     	
     }
 
     @Test
-    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndIncrementVersion()   throws Exception {
-    	
-        //submit primary
-        JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
-        JsonNode newRelate = js.at("/relationships/0");
-        js=new JsonUtil.JsonNodeBuilder(js)
-			.remove("/relationships/1")
-			.remove("/relationships/0")
-			.ignoreMissing()
-			.build();
-        
-        String uuid = js.get("uuid").asText();
-        assertCreated(js);
+    public void addTwoRelationshipsToSameSubstanceShouldOnlyIncrementVersionOnce(@Autowired ApplicationEvents applicationEvents)   throws Exception {
 
+        applicationEvents.clear();
+        UUID uuid1 = UUID.randomUUID();
 
-        //submit alternative
-        JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
-        String uuidA = jsA.get("uuid").asText();
-        assertCreated(jsA);
+        UUID uuid2 = UUID.randomUUID();
+        Substance substance2 = new SubstanceBuilder()
+                .addName("sub2")
+                .setUUID(uuid2)
+                .build();
+        //submit primary, with dangling relationship
+        new SubstanceBuilder()
+                .addName("sub1")
+                .setUUID(uuid1)
+                .buildJsonAnd(this::assertCreated);
 
-        
+        //now submit with one sided reference, processors should add the other side.
+        assertCreated(substance2.toFullJsonNode());
+
         //add relationship
-        JsonNode updated=new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
-                                            .add("/relationships/-", newRelate)
-                                            .ignoreMissing().build();
-        assertUpdated(updated);
+        Substance substance1 = substanceEntityService.get(uuid1).get();
+        assertEquals("1", substance1.version);
 
-        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updated);
-        String[] parts=type1.split("->");
-        
-        //check inverse relationship with primary
-        Substance substanceA = substanceEntityService.get(UUID.fromString(uuidA)).get();
-        Relationship relationshipA = substanceA.relationships.get(0);
+        SubstanceBuilder.from(substance1.toFullJsonNode())
+                .addRelationshipTo(substance2, "foo->bar")
+                .addRelationshipTo(substance2, "foo2->bar2")
+                .buildJsonAnd(this::assertUpdated);
 
-        assertEquals(uuid, relationshipA.relatedSubstance.refuuid);
-        assertEquals(parts[1] + "->" + parts[0],relationshipA.type);
-    	assertEquals("2", substanceA.version);
-    	
+        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(2, inverseCreateEvents.size());
+        applicationEvents.clear();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
+        transactionTemplate.executeWithoutResult(s-> {
+            relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0));
+            relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(1));
+        });
+
+        Substance substance = substanceEntityService.get(uuid2).get();
+        assertEquals("2", substance.version);
+        List<Relationship> relationships = substance.relationships;
+        assertEquals(2, relationships.size());
+
+        assertThat(relationships.stream().map(r-> r.type).collect(Collectors.toSet()), contains("bar2->foo2", "bar->foo"));
+
+        assertEquals(uuid1.toString(), relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(uuid1.toString(), relationships.get(1).relatedSubstance.refuuid);
+        assertEquals(0L, applicationEvents.stream(CreateInverseRelationshipEvent.class)
+                .count());
+
     }
+
     
 
-
     @Test
-    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndShouldBeInHistoryOnlyOnce()   throws Exception {
-    	
-    		//This is very hard to read right now. A substanceBuilder would make this easy.
-    		
-        //submit primary
-        JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
-        JsonNode newRelate = js.at("/relationships/0");
-        js=new JsonUtil.JsonNodeBuilder(js)
-							.remove("/relationships/1")
-							.remove("/relationships/0")
-							.ignoreMissing()
-							.build();
-        
-        String uuid = js.get("uuid").asText();
-        assertCreated(js);
+    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndShouldBeInHistoryOnlyOnce(@Autowired ApplicationEvents applicationEvents)   throws Exception {
 
-        //submit alternative
-        JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
-        String uuidA = jsA.get("uuid").asText();
-        assertCreated(jsA);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 
-        //add relationship To
-        JsonNode updated=new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
-								.add("/relationships/-", newRelate)
-								.ignoreMissing()
-								.build();
-        assertUpdated(updated);
-        //update the substance for real
+                    //This is very hard to read right now. A substanceBuilder would make this easy.
+
+                    //submit primary
+                    JsonNode tmp = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
+                    JsonNode newRelate = tmp.at("/relationships/0");
+                    JsonNode js = new JsonUtil.JsonNodeBuilder(tmp)
+                            .remove("/relationships/1")
+                            .remove("/relationships/0")
+                            .ignoreMissing()
+                            .build();
+
+                    String uuid = js.get("uuid").asText();
+
+
+                    //submit alternative
+                    JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
+                    String uuidA = jsA.get("uuid").asText();
+
+
+        applicationEvents.clear();
+        transactionTemplate.executeWithoutResult( status-> {
+                    assertCreated(js);
+                    assertCreated(jsA);
+                });
+
+        transactionTemplate.executeWithoutResult( status->
+                applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
+        );
+        applicationEvents.clear();
+
+        JsonNode updatedJson = transactionTemplate.execute(status-> {
+                    //add relationship To
+                    JsonNode updated = new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
+                            .add("/relationships/-", newRelate)
+                            .ignoreMissing()
+                            .build();
+                    assertUpdated(updated);
+                    //update the substance for real
+                    return updated;
+                });
 
         
-        
-        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updated);
+        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updatedJson);
         String[] parts=type1.split("->");
         
         //check inverse relationship with primary
-        Substance substanceA = substanceEntityService.get(UUID.fromString(uuidA)).get();
+//        Substance substanceA = substanceEntityService.get(UUID.fromString(uuidA)).get();
+//
+//        Relationship relationshipA = substanceA.relationships.get(0);
+//        String refUuidA = relationshipA.relatedSubstance.refuuid;
+//
+//        assertEquals(uuid, refUuidA);
+//        assertEquals(parts[1] + "->" + parts[0],relationshipA.type);
+//    	assertEquals("2",substanceA.version);
 
-        Relationship relationshipA = substanceA.relationships.get(0);
-        String refUuidA = relationshipA.relatedSubstance.refuuid;
+    	List<CreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toList());
 
-        assertEquals(uuid, refUuidA);
-        assertEquals(parts[1] + "->" + parts[0],relationshipA.type);
-    	assertEquals("2",substanceA.version);
-    	
-    	
-    	//This part is broken?
-    	//Doesn't even return? 
-    	//Probably not actually being considered an edit!
+    	Substance updatedSubstance = SubstanceBuilder.from(updatedJson).build();
+
+    	assertEquals(1, createInverseEvents.size());
+    	assertEquals(CreateInverseRelationshipEvent.builder()
+                        .relationshipIdToInvert(updatedSubstance.relationships.get(0).uuid)
+                        .forceCreation(true)
+                        .fromSubstance(UUID.fromString(uuidA))
+                        .toSubstance(updatedSubstance.uuid)
+                        .originatorSubstance(updatedSubstance.uuid)
+                        .build(),
+                createInverseEvents.get(0));
+
+        transactionTemplate.executeWithoutResult( status-> {
+            relationshipService.createNewInverseRelationshipFor(createInverseEvents.get(0));
+
+        });
+        List<CreateEditEvent> editsFromInverseCreation = applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList());
+        assertFalse(editsFromInverseCreation.isEmpty());
+        transactionTemplate.executeWithoutResult( status->
+                editsFromInverseCreation.forEach(editEventService::createNewEditFromEvent)
+        );
 
     	List<Edit> edits = editRepository.findByRefidOrderByCreatedDesc(uuid);
-    	assertEquals(1, edits.size());
-
-    	assertEquals("1", edits.get(0).version);
+//    	assertEquals( 2, edits.size());
+//
+    	assertEquals("2", edits.get(0).version);
+        assertEquals("1", edits.get(1).version);
     	
     }
 
     @Test
-    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndShouldBeInHistory()   throws Exception {
-    	
-    		//This is very hard to read right now. A substanceBuilder would make this easy.
-    		
+    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndShouldBeInHistory(@Autowired ApplicationEvents applicationEvents)   throws Exception {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+
+        //This is very hard to read right now. A substanceBuilder would make this easy.
+        applicationEvents.clear();
         //submit primary
         JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
         JsonNode newRelate = js.at("/relationships/0");
@@ -319,21 +445,27 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         
         String uuid = js.get("uuid").asText();
        assertCreated(js);
-
-
-        
+        transactionTemplate.executeWithoutResult( status->
+                applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
+        );
+        applicationEvents.clear();
         
         //submit alternative
         JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
         String uuidA = jsA.get("uuid").asText();
 
         assertCreated(jsA);
+        transactionTemplate.executeWithoutResult( status->
+                applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
+        );
+        assertEquals(0L, applicationEvents.stream(CreateInverseRelationshipEvent.class).count());
+        applicationEvents.clear();
 
-        entityManager.flush();
+        JsonNode beforeA = transactionTemplate.execute(s->{
+            return substanceEntityService.get(UUID.fromString(uuidA)).get().toFullJsonNode();
+        });
 
-        JsonNode beforeA = substanceEntityService.get(UUID.fromString(uuidA)).get().toFullJsonNode();
-        
-       
+
         //add relationship To
         JsonNode updated=new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
 								.add("/relationships/-", newRelate)
@@ -342,26 +474,58 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         
         //update the substance for real
         assertUpdated(updated);
-        
-        
+        transactionTemplate.executeWithoutResult( status->
+                {
+                    List<CreateEditEvent> list = applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList());
+
+
+                    list.forEach(editEventService::createNewEditFromEvent);
+                }
+                );
+        List<CreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toList());
+        applicationEvents.clear();
+        assertEquals(1, createInverseEvents.size());
+        transactionTemplate.executeWithoutResult( status-> {
+            relationshipService.createNewInverseRelationshipFor(createInverseEvents.get(0));
+            em.flush();
+        });
+        List<CreateEditEvent> editsFromInverseCreation = applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList());
+        assertFalse(editsFromInverseCreation.isEmpty());
+        transactionTemplate.executeWithoutResult( status-> {
+            editsFromInverseCreation.forEach(editEventService::createNewEditFromEvent);
+            em.flush();
+                }
+        );
+
+
+        applicationEvents.clear();
+
         String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updated);
         String[] parts=type1.split("->");
-        
-        //check inverse relationship with primary
-        Substance substanceA = substanceEntityService.get(UUID.fromString(uuidA)).get();
 
-        Relationship relationshipA = substanceA.relationships.get(0);
-        String refUuidA = relationshipA.relatedSubstance.refuuid;
-        
-        assertTrue(refUuidA.equals(uuid));
-        assertEquals(parts[1] + "->" + parts[0],relationshipA.type);
-    	assertEquals("2",substanceA.version);
-    	
-    	
-    	//This part is broken?
-    	//Doesn't even return? 
-    	//Probably not actually being considered an edit!
-    	JsonNode historyFetchedForFirst=editRepository.findByRefidOrderByCreatedDesc(uuid).get(0).getOldValueReference().rawJson();
+        transactionTemplate.executeWithoutResult( s-> {
+                    //check inverse relationship with primary
+                    Substance substanceA = substanceEntityService.get(UUID.fromString(uuidA)).get();
+
+                    Relationship relationshipA = substanceA.relationships.get(0);
+                    String refUuidA = relationshipA.relatedSubstance.refuuid;
+
+                    assertTrue(refUuidA.equals(uuid));
+                    assertEquals(parts[1] + "->" + parts[0], relationshipA.type);
+                    assertEquals("2", substanceA.version);
+                });
+
+//        em.flush();
+        transactionTemplate.executeWithoutResult( s->{
+            List<Edit> otherSubEdits = editRepository.findByRefidOrderByCreatedDesc(uuid);
+//            JsonNode historyFetchedForFirst=editRepository.findByRefidOrderByCreatedDesc(uuid).get(0).getOldValueReference().rawJson();
+            List<Edit> byRefidOrderByCreatedDesc = editRepository.findByRefidOrderByCreatedDesc(uuidA);
+            Edit edit = byRefidOrderByCreatedDesc.get(0);
+            JsonNode historyFetchedForSecond= edit.getOldValueReference().rawJson();
+    	Changes changes= JsonUtil.computeChanges(beforeA, historyFetchedForSecond, new ChangeFilter[0]);
+
+            assertEquals(beforeA,historyFetchedForSecond);
+        });
     	//TODO other edits might still not have their old value set?
 
 //    	JsonNode historyFetchedForSecond=editRepository.findByRefidOrderByCreatedDesc(uuidA).get(0).getOldValueReference().rawJson();
@@ -583,8 +747,10 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
      */
 
     @Test
-    public void removeRelationshipWithActiveMoeityGsrs587FromOriginal() throws Exception{
+    public void removeRelationshipWithActiveMoeityGsrs587FromOriginal(@Autowired ApplicationEvents applicationEvents)   throws Exception {
 
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        applicationEvents.clear();
 
         UUID parentUUID = UUID.fromString(substanceEntityService.createEntity( new SubstanceBuilder()
                 .addName("parent", name -> name.displayName =true)
@@ -595,7 +761,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         Substance inhibitor = new SubstanceBuilder()
                                         .addName("inhibitor", name -> name.displayName =true)
                                         .addActiveMoiety()
-                .generateNewUUID()
+                                        .generateNewUUID()
                                         .build();
 
         List<Relationship> activeMoeity = inhibitor.getActiveMoieties();
@@ -607,43 +773,57 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 .generateNewUUID()
                 .build();
 
-       GsrsEntityService.CreationResult<Substance> createdInhibitor = substanceEntityService.createEntity(inhibitor.toFullJsonNode());
+       Substance createdInhibitor = assertCreated(inhibitor.toFullJsonNode());
 
-        em.flush();
+        Set<CreateInverseRelationshipEvent> createInverseRelationshipEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toSet());
+        //active moeities don't have inverse relationships
+        assertEquals(0, createInverseRelationshipEvents.size());
+
         Substance storedTransporter = substanceEntityService.createEntity(transporter.toFullJsonNode()).getCreatedEntity();
 
 
         SubstanceBuilder.from(substanceRepository.getOne(parentUUID).toFullJsonNode())
-                .addRelationshipTo(createdInhibitor.getCreatedEntity(), "INFRASPECIFIC->PARENT ORGANISM")
+                .addRelationshipTo(createdInhibitor, "INFRASPECIFIC->PARENT ORGANISM")
                 .buildJsonAnd( this::assertUpdated);
 
 
 
-        SubstanceBuilder.from(substanceRepository.getOne(inhibitor.getUuid()).toFullJsonNode())
+        SubstanceBuilder.from(substanceRepository.getOne(createdInhibitor.getUuid()).toFullJsonNode())
                 .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
                 .buildJsonAnd(this::assertUpdated);
 
-        em.flush();
 
-        Principal admin = principalService.registerIfAbsent("admin");
-        assertNotNull(admin.id);
+        transactionTemplate.executeWithoutResult(s->{
+            applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toList()).forEach(relationshipService::createNewInverseRelationshipFor);
+        });
 
-        Substance actualTransporter = substanceRepository.findById(storedTransporter.getUuid()).get();
 
-        assertEquals(1, actualTransporter.relationships.size());
-        Substance storedWithRel = SubstanceBuilder.from(substanceRepository.findById(inhibitor.getUuid()).get().toFullJsonNode()).build();
+        transactionTemplate.executeWithoutResult(s-> {
+            Substance actualTransporter = substanceRepository.findById(storedTransporter.getUuid()).get();
 
-        Relationship removedRel = storedWithRel.relationships.remove(2);
-        Set<UUID> uuidRefs = removedRel.getReferencesAsUUIDs();
-        Iterator<Reference> iter = storedWithRel.references.iterator();
-        while(iter.hasNext()){
-            if(uuidRefs.contains(iter.next().uuid)){
-                iter.remove();
-            }
-        }
-        System.out.println("removed relationship relatedSubstance with uuid " + removedRel.relatedSubstance.uuid + "  ref= " + removedRel.relatedSubstance);
-        assertUpdated(storedWithRel.toFullJsonNode());
+            assertEquals(1, actualTransporter.relationships.size());
+            applicationEvents.clear();
+            System.out.println("inhibior uuid = " + inhibitor.getUuid());
+            SubstanceBuilder.from(substanceRepository.findById(inhibitor.getUuid()).get().toFullJsonNode())
+                                                .andThen(substance->{
+                                                    UUID relationshipIdToRemove=null;
+                                                    try(Stream<Relationship> rels = substance.relationships.stream()){
+                                                        relationshipIdToRemove= rels.filter(r->  r.type.equals("INHIBITOR->TRANSPORTER")).findAny().get().uuid;
+                                                    }
+                                                    assertNotNull(relationshipIdToRemove);
+                                                    substance.removeRelationshipByUUID(relationshipIdToRemove);
+                                                    return substance;
+                                                })
+                            .buildJsonAnd(this::assertUpdated);
 
+                });
+        Set<RemoveInverseRelationshipEvent> removeInverseRelationshipEvents = applicationEvents.stream(RemoveInverseRelationshipEvent.class).collect(Collectors.toSet());
+
+        assertEquals(1, removeInverseRelationshipEvents.size());
+
+        transactionTemplate.executeWithoutResult(s->{
+            removeInverseRelationshipEvents.forEach(relationshipService::removeInverseRelationshipFor);
+        });
 
 
         Substance actualInhibitor =substanceRepository.findById(inhibitor.getUuid()).get();

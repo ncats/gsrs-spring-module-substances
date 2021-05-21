@@ -293,7 +293,6 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
 			rr.publicDomain=true;
 			rr.addTag(Reference.PUBLIC_DOMAIN_REF);
 			rr.getOrGenerateUUID();
-//			s.references.add(rr);
 			return rr;
 
 	}

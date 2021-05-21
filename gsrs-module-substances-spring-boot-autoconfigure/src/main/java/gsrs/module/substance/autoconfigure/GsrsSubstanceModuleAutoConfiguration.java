@@ -83,6 +83,24 @@ public class GsrsSubstanceModuleAutoConfiguration {
         return new SubstanceController();
     }
     @Bean
+    @ConditionalOnMissingBean(StructureOCRController.class)
+    public StructureOCRController ocrController(){
+        return new StructureOCRController();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ReIndexController.class)
+    public ReIndexController reIndexController(){
+        return new ReIndexController();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ReindexService.class)
+    public ReindexService reindexService(){
+        return new ReindexFromBackups();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(NameEntityService.class)
     public NameEntityService nameEntityService(){
         return new NameEntityService();
@@ -96,5 +114,11 @@ public class GsrsSubstanceModuleAutoConfiguration {
     @ConditionalOnMissingBean(ReferenceEntityService.class)
     public ReferenceEntityService referenceEntityService(){
         return new ReferenceEntityService();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(RelationshipService.class)
+    public RelationshipService relationshipService(){
+        return new RelationshipService();
     }
 }

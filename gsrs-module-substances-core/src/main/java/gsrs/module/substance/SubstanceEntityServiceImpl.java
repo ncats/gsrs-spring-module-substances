@@ -110,6 +110,14 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
                     if (GinasProcessingMessage.ALL_VALID(messages)) {
                         resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
+                        resp.setValid(true);
+                    }else{
+                        if(resp.hasError()){
+                            resp.setValid(false);
+                        }else {
+                            //might be warnings
+                            resp.setValid(true);
+                        }
                     }
                 }
             }

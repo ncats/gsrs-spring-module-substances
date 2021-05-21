@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorValue("SUB")
 @Slf4j
+@IndexableRoot
 public class Substance extends GinasCommonData implements ValidationMessageHolder {
 
 
@@ -971,7 +972,18 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         }
         return r;
     }
-
+    public Relationship removeRelationshipByUUID(UUID relationshipUUID){
+        Iterator<Relationship> iter = this.relationships.iterator();
+        while(iter.hasNext()){
+            Relationship r = iter.next();
+            if(relationshipUUID.equals(r.uuid)){
+                iter.remove();
+                this.setIsDirty("relationships");
+                return r;
+            }
+        }
+        return null;
+    }
     public Relationship removeRelationship(Relationship r){
         if(this.relationships.remove(r)) {
             this.setIsDirty("relationships");
@@ -1000,16 +1012,17 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     }
 
 
-    public void updateVersion(){
-        Integer i=0;
-        try{
-            i = Integer.parseInt(this.version);
-        }catch(Exception e){
+    public synchronized void updateVersion(){
+        this.performIfNotDirty("version", ()-> {
+            Integer i = 0;
+            try {
+                i = Integer.parseInt(this.version);
+            } catch (Exception e) {
 
-        }
-        i++;
-        this.version=i+"";
-        setIsDirty("version");
+            }
+            i++;
+            this.version = i + "";
+        });
     }
 
     public List<Note> getNotes(){
