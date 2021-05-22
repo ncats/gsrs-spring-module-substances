@@ -40,6 +40,11 @@ public class GsrsSubstanceModuleAutoConfiguration {
     @Autowired
     private SequenceIndexerService sequenceIndexerService;
 
+
+    @Autowired
+    private SubstanceStructureSearchService structureSearchService;
+
+
     @Autowired
     private GsrsCache ixCache;
 
@@ -65,6 +70,16 @@ public class GsrsSubstanceModuleAutoConfiguration {
                 proteinSubstanceRepository, nucleicAcidSubstanceRepository);
     }
 
+    @Bean("SubstanceStructureSearchService")
+    @ConditionalOnMissingBean(SubstanceStructureSearchService.class)
+    public SubstanceStructureSearchService getStructureSearchService(){
+        return new SubstanceStructureSearchService();
+    }
+    @Bean
+    @ConditionalOnMissingBean(StructureSearchConfiguration.class)
+    public StructureSearchConfiguration getStructureSearchConfiguration(){
+        return new StructureSearchConfiguration();
+    }
     //let's try creating the beans for our controllers and services
 
     @Bean
