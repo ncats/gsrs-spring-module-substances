@@ -58,6 +58,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
@@ -384,7 +387,26 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return Util.sha1(args.toArray(new String[0]));
     }
 
+    @PostGsrsRestApiMapping("/structureSearch")
+    public Object structureSearchPost(@NotNull @RequestBody SubstanceStructureSearchService.SearchRequest request,
+                                                      @RequestParam(value="sync", required= false, defaultValue="true") boolean sync,
+                                                      @RequestParam Map<String, String> queryParameters,
+                                                      HttpServletRequest httpRequest,
+                                      RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
 
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = request.sanitize();
+
+        Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), true);
+        if(!structure.isPresent()){
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + sanitizedRequest.getQueryStructure());
+        }
+        httpRequest.setAttribute(
+                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
+
+        attributes.mergeAttributes(sanitizedRequest.getParameterMap());
+        attributes.addAttribute("q", structure.get().id.toString());
+        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+    }
     @GetGsrsRestApiMapping("/structureSearch")
     public ResponseEntity<Object> structureSearchGet(
             @RequestParam(required = false) String q, @RequestParam(required = false) String type, @RequestParam(required = false, defaultValue = "0.9") Double cutoff,
@@ -398,12 +420,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         Optional<Structure> structure = parseStructureQuery(q, false);
         if(!structure.isPresent()){
-            getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
         }
-        System.out.println("mol=\n========\n" + structure.get().molfile);
 
         String cleaned = CtTableCleaner.clean(structure.get().molfile);
-        System.out.println("cleaned=\n=====\n"+cleaned);
+
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
                         .queryStructure(cleaned)
                         .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))

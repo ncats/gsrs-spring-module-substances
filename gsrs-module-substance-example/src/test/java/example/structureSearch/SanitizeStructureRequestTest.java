@@ -26,7 +26,7 @@ public class SanitizeStructureRequestTest {
     @Test
     public void structureSet(){
         SubstanceStructureSearchService.SearchRequest request =  SubstanceStructureSearchService.SearchRequest.builder()
-                .queryStructure("CCCCC")
+                .q("CCCCC")
                 .build();
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequest = request.sanitize();

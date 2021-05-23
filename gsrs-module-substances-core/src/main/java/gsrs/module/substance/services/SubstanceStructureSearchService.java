@@ -38,7 +38,7 @@ public class SubstanceStructureSearchService {
     @NoArgsConstructor
     public static class SearchRequest{
 
-        private String queryStructure;
+        private String q;
 
         private Integer top;
 
@@ -131,7 +131,7 @@ public class SubstanceStructureSearchService {
             this.fdim = SanitizerUtil.sanitizeNumber(request.fdim, DEFAULT_FDIM);
             this.cutoff = SanitizerUtil.sanitizeCutOff(request.cutoff, DEFAULT_CUTOFF);
             this.type = request.type ==null? StructureSearchType.SUBSTRUCTURE: request.getType();
-            this.queryStructure = request.queryStructure ==null? null: request.queryStructure;//don't trim it breaks mol format!
+            this.queryStructure = request.q ==null? null: request.q;//don't trim it breaks mol format!
             this.order = request.order;
             this.field = request.field ==null? DEFAULT_FIELD: request.field;
         }
@@ -154,6 +154,22 @@ public class SubstanceStructureSearchService {
 
         public static StructureSearchType getDefaultType() {
             return DEFAULT_TYPE;
+        }
+
+        public Map<String,Object> getParameterMap() {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("top", top);
+            map.put("skip", skip);
+            map.put("fdim", fdim);
+            map.put("type", type.value);
+            if(order !=null) {
+                map.put("order", order);
+            }
+            if(!field.trim().isEmpty()){
+                map.put("field", field.trim());
+            }
+            map.put("cutoff", cutoff);
+            return map;
         }
     }
     @Autowired
