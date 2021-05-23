@@ -426,7 +426,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String cleaned = CtTableCleaner.clean(structure.get().molfile);
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
-                        .queryStructure(cleaned)
+                        .q(cleaned)
                         .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))
                         .cutoff(cutoff)
                         .fdim(fdim)
@@ -436,8 +436,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         .build()
                         .sanitize();
         SearchResultContext resultContext=null;
-        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE) {
-            resultContext = substanceStructureSearchService.substructureSearch(sanitizedRequest, hashKey.get());
+        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
+        || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SIMILARITY) {
+            resultContext = substanceStructureSearchService.search(sanitizedRequest, hashKey.get());
         }
         //TODO add other search types here
 
@@ -493,9 +494,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest) throws IOException, ExecutionException, InterruptedException {
 
-        String sequenceQuery = convertQueryStringToSequence(q);
+        Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
+        //TODO use hashKey to store in ixcache
+        Optional<Subunit> subunit = convertQueryStringToSequence(q, false);
+        if(!subunit.isPresent()){
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query sequence not found : " + q);
+
+        }
         SubstanceSequenceSearchService.SequenceSearchRequest request = SubstanceSequenceSearchService.SequenceSearchRequest.builder()
-                .q(sequenceQuery)
+                .q(subunit.get().sequence)
                 .type(SequenceIndexer.CutoffType.valueOfOrDefault(type))
                 .cutoff(cutoff)
                 .top(top)
@@ -525,8 +532,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return substanceFactoryDetailedSearch(focused, sync);
     }
 
-    private String convertQueryStringToSequence(@RequestParam(required = false) String q) {
-        String sequenceQuery = q;
+    private Optional<Subunit> convertQueryStringToSequence(@RequestParam(required = false) String q, boolean store) {
+
         if(UUIDUtil.isUUID(q)){
             //query is a uuid of a subunit look it up
             String json = (String) ixCache.getTemp(q);
@@ -534,59 +541,42 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             if(json !=null){
                 //get as Subunit
                 Subunit subunit = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().convertValue(json, Subunit.class);
-                sequenceQuery = subunit.sequence;
+                return Optional.of(subunit);
             }else{
-                Optional<Subunit> opt = subunitRepository.findById(UUID.fromString(q));
-                if(opt.isPresent()){
-                    sequenceQuery = opt.get().sequence;
-                }
+                return subunitRepository.findById(UUID.fromString(q));
+
             }
         }
-        return sequenceQuery;
+
+        Subunit sub = new Subunit();
+        sub.uuid = UUID.randomUUID();
+        sub.sequence = q;
+        if(store){
+            ixCache.setTemp(sub.uuid.toString(), EntityUtils.EntityWrapper.of(sub).toInternalJson());
+
+        }
+        return Optional.of(sub);
     }
 
     @PostGsrsRestApiMapping("/sequenceSearch")
-    public ResponseEntity<Object> sequenceSearchPost(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request,
-                                         @RequestParam(value="sync", required= false, defaultValue="true") boolean sync, @RequestParam Map<String, String> queryParameters) throws IOException, ExecutionException, InterruptedException {
+    public Object sequenceSearchPost(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request,
+                                         @RequestParam(value="sync", required= false, defaultValue="true") boolean sync,
+                                                     @RequestParam Map<String, String> queryParameters,
+                                                     HttpServletRequest httpRequest,
+                                                     RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
 
-        String querySequence= convertQueryStringToSequence(request.getQ());
-        request.setQ(querySequence);
-        SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
-/*
-        String q = sanitizedRequest.getQ();
-        if(!UUIDUtil.isUUID(q)){
-            //store the query as a temp in the cache
-            Subunit s = new Subunit();
-            s.sequence = q;
-            s.subunitIndex = 1;
-            s.uuid = UUID.randomUUID();
-            ixCache.setTemp(s.uuid.toString(), EntityUtils.EntityWrapper.of(s).toFullJson());
-            sanitizedRequest.setQ(s.uuid.toString());
+        Optional<Subunit> querySequence= convertQueryStringToSequence(request.getQ(), true);
+        if(!querySequence.isPresent()){
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters, request.getQ());
         }
 
-        HttpHeaders headers = new HttpHeaders();
-//                String url = .toUri().toString();
-        //this feels wierd that we are do a re-direct to anothe method in this same controller but if we do a direct method call
-        //our request() object won't change to what we need to pull the data out of the request object and cache ?
-        StringBuilder builder = new StringBuilder();
-        for(Map.Entry<String,String> entry : sanitizedRequest.toMap().entrySet()){
-            if(builder.length()==0){
-                builder.append("?");
-            }else{
-                builder.append("&");
-            }
-            builder.append(entry.getKey()).append("=").append(entry.getValue());
-        }
-        headers.add("Location", GsrsLinkUtil.adapt(entityLinks.linkFor(Substance.class)
-                .slash("sequenceSearch" + builder.toString())
-                .withSelfRel())
-                .toUri().toString() );
-        return new ResponseEntity<>(headers,HttpStatus.FOUND);
-        */
-        SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
-        //TODO move to service
-        SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
-        return substanceFactoryDetailedSearch(focused, sync);
+        httpRequest.setAttribute(
+                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
+
+        attributes.mergeAttributes(request.sanitize().toMap());
+        attributes.addAttribute("q", querySequence.get().uuid.toString());
+        return new ModelAndView("redirect:/api/v1/substances/sequenceSearch");
+
     }
     static String getOrderedKey (SearchResultContext context, SearchRequest request) {
         return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();

@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 @Service
@@ -81,6 +82,12 @@ public class SubstanceStructureSearchService {
 
         private final String value;
 
+        private static Map<String, StructureSearchType> lookup = new ConcurrentHashMap<>();
+        static{
+            for(StructureSearchType t : values()){
+                lookup.put(t.value, t);
+            }
+        }
         private StructureSearchType(String value){
             this.value = value;
         }
@@ -89,12 +96,15 @@ public class SubstanceStructureSearchService {
             if(type ==null){
                 return null;
             }
-            for(StructureSearchType t : values()){
-                if(t.value.equalsIgnoreCase(type)){
-                    return t;
+            return lookup.computeIfAbsent(type, t->{
+                for(StructureSearchType s : values()){
+                    if(s.value.equalsIgnoreCase(type)){
+                        return s;
+                    }
                 }
-            }
-            return null;
+                return null;
+            });
+
         }
 
         @JsonValue
@@ -187,10 +197,9 @@ public class SubstanceStructureSearchService {
     @Autowired
     private EntityManager entityManager;
 
-    public SearchResultContext substructureSearch(SanitizedSearchRequest request, String hashKey) throws Exception {
+    public SearchResultContext search(SanitizedSearchRequest request, String hashKey) throws Exception {
 
         return gsrsCache.getOrElse(structureIndexerService.lastModified(), hashKey, ()->{
-            //TODO different processors for the different types?  this is substructure need similarity, flex etc
             SearchResultProcessor<StructureIndexer.Result, Substance> processor = new StructureSearchResultProcessor(
                     structureSearchConfiguration,
                     modificationRepository,
@@ -200,8 +209,15 @@ public class SubstanceStructureSearchService {
                     entityManager);
 
             AutowireHelper.getInstance().autowire(processor);
-            StructureIndexer.ResultEnumeration resultEnumeration = structureIndexerService.substructure(request.getQueryStructure());
-
+            StructureIndexer.ResultEnumeration resultEnumeration=null;
+            if(request.getType() == StructureSearchType.SUBSTRUCTURE) {
+                resultEnumeration = structureIndexerService.substructure(request.getQueryStructure());
+            }else if(request.getType() == StructureSearchType.SIMILARITY){
+                resultEnumeration = structureIndexerService.similarity(request.getQueryStructure(), request.cutoff);
+            }
+            if(resultEnumeration ==null){
+                throw new Exception("invalid request type "+ request.getType());
+            }
             processor.setResults(1, resultEnumeration);
             SearchResultContext ctx = processor.getContext();
             ctx.setKey(hashKey);
