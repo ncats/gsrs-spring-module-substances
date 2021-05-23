@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.nih.ncats.molwitch.io.CtTableCleaner;
+import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.repository.StructureRepository;
 import gov.nih.ncats.common.io.IOUtil;
@@ -21,6 +23,7 @@ import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.ReindexService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
+import gsrs.module.substance.services.SubstanceStructureSearchService;
 import gsrs.repository.EditRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.hasAdminRole;
@@ -28,10 +31,7 @@ import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.GsrsSpringUtils;
 import ix.core.EntityMapperOptions;
-import ix.core.chem.ChemAligner;
-import ix.core.chem.ChemCleaner;
-import ix.core.chem.PolymerDecode;
-import ix.core.chem.StructureProcessor;
+import ix.core.chem.*;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
 import ix.core.models.Structure;
@@ -205,6 +205,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private SubunitRepository subunitRepository;
 
+    @Autowired
+    private SubstanceStructureSearchService substanceStructureSearchService;
 
 
 
@@ -274,20 +276,17 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
     }
 
-    public Optional<String> getKeyForCurrentRequest(SubstanceSequenceSearchService.SanitizedSequenceSearchRequest searchRequest){
+    public Optional<String> getKeyForCurrentRequest(HttpServletRequest request){
 
-        Optional<HttpServletRequest> opt =  getCurrentHttpRequest();
-        if(!opt.isPresent()){
-            return Optional.empty();
-        }
-        HttpServletRequest request = opt.get();
-        String query = searchRequest.getQ() + request.getParameter("order");
+
+
+        String query = request.getParameter("q") + request.getParameter("order");
         String type = request.getParameter("type");
 
 
 
         log.debug("checkStatus: q=" + query + " type=" + type);
-        if (type != null && query != null) {
+        if (type != null && request.getParameter("q") != null) {
             try {
                 String key = null;
                 if (type.toLowerCase().startsWith("sub")) {
@@ -384,6 +383,85 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Collections.sort(args);
         return Util.sha1(args.toArray(new String[0]));
     }
+
+
+    @GetGsrsRestApiMapping("/structureSearch")
+    public ResponseEntity<Object> structureSearchGet(
+            @RequestParam(required = false) String q, @RequestParam(required = false) String type, @RequestParam(required = false, defaultValue = "0.9") Double cutoff,
+            @RequestParam(required = false) Integer top, @RequestParam(required = false) Integer skip, @RequestParam(required = false) Integer fdim, @RequestParam(required = false) String field,
+
+            @RequestParam(value = "sync", required = false, defaultValue = "true") boolean sync,
+            @RequestParam Map<String, String> queryParameters,
+            HttpServletRequest httpServletRequest) throws Exception {
+
+        Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
+
+        Optional<Structure> structure = parseStructureQuery(q, false);
+        if(!structure.isPresent()){
+            getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
+        }
+        System.out.println("mol=\n========\n" + structure.get().molfile);
+
+        String cleaned = CtTableCleaner.clean(structure.get().molfile);
+        System.out.println("cleaned=\n=====\n"+cleaned);
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
+                        .queryStructure(cleaned)
+                        .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))
+                        .cutoff(cutoff)
+                        .fdim(fdim)
+                        .top(top)
+                        .skip(skip)
+                        .field(field)
+                        .build()
+                        .sanitize();
+        SearchResultContext resultContext=null;
+        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE) {
+            resultContext = substanceStructureSearchService.substructureSearch(sanitizedRequest, hashKey.get());
+        }
+        //TODO add other search types here
+
+        //we have to manually set the actual request uri here as it's the only place we know it!!
+        //for some reason the spring boot methods to get the current quest  URI don't include the parameters
+        //so we have to append them manually here from our controller
+        StringBuilder queryParamBuilder = new StringBuilder();
+        queryParameters.forEach((k,v)->{
+            if(queryParamBuilder.length()==0){
+                queryParamBuilder.append("?");
+            }else{
+                queryParamBuilder.append("&");
+            }
+            queryParamBuilder.append(k).append("=").append(v);
+        });
+        resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder);
+        //TODO move to service
+        SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
+        return substanceFactoryDetailedSearch(focused, sync);
+    }
+
+    private Optional<Structure> parseStructureQuery(String q, boolean store) throws IOException {
+        if(UUIDUtil.isUUID(q)){
+            String json = (String) ixCache.getTemp(q);
+            if(json !=null){
+                return Optional.of(EntityUtils.getEntityInfoFor(Structure.class).fromJson(json));
+            }
+            //it's a UUID that isn't a temp structure try the database
+            Optional<Structure> opt = structureRepository.findById(UUID.fromString(q));
+            return opt;
+
+        }
+        Structure struc= structureProcessor.instrument(q);
+
+
+            if(store){
+
+                if(struc.id ==null){
+                    struc.id = UUID.randomUUID();
+                }
+                ixCache.setTemp(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
+            }
+        return Optional.of(struc);
+    }
+
     //context: String, q: String ?= null, type: String ?= "GLOBAL", cutoff: Double ?= .9, top: Int ?= 10, skip: Int ?= 0, fdim: Int ?= 10, field: String ?= "", seqType: String ?="Protein")
     @GetGsrsRestApiMapping("/sequenceSearch")
     public ResponseEntity<Object> sequenceSearchGet(
@@ -420,7 +498,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }
             queryParamBuilder.append(k).append("=").append(v);
         });
-        resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder.toString());
+        resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder);
         //TODO move to service
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
@@ -558,7 +636,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }else{
                 //katzelda : run it through the text indexer for the facets?
 //                searchResult = SearchFactory.search (request);
-                searchResult = legacySearchService.search(request.getQuery(), request.getOptions(), request.getSubset());
+                searchResult = legacySearchService.search(null, request.getOptions(), request.getSubset());
                 log.debug("Cache misses: "
                         +key+" size="+results.size()
                         +" class="+searchResult);

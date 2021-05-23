@@ -12,6 +12,7 @@ import gsrs.module.substance.repository.ModificationRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.utils.SanitizerUtil;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Structure;
 import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
@@ -50,6 +51,8 @@ public class SubstanceStructureSearchService {
         private StructureSearchType type;
 
         private String order;
+
+        private String field;
         /*
 
         String q =      getLastStringOrElse(params.get("q"), null);
@@ -81,6 +84,19 @@ public class SubstanceStructureSearchService {
         private StructureSearchType(String value){
             this.value = value;
         }
+
+        public static StructureSearchType parseType(String type) {
+            if(type ==null){
+                return null;
+            }
+            for(StructureSearchType t : values()){
+                if(t.value.equalsIgnoreCase(type)){
+                    return t;
+                }
+            }
+            return null;
+        }
+
         @JsonValue
         public String getValue(){
             return value;
@@ -96,6 +112,7 @@ public class SubstanceStructureSearchService {
         private static final double DEFAULT_CUTOFF = 0.8D;
         private static final StructureSearchType DEFAULT_TYPE = StructureSearchType.SUBSTRUCTURE;
 
+        private static final String DEFAULT_FIELD= "";
         private String queryStructure;
 
         private int top;
@@ -103,7 +120,7 @@ public class SubstanceStructureSearchService {
         private int skip;
 
         private int fdim;
-
+        private String field;
         private double cutoff;
         private String order;
         private StructureSearchType type;
@@ -114,8 +131,13 @@ public class SubstanceStructureSearchService {
             this.fdim = SanitizerUtil.sanitizeNumber(request.fdim, DEFAULT_FDIM);
             this.cutoff = SanitizerUtil.sanitizeCutOff(request.cutoff, DEFAULT_CUTOFF);
             this.type = request.type ==null? StructureSearchType.SUBSTRUCTURE: request.getType();
-            this.queryStructure = request.queryStructure ==null? null: request.queryStructure.trim();
+            this.queryStructure = request.queryStructure ==null? null: request.queryStructure;//don't trim it breaks mol format!
             this.order = request.order;
+            this.field = request.field ==null? DEFAULT_FIELD: request.field;
+        }
+
+        public static String getDefaultField() {
+            return DEFAULT_FIELD;
         }
 
         public static int getDefaultTop() {
@@ -161,6 +183,7 @@ public class SubstanceStructureSearchService {
                     gsrsCache,
                     entityManager);
 
+            AutowireHelper.getInstance().autowire(processor);
             StructureIndexer.ResultEnumeration resultEnumeration = structureIndexerService.substructure(request.getQueryStructure());
 
             processor.setResults(1, resultEnumeration);
