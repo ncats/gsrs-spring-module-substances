@@ -396,16 +396,30 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = request.sanitize();
 
-        Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), true);
+        boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT ||
+                sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX ;
+        Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), !isHashQuery);
         if(!structure.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + sanitizedRequest.getQueryStructure());
         }
         httpRequest.setAttribute(
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
+
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
-        attributes.addAttribute("q", structure.get().id.toString());
-        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+        if(isHashQuery){
+            if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
+                attributes.addAttribute("q", "root_structure_properties_term:"+structure.get().getExactHash());
+
+            }else{
+                attributes.addAttribute("q", "root_structure_properties_term:"+structure.get().getStereoInsensitiveHash());
+
+            }
+            return new ModelAndView("redirect:/api/v1/substances/search");
+        }else {
+            attributes.addAttribute("q", structure.get().id.toString());
+            return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+        }
     }
     @GetGsrsRestApiMapping("/structureSearch")
     public Object structureSearchGet(
@@ -425,6 +439,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
         }
 
+
         String cleaned = CtTableCleaner.clean(structure.get().molfile);
 
 
@@ -438,6 +453,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         .field(field)
                         .build()
                         .sanitize();
+
 
         String hash=null;
         String textSearchKey=null;
@@ -454,7 +470,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
-            attributes.addAttribute("q", "root_substances_properties_term:"+hash);
+            attributes.addAttribute("q", "root_structure_properties_term:"+hash);
             //do a text search for that hash value?
             return new ModelAndView("redirect:/api/v1/substances/search");
         }
