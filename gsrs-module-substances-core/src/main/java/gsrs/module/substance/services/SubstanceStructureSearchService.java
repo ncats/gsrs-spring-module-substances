@@ -12,9 +12,14 @@ import gsrs.module.substance.repository.ModificationRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.utils.SanitizerUtil;
+import gsrs.springUtils.AutowireHelper;
+import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
+import ix.core.search.text.IndexerService;
+import ix.core.search.text.IndexerServiceFactory;
+import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.*;
 import ix.seqaln.SequenceIndexer;
@@ -27,6 +32,7 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 @Service
@@ -37,7 +43,7 @@ public class SubstanceStructureSearchService {
     @NoArgsConstructor
     public static class SearchRequest{
 
-        private String queryStructure;
+        private String q;
 
         private Integer top;
 
@@ -50,6 +56,8 @@ public class SubstanceStructureSearchService {
         private StructureSearchType type;
 
         private String order;
+
+        private String field;
         /*
 
         String q =      getLastStringOrElse(params.get("q"), null);
@@ -78,9 +86,31 @@ public class SubstanceStructureSearchService {
 
         private final String value;
 
+        private static Map<String, StructureSearchType> lookup = new ConcurrentHashMap<>();
+        static{
+            for(StructureSearchType t : values()){
+                lookup.put(t.value, t);
+            }
+        }
         private StructureSearchType(String value){
             this.value = value;
         }
+
+        public static StructureSearchType parseType(String type) {
+            if(type ==null){
+                return null;
+            }
+            return lookup.computeIfAbsent(type, t->{
+                for(StructureSearchType s : values()){
+                    if(s.value.equalsIgnoreCase(type)){
+                        return s;
+                    }
+                }
+                return null;
+            });
+
+        }
+
         @JsonValue
         public String getValue(){
             return value;
@@ -96,6 +126,7 @@ public class SubstanceStructureSearchService {
         private static final double DEFAULT_CUTOFF = 0.8D;
         private static final StructureSearchType DEFAULT_TYPE = StructureSearchType.SUBSTRUCTURE;
 
+        private static final String DEFAULT_FIELD= "";
         private String queryStructure;
 
         private int top;
@@ -103,7 +134,7 @@ public class SubstanceStructureSearchService {
         private int skip;
 
         private int fdim;
-
+        private String field;
         private double cutoff;
         private String order;
         private StructureSearchType type;
@@ -114,8 +145,13 @@ public class SubstanceStructureSearchService {
             this.fdim = SanitizerUtil.sanitizeNumber(request.fdim, DEFAULT_FDIM);
             this.cutoff = SanitizerUtil.sanitizeCutOff(request.cutoff, DEFAULT_CUTOFF);
             this.type = request.type ==null? StructureSearchType.SUBSTRUCTURE: request.getType();
-            this.queryStructure = request.queryStructure ==null? null: request.queryStructure.trim();
+            this.queryStructure = request.q ==null? null: request.q;//don't trim it breaks mol format!
             this.order = request.order;
+            this.field = request.field ==null? DEFAULT_FIELD: request.field;
+        }
+
+        public static String getDefaultField() {
+            return DEFAULT_FIELD;
         }
 
         public static int getDefaultTop() {
@@ -133,6 +169,22 @@ public class SubstanceStructureSearchService {
         public static StructureSearchType getDefaultType() {
             return DEFAULT_TYPE;
         }
+
+        public Map<String,Object> getParameterMap() {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("top", top);
+            map.put("skip", skip);
+            map.put("fdim", fdim);
+            map.put("type", type.value);
+            if(order !=null) {
+                map.put("order", order);
+            }
+            if(!field.trim().isEmpty()){
+                map.put("field", field.trim());
+            }
+            map.put("cutoff", cutoff);
+            return map;
+        }
     }
     @Autowired
     private StructureIndexerService structureIndexerService;
@@ -149,10 +201,9 @@ public class SubstanceStructureSearchService {
     @Autowired
     private EntityManager entityManager;
 
-    public SearchResultContext substructureSearch(SanitizedSearchRequest request, String hashKey) throws Exception {
+    public SearchResultContext search(SanitizedSearchRequest request, String hashKey) throws Exception {
 
         return gsrsCache.getOrElse(structureIndexerService.lastModified(), hashKey, ()->{
-            //TODO different processors for the different types?  this is substructure need similarity, flex etc
             SearchResultProcessor<StructureIndexer.Result, Substance> processor = new StructureSearchResultProcessor(
                     structureSearchConfiguration,
                     modificationRepository,
@@ -161,8 +212,17 @@ public class SubstanceStructureSearchService {
                     gsrsCache,
                     entityManager);
 
-            StructureIndexer.ResultEnumeration resultEnumeration = structureIndexerService.substructure(request.getQueryStructure());
+            AutowireHelper.getInstance().autowire(processor);
+            StructureIndexer.ResultEnumeration resultEnumeration=null;
+            if(request.getType() == StructureSearchType.SUBSTRUCTURE) {
+                resultEnumeration = structureIndexerService.substructure(request.getQueryStructure());
+            }else if(request.getType() == StructureSearchType.SIMILARITY){
+                resultEnumeration = structureIndexerService.similarity(request.getQueryStructure(), request.cutoff);
+            }
 
+            if(resultEnumeration ==null){
+                throw new Exception("invalid request type "+ request.getType());
+            }
             processor.setResults(1, resultEnumeration);
             SearchResultContext ctx = processor.getContext();
             ctx.setKey(hashKey);

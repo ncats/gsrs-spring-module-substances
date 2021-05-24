@@ -19,12 +19,14 @@ public class SanitizeStructureRequestTest {
         assertEquals(SanitizedSearchRequest.getDefaultCutoff(),sanitizedSearchRequest.getCutoff());
         assertEquals(SanitizedSearchRequest.getDefaultFdim(),sanitizedSearchRequest.getFdim());
         assertEquals(SanitizedSearchRequest.getDefaultType(),sanitizedSearchRequest.getType());
+        assertEquals(SanitizedSearchRequest.getDefaultTop(),sanitizedSearchRequest.getTop());
+        assertEquals(SanitizedSearchRequest.getDefaultField(),sanitizedSearchRequest.getField());
     }
 
     @Test
     public void structureSet(){
         SubstanceStructureSearchService.SearchRequest request =  SubstanceStructureSearchService.SearchRequest.builder()
-                .queryStructure("CCCCC")
+                .q("CCCCC")
                 .build();
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequest = request.sanitize();
@@ -62,6 +64,28 @@ public class SanitizeStructureRequestTest {
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequest = request.sanitize();
 
         assertEquals("desc", sanitizedSearchRequest.getOrder());
+    }
+
+    @Test
+    public void field(){
+        SubstanceStructureSearchService.SearchRequest request =  SubstanceStructureSearchService.SearchRequest.builder()
+                .field("myField")
+                .build();
+
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequest = request.sanitize();
+
+        assertEquals("myField", sanitizedSearchRequest.getField());
+    }
+
+    @Test
+    public void top(){
+        SubstanceStructureSearchService.SearchRequest request =  SubstanceStructureSearchService.SearchRequest.builder()
+                .top(99)
+                .build();
+
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequest = request.sanitize();
+
+        assertEquals(99, sanitizedSearchRequest.getTop());
     }
 
     @Test

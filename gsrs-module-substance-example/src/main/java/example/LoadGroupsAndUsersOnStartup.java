@@ -16,6 +16,7 @@ import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -38,6 +39,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
 
     @Override
+    @Transactional
     public void run(ApplicationArguments args) throws Exception {
         if(groupRepository.count() >0){
             return;

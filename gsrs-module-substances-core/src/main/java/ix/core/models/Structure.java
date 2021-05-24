@@ -210,6 +210,27 @@ public class Structure extends BaseModel {
 //        return HTMLFormula;
 //    }
 
+    public void updateStructureFields(Structure other){
+        if(other !=null) {
+            this.properties.clear();
+
+            this.properties = new ArrayList(other.properties); //add properties
+            this.ezCenters = other.ezCenters;
+            this.definedStereo = other.definedStereo;
+            this.charge = other.charge;
+            this.stereoCenters = other.stereoCenters;
+
+            this.mwt = other.mwt;
+            this.formula = other.formula;
+            setIsDirty("properties");
+            setIsDirty("ezCenters");
+            setIsDirty("definedStereo");
+            setIsDirty("charge");
+            setIsDirty("stereoCenters");
+            setIsDirty("mwt");
+            setIsDirty("formula");
+        }
+    }
     @JsonProperty("stereochemistry")
     public void setStereoChemistry(Stereo stereoChemistry) {
         this.stereoChemistry = stereoChemistry;
