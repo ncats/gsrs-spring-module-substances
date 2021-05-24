@@ -17,6 +17,8 @@ import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
+import ix.core.search.text.IndexerService;
+import ix.core.search.text.IndexerServiceFactory;
 import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.*;
 import ix.seqaln.SequenceIndexer;
@@ -197,7 +199,8 @@ public class SubstanceStructureSearchService {
     private GsrsCache gsrsCache;
     @Autowired
     private EntityManager entityManager;
-
+    @Autowired
+    private IndexerServiceFactory indexerServiceFactory;
 
     public SearchResultContext search(SanitizedSearchRequest request, String hashKey) throws Exception {
 

@@ -5,13 +5,10 @@ import ix.core.models.Structure;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.PolymerSubstance;
 import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -32,18 +29,18 @@ public class ChemicalSubstanceStructureHashIndexValueMaker implements IndexValue
     @Override
     public void createIndexableValues(Substance s, Consumer<IndexableValue> consumer) {
         if(s instanceof ChemicalSubstance){
-            createPolymerStructureHashes((ChemicalSubstance)s, consumer);
+            createStructureHashes((ChemicalSubstance)s, consumer);
         }
     }
 
 
-    public void createPolymerStructureHashes(ChemicalSubstance s, Consumer<IndexableValue> consumer) {
+    public void createStructureHashes(ChemicalSubstance s, Consumer<IndexableValue> consumer) {
         try{
             Structure structure = structureProcessor.instrument(s.structure.molfile);
 
 
 
-
+            System.out.println("stereo insensitive hash = " + structure.getStereoInsensitiveHash());
             consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", structure.getStereoInsensitiveHash()));
             consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", structure.getExactHash()));
 
