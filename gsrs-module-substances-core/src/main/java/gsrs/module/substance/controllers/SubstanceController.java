@@ -408,13 +408,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ModelAndView("redirect:/api/v1/substances/structureSearch");
     }
     @GetGsrsRestApiMapping("/structureSearch")
-    public ResponseEntity<Object> structureSearchGet(
+    public Object structureSearchGet(
             @RequestParam(required = false) String q, @RequestParam(required = false) String type, @RequestParam(required = false, defaultValue = "0.9") Double cutoff,
             @RequestParam(required = false) Integer top, @RequestParam(required = false) Integer skip, @RequestParam(required = false) Integer fdim, @RequestParam(required = false) String field,
 
             @RequestParam(value = "sync", required = false, defaultValue = "true") boolean sync,
             @RequestParam Map<String, String> queryParameters,
-            HttpServletRequest httpServletRequest) throws Exception {
+            HttpServletRequest httpServletRequest,
+            HttpServletRequest httpRequest,
+            RedirectAttributes attributes) throws Exception {
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
 
@@ -424,6 +426,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
         String cleaned = CtTableCleaner.clean(structure.get().molfile);
+
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
                         .q(cleaned)
@@ -435,6 +438,26 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         .field(field)
                         .build()
                         .sanitize();
+
+        String hash=null;
+        String textSearchKey=null;
+        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
+            hash = structure.get().getExactHash();
+            textSearchKey = Structure.H_EXACT_HASH;
+        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
+            hash= structure.get().getStereoInsensitiveHash();
+            textSearchKey = Structure.H_STEREO_INSENSITIVE_HASH;
+        }
+
+        if(hash !=null){
+            httpRequest.setAttribute(
+                    View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
+
+            attributes.mergeAttributes(sanitizedRequest.getParameterMap());
+            attributes.addAttribute("q", "root_substances_properties_term:"+hash);
+            //do a text search for that hash value?
+            return new ModelAndView("redirect:/api/v1/substances/search");
+        }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
         || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SIMILARITY) {

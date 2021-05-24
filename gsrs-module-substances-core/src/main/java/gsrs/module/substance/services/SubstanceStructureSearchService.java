@@ -13,6 +13,7 @@ import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.utils.SanitizerUtil;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
@@ -197,6 +198,7 @@ public class SubstanceStructureSearchService {
     @Autowired
     private EntityManager entityManager;
 
+
     public SearchResultContext search(SanitizedSearchRequest request, String hashKey) throws Exception {
 
         return gsrsCache.getOrElse(structureIndexerService.lastModified(), hashKey, ()->{
@@ -215,6 +217,7 @@ public class SubstanceStructureSearchService {
             }else if(request.getType() == StructureSearchType.SIMILARITY){
                 resultEnumeration = structureIndexerService.similarity(request.getQueryStructure(), request.cutoff);
             }
+
             if(resultEnumeration ==null){
                 throw new Exception("invalid request type "+ request.getType());
             }
