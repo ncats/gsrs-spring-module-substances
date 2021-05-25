@@ -456,13 +456,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
         String hash=null;
-        String textSearchKey=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            hash = structure.get().getExactHash();
-            textSearchKey = Structure.H_EXACT_HASH;
+            hash = "root_structure_properties_term:" + structure.get().getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
+            //note we purposefully don't have the lucene path so it finds moeities and polymers etc
             hash= structure.get().getStereoInsensitiveHash();
-            textSearchKey = Structure.H_STEREO_INSENSITIVE_HASH;
         }
 
         if(hash !=null){
@@ -470,7 +468,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
-            attributes.addAttribute("q", "root_structure_properties_term:"+hash);
+            attributes.addAttribute("q", hash);
             //do a text search for that hash value?
             return new ModelAndView("redirect:/api/v1/substances/search");
         }
