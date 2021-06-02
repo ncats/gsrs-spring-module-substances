@@ -25,11 +25,13 @@ public class Glycosylation extends GinasCommonSubData {
     @JsonIgnore
     @Indexable(indexed=false)
 	@OneToOne(cascade= CascadeType.ALL)
-    @JoinTable(
-            name = "Glycosylation_CGlycosylationSiteContainer",
-            joinColumns=
-                @JoinColumn(name="c_glycosylation_sites_uuid")
-        )
+//    @JoinTable(
+//            name = "Glycosylation_CGlycosylationSiteContainer",
+//            joinColumns=
+//                @JoinColumn(name="c_glycosylation_sites_uuid")
+//        )
+    @MapsId
+    @JoinColumn(name = "c_glycosylation_sites_uuid")
     SiteContainer _CGlycosylationSiteContainer;
 
     @JsonProperty("CGlycosylationSites")
@@ -50,11 +52,13 @@ public class Glycosylation extends GinasCommonSubData {
     @JsonIgnore
     @Indexable(indexed=false)
     @OneToOne(cascade= CascadeType.ALL)
-    @JoinTable(
-            name = "Glycosylation_NGlycosylationSiteContainer",
-            joinColumns=
-                @JoinColumn(name="n_glycosylation_sites_uuid")
-        )
+//    @JoinTable(
+//            name = "Glycosylation_NGlycosylationSiteContainer",
+//            joinColumns=
+//                @JoinColumn(name="n_glycosylation_sites_uuid")
+//        )
+    @MapsId
+    @JoinColumn(name = "n_glycosylation_sites_uuid")
     SiteContainer _NGlycosylationSiteContainer;
 
     @JsonProperty("NGlycosylationSites")
@@ -77,11 +81,13 @@ public class Glycosylation extends GinasCommonSubData {
     @JsonIgnore
 	@OneToOne(cascade= CascadeType.ALL)
     @Indexable(indexed=false)
-    @JoinTable(
-            name = "Glycosylation_OGlycosylationSiteContainer",
-            joinColumns=
-                @JoinColumn(name="o_glycosylation_sites_uuid")
-        )
+//    @JoinTable(
+//            name = "Glycosylation_OGlycosylationSiteContainer",
+//            joinColumns=
+//                @JoinColumn(name="o_glycosylation_sites_uuid")
+//        )
+    @MapsId
+    @JoinColumn(name = "o_glycosylation_sites_uuid")
     SiteContainer _OGlycosylationSiteContainer;
 
     @JsonProperty("OGlycosylationSites")
