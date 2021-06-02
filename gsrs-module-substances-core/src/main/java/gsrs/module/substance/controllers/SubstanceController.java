@@ -2,14 +2,20 @@ package gsrs.module.substance.controllers;
 
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.molwitch.MolwitchException;
 import gov.nih.ncats.molwitch.io.CtTableCleaner;
+import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
+import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
@@ -20,6 +26,7 @@ import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.ReindexService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
@@ -46,14 +53,18 @@ import ix.utils.UUIDUtil;
 import ix.utils.Util;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -62,16 +73,23 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -211,10 +229,29 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private SubstanceStructureSearchService substanceStructureSearchService;
 
-
-
+    @Autowired
+    private ChemicalSubstanceRepository chemicalSubstanceRepository;
+    @Autowired
+    private SubstanceRepository substanceRepository;
     @Autowired
     private GsrsEntityService<Substance, UUID> substanceEntityService;
+
+
+    @Value("classpath:renderer.json")
+    private String renderOptionsJson;
+
+    private CachedSupplier<RendererOptions> rendererSupplier = CachedSupplier.of(()->{
+        if(renderOptionsJson !=null) {
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                return mapper.readValue(renderOptionsJson, RendererOptions.class);
+            } catch (JsonProcessingException e) {
+                e.printStackTrace();
+            }
+        }
+        return new RendererOptions();
+    });
+
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
         return legacySearchService;
@@ -456,13 +493,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
         String hash=null;
-        String textSearchKey=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            hash = structure.get().getExactHash();
-            textSearchKey = Structure.H_EXACT_HASH;
+            hash = "root_structure_properties_term:" + structure.get().getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
+            //note we purposefully don't have the lucene path so it finds moeities and polymers etc
             hash= structure.get().getStereoInsensitiveHash();
-            textSearchKey = Structure.H_STEREO_INSENSITIVE_HASH;
         }
 
         if(hash !=null){
@@ -470,7 +505,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
-            attributes.addAttribute("q", "root_structure_properties_term:"+hash);
+            attributes.addAttribute("q", hash);
             //do a text search for that hash value?
             return new ModelAndView("redirect:/api/v1/substances/search");
         }
@@ -783,74 +818,425 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             s.id = UUID.randomUUID();
         }
         //TODO save in EhCache
-    }
-    /*
-     public static void saveTempStructure(Structure s){
-        if(s.id==null)s.id=UUID.randomUUID();
 
-        AccessLogger.info("{} {} {} {} \"{}\"",
-                UserFetcher.getActingUser(true).username,
-                "unknown",
-                "unknown",
-                "structure search:" + s.id,
-                s.molfile.trim().replace("\n", "\\n").replace("\r", ""));
-        //IxCache.setTemp(s.id.toString(), EntityWrapper.of(s).toFullJson());
-        IxCache.setTemp(s.id.toString(), EntityWrapper.of(s).toInternalJson());
     }
 
-    public static Result interpretStructure(String contextIgnored) {
-            ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
-            ObjectNode node = mapper.createObjectNode();
-            try {
-                String opayload = request().body().asText();
-                String payload = ChemCleaner.getCleanMolfile(opayload);
-                if (payload != null) {
-                    List<Structure> moieties = new ArrayList<Structure>();
-                    try {
-                        Structure struc = StructureProcessor.instrument(payload, moieties, false); // don't
-                        // standardize!
-                        // we should be really use the PersistenceQueue to do this
-                        // so that it doesn't block
-                        // in fact, it probably shouldn't be saving this at all
-                        if (payload.contains("\n") && payload.contains("M  END")) {
-                            struc.molfile = payload;
-                        }
-                        StructureFactory.saveTempStructure(struc);
-                        ArrayNode an = mapper.createArrayNode();
-                        for (Structure m : moieties) {
-                            // m.save();
-                            StructureFactory.saveTempStructure(m);
-                            ObjectNode on = mapper.valueToTree(m);
-                            Amount c1 = Moiety.intToAmount(m.count);
-                            JsonNode amt = mapper.valueToTree(c1);
-                            on.set("countAmount", amt);
-                            an.add(on);
-                        }
-                        node.put("structure", mapper.valueToTree(struc));
-                        node.put("moieties", an);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    try {
-                        Collection<PolymerDecode.StructuralUnit> o = PolymerDecode.DecomposePolymerSU(payload, true);
-                        for (PolymerDecode.StructuralUnit su : o) {
-                            Structure struc = StructureProcessor.instrument(su.structure, null, false);
-                            // struc.save();
-                            StructureFactory.saveTempStructure(struc);
-                            su._structure = struc;
-                        }
-                        node.put("structuralUnits", mapper.valueToTree(o));
-                    } catch (Throwable e) {
-                    	e.printStackTrace();
-                        Logger.error("Can't enumerate polymer", e);
+
+    @GetGsrsRestApiMapping({"/render({ID})", "/render/{ID}"})
+    public Object render(@PathVariable("ID") String idOrSmiles,
+                         @RequestParam(value = "format", required = false, defaultValue = "svg") String format,
+                         //default stereo to empty string which spring returns as null Boolean object
+                         @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
+                         @RequestParam(value = "context", required = false) String contextId,
+                         @RequestParam(value = "size", required = false, defaultValue = "150") int size,
+                         @RequestParam Map<String, String> queryParameters) throws Exception {
+        int[] amaps = null;
+        String input=null;
+        if (UUIDUtil.isUUID(idOrSmiles)) {
+            Substance actualSubstance = null;
+            UUID uuid = UUID.fromString(idOrSmiles);
+            Optional<Structure> structure = structureRepository.findById(uuid);
+            if (structure.isPresent()) {
+                if (structure.get() instanceof GinasChemicalStructure) {
+                    ChemicalSubstance cs = chemicalSubstanceRepository.findByStructure_Id(structure.get().id);
+                    if (cs != null) {
+                        actualSubstance = cs;
                     }
                 }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                Logger.error("Can't process payload", ex);
-                return internalServerError("Can't process mol payload");
+            } else {
+                Optional<Substance> substance = substanceRepository.findById(uuid);
+                if (substance.isPresent()) {
+                    actualSubstance = substance.get();
+                    structure = actualSubstance.getStructureToRender();
+
+
+                }
+
+
             }
-            return ok(node);
+            if (!structure.isPresent()) {
+                return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+            }
+            //context id is either a hash or a comma sep list of offsets
+            if (contextId != null) {
+                if (contextId.contains(",")) {
+                    try {
+                        amaps = Arrays.stream(contextId.split(","))
+                                .mapToInt(Integer::parseInt)
+                                .toArray();
+                    } catch (Exception e) {
+                        //ignore
+                    }
+
+
+                } else if (actualSubstance != null) {
+                    actualSubstance.setMatchContextProperty(ixCache.getMatchingContextByContextID(contextId, EntityUtils.EntityWrapper.of(actualSubstance).getKey()));
+                    amaps = actualSubstance.getMatchContextPropertyOr("atomMaps", null);
+
+                }
+
+            }
+            input = fixMolIfNeeded(structure.get());
+        }else {
+            //string must be a smiles (or mol ?)
+            input = idOrSmiles;
+            if (contextId != null && contextId.contains(",")) {
+                try {
+                    amaps = Arrays.stream(contextId.split(","))
+                            .mapToInt(Integer::parseInt)
+                            .toArray();
+                } catch (Exception e) {
+                    //ignore
+                }
+            }
         }
-     */
+
+        byte[] data = renderChemical(parseAndComputeCoordsIfNeeded(input), format, size, amaps, null, stereo);
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("Content-Type", parseContentType(format));
+        return new ResponseEntity<>(data, headers, HttpStatus.OK);
+
+    }
+    private static String parseContentType(String format){
+        if("svg".equalsIgnoreCase(format)){
+            return "image/svg+xml";
+        }
+        if("png".equalsIgnoreCase(format)){
+            return MediaType.IMAGE_PNG_VALUE;
+        }
+        return MediaType.parseMediaType(format).toString();
+    }
+    private static String fixMolIfNeeded(Structure struc ){
+        if(struc.molfile ==null){
+            return struc.smiles;
+        }
+        try {
+            return CtTableCleaner.clean(struc.molfile);
+        } catch (IOException e) {
+            e.printStackTrace();
+            return struc.molfile;
+        }
+    }
+
+    private byte[] renderChemical (Chemical chem, String format,
+                           int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo)
+            throws Exception {
+
+        try {
+            RendererOptions rendererOptons = rendererSupplier.get().copy();
+
+            if (newDisplay != null) {
+
+                rendererOptons.changeSettings(newDisplay);
+            }
+
+
+            //chem.reduceMultiples();
+//		boolean highlight=false;
+            if(amap!=null && amap.length>0){
+                Atom[] atoms = chem.atoms().toArray(i -> new Atom[i]);
+                for (int i = 0; i < Math.min(atoms.length, amap.length); ++i) {
+                    atoms[i].setAtomToAtomMap(amap[i]);
+                    if(amap[i]!=0){
+                        rendererOptons.withSubstructureHighlight();
+                    }
+                }
+            }else{
+                if (chem.atoms().filter(Atom::hasAtomToAtomMap)
+                        .findAny().isPresent()) {
+                    rendererOptons.withSubstructureHighlight();
+                }
+
+            }
+            preProcessChemical(chem, rendererOptons);
+
+            if(Chem.isProblem(chem)){
+                rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, false);
+
+            }else{
+                if (size > 250 /*&& !highlight*/) {
+                    //katzelda March 21 2019
+                    //after talking to Tyler we should just always
+                    //turn on stereo labels because the renderer will determine if there's stereo
+                    rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, true);
+
+
+//				try{
+//					if(chem.hasStereoIsomers()){
+//						dp.changeProperty(DisplayParams.PROP_KEY_DRAW_STEREO_LABELS, true);
+//					}
+//				}catch(Exception e){
+//					e.printStackTrace();
+//					Logger.error("Can't generate stereo flags for structure", e);
+//				}
+                }
+            }
+            if (drawStereo != null) {
+                rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, drawStereo);
+
+            }
+//		if("true".equals(r.getQueryString("stereo"))){
+//			rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, true);
+//
+//		}else if("false".equals(r.getQueryString("stereo"))){
+//			rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, false);
+//
+//		}
+
+            rendererOptons.captionTop(c -> c.getProperty("TOP_TEXT"));
+            rendererOptons.captionBottom(c -> c.getProperty("BOTTOM_TEXT"));
+
+
+
+            Chem.fixMetals(chem);
+
+            ChemicalRenderer renderer = new ChemicalRenderer(rendererOptons);
+
+            ByteArrayOutputStream bos = new ByteArrayOutputStream ();
+
+            if (format.equals("svg")) {
+                SVGGraphics2D svg = new SVGGraphics2D
+                        (bos, new Dimension(size, size));
+                try {
+                    svg.startExport();
+                    renderer.render(svg, chem, 0, 0, size, size, false);
+                    svg.endExport();
+                } finally {
+                    svg.dispose();
+                }
+            }else {
+                BufferedImage bi = renderer.createImage(chem, size);
+                ImageIO.write(bi, format, bos);
+            }
+
+            return bos.toByteArray();
+        }catch(Exception e){
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+
+    private static void preProcessChemical(Chemical c,  RendererOptions renderOptions){
+        if(c!=null){
+
+
+            boolean compColor=false;
+            boolean fuse=false;
+            boolean hasRgroups=hasRGroups(c);
+            int rgroupColor=1;
+
+            if(hasRgroups){
+                if(fuse){
+                    compColor=colorChemicalComponents(c);
+                    if(compColor){
+						/*
+						dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_MAPPED,true);
+			dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_MONOCHROMATIC,false);
+			dp.DEF_STROKE_PERCENT=.095f;
+
+			PROP_KEYS_VALUES.put( PROP_KEY_BOND_EXPECTED_LENGTH,DEF_BOND_AVG );
+			 PROP_KEYS_VALUES.put( PROP_KEY_BOND_STROKE_WIDTH_FRACTION,DEF_STROKE_PERCENT );
+			 PROP_KEYS_VALUES.put( PROP_KEY_ATOM_LABEL_FONT_FRACTION,DEF_FONT_PERCENT );
+			 PROP_KEYS_VALUES.put( PROP_KEY_BOND_DOUBLE_GAP_FRACTION,DEF_DBL_BOND_GAP );
+			 PROP_KEYS_VALUES.put( PROP_KEY_BOND_DOUBLE_LENGTH_FRACTION,DEF_DBL_BOND_DISTANCE );
+			 PROP_KEYS_VALUES.put( PROP_KEY_ATOM_LABEL_BOND_GAP_FRACTION,DEF_FONT_GAP_PERCENT );
+			 PROP_KEYS_VALUES.put( PROP_KEY_BOND_STEREO_WEDGE_ANGLE,DEF_WEDGE_ANG );
+			 PROP_KEYS_VALUES.put( PROP_KEY_BOND_OVERLAP_SPACING_FRACTION,DEF_SPLIT_RATIO );
+			 PROP_KEYS_VALUES.put( PROP_KEY_BOND_STEREO_DASH_NUMBER,DEF_NUM_DASH );
+						 */
+//						dp=dp.withSpecialColor2();
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_MONOCHROMATIC, false);
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_MAPPED, true);
+
+                        renderOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BOND_STROKE_WIDTH_FRACTION, .095F);
+
+                    }
+                    if(fuseChemical(c)){
+                        try {
+                            c.generateCoordinates();
+                        }catch(Exception e){
+                            e.printStackTrace();
+
+                        }
+                    }
+                }
+                if(rgroupColor==1){
+                    if(!compColor && mapChemicalRgroup(c)){
+						/*
+
+			dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_MAPPED,true);
+			dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_WITH_HALO,true);
+			dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_MONOCHROMATIC,false);
+						 */
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_MAPPED, true);
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_WITH_HALO, true);
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_MONOCHROMATIC, false);
+
+//						dp=dp.withSpecialColor();
+                    }
+                }else if(rgroupColor==2){ //katzelda TODO DOES THIS EVER HAPPEN? rgroupColor hardcoded to 1
+                    if(!compColor && mapChemicalRgroup(c)){
+//						dp=dp.withSpecialColorMON();
+						/*
+						dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_MAPPED,true);
+			dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_WITH_HALO,true);
+			dp.changeProperty(PROP_KEY_DRAW_HIGHLIGHT_MONOCHROMATIC,true);
+						 */
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_MAPPED, true);
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_WITH_HALO, true);
+                        renderOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_HIGHLIGHT_MONOCHROMATIC, true);
+
+                    }
+                }
+            }
+
+        }
+    }
+
+
+
+
+    public static boolean hasRGroups(Chemical c){
+//		return c.atoms()
+//				.filter(a-> a.getRGroupIndex().isPresent()).findAny().isPresent();
+
+//		else{
+//			//r=true;
+//			if(ca.getAlias().startsWith("_")){
+//				ca.setRgroupIndex(Integer.parseInt(ca.getAlias().replace("_R", "")));
+//				ca.setAlias(ca.getAlias().replace("_",""));
+//				r= true;
+//			}
+//		}
+        boolean r=false;
+        for(Atom ca:c.getAtoms()){
+            if(ca.getRGroupIndex().isPresent()){
+                r= true;
+            }
+            else{
+                //r=true;
+                String alias = ca.getAlias().orElse("");
+                if(alias.startsWith("_R")){
+                    ca.setRGroup(Integer.parseInt(alias.replace("_R", "")));
+                    r= true;
+                }
+            }
+        }
+        return r;
+    }
+    public static boolean colorChemicalComponents(Chemical c){
+
+
+        long numberOfConnectedComponents =c.connectedComponentsAsStream().count();
+        if(numberOfConnectedComponents <2){
+            return false;
+        }
+
+        c.setAtomMapToPosition();
+        int i = 2;
+        int con=80;
+
+        Iterator<Chemical> components = c.connectedComponents();
+        while(components.hasNext()){
+            for(Atom a : components.next().getAtoms()){
+                a.setAtomToAtomMap( i+con);
+            }
+            i--;
+        }
+
+        return true;
+    }
+    public static boolean mapChemicalRgroup(Chemical c){
+        AtomicBoolean change=new AtomicBoolean(false);
+        for(Atom ca:c.getAtoms()){
+            ca.getRGroupIndex().ifPresent( rindex ->{
+                ca.setAtomToAtomMap(rindex);
+                change.set(true);
+            });
+        }
+        return change.get();
+    }
+    public static boolean fuseChemical(Chemical c){
+        Map<Integer,Atom> needLink = new HashMap<>();
+        Set<Atom> toRemove=new HashSet<>();
+
+
+        for(Atom ca:c.getAtoms()){
+
+            ca.getRGroupIndex().ifPresent(rindex->{
+                Atom newNeighbor = needLink.get(rindex);
+                if(newNeighbor==null){
+                    needLink.put(rindex, newNeighbor);
+                }else{
+                    needLink.remove(rindex);
+                    for(Atom ca2 : ca.getNeighbors()){
+                        for(Atom ca3: newNeighbor.getNeighbors()){
+                            c.addBond(ca2, ca3, Bond.BondType.SINGLE);
+                        }
+                    }
+                    toRemove.add(ca);
+                    toRemove.add(newNeighbor);
+                }
+            });
+        }
+
+        toRemove.forEach(ca -> c.removeAtom(ca));
+        return !toRemove.isEmpty();
+    }
+
+
+    private static Chemical parseAndComputeCoordsIfNeeded(String input) throws IOException{
+        Chemical c = Chemical.parse(input);
+        if(!c.getSource().get().getType().includesCoordinates()){
+            try {
+                c.generateCoordinates();
+            } catch (MolwitchException e) {
+                throw new IOException("error generating coordinates",e);
+            }
+        }
+        return c;
+    }
+    private byte[] render (Structure struc, String format, int size, int[] amap, Boolean stereo)
+            throws Exception {
+        Map<String, Boolean> newDisplay = new HashMap<>();
+        newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS_AS_RELATIVE.name(),
+                Structure.Stereo.RACEMIC.equals(struc.stereoChemistry));
+        Chemical c= parseAndComputeCoordsIfNeeded(fixMolIfNeeded(struc));
+
+        if(!Structure.Optical.UNSPECIFIED.equals(struc.opticalActivity)
+                && struc.opticalActivity!=null){
+            if(struc.definedStereo>0){
+                if(Structure.Optical.PLUS_MINUS.equals(struc.opticalActivity)){
+                    if(Structure.Stereo.EPIMERIC.equals(struc.stereoChemistry)
+                            || Structure.Stereo.RACEMIC.equals(struc.stereoChemistry)
+                            || Structure.Stereo.MIXED.equals(struc.stereoChemistry)){
+                        c.setProperty("BOTTOM_TEXT","relative stereochemistry");
+                    }
+                }
+            }
+            if(struc.opticalActivity== Structure.Optical.PLUS){
+                c.setProperty("BOTTOM_TEXT","optical activity: (+)");
+                if(Structure.Stereo.UNKNOWN.equals(struc.stereoChemistry)){
+                    newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS_AS_STARRED.name(), true);
+                }
+            } else if(struc.opticalActivity== Structure.Optical.MINUS) {
+                c.setProperty("BOTTOM_TEXT","optical activity: (-)");
+                if(Structure.Stereo.UNKNOWN.equals(struc.stereoChemistry)){
+                    newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS_AS_STARRED.name(), true);
+                }
+            }
+        }
+
+        if(size>250){
+            if(!Structure.Stereo.ACHIRAL.equals(struc.stereoChemistry))
+                newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS.name(), true);
+        }
+        if(newDisplay.size()==0)newDisplay=null;
+
+
+        return renderChemical (c, format, size, amap,newDisplay,stereo);
+    }
+
 }

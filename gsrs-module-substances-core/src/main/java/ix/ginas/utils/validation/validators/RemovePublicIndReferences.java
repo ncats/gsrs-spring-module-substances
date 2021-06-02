@@ -54,7 +54,7 @@ public class RemovePublicIndReferences extends AbstractValidatorPlugin<Substance
 
     private void makeReferenceProtected(Reference r){
         r.publicDomain=false;
-        Group g= groupRepository.findByNameIgnoreCase("protected");
+        Group g= groupRepository.findByName("protected");
         if(g==null){
             g=new Group("protected");
 

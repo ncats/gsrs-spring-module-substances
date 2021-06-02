@@ -222,6 +222,9 @@ public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEnt
         return user;
     }
 
+    protected TransactionTemplate newTransactionTemplate(){
+        return new TransactionTemplate(transactionManager);
+    }
     protected Substance assertCreated(JsonNode json){
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);

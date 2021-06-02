@@ -174,7 +174,7 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 
 	public Group getGroupByName(String groupName, Map<String, Group> cache){
 		return cache.computeIfAbsent(groupName, n-> {
-			Group g = groupRepository.findByNameIgnoreCase(n);
+			Group g = groupRepository.findByName(n);
 			if (g == null) {
 				g = new Group(n);
 			}

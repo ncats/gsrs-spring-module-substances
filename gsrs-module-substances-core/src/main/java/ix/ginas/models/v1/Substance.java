@@ -328,6 +328,16 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return this.codes;
     }
 
+    /**
+     * Get the structure of this Substance
+     * to Render.  By default returns `Optional.empty()`
+     * override this method.
+     * @return
+     */
+    @Transient
+    public Optional<Structure> getStructureToRender(){
+        return Optional.empty();
+    }
     @JsonIgnore
     public List<Code> getOrderedCodes(Map<String, Integer> codeSystemOrder){
 
