@@ -51,7 +51,7 @@ public class Unit extends GinasCommonSubData {
     public String type;
     
     @Lob
-    @Column(name="attachmentMap")
+    @Column(name="attachment_map")
     private String _attachmentMap;
     
     public Map<String,LinkedHashSet<String>> getAttachmentMap(){

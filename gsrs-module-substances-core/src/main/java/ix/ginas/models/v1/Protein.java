@@ -45,6 +45,7 @@ public class Protein extends GinasCommonSubData {
 	@Lob
 	@JsonIgnore
 	@Indexable(indexed = false)
+	@Column(name="disulf_json")
 	public String disulfJSON = null;
 
 	@OneToOne(mappedBy = "protein")
@@ -226,7 +227,9 @@ public class Protein extends GinasCommonSubData {
 	//public Modifications modifications;
 
 	@ManyToMany(cascade = CascadeType.ALL)
-	@JoinTable(name = "ix_ginas_protein_subunit")
+    @JoinTable(name="ix_ginas_protein_subunit", inverseJoinColumns = {
+            @JoinColumn(name="ix_ginas_subunit_uuid")
+    })
 	@OrderBy("subunitIndex asc")
 	public List<Subunit> subunits = new ArrayList<Subunit>();
 	
