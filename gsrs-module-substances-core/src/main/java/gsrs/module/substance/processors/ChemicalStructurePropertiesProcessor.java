@@ -2,24 +2,22 @@ package gsrs.module.substance.processors;
 
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.ValueRepository;
+import gsrs.module.substance.services.RecalcStructurePropertiesService;
 import ix.core.EntityProcessor;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
+import ix.core.models.Value;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class ChemicalStructurePropertiesProcessor implements EntityProcessor<Substance> {
     @Autowired
-    private StructureProcessor structureProcessor;
-
-    @Autowired
-    private StructureRepository structureRepository;
-
-    @Autowired
-    private ValueRepository valueRepository;
+    private RecalcStructurePropertiesService recalcStructurePropertiesService;
 
     @Override
     public void prePersist(Substance obj) throws FailProcessingException {
@@ -36,12 +34,9 @@ public class ChemicalStructurePropertiesProcessor implements EntityProcessor<Sub
     }
 
     private void generateStructureProperties(ChemicalSubstance substance){
-        Structure s = substance.structure;
-        Structure newStructure = structureProcessor.instrument(s.molfile);
-        s.updateStructureFields(newStructure);
-        s.properties.forEach(valueRepository::save);
-        structureRepository.save(s);
+        recalcStructurePropertiesService.recalcStructureProperties(substance.structure);
     }
+
 
     @Override
     public Class<Substance> getEntityClass() {

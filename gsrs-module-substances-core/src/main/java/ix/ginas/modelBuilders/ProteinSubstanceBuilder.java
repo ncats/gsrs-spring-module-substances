@@ -180,4 +180,18 @@ public class ProteinSubstanceBuilder  extends AbstractSubstanceBuilder<ProteinSu
 
         });
     }
+
+    public ProteinSubstanceBuilder addStructuralModification(StructuralModification modification){
+        Objects.requireNonNull(modification);
+        return andThen( s->{
+            if(s.modifications ==null){
+                Modifications mods = new Modifications();
+                s.setModifications(mods);
+            }
+            if(s.modifications.structuralModifications ==null){
+                s.modifications.structuralModifications = new ArrayList<>();
+            }
+            s.modifications.structuralModifications.add(modification);
+        });
+    }
 }

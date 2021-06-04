@@ -198,7 +198,6 @@ public class ProteinUtils {
 	}
     
     public static Map<String, SingleThreadCounter> restoreEndWater(Map<String, SingleThreadCounter> formula) {
-        System.out.println("starting in restoreEndWater");
         String hydrogenSymbol = "H";
         String oxygenSymbol ="O";
         if(formula!=null) {

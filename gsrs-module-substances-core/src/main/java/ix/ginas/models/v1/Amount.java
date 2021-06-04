@@ -41,7 +41,7 @@ public class Amount extends GinasCommonSubData {
     public String nonNumericValue;
     
     @JSONEntity(title = "Referenced Material")
-    @Column(length=10)
+    @Column(name= "approval_id", length=10)
     public String approvalID;
 
     public Amount () {}

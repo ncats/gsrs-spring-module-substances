@@ -96,7 +96,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		Reference r = new Reference();
 		r.docType="SYSTEM";
 		r.citation="System Generated Code";
-		Group g = groupRepository.findByNameIgnoreCase("protected");
+		Group g = groupRepository.findByName("protected");
 		if(g ==null){
 			g= new Group("protected");
 		}

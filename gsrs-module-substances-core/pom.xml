@@ -34,6 +34,11 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>molwitch-renderer</artifactId>
+            <version>1.0.8-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>molvec</artifactId>
             <version>0.9.8</version>
         </dependency>
@@ -90,6 +95,11 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-sequence-indexer</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-controlled-vocabulary-api</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
         <dependency>

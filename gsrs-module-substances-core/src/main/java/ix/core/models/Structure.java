@@ -266,15 +266,19 @@ public class Structure extends BaseModel {
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.JsonDiff.class)
-    @JoinTable(name = "ix_core_structure_property")
     @JsonDeserialize(contentUsing=AbstractValueDeserializer.class)
     @EntityMapperOptions(linkoutInCompactView = true)
+    @JoinTable(name="ix_core_structure_property", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
     public List<Value> properties = new ArrayList<Value>();
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.JsonDiff.class)
-    @JoinTable(name = "ix_core_structure_link")
     @EntityMapperOptions(linkoutInCompactView = true)
+    @JoinTable(name="ix_core_structure_link", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_xref_id")
+    })
     public List<XRef> links = new ArrayList<XRef>();
 
     @Transient
