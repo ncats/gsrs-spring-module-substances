@@ -11,8 +11,11 @@ import java.util.List;
 @Entity
 @Table(name="ix_ginas_mixture")
 public class Mixture extends GinasCommonSubData {
+    
 	@ManyToMany(cascade= CascadeType.ALL)
-	@JoinTable(name="ix_ginas_substance_mix_comp")
+    @JoinTable(name="ix_ginas_substance_mix_comp", inverseJoinColumns = {
+            @JoinColumn(name="ix_ginas_component_uuid")
+    })
 	public List<Component> components = new ArrayList<>();
 	
 	@OneToOne(cascade= CascadeType.ALL)

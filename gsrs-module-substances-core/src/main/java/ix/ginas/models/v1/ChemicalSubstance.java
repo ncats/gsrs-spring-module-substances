@@ -18,6 +18,7 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("serial")
 @JSONEntity(name = "chemicalSubstance", title = "Chemical Substance")
@@ -136,8 +137,13 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
         }
         return temp;
     }
+    @JsonIgnore
+    @Override
+    public Optional<Structure> getStructureToRender() {
+        return Optional.ofNullable(this.structure);
+    }
 
-//    @Override
+    //    @Override
 //    protected void additionalDefinitionalElements(Consumer<DefinitionalElement> consumer) {
 //
 //

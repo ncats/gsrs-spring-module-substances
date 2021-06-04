@@ -43,6 +43,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
+    Substance findByModifications_Uuid(UUID uuid);
+
 //    List<SubstanceSummary> findSubstanceSummaryByStructure_Properties_Term(String term);
     default List<Substance> findSubstanceSummaryByStructure_Properties_Term(String term){
         ChemicalSubstance example = new ChemicalSubstance();

@@ -1,18 +1,21 @@
 package ix.ginas.models.v1;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Lob;
+import javax.persistence.Table;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import ix.core.util.ModelUtils;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
-
-import javax.persistence.Entity;
-import javax.persistence.Lob;
-import javax.persistence.Table;
-import java.util.ArrayList;
-import java.util.List;
 
 @SuppressWarnings("serial")
 @Entity
@@ -23,6 +26,7 @@ public class SiteContainer extends GinasCommonSubData{
 	String sitesShortHand;
 	@Lob
 	@JsonIgnore
+	@Column(name="sites_json")
 	String sitesJSON;	
 	long siteCount;
 	String siteType;

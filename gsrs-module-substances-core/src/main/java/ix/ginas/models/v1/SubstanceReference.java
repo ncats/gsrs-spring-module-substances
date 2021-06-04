@@ -53,7 +53,7 @@ public class SubstanceReference extends GinasCommonSubData {
     @JSONEntity(values = "JSONConstants.ENUM_REFERENCE")
     public String substanceClass;
     
-    @Column(length=32)
+    @Column(length=32, name="approval_ID")
     public String approvalID;
 
     public SubstanceReference () {}

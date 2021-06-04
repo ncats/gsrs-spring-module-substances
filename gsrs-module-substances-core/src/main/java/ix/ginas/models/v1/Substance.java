@@ -194,8 +194,8 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JSONEntity(title = "Names", minItems = 1, isRequired = true)
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
-//    @OrderColumn(name = "created")
-    @OrderColumn
+    @OrderBy("name asc")
+//    @OrderColumn
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<Name> names = new ArrayList<Name>();
 
@@ -282,7 +282,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JsonDeserialize(contentUsing = KeywordDeserializer.TagDeserializer.class)
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
-    @JoinTable(name = "ix_ginas_substance_tags")
+    @JoinTable(name="ix_ginas_substance_tags", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
     public List<Keyword> tags = new ArrayList<Keyword>();
 
     public void addTag(Keyword tag){
@@ -328,6 +330,16 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return this.codes;
     }
 
+    /**
+     * Get the structure of this Substance
+     * to Render.  By default returns `Optional.empty()`
+     * override this method.
+     * @return
+     */
+    @Transient
+    public Optional<Structure> getStructureToRender(){
+        return Optional.empty();
+    }
     @JsonIgnore
     public List<Code> getOrderedCodes(Map<String, Integer> codeSystemOrder){
 

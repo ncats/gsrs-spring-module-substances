@@ -210,6 +210,27 @@ public class Structure extends BaseModel {
 //        return HTMLFormula;
 //    }
 
+    public void updateStructureFields(Structure other){
+        if(other !=null) {
+            this.properties.clear();
+
+            this.properties = new ArrayList(other.properties); //add properties
+            this.ezCenters = other.ezCenters;
+            this.definedStereo = other.definedStereo;
+            this.charge = other.charge;
+            this.stereoCenters = other.stereoCenters;
+
+            this.mwt = other.mwt;
+            this.formula = other.formula;
+            setIsDirty("properties");
+            setIsDirty("ezCenters");
+            setIsDirty("definedStereo");
+            setIsDirty("charge");
+            setIsDirty("stereoCenters");
+            setIsDirty("mwt");
+            setIsDirty("formula");
+        }
+    }
     @JsonProperty("stereochemistry")
     public void setStereoChemistry(Stereo stereoChemistry) {
         this.stereoChemistry = stereoChemistry;
@@ -225,7 +246,7 @@ public class Structure extends BaseModel {
     public Optical opticalActivity;
     
     @Column(name = "atropi")
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.ORDINAL)
     public NYU atropisomerism = NYU.No;
     
     @Lob
@@ -245,15 +266,19 @@ public class Structure extends BaseModel {
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.JsonDiff.class)
-    @JoinTable(name = "ix_core_structure_property")
     @JsonDeserialize(contentUsing=AbstractValueDeserializer.class)
     @EntityMapperOptions(linkoutInCompactView = true)
+    @JoinTable(name="ix_core_structure_property", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
     public List<Value> properties = new ArrayList<Value>();
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.JsonDiff.class)
-    @JoinTable(name = "ix_core_structure_link")
     @EntityMapperOptions(linkoutInCompactView = true)
+    @JoinTable(name="ix_core_structure_link", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_xref_id")
+    })
     public List<XRef> links = new ArrayList<XRef>();
 
     @Transient

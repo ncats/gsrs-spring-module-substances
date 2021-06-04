@@ -164,7 +164,7 @@ public class StructureProcessor {
         }
 
         // no explicit Hs
-        //dkatzel aug 2019 - exceppt when the Hs are stereo and explicitly drawn that way...
+        //dkatzel aug 2019 - except when the Hs are stereo and explicitly drawn that way...
         mol.removeNonDescriptHydrogens();
 
         // make sure molecule is kekulized consistently

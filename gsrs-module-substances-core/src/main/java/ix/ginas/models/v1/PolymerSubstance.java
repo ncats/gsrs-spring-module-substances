@@ -3,6 +3,7 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.models.Indexable;
+import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
@@ -31,6 +32,11 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
 						.WARNING_MESSAGE("Polymer substance structure is for display, and is not complete in definition"));
 
 		return polymer.displayStructure.toChemical(messages);
+	}
+
+	@Override
+	public Optional<Structure> getStructureToRender() {
+		return Optional.ofNullable(this.polymer.displayStructure);
 	}
 
 	@JsonIgnore
