@@ -22,17 +22,31 @@ public class Glycosylation extends GinasCommonSubData {
 	@OneToOne(mappedBy="glycosylation")
     private Protein protein;
 	
-    @JsonIgnore
+	
+//	@Transient
+    
+	@JsonIgnore
     @Indexable(indexed=false)
 	@OneToOne(cascade= CascadeType.ALL)
-//    @JoinTable(
-//            name = "Glycosylation_CGlycosylationSiteContainer",
-//            joinColumns=
-//                @JoinColumn(name="c_glycosylation_sites_uuid")
-//        )
-    @MapsId
-    @JoinColumn(name = "c_glycosylation_sites_uuid")
+    @JoinColumn(name="c_glycosylation_sites_uuid")
     SiteContainer _CGlycosylationSiteContainer;
+	
+    
+    @JsonIgnore
+    @Indexable(indexed=false)
+    @OneToOne(cascade= CascadeType.ALL)
+    @JoinColumn(name="n_glycosylation_sites_uuid")
+    SiteContainer _NGlycosylationSiteContainer;
+    
+    
+    
+    @JsonIgnore
+    @Indexable(indexed=false)
+    @OneToOne(cascade= CascadeType.ALL)
+    @JoinColumn(name="o_glycosylation_sites_uuid")
+    SiteContainer _OGlycosylationSiteContainer;
+    
+    
 
     @JsonProperty("CGlycosylationSites")
     public List<Site> getCGlycosylationSites(){
@@ -49,17 +63,6 @@ public class Glycosylation extends GinasCommonSubData {
     	_CGlycosylationSiteContainer.setSites(sites);
     }
     
-    @JsonIgnore
-    @Indexable(indexed=false)
-    @OneToOne(cascade= CascadeType.ALL)
-//    @JoinTable(
-//            name = "Glycosylation_NGlycosylationSiteContainer",
-//            joinColumns=
-//                @JoinColumn(name="n_glycosylation_sites_uuid")
-//        )
-    @MapsId
-    @JoinColumn(name = "n_glycosylation_sites_uuid")
-    SiteContainer _NGlycosylationSiteContainer;
 
     @JsonProperty("NGlycosylationSites")
     public List<Site> getNGlycosylationSites(){
@@ -78,17 +81,6 @@ public class Glycosylation extends GinasCommonSubData {
     	_NGlycosylationSiteContainer.setSites(sites);
     }
     
-    @JsonIgnore
-	@OneToOne(cascade= CascadeType.ALL)
-    @Indexable(indexed=false)
-//    @JoinTable(
-//            name = "Glycosylation_OGlycosylationSiteContainer",
-//            joinColumns=
-//                @JoinColumn(name="o_glycosylation_sites_uuid")
-//        )
-    @MapsId
-    @JoinColumn(name = "o_glycosylation_sites_uuid")
-    SiteContainer _OGlycosylationSiteContainer;
 
     @JsonProperty("OGlycosylationSites")
     public List<Site> getOGlycosylationSites(){
@@ -108,6 +100,8 @@ public class Glycosylation extends GinasCommonSubData {
     
     @Indexable(facet=true,name="Glycosylation Type")
     public String glycosylationType;
+    
+    
 
     public Glycosylation () {}
     

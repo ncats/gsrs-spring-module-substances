@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(name="polymer_classification")
 public class PolymerClassification extends GinasCommonSubData {
     @Indexable(facet=true,name="Polymer Class")
     public String polymerClass;

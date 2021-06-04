@@ -194,8 +194,8 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JSONEntity(title = "Names", minItems = 1, isRequired = true)
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
-//    @OrderColumn(name = "created")
-    @OrderColumn
+    @OrderBy("name asc")
+//    @OrderColumn
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<Name> names = new ArrayList<Name>();
 
@@ -282,7 +282,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JsonDeserialize(contentUsing = KeywordDeserializer.TagDeserializer.class)
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
-    @JoinTable(name = "ix_ginas_substance_tags")
+    @JoinTable(name="ix_ginas_substance_tags", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
     public List<Keyword> tags = new ArrayList<Keyword>();
 
     public void addTag(Keyword tag){
