@@ -22,5 +22,12 @@
             <artifactId>gsrs-module-substances-spring-boot-autoconfigure</artifactId>
             <version>${gsrs.substance.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-controlled-vocabulary-api</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+
     </dependencies>
 </project>

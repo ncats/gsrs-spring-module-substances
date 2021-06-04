@@ -23,56 +23,27 @@ public class Glycosylation extends GinasCommonSubData {
     private Protein protein;
 	
 	
-	
-    @JsonIgnore
+//	@Transient
+    
+	@JsonIgnore
     @Indexable(indexed=false)
 	@OneToOne(cascade= CascadeType.ALL)
-    @Column(name="c_glycosylation_sites_uuid")
-    
-//    @JoinTable(
-//            name = "Glycosylation_CGlycosylationSiteContainer",
-//            joinColumns=
-//                @JoinColumn(name="c_glycosylation_sites_uuid")
-//        )
-//    @MapsId
-//    @JoinColumn(name = "c_glycosylation_sites_uuid")
-//    @JoinTable(
-//            joinColumns=
-//                @JoinColumn(name="c_glycosylation_sites_uuid")
-//        )
+    @JoinColumn(name="c_glycosylation_sites_uuid")
     SiteContainer _CGlycosylationSiteContainer;
+	
     
-
     @JsonIgnore
     @Indexable(indexed=false)
     @OneToOne(cascade= CascadeType.ALL)
-    @Column(name="n_glycosylation_sites_uuid")
-//    @JoinTable(
-//            joinColumns=
-//                @JoinColumn(name="n_glycosylation_sites_uuid")
-//        )
-//    @MapsId
-//    @JoinColumn(name = "n_glycosylation_sites_uuid")
+    @JoinColumn(name="n_glycosylation_sites_uuid")
     SiteContainer _NGlycosylationSiteContainer;
     
     
-
+    
     @JsonIgnore
-    @OneToOne(cascade= CascadeType.ALL)
-    @Column(name="o_glycosylation_sites_uuid")
     @Indexable(indexed=false)
-//    @Column
-//    @JoinTable(
-//            joinColumns=
-//                @JoinColumn(name="o_glycosylation_sites_uuid")
-//        )
-//    @JoinTable(
-//            name = "Glycosylation_OGlycosylationSiteContainer",
-//            joinColumns=
-//                @JoinColumn(name="o_glycosylation_sites_uuid")
-//        )
-//    @MapsId
-//    @JoinColumn(name = "o_glycosylation_sites_uuid")
+    @OneToOne(cascade= CascadeType.ALL)
+    @JoinColumn(name="o_glycosylation_sites_uuid")
     SiteContainer _OGlycosylationSiteContainer;
     
     
@@ -129,6 +100,8 @@ public class Glycosylation extends GinasCommonSubData {
     
     @Indexable(facet=true,name="Glycosylation Type")
     public String glycosylationType;
+    
+    
 
     public Glycosylation () {}
     
