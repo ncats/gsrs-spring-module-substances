@@ -12,7 +12,9 @@ import java.util.List;
 @Table(name="ix_ginas_ssg1")
 public class SpecifiedSubstanceGroup1 extends GinasCommonSubData {
 	@ManyToMany(cascade= CascadeType.ALL)
-	@JoinTable(name="ix_ginas_substance_ss_comp")
+    @JoinTable(name="ix_ginas_substance_ss_comp", inverseJoinColumns = {
+            @JoinColumn(name="ix_ginas_component_uuid")
+    })
 	public List<SpecifiedSubstanceComponent> constituents;
 	
 //	@OneToOne(cascade=CascadeType.ALL)

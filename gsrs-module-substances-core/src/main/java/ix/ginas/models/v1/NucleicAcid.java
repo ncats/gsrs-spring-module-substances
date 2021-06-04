@@ -43,8 +43,10 @@ public class NucleicAcid extends GinasCommonSubData {
 	
 	@JSONEntity(name = "subunits", title = "Subunits")
 	@ManyToMany(cascade= CascadeType.ALL)
-    @JoinTable(name="ix_ginas_nucleicacid_subunits")
 	@OrderBy("subunitIndex asc")
+    @JoinTable(name="ix_ginas_nucleicacid_subunits", inverseJoinColumns = {
+            @JoinColumn(name="ix_ginas_subunit_uuid")
+    })
 	public List<Subunit> subunits = new ArrayList<>();
 	
 	@JSONEntity(title = "Sugars", isRequired = true)

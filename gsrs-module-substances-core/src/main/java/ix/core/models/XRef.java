@@ -34,7 +34,9 @@ public class XRef extends IxModel {
     public Object _instance; // instance of the object 
 
     @ManyToMany(cascade= CascadeType.ALL)
-    @JoinTable(name="ix_core_xref_property")
+    @JoinTable(name="ix_core_xref_property", inverseJoinColumns = {
+            @JoinColumn(name="ix_core_value_id")
+    })
     public List<Value> properties = new ArrayList<Value>();
 
     public XRef() {
