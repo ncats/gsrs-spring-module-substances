@@ -177,11 +177,13 @@ public class Structure extends BaseModel {
     public String digest; // digest checksum of the original structure
     
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String molfile;				
 
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String smiles;
@@ -250,6 +252,7 @@ public class Structure extends BaseModel {
     public NYU atropisomerism = NYU.No;
     
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch = FetchType.EAGER)
     public String stereoComments;
     

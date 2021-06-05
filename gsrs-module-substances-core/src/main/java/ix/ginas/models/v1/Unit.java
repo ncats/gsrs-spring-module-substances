@@ -18,6 +18,7 @@ import javax.persistence.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.hibernate.annotations.Type;
 
 /**
  * A Chemical Structual Fragment of a {@link Polymer}, typically
@@ -44,6 +45,7 @@ public class Unit extends GinasCommonSubData {
     
     
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     @Indexable(indexed = false)
     public String structure;    //TODO: should be changed to be a structure
@@ -51,6 +53,7 @@ public class Unit extends GinasCommonSubData {
     public String type;
     
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Column(name="attachmentMap")
     private String _attachmentMap;
     

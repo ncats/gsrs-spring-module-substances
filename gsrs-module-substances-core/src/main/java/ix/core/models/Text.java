@@ -1,11 +1,13 @@
 package ix.core.models;
 
 import javax.persistence.*;
+import org.hibernate.annotations.Type;
 
 @Entity
 @DiscriminatorValue("TXT")
 public class Text extends Value {
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     public String text;
 

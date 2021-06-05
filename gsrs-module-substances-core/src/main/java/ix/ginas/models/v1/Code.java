@@ -9,6 +9,7 @@ import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -59,12 +60,14 @@ public class Code extends CommonDataElementOfCollection{
 
 	@JSONEntity(title = "Code Comments")
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
 	@Indexable(pathsep="//|")
     public String comments;
 
     @JSONEntity(title = "Code Text")
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     public String codeText;
     
@@ -73,6 +76,7 @@ public class Code extends CommonDataElementOfCollection{
     
     @JSONEntity(title = "Code URL", format = "uri")
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     public String url;
     

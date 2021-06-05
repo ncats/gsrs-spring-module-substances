@@ -12,6 +12,7 @@ import ix.ginas.models.GinasCommonSubData;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.annotations.Type;
 
 @SuppressWarnings("serial")
 @Entity
@@ -19,6 +20,7 @@ import java.util.List;
 @SingleParent
 public class Subunit extends GinasCommonSubData implements SequenceEntity {
     @Lob
+    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     @Indexable(sequence=true)
     public String sequence;
