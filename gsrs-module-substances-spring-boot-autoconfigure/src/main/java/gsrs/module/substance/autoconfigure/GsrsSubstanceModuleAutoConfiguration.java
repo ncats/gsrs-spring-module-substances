@@ -92,6 +92,11 @@ public class GsrsSubstanceModuleAutoConfiguration {
         return new SubstanceEntityServiceImpl();
     }
     @Bean
+    @ConditionalOnMissingBean(LegacyGinasAppController.class)
+    public LegacyGinasAppController legacyGinasAppController(){
+        return new LegacyGinasAppController();
+    }
+    @Bean
     @ConditionalOnMissingBean(EditEntityService.class)
     public EditEntityService editEntityService(){
         return new EditEntityService();

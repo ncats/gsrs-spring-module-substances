@@ -15,7 +15,8 @@ import org.springframework.context.annotation.Import;
         SubstanceLegacySearchService.class,  StructureProcessingConfiguration.class, StructureStandardizerConfiguration.class,
         EditEntityService.class, NameLegacySearchService.class, CodeLegacySearchService.class, ReferenceLegacySearchService.class,
         SubstanceEntityServiceImpl.class, RelationEventListener.class,
-        ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class
+        ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
+        LegacyGinasAppController.class
 
 })
 public class SubstanceCoreConfiguration {
