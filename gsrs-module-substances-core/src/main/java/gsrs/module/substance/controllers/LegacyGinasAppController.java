@@ -1,5 +1,6 @@
 package gsrs.module.substance.controllers;
 
+import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
@@ -18,6 +19,8 @@ import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -128,5 +131,30 @@ public class LegacyGinasAppController {
             attributes.addAttribute("stereo", stereo);
         }
         return new ModelAndView("redirect:/api/v1/substances/render(" +id +")");
+    }
+
+    @GetGsrsRestApiMapping("/suggest/@fields")
+    public Object suggestFields(HttpServletRequest httpRequest, RedirectAttributes attributes) throws IOException {
+        httpRequest.setAttribute(
+                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
+        return new ModelAndView("redirect:/api/v1/substances/suggest/@fields");
+    }
+    @GetGsrsRestApiMapping("/suggest")
+    public Object suggest(@RequestParam(value ="q") String q, @RequestParam(value ="max", defaultValue = "10") int max,
+                          HttpServletRequest httpRequest, RedirectAttributes attributes) throws IOException {
+        httpRequest.setAttribute(
+                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
+        attributes.addAttribute("q", q);
+        attributes.addAttribute("max", max);
+        return new ModelAndView("redirect:/api/v1/substances/suggest");
+    }
+    @GetGsrsRestApiMapping("/suggest/{field}")
+    public Object suggestField(@PathVariable("field") String field,  @RequestParam("q") String q, @RequestParam(value ="max", defaultValue = "10") int max,
+        HttpServletRequest httpRequest, RedirectAttributes attributes) throws IOException {
+            httpRequest.setAttribute(
+                    View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
+            attributes.addAttribute("q", q);
+            attributes.addAttribute("max", max);
+            return new ModelAndView("redirect:/api/v1/substances/suggest/" + field);
     }
 }
