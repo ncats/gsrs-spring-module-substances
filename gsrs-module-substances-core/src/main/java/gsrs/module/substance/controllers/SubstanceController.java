@@ -853,6 +853,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
             }
+            //check cache?
+            String json = (String) ixCache.getTemp(idOrSmiles);
+
+                if(json !=null){
+                    structure= Optional.of(EntityUtils.getEntityInfoFor(Structure.class).fromJson(json));
+                }
+
             if (!structure.isPresent()) {
                 return getGsrsControllerConfiguration().handleNotFound(queryParameters);
             }
