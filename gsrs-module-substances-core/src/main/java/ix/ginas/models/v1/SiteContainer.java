@@ -30,7 +30,9 @@ public class SiteContainer extends GinasCommonSubData{
 	String sitesJSON;	
 	long siteCount;
 	String siteType;
-	
+
+	public SiteContainer() {};
+
 	public SiteContainer(String type){
 		this.siteType=type;
 	}
