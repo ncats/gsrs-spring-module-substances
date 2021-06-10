@@ -6,12 +6,14 @@ import ix.ginas.models.v1.*;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
+@Transactional
 public interface SubstanceRepository extends GsrsVersionedRepository<Substance, UUID> {
 
     default boolean exists(SubstanceReference substanceReference){

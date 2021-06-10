@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 @Repository
+
 public interface RelationshipRepository extends GsrsRepository<Relationship, UUID> {
 
     List<Relationship> findByOriginatorUuid(String originatorUuid);

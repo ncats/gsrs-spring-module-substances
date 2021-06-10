@@ -6,11 +6,13 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 @Repository
+@Transactional
 public interface ReferenceRepository extends GsrsVersionedRepository<Reference, UUID> {
 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
