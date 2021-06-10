@@ -337,6 +337,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
      * @return
      */
     @Transient
+    @JsonIgnore
     public Optional<Structure> getStructureToRender(){
         return Optional.empty();
     }
