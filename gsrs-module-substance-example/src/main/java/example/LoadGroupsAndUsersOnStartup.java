@@ -3,24 +3,44 @@ package example;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.UserProfileRepository;
 import gsrs.validator.GsrsValidatorFactory;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
+import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.persistence.EntityManager;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.zip.GZIPInputStream;
 
 @Profile("!test")
 @Component
@@ -35,8 +55,17 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
     @Autowired
     private GroupRepository groupRepository;
+    @Autowired
+    private SubstanceRepository substanceRepository;
 
+    @Autowired
+    private EntityManager entityManager;
 
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
+
+    @Autowired
+    private SubstanceEntityService substanceEntityService;
 
     @Override
     @Transactional
@@ -74,5 +103,27 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
         guest.setRoles(Arrays.asList(Role.Query));
 
         userProfileRepository.saveAndFlush(guest);
+
+        Authentication auth =new UsernamePasswordAuthenticationToken(up.user.username, null,
+                up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
+
+        SecurityContextHolder.getContext().setAuthentication(auth);
+
+
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream("/Users/katzelda/Downloads/rep18.gsrs"))))){
+            String line;
+            Pattern sep = Pattern.compile("\t");
+            ObjectMapper mapper = new ObjectMapper();
+            while( (line = reader.readLine())!=null){
+                String[] cols = sep.split(line);
+//                System.out.println(cols[2]);
+
+                Substance created = substanceEntityService.createEntity(mapper.readTree(cols[2])).getCreatedEntity();
+                if(created instanceof ChemicalSubstance){
+                    System.out.println("here");
+                }
+
+            }
+        }
     }
 }

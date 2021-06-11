@@ -12,11 +12,19 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.mock.mockito.MockBean;
 
+import javax.persistence.EntityManager;
 import java.io.File;
 import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
+@ExtendWith(MockitoExtension.class)
 
 public class BasicLegacyIndexerTest {
 
@@ -26,10 +34,13 @@ public class BasicLegacyIndexerTest {
     private LegacyStructureIndexerService indexer;
 
     private StructureIndexerEventListener eventListener;
+    @Mock
+    private EntityManager mockEntityManager;
+
     @BeforeEach
     public void setupIndexer() throws IOException {
         indexer = new LegacyStructureIndexerService(tempDir);
-        eventListener = new StructureIndexerEventListener(indexer);
+        eventListener = new StructureIndexerEventListener(indexer, mockEntityManager);
     }
     @AfterEach
     public void shutdown(){
@@ -53,7 +64,8 @@ public class BasicLegacyIndexerTest {
                 .generateNewUUID()
                 .build();
 
-        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs)));
+        Mockito.when(mockEntityManager.find(ChemicalSubstance.class, cs.uuid)).thenReturn(cs);
+        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs).getKey()));
 
         StructureIndexer.ResultEnumeration resultEnumeration = indexer.substructure(structure);
         assertTrue(resultEnumeration.hasMoreElements());
@@ -74,20 +86,25 @@ public class BasicLegacyIndexerTest {
                 .generateNewUUID()
                 .build();
 
-        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs)));
+        Mockito.when(mockEntityManager.find(ChemicalSubstance.class, cs.uuid)).thenReturn(cs);
+        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs).getKey()));
 
-        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(new ChemicalSubstanceBuilder()
+        ChemicalSubstance cs2 = new ChemicalSubstanceBuilder()
 
                 .setStructure("[Na+].[Cl-]")
                 .addName("somethingElse")
                 .generateNewUUID()
-                .build())));
+                .build();
+
+        Mockito.when(mockEntityManager.find(ChemicalSubstance.class, cs2.uuid)).thenReturn(cs2);
+        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs2).getKey()));
 
         StructureIndexer.ResultEnumeration resultEnumeration = indexer.substructure(structure);
         assertTrue(resultEnumeration.hasMoreElements());
 
         assertEquals(cs.uuid.toString(), resultEnumeration.nextElement().getId());
         assertFalse(resultEnumeration.hasMoreElements());
+
 
     }
 
@@ -102,11 +119,16 @@ public class BasicLegacyIndexerTest {
                 .generateNewUUID()
                 .build();
 
-        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs)));
+        Mockito.when(mockEntityManager.find(ChemicalSubstance.class, cs.uuid)).thenReturn(cs);
+        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs).getKey()));
 
-        eventListener.onUpdate(new IndexUpdateEntityEvent(EntityUtils.EntityWrapper.of(cs.toChemicalBuilder()
+        ChemicalSubstance updatedCs = cs.toChemicalBuilder()
                 .setStructure("[Na+].[Cl-]")
-                .build())));
+                .build();
+
+        Mockito.when(mockEntityManager.find(ChemicalSubstance.class, cs.uuid)).thenReturn(updatedCs);
+
+        eventListener.onUpdate(new IndexUpdateEntityEvent(EntityUtils.EntityWrapper.of(updatedCs).getKey()));
 
         StructureIndexer.ResultEnumeration resultEnumeration = indexer.substructure(structure);
         assertFalse(resultEnumeration.hasMoreElements());
@@ -124,7 +146,8 @@ public class BasicLegacyIndexerTest {
                 .generateNewUUID()
                 .build();
 
-        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs)));
+        Mockito.when(mockEntityManager.find(ChemicalSubstance.class, cs.uuid)).thenReturn(cs);
+        eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs).getKey()));
 
 
         eventListener.onRemove(new IndexRemoveEntityEvent(EntityUtils.EntityWrapper.of(cs)));
