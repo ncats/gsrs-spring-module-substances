@@ -627,10 +627,10 @@ public class ProteinUtils {
         boolean containsStarAtom =false;
         if( referencedSubstance.substanceClass.equals(SubstanceClass.chemical)) {
             ChemicalSubstance chemical = (ChemicalSubstance) referencedSubstance;
-            mw=chemical.structure.getMwt();
+            mw=chemical.getStructure().getMwt();
             log.trace(String.format("mod substance is a chemical. mw: %,.2f", mw));
-            formula = chemical.structure.formula;
-            containsStarAtom = chemical.structure.molfile.contains(" * ");
+            formula = chemical.getStructure().formula;
+            containsStarAtom = chemical.getStructure().molfile.contains(" * ");
         }else {
 				//TODO: This currently only considers the average number, but that's
 				// not ideal since modifications may have ranges. However,

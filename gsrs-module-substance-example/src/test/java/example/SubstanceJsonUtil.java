@@ -186,7 +186,7 @@ public final class SubstanceJsonUtil {
 								{
 									ChemicalSubstance cs = (ChemicalSubstance)s;
 
-									removeUnusedReferencesAndAddPublicIfNeeded(s, cs.structure);
+									removeUnusedReferencesAndAddPublicIfNeeded(s, cs.getStructure());
 
 
 									break;

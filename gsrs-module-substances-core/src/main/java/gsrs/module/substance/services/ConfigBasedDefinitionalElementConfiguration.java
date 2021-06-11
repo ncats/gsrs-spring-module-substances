@@ -20,6 +20,7 @@ import java.util.function.Consumer;
 
 @Configuration
 @ConfigurationProperties("substance.definitional-elements")
+@Data
 public class ConfigBasedDefinitionalElementConfiguration{
 
     private List<DefinitionalElementImplementationConfig> implementations;
@@ -57,7 +58,7 @@ public class ConfigBasedDefinitionalElementConfiguration{
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DefinitionalElementImplementationConfig{
-        @JsonProperty("class")
+
         private Class implementationClass;
         /**
          * Additional parameters to initialize in your instance returned by

@@ -1,6 +1,7 @@
 package gsrs.module.substance.services;
 
 import gsrs.events.MaintenanceModeEvent;
+import gsrs.events.ReindexEntityEvent;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.tasks.ProcessExecutionService;
 import gsrs.repository.BackupRepository;
@@ -61,12 +62,13 @@ public class ReindexFromBackups implements ReindexService{
                             //child objects of that root.
                             if(isRootIndexCache.computeIfAbsent(child.getEntityClass(), c->wrapped.getEntityInfo().isRootIndex())) {
                                 try {
-                                    String key = wrapped.getKey().toString();
+                                    EntityUtils.Key key = wrapped.getKey();
+                                    String keyString = key.toString();
 
                                     //TODO add only index if it has a controller
-                                    if (seen.add(key)) {
+                                    if (seen.add(keyString)) {
                                         //is this a good idea ?
-                                        IndexCreateEntityEvent event = new IndexCreateEntityEvent(wrapped);
+                                        ReindexEntityEvent event = new ReindexEntityEvent(key);
                                         eventPublisher.publishEvent(event);
                                     }
                                 } catch (Throwable t) {

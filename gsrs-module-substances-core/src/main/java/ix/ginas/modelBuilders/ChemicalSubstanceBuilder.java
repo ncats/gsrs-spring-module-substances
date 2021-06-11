@@ -27,10 +27,10 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
     }
 	public ChemicalSubstanceBuilder setStructure(String smiles){
 		return andThen(cs->{
-			cs.structure=new GinasChemicalStructure();
-			cs.structure.molfile=smiles;//not really right, but we know it works
+			cs.setStructure(new GinasChemicalStructure());
+			cs.getStructure().molfile=smiles;//not really right, but we know it works
             Reference orAddFirstReference = getOrAddFirstReference(cs);
-            cs.structure.addReference( orAddFirstReference,cs);
+            cs.getStructure().addReference( orAddFirstReference,cs);
 		});
 	}
 
@@ -41,7 +41,7 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
         super(copy);
 
         ChemicalSubstance cs = (ChemicalSubstance)copy;
-        setStructure(cs.structure);
+        setStructure(cs.getStructure());
         for(Moiety m : cs.moieties){
             addMoiety(m);
         }
@@ -58,6 +58,6 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
         return andThen( s-> { s.moieties.add(m);});
     }
     public ChemicalSubstanceBuilder setStructure(GinasChemicalStructure structure){
-        return andThen(s-> { s.structure = structure;});
+        return andThen(s-> { s.setStructure(structure);});
     }
 }

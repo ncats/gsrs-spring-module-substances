@@ -60,8 +60,8 @@ public class ModificationStructureHashIndexValueMaker implements IndexValueMaker
     public void extractHashes(ChemicalSubstance s, Consumer<IndexableValue> consumer) {
 
         //consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", lychi3));
-		String stereoInsensitive=s.structure.getStereoInsensitiveHash();
-		String exact=s.structure.getExactHash();
+		String stereoInsensitive=s.getStructure().getStereoInsensitiveHash();
+		String exact=s.getStructure().getExactHash();
 		if(stereoInsensitive!=null){
 			consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", stereoInsensitive));
 		}
