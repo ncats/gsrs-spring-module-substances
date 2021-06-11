@@ -1,7 +1,6 @@
 package gsrs.module.substance.services;
 
-import gsrs.events.MaintenanceModeEvent;
-import gsrs.events.ReindexEntityEvent;
+import gsrs.events.*;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.tasks.ProcessExecutionService;
 import gsrs.repository.BackupRepository;
@@ -15,9 +14,7 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -47,7 +44,8 @@ public class ReindexFromBackups implements ReindexService{
         Set<String> seen = Collections.newSetFromMap(new ConcurrentHashMap<>(count));
         String messageTail = " of " + count;
         //single thread for now...
-        eventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.BEGIN));
+        UUID reindexId = UUID.randomUUID();
+        eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
             AtomicLong counter = new AtomicLong();
             stream.forEach(be ->{
@@ -57,6 +55,7 @@ public class ReindexFromBackups implements ReindexService{
                     wrapper.traverse().execute((p, child)->{
                         EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
                         if(wrapped.isEntity()) {
+
                             //this should speed up indexing so that we only index
                             //things that are roots.  the actual indexing process of the root should handle any
                             //child objects of that root.
@@ -68,7 +67,7 @@ public class ReindexFromBackups implements ReindexService{
                                     //TODO add only index if it has a controller
                                     if (seen.add(keyString)) {
                                         //is this a good idea ?
-                                        ReindexEntityEvent event = new ReindexEntityEvent(key);
+                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
                                         eventPublisher.publishEvent(event);
                                     }
                                 } catch (Throwable t) {
@@ -79,13 +78,16 @@ public class ReindexFromBackups implements ReindexService{
                         }
 
                     });
+                    eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
                     l.message("Indexed:" + counter.incrementAndGet() + messageTail);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
                     });
         }
-        eventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.END));
+        //other index listeners now figure out when indexing end is so don't need to that publish anymore (here)
+
+
         /*
         new ProcessExecutionService(1, 10).buildProcess(BackupEntity.class)
                 .before(()->{

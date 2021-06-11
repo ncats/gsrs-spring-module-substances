@@ -40,7 +40,7 @@ public class ChemicalSubstanceStructureHashIndexValueMaker implements IndexValue
 
 
 
-            System.out.println("stereo insensitive hash = " + structure.getStereoInsensitiveHash());
+//            System.out.println("stereo insensitive hash = " + structure.getStereoInsensitiveHash());
             consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", structure.getStereoInsensitiveHash()));
             consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", structure.getExactHash()));
 
