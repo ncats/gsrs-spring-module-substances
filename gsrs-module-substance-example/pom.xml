@@ -19,6 +19,18 @@
             <version>${gsrs.substance.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>3.2.4</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>3.11.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-fda-substance-extension</artifactId>
             <version>${gsrs.substance.version}</version>
