@@ -1,9 +1,6 @@
 package gsrs.module.substance.services;
 
-import gsrs.events.BeginReindexEvent;
-import gsrs.events.DoNotReindexEntityEvent;
-import gsrs.events.MaintenanceModeEvent;
-import gsrs.events.ReindexEntityEvent;
+import gsrs.events.*;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.tasks.ProcessExecutionService;
 import gsrs.repository.BackupRepository;
@@ -77,14 +74,11 @@ public class ReindexFromBackups implements ReindexService{
                                     System.err.println("error handling " + wrapped);
                                     t.printStackTrace();
                                 }
-                            }else{
-                                //still need to publish something about records we skip since others are keeping count
-
-                                eventPublisher.publishEvent(new DoNotReindexEntityEvent(reindexId, null));
                             }
                         }
 
                     });
+                    eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
                     l.message("Indexed:" + counter.incrementAndGet() + messageTail);
                 } catch (Exception e) {
                     e.printStackTrace();
