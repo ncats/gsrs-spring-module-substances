@@ -138,13 +138,13 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
              DEFAULT_RECIPE_MAP.put(DefaultColumns.SMILES, SingleColumnValueRecipe.create(DefaultColumns.SMILES, (s, cell) -> {
                  if (s instanceof ChemicalSubstance) {
-                     cell.writeString(((ChemicalSubstance) s).structure.smiles);
+                     cell.writeString(((ChemicalSubstance) s).getStructure().smiles);
                  }
              }));
 
              DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, SingleColumnValueRecipe.create(DefaultColumns.FORMULA, (s, cell) -> {
                  if (s instanceof ChemicalSubstance) {
-                     cell.writeString(((ChemicalSubstance) s).structure.formula);
+                     cell.writeString(((ChemicalSubstance) s).getStructure().formula);
                  } else if (s instanceof PolymerSubstance) {
                      cell.writeString("Polymer substance not supported");
                  }

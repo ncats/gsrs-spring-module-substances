@@ -6,12 +6,14 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
 @Repository
+@Transactional
 public interface NameRepository extends GsrsVersionedRepository<Name, UUID> {
 
     List<Name> findByNameIgnoreCase(String name);

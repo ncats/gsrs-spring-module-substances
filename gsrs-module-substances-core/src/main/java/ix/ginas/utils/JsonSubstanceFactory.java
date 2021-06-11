@@ -107,7 +107,7 @@ public class JsonSubstanceFactory {
 
 
                         try {
-                            ((ChemicalSubstance) sub).structure.smiles = Chemical.parseMol(((ChemicalSubstance) sub).structure.molfile).toSmiles();
+                            ((ChemicalSubstance) sub).getStructure().smiles = Chemical.parseMol(((ChemicalSubstance) sub).getStructure().molfile).toSmiles();
                         } catch (Exception e) {
 
                         }

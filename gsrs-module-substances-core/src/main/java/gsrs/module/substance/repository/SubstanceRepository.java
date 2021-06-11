@@ -6,12 +6,14 @@ import ix.ginas.models.v1.*;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
+@Transactional
 public interface SubstanceRepository extends GsrsVersionedRepository<Substance, UUID> {
 
     default boolean exists(SubstanceReference substanceReference){
@@ -48,8 +50,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 //    List<SubstanceSummary> findSubstanceSummaryByStructure_Properties_Term(String term);
     default List<Substance> findSubstanceSummaryByStructure_Properties_Term(String term){
         ChemicalSubstance example = new ChemicalSubstance();
-        example.structure = new GinasChemicalStructure();
-        example.structure.properties.add(new Keyword(null, term));
+        example.setStructure( new GinasChemicalStructure());
+        example.getStructure().properties.add(new Keyword(null, term));
 
         return findAll(Example.of(example));
     }

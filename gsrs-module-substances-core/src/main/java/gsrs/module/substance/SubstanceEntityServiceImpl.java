@@ -229,11 +229,20 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     @Override
+    @Transactional
     public Optional<Substance> get(UUID id) {
-        return repository.findById(id);
+        return fullFetch(repository.findById(id));
+    }
+
+    private Optional<Substance> fullFetch(Optional<Substance> opt){
+        if(opt.isPresent()){
+            opt.get().toFullJsonNode();
+        }
+        return opt;
     }
 
     @Override
+    @Transactional
     public Optional<Substance> flexLookup(String someKindOfId) {
         if(someKindOfId==null){
             return Optional.empty();
@@ -245,25 +254,25 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         if (someKindOfId.length() == 8) { // might be uuid
             List<Substance> list = repository.findByUuidStartingWith(someKindOfId);
             if(!list.isEmpty()){
-                return Optional.of(list.get(0));
+                return fullFetch(Optional.of(list.get(0)));
             }
         }
 
         Substance result = repository.findByApprovalID(someKindOfId);
         if(result !=null){
-            return Optional.of(result);
+            return fullFetch(Optional.of(result));
         }
         List<SubstanceRepository.SubstanceSummary> summaries = repository.findByNames_NameIgnoreCase(someKindOfId);
         if(summaries !=null && !summaries.isEmpty()){
 
             //get the first?
-            return repository.findById(summaries.get(0).getUuid());
+            return fullFetch(repository.findById(summaries.get(0).getUuid()));
         }
         summaries = repository.findByCodes_CodeIgnoreCase(someKindOfId);
         if(summaries !=null && !summaries.isEmpty()){
 
             //get the first?
-            return repository.findById(summaries.get(0).getUuid());
+            return fullFetch(repository.findById(summaries.get(0).getUuid()));
         }
         return Optional.empty();
         //from Play version

@@ -34,7 +34,7 @@ public class ChemicalStructurePropertiesProcessor implements EntityProcessor<Sub
     }
 
     private void generateStructureProperties(ChemicalSubstance substance){
-        recalcStructurePropertiesService.recalcStructureProperties(substance.structure);
+        recalcStructurePropertiesService.recalcStructureProperties(substance.getStructure());
     }
 
 

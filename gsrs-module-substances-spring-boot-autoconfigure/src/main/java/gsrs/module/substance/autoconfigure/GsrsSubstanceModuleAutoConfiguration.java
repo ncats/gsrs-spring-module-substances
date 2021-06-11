@@ -20,6 +20,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
+import org.springframework.context.event.ApplicationEventMulticaster;
+import org.springframework.context.event.SimpleApplicationEventMulticaster;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 @Configuration
 @EnableConfigurationProperties
@@ -54,6 +57,19 @@ public class GsrsSubstanceModuleAutoConfiguration {
     private ProteinSubstanceRepository proteinSubstanceRepository;
     @Autowired
     private NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository;
+
+    /**
+     * This is to allow async events
+     * @return
+     */
+//    @Bean(name = "applicationEventMulticaster")
+//    public ApplicationEventMulticaster simpleApplicationEventMulticaster() {
+//        SimpleApplicationEventMulticaster eventMulticaster =
+//                new SimpleApplicationEventMulticaster();
+//
+//        eventMulticaster.setTaskExecutor(new SimpleAsyncTaskExecutor());
+//        return eventMulticaster;
+//    }
 
     @Primary
     @Bean

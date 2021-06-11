@@ -77,7 +77,7 @@ public class ReindexTaskInitializer extends ScheduledTaskInitializer {
                                     //TODO add only index if it has a controller
                                     if(!seen.add(key)){
                                         //is this a good idea ?
-                                        eventPublisher.publishEvent(new IndexCreateEntityEvent(wrapped));
+                                        eventPublisher.publishEvent(new IndexCreateEntityEvent(wrapped.getKey()));
                                     }
                                 });
                             } catch (Exception e) {

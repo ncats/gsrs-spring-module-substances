@@ -246,7 +246,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @OneToOne(cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-	public Modifications modifications;
+    public Modifications modifications;
 
     @JSONEntity(title = "Notes")
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
@@ -337,6 +337,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
      * @return
      */
     @Transient
+    @JsonIgnore
     public Optional<Structure> getStructureToRender(){
         return Optional.empty();
     }

@@ -32,8 +32,24 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     @OneToOne(cascade= CascadeType.ALL)
 //    @Column(nullable=false)
     //@JsonSerialize(using=StructureSerializer.class)
-    public GinasChemicalStructure structure;
+    private GinasChemicalStructure structure;
 
+
+    public GinasChemicalStructure getStructure() {
+        return structure;
+    }
+
+    public void setStructure(GinasChemicalStructure structure) {
+        this.structure = structure;
+    }
+
+    public List<Moiety> getMoieties() {
+        return moieties;
+    }
+
+    public void setMoieties(List<Moiety> moieties) {
+        this.moieties = moieties;
+    }
 
     @JSONEntity(title = "Chemical Moieties", isRequired = true, minItems = 1)
     //FIXME katzelda Sept 2019 changed mapped by from "owner" to the class that is the owner
@@ -46,7 +62,7 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     @Indexable(name="SubstanceStereochemistry", facet=true)
     @JsonIgnore
     public Structure.Stereo getStereochemistry () {
-        return structure != null ? structure.stereoChemistry : null;
+        return getStructure() != null ? structure.stereoChemistry : null;
     }
 
     @Transient
@@ -102,33 +118,33 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
 
     @Override
     protected Chemical getChemicalImpl(List<GinasProcessingMessage> messages) {
-        return structure.toChemical(messages);
+        return getStructure().toChemical(messages);
     }
 
     @JsonIgnore
     @Indexable(indexed=false, structure=true)
     public String getStructureMolfile(){
-        return structure.molfile;
+        return getStructure().molfile;
     }
 
     @JsonIgnore
     @Indexable(name = "Molecular Weight", dranges = { 0, 200, 400, 600, 800, 1000 }, format = "%1$.0f", facet=true)
     public double getMolecularWeight(){
-        return structure.mwt;
+        return getStructure().mwt;
     }
 
 
     @JsonIgnore
     public GinasAccessReferenceControlled getDefinitionElement(){
-        return structure;
+        return getStructure();
     }
 
     @Override
     @JsonIgnore
     public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences(){
         List<GinasAccessReferenceControlled> temp = super.getAllChildrenCapableOfHavingReferences();
-        if(this.structure!=null){
-            temp.addAll(this.structure.getAllChildrenAndSelfCapableOfHavingReferences());
+        if(this.getStructure()!=null){
+            temp.addAll(this.getStructure().getAllChildrenAndSelfCapableOfHavingReferences());
         }
         if(this.moieties!=null){
             for(Moiety m: this.moieties){
@@ -140,7 +156,7 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     @JsonIgnore
     @Override
     public Optional<Structure> getStructureToRender() {
-        return Optional.ofNullable(this.structure);
+        return Optional.ofNullable(this.getStructure());
     }
 
     //    @Override

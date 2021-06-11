@@ -3,6 +3,7 @@ package gsrs.module.substance.indexers;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import org.springframework.stereotype.Component;
@@ -46,15 +47,19 @@ public class MoietyTypeIndexValueMaker implements IndexValueMaker<Substance> {
 
         if(substance instanceof ChemicalSubstance)
         {
-            Integer charge = ((ChemicalSubstance)substance).structure.charge;
+            GinasChemicalStructure structure = ((ChemicalSubstance) substance).getStructure();
+            if(structure ==null){
+                return;
+            }
+            Integer charge = structure.charge;
             if(null != charge && charge != 0)
             {
                 consumer.accept(IndexableValue.simpleFacetStringValue("Moiety Type", "Ionic Moiety"));
                 return;
             }
 
-            if(((ChemicalSubstance)substance).structure.molfile.contains(" * ") ||
-                    ((ChemicalSubstance)substance).structure.molfile.contains(" A ")
+            if(structure.molfile.contains(" * ") ||
+                    structure.molfile.contains(" A ")
                     ){
                 consumer.accept(IndexableValue.simpleFacetStringValue("Moiety Type", "Fragment Moiety"));
                 return;

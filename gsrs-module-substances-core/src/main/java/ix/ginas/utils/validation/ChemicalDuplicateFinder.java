@@ -2,6 +2,7 @@ package ix.ginas.utils.validation;
 
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +31,9 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
         if(sub instanceof ChemicalSubstance){
             ChemicalSubstance cs = (ChemicalSubstance)sub;
          // System.out.println("Dupe chack");
-            String hash = cs.structure.getStereoInsensitiveHash();
+            GinasChemicalStructure structure = cs.getStructure();
+
+            String hash = structure.getStereoInsensitiveHash();
             dupMap = substanceRepository.findSubstanceSummaryByStructure_Properties_Term(hash)
                         .stream()
                         .limit(max)
@@ -44,9 +47,10 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
             
             //
             if(dupMap.size()<max){
-                String hash2 = cs.structure.getStereoInsensitiveHash();
+                String hash2 = cs.getStructure().getStereoInsensitiveHash();
                 dupMap.putAll(substanceRepository.findSubstanceSummaryByMoieties_Structure_Properties_Term(hash2)
                         .stream()
+
                         .limit(max- dupMap.size())
                         .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new)));
 //
