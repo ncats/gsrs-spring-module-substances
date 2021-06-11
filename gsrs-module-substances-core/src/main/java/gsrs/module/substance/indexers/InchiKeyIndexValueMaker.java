@@ -3,6 +3,7 @@ package gsrs.module.substance.indexers;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
 import org.springframework.stereotype.Component;
 
@@ -35,10 +36,19 @@ public class InchiKeyIndexValueMaker implements IndexValueMaker<Substance>{
     }
 
     private static void extractInchiKeys(ChemicalSubstance s, Consumer<IndexableValue> consumer) {
-        consumer.accept(IndexableValue.simpleStringValue("root_structure_inchikey", s.structure.getInChIKey()));
-        s.moieties.stream().forEach(m->{
-            consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_inchikey", m.structure.getInChIKey()));
-        });
+        GinasChemicalStructure structure = s.getStructure();
+        if(structure !=null) {
+            consumer.accept(IndexableValue.simpleStringValue("root_structure_inchikey", structure.getInChIKey()));
+        }else{
+            System.out.println("structure is null");
+        }
+        if(s.moieties !=null) {
+            s.moieties.stream().forEach(m -> {
+                if(m.structure !=null) {
+                    consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_inchikey", m.structure.getInChIKey()));
+                }
+            });
+        }
     }
 
 }

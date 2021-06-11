@@ -36,7 +36,7 @@ public class ChemicalSubstanceStructureHashIndexValueMaker implements IndexValue
 
     public void createStructureHashes(ChemicalSubstance s, Consumer<IndexableValue> consumer) {
         try{
-            Structure structure = structureProcessor.instrument(s.structure.molfile);
+            Structure structure = structureProcessor.instrument(s.getStructure().molfile);
 
 
 

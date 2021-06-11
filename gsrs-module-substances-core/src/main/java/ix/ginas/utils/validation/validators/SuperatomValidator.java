@@ -17,10 +17,10 @@ public class SuperatomValidator extends AbstractValidatorPlugin<Substance> {
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         if (s.substanceClass == Substance.SubstanceClass.chemical) {
             ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-            if(chemicalSubstance.structure ==null){
+            if(chemicalSubstance.getStructure() ==null){
                 return;
             }
-            Chemical chem = chemicalSubstance.structure.toChemical();
+            Chemical chem = chemicalSubstance.getStructure().toChemical();
             for (SGroup sgroup : chem.getSGroups()) {
                 if (sgroup.getType() == SGroup.SGroupType.SUPERATOM_OR_ABBREVIATION) {
                     if (sgroup.getSuperatomLabel().isPresent()) {

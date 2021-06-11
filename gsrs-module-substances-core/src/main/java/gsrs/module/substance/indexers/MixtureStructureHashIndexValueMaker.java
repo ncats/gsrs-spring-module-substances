@@ -56,13 +56,13 @@ public class MixtureStructureHashIndexValueMaker implements IndexValueMaker<Subs
 	public void extractStructureHashes(ChemicalSubstance s, Consumer<IndexableValue> consumer) {
 		
 		//consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", lychi3));
-		if( s.structure.getStereoInsensitiveHash() != null && s.structure.getStereoInsensitiveHash().length() > 0)
+		if( s.getStructure().getStereoInsensitiveHash() != null && s.getStructure().getStereoInsensitiveHash().length() > 0)
 		{
-		consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", s.structure.getStereoInsensitiveHash()));
+		consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", s.getStructure().getStereoInsensitiveHash()));
 		}
-		if(s.structure.getExactHash() != null && s.structure.getExactHash().length() >0 )
+		if(s.getStructure().getExactHash() != null && s.getStructure().getExactHash().length() >0 )
 		{
-		consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", s.structure.getExactHash()));
+		consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", s.getStructure().getExactHash()));
 		}
 
 		s.moieties.stream().forEach(m->{

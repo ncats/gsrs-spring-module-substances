@@ -25,6 +25,9 @@ public class NucleicAcidSubstance extends Substance implements GinasSubstanceDef
 	
 	@Override
     public Modifications getModifications(){
+		if(this.nucleicAcid ==null){
+			return null;
+		}
     	return this.nucleicAcid.getModifications();
     }
     

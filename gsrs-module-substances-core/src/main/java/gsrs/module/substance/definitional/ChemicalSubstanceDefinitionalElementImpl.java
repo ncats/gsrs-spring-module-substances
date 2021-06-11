@@ -17,7 +17,7 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
         ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-        Structure structure = chemicalSubstance.structure;
+        Structure structure = chemicalSubstance.getStructure();
         if(structure==null){
             //shouldn't happen unless we get invalid submission
             return;
