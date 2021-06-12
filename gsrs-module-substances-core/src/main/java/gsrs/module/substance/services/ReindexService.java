@@ -6,5 +6,5 @@ import java.io.IOException;
 
 public interface ReindexService {
 
-    void execute(SchedulerPlugin.TaskListener l) throws IOException;
+    void execute(Object id, SchedulerPlugin.TaskListener l) throws IOException;
 }

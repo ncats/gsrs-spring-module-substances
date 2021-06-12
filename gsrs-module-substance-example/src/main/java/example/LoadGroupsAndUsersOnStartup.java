@@ -123,6 +123,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
 
                 }
+                System.out.println("done loading file");
             }
         }
 

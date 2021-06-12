@@ -41,9 +41,6 @@ public class JsonSubstanceFactory {
             f.setAccessible(true);
             if(f.getAnnotation(SubstanceOwnerReference.class) !=null){
                 if(force || f.get(obj) == null){
-                    if(obj instanceof Relationship){
-                        System.out.println("here");
-                    }
                     f.set(obj, substance);
                 }
             }
