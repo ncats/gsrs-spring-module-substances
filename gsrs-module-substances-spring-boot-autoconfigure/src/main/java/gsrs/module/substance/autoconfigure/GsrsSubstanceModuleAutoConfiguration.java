@@ -141,6 +141,12 @@ public class GsrsSubstanceModuleAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean(ReindexStatusEventListener.class)
+    public ReindexStatusEventListener reindexStatusEventListener(){
+        return new ReindexStatusEventListener();
+    }
+
+    @Bean
     @ConditionalOnMissingBean(NameEntityService.class)
     public NameEntityService nameEntityService(){
         return new NameEntityService();

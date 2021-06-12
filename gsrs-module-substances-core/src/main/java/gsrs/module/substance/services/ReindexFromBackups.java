@@ -10,6 +10,7 @@ import ix.core.util.EntityUtils;
 import ix.core.utils.executor.ProcessListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,28 +27,22 @@ public class ReindexFromBackups implements ReindexService{
     @Autowired
     private BackupRepository backupRepository;
 
-
+    @Async
     @Override
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public void execute(SchedulerPlugin.TaskListener l) throws IOException {
+    public void execute(Object id, SchedulerPlugin.TaskListener l) throws IOException {
         l.message("Initializing reindexing");
-        ProcessListener listen = ProcessListener.onCountChange((sofar, total)->{
-            if(total!=null){
-                l.message("Indexed:" + sofar + " of " + total);
-            }else{
-                l.message("Indexed:" + sofar);
-            }
-        });
+
 //this is all handled now by Spring events
         int count = (int) backupRepository.count();
         Map<Class, Boolean> isRootIndexCache = new ConcurrentHashMap<>();
         Set<String> seen = Collections.newSetFromMap(new ConcurrentHashMap<>(count));
-        String messageTail = " of " + count;
+        System.out.println("found count of " + count);
         //single thread for now...
-        UUID reindexId = UUID.randomUUID();
+        UUID reindexId = (UUID) id;
         eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
-            AtomicLong counter = new AtomicLong();
+
             stream.forEach(be ->{
                 try {
                     EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(be.getInstantiated());
@@ -79,7 +74,7 @@ public class ReindexFromBackups implements ReindexService{
 
                     });
                     eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
-                    l.message("Indexed:" + counter.incrementAndGet() + messageTail);
+//                    l.message("Indexed:" + counter.incrementAndGet() + messageTail);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
