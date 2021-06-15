@@ -3,7 +3,7 @@ package gsrs.module.substance;
 import gsrs.controller.EditController2;
 import gsrs.controller.EditEntityService;
 import gsrs.module.substance.controllers.*;
-import gsrs.module.substance.exporters.SubstanceSpreadhseetExporterConfiguration;
+import gsrs.module.substance.exporters.SubstanceSpreadsheetExporterConfiguration;
 import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.ConfigBasedDefinitionalElementConfiguration;
 import gsrs.module.substance.services.ConfigBasedDefinitionalElementFactory;
@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Import;
         LegacyGinasAppController.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
         StructureResolverController.class,
-        SubstanceSpreadhseetExporterConfiguration.class
+        SubstanceSpreadsheetExporterConfiguration.class
 
 })
 public class SubstanceCoreConfiguration {
