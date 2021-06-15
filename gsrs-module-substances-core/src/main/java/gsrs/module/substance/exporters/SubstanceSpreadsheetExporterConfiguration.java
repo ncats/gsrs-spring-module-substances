@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Data
-public class SubstanceSpreadhseetExporterConfiguration {
+public class SubstanceSpreadsheetExporterConfiguration {
 
     @Value("${ix.gsrs.delimitedreports.inchikeysforambiguousstereo}")
     private boolean includeInChiKeysAnyway = false;

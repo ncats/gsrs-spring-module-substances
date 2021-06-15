@@ -25,7 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.hibernate.annotations.Type;
 
 @JSONEntity(title = "Reference", isFinal = true)
 @Entity
@@ -49,7 +48,6 @@ public class Reference extends GinasCommonData {
 
 	@JSONEntity(title = "Citation Text", isRequired = true)
     @Lob
-    @Type(type="org.hibernate.type.TextType")
     public String citation;
     
     @JSONEntity(title = "Reference Type", format = JSONConstants.CV_DOCUMENT_TYPE, values = "JSONConstants.ENUM_DOCUMENTTYPE", isRequired = true)
@@ -77,7 +75,6 @@ public class Reference extends GinasCommonData {
     
     @JSONEntity(title = "Reference URL", format = "URI")
     @Lob
-    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     public String url;
 

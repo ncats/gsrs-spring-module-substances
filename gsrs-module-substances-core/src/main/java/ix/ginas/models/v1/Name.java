@@ -19,7 +19,6 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import org.apache.commons.lang3.ObjectUtils;
-import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.*;
@@ -124,13 +123,11 @@ public class Name extends CommonDataElementOfCollection {
     public String name;
 
     @Lob
-    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     @JsonIgnore
     public String fullName;
     
     @Lob
-    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     @JsonView(BeanViews.JsonDiff.class)
     public String stdName;

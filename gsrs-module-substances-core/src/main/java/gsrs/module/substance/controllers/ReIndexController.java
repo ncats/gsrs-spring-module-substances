@@ -13,12 +13,16 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.persistence.Id;
 import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
+
 @Slf4j
 @ExposesResourceFor(ReIndexController.ReindexStatus.class)
 @GsrsRestApiController(context = "reindex",  idHelper = IdHelpers.UUID)
@@ -38,7 +42,20 @@ public class ReIndexController {
     public static class ReindexStatus {
         @JsonProperty("status")
         private SchedulerPlugin.TaskListener listener;
+        @Id
         private UUID uuid;
+
+        private long total;
+
+        private AtomicLong count= new AtomicLong(0);
+
+        public void incrementCount(){
+            count.incrementAndGet();
+        }
+
+        public String generateMessage(){
+            return count.get() + " of "+ total;
+        }
     }
 
     @GetGsrsRestApiMapping({"({ID})","/{ID}"})
@@ -60,8 +77,10 @@ public class ReIndexController {
         ixCache.setTemp(status.uuid.toString(), status);
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
         status.setListener(listener);
-        reindexService.execute(listener);
+        reindexService.execute(status.uuid, listener);
 
         return GsrsControllerUtil.enhanceWithView(status, queryParameters);
     }
+
+   
 }

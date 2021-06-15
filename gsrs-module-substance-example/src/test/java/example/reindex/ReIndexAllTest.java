@@ -4,9 +4,7 @@ import example.GsrsModuleSubstanceApplication;
 import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.BackupEntityProcessorListener;
 import gsrs.backup.BackupEventListener;
-import gsrs.events.BackupEvent;
-import gsrs.events.MaintenanceModeEvent;
-import gsrs.events.ReindexEntityEvent;
+import gsrs.events.*;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.services.ReindexFromBackups;
 import gsrs.repository.BackupRepository;
@@ -129,9 +127,12 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
         ReindexFromBackups sut = new ReindexFromBackups();
         AutowireHelper.getInstance().autowire(sut);
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
-        sut.execute(listener);
+        UUID uuid = UUID.randomUUID();
+        sut.execute(uuid, listener);
         //2 substances each with ( 1 sub, 1 name, 1 ref) = 6 indexed events
         assertEquals(6L, applicationEvents.stream(ReindexEntityEvent.class).count());
+        assertEquals(1L, applicationEvents.stream(BeginReindexEvent.class).count());
+        assertEquals(1L, applicationEvents.stream(EndReindexEvent.class).count());
 
         assertEquals(1L, applicationEvents.stream(MaintenanceModeEvent.class).filter(e -> e.getSource().isInMaintenanceMode()).count());
         assertEquals(1L, applicationEvents.stream(MaintenanceModeEvent.class).filter(e -> !e.getSource().isInMaintenanceMode()).count());

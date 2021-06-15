@@ -8,20 +8,15 @@ import ix.core.validator.ExceptionValidationMessage;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidatorCallback;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Moiety;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.*;
 import ix.ginas.utils.ChemUtils;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
+import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 
 /**
@@ -33,6 +28,9 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
 	@Autowired
     private ReferenceRepository referenceRepository;
+
+	@Autowired
+    private ChemicalDuplicateFinder chemicalDuplicateFinder;
 
 	private boolean allow0AtomStructures = false;
 
@@ -192,40 +190,42 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         //TODO noop for now pushed to 2.3.7 until we find out more for GSRS-914
     }
 
-//    private static void validateStructureDuplicates(
-//            ChemicalSubstance cs, ValidatorCallback callback) {
-//        List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
-//
-//        try {
-//
-//            List<Substance> sr = ix.ginas.controllers.v1.SubstanceFactory
-//                    .getCollsionChemicalSubstances(100, 0, cs);
-//
-//            if (sr != null && !sr.isEmpty()) {
-//                int dupes = 0;
-//                GinasProcessingMessage mes = null;
-//                for (Substance s : sr) {
-//
-//                    if (cs.getUuid() == null
-//                            || !s.getUuid().toString()
-//                            .equals(cs.getUuid().toString())) {
-//                        if (dupes <= 0)
-//                            mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate:");
-//                        dupes++;
-//                        mes.addLink(GinasUtils.createSubstanceLink(s));
-//                    }
-//                }
-//                if (dupes > 0) {
-//                    if (dupes > 1)
-//                        mes.message = "Structure has " + dupes
-//                                + " possible duplicates:";
-//                    callback.addMessage(mes);
-//                }
-//            }
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-//    }
+    private void validateStructureDuplicates(
+            ChemicalSubstance cs, ValidatorCallback callback) {
+        List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
+
+        try {
+
+            List<SubstanceReference> sr = chemicalDuplicateFinder.findPossibleDuplicatesFor(cs.asSubstanceReference());
+
+            if (sr != null && !sr.isEmpty()) {
+                int dupes = 0;
+                GinasProcessingMessage mes = null;
+                for (SubstanceReference s : sr) {
+
+                    if (cs.getUuid() == null
+                            || !s.getUuid().toString()
+                            .equals(cs.getUuid().toString())) {
+                        if (dupes <= 0)
+                            mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate: " + s.uuid);
+                        dupes++;
+                        //TODO katelda June 2021: add link using new reference objects
+//                        mes.addLink(
+//                                GinasUtils.createSubstanceLink(s));
+                    }
+                }
+                if (dupes > 0) {
+                    if (dupes > 1)
+                        mes.message = "Structure has " + dupes
+                                + " possible duplicates:";
+                    callback.addMessage(mes);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private static void validateChemicalStructure(
             GinasChemicalStructure oldstr, Structure newstr,
             ValidatorCallback callback) {

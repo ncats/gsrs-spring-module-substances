@@ -13,9 +13,7 @@ import java.util.function.Consumer;
 @Component
 public class DeprecatedIndexValueMaker implements IndexValueMaker<Substance> {
 
-    public DeprecatedIndexValueMaker(){
-        System.out.println("here");
-    }
+
     @Override
     public Class<Substance> getIndexedEntityClass() {
         return Substance.class;

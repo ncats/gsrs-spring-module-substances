@@ -109,21 +109,23 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
         SecurityContextHolder.getContext().setAuthentication(auth);
 
-
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream("/Users/katzelda/Downloads/rep18.gsrs"))))){
-            String line;
-            Pattern sep = Pattern.compile("\t");
-            ObjectMapper mapper = new ObjectMapper();
-            while( (line = reader.readLine())!=null){
-                String[] cols = sep.split(line);
+        String pathToLoadFile = System.getProperty("ix.ginas.load.file");
+        if (pathToLoadFile != null) {
+            try(BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(pathToLoadFile))))){
+                String line;
+                Pattern sep = Pattern.compile("\t");
+                ObjectMapper mapper = new ObjectMapper();
+                while( (line = reader.readLine())!=null){
+                    String[] cols = sep.split(line);
 //                System.out.println(cols[2]);
 
-                Substance created = substanceEntityService.createEntity(mapper.readTree(cols[2])).getCreatedEntity();
-                if(created instanceof ChemicalSubstance){
-                    System.out.println("here");
-                }
+                    substanceEntityService.createEntity(mapper.readTree(cols[2])).getCreatedEntity();
 
+
+                }
+                System.out.println("done loading file");
             }
         }
+
     }
 }

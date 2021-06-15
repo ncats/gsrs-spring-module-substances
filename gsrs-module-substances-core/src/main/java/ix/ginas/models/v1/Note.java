@@ -9,7 +9,7 @@ import ix.ginas.models.utils.JSONEntity;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-import org.hibernate.annotations.Type;
+
 
 @JSONEntity(title = "Note", isFinal = true)
 @Entity
@@ -37,7 +37,6 @@ public class Note extends CommonDataElementOfCollection {
 
     @JSONEntity(title = "Note")
     @Lob
-    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     public String note;
 

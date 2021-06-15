@@ -14,7 +14,6 @@ import ix.ginas.models.utils.RelationshipUtil;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-import org.hibernate.annotations.Type;
 
 
 @JSONEntity(title = "Relationship", isFinal = true)
@@ -51,7 +50,6 @@ public class Relationship extends /*CommonDataElementOfCollection */ GinasCommon
     
     @JSONEntity(title = "Comments")
     @Lob
-    @Type(type="org.hibernate.type.TextType")
     @Basic(fetch= FetchType.EAGER)
     public String comments;
     

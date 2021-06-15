@@ -24,7 +24,6 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.hibernate.annotations.Type;
 
 @SuppressWarnings("serial")
 @Entity
@@ -44,7 +43,6 @@ public class Protein extends GinasCommonSubData {
 	public String sequenceType;
 
 	@Lob
-    @Type(type="org.hibernate.type.TextType")
 	@JsonIgnore
 	@Indexable(indexed = false)
 	@Column(name="disulf_json")

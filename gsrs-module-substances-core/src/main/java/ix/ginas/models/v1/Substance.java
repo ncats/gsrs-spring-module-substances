@@ -601,14 +601,12 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
     @PrePersist
     private void prePersist(){
-        System.out.println("in pre persist");
         fixstatus();
         tidy();
     }
 
     @PreUpdate
     private void preUpdate(){
-        System.out.println("in pre update");
         fixstatus();
         tidy();
         updateVersion();

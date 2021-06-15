@@ -16,18 +16,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.util.ModelUtils;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
-import org.hibernate.annotations.Type;
 
 @SuppressWarnings("serial")
 @Entity
 @Table(name="ix_ginas_site_lob")
 public class SiteContainer extends GinasCommonSubData{
 	@Lob
-    @Type(type="org.hibernate.type.TextType")
 	@JsonIgnore
 	String sitesShortHand;
 	@Lob
-    @Type(type="org.hibernate.type.TextType")
 	@JsonIgnore
 	@Column(name="sites_json")
 	String sitesJSON;	

@@ -47,7 +47,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 
     Substance findByModifications_Uuid(UUID uuid);
 
-//    List<SubstanceSummary> findSubstanceSummaryByStructure_Properties_Term(String term);
+
     default List<Substance> findSubstanceSummaryByStructure_Properties_Term(String term){
         ChemicalSubstance example = new ChemicalSubstance();
         example.setStructure( new GinasChemicalStructure());
