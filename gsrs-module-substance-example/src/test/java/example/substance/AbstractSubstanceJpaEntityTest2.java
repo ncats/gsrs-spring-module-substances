@@ -23,6 +23,7 @@ import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
+import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
 import ix.seqaln.service.SequenceIndexerService;
@@ -265,7 +266,7 @@ public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEnt
         assertTrue(creationResult.isCreated(), ()->"was not created "+ resp.getValidationMessages());
 
         T sub= creationResult.getCreatedEntity();
-        System.out.println("created sub uuid = " + ((Substance)sub).getUuid());
+        EntityUtils.EntityWrapper.of(sub).toFullJson();
         return sub;
     }
 }

@@ -10,6 +10,7 @@ import gsrs.module.substance.services.ConfigBasedDefinitionalElementFactory;
 import gsrs.module.substance.services.StructureResolverService;
 import gsrs.module.substance.services.StructureResolverServiceConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
+import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -21,7 +22,7 @@ import org.springframework.context.annotation.Import;
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
         LegacyGinasAppController.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
-        StructureResolverController.class,
+        StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadhseetExporterConfiguration.class
 
 })
