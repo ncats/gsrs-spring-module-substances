@@ -1,12 +1,15 @@
 package example.substance.indexer;
 
-import com.google.common.util.concurrent.AtomicDouble;
+import gov.nih.ncats.common.util.SingleThreadCounter;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 
@@ -151,19 +154,18 @@ public class ExampleValueMaker implements IndexValueMaker<Substance> {
 	public void addCarbonNonCarbonWeightRatioFacet(Substance s, Consumer<IndexableValue> consumer){
 
 		if(s instanceof ChemicalSubstance){
-			AtomicDouble ctot=new AtomicDouble();
-			AtomicDouble tot=new AtomicDouble();
-			
+			List<Double> ctot = new ArrayList<>();
+			List<Double> tot = new ArrayList<>();
 			s.toChemical().atoms().forEach(ca->{
 						double m=ca.getExactMass();
 						if("C".equals(ca.getSymbol())){
-							ctot.addAndGet(m);
+							ctot.add(m);
 						}
-						tot.addAndGet(m);
+						tot.add(m);
 					});
 			
 			consumer.accept(IndexableValue.simpleFacetDoubleValue(CARBON_RATIO
-					,ctot.doubleValue()/tot.doubleValue()
+					,ctot.stream().mapToDouble(Double::doubleValue).sum()/tot.stream().mapToDouble(Double::doubleValue).sum()
 					,carbonRatio));
 		}
 	}
