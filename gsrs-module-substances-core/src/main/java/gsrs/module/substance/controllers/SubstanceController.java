@@ -186,7 +186,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         
     }
     //TODO: could be its own microservice?
-    private static enum StructureStandardizerPresets{
+    private enum StructureStandardizerPresets{
         REMOVE_HYDROGENS(SimpleStandardizer.REMOVE_HYDROGENS()),
         ADD_HYDROGENS(SimpleStandardizer.ADD_HYDROGENS()),
         STEREO_FLATTEN(SimpleStandardizer.STEREO_FLATTEN()),
@@ -236,7 +236,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private GsrsEntityService<Substance, UUID> substanceEntityService;
 
 
-    @Value("classpath:renderer.json")
+    @Value( "classpath:renderer.json")
     private String renderOptionsJson;
 
     private CachedSupplier<RendererOptions> rendererSupplier = CachedSupplier.of(()->{
