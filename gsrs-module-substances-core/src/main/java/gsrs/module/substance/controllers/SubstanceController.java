@@ -56,6 +56,7 @@ import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
@@ -832,8 +833,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam Map<String, String> queryParameters) throws Exception {
         int[] amaps = null;
         String input=null;
+        Substance actualSubstance = null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
-            Substance actualSubstance = null;
+
             UUID uuid = UUID.fromString(idOrSmiles);
             Optional<Structure> structure = structureRepository.findById(uuid);
             if (structure.isPresent()) {
@@ -862,7 +864,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
 
             if (!structure.isPresent()) {
-                return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+                if(actualSubstance ==null) {
+                    //couldn't find a substance
+                    return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+                }
+                //if we're here, we have a substance but nothing to render return default for substance type
+                return getDefaultImageFor(actualSubstance);
             }
             //context id is either a hash or a comma sep list of offsets
             if (contextId != null) {
@@ -905,6 +912,53 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
 
     }
+
+    private Object getDefaultImageFor(Substance s) throws IOException {
+        String placeholderFile = "polymer.svg";
+        if (s != null) {
+            switch (s.substanceClass) {
+                case chemical:
+                    placeholderFile = "chemical.svg";
+                    break;
+                case protein:
+                    placeholderFile = "protein.svg";
+                    break;
+                case mixture:
+                    placeholderFile = "mixture.svg";
+                    break;
+                case polymer:
+                    placeholderFile = "polymer.svg";
+                    break;
+                case structurallyDiverse:
+                    placeholderFile = "structurally-diverse.svg";
+                    break;
+                case concept:
+                    placeholderFile = "concept.svg";
+                    break;
+                case nucleicAcid:
+                    placeholderFile = "nucleic-acid.svg";
+                    break;
+                case specifiedSubstanceG1:
+                    placeholderFile = "g1ss.svg";
+                    break;
+                default:
+                    placeholderFile = "polymer.svg";
+            }
+        } else {
+            placeholderFile = "noimage.svg";
+        }
+
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("Content-Type", parseContentType(placeholderFile.substring(placeholderFile.length()-3)));
+
+        try(InputStream in = new ClassPathResource("images/" + placeholderFile).getInputStream()) {
+            byte[] bytes = IOUtil.toByteArray(in);
+            return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
+        }
+
+    }
+
     private static String parseContentType(String format){
         if("svg".equalsIgnoreCase(format)){
             return "image/svg+xml";
