@@ -784,6 +784,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     on.set("countAmount", amt);
                     an.add(on);
                 }
+                saveTempStructure(struc);
                 node.put("structure", mapper.valueToTree(struc));
                 node.put("moieties", an);
             } catch (Exception e) {
@@ -812,11 +813,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
-    public static void saveTempStructure(Structure s) {
+    public void saveTempStructure(Structure s) {
         if (s.id == null){
             s.id = UUID.randomUUID();
         }
-        //TODO save in EhCache
+        ixCache.setTemp(s.id.toString(), s);
 
     }
 
