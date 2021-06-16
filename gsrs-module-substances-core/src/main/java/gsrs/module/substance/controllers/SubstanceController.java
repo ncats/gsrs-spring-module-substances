@@ -818,7 +818,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if (s.id == null){
             s.id = UUID.randomUUID();
         }
-        ixCache.setTemp(s.id.toString(), s);
+        ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(s));
 
     }
 
