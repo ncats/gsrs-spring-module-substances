@@ -19,7 +19,7 @@
     </parent>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-module-substances</artifactId>
-    <version>0.6.3-SNAPSHOT</version>
+    <version>0.6.4-SNAPSHOT</version>
     <name>GSRS Substance Module</name>
     <description>Substance Module for GSRS Spring Boot</description>
 
