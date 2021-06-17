@@ -146,11 +146,7 @@ public class ProteinUtils {
 	}
 	
 	public static Map<String, SingleThreadCounter> getSingleAAFormula(String c) {
-		if( atomCounts.containsKey(c) ) {
-			Map aaMap = atomCounts.get(c);
-			return aaMap;
-		}
-		return null;
+		return atomCounts.getOrDefault(c, Collections.emptyMap());
 	}
 
 	public static double getSubunitWeight(Subunit sub, Set<String> unknownRes){

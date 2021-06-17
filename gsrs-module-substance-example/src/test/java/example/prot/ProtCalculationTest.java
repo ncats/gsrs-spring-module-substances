@@ -26,7 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.ClassPathResource;
 
@@ -34,6 +34,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String CV_AMINO_ACID_SUBSTITUTION = "AMINO_ACID_SUBSTITUTION";
     private static final Double CELLULOSE_SULFATE_MW =470000.0;
+    private static final Double PROLINE_MW = 115.1305;
     private static final Double WATER_MW = 18.015;;
     private static final Double LARGE_PROTEIN_MW_TOLERANCE = 12.0;
     private static final Double MW_HIGH_OFFSET =1000.0;
@@ -361,6 +362,47 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(expectedMw, actual, 0.9);
     }
 
+
+    @Test
+    public void proteinMwTestModOnX() {
+        System.out.println("starting proteinMwTestModOnX");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "XMAKNY";
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+        List<Site> sites = new ArrayList<>();
+        sites.add(new Site(1, 1));
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+
+        Substance proline = buildProline();
+
+        modification.molecularFragment.refuuid=proline.getUuid().toString();
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            System.out.printf("message: %s; ", m.message);
+        });
+        double xMw = 0.0; //x is not recognized and contributes 0
+        double expectedMw = 625.801 - xMw + PROLINE_MW-WATER_MW;
+        double actual =contribution.getMw();
+        System.out.println("calculated MW: " + actual);
+        assertEquals(expectedMw, actual, 0.9);
+    }
+
     @Test
     public void proteinMwTestModWithHighAndLow() {
         System.out.println("starting proteinMwTestModWithHighAndLow");
@@ -453,11 +495,11 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         double actualLowLimit =contribution.getMwLowLimit();
         System.out.println("calculated MW: " + actualAverage);
         assertEquals(expectedAverageMw, actualAverage, LARGE_PROTEIN_MW_TOLERANCE);
-        assertEquals(MW_LOW_OFFSET, actualLow, 0.9);
-        assertEquals(MW_HIGH_OFFSET, actualHigh, 0.9);
-        assertEquals(MW_LOW_OFFSET, actualHigh, 0.9);
-        assertEquals(MW_HIGHLIMIT_OFFSET, actualHighLimit);
-        assertEquals(MW_LOWLIMIT_OFFSET, actualLowLimit);
+        assertEquals(Math.abs(MW_LOW_OFFSET), actualLow, 0.9);
+        assertEquals(Math.abs(MW_HIGH_OFFSET), actualHigh, 0.9);
+        assertEquals(Math.abs(MW_LOW_OFFSET), actualHigh, 0.9);
+        assertEquals(Math.abs(MW_HIGHLIMIT_OFFSET), actualHighLimit);
+        assertEquals(Math.abs(MW_LOWLIMIT_OFFSET), actualLowLimit);
     }
 
     @Test
@@ -515,7 +557,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         expected.put("N", new SingleThreadCounter(1));
         expected.put("O", new SingleThreadCounter(3-1)); //remove 1 for O in 'H2O'
         Map<String, SingleThreadCounter> actual = ProteinUtils.getSingleAAFormula(serineAbbreviation);
-        Assertions.assertTrue( actual.keySet().stream().allMatch(k-> expected.get(k).getAsInt() == actual.get(k).getAsInt()));
+        assertFalse(actual.isEmpty());
+        assertTrue( actual.keySet().stream().allMatch(k-> expected.get(k).getAsInt() == actual.get(k).getAsInt()));
     }
     
     @Test
@@ -630,6 +673,20 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         return polymer;
     }
 
+    private ChemicalSubstance buildProline() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.addName("proline");
+        builder.addCode("FDA UNII", "9DLQ4CIU6V");
+        GinasChemicalStructure structure= new GinasChemicalStructure();
+        structure.molfile =readProlineMolfileFromFile();
+        structure.setMwt(115.1305);
+        structure.formula ="C5H9NO2";
+        builder.setStructure(structure);
+        ChemicalSubstance proline = builder.build();
+        substanceRepository.saveAndFlush(proline);
+        return proline;
+    }
+
     private PolymerSubstance buildPolymerWithHighAndLow() {
         PolymerSubstanceBuilder builder = new PolymerSubstanceBuilder(new Substance());
         builder.addName("CELLULOSE SULFATE");
@@ -697,6 +754,20 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
             lines.remove(0);
             String sequence = String.join("", lines);
             return sequence;
+        }
+        catch(Exception ex) {
+            Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return "";
+    }
+
+    private String readProlineMolfileFromFile() {
+        try {
+            File fastaFile = new ClassPathResource("molfiles/9DLQ4CIU6V.mol").getFile();
+
+            List<String> lines =Files.readAllLines(fastaFile.toPath());
+            String molfile = String.join("\n", lines);
+            return molfile;
         }
         catch(Exception ex) {
             Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
