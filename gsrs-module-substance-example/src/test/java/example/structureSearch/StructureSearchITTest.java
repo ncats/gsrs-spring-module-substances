@@ -8,6 +8,8 @@ import gsrs.legacy.structureIndexer.StructureIndexerEventListener;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.services.PrincipalService;
+import gsrs.services.PrincipalServiceImpl;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -33,9 +35,13 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     @Autowired
     private SubstanceEntityService substanceEntityService;
 
+    @Autowired
+    private PrincipalServiceImpl principalService;
+
     @BeforeEach
     public void clearIndexers() throws IOException {
         indexer.removeAll();
+        principalService.clearCache();
     }
 
     @Test
