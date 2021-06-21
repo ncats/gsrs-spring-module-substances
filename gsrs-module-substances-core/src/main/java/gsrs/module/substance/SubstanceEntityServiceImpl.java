@@ -12,6 +12,7 @@ import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.repository.GroupRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.validator.ValidatorConfig;
+import ix.core.util.EntityUtils;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 import ix.utils.Util;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -216,6 +218,19 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     protected Substance create(Substance substance) {
         JsonSubstanceFactory.fixOwners(substance, true);
         try {
+//            EntityManager em = getEntityManager();
+//            //we might have detatched objects (like principals)
+//            EntityUtils.EntityWrapper.of(substance).traverse().execute( (p,e)->{
+//                if(p.getDepth() !=0) {
+//                    if (e.isEntity()) {
+//                        Object o = e.getRawValue();
+//                        if (!em.contains(o)) {
+//                            System.out.println("merged "+ o);
+//                            em.merge(o);
+//                        }
+//                    }
+//                }
+//            });
             return repository.saveAndFlush(substance);
         }catch(Throwable t){
             t.printStackTrace();

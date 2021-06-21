@@ -1,6 +1,8 @@
 package example.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.nih.ncats.common.io.InputStreamSupplier;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.cache.GsrsCache;
@@ -45,6 +47,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.Resource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -53,7 +56,12 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -226,10 +234,63 @@ public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEnt
     protected TransactionTemplate newTransactionTemplate(){
         return new TransactionTemplate(transactionManager);
     }
+
+    /**
+     * Load the specially formatted GSRS format file (often with {@code .gsrs} extension although some
+     * GSRS 1.x verion files have the extension {@code .ginas}.  Either way, the file is a GZIPPED
+     * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
+     * with additional metadata.
+     * @param gsrsFile the GSRS file to load.
+     * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+     * @throws IOException if there is a problem parsing the file.
+     */
+    protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(Resource gsrsFile) throws IOException {
+        return loadGsrsFile(gsrsFile.getFile());
+    }
+    /**
+     * Load the specially formatted GSRS format file (often with {@code .gsrs} extension although some
+     * GSRS 1.x verion files have the extension {@code .ginas}.  Either way, the file is a GZIPPED
+     * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
+     * with additional metadata.
+     * @param gsrsFile the GSRS file to load.
+     * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+     * @throws IOException if there is a problem parsing the file.
+     */
+    protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(File gsrsFile) throws IOException {
+        try(BufferedReader reader = new BufferedReader(new InputStreamReader( InputStreamSupplier.forFile(gsrsFile).get()))){
+            String line;
+            ObjectMapper mapper = new ObjectMapper();
+            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+            List<GsrsEntityService.CreationResult<Substance>> list = new ArrayList<>();
+            Pattern gsrsFilePattern = Pattern.compile("\t");
+            while( (line=reader.readLine()) !=null){
+                if(line.isEmpty() || line.startsWith("#")){
+                    //skip
+                    continue;
+                }
+                String[] cols = gsrsFilePattern.split(line);
+                JsonNode json = mapper.readTree(cols[2]);
+                list.add(transactionTemplate.execute(status ->{
+                    try {
+                        GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json);
+                        //full fetch
+                        if(result.isCreated()){
+                            result.getCreatedEntity().toFullJsonNode();
+                        }
+                        return result;
+                    }catch(IOException e){
+                        return Sneak.sneakyThrow(e);
+                    }
+                }));
+            }
+            return list;
+        }
+    }
     protected Substance assertCreated(JsonNode json){
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-        return transactionTemplate.execute( stauts -> {
+        return transactionTemplate.execute( status -> {
             try {
                 return ensurePass(substanceEntityService.createEntity(json));
             } catch (Exception e) {
@@ -268,5 +329,19 @@ public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEnt
         T sub= creationResult.getCreatedEntity();
         EntityUtils.EntityWrapper.of(sub).toFullJson();
         return sub;
+    }
+
+    protected static <T> Collection<GsrsEntityService.CreationResult<T>> ensurePass(Collection<GsrsEntityService.CreationResult<T>> creationResults){
+        for(GsrsEntityService.CreationResult<T> creationResult: creationResults) {
+            ValidationResponse<T> resp = creationResult.getValidationResponse();
+            assertTrue(resp.isValid(), () -> "response is not valid " + resp.getValidationMessages());
+            assertTrue(!resp.hasError(), () -> "response has error " + resp.getValidationMessages());
+
+            assertTrue(creationResult.isCreated(), () -> "was not created " + resp.getValidationMessages());
+
+            T sub = creationResult.getCreatedEntity();
+
+        }
+        return creationResults;
     }
 }
