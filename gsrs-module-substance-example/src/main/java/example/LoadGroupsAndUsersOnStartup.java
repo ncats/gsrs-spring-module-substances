@@ -115,12 +115,19 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 String line;
                 Pattern sep = Pattern.compile("\t");
                 ObjectMapper mapper = new ObjectMapper();
+                int i=0;
                 while( (line = reader.readLine())!=null){
                     String[] cols = sep.split(line);
 //                System.out.println(cols[2]);
-
-                    substanceEntityService.createEntity(mapper.readTree(cols[2])).getCreatedEntity();
-
+                    try {
+                        substanceEntityService.createEntity(mapper.readTree(cols[2])).getCreatedEntity();
+                    }catch(Throwable t){
+                        t.printStackTrace();
+                    }
+                    i++;
+                    if(i %100 ==0){
+                        System.out.println("loaded record " + i);
+                    }
 
                 }
                 System.out.println("done loading file");
