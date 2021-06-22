@@ -96,7 +96,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
         userProfileRepository.saveAndFlush(up2);
 
         UserProfile guest = new UserProfile();
-        guest.user = new Principal("GUEST", "GUEST@example.com");
+        guest.user = new Principal("GUEST", null);
         guest.setPassword("GUEST");
         guest.active=false;
         guest.deprecated=false;
