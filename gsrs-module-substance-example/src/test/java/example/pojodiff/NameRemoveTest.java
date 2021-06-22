@@ -2,6 +2,8 @@ package example.pojodiff;
 
 import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.repository.PrincipalRepository;
+import gsrs.services.PrincipalService;
+import gsrs.services.PrincipalServiceImpl;
 import ix.core.models.Principal;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
@@ -21,12 +23,12 @@ import static org.mockito.Mockito.*;
 //@DataJpaTest
 public class NameRemoveTest extends AbstractSubstanceJpaEntityTest {
 	@MockBean
-	public PrincipalRepository mockRepository;
+	public PrincipalServiceImpl mockRepository;
 
 	Map<String, Principal> cache = new HashMap<>();
 	@BeforeEach
 	public void setup(){
-		when(mockRepository.findDistinctByUsernameIgnoreCase(anyString())).thenAnswer(a -> cache.computeIfAbsent(a.getArgument(0),  n->new Principal(n)));
+		when(mockRepository.registerIfAbsent(anyString())).thenAnswer(a -> cache.computeIfAbsent(a.getArgument(0),  n->new Principal(n, null)));
 	}
 	@Test
     public void testSubstanceThing() throws Exception{

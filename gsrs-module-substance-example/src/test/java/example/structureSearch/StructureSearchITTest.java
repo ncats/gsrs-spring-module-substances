@@ -1,6 +1,7 @@
 package example.structureSearch;
 
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.search.MolSearcherFactory;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
@@ -100,26 +101,28 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     @WithMockUser(value = "admin", roles = "Admin")
     public void ensureIsobutaneSSSDoesntReturnIsoPentene() throws Exception {
 
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+                    UUID uuid = UUID.randomUUID();
+                    String mol1 = "\n" +
+                            "   JSDraw209182020002D\n" +
+                            "\n" +
+                            "  4  3  0  0  0  0              0 V2000\n" +
+                            "   23.1921   -7.4013    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                            "   23.6531   -8.8915    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                            "   25.1741   -9.2375    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                            "   22.5929  -10.0359    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                            "  1  2  1  0  0  0  0\n" +
+                            "  2  3  1  0  0  0  0\n" +
+                            "  2  4  1  0  0  0  0\n" +
+                            "M  END";
+                    new ChemicalSubstanceBuilder()
 
-        UUID uuid = UUID.randomUUID();
-        String mol1 = "\n" +
-                "   JSDraw209182020002D\n" +
-                "\n" +
-                "  4  3  0  0  0  0              0 V2000\n" +
-                "   23.1921   -7.4013    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "   23.6531   -8.8915    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "   25.1741   -9.2375    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "   22.5929  -10.0359    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  1  0  0  0  0\n" +
-                "  2  3  1  0  0  0  0\n" +
-                "  2  4  1  0  0  0  0\n" +
-                "M  END";
-        new ChemicalSubstanceBuilder()
-
-                .setStructure(mol1)
-                .addName("Test")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+                            .setStructure(mol1)
+                            .addName("Test")
+                            .setUUID(uuid)
+                            .buildJsonAnd(this::assertCreated);
+                });
 
         String mol2 = "\n" +
                 "   JSDraw209182020002D\n" +
@@ -159,6 +162,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                 "  2  3  1  0  0  0  0\n" +
                 "  2  4  1  0  0  0  0\n" +
                 "M  END";
+
         new ChemicalSubstanceBuilder()
 
                 .setStructure(mol1)
@@ -206,17 +210,28 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
 
 
         UUID uuid = UUID.randomUUID();
-        new ChemicalSubstanceBuilder()
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+                    new ChemicalSubstanceBuilder()
 
-                .setStructure("C(=CC=C1)C=C1")
-                .addName("Test")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+                            .setStructure("C(=CC=C1)C=C1")
+                            .addName("Test")
+                            .setUUID(uuid)
+                            .buildJsonAnd(this::assertCreated);
+                });
 
+        transactionTemplate.executeWithoutResult(s -> {
+            StructureIndexer.ResultEnumeration result = null;
+            try {
+                result = indexer.substructure("C(=C(C(=C1[H])[H])[H])(C(=C1[H])[H])[H]");
 
-        StructureIndexer.ResultEnumeration result = indexer.substructure("C(=C(C(=C1[H])[H])[H])(C(=C1[H])[H])[H]");
-        assertTrue(result.hasMoreElements());
-        assertEquals(uuid.toString(), result.nextElement().getId());
-        assertFalse(result.hasMoreElements());
+            assertTrue(result.hasMoreElements());
+            assertEquals(uuid.toString(), result.nextElement().getId());
+            assertFalse(result.hasMoreElements());
+            } catch (Exception e) {
+                Sneak.sneakyThrow(e);
+            }
+        });
+
     }
 }
