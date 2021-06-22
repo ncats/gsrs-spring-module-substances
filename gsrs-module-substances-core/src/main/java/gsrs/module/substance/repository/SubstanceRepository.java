@@ -20,7 +20,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         if(substanceReference ==null){
             return false;
         }
-        return (substanceReference.approvalID !=null && existsByApprovalID(substanceReference.approvalID)) || existsById(UUID.fromString(substanceReference.refuuid));
+        return (substanceReference.approvalID !=null && existsByApprovalID(substanceReference.approvalID))
+                || ( substanceReference.refuuid !=null && existsById(UUID.fromString(substanceReference.refuuid)));
     }
     default Substance findBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
@@ -32,10 +33,10 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
                 return s;
             }
         }
+        //Older Substance data did not have a refuuid as all references were based on approval id
+        //so we need to check for null here
         if(substanceReference.refuuid !=null) {
             return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
-        }else{
-            System.out.println("null refuuid for " + substanceReference);
         }
 
         return null;
