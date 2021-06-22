@@ -32,7 +32,13 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
                 return s;
             }
         }
-        return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
+        if(substanceReference.refuuid !=null) {
+            return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
+        }else{
+            System.out.println("null refuuid for " + substanceReference);
+        }
+
+        return null;
     }
     @Query("select s from Substance s where s.approvalID= ?1")
     Substance findByApprovalID(String approvalID);

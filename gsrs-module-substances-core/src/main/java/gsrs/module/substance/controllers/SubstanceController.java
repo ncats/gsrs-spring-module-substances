@@ -471,7 +471,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
 
-        Optional<Structure> structure = parseStructureQuery(q, false);
+        Optional<Structure> structure = parseStructureQuery(q, true);
         if(!structure.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
         }
@@ -536,13 +536,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     private Optional<Structure> parseStructureQuery(String q, boolean store) throws IOException {
         if(UUIDUtil.isUUID(q)){
-            String json = (String) ixCache.getTemp(q);
-            if(json !=null){
-                return Optional.of(EntityUtils.getEntityInfoFor(Structure.class).fromJson(json));
+            Optional<Structure> opt = GsrsSubstanceControllerUtil.getTempObject(ixCache, q, Structure.class);
+            if(opt.isPresent()){
+                return opt;
             }
             //it's a UUID that isn't a temp structure try the database
-            Optional<Structure> opt = structureRepository.findById(UUID.fromString(q));
-            return opt;
+            return structureRepository.findById(UUID.fromString(q));
 
         }
         Structure struc= structureProcessor.instrument(q);
@@ -610,15 +609,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         if(UUIDUtil.isUUID(q)){
             //query is a uuid of a subunit look it up
-            String json = (String) ixCache.getTemp(q);
-
-            if(json !=null){
-                //get as Subunit
-                Subunit subunit = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().convertValue(json, Subunit.class);
-                return Optional.of(subunit);
+            Optional<Subunit> opt = GsrsSubstanceControllerUtil.getTempObject(ixCache, q, Subunit.class);
+            if(opt.isPresent()){
+                return opt;
             }else{
                 return subunitRepository.findById(UUID.fromString(q));
-
             }
         }
 
@@ -835,33 +830,30 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String input=null;
         Substance actualSubstance = null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
-
-            UUID uuid = UUID.fromString(idOrSmiles);
-            Optional<Structure> structure = structureRepository.findById(uuid);
-            if (structure.isPresent()) {
-                if (structure.get() instanceof GinasChemicalStructure) {
-                    ChemicalSubstance cs = chemicalSubstanceRepository.findByStructure_Id(structure.get().id);
-                    if (cs != null) {
-                        actualSubstance = cs;
-                    }
-                }
-            } else {
-                Optional<Substance> substance = substanceRepository.findById(uuid);
-                if (substance.isPresent()) {
-                    actualSubstance = substance.get();
-                    structure = actualSubstance.getStructureToRender();
-
-
-                }
-
-
-            }
             //check cache?
-            String json = (String) ixCache.getTemp(idOrSmiles);
+            Optional<Structure> structure = GsrsSubstanceControllerUtil.getTempObject(ixCache, idOrSmiles,Structure.class);
+            if(!structure.isPresent()) {
+                UUID uuid = UUID.fromString(idOrSmiles);
+                structure = structureRepository.findById(uuid);
+                if (structure.isPresent()) {
+                    if (structure.get() instanceof GinasChemicalStructure) {
+                        ChemicalSubstance cs = chemicalSubstanceRepository.findByStructure_Id(structure.get().id);
+                        if (cs != null) {
+                            actualSubstance = cs;
+                        }
+                    }
+                } else {
+                    Optional<Substance> substance = substanceRepository.findById(uuid);
+                    if (substance.isPresent()) {
+                        actualSubstance = substance.get();
+                        structure = actualSubstance.getStructureToRender();
 
-                if(json !=null){
-                    structure= Optional.of(EntityUtils.getEntityInfoFor(Structure.class).fromJson(json));
+
+                    }
+
+
                 }
+            }
 
             if (!structure.isPresent()) {
                 if(actualSubstance ==null) {
@@ -912,6 +904,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(data, headers, HttpStatus.OK);
 
     }
+
+
 
     private Object getDefaultImageFor(Substance s) throws IOException {
         String placeholderFile = "polymer.svg";
