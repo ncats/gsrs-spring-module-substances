@@ -678,9 +678,9 @@ public class ProteinUtils {
 	
 	private static void appendOneSpecies(StringBuilder formulaBuilder, Map<String, SingleThreadCounter> map, String species) {
         formulaBuilder.append(species);
-        Integer speciesCount =map.get(species).getAsInt();
-		if(speciesCount >1) {
-            formulaBuilder.append(speciesCount);
+        SingleThreadCounter speciesCount =map.get(species);
+        if(speciesCount != null && speciesCount.getAsInt() >1) {
+            formulaBuilder.append(speciesCount.getAsInt());
 		}
     }
 	

@@ -616,6 +616,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         
         String expected = "C51H86N14O15";
         String actual = ProteinUtils.makeFormulaFromMap(counts);
+        System.out.println("newly made formula: " + actual);
         assertEquals(expected, actual);
     }
     
