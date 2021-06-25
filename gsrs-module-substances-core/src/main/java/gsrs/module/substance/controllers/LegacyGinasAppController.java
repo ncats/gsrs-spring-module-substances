@@ -1,5 +1,6 @@
 package gsrs.module.substance.controllers;
 
+import gsrs.cache.GsrsCache;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
@@ -47,6 +48,8 @@ public class LegacyGinasAppController {
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
 
+    @Autowired
+    private GsrsCache ixCache;
 
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
     // ix.ginas.controllers.GinasApp.structureExport(id: String, format: String, context: String ?= null)
@@ -64,25 +67,33 @@ public class LegacyGinasAppController {
             //parent substance since we don't need to set context ?
             if (UUIDUtil.isUUID(id)) {
                 Substance actualSubstance = null;
-                UUID uuid = UUID.fromString(id);
-                Optional<Structure> structure = structureRepository.findById(uuid);
-                if (structure.isPresent()) {
-                    if (structure.get() instanceof GinasChemicalStructure) {
-                        ChemicalSubstance cs = chemicalSubstanceRepository.findByStructure_Id(structure.get().id);
-                        if (cs != null) {
-                            actualSubstance = cs;
+
+                //katzelda June 2021: first check if temp structure the UI uses this to render everything
+                //including temp structure searches
+                Optional<Structure> structure = GsrsSubstanceControllerUtil.getTempObject(ixCache, id, Structure.class);
+                if(!structure.isPresent()) {
+
+
+                    UUID uuid = UUID.fromString(id);
+                    structure = structureRepository.findById(uuid);
+                    if (structure.isPresent()) {
+                        if (structure.get() instanceof GinasChemicalStructure) {
+                            ChemicalSubstance cs = chemicalSubstanceRepository.findByStructure_Id(structure.get().id);
+                            if (cs != null) {
+                                actualSubstance = cs;
+                            }
                         }
-                    }
-                } else {
-                    Optional<Substance> substance = substanceRepository.findById(uuid);
-                    if (substance.isPresent()) {
-                        actualSubstance = substance.get();
-                        structure = actualSubstance.getStructureToRender();
+                    } else {
+                        Optional<Substance> substance = substanceRepository.findById(uuid);
+                        if (substance.isPresent()) {
+                            actualSubstance = substance.get();
+                            structure = actualSubstance.getStructureToRender();
+
+
+                        }
 
 
                     }
-
-
                 }
                 if (!structure.isPresent()) {
                     return gsrsControllerConfiguration.handleNotFound(queryParameters);

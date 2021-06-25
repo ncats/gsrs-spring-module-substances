@@ -45,34 +45,38 @@ public class ReindexFromBackups implements ReindexService{
 
             stream.forEach(be ->{
                 try {
-                    EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(be.getInstantiated());
+                    Optional<Object> opt = be.getOptionalInstantiated();
+                    if(opt.isPresent()) {
 
-                    wrapper.traverse().execute((p, child)->{
-                        EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
-                        if(wrapped.isEntity()) {
+                        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(opt.get());
 
-                            //this should speed up indexing so that we only index
-                            //things that are roots.  the actual indexing process of the root should handle any
-                            //child objects of that root.
-                            if(isRootIndexCache.computeIfAbsent(child.getEntityClass(), c->wrapped.getEntityInfo().isRootIndex())) {
-                                try {
-                                    EntityUtils.Key key = wrapped.getKey();
-                                    String keyString = key.toString();
+                        wrapper.traverse().execute((p, child) -> {
+                            EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
+                            if (wrapped.isEntity()) {
 
-                                    //TODO add only index if it has a controller
-                                    if (seen.add(keyString)) {
-                                        //is this a good idea ?
-                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
-                                        eventPublisher.publishEvent(event);
+                                //this should speed up indexing so that we only index
+                                //things that are roots.  the actual indexing process of the root should handle any
+                                //child objects of that root.
+                                if (isRootIndexCache.computeIfAbsent(child.getEntityClass(), c -> wrapped.getEntityInfo().isRootIndex())) {
+                                    try {
+                                        EntityUtils.Key key = wrapped.getKey();
+                                        String keyString = key.toString();
+
+                                        //TODO add only index if it has a controller
+                                        if (seen.add(keyString)) {
+                                            //is this a good idea ?
+                                            ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
+                                            eventPublisher.publishEvent(event);
+                                        }
+                                    } catch (Throwable t) {
+                                        System.err.println("error handling " + wrapped);
+                                        t.printStackTrace();
                                     }
-                                } catch (Throwable t) {
-                                    System.err.println("error handling " + wrapped);
-                                    t.printStackTrace();
                                 }
                             }
-                        }
 
-                    });
+                        });
+                    }
                     eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
 //                    l.message("Indexed:" + counter.incrementAndGet() + messageTail);
                 } catch (Exception e) {

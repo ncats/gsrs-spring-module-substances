@@ -1,7 +1,6 @@
 package example.substance;
 
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gov.nih.ncats.common.util.SingleThreadCounter;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.validator.ValidationMessage;
@@ -27,8 +26,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.jupiter.api.io.TempDir;
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.springframework.core.io.ClassPathResource;
 
 public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
@@ -512,7 +511,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         expected.put("N", new SingleThreadCounter(1));
         expected.put("O", new SingleThreadCounter(3-1)); //remove 1 for O in 'H2O'
         Map<String, SingleThreadCounter> actual = ProteinUtils.getSingleAAFormula(serineAbbreviation);
-        Assertions.assertTrue( actual.keySet().stream().allMatch(k-> expected.get(k).getAsInt() == actual.get(k).getAsInt()));
+        assertFalse(actual.isEmpty());
+        assertTrue( actual.keySet().stream().allMatch(k-> expected.get(k).getAsInt() == actual.get(k).getAsInt()));
     }
 
     @Test

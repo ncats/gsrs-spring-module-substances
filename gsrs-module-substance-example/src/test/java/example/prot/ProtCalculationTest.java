@@ -26,7 +26,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.junit.jupiter.api.Assertions;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.ClassPathResource;
 
@@ -34,7 +34,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String CV_AMINO_ACID_SUBSTITUTION = "AMINO_ACID_SUBSTITUTION";
     private static final Double CELLULOSE_SULFATE_MW =470000.0;
-	private static final Double PROLINE_MW = 115.1305;
+    private static final Double PROLINE_MW = 115.1305;
     private static final Double WATER_MW = 18.015;;
     private static final Double LARGE_PROTEIN_MW_TOLERANCE = 12.0;
     private static final Double MW_HIGH_OFFSET =1000.0;
@@ -362,7 +362,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(expectedMw, actual, 0.9);
     }
 
-	@Test
+
+    @Test
     public void proteinMwTestModOnX() {
         System.out.println("starting proteinMwTestModOnX");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
@@ -380,11 +381,11 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         modification.extent="COMPLETE";
         modification.molecularFragment = new SubstanceReference();
 
-		Substance proline = buildProline();
+        Substance proline = buildProline();
 
         modification.molecularFragment.refuuid=proline.getUuid().toString();
         Modifications mods = new Modifications();
-		mods.structuralModifications.add(modification);
+        mods.structuralModifications.add(modification);
         proteinSubstance.setModifications(mods);
         proteinSubstance.setProtein(protein);
 
@@ -395,13 +396,12 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         contribution.getMessages().forEach(m->{
             System.out.printf("message: %s; ", m.message);
         });
-		double xMw = 0.0; //x is not recognized and contributes 0
+        double xMw = 0.0; //x is not recognized and contributes 0
         double expectedMw = 625.801 - xMw + PROLINE_MW-WATER_MW;
         double actual =contribution.getMw();
         System.out.println("calculated MW: " + actual);
         assertEquals(expectedMw, actual, 0.9);
     }
-
 
     @Test
     public void proteinMwTestModWithHighAndLow() {
@@ -557,7 +557,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         expected.put("N", new SingleThreadCounter(1));
         expected.put("O", new SingleThreadCounter(3-1)); //remove 1 for O in 'H2O'
         Map<String, SingleThreadCounter> actual = ProteinUtils.getSingleAAFormula(serineAbbreviation);
-        Assertions.assertTrue( actual.keySet().stream().allMatch(k-> expected.get(k).getAsInt() == actual.get(k).getAsInt()));
+        assertFalse(actual.isEmpty());
+        assertTrue( actual.keySet().stream().allMatch(k-> expected.get(k).getAsInt() == actual.get(k).getAsInt()));
     }
     
     @Test
@@ -605,6 +606,19 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(0, unknowns.size());
     }
 
+    @Test
+    public void makeFormulaFromMapTest() {
+        Map<String, SingleThreadCounter> counts = new HashMap<>();
+        counts.put("H", new SingleThreadCounter(86));
+        counts.put("O", new SingleThreadCounter(15));
+        counts.put("N", new SingleThreadCounter(14));
+        counts.put("C", new SingleThreadCounter(51));
+        
+        String expected = "C51H86N14O15";
+        String actual = ProteinUtils.makeFormulaFromMap(counts);
+        assertEquals(expected, actual);
+    }
+    
     @Test
     public void getSubunitFormulaInfoTinyTest(){
         System.out.println("starting in getSubunitFormulaInfoTinyTest");
@@ -672,20 +686,20 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         return polymer;
     }
 
-	private ChemicalSubstance buildProline() {
-		ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
-		builder.addName("proline");
-		builder.addCode("FDA UNII", "9DLQ4CIU6V");
+    private ChemicalSubstance buildProline() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.addName("proline");
+        builder.addCode("FDA UNII", "9DLQ4CIU6V");
         GinasChemicalStructure structure= new GinasChemicalStructure();
         structure.molfile =readProlineMolfileFromFile();
-		structure.setMwt(115.1305);
+        structure.setMwt(115.1305);
         structure.formula ="C5H9NO2";
-		builder.setStructure(structure);
-		ChemicalSubstance proline = builder.build();
-		substanceRepository.saveAndFlush(proline);
-		return proline;
-	}
-	
+        builder.setStructure(structure);
+        ChemicalSubstance proline = builder.build();
+        substanceRepository.saveAndFlush(proline);
+        return proline;
+    }
+
     private PolymerSubstance buildPolymerWithHighAndLow() {
         PolymerSubstanceBuilder builder = new PolymerSubstanceBuilder(new Substance());
         builder.addName("CELLULOSE SULFATE");
@@ -759,11 +773,11 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         }
         return "";
     }
-	
-	 private String readProlineMolfileFromFile() {
+
+    private String readProlineMolfileFromFile() {
         try {
             File fastaFile = new ClassPathResource("molfiles/9DLQ4CIU6V.mol").getFile();
-            
+
             List<String> lines =Files.readAllLines(fastaFile.toPath());
             String molfile = String.join("\n", lines);
             return molfile;

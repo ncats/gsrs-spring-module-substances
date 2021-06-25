@@ -14,5 +14,6 @@ import java.util.UUID;
 @Transactional
 public interface MixtureSubstanceRepository extends GsrsVersionedRepository<MixtureSubstance, UUID> {
 
+
     List<MixtureSubstance> findByMixture_Components_Substance_Refuuid(String refuuid);
 }

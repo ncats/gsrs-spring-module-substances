@@ -36,12 +36,12 @@ public class JsonSubstanceFactory {
         }while(aClass !=null);
     }
 
-    private static void setOwner(Substance substance, Object obj, Class<?> aClass, boolean force) throws IllegalAccessException {
+    private static void setOwner(Substance parent, Object obj, Class<?> aClass, boolean force) throws IllegalAccessException {
         for(Field f : aClass.getDeclaredFields()){
             f.setAccessible(true);
             if(f.getAnnotation(SubstanceOwnerReference.class) !=null){
                 if(force || f.get(obj) == null){
-                    f.set(obj, substance);
+                    f.set(obj, parent);
                 }
             }
         }

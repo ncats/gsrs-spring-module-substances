@@ -3,6 +3,7 @@ package gsrs.module.substance.repository;
 import gsrs.repository.GsrsVersionedRepository;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.*;
+import ix.utils.UUIDUtil;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -20,7 +21,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         if(substanceReference ==null){
             return false;
         }
-        return (substanceReference.approvalID !=null && existsByApprovalID(substanceReference.approvalID)) || existsById(UUID.fromString(substanceReference.refuuid));
+        return (substanceReference.approvalID !=null && existsByApprovalID(substanceReference.approvalID))
+                || ( substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid) && existsById(UUID.fromString(substanceReference.refuuid)));
     }
     default Substance findBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
@@ -32,7 +34,13 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
                 return s;
             }
         }
-        return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
+        //Older Substance data did not have a refuuid as all references were based on approval id
+        //so we need to check for null here
+        if(substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid)) {
+            return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
+        }
+
+        return null;
     }
     @Query("select s from Substance s where s.approvalID= ?1")
     Substance findByApprovalID(String approvalID);
