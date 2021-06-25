@@ -15,4 +15,11 @@ public interface RelationshipRepository extends GsrsRepository<Relationship, UUI
     List<Relationship> findByOriginatorUuid(String originatorUuid);
 
     List<Relationship> findByRelatedSubstance_Refuuid(String refuuid);
+
+    /*
+    criteria.put("relatedSubstance.refuuid", parentUUID);
+			criteria.put("type", this.fetchableDirection);
+     */
+
+    List<Relationship> findByTypeAndRelatedSubstance_Refuuid(String type, String refuuid);
 }

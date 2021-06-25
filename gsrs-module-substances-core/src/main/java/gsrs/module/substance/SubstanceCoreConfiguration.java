@@ -4,6 +4,8 @@ import gsrs.controller.EditController2;
 import gsrs.controller.EditEntityService;
 import gsrs.module.substance.controllers.*;
 import gsrs.module.substance.exporters.SubstanceSpreadsheetExporterConfiguration;
+import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
+import gsrs.module.substance.hierarchy.SubstanceHierarchyFinderConfig;
 import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.ConfigBasedDefinitionalElementConfiguration;
 import gsrs.module.substance.services.ConfigBasedDefinitionalElementFactory;
@@ -23,7 +25,8 @@ import org.springframework.context.annotation.Import;
         LegacyGinasAppController.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
         StructureResolverController.class, ChemicalDuplicateFinder.class,
-        SubstanceSpreadsheetExporterConfiguration.class
+        SubstanceSpreadsheetExporterConfiguration.class,
+        SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class
 
 })
 public class SubstanceCoreConfiguration {
