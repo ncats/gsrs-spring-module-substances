@@ -678,9 +678,10 @@ public class ProteinUtils {
 	
 	private static void appendOneSpecies(StringBuilder formulaBuilder, Map<String, SingleThreadCounter> map, String species) {
         formulaBuilder.append(species);
-			if(map.containsKey(species) && map.get(species).getAsInt()>1) {
-				formulaBuilder.append(map.get(species).getAsInt());
-			}
+        Integer speciesCount =map.get(species).getAsInt();
+		if(speciesCount >1) {
+            formulaBuilder.append(speciesCount);
+		}
     }
 	
 	public static String makeFormulaFromMap(Map<String, SingleThreadCounter> map) {
@@ -689,7 +690,6 @@ public class ProteinUtils {
       return "";
     }
 		StringBuilder formula = new StringBuilder();
-		List<String> symbols = Arrays.asList("C", "H", "O", "N");
 		
         if( map.containsKey("C") ) {
             appendOneSpecies(formula, map, "C");
@@ -704,13 +704,6 @@ public class ProteinUtils {
                 .forEach(k->{
                     appendOneSpecies(formula, map, k);
 		});
-		/*symbols.forEach(s->{
-			formula.append(s);
-			if(map.containsKey(s) && map.get(s).getAsInt()>1) {
-				formula.append(map.get(s).getAsInt());
-			}
-			//formula.append(" ");
-		});&*/
 		return formula.toString().trim();
 	}
 	
