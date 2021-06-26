@@ -607,6 +607,20 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
+    public void makeFormulaFromMapTest() {
+        Map<String, SingleThreadCounter> counts = new HashMap<>();
+        counts.put("H", new SingleThreadCounter(86));
+        counts.put("O", new SingleThreadCounter(15));
+        counts.put("N", new SingleThreadCounter(14));
+        counts.put("C", new SingleThreadCounter(51));
+        
+        String expected = "C51H86N14O15";
+        String actual = ProteinUtils.makeFormulaFromMap(counts);
+        System.out.println("newly made formula: " + actual);
+        assertEquals(expected, actual);
+    }
+    
+    @Test
     public void getSubunitFormulaInfoTinyTest(){
         System.out.println("starting in getSubunitFormulaInfoTinyTest");
         Subunit unit1 = new Subunit();

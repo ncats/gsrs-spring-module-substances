@@ -676,28 +676,33 @@ public class ProteinUtils {
     }
 	
 	
+    private static void appendOneSpecies(StringBuilder formulaBuilder, Map<String, SingleThreadCounter> map, String species) {
+        formulaBuilder.append(species);
+        SingleThreadCounter speciesCount =map.get(species);
+        if(speciesCount != null && speciesCount.getAsInt() >1) {
+            formulaBuilder.append(speciesCount.getAsInt());
+        }
+    }
 	
-	
-	public static String makeFormulaFromMap(Map<String, SingleThreadCounter> map) {
+    public static String makeFormulaFromMap(Map<String, SingleThreadCounter> map) {
     if( map.isEmpty() ) {
       log.trace("empty map in makeFormulaFromMap");
       return "";
     }
 		StringBuilder formula = new StringBuilder();
-		List<String> symbols = new ArrayList<>();
-		symbols.addAll(Arrays.asList("C", "H", "O", "N"));
 		
-		map.keySet().forEach(k->{
-			if( !symbols.contains(k) ){
-				symbols.add(k);
-			}
-		});
-		symbols.forEach(s->{
-			formula.append(s);
-			if(map.containsKey(s) && map.get(s).getAsInt()>1) {
-				formula.append(map.get(s).getAsInt());
-			}
-			//formula.append(" ");
+        if( map.containsKey("C") ) {
+            appendOneSpecies(formula, map, "C");
+        }
+        if( map.containsKey("H") ) {
+            appendOneSpecies(formula, map, "H");
+        }
+        
+		map.keySet().stream()
+                .filter(k-> !(k.equals("H") || k.equals("C")))
+                .sorted()
+                .forEach(k->{
+                    appendOneSpecies(formula, map, k);
 		});
 		return formula.toString().trim();
 	}
