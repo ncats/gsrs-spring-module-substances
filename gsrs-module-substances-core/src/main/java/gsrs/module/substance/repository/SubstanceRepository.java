@@ -88,7 +88,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
     @Query("select s from Substance s where CONCAT(s.uuid, '') like ?1%")
     List<Substance> findByUuidStartingWith(String partialUUID);
-    @Query("select case when count(c)> 0 then true else false end from Substance s where s.approvalID= ?1")
+    @Query("select case when count(s)> 0 then true else false end from Substance s where s.approvalID= ?1")
     boolean existsByApprovalID(String approvalID);
 
     @Query("select s from Substance s JOIN s.relationships r where r.relatedSubstance.refuuid=?1 and r.type='"+ Substance.ALTERNATE_SUBSTANCE_REL +"'")
