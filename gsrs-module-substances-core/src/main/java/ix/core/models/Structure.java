@@ -219,9 +219,10 @@ public class Structure extends BaseModel {
             this.definedStereo = other.definedStereo;
             this.charge = other.charge;
             this.stereoCenters = other.stereoCenters;
-
+            this.smiles = other.smiles;
             this.mwt = other.mwt;
             this.formula = other.formula;
+            this.digest = other.digest;
             setIsDirty("properties");
             setIsDirty("ezCenters");
             setIsDirty("definedStereo");
@@ -229,6 +230,8 @@ public class Structure extends BaseModel {
             setIsDirty("stereoCenters");
             setIsDirty("mwt");
             setIsDirty("formula");
+            setIsDirty("smiles");
+            setIsDirty("digest");
         }
     }
     @JsonProperty("stereochemistry")

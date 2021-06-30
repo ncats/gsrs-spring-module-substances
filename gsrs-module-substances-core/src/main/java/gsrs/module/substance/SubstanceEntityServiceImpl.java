@@ -32,10 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
@@ -219,12 +216,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         JsonSubstanceFactory.fixOwners(substance, true);
         try {
 //            EntityManager em = getEntityManager();
-//            //we might have detatched objects (like principals)
+//            Map<Object, Boolean> seen = new IdentityHashMap<>();
+//            //we might have detatched objects (like principals or new values etc)
 //            EntityUtils.EntityWrapper.of(substance).traverse().execute( (p,e)->{
 //                if(p.getDepth() !=0) {
 //                    if (e.isEntity()) {
 //                        Object o = e.getRawValue();
-//                        if (!em.contains(o)) {
+//                        if (seen.put(o, Boolean.TRUE)==null && !em.contains(o)) {
 //                            System.out.println("merged "+ o);
 //                            em.merge(o);
 //                        }
