@@ -1,6 +1,5 @@
 package ix.core.chem;
 
-import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
 import gov.nih.ncats.molwitch.io.ChemFormat;
@@ -13,7 +12,7 @@ import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-public class InchiStandardizer implements StructureStandardizer {
+public class InchiStandardizer extends AbstractStructureStandardizer {
     private static final int ATOM_LIMIT_FOR_STANDARDIZATION = 240;
 
     private static final ChemFormat.SmilesFormatWriterSpecification CANONICAL_SMILES_SPEC = new ChemFormat.SmilesFormatWriterSpecification()
