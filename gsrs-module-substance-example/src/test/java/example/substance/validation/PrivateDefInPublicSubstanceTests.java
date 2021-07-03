@@ -1,4 +1,4 @@
-package example.substance;
+package example.substance.validation;
 
 import ix.core.models.Group;
 import ix.core.validator.ValidationResponse;
@@ -15,6 +15,7 @@ import org.junit.BeforeClass;
 import org.junit.jupiter.api.Test;
 import static org.junit.Assert.*;
 import com.fasterxml.jackson.databind.JsonNode;
+import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
@@ -23,7 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationMessage.MESSAGE_TYPE;
+import ix.ginas.models.v1.Protein;
+import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.Subunit;
 import ix.ginas.utils.validation.validators.DefinitionalReferenceValidator;
+import java.util.ArrayList;
 import java.util.stream.Stream;
 
 /**
@@ -127,5 +132,44 @@ public class PrivateDefInPublicSubstanceTests extends AbstractSubstanceJpaEntity
         response.getValidationMessages().forEach(m -> System.out.println(m));
         Stream<ValidationMessage> messages = response.getValidationMessages().stream();
         assertTrue("public definition of public substance must have a public ref", messages.filter(m -> m.getMessageType() == MESSAGE_TYPE.ERROR).count()>0);
+    }
+    
+    @Test
+    public void testPublicSubstanceWithPrivateProtein() throws Exception {
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "MKKNYNPKDIEEHLYNFWEKNGFFKPNNNLNKPAFCIMMPPPNITGNLHMGHAFQQTIMD" +
+                        "ILIRYNRMQGKNTLWQVGTDHAGIATQILIERQIFSEERKTKKDYSRNDFIKKIWKWKKK" +
+                        "SNFSVKKQMKRLGNSVDWDREKFTLDPDISNSVKEAFIILYKNNLIYQKKRLVHWDSKLE" +
+                        "TVISDLEVEHRLIKSKKWFIRYPIIKNIKNINIEYLLVATTRPETLLGDTALAINPKDDK" +
+                        "YNHLIGQSVICPIVNRIIPIIADHYADMNKDTGCVKITPGHDFNDYEVGQRHKLPMINIF" +
+                        "TFNGKIKSNFSIYDYQGSKSNFYDSSIPTEFQNLDILSARKKIIYEIEKLGLLEKIEECN" +
+                        "FFTPYSERSGVIIQPMLTNQWYLKTSHLSQSAIDVVREKKIKFIPNQYKSMYLSWMNNIE" +
+                        "DWCISRQLWWGHQIPVWYDDKKNIYVGHSEKKIREEYNISDDMILNQDNDVLDTWFSSGL" +
+                        "WTFSTLGWPEKTEFLKIFHSTDVLVSGFDIIFFWIARMIMLTMYLVKDSYGNPQIPFKDV" +
+                        "YITGLIRDEEGKKMSKSKGNVIDPIDMIDGISLNELIEKRTSNLLQPHLSQKIRYHTIKQ" +
+                        "FPNGISATGTDALRFTFSALASNTRDIQWDMNRLKGYRNFCNKLWNASRFVLKNTKDHDY" +
+                        "FNFSVNDNMLLINKWILIKFNNTVKSYRNSLDSYRFDIAANILYDFIWNVFCDWYLEFVK" +
+                        "SVIKSGSYQDIYFTKNVLIHVLELLLRLSHPIMPFITEAIWQRVKIIKHIKDRTIMLQSF" +
+                        "PEYNDQLFDKSTLSNINWIKKIIIFIRNTRSKMNISSTKLLSLFLKNINSEKKKVIQENK" +
+                        "FILKNIASLEKISILSKQDDEPCLSLKEIIDGVDILVPVLKAIDKEIELKRLNKEIEKIK" +
+                        "SKMLISEKKMSNQDFLSYAPKNIIDKEIKKLKSLNEIYLTLSQQLESLHDAFCKKNKIFN";
+
+        protein.setAccess(Collections.singleton(new Group("registrars")));
+        Reference defRef = new Reference();
+        defRef.publicDomain = false;
+        protein.addReference(defRef);
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        proteinSubstance.setProtein(protein);
+        JsonNode proteinNode = proteinSubstance.toFullJsonNode();
+        ValidationResponse response = substanceEntityService.validateEntity(proteinNode);
+        System.out.println("validation messages: ");
+        response.getValidationMessages().forEach(m -> System.out.println(m));
+        Stream<ValidationMessage> messages = response.getValidationMessages().stream();
+        assertEquals("private definition of public substance may have a public or restricted ref", 
+                0, messages.filter(m -> m.getMessageType() == MESSAGE_TYPE.ERROR).count());
     }
 }

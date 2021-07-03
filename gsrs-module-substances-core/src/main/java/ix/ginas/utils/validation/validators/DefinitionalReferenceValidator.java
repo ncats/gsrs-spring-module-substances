@@ -25,7 +25,10 @@ public class DefinitionalReferenceValidator extends AbstractValidatorPlugin<Subs
 
 	@Override
 	public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
-		if (objnew.isPublic() && !objnew.substanceClass.equals(Substance.SubstanceClass.concept)) {
+        GinasAccessControlled definitionalPart = (objnew instanceof GinasSubstanceDefinitionAccess)
+    		? ((GinasSubstanceDefinitionAccess) objnew).getDefinitionElement() : null;
+    			if (objnew.isPublic() && !objnew.substanceClass.equals(Substance.SubstanceClass.concept)
+				&& definitionalPart != null && definitionalPart.getAccess().isEmpty()) {
 			log.trace("in DefinitionalReferenceValidator with public substance.  class: " + objnew.substanceClass);
 			Stream<Reference> defRefs = getDefinitionalReferences(objnew);
 			boolean allowed = defRefs
@@ -36,7 +39,7 @@ public class DefinitionalReferenceValidator extends AbstractValidatorPlugin<Subs
 			log.trace("		allowed: " + allowed);
 			if (!allowed) {
 				callback.addMessage(GinasProcessingMessage
-								.ERROR_MESSAGE("Public substances require a public defintional reference.  Please add one."));
+								.ERROR_MESSAGE("Public substances require a public definitional reference.  Please add one."));
 
 			}
 		}
