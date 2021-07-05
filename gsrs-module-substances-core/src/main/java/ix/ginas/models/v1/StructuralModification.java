@@ -52,7 +52,8 @@ public class StructuralModification extends GinasCommonSubData {
     public Amount extentAmount;
     @OneToOne(cascade= CascadeType.ALL)
     public SubstanceReference molecularFragment;
-    
+
+
     @JSONEntity(title = "Modified Fragment Role")
     public String moleculareFragmentRole;
     
@@ -61,7 +62,23 @@ public class StructuralModification extends GinasCommonSubData {
     
     
     public StructuralModification () {}
+	@JsonIgnore
+	public String getMoleculareFragmentRole(){
+		return moleculareFragmentRole;
+	}
 
+	public String getMolecularFragmentRole(){
+		return moleculareFragmentRole;
+	}
+	/**
+	 * This is purposefully spelled wrong for backwards compatibility
+	 * purposed when an older version of GSRS had a typo in the name
+	 * so we can parse old JSON.
+	 * @param molecularFragmentRole
+	 */
+	public void setMolecularFragmentRole(String molecularFragmentRole){
+    	this.moleculareFragmentRole = molecularFragmentRole;
+	}
     @Override
    	@JsonIgnore
    	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {

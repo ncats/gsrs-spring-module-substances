@@ -4,6 +4,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
+import ix.core.models.Value;
 import ix.core.validator.ExceptionValidationMessage;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationMessage;
@@ -16,6 +17,7 @@ import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -32,7 +34,11 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 	@Autowired
     private ChemicalDuplicateFinder chemicalDuplicateFinder;
 
+	@Autowired
+    private EntityManager em;
+
 	private boolean allow0AtomStructures = false;
+
 
     public ReferenceRepository getReferenceRepository() {
         return referenceRepository;
@@ -226,7 +232,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
 
-    private static void validateChemicalStructure(
+    private void validateChemicalStructure(
             GinasChemicalStructure oldstr, Structure newstr,
             ValidatorCallback callback) {
         List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
@@ -243,15 +249,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                     .appliableChange(true);
             callback.addMessage(mes, ()->{
                     Structure struc2 = new GinasChemicalStructure(newstr);
-                    oldstr.properties = struc2.properties;
-                    oldstr.charge = struc2.charge;
-                    oldstr.formula = struc2.formula;
-                    oldstr.mwt = struc2.mwt;
-                    oldstr.smiles = struc2.smiles;
-                    oldstr.ezCenters = struc2.ezCenters;
-                    oldstr.definedStereo = struc2.definedStereo;
-                    oldstr.stereoCenters = struc2.stereoCenters;
-                    oldstr.digest = struc2.digest;
+                    oldstr.updateStructureFields(struc2);
 
             });
         }

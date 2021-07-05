@@ -25,9 +25,10 @@ public class DefinitionalReferenceValidator extends AbstractValidatorPlugin<Subs
 
 	@Override
 	public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
+
         GinasAccessControlled definitionalPart = (objnew instanceof GinasSubstanceDefinitionAccess)
     		? ((GinasSubstanceDefinitionAccess) objnew).getDefinitionElement() : null;
-    			if (objnew.isPublic() && !objnew.substanceClass.equals(Substance.SubstanceClass.concept)
+    	if (objnew.isPublic() && !objnew.substanceClass.equals(Substance.SubstanceClass.concept)
 				&& definitionalPart != null && definitionalPart.getAccess().isEmpty()) {
 			log.trace("in DefinitionalReferenceValidator with public substance.  class: " + objnew.substanceClass);
 			Stream<Reference> defRefs = getDefinitionalReferences(objnew);
