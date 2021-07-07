@@ -6,6 +6,7 @@ import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.payload.PayloadController;
 import ix.core.models.Structure;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -14,7 +15,9 @@ import ix.utils.UUIDUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -50,7 +53,15 @@ public class LegacyGinasAppController {
 
     @Autowired
     private GsrsCache ixCache;
+    @Autowired
+    private PayloadController payloadController;
 
+    @PostMapping("/upload")
+    public ResponseEntity<Object> uploadPayload(@RequestParam("file-type") String type, @RequestParam("file-name") String name, @RequestParam("file") MultipartFile file, @RequestParam Map<String, String> queryParameters) throws IOException {
+        //I dont think we can redirect to an upload... so just call our payload controller
+        return payloadController.handleFileUpload(type, name, file, queryParameters);
+
+    }
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
     // ix.ginas.controllers.GinasApp.structureExport(id: String, format: String, context: String ?= null)
     @GetMapping({"export/{id:[a-f0-9\\-]+}.{format}","/ginas/app/export/{id:[a-f0-9\\-]+}.{format}"})

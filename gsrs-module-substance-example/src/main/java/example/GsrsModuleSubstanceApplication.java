@@ -2,6 +2,7 @@ package example;
 
 import gsrs.*;
 import gsrs.EnableGsrsLegacyStructureSearch;
+import gsrs.cv.EnableControlledVocabulary;
 import gsrs.module.substance.indexers.DeprecatedIndexValueMaker;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -28,6 +29,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @EnableGsrsScheduler
 @EnableGsrsBackup
 @EnableAsync
+@EnableControlledVocabulary
 public class GsrsModuleSubstanceApplication {
 
     @Bean
