@@ -12,6 +12,7 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.payload.PayloadController;
 import gsrs.repository.ETagRepository;
 import gsrs.repository.EditRepository;
 import gsrs.repository.GroupRepository;
@@ -198,6 +199,9 @@ public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEnt
 
     @Autowired
     protected ETagRepository eTagRepository;
+
+    @MockBean
+    protected PayloadController payloadController;
 
     @Autowired
     @RegisterExtension

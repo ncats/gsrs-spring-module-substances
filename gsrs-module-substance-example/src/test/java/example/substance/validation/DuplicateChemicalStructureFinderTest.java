@@ -1,6 +1,8 @@
 package example.substance.validation;
 
 import example.substance.AbstractSubstanceJpaEntityTest;
+import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.module.substance.repository.KeywordRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -20,8 +22,8 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 @WithMockUser(username = "admin", roles="Admin")
-@Disabled("substance repository query doesn't work yet")
-public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEntityTest {
+//@Disabled("substance repository query doesn't work yet")
+public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     ChemicalDuplicateFinder sut;
@@ -29,17 +31,20 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     @Autowired
     StructureProcessor structureProcessor;
 
+    @Autowired
+    KeywordRepository keywordRepository;
+
     @Test
     public void noRecordsLoadedShouldNotFindAnyDups(){
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
                                 .setUUID(uuid)
-                                .setStructure("c1ccccc1")
+                                .setStructure("C1CC=CC=C1")
                                 .addName("a name")
                                 .build();
         //have to structure process first to generate hashes
         Structure structure = structureProcessor.instrument(s.getStructure().toChemical(), true);
-        s.getStructure().properties = structure.properties;
+        s.getStructure().updateStructureFields(structure);
 
         assertTrue(sut.findPossibleDuplicatesFor(s.asSubstanceReference()).isEmpty());
     }
@@ -49,20 +54,25 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
                 .setUUID(uuid)
-                .setStructure("c1ccccc1")
+                .setStructure("C1CC=CC=C1")
                 .addName("a name")
                 .build();
+        //have to structure process first to generate hashes
 
+        s.getStructure().updateStructureFields(structureProcessor.instrument(s.getStructure().toChemical(), true));
+
+        
         assertCreated(s.toFullJsonNode());
+
+        assertTrue(keywordRepository.count() > 0);
 
         ChemicalSubstance s2 = new ChemicalSubstanceBuilder()
 
-                .setStructure("c1ccccc1")
+                .setStructure("C1CC=CC=C1")
                 .addName("different name")
                 .build();
         //have to structure process first to generate hashes
-        Structure structure = structureProcessor.instrument(s2.getStructure().toChemical(), true);
-        s2.getStructure().properties = structure.properties;
+        s2.getStructure().updateStructureFields( structureProcessor.instrument(s2.getStructure().toChemical(), true));
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference());
         assertEquals(Arrays.asList(uuid.toString()),
@@ -74,7 +84,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
                 .setUUID(uuid)
-                .setStructure("c1ccccc1")
+                .setStructure("C1CC=CC=C1")
                 .addName("a name")
                 .build();
         Structure structure = structureProcessor.instrument(s.getStructure().toChemical(), true);

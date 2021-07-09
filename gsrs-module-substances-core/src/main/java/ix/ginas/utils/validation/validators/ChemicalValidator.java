@@ -170,7 +170,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
             ValidationUtils.validateReference(s,cs.getStructure(), callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
 
-            //validateStructureDuplicates(cs, callback);
+            validateStructureDuplicates(cs, callback);
         } else {
             callback.addMessage(GinasProcessingMessage
                     .ERROR_MESSAGE("Chemical substance must have a valid chemical structure"));
