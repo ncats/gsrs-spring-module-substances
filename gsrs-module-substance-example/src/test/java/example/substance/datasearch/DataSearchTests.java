@@ -9,14 +9,9 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.ginas.models.v1.Substance;
-import java.io.BufferedReader;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -77,7 +72,7 @@ public class DataSearchTests extends AbstractSubstanceJpaFullStackEntityTest
             File dataFile = new ClassPathResource("testdumps/rep90.ginas").getFile();
             loadGsrsFile(dataFile);
             setup = true;
-            reindexDirect();
+            //reindexDirect();
             System.out.println("loaded rep90 data file");
         }
     }
