@@ -3,10 +3,12 @@ package gsrs.module.substance.controllers;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.models.Structure;
+import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -36,6 +40,10 @@ import java.util.UUID;
 public class LegacyGinasAppController {
 
     @Autowired
+    private SubstanceEntityService substanceService;
+    
+    
+    @Autowired
     private EntityLinks entityLinks;
 
     @Autowired
@@ -50,6 +58,12 @@ public class LegacyGinasAppController {
 
     @Autowired
     private GsrsCache ixCache;
+    
+    //POST        /register/duplicateCheck          ix.ginas.controllers.GinasFactory.validateChemicalDuplicates
+    @PostMapping({"register/duplicateCheck", "/ginas/app/register/duplicateCheck"})
+    public ValidationResponse<Substance> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
+        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION());
+    }
 
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
     // ix.ginas.controllers.GinasApp.structureExport(id: String, format: String, context: String ?= null)

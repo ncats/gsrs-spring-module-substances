@@ -49,6 +49,11 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     public void setStructureProcessor(StructureProcessor structureProcessor) {
         this.structureProcessor = structureProcessor;
     }
+    
+    @Override
+    public boolean supportsCategory(ValidatorCategory c) {
+        
+    }
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {

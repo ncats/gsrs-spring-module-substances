@@ -11,15 +11,25 @@ import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.repository.GroupRepository;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.springUtils.StaticContextAccessor;
+import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.util.EntityUtils;
+import ix.core.util.Java8Util;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
+import ix.core.validator.Validator;
 import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
+import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.GinasUtils;
 import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.ValidationUtils;
+import ix.ginas.utils.validation.validators.ChemicalValidator;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -32,6 +42,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.EntityManager;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -90,6 +101,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
+        
         GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
@@ -322,6 +334,37 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 		}
 
          */
+    }
+    
+    @Override
+    public ValidationResponse<Substance> validateEntity(JsonNode updatedEntityJson, ValidatorCategory cat) throws Exception {
+        
+        if(cat.equals(ValidatorCategory.CATEGORY_DEFINITION())){
+           
+//            ChemicalValidator cval = new ChemicalValidator();
+            
+            ValidationResponse<Substance> response = new ValidationResponse<Substance>(null);
+            response.setValid(false);
+            try {
+                Substance sub = fromUpdatedJson(updatedEntityJson);
+                response.setNewObject(sub);
+                ChemicalValidator cval = StaticContextAccessor.getBean(ChemicalValidator.class);
+                
+                if (sub instanceof ChemicalSubstance) {
+                    return cval.validate(sub, null);
+                } else {
+                    response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE("Substance is not a chemical substance"));
+                }
+            } catch (IllegalStateException e) {
+                response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
+            } catch (UnsupportedEncodingException e) {
+                response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE("Problem decoding JSON:" + e.getMessage()));
+            }
+            return response;            
+        }else {
+            return super.validateEntity(updatedEntityJson,cat);
+        }
+
     }
 
     @Override
