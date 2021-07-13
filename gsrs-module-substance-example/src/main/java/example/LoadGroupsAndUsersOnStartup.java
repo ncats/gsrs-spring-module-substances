@@ -32,10 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -112,26 +109,33 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
         String pathToLoadFile = System.getProperty("ix.ginas.load.file");
         if (pathToLoadFile != null) {
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(pathToLoadFile))))){
-                String line;
-                Pattern sep = Pattern.compile("\t");
-                ObjectMapper mapper = new ObjectMapper();
-                int i=0;
-                while( (line = reader.readLine())!=null){
-                    String[] cols = sep.split(line);
+            File f = new File(pathToLoadFile);
+            if(f.exists()) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(pathToLoadFile))))) {
+                    String line;
+                    Pattern sep = Pattern.compile("\t");
+                    ObjectMapper mapper = new ObjectMapper();
+                    int i = 0;
+                    while ((line = reader.readLine()) != null) {
+                        String[] cols = sep.split(line);
 //                System.out.println(cols[2]);
-                    try {
-                        substanceEntityService.createEntity(mapper.readTree(cols[2]), true).getCreatedEntity();
-                    }catch(Throwable t){
-                        t.printStackTrace();
-                    }
-                    i++;
-                    if(i %100 ==0){
-                        System.out.println("loaded record " + i);
-                    }
+                        try {
+                            substanceEntityService.createEntity(mapper.readTree(cols[2]), true).getCreatedEntity();
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+                        }
+                        i++;
+                        if (i % 100 == 0) {
+                            System.out.println("loaded record " + i);
+                        }
 
+                    }
+                    System.out.println("done loading file");
+                }catch(Throwable t){
+                    t.printStackTrace();
                 }
-                System.out.println("done loading file");
+            }else{
+                System.err.println("could not find GSRS file: " + pathToLoadFile);
             }
         }
 
