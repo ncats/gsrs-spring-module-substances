@@ -329,36 +329,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
          */
     }
     
-    @Override
-    public ValidationResponse<Substance> validateEntity(JsonNode updatedEntityJson, ValidatorCategory cat) throws Exception {
-        
-        if(cat.equals(ValidatorCategory.CATEGORY_DEFINITION())){
-           
-//            ChemicalValidator cval = new ChemicalValidator();
-            
-            ValidationResponse<Substance> response = new ValidationResponse<Substance>(null);
-            response.setValid(false);
-            try {
-                Substance sub = fromUpdatedJson(updatedEntityJson);
-                response.setNewObject(sub);
-                ChemicalValidator cval = StaticContextAccessor.getBean(ChemicalValidator.class);
-                
-                if (sub instanceof ChemicalSubstance) {
-                    return cval.validate(sub, null);
-                } else {
-                    response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE("Substance is not a chemical substance"));
-                }
-            } catch (IllegalStateException e) {
-                response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
-            } catch (UnsupportedEncodingException e) {
-                response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE("Problem decoding JSON:" + e.getMessage()));
-            }
-            return response;            
-        }else {
-            return super.validateEntity(updatedEntityJson,cat);
-        }
-
-    }
 
     @Override
     protected Optional<UUID> flexLookupIdOnly(String someKindOfId) {
