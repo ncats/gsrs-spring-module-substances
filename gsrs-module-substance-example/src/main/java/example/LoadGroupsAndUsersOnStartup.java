@@ -74,6 +74,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
             return;
         }
         groupRepository.save(new Group("protected"));
+        groupRepository.save(new Group("admin"));
 
         System.out.println("RUNNING");
 
