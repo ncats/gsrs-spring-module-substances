@@ -10,6 +10,7 @@ import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.payload.PayloadController;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Structure;
+import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.ChemicalSubstance;
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -70,9 +72,9 @@ public class LegacyGinasAppController {
 
     //POST        /register/duplicateCheck          ix.ginas.controllers.GinasFactory.validateChemicalDuplicates
     @PostMapping({"register/duplicateCheck", "/ginas/app/register/duplicateCheck"})
-    public ValidationResponse<Substance> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
+    public List<ValidationMessage> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
         SubstanceEntityService substanceService = StaticContextAccessor.getBean(SubstanceEntityService.class);
-        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION());
+        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION()).getValidationMessages();
     }
     
     @PostMapping("/upload")
