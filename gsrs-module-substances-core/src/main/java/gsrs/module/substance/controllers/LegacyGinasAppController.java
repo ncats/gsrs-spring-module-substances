@@ -8,6 +8,7 @@ import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.payload.PayloadController;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Structure;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
@@ -43,8 +44,8 @@ import java.util.UUID;
 @RestController
 public class LegacyGinasAppController {
 
-    @Autowired
-    private SubstanceEntityService substanceService;
+//    @Autowired
+//    private SubstanceEntityService substanceService;
     
     
     @Autowired
@@ -63,14 +64,17 @@ public class LegacyGinasAppController {
     @Autowired
     private GsrsCache ixCache;
     
-    //POST        /register/duplicateCheck          ix.ginas.controllers.GinasFactory.validateChemicalDuplicates
-    @PostMapping({"register/duplicateCheck", "/ginas/app/register/duplicateCheck"})
-    public ValidationResponse<Substance> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
-        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION());
-    }
     @Autowired
     private PayloadController payloadController;
 
+
+    //POST        /register/duplicateCheck          ix.ginas.controllers.GinasFactory.validateChemicalDuplicates
+    @PostMapping({"register/duplicateCheck", "/ginas/app/register/duplicateCheck"})
+    public ValidationResponse<Substance> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
+        SubstanceEntityService substanceService = StaticContextAccessor.getBean(SubstanceEntityService.class);
+        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION());
+    }
+    
     @PostMapping("/upload")
     public ResponseEntity<Object> uploadPayload(@RequestParam("file-type") String type, @RequestParam("file-name") String name, @RequestParam("file") MultipartFile file, @RequestParam Map<String, String> queryParameters) throws IOException {
         //I dont think we can redirect to an upload... so just call our payload controller

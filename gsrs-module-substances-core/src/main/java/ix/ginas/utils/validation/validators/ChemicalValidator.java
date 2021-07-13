@@ -61,7 +61,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     }
     
     @Override
-    public boolean supportsCategory(ValidatorCategory c) {
+    public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory c) {
         if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)) {
             return true;
         }else {
