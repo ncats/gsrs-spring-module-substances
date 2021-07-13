@@ -431,7 +431,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     public static String signature (String q, HttpServletRequest request) {
-        Map<String, String[]> query = request.getParameterMap();
+        Map<String, String[]> query = new HashMap<>(request.getParameterMap());
         List<String> qfacets = new ArrayList<String>();
         if (query.get("facet") != null) {
             for (String f : query.get("facet"))
