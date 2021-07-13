@@ -138,14 +138,14 @@ public class JsonSubstanceFactory {
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
                 System.err.println(tree.toPrettyString());
-                throw new IllegalStateException("JSON parse error:" + e.getMessage());
+                throw new IllegalStateException("JSON parse error:" + e.getMessage(), e);
             }
         } else {
             try {
                 return mapper.treeToValue(tree, Substance.class);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
-                throw new IllegalStateException("JSON parse error:" + e.getMessage());
+                throw new IllegalStateException("JSON parse error:" + e.getMessage(), e);
 
             }
 //            throw new IllegalStateException("Not a valid JSON substance! \"substanceClass\" cannot be null!");

@@ -1,46 +1,5 @@
 package gsrs.module.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.controller.IdHelpers;
-
-import gsrs.events.AbstractEntityCreatedEvent;
-import gsrs.events.AbstractEntityUpdatedEvent;
-import gsrs.module.substance.events.SubstanceCreatedEvent;
-import gsrs.module.substance.events.SubstanceUpdatedEvent;
-import gsrs.repository.GroupRepository;
-import gsrs.service.AbstractGsrsEntityService;
-import gsrs.springUtils.StaticContextAccessor;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
-import ix.core.util.EntityUtils;
-import ix.core.util.Java8Util;
-import ix.core.validator.GinasProcessingMessage;
-import ix.core.validator.ValidationResponse;
-import ix.core.validator.ValidationResponseBuilder;
-import ix.core.validator.Validator;
-import ix.core.validator.ValidatorCallback;
-import ix.core.validator.ValidatorCategory;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasProcessingStrategy;
-import ix.ginas.utils.GinasUtils;
-import ix.ginas.utils.JsonSubstanceFactory;
-import ix.ginas.utils.validation.ValidationUtils;
-import ix.ginas.utils.validation.validators.ChemicalValidator;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-
-import ix.utils.Util;
-import org.springframework.transaction.annotation.Transactional;
-
-import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -48,6 +7,39 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gsrs.controller.IdHelpers;
+import gsrs.events.AbstractEntityCreatedEvent;
+import gsrs.events.AbstractEntityUpdatedEvent;
+import gsrs.module.substance.events.SubstanceCreatedEvent;
+import gsrs.module.substance.events.SubstanceUpdatedEvent;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.repository.GroupRepository;
+import gsrs.service.AbstractGsrsEntityService;
+import gsrs.springUtils.StaticContextAccessor;
+import gsrs.validator.ValidatorConfig;
+import ix.core.validator.GinasProcessingMessage;
+import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidationResponseBuilder;
+import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.validators.ChemicalValidator;
+import ix.utils.Util;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
@@ -231,12 +223,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         JsonSubstanceFactory.fixOwners(substance, true);
         try {
 //            EntityManager em = getEntityManager();
-//            //we might have detatched objects (like principals)
+//            Map<Object, Boolean> seen = new IdentityHashMap<>();
+//            //we might have detatched objects (like principals or new values etc)
 //            EntityUtils.EntityWrapper.of(substance).traverse().execute( (p,e)->{
 //                if(p.getDepth() !=0) {
 //                    if (e.isEntity()) {
 //                        Object o = e.getRawValue();
-//                        if (!em.contains(o)) {
+//                        if (seen.put(o, Boolean.TRUE)==null && !em.contains(o)) {
 //                            System.out.println("merged "+ o);
 //                            em.merge(o);
 //                        }

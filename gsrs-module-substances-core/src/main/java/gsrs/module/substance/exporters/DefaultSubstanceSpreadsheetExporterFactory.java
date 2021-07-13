@@ -129,7 +129,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
      synchronized void createdDefaultMapIfNeeded() {
 
          if (DEFAULT_RECIPE_MAP == null) {
-             Map<Column, ColumnValueRecipe<Substance>> DEFAULT_RECIPE_MAP = new LinkedHashMap<>();
+             DEFAULT_RECIPE_MAP = new LinkedHashMap<>();
 
              DEFAULT_RECIPE_MAP.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
              //TODO preferred TERM ?

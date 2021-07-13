@@ -58,6 +58,8 @@ public class GsrsSubstanceModuleAutoConfiguration {
     @Autowired
     private NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository;
 
+
+
     /**
      * This is to allow async events
      * @return

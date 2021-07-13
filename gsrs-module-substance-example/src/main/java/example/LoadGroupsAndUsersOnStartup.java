@@ -74,6 +74,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
             return;
         }
         groupRepository.save(new Group("protected"));
+        groupRepository.save(new Group("admin"));
 
         System.out.println("RUNNING");
 
@@ -120,7 +121,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                     String[] cols = sep.split(line);
 //                System.out.println(cols[2]);
                     try {
-                        substanceEntityService.createEntity(mapper.readTree(cols[2])).getCreatedEntity();
+                        substanceEntityService.createEntity(mapper.readTree(cols[2]), true).getCreatedEntity();
                     }catch(Throwable t){
                         t.printStackTrace();
                     }

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.6.5-SNAPSHOT</version>
+        <version>0.6.7-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -16,7 +16,7 @@
     <repositories>
         <repository>
             <id>oss.sonatype.org-snapshot</id>
-            <url>http://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
             <releases>
                 <enabled>false</enabled>
             </releases>
@@ -118,11 +118,7 @@
             <artifactId>molwitch</artifactId>
             <version>0.6.1-SNAPSHOT</version>
         </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.7-SNAPSHOT</version>
-        </dependency>
+
         <dependency>
             <groupId>org.jcvi.jillion</groupId>
             <artifactId>jillion</artifactId>

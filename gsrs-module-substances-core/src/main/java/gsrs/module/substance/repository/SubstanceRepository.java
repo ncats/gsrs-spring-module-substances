@@ -3,6 +3,7 @@ package gsrs.module.substance.repository;
 import gsrs.repository.GsrsVersionedRepository;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.*;
+import ix.utils.UUIDUtil;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -21,7 +22,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             return false;
         }
         return (substanceReference.approvalID !=null && existsByApprovalID(substanceReference.approvalID))
-                || ( substanceReference.refuuid !=null && existsById(UUID.fromString(substanceReference.refuuid)));
+                || ( substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid) && existsById(UUID.fromString(substanceReference.refuuid)));
     }
     default Substance findBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
@@ -35,7 +36,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         }
         //Older Substance data did not have a refuuid as all references were based on approval id
         //so we need to check for null here
-        if(substanceReference.refuuid !=null) {
+        if(substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid)) {
             return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
         }
 
@@ -55,13 +56,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     Substance findByModifications_Uuid(UUID uuid);
 
 
-    default List<Substance> findSubstanceSummaryByStructure_Properties_Term(String term){
-        ChemicalSubstance example = new ChemicalSubstance();
-        example.setStructure( new GinasChemicalStructure());
-        example.getStructure().properties.add(new Keyword(null, term));
 
-        return findAll(Example.of(example));
-    }
 //    List<SubstanceSummary> findSubstanceSummaryByMoieties_Structure_Properties_Term(String term);
 
     default List<Substance> findSubstanceSummaryByMoieties_Structure_Properties_Term(String term){
@@ -87,7 +82,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
     @Query("select s from Substance s where CONCAT(s.uuid, '') like ?1%")
     List<Substance> findByUuidStartingWith(String partialUUID);
-    @Query("select case when count(c)> 0 then true else false end from Substance s where s.approvalID= ?1")
+    @Query("select case when count(s)> 0 then true else false end from Substance s where s.approvalID= ?1")
     boolean existsByApprovalID(String approvalID);
 
     @Query("select s from Substance s JOIN s.relationships r where r.relatedSubstance.refuuid=?1 and r.type='"+ Substance.ALTERNATE_SUBSTANCE_REL +"'")

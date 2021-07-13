@@ -18,7 +18,7 @@ In order for GSRS 3.0 to run correctly, a small configuration setting is require
 Within application.conf, add this line:
 
 ```
-spring.jpa.database-platform = ix.ginas.models.GSRSPostgreSQLDialectCustom
+spring.jpa.database-platform = gsrs.repository.sql.dialect.GSRSPostgreSQLDialectCustom
 ```
 
 This directs the Spring Boot framework to use the 

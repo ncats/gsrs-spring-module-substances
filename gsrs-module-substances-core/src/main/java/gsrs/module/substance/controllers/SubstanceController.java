@@ -14,6 +14,7 @@ import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gov.nih.ncats.common.io.IOUtil;
@@ -236,6 +237,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private GsrsEntityService<Substance, UUID> substanceEntityService;
 
+    @Autowired
+    private SubstanceHierarchyFinder substanceHierarchyFinder;
 
     @Value( "classpath:renderer.json")
     private String renderOptionsJson;
@@ -314,6 +317,47 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
     public static String getKey (String q, double t) {
         return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
+    }
+//    @GetGsrsRestApiMapping("({ID}/@hierarchy")
+//    public Object getHierarchy(@PathVariable("ID") String id){
+//
+//    }
+
+
+    @Override
+    protected Optional<Object> handleSpecialFields(EntityUtils.EntityWrapper<Substance> entity, String field) {
+        if("@hierarchy".equals(field)){
+            return Optional.of(makeJsonTreeForAPI(entity.getValue()));
+        }
+        return null;
+    }
+
+    private List<SubstanceHierarchyFinder.TreeNode2> makeJsonTreeForAPI(Substance sub) {
+
+        List<SubstanceHierarchyFinder.TreeNode<Substance>> tnlist = substanceHierarchyFinder.getHierarchies(sub);
+
+
+        SubstanceHierarchyFinder.TreeNode2Builder builder = new SubstanceHierarchyFinder.TreeNode2Builder();
+        for (SubstanceHierarchyFinder.TreeNode<Substance> n : tnlist) {
+            n.traverseDepthFirst(l -> {
+                SubstanceHierarchyFinder.TreeNode<Substance> fin = l.get(l.size() - 1);
+                String text = ("[" + fin.getValue().getApprovalIDDisplay() + "] "
+                        + fin.getValue().getName()
+                        + (fin.getType().equals(SubstanceHierarchyFinder.getHierarchyRootType()) ? "" : " {" + fin.getType() + "}")).toUpperCase();
+
+                builder.addNode(text, fin.getType(), l.size() - 1, fin.getValue().asSubstanceReference());
+//				System.out.println(text + "\n  " + namer.apply(fin) + "  depth = " + l.size() );
+                return true;
+            });
+        }
+        List<SubstanceHierarchyFinder.TreeNode2> nodes = builder.build();
+//		try {
+//			System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
+//		} catch (JsonProcessingException e) {
+//			e.printStackTrace();
+//		}
+
+        return nodes;
     }
 
     public Optional<String> getKeyForCurrentRequest(HttpServletRequest request){

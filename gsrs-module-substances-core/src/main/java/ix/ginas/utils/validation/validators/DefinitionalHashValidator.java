@@ -96,7 +96,7 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 								String message= createDiffMessage(diff);
 								callback.addMessage(GinasProcessingMessage
 										.WARNING_MESSAGE(message));
-								log.trace("in DefinitionalHashValidator, apending message " + message);
+								log.trace("in DefinitionalHashValidator, appending message " + message);
 						} else {
 								log.trace("diffs empty ");
 						}

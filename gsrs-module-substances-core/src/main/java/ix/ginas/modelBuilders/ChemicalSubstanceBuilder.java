@@ -1,7 +1,10 @@
 package ix.ginas.modelBuilders;
 
+import gov.nih.ncats.common.sneak.Sneak;
+import gov.nih.ncats.molwitch.Chemical;
 import ix.ginas.models.v1.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
@@ -28,7 +31,15 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
 	public ChemicalSubstanceBuilder setStructure(String smiles){
 		return andThen(cs->{
 			cs.setStructure(new GinasChemicalStructure());
-			cs.getStructure().molfile=smiles;//not really right, but we know it works
+            try {
+                Chemical chem = Chemical.parse(smiles);
+                chem.generateCoordinates();
+                cs.getStructure().molfile= chem.toMol();
+                cs.getStructure().smiles = smiles;
+            } catch (Exception e) {
+                Sneak.sneakyThrow(e);
+            }
+//            =smiles;//not really right, but we know it works
             Reference orAddFirstReference = getOrAddFirstReference(cs);
             cs.getStructure().addReference( orAddFirstReference,cs);
 		});
