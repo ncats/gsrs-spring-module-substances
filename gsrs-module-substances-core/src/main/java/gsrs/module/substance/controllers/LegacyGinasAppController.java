@@ -1,5 +1,31 @@
 package gsrs.module.substance.controllers;
 
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
@@ -11,31 +37,11 @@ import gsrs.payload.PayloadController;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Structure;
 import ix.core.validator.ValidationMessage;
-import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
 import ix.utils.UUIDUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 /**
  * Some heavily used API calls in GSRS 2.x did not get moved over to a `api/v1` route
@@ -77,10 +83,16 @@ public class LegacyGinasAppController {
         return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION()).getValidationMessages();
     }
     
-    @PostMapping("/upload")
-    public ResponseEntity<Object> uploadPayload(@RequestParam("file-type") String type, @RequestParam("file-name") String name, @RequestParam("file") MultipartFile file, @RequestParam Map<String, String> queryParameters) throws IOException {
+    @PostMapping({"upload", "/ginas/app/upload", "/upload"})
+    public ResponseEntity<Object> uploadPayload(MultipartHttpServletRequest mpreq,
+//            @RequestParam("file-type") String type, 
+//            @RequestParam("file-name") String name, 
+            @RequestParam("file-name") MultipartFile file, 
+            @RequestParam Map<String, String> queryParameters) throws IOException {
+        
         //I dont think we can redirect to an upload... so just call our payload controller
-        return payloadController.handleFileUpload(type, name, file, queryParameters);
+        
+        return payloadController.handleFileUpload(mpreq, file, queryParameters);
 
     }
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
