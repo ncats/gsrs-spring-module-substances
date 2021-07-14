@@ -493,7 +493,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 attributes.addAttribute("q", "root_structure_properties_term:"+structure.get().getExactHash());
 
             }else{
-                attributes.addAttribute("q", "root_structure_properties_term:"+structure.get().getStereoInsensitiveHash());
+                attributes.addAttribute("q", structure.get().getStereoInsensitiveHash());
 
             }
             return new ModelAndView("redirect:/api/v1/substances/search");
