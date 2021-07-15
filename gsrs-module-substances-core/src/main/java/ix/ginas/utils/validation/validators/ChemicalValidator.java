@@ -11,6 +11,7 @@ import ix.core.validator.ExceptionValidationMessage;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.ChemUtils;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
@@ -57,6 +58,15 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     public void setStructureProcessor(StructureProcessor structureProcessor) {
         this.structureProcessor = structureProcessor;
+    }
+    
+    @Override
+    public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory c) {
+        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)) {
+            return true;
+        }else {
+            return false;
+        }
     }
 
     @Override

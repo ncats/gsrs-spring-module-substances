@@ -102,7 +102,7 @@ public class SubstanceStructureSearchService {
             }
             return lookup.computeIfAbsent(type, t->{
                 for(StructureSearchType s : values()){
-                    if(s.value.equalsIgnoreCase(type)){
+                    if(type.toLowerCase().startsWith(s.value)){
                         return s;
                     }
                 }

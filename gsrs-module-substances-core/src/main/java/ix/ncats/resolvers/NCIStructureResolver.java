@@ -5,6 +5,9 @@ import ix.utils.Util;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class NCIStructureResolver extends AbstractStructureResolver {
     public static final String NCI_RESOLVER1 =
         "https://cactus.nci.nih.gov/chemical/structure";

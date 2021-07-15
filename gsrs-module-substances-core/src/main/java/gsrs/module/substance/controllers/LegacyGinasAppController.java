@@ -1,33 +1,47 @@
 package gsrs.module.substance.controllers;
 
-import gsrs.cache.GsrsCache;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.module.substance.repository.ChemicalSubstanceRepository;
-import gsrs.module.substance.repository.StructureRepository;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.payload.PayloadController;
-import ix.core.models.Structure;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Substance;
-import ix.utils.UUIDUtil;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import com.fasterxml.jackson.databind.JsonNode;
+
+import gsrs.cache.GsrsCache;
+import gsrs.controller.GetGsrsRestApiMapping;
+import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.ChemicalSubstanceRepository;
+import gsrs.module.substance.repository.StructureRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.payload.PayloadController;
+import gsrs.springUtils.StaticContextAccessor;
+import ix.core.models.Structure;
+import ix.core.validator.ValidationMessage;
+import ix.core.validator.ValidatorCategory;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Substance;
+import ix.utils.UUIDUtil;
 
 /**
  * Some heavily used API calls in GSRS 2.x did not get moved over to a `api/v1` route
@@ -38,6 +52,10 @@ import java.util.UUID;
 @RestController
 public class LegacyGinasAppController {
 
+//    @Autowired
+//    private SubstanceEntityService substanceService;
+    
+    
     @Autowired
     private EntityLinks entityLinks;
 
@@ -53,13 +71,30 @@ public class LegacyGinasAppController {
 
     @Autowired
     private GsrsCache ixCache;
+    
     @Autowired
     private PayloadController payloadController;
 
-    @PostMapping("/upload")
-    public ResponseEntity<Object> uploadPayload(@RequestParam("file-type") String type, @RequestParam("file-name") String name, @RequestParam("file") MultipartFile file, @RequestParam Map<String, String> queryParameters) throws IOException {
+
+    //POST        /register/duplicateCheck          ix.ginas.controllers.GinasFactory.validateChemicalDuplicates
+    @PostMapping({"register/duplicateCheck", "/ginas/app/register/duplicateCheck"})
+    public List<ValidationMessage> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
+        SubstanceEntityService substanceService = StaticContextAccessor.getBean(SubstanceEntityService.class);
+        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION()).getValidationMessages();
+    }
+    
+    @PostMapping({"upload", "/ginas/app/upload", "/upload"})
+    public ResponseEntity<Object> uploadPayload(MultipartHttpServletRequest mpreq,
+//            @RequestParam("file-type") String type, 
+//            @RequestParam("file-name") String name, 
+            @RequestParam("file-name") MultipartFile file, 
+            @RequestParam Map<String, String> queryParameters) throws IOException {
+        
+        System.out.println("Uploading");
+        
         //I dont think we can redirect to an upload... so just call our payload controller
-        return payloadController.handleFileUpload(type, name, file, queryParameters);
+        
+        return payloadController.handleFileUpload(mpreq, file, queryParameters);
 
     }
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>

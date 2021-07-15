@@ -1,39 +1,45 @@
 package gsrs.module.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.controller.IdHelpers;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import gsrs.events.AbstractEntityCreatedEvent;
-import gsrs.events.AbstractEntityUpdatedEvent;
-import gsrs.module.substance.events.SubstanceCreatedEvent;
-import gsrs.module.substance.events.SubstanceUpdatedEvent;
-import gsrs.repository.GroupRepository;
-import gsrs.service.AbstractGsrsEntityService;
-import gsrs.validator.ValidatorConfig;
-import ix.core.util.EntityUtils;
-import ix.core.validator.GinasProcessingMessage;
-import ix.core.validator.ValidationResponse;
-import ix.core.validator.ValidationResponseBuilder;
-import ix.core.validator.ValidatorCallback;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasProcessingStrategy;
-import ix.ginas.utils.JsonSubstanceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import ix.utils.Util;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import gsrs.controller.IdHelpers;
+import gsrs.events.AbstractEntityCreatedEvent;
+import gsrs.events.AbstractEntityUpdatedEvent;
+import gsrs.module.substance.events.SubstanceCreatedEvent;
+import gsrs.module.substance.events.SubstanceUpdatedEvent;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.repository.GroupRepository;
+import gsrs.service.AbstractGsrsEntityService;
+import gsrs.springUtils.StaticContextAccessor;
+import gsrs.validator.ValidatorConfig;
+import ix.core.validator.GinasProcessingMessage;
+import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidationResponseBuilder;
+import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.validators.ChemicalValidator;
+import ix.utils.Util;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
@@ -87,6 +93,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
+        
         GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
@@ -321,6 +328,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
          */
     }
+    
 
     @Override
     protected Optional<UUID> flexLookupIdOnly(String someKindOfId) {
