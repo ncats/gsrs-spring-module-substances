@@ -84,17 +84,17 @@ public class LegacyGinasAppController {
     }
     
     @PostMapping({"upload", "/ginas/app/upload", "/upload"})
-    public ResponseEntity<Object> uploadPayload(MultipartHttpServletRequest mpreq,
+    public ResponseEntity<Object> uploadPayload(
 //            @RequestParam("file-type") String type, 
 //            @RequestParam("file-name") String name, 
             @RequestParam("file-name") MultipartFile file, 
             @RequestParam Map<String, String> queryParameters) throws IOException {
         
-        System.out.println("Uploading");
+//        System.out.println("Uploading");
         
         //I dont think we can redirect to an upload... so just call our payload controller
         
-        return payloadController.handleFileUpload(mpreq, file, queryParameters);
+        return payloadController.handleFileUpload(file, queryParameters);
 
     }
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
