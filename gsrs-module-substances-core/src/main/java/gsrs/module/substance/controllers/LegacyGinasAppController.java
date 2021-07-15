@@ -90,6 +90,8 @@ public class LegacyGinasAppController {
             @RequestParam("file-name") MultipartFile file, 
             @RequestParam Map<String, String> queryParameters) throws IOException {
         
+        System.out.println("Uploading");
+        
         //I dont think we can redirect to an upload... so just call our payload controller
         
         return payloadController.handleFileUpload(mpreq, file, queryParameters);
