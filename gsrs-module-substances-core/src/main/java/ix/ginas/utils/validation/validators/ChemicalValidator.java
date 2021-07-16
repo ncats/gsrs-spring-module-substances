@@ -1,6 +1,8 @@
 package ix.ginas.utils.validation.validators;
 
 import gov.nih.ncats.molwitch.Chemical;
+import gsrs.controller.GsrsControllerUtil;
+import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
@@ -9,6 +11,7 @@ import ix.core.validator.ExceptionValidationMessage;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.ChemUtils;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
@@ -16,6 +19,7 @@ import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.EntityLinks;
 
 import javax.persistence.EntityManager;
 import java.util.*;
@@ -35,7 +39,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     private ChemicalDuplicateFinder chemicalDuplicateFinder;
 
 	@Autowired
-    private EntityManager em;
+    private EntityLinks entityLinks;
 
 	private boolean allow0AtomStructures = false;
 
@@ -54,6 +58,15 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     public void setStructureProcessor(StructureProcessor structureProcessor) {
         this.structureProcessor = structureProcessor;
+    }
+    
+    @Override
+    public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory c) {
+        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)) {
+            return true;
+        }else {
+            return false;
+        }
     }
 
     @Override
@@ -170,7 +183,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
             ValidationUtils.validateReference(s,cs.getStructure(), callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
 
-            //validateStructureDuplicates(cs, callback);
+            validateStructureDuplicates(cs, callback);
         } else {
             callback.addMessage(GinasProcessingMessage
                     .ERROR_MESSAGE("Chemical substance must have a valid chemical structure"));
@@ -205,31 +218,30 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             List<SubstanceReference> sr = chemicalDuplicateFinder.findPossibleDuplicatesFor(cs.asSubstanceReference());
 
             if (sr != null && !sr.isEmpty()) {
-                int dupes = 0;
-                GinasProcessingMessage mes = null;
-                for (SubstanceReference s : sr) {
+                //the duplicate check object should handle filtering out ourselves so don't need ot check anymore
 
-                    if (cs.getUuid() == null
-                            || !s.getUuid().toString()
-                            .equals(cs.getUuid().toString())) {
-                        if (dupes <= 0)
-                            mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate: " + s.uuid);
-                        dupes++;
-                        //TODO katelda June 2021: add link using new reference objects
-//                        mes.addLink(
-//                                GinasUtils.createSubstanceLink(s));
-                    }
+                GinasProcessingMessage mes;
+                if(sr.size() > 1){
+                    mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has " + sr.size() + " possible duplicates:");
+                }else{
+                    mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate: " + sr.get(0).refuuid);
                 }
-                if (dupes > 0) {
-                    if (dupes > 1)
-                        mes.message = "Structure has " + dupes
-                                + " possible duplicates:";
-                    callback.addMessage(mes);
+                for (SubstanceReference s : sr) {
+                    mes.addLink(createSubstanceLink(s));
+
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
+        GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
+        l.href= GsrsLinkUtil.computeSelfLinkFor(entityLinks, Substance.class, s.getLinkingID()).getHref();
+        l.text="[" + s.refPname + "]" + s.getName();
+
+        return l;
     }
 
     private void validateChemicalStructure(

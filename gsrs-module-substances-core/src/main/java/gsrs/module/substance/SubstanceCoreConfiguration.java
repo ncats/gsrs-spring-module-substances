@@ -2,6 +2,7 @@ package gsrs.module.substance;
 
 import gsrs.controller.EditController2;
 import gsrs.controller.EditEntityService;
+import gsrs.module.substance.approvalId.ApprovalIdConfiguration;
 import gsrs.module.substance.controllers.*;
 import gsrs.module.substance.exporters.SubstanceSpreadsheetExporterConfiguration;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
@@ -26,7 +27,8 @@ import org.springframework.context.annotation.Import;
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
-        SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class
+        SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
+        ApprovalIdConfiguration.class
 
 })
 public class SubstanceCoreConfiguration {

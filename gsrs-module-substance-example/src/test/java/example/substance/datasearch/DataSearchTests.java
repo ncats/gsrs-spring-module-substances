@@ -1,5 +1,6 @@
 package example.substance.datasearch;
 
+import example.substance.AbstractSubstanceJpaEntityTest;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.controllers.ReIndexController;
@@ -35,8 +36,11 @@ import org.springframework.transaction.support.TransactionCallback;
  *
  * @author mitch
  */
+
+//Changed base clas from AbstractSubstanceJpaFullStackEntityTest to AbstractSubstanceJpaEntityTest
+// 16 July based on recommdendtion from Danny K.
 @WithMockUser(username = "admin", roles = "Admin")
-public class DataSearchTests extends AbstractSubstanceJpaFullStackEntityTest
+public class DataSearchTests extends AbstractSubstanceJpaEntityTest
 {
 
 //    @Autowired

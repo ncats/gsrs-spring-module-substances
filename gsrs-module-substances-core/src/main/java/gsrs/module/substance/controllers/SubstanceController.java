@@ -431,7 +431,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     public static String signature (String q, HttpServletRequest request) {
-        Map<String, String[]> query = request.getParameterMap();
+        Map<String, String[]> query = new HashMap<>(request.getParameterMap());
         List<String> qfacets = new ArrayList<String>();
         if (query.get("facet") != null) {
             for (String f : query.get("facet"))
@@ -493,7 +493,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 attributes.addAttribute("q", "root_structure_properties_term:"+structure.get().getExactHash());
 
             }else{
-                attributes.addAttribute("q", "root_structure_properties_term:"+structure.get().getStereoInsensitiveHash());
+                attributes.addAttribute("q", structure.get().getStereoInsensitiveHash());
 
             }
             return new ModelAndView("redirect:/api/v1/substances/search");

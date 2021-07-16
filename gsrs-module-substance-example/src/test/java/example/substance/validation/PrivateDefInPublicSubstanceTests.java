@@ -3,7 +3,6 @@ package example.substance.validation;
 import ix.core.models.Group;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Reference;

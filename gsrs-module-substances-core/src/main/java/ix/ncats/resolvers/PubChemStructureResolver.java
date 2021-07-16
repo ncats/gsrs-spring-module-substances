@@ -1,10 +1,13 @@
 package ix.ncats.resolvers;
 
-import ix.utils.Util;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import org.springframework.stereotype.Component;
+
+import ix.utils.Util;
+
+@Component
 public class PubChemStructureResolver extends AbstractStructureResolver {
     public static final String PUBCHEM_RESOLVER = 
         "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name";

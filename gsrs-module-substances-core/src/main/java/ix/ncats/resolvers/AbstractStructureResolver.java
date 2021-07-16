@@ -3,6 +3,7 @@ package ix.ncats.resolvers;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.cache.GsrsCache;
 import gsrs.module.substance.ProxyConfiguration;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
@@ -30,15 +31,17 @@ public abstract class AbstractStructureResolver implements Resolver<Structure> {
 //    private static int PORT_NUMBER;
 
     @Autowired
-    private ProxyConfiguration proxyConfiguration;
+    protected ProxyConfiguration proxyConfiguration;
 
     @Autowired
-    private StructureProcessor structureProcessor;
+    protected StructureProcessor structureProcessor;
 
     @Autowired
-    private GsrsCache gsrsCache;
+    protected GsrsCache gsrsCache;
 
 
+    
+    
     //Static method to instantiate the parameter values for calling/connecting to the proxy server
 //    static {
 //        if (PROXY_ENABLED) {
@@ -50,9 +53,28 @@ public abstract class AbstractStructureResolver implements Resolver<Structure> {
     protected AbstractStructureResolver (String name) {
         if (name == null)
             throw new IllegalArgumentException ("Invalid resolver name: "+name);
-        this.name = name;
-        
+        this.name = name;        
     }
+    
+    
+    // TODO: This method really shouldn't be necessary, but due to the way
+    // spring handles autowired dependency injection for abstact classes and base
+    // classes, it appears that it is necessary. Spring will only autowire the FIRST
+    // subclass extending the abstract class. All other ones will have the dependencies
+    // remain null. The entire structure could, however, be rewritten to avoid these problems, 
+    // but its not trivial.
+    //
+    // Note that this current paradigm of using init may cause issues for test.
+    //
+    // Screwy, init?
+    private void init() {
+        if(proxyConfiguration==null) {
+            proxyConfiguration =StaticContextAccessor.getBean(ProxyConfiguration.class);
+            structureProcessor =StaticContextAccessor.getBean(StructureProcessor.class);
+            gsrsCache =StaticContextAccessor.getBean(GsrsCache.class);
+        }
+    }
+    
 
     public String getName () { return name; }
     public Class<Structure> getType () { return Structure.class; }
@@ -68,6 +90,7 @@ public abstract class AbstractStructureResolver implements Resolver<Structure> {
         return resolve(is, "sdf");
     }
     protected Structure resolve (InputStream is, String format) throws IOException {
+        
         StringBuilder builder = new StringBuilder();
         //katzelda - April 2018
         //sometimes we have an invalid mol or sdfile
@@ -115,6 +138,7 @@ public abstract class AbstractStructureResolver implements Resolver<Structure> {
         throws MalformedURLException;
 
     public Structure resolve (String name) {
+        init();
         try {
             UrlAndFormat[] urls = resolvers (name);
             for (UrlAndFormat url : urls) {
@@ -123,6 +147,14 @@ public abstract class AbstractStructureResolver implements Resolver<Structure> {
                     try {
 
                         // If the Proxy flag is enabled in the Config file, it connects to proxy or it wouldn't
+//                        
+//                        ProxyConfiguration proxyConfiguration2 =StaticContextAccessor.getBean(ProxyConfiguration.class);
+//                        
+//                        System.out.println("Url is:" +url.url);
+//                        System.out.println("Proxy found was:" + proxyConfiguration2);
+//                        System.out.println("Autowired was:" + proxyConfiguration);
+//                        
+//                        
 
                         HttpURLConnection con = proxyConfiguration.openConnection(url.url);
                         con.connect();
