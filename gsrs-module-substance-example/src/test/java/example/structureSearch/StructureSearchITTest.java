@@ -26,7 +26,7 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
