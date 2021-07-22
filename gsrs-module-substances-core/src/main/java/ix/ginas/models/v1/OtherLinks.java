@@ -3,6 +3,7 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
+import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 
@@ -16,6 +17,7 @@ import java.util.List;
 @SingleParent
 public class OtherLinks extends GinasCommonSubData {
 	@ManyToOne(cascade = CascadeType.PERSIST)
+	@ParentReference
 	private Protein owner;
 	
     @Indexable(facet=true,name="Linkage Type")

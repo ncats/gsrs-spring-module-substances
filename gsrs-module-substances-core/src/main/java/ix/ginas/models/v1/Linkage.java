@@ -4,6 +4,7 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
+import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 
@@ -16,7 +17,7 @@ import java.util.List;
 @Table(name="ix_ginas_linkage")
 @SingleParent
 public class Linkage extends GinasCommonSubData {
-
+	@ParentReference
 	@ManyToOne(cascade = CascadeType.PERSIST)
 	private NucleicAcid owner;
 

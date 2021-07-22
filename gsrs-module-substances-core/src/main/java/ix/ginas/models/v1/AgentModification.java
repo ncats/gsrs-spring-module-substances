@@ -2,6 +2,7 @@ package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
+import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.utils.JSONEntity;
@@ -16,6 +17,7 @@ import java.util.List;
 @SingleParent
 public class AgentModification extends GinasCommonSubData {
 	@ManyToOne(cascade = CascadeType.PERSIST)
+    @ParentReference
 	private Modifications owner;
 	
     @JSONEntity(title = "Process")

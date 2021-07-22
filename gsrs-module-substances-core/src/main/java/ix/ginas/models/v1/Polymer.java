@@ -1,6 +1,7 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 
@@ -11,7 +12,7 @@ import java.util.List;
 @Entity
 @Table(name="ix_ginas_polymer")
 public class Polymer extends GinasCommonSubData {
-    
+	@ParentReference
     @OneToOne(mappedBy="polymer")
     private PolymerSubstance owner;
     
