@@ -4,12 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.SingleParent;
-import ix.core.models.BeanViews;
-import ix.core.models.Indexable;
-import ix.core.models.IndexableRoot;
-import ix.core.models.Keyword;
+import ix.core.models.*;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.GinasAccessReferenceControlled;
@@ -99,7 +95,7 @@ public class Name extends CommonDataElementOfCollection {
 
 	@ManyToOne(cascade = CascadeType.PERSIST)
 	@JsonIgnore
-	@SubstanceOwnerReference
+	@ParentReference
 	private Substance owner;
 
 	public Substance fetchOwner(){

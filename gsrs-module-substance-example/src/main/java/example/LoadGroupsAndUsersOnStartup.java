@@ -67,50 +67,55 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        if(groupRepository.count() >0){
-            return;
+        if(groupRepository.count() ==0) {
+
+
+            groupRepository.save(new Group("protected"));
+            groupRepository.save(new Group("admin"));
+
+            System.out.println("RUNNING");
+
+            UserProfile up = new UserProfile();
+            up.user = new Principal("admin", "admin@example.com");
+            up.setPassword("admin");
+            up.active = true;
+            up.deprecated = false;
+            up.setRoles(Arrays.asList(Role.values()));
+
+            userProfileRepository.saveAndFlush(up);
+
+            UserProfile up2 = new UserProfile();
+            up2.user = new Principal("user1", "user1@example.com");
+            up2.setPassword("user1");
+            up2.active = true;
+            up2.deprecated = false;
+            up2.setRoles(Arrays.asList(Role.Query));
+
+            userProfileRepository.saveAndFlush(up2);
+
+            UserProfile guest = new UserProfile();
+            guest.user = new Principal("GUEST", null);
+            guest.setPassword("GUEST");
+            guest.active = false;
+            guest.deprecated = false;
+            guest.setRoles(Arrays.asList(Role.Query));
+
+            userProfileRepository.saveAndFlush(guest);
         }
-        groupRepository.save(new Group("protected"));
-        groupRepository.save(new Group("admin"));
 
-        System.out.println("RUNNING");
 
-        UserProfile up = new UserProfile();
-        up.user = new Principal("admin", "admin@example.com");
-        up.setPassword("admin");
-        up.active=true;
-        up.deprecated=false;
-        up.setRoles(Arrays.asList(Role.values()));
-
-        userProfileRepository.saveAndFlush(up);
-
-        UserProfile up2 = new UserProfile();
-        up2.user = new Principal("user1", "user1@example.com");
-        up2.setPassword("user1");
-        up2.active=true;
-        up2.deprecated=false;
-        up2.setRoles(Arrays.asList(Role.Query));
-
-        userProfileRepository.saveAndFlush(up2);
-
-        UserProfile guest = new UserProfile();
-        guest.user = new Principal("GUEST", null);
-        guest.setPassword("GUEST");
-        guest.active=false;
-        guest.deprecated=false;
-        guest.setRoles(Arrays.asList(Role.Query));
-
-        userProfileRepository.saveAndFlush(guest);
-
-        Authentication auth =new UsernamePasswordAuthenticationToken(up.user.username, null,
-                up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
-
-        SecurityContextHolder.getContext().setAuthentication(auth);
 
         String pathToLoadFile = System.getProperty("ix.ginas.load.file");
         if (pathToLoadFile != null) {
             File f = new File(pathToLoadFile);
             if(f.exists()) {
+                UserProfile up = userProfileRepository.findByUser_Username("admin");
+
+                Authentication auth =new UsernamePasswordAuthenticationToken(up.user.username, null,
+                        up.getRoles().stream().map(r->new SimpleGrantedAuthority("ROLE_"+ r.name())).collect(Collectors.toList()));
+
+                SecurityContextHolder.getContext().setAuthentication(auth);
+
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(pathToLoadFile))))) {
                     String line;
                     Pattern sep = Pattern.compile("\t");

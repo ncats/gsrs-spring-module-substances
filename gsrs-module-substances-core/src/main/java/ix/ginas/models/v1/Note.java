@@ -1,7 +1,7 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import gsrs.module.substance.SubstanceOwnerReference;
+import ix.core.models.ParentReference;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.utils.JSONEntity;
@@ -17,7 +17,7 @@ import java.util.List;
 public class Note extends CommonDataElementOfCollection {
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
-    @SubstanceOwnerReference
+    @ParentReference
     private Substance owner;
 
     public Substance fetchOwner(){

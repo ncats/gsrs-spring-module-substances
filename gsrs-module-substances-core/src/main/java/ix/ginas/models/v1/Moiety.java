@@ -3,8 +3,8 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.models.Indexable;
+import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
@@ -36,7 +36,7 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
-	@SubstanceOwnerReference
+	@ParentReference
     private ChemicalSubstance owner;
 
     public ChemicalSubstance getOwner(){

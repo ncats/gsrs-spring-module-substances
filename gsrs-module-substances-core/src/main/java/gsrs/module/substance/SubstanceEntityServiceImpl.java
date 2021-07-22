@@ -190,9 +190,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     @Override
-    protected Substance fixUpdatedIfNeeded(Substance oldEntity, Substance updatedEntity) {
+    protected Substance fixUpdatedIfNeeded(Substance updatedEntity) {
         //force the "owner" on all the updated fields to point to the old version so the uuids are correct
-        JsonSubstanceFactory.fixOwners(updatedEntity, oldEntity,true);
+        JsonSubstanceFactory.fixOwners(updatedEntity,true);
         return updatedEntity;
     }
 

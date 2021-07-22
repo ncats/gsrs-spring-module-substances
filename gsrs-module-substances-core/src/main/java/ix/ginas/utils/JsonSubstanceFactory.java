@@ -4,16 +4,21 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.controllers.EntityFactory;
+import ix.core.models.ParentReference;
 import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.v1.*;
 
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -28,50 +33,50 @@ public class JsonSubstanceFactory {
         return fixOwners(s);
     }
 
-    private static void setOwners(Substance substance, Object obj, boolean force) throws IllegalAccessException {
-        Class<?> aClass = obj.getClass();
-        do {
-            setOwner(substance, obj, aClass, force);
-            aClass = aClass.getSuperclass();
-        }while(aClass !=null);
+    private static void setOwners(Object obj, boolean force){
+        EntityUtils.EntityWrapper.of(obj)
+                        .traverse()
+                        .execute((parent, path, current)->{
+                            if(current==null || parent ==null){
+                                return;
+                            }
+                            Object currentObj = current.getValue();
+
+                                Class<?> aClass = currentObj.getClass();
+                                do {
+                                    setOwner(parent.getValue(), currentObj, aClass, force);
+                                    aClass = aClass.getSuperclass();
+                                } while (aClass != null);
+
+                        });
     }
 
-    private static void setOwner(Substance parent, Object obj, Class<?> aClass, boolean force) throws IllegalAccessException {
+    private static void setOwner(Object owner, Object obj, Class<?> aClass, boolean force) {
         for(Field f : aClass.getDeclaredFields()){
             f.setAccessible(true);
-            if(f.getAnnotation(SubstanceOwnerReference.class) !=null){
-                if(force || f.get(obj) == null){
-                    f.set(obj, parent);
+            if(f.getAnnotation(ParentReference.class) !=null){
+                try {
+                    if (force || f.get(obj) == null) {
+                        f.set(obj, owner);
+                    }
+                }catch(IllegalAccessException e){
+                    Sneak.sneakyThrow(e);
                 }
             }
         }
     }
-
     public static Substance fixOwners(Substance s){
         return fixOwners(s, false);
     }
     public static Substance fixOwners(Substance s, boolean force){
-        return fixOwners(s,s,force);
+        setOwners(s, force);
+        return s;
     }
-    public static Substance fixOwners(Substance substanceToModify, Substance ownerSubstance, boolean force){
-        if(substanceToModify ==null){
-            return null;
-        }
-        Map<Integer, EntityUtils.EntityWrapper> map = new HashMap<>();
-        EntityUtils.EntityWrapper.of(substanceToModify).traverse().execute((path, e)->{
-            Object o =e.getRawValue();
-            if(o !=null){
-                try {
-                    setOwners(ownerSubstance, o, force);
-                } catch (IllegalAccessException ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
 
-        //TODO add others
-        return substanceToModify;
-    }
+
+
+
+
     public static Substance makeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
         return fixOwners(internalMakeSubstance(tree, messages));
     }
