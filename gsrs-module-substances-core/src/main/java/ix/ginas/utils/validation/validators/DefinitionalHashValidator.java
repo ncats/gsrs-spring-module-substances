@@ -42,6 +42,11 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
 //				System.out.println("in def hash Validator with substance of type " + objnew.substanceClass.name());
+        
+        //don't validate if there is no old version
+        if(objold==null) {
+            return;
+        }
 		LogUtil.trace(()->"in def hash Validator with substance of type " + objnew.substanceClass.name());
 
         /*if(objold ==null || objnew.getApprovalID() ==null || (objnew.getApprovalID() !=null && objold.getApprovalID() ==null)){
@@ -51,9 +56,10 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 				DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(objnew);
 				DefinitionalElements oldDefinitionalElements;
 				try	{
+				        // The old equivalent to this line used to throw a NPE if objold was null,
+				        // this was the effective way that the validation rule was disabled for new records.
 						oldDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(objold);
-				}
-				catch(Exception e){
+				}catch(Exception e){
 						log.warn("Unable to access definitional elements for old substance");
 						return;
 				}
