@@ -2,6 +2,7 @@ package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
+import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.utils.JSONEntity;
@@ -15,7 +16,7 @@ import java.util.List;
 @JSONEntity(title = "Structural Modification", isFinal = true)
 @SingleParent
 public class StructuralModification extends GinasCommonSubData {
-	
+	@ParentReference
 	@ManyToOne(cascade = CascadeType.PERSIST)
 	private Modifications owner;
 	

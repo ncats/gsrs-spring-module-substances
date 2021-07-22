@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
+import ix.core.models.ParentReference;
 import ix.core.models.VIntArray;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
@@ -29,6 +30,7 @@ import java.util.regex.Pattern;
 @SingleParent
 public class Unit extends GinasCommonSubData {
 	@ManyToOne(cascade = CascadeType.PERSIST)
+	@ParentReference
 	private Polymer owner;
 	
 	

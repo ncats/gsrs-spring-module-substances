@@ -13,6 +13,7 @@ import gsrs.module.substance.services.ConfigBasedDefinitionalElementFactory;
 import gsrs.module.substance.services.StructureResolverService;
 import gsrs.module.substance.services.StructureResolverServiceConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
+import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -28,7 +29,7 @@ import org.springframework.context.annotation.Import;
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
-        ApprovalIdConfiguration.class
+        ApprovalIdConfiguration.class, MolWeightCalculatorProperties.class
 
 })
 public class SubstanceCoreConfiguration {

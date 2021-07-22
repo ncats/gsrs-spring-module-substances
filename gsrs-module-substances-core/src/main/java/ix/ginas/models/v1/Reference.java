@@ -3,11 +3,11 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
 import ix.core.models.Keyword;
+import ix.core.models.ParentReference;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 public class Reference extends GinasCommonData {
 
 	@ManyToOne(cascade = CascadeType.PERSIST)
-	@SubstanceOwnerReference
+	@ParentReference
 	@JsonIgnore
 	private Substance owner;
 

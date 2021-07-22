@@ -11,6 +11,7 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.MolecularWeightAndFormulaContribution;
 import ix.ginas.utils.ProteinUtils;
+import static ix.ginas.utils.ProteinUtils.getSubunitFormulaInfo;
 import java.io.File;
 import org.junit.jupiter.api.Test;
 
@@ -592,6 +593,15 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(expectedFormula, formulaProps.get(0).getValue().nonNumericValue);
     }
 
+    @Test
+    public void nullSequenceTest(){
+        Subunit su = new Subunit();
+
+        //leave the sequence null;
+        Set<String> unknownRes = new HashSet<>();
+        Map<String, SingleThreadCounter> contribution = getSubunitFormulaInfo(su.sequence, unknownRes);
+        assertTrue(contribution.isEmpty());
+    }
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 
@@ -664,16 +674,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         return polymer;
     }
 
-    private Substance getPolymerFromFile() {
-        try {
-            File polymerFile =new ClassPathResource("testJSON/8OZM26QV2C.json").getFile();
-            SubstanceBuilder builder =SubstanceBuilder.from(polymerFile);
-            return builder.build();
-        } catch (IOException ex) {
-            Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
-    }
 
     private ProteinSubstance getProteinFromFile() {
         try {

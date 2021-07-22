@@ -1,10 +1,10 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import gsrs.module.substance.SubstanceOwnerReference;
 import ix.core.models.DynamicFacet;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
+import ix.core.models.ParentReference;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.utils.JSONConstants;
@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 public class Code extends CommonDataElementOfCollection{
 	@ManyToOne(cascade = CascadeType.PERSIST)
 	@JsonIgnore
-	@SubstanceOwnerReference
+	@ParentReference
 	private Substance owner;
 
 	public Substance fetchOwner(){

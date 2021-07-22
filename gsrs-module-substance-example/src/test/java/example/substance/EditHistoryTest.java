@@ -21,14 +21,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class EditHistoryTest extends AbstractSubstanceJpaEntityTest {
 
 
-
-
-
-
-
 	@Test
 	@WithMockUser(username = "admin", roles = "Admin")
-	public void testRecordHistoryEditCanProduceDiff() throws Exception {
+	public void testRecordHistoryEditCanProduceDiff() {
     			UUID uuid = UUID.randomUUID();
     			
     			new SubstanceBuilder()
