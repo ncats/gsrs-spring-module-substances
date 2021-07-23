@@ -190,13 +190,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     @Override
-    protected Substance fixUpdatedIfNeeded(Substance updatedEntity) {
-        //force the "owner" on all the updated fields to point to the old version so the uuids are correct
-        JsonSubstanceFactory.fixOwners(updatedEntity,true);
-        return updatedEntity;
-    }
-
-    @Override
     protected Substance fromUpdatedJson(JsonNode json) throws IOException {
         //TODO should we make any edits to remove fields?
         return JsonSubstanceFactory.makeSubstance(json);
