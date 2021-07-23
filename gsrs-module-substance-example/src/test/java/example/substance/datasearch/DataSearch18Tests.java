@@ -56,9 +56,8 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest
         if (!setup) {
 
             File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
-            //loadGsrsFile(dataFile);
+            loadGsrsFile(dataFile);
             setup = true;
-            //reindexDirect();
             //System.out.println("loaded rep18 data file");
         }
     }

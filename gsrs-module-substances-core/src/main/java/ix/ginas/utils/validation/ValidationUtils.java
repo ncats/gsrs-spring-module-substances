@@ -1,9 +1,16 @@
 package ix.ginas.utils.validation;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.module.substance.services.DefinitionalElementFactory;
+import gsrs.springUtils.AutowireHelper;
 
 import ix.core.models.*;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
 
 import ix.core.validator.*;
 
@@ -17,40 +24,45 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
-public class ValidationUtils {
+public class ValidationUtils
+{
 
-	private static final String VALIDATION_CONF = "validation.conf";
 
-	public static interface ValidationRule<K>{
-		public GinasProcessingMessage validate(K obj);
-	}
-	
-	public static class SubstanceCantBeNull implements ValidationRule<Substance>{
-		@Override
-		public GinasProcessingMessage validate(Substance s) {
-			if (s == null) {
-				return GinasProcessingMessage
-						.ERROR_MESSAGE("Substance cannot be parsed");
-			}
-			return GinasProcessingMessage.SUCCESS_MESSAGE("Substance is parsable");
-		}
-	}
-	
-	
+    private static final String VALIDATION_CONF = "validation.conf";
+
+    public static interface ValidationRule<K>
+    {
+
+        public GinasProcessingMessage validate(K obj);
+    }
+
+    public static class SubstanceCantBeNull implements ValidationRule<Substance>
+    {
+
+        @Override
+        public GinasProcessingMessage validate(Substance s) {
+            if (s == null) {
+                return GinasProcessingMessage
+                        .ERROR_MESSAGE("Substance cannot be parsed");
+            }
+            return GinasProcessingMessage.SUCCESS_MESSAGE("Substance is parsable");
+        }
+    }
+
 //	private static CachedSupplier<PayloadPlugin> _payload = CachedSupplier.of(()->Play.application().plugin(PayloadPlugin.class));
 //	static CachedSupplier<ValidationConfig> validationConf = CachedSupplier.of(()->{
 //		return new ValidationConfig(Play.application());
 //	});
-
-	
-
-	
-	
-
 //	static List<GinasProcessingMessage> validateAndPrepare(Substance s, Substance old,
 //                                                           GinasProcessingStrategy strat) {
 //		long start = System.currentTimeMillis();
@@ -279,225 +291,235 @@ public class ValidationUtils {
 //		}
 //		return gpm;
 //	}
+    public enum ReferenceAction
+    {
+        FAIL, WARN, ALLOW
+    }
 
-	public enum ReferenceAction {
-		FAIL, WARN, ALLOW
-	}
+    private static <D extends GinasAccessReferenceControlled> void validatePublicReferenced(Substance s,
+            D data,
+            List<GinasProcessingMessage> gpm,
+            GinasProcessingStrategy strat,
+            Function<D, String> namer) {
+        //If public
+        if (data.getAccess().isEmpty()) {
+            boolean hasPublicReference = data.getReferences().stream()
+                    .map(r -> r.getValue())
+                    .map(r -> s.getReferenceByUUID(r))
+                    .filter(r -> r.isPublic())
+                    .filter(r -> r.isPublicDomain())
+                    .findAny()
+                    .isPresent();
 
-	private static <D extends GinasAccessReferenceControlled> void validatePublicReferenced(Substance s,
-                                                                                            D data,
-                                                                                            List<GinasProcessingMessage> gpm,
-                                                                                            GinasProcessingStrategy strat,
-                                                                                            Function<D,String> namer) {
-		//If public
-		if(data.getAccess().isEmpty()){
-			boolean hasPublicReference = data.getReferences().stream()
-			                    .map(r->r.getValue())
-			                    .map(r->s.getReferenceByUUID(r))
-			                    .filter(r->r.isPublic())
-			                    .filter(r->r.isPublicDomain())
-			                    .findAny()
-			                    .isPresent();
+            if (!hasPublicReference) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .ERROR_MESSAGE(namer.apply(data) + " needs an unprotected reference marked \"Public Domain\" in order to be made public.");
+                gpm.add(mes);
+                strat.processMessage(mes);
+            }
+        }
 
-			if(!hasPublicReference){
-				GinasProcessingMessage mes = GinasProcessingMessage
-						.ERROR_MESSAGE(namer.apply(data) + " needs an unprotected reference marked \"Public Domain\" in order to be made public.");
-				gpm.add(mes);
-				strat.processMessage(mes);
-			}
-		}
+    }
 
-	}
+    private static boolean validateReferenced(Substance s,
+            GinasAccessReferenceControlled data,
+            List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat,
+            ReferenceAction onemptyref) {
 
-	private static boolean validateReferenced(Substance s,
-                                              GinasAccessReferenceControlled data,
-                                              List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat,
-                                              ReferenceAction onemptyref) {
+        boolean worked = true;
 
-		boolean worked = true;
+        Set<Keyword> references = data.getReferences();
+        if ((references == null || references.size() <= 0)) {
+            if (onemptyref == ReferenceAction.ALLOW) {
+                return worked;
+            }
 
-		Set<Keyword> references = data.getReferences();
-		if ((references == null || references.size() <= 0)) {
-			if (onemptyref == ReferenceAction.ALLOW) {
-				return worked;
-			}
+            GinasProcessingMessage gpmerr = null;
+            if (onemptyref == ReferenceAction.FAIL) {
+                gpmerr = GinasProcessingMessage.ERROR_MESSAGE(
+                        data.toString() + " needs at least 1 reference")
+                        .appliableChange(true);
+            }
+            else if (onemptyref == ReferenceAction.WARN) {
+                gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
+                        data.toString() + " needs at least 1 reference")
+                        .appliableChange(true);
+            }
+            else {
+                gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
+                        data.toString() + " needs at least 1 reference")
+                        .appliableChange(true);
+            }
 
-			GinasProcessingMessage gpmerr = null;
-			if (onemptyref == ReferenceAction.FAIL) {
-				gpmerr = GinasProcessingMessage.ERROR_MESSAGE(
-						data.toString() + " needs at least 1 reference")
-						.appliableChange(true);
-			} else if (onemptyref == ReferenceAction.WARN) {
-				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
-						.appliableChange(true);
-			} else {
-				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
-						.appliableChange(true);
-			}
+            strat.processMessage(gpmerr);
 
-				strat.processMessage(gpmerr);
+            if (gpmerr.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
+                gpmerr.appliedChange = true;
+                Reference r = Reference.SYSTEM_ASSUMED();
+                s.references.add(r);
+                data.addReference(r.getOrGenerateUUID().toString());
+            }
+            else {
+                worked = false;
+            }
+            gpm.add(gpmerr);
+        }
+        else {
+            for (Keyword ref : references) {
+                Reference r = s.getReferenceByUUID(ref.getValue());
+                if (r == null) {
+                    gpm.add(GinasProcessingMessage.ERROR_MESSAGE("Reference \""
+                            + ref.getValue() + "\" not found on substance."));
+                    worked = false;
+                }
+            }
+        }
 
-			if (gpmerr.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
-				gpmerr.appliedChange = true;
-				Reference r = Reference.SYSTEM_ASSUMED();
-				s.references.add(r);
-				data.addReference(r.getOrGenerateUUID().toString());
-			} else {
-				worked = false;
-			}
-			gpm.add(gpmerr);
-		} else {
-			for (Keyword ref : references) {
-				Reference r = s.getReferenceByUUID(ref.getValue());
-				if (r == null) {
-					gpm.add(GinasProcessingMessage.ERROR_MESSAGE("Reference \""
-							+ ref.getValue() + "\" not found on substance."));
-					worked = false;
-				}
-			}
-		}
+        return worked;
+    }
 
-		return worked;
-	}
+    public static boolean validateReference(Substance s,
+            GinasAccessReferenceControlled data,
+            ValidatorCallback callback,
+            ReferenceAction onemptyref,
+            ReferenceRepository referenceRepository) {
 
-	public static boolean validateReference(Substance s,
-											GinasAccessReferenceControlled data,
-											ValidatorCallback callback,
-											ReferenceAction onemptyref,
-											ReferenceRepository referenceRepository) {
+        AtomicBoolean worked = new AtomicBoolean(true);
 
-		AtomicBoolean worked = new AtomicBoolean(true);
+        Set<Keyword> references = data.getReferences();
+        if ((references == null || references.size() <= 0)) {
+            if (onemptyref == ReferenceAction.ALLOW) {
+                return worked.get();
+            }
 
-		Set<Keyword> references = data.getReferences();
-		if ((references == null || references.size() <= 0)) {
-			if (onemptyref == ReferenceAction.ALLOW) {
-				return worked.get();
-			}
+            GinasProcessingMessage gpmerr = null;
+            if (onemptyref == ReferenceAction.FAIL) {
+                gpmerr = GinasProcessingMessage.ERROR_MESSAGE(
+                        data.toString() + " needs at least 1 reference")
+                        .appliableChange(true);
+                worked.set(false);
+            }
+            else if (onemptyref == ReferenceAction.WARN) {
+                gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
+                        data.toString() + " needs at least 1 reference")
+                        .appliableChange(true);
+                worked.set(false);
+            }
+            else {
+                gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
+                        data.toString() + " needs at least 1 reference")
+                        .appliableChange(true);
+                worked.set(false);
+            }
 
-			GinasProcessingMessage gpmerr = null;
-			if (onemptyref == ReferenceAction.FAIL) {
-				gpmerr = GinasProcessingMessage.ERROR_MESSAGE(
-						data.toString() + " needs at least 1 reference")
-						.appliableChange(true);
-				worked.set(false);
-			} else if (onemptyref == ReferenceAction.WARN) {
-				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
-						.appliableChange(true);
-				worked.set(false);
-			} else {
-				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
-						.appliableChange(true);
-				worked.set(false);
-			}
+            //this extra reference is so it's effectively final
+            //and we can reference it in the lambda
+            GinasProcessingMessage gpmerr2 = gpmerr;
+            callback.addMessage(gpmerr2, () -> {
+                gpmerr2.appliedChange = true;
+                Reference r = Reference.SYSTEM_ASSUMED();
+                s.references.add(r);
+                data.addReference(r.getOrGenerateUUID().toString());
+                worked.set(true);
+            });
 
-			//this extra reference is so it's effectively final
-			//and we can reference it in the lambda
-			GinasProcessingMessage gpmerr2 = gpmerr;
-			callback.addMessage(gpmerr2, () ->{
-				gpmerr2.appliedChange = true;
-				Reference r = Reference.SYSTEM_ASSUMED();
-				s.references.add(r);
-				data.addReference(r.getOrGenerateUUID().toString());
-				worked.set(true);
-			});
+        }
+        else {
+            for (Keyword ref : references) {
+                Reference r = s.getReferenceByUUID(ref.getValue());
+                if (r == null) {
+                    //GSRS-933 more informative error message if you can find the Reference
+                    Reference dbReference = referenceRepository.getOne(UUID.fromString(ref.getValue()));
+                    if (dbReference != null) {
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference  type: \"" + dbReference.docType
+                                + "\" citation: \"" + dbReference.citation + "\"  uuid \""
+                                + ref.getValue() + "\" not found on substance."));
+                    }
+                    else {
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference \""
+                                + ref.getValue() + "\" not found on substance."));
+                    }
+                    worked.set(false);
+                }
+            }
+        }
 
-		} else {
-			for (Keyword ref : references) {
-				Reference r = s.getReferenceByUUID(ref.getValue());
-				if (r == null) {
-					//GSRS-933 more informative error message if you can find the Reference
-					Reference dbReference = referenceRepository.getOne(UUID.fromString(ref.getValue()));
-					if(dbReference !=null) {
-						callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference  type: \"" + dbReference.docType +
-								"\" citation: \"" + dbReference.citation + "\"  uuid \""
-								+ ref.getValue() + "\" not found on substance."));
-					}else{
-					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference \""
-							+ ref.getValue() + "\" not found on substance."));
-					}
-					worked.set(false);
-				}
-			}
-		}
+        return worked.get();
+    }
 
-		return worked.get();
-	}
+    static private void extractLocators(Substance s, Name n,
+            List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+        Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
+        Matcher m = p.matcher(n.name);
+        Set<String> locators = new LinkedHashSet<String>();
+        if (m.find()) {
+            do {
+                String loc = m.group(1);
 
-	static private void extractLocators(Substance s, Name n,
-                                        List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
-		Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
-		Matcher m = p.matcher(n.name);
-		Set<String> locators = new LinkedHashSet<String>();
-		if (m.find()) {
-			do {
-				String loc = m.group(1);
+                // System.out.println("LOCATOR:" + loc);
+                locators.add(loc);
+            } while (m.find(m.start(1)));
+        }
+        if (locators.size() > 0) {
+            GinasProcessingMessage mes = GinasProcessingMessage
+                    .WARNING_MESSAGE(
+                            "Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:"
+                            + locators.toString())
+                    .appliableChange(true);
+            gpm.add(mes);
+            strat.processMessage(mes);
+            if (mes.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
+                for (String loc : locators) {
+                    n.name = n.name.replace("[" + loc + "]", "").trim();
+                }
+                for (String loc : locators) {
+                    n.addLocator(s, loc);
+                }
+            }
+        }
+    }
 
-				// System.out.println("LOCATOR:" + loc);
-				locators.add(loc);
-			} while (m.find(m.start(1)));
-		}
-		if (locators.size() > 0) {
-			GinasProcessingMessage mes = GinasProcessingMessage
-					.WARNING_MESSAGE(
-							"Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:"
-									+ locators.toString())
-					.appliableChange(true);
-			gpm.add(mes);
-			strat.processMessage(mes);
-			if (mes.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
-				for (String loc : locators) {
-					n.name = n.name.replace("[" + loc + "]", "").trim();
-				}
-				for (String loc : locators) {
-					n.addLocator(s, loc);
-				}
-			}
-		}
-	}
+    public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(() -> {
+        List<Replacer> repList = new ArrayList<>();
+        repList.add(new Replacer("[\\t\\n\\r]", " ")
+                .message("Name \"$0\" has non-space whitespace characters. They will be replaced with spaces."));
+        repList.add(new Replacer("\\s\\s\\s*", " ")
+                .message("Name \"$0\" has consecutive whitespace characters. These will be replaced with single spaces."));
 
-       public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
-               List<Replacer> repList = new ArrayList<>();
-               repList.add(new Replacer("[\\t\\n\\r]", " ")
-                               .message("Name \"$0\" has non-space whitespace characters. They will be replaced with spaces."));
-               repList.add(new Replacer("\\s\\s\\s*", " ")
-                       .message("Name \"$0\" has consecutive whitespace characters. These will be replaced with single spaces."));
+        return repList;
 
-               return repList;
+    });
 
-       });
+    public static class Replacer
+    {
 
-       public static class Replacer{
-               Pattern p;
-               String replace;
-               String message = "String \"$0\" matches forbidden pattern";
+        Pattern p;
+        String replace;
+        String message = "String \"$0\" matches forbidden pattern";
 
-               public Replacer(String regex, String replace){
-                       this.p=Pattern.compile(regex);
-                       this.replace=replace;
-               }
+        public Replacer(String regex, String replace) {
+            this.p = Pattern.compile(regex);
+            this.replace = replace;
+        }
 
-               public boolean matches(String test){
-                       return this.p.matcher(test).find();
-               }
-              public String fix(String test){
-                       return test.replaceAll(p.pattern(), replace);
-               }
+        public boolean matches(String test) {
+            return this.p.matcher(test).find();
+        }
 
-               public Replacer message(String msg){
-                       this.message=msg;
-                       return this;
-               }
+        public String fix(String test) {
+            return test.replaceAll(p.pattern(), replace);
+        }
 
-               public String getMessage(String test){
-                       return message.replace("$0", test);
-               }
+        public Replacer message(String msg) {
+            this.message = msg;
+            return this;
+        }
 
-       }
+        public String getMessage(String test) {
+            return message.replace("$0", test);
+        }
 
+    }
 
 //	private static boolean validateNames(Substance s,
 //                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
@@ -755,104 +777,100 @@ public class ValidationUtils {
 //		}
 //		return true;
 //	}
+    /**
+     * Check if the object is effectively null. That is, is it literally null,
+     * or is the string representation of the object an empty string.
+     *
+     * @param o
+     * @return
+     */
+    public static boolean isEffectivelyNull(Object o) {
+        if (o == null) {
+            return true;
+        }
+        return o.toString().isEmpty();
+    }
 
+    private static boolean validateRelationships(Substance s,
+            List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+        List<Relationship> remnames = new ArrayList<Relationship>();
+        for (Relationship n : s.relationships) {
+            if (isEffectivelyNull(n)) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .WARNING_MESSAGE(
+                                "Null relationship objects are not allowed")
+                        .appliableChange(true);
+                gpm.add(mes);
+                strat.processMessage(mes);
+                if (mes.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
+                    remnames.add(n);
+                    mes.appliedChange = true;
+                }
+            }
+            if (isEffectivelyNull(n.relatedSubstance)) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .ERROR_MESSAGE(
+                                "Relationships must specify a related substance");
+                gpm.add(mes);
+                strat.processMessage(mes);
+            }
+            if (isEffectivelyNull(n.type)) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .ERROR_MESSAGE(
+                                "Relationships must specify a type");
+                gpm.add(mes);
+                strat.processMessage(mes);
+            }
+            if (!validateReferenced(s, n, gpm, strat, ReferenceAction.ALLOW)) {
+                return false;
+            }
+        }
 
-	/**
-	 * Check if the object is effectively null. That is,
-	 * is it literally null, or is the string representation
-	 * of the object an empty string.
-	 *
-	 * @param o
-	 * @return
-	 */
-	public static boolean isEffectivelyNull(Object o) {
-		if (o == null) {
-			return true;
-		}
-		return o.toString().isEmpty();
-	}
+        long parentList = s.relationships.stream()
+                .filter(r -> "SUBSTANCE->SUB_CONCEPT".equals(r.type))
+                .count();
 
-	private static boolean validateRelationships(Substance s,
-                                                 List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
-		List<Relationship> remnames = new ArrayList<Relationship>();
-		for (Relationship n : s.relationships) {
-			if (isEffectivelyNull(n)) {
-				GinasProcessingMessage mes = GinasProcessingMessage
-						.WARNING_MESSAGE(
-								"Null relationship objects are not allowed")
-						.appliableChange(true);
-				gpm.add(mes);
-				strat.processMessage(mes);
-				if (mes.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
-					remnames.add(n);
-					mes.appliedChange = true;
-				}
-			}
-			if (isEffectivelyNull(n.relatedSubstance)) {
-				GinasProcessingMessage mes = GinasProcessingMessage
-						.ERROR_MESSAGE(
-								"Relationships must specify a related substance");
-				gpm.add(mes);
-				strat.processMessage(mes);
-			}
-			if(isEffectivelyNull(n.type)){
-				GinasProcessingMessage mes = GinasProcessingMessage
-						.ERROR_MESSAGE(
-								"Relationships must specify a type");
-				gpm.add(mes);
-				strat.processMessage(mes);
-			}
-			if (!validateReferenced(s, n, gpm, strat, ReferenceAction.ALLOW)) {
-				return false;
-			}
-		}
+        if (parentList > 1) {
+            GinasProcessingMessage mes = GinasProcessingMessage
+                    .ERROR_MESSAGE(
+                            "Variant concepts may not specify more than one parent record");
+            gpm.add(mes);
+            strat.processMessage(mes);
+        }
+        else if (parentList >= 1 && (s.substanceClass != SubstanceClass.concept)) {
+            GinasProcessingMessage mes = GinasProcessingMessage
+                    .ERROR_MESSAGE(
+                            "Non-concepts may not be specified as subconcepts.");
+            gpm.add(mes);
+            strat.processMessage(mes);
+        }
 
-		long parentList=s.relationships.stream()
-		               .filter(r->"SUBSTANCE->SUB_CONCEPT".equals(r.type))
-		               .count();
+        s.relationships.removeAll(remnames);
+        return true;
+    }
 
-		if(parentList>1){
-			GinasProcessingMessage mes = GinasProcessingMessage
-					.ERROR_MESSAGE(
-							"Variant concepts may not specify more than one parent record");
-			gpm.add(mes);
-			strat.processMessage(mes);
-		}else if(parentList>=1 && (s.substanceClass != SubstanceClass.concept)){
-			GinasProcessingMessage mes = GinasProcessingMessage
-					.ERROR_MESSAGE(
-							"Non-concepts may not be specified as subconcepts.");
-			gpm.add(mes);
-			strat.processMessage(mes);
-		}
-
-
-
-		s.relationships.removeAll(remnames);
-		return true;
-	}
-
-	private static boolean validateNotes(Substance s,
-                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
-		List<Note> remnames = new ArrayList<Note>();
-		for (Note n : s.notes) {
-			if (n == null) {
-				GinasProcessingMessage mes = GinasProcessingMessage
-						.WARNING_MESSAGE("Null note objects are not allowed")
-						.appliableChange(true);
-				gpm.add(mes);
-				strat.processMessage(mes);
-				if (mes.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
-					remnames.add(n);
-					mes.appliedChange = true;
-				}
-			}
-			if (!validateReferenced(s, n, gpm, strat, ReferenceAction.ALLOW)) {
-				return false;
-			}
-		}
-		s.notes.removeAll(remnames);
-		return true;
-	}
+    private static boolean validateNotes(Substance s,
+            List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+        List<Note> remnames = new ArrayList<Note>();
+        for (Note n : s.notes) {
+            if (n == null) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .WARNING_MESSAGE("Null note objects are not allowed")
+                        .appliableChange(true);
+                gpm.add(mes);
+                strat.processMessage(mes);
+                if (mes.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
+                    remnames.add(n);
+                    mes.appliedChange = true;
+                }
+            }
+            if (!validateReferenced(s, n, gpm, strat, ReferenceAction.ALLOW)) {
+                return false;
+            }
+        }
+        s.notes.removeAll(remnames);
+        return true;
+    }
 
 //	private static List<GinasProcessingMessage> validateStructureDuplicates(
 //			ChemicalSubstance cs) {
@@ -1238,64 +1256,67 @@ public class ValidationUtils {
 //		}
 //		return gpm;
 //	}
+    public static boolean isNull(GinasChemicalStructure gcs) {
+        if (gcs == null || gcs.molfile == null) {
+            return true;
+        }
+        return false;
+    }
 
-	public static boolean isNull(GinasChemicalStructure gcs) {
-		if (gcs == null || gcs.molfile == null)
-			return true;
-		return false;
-	}
-
-	private static List<? extends GinasProcessingMessage> validateAndPrepareNa(
+    private static List<? extends GinasProcessingMessage> validateAndPrepareNa(
             NucleicAcidSubstance cs, GinasProcessingStrategy strat) {
-		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
-		if (cs.nucleicAcid == null) {
-			gpm.add(GinasProcessingMessage
-					.ERROR_MESSAGE("Nucleic Acid substance must have a nucleicAcid element"));
-		} else {
-			if (cs.nucleicAcid.getSubunits() == null
-					|| cs.nucleicAcid.getSubunits().isEmpty()) {
-				gpm.add(GinasProcessingMessage
-						.ERROR_MESSAGE("Nucleic Acid substance must have at least 1 subunit"));
-			}
-			if (cs.nucleicAcid.getSugars() == null
-					|| cs.nucleicAcid.getSugars().isEmpty()) {
-				gpm.add(GinasProcessingMessage
-						.ERROR_MESSAGE("Nucleic Acid substance must have at least 1 specified sugar"));
-			}
-			if (cs.nucleicAcid.getLinkages() == null
-					|| cs.nucleicAcid.getLinkages().isEmpty()) {
-				gpm.add(GinasProcessingMessage
-						.ERROR_MESSAGE("Nucleic Acid substance must have at least 1 specified linkage"));
-			}
+        List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
+        if (cs.nucleicAcid == null) {
+            gpm.add(GinasProcessingMessage
+                    .ERROR_MESSAGE("Nucleic Acid substance must have a nucleicAcid element"));
+        }
+        else {
+            if (cs.nucleicAcid.getSubunits() == null
+                    || cs.nucleicAcid.getSubunits().isEmpty()) {
+                gpm.add(GinasProcessingMessage
+                        .ERROR_MESSAGE("Nucleic Acid substance must have at least 1 subunit"));
+            }
+            if (cs.nucleicAcid.getSugars() == null
+                    || cs.nucleicAcid.getSugars().isEmpty()) {
+                gpm.add(GinasProcessingMessage
+                        .ERROR_MESSAGE("Nucleic Acid substance must have at least 1 specified sugar"));
+            }
+            if (cs.nucleicAcid.getLinkages() == null
+                    || cs.nucleicAcid.getLinkages().isEmpty()) {
+                gpm.add(GinasProcessingMessage
+                        .ERROR_MESSAGE("Nucleic Acid substance must have at least 1 specified linkage"));
+            }
 
+            int unspSugars = NucleicAcidUtils
+                    .getNumberOfUnspecifiedSugarSites(cs);
+            if (unspSugars != 0) {
+                gpm.add(GinasProcessingMessage
+                        .ERROR_MESSAGE("Nucleic Acid substance must have every base specify a sugar fragment. Missing "
+                                + unspSugars + " sites."));
+            }
 
-				int unspSugars = NucleicAcidUtils
-						.getNumberOfUnspecifiedSugarSites(cs);
-				if (unspSugars != 0) {
-					gpm.add(GinasProcessingMessage
-							.ERROR_MESSAGE("Nucleic Acid substance must have every base specify a sugar fragment. Missing "
-									+ unspSugars + " sites."));
-				}
+            int unspLinkages = NucleicAcidUtils
+                    .getNumberOfUnspecifiedLinkageSites(cs);
+            //This is meant to say you can't be MISSING a link between 2 sugars in an NA
+            if (unspLinkages > 0) {
+                gpm.add(GinasProcessingMessage
+                        .ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing "
+                                + unspLinkages + " sites."));
+                //Typically you can't also have an extra link (on the 5' end), but it's allowed
+            }
+            else if (unspLinkages < 0 && unspLinkages >= -cs.nucleicAcid.subunits.size()) {
+                gpm.add(GinasProcessingMessage
+                        .INFO_MESSAGE("Nucleic Acid Substance specifies more linkages than typically expected. This is typically done to specify a 5' phosphate, but is often sometimes done by accident."));
+            }
+            else if (unspLinkages < 0) {
+                gpm.add(GinasProcessingMessage
+                        .ERROR_MESSAGE("Nucleic Acid Substance has too many linkage sites specified."));
+            }
 
-				int unspLinkages = NucleicAcidUtils
-						.getNumberOfUnspecifiedLinkageSites(cs);
-				//This is meant to say you can't be MISSING a link between 2 sugars in an NA
-				if (unspLinkages >0) {
-					gpm.add(GinasProcessingMessage
-							.ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing "
-									+ unspLinkages + " sites."));
-					//Typically you can't also have an extra link (on the 5' end), but it's allowed
-				}else if(unspLinkages < 0 && unspLinkages >= -cs.nucleicAcid.subunits.size()){
-					gpm.add(GinasProcessingMessage
-							.INFO_MESSAGE("Nucleic Acid Substance specifies more linkages than typically expected. This is typically done to specify a 5' phosphate, but is often sometimes done by accident."));
-				}else if(unspLinkages < 0){
-					gpm.add(GinasProcessingMessage
-							.ERROR_MESSAGE("Nucleic Acid Substance has too many linkage sites specified."));
-				}
+        }
+        return gpm;
+    }
 
-		}
-		return gpm;
-	}
 
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareProtein(
 //            ProteinSubstance cs, ProteinSubstance old, GinasProcessingStrategy strat) {
@@ -1448,7 +1469,6 @@ public class ValidationUtils {
 //		}
 //		return gpm;
 //	}
-
 //	private static boolean sequenceHasChanged(ProteinSubstance cs, ProteinSubstance old) {
 //		if(old ==null){
 //			return true;
@@ -1666,8 +1686,6 @@ public class ValidationUtils {
 //
 //		return gpm;
 //	}
-
-
 //	public static class GinasValidationResponseBuilder<T> extends ValidationResponseBuilder<T> {
 //
 //		private final GinasProcessingStrategy _strategy;
@@ -1734,70 +1752,4 @@ public class ValidationUtils {
 //			return resp;
 //		}
 //	}
-
-//	public static List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance){
-//		Logger.trace("starting in findDefinitionaLayer1lDuplicateCandidates. ");
-//		List<Substance> candidates = new ArrayList<>();
-//		try	{
-//			String layer1Search = "root_definitional_hash_layer_1:"
-//											+ substance.getDefinitionalElements().getDefinitionalHashLayers().get(0);
-//			Logger.trace("	layer1Search: " + layer1Search);
-//			SearchResult sres = new SearchRequest.Builder()
-//							.simpleSearchOnly(true)
-//							.query(layer1Search)
-//							.kind(Substance.class)
-//							.fdim(0)
-//							.build()
-//							.execute();
-//			sres.waitForFinish();
-//			List<Substance> submatches = (List<Substance>) sres.getMatches();
-//			Logger.trace("size of initial match list in findDefinitionaLayer1lDuplicateCandidates: "
-//							+ submatches.size());
-//
-//			//return submatches.stream().filter(s -> !s.getUuid().equals(substance.getUuid())).collect(Collectors.toList());
-//			for (int i = 0; i < submatches.size(); i++)	{
-//				Substance s = submatches.get(i);
-//				if (s !=null && !s.getUuid().equals(substance.getUuid()))	{
-//					candidates.add(s);
-//				}
-//			}
-//		} catch (Exception ex){
-//			Logger.error("Error running query", ex);
-//		}
-//		return candidates;
-//	}
-
-//	public static List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance){
-//		List<Substance> candidates = new ArrayList<>();
-//		try	{
-//			Builder searchBuilder= new SearchRequest.Builder();
-//			List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
-//			int layer = hashes.size()-1;
-//			Logger.trace("handling layer: " + (layer+1));
-//				String searchItem = "root_definitional_hash_layer_" + (layer+1) + ":"
-//                                                                + hashes.get(layer);
-//				searchBuilder = searchBuilder.query(searchItem);
-//
-//			SearchResult sres = searchBuilder
-//							.kind(Substance.class)
-//							.simpleSearchOnly(true)
-//							.fdim(0)
-//							.build()
-//							.execute();
-//			sres.waitForFinish();
-//			List<Substance> submatches = (List<Substance>) sres.getMatches();
-//			Logger.trace("total submatches: " + submatches.size());
-//
-//			for (int i = 0; i < submatches.size(); i++)	{
-//				Substance s = submatches.get(i);
-//				if (!s.getUuid().equals(substance.getUuid()))	{
-//					candidates.add(s);
-//				}
-//			}
-//		} catch (Exception ex) {
-//			Logger.error("Error running query", ex);
-//		}
-//		return candidates;
-//	}
-
 }
