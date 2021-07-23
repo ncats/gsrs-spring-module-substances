@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.molwitch.Chemical;
+import gsrs.json.JsonEntityUtil;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.ParentReference;
 import ix.core.models.Structure;
@@ -30,7 +31,7 @@ public class JsonSubstanceFactory {
     public static Substance makeSubstance(JsonNode tree){
         Substance s= internalMakeSubstance(tree, null);
 
-        return fixOwners(s);
+        return JsonEntityUtil.fixOwners(s, true);
     }
 
     private static void setOwners(Object obj, boolean force){
@@ -65,20 +66,14 @@ public class JsonSubstanceFactory {
             }
         }
     }
-    public static Substance fixOwners(Substance s){
-        return fixOwners(s, false);
-    }
-    public static Substance fixOwners(Substance s, boolean force){
-        setOwners(s, force);
-        return s;
-    }
+
 
 
 
 
 
     public static Substance makeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
-        return fixOwners(internalMakeSubstance(tree, messages));
+        return JsonEntityUtil.fixOwners(internalMakeSubstance(tree, messages), true);
     }
     public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 

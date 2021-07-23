@@ -157,7 +157,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     protected Substance update(Substance substance) {
 //        controlledVocabulary.
 
-        JsonSubstanceFactory.fixOwners(substance, true);
+//        JsonSubstanceFactory.fixOwners(substance, true);
         //first bump version?
         substance.forceUpdate();
 
@@ -213,22 +213,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected Substance create(Substance substance) {
-        JsonSubstanceFactory.fixOwners(substance, true);
+
         try {
-//            EntityManager em = getEntityManager();
-//            Map<Object, Boolean> seen = new IdentityHashMap<>();
-//            //we might have detatched objects (like principals or new values etc)
-//            EntityUtils.EntityWrapper.of(substance).traverse().execute( (p,e)->{
-//                if(p.getDepth() !=0) {
-//                    if (e.isEntity()) {
-//                        Object o = e.getRawValue();
-//                        if (seen.put(o, Boolean.TRUE)==null && !em.contains(o)) {
-//                            System.out.println("merged "+ o);
-//                            em.merge(o);
-//                        }
-//                    }
-//                }
-//            });
             return repository.saveAndFlush(substance);
         }catch(Throwable t){
             t.printStackTrace();
