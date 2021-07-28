@@ -549,6 +549,9 @@ public class Structure extends BaseModel {
     @JsonView(BeanViews.Deprecated.class)
     @Deprecated
     public String getStereoChemistry() {
-        return Optional.ofNullable(this.stereoChemistry).map(ss->ss.toString()).orElse(null);
+        if(this.stereoChemistry ==null){
+            return null;
+        }
+        return this.stereoChemistry.toString();
     }
 }
