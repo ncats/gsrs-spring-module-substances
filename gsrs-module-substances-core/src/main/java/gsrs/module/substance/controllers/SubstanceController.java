@@ -589,13 +589,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Structure struc= structureProcessor.instrument(q);
 
 
-            if(store){
-
-                if(struc.id ==null){
-                    struc.id = UUID.randomUUID();
-                }
-                ixCache.setTemp(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
+        if(store){
+            if(struc.id ==null){
+                struc.id = UUID.randomUUID();
             }
+            ixCache.setTemp(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
+        }
         return Optional.of(struc);
     }
 
