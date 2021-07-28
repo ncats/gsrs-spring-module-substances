@@ -507,13 +507,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
 
-        Optional<Structure> structure = parseStructureQuery(q, true);
-        if(!structure.isPresent()){
+        Optional<Structure> structureOp = parseStructureQuery(q, true);
+        if(!structureOp.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
         }
+        Structure structure = structureOp.get();
+        
 
 
-        String cleaned = CtTableCleaner.clean(structure.get().molfile);
+        String cleaned = CtTableCleaner.clean(structure.molfile);
 
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
@@ -529,11 +531,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
         String hash=null;
+        
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            hash = "root_structure_properties_term:" + structure.get().getExactHash();
+            hash = "root_structure_properties_term:" + structure.getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
-            //note we purposefully don't have the lucene path so it finds moeities and polymers etc
-            hash= structure.get().getStereoInsensitiveHash();
+            //note we purposefully don't have the lucene path so it finds moieties and polymers etc
+            hash= structure.getStereoInsensitiveHash();
         }
 
         if(hash !=null){
@@ -542,7 +545,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
             attributes.addAttribute("q", hash);
+            attributes.addAttribute("includeBreakdown", false);
             //do a text search for that hash value?
+            // This technically breaks things, but is probably okay for now
+            //
             return new ModelAndView("redirect:/api/v1/substances/search");
         }
         SearchResultContext resultContext=null;
@@ -849,7 +855,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if (s.id == null){
             s.id = UUID.randomUUID();
         }
-        ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(s));
+        ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
 
     }
 

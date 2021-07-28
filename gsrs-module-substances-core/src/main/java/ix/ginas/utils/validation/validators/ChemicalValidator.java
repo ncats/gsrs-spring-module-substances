@@ -218,7 +218,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
             if (sr != null && !sr.isEmpty()) {
                 
-                //the duplicate check object should handle filtering out ourselves so don't need ot check anymore
+                //the duplicate check object should handle filtering out ourselves so don't need to check anymore
 
                 GinasProcessingMessage mes;
                 if(sr.size() > 1){
