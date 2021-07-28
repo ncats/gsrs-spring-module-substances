@@ -28,7 +28,8 @@ import org.springframework.context.annotation.Import;
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
-        ApprovalIdConfiguration.class
+        ApprovalIdConfiguration.class,
+        RendererOptionsConfig.class
 
 })
 public class SubstanceCoreConfiguration {

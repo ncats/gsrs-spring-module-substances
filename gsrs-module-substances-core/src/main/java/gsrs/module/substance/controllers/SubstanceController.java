@@ -13,6 +13,7 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
+import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
@@ -240,20 +241,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private SubstanceHierarchyFinder substanceHierarchyFinder;
 
-    @Value( "classpath:renderer.json")
-    private String renderOptionsJson;
 
-    private CachedSupplier<RendererOptions> rendererSupplier = CachedSupplier.of(()->{
-        if(renderOptionsJson !=null) {
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                return mapper.readValue(renderOptionsJson, RendererOptions.class);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        return new RendererOptions();
-    });
+    @Autowired
+    private RendererOptionsConfig rendererOptionsConfig;
+
+
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -1023,7 +1015,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             throws Exception {
 
         try {
-            RendererOptions rendererOptons = rendererSupplier.get().copy();
+            RendererOptions rendererOptons = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             if (newDisplay != null) {
 
