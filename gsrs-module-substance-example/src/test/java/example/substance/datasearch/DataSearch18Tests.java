@@ -1,12 +1,15 @@
 package example.substance.datasearch;
 
+import example.substance.AbstractSubstanceJpaEntityTest;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
+import ix.core.search.text.TextIndexerEntityListener;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
@@ -29,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 /**
@@ -39,8 +43,7 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 // 16 July based on recommdendtion from Danny K.
 @WithMockUser(username = "admin", roles = "Admin")
 @RecordApplicationEvents
-public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest
-{
+public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     private SubstanceLegacySearchService searchService;
@@ -48,22 +51,22 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest
     @Autowired
     private DefinitionalElementFactory definitionalElementFactory;
 
-    private boolean setup = false;
+    @Autowired
+    private TextIndexerEntityListener textIndexEntityLister;
 
+    
     @BeforeEach
     public void clearIndexers() throws IOException {
         System.out.println("clearIndexers");
-        if (!setup) {
 
-            File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
-            loadGsrsFile(dataFile);
-            setup = true;
-            //System.out.println("loaded rep18 data file");
-        }
+        File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
+        loadGsrsFile(dataFile);
+        //System.out.println("loaded rep18 data file");
     }
 
     @Test
-    public void testSearchByName() {
+    public void testSearchByName(@Autowired ApplicationEvents events) {
+        
         String name1 = "THIOFLAVIN S2";
         String idForName = "e92bc4ad-250a-4eef-8cd7-0b0b1e3b6cf0";
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
@@ -272,10 +275,18 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest
     }
 
     @Test
-    public void testDuplicates() {
+    public void testDuplicates(@Autowired ApplicationEvents events) {
+        events.stream(IndexCreateEntityEvent.class)
+                .forEach((event) -> {
+            try {
+                textIndexEntityLister.created(event);
+            } catch (Exception ex) {
+                Logger.getLogger(DataSearch18Tests.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        });
         System.out.println("starting in testDuplicates");
         Substance chemical = getSampleChemicalFromFile();
-        chemical.uuid=UUID.randomUUID();
+        chemical.uuid = UUID.randomUUID();
         substanceRepository.saveAndFlush(chemical);
         List<Substance> matches = findFullDefinitionalDuplicateCandidates(chemical);
         assertTrue(matches.size() > 0, "must find some duplicates");

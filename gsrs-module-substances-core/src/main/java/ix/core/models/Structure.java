@@ -237,6 +237,7 @@ public class Structure extends BaseModel {
     @JsonProperty("stereochemistry")
     public void setStereoChemistry(Stereo stereoChemistry) {
         this.stereoChemistry = stereoChemistry;
+       
     }
 
     @JsonProperty("stereochemistry")
@@ -244,7 +245,8 @@ public class Structure extends BaseModel {
     @Column(name = "stereo" )
     @Convert(converter = StereoConverter.class)
     public Stereo stereoChemistry;
-
+    
+    
     @Column(name = "optical")
     public Optical opticalActivity;
     
@@ -541,4 +543,15 @@ public class Structure extends BaseModel {
     }
 
 
+    
+    //Supporting legacy endpoints for API for backwards compatibility
+    @JsonProperty("stereoChemistry")
+    @JsonView(BeanViews.Deprecated.class)
+    @Deprecated
+    public String getStereoChemistry() {
+        if(this.stereoChemistry ==null){
+            return null;
+        }
+        return this.stereoChemistry.toString();
+    }
 }

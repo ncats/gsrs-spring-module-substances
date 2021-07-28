@@ -13,6 +13,7 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
+import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
@@ -240,20 +241,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private SubstanceHierarchyFinder substanceHierarchyFinder;
 
-    @Value( "classpath:renderer.json")
-    private String renderOptionsJson;
 
-    private CachedSupplier<RendererOptions> rendererSupplier = CachedSupplier.of(()->{
-        if(renderOptionsJson !=null) {
-            ObjectMapper mapper = new ObjectMapper();
-            try {
-                return mapper.readValue(renderOptionsJson, RendererOptions.class);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        return new RendererOptions();
-    });
+    @Autowired
+    private RendererOptionsConfig rendererOptionsConfig;
+
+
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -515,13 +507,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
 
-        Optional<Structure> structure = parseStructureQuery(q, true);
-        if(!structure.isPresent()){
+        Optional<Structure> structureOp = parseStructureQuery(q, true);
+        if(!structureOp.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
         }
+        Structure structure = structureOp.get();
+        
 
 
-        String cleaned = CtTableCleaner.clean(structure.get().molfile);
+        String cleaned = CtTableCleaner.clean(structure.molfile);
 
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
@@ -537,11 +531,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
         String hash=null;
+        
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            hash = "root_structure_properties_term:" + structure.get().getExactHash();
+            hash = "root_structure_properties_term:" + structure.getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
-            //note we purposefully don't have the lucene path so it finds moeities and polymers etc
-            hash= structure.get().getStereoInsensitiveHash();
+            //note we purposefully don't have the lucene path so it finds moieties and polymers etc
+            hash= structure.getStereoInsensitiveHash();
         }
 
         if(hash !=null){
@@ -550,7 +545,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
             attributes.addAttribute("q", hash);
+            attributes.addAttribute("includeBreakdown", false);
             //do a text search for that hash value?
+            // This technically breaks things, but is probably okay for now
+            //
             return new ModelAndView("redirect:/api/v1/substances/search");
         }
         SearchResultContext resultContext=null;
@@ -591,13 +589,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Structure struc= structureProcessor.instrument(q);
 
 
-            if(store){
-
-                if(struc.id ==null){
-                    struc.id = UUID.randomUUID();
-                }
-                ixCache.setTemp(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
+        if(store){
+            if(struc.id ==null){
+                struc.id = UUID.randomUUID();
             }
+            ixCache.setTemp(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
+        }
         return Optional.of(struc);
     }
 
@@ -857,7 +854,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if (s.id == null){
             s.id = UUID.randomUUID();
         }
-        ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().toJson(s));
+        ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
 
     }
 
@@ -1023,7 +1020,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             throws Exception {
 
         try {
-            RendererOptions rendererOptons = rendererSupplier.get().copy();
+            RendererOptions rendererOptons = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             if (newDisplay != null) {
 

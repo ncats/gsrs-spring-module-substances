@@ -13,6 +13,10 @@ public class SubstanceFieldNameDecorator implements FieldNameDecorator {
 	
 	//TODO: This is super ugly, should be somewhere nice, outside
 	//of the code-base altogether, and loaded in.
+	
+	//Tyler July 2021: Technically the data dictionary has information
+	//that could be used here by the UI if needed, but a lot of little things
+	//need to be reworked
 	static{
 			Map<String, String> m = new HashMap<>();
 			m.put("root_approvalID" , "Approval ID");
@@ -32,6 +36,7 @@ public class SubstanceFieldNameDecorator implements FieldNameDecorator {
 			m.put("root_names_languages_GInAS Language","Language Code"); 
 			m.put("root_mixture_components_substance_approvalID" , "Mixture Component ApprovalID"); 
 			m.put("root_mixture_components_substance_refPname" , "Mixture Component Name"); 
+			
 			m.put("root_mixture_components_type" , "Mixture Component Type"); 
 			m.put("root_moieties_structure_stereoChemistry" , "Moeity Stereochemistry"); 
 			m.put("root_moieties_structure_createdBy" , "Moiety Created By"); 
@@ -136,6 +141,10 @@ public class SubstanceFieldNameDecorator implements FieldNameDecorator {
 			m.put("root_structure_opticalActivity" , "Structure Optical Activity"); 
 			m.put("root_structure_stereoComments" , "Structure Stereo Comments"); 
 			m.put("root_substanceClass","Substance Class");
+			
+			//TODO: use data dictionary
+	        m.put("root_specifiedSubstance_constituents_substance_refPname" , "G1 Specified Substance Constituent Name");
+			
 			displayNames=m;
 	}
 

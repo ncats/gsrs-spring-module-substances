@@ -211,14 +211,14 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     private void validateStructureDuplicates(
             ChemicalSubstance cs, ValidatorCallback callback) {
-        List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 
         try {
 
             List<SubstanceReference> sr = chemicalDuplicateFinder.findPossibleDuplicatesFor(cs.asSubstanceReference());
 
             if (sr != null && !sr.isEmpty()) {
-                //the duplicate check object should handle filtering out ourselves so don't need ot check anymore
+                
+                //the duplicate check object should handle filtering out ourselves so don't need to check anymore
 
                 GinasProcessingMessage mes;
                 if(sr.size() > 1){
@@ -228,8 +228,9 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                 }
                 for (SubstanceReference s : sr) {
                     mes.addLink(createSubstanceLink(s));
-
+                    
                 }
+                callback.addMessage(mes);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -238,7 +239,13 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     private GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
         GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
-        l.href= GsrsLinkUtil.computeSelfLinkFor(entityLinks, Substance.class, s.getLinkingID()).getHref();
+        //TODO: it makes total sense that the REST API should return an API link, but it can't
+        //for backwards compatibility
+        
+//        l.href= GsrsLinkUtil.computeSelfLinkFor(entityLinks, Substance.class, s.getLinkingID()).getHref();
+        
+        l.href= "/app/substance/" + s.getLinkingID();
+        
         l.text="[" + s.refPname + "]" + s.getName();
 
         return l;

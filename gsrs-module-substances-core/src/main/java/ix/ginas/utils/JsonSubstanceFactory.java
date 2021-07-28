@@ -34,38 +34,8 @@ public class JsonSubstanceFactory {
         return JsonEntityUtil.fixOwners(s, true);
     }
 
-    private static void setOwners(Object obj, boolean force){
-        EntityUtils.EntityWrapper.of(obj)
-                        .traverse()
-                        .execute((parent, path, current)->{
-                            if(current==null || parent ==null){
-                                return;
-                            }
-                            Object currentObj = current.getValue();
 
-                                Class<?> aClass = currentObj.getClass();
-                                do {
-                                    setOwner(parent.getValue(), currentObj, aClass, force);
-                                    aClass = aClass.getSuperclass();
-                                } while (aClass != null);
 
-                        });
-    }
-
-    private static void setOwner(Object owner, Object obj, Class<?> aClass, boolean force) {
-        for(Field f : aClass.getDeclaredFields()){
-            f.setAccessible(true);
-            if(f.getAnnotation(ParentReference.class) !=null){
-                try {
-                    if (force || f.get(obj) == null) {
-                        f.set(obj, owner);
-                    }
-                }catch(IllegalAccessException e){
-                    Sneak.sneakyThrow(e);
-                }
-            }
-        }
-    }
 
 
 
