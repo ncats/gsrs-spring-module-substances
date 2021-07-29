@@ -38,8 +38,6 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 	{
 		LogUtil.trace(()->String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. class: %s ",
 						substance.getClass().getName()));
-        System.out.println(String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. class: %s ",
-						substance.getClass().getName()));
 		try
 		{
 			DefinitionalElements elements =  definitionalElementFactory.computeDefinitionalElementsFor(substance);

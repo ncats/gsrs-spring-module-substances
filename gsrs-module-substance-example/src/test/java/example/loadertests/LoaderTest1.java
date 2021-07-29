@@ -120,7 +120,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
     @WithMockUser(username = "admin", roles = "Admin")
     public void loadAsciiFile() throws Exception {
         //this input file is unzipped -- in text format
-        File dataFile1 = new ClassPathResource("testdumps/rep90").getFile();
+        File dataFile1 = new ClassPathResource("testdumps/rep90.txt").getFile();
         loadGsrsFile(dataFile1);
 
         String structure = "c1ccccc1";
