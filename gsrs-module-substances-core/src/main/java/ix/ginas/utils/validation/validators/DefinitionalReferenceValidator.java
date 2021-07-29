@@ -20,50 +20,50 @@ Make sure that a substance that is marked as public has at least one definitiona
 that is also marked public.
  */
 @Slf4j
-public class DefinitionalReferenceValidator extends AbstractValidatorPlugin<Substance>
-{
+public class DefinitionalReferenceValidator extends AbstractValidatorPlugin<Substance>{
 
-	@Override
-	public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
-		if (objnew.isPublic() && !objnew.substanceClass.equals(Substance.SubstanceClass.concept)) {
-			log.trace("in DefinitionalReferenceValidator with public substance.  class: " + objnew.substanceClass);
-			Stream<Reference> defRefs = getDefinitionalReferences(objnew);
-			boolean allowed = defRefs
-							.filter(Reference::isPublic)
-							.filter(Reference::isPublicDomain)
-							.findAny()
-							.isPresent();
-			log.trace("		allowed: " + allowed);
-			if (!allowed) {
-				callback.addMessage(GinasProcessingMessage
-								.ERROR_MESSAGE("Public substances require a public defintional reference.  Please add one."));
-
-			}
-		}
-	}
-
-	private Stream<Reference> getDefinitionalReferences(Substance sub) {
-		if (sub == null) {
-			log.debug("substance is null");
-			return Stream.empty();
-		}
-		Set<UUID> referenceIds = null;
-		GinasAccessControlled definitionalPart = (sub instanceof GinasSubstanceDefinitionAccess)
-						? ((GinasSubstanceDefinitionAccess) sub).getDefinitionElement() : null;
-
-		if (definitionalPart != null && definitionalPart instanceof GinasAccessReferenceControlled) {
-			log.trace("	definitionalPart not null");
-			referenceIds = ((GinasAccessReferenceControlled) definitionalPart).getReferencesAsUUIDs();
-		}
-		else {
-			log.warn("	definitionalPart not usable for references. ");
-		}
-
-		if (referenceIds != null && !referenceIds.isEmpty() && sub.references != null && !sub.references.isEmpty()) {
-			log.trace("in DefinitionalReferenceValidator.getDefinitionalReferences found some definitional references");
-			final Set<UUID> finalReferenceIds = referenceIds;
-			return sub.references.stream().filter(r -> finalReferenceIds.contains(r.uuid));
-		}
-		return Stream.empty();
-	}
+    @Override
+    public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
+        GinasAccessControlled definitionalPart = (objnew instanceof GinasSubstanceDefinitionAccess)
+                ? ((GinasSubstanceDefinitionAccess) objnew).getDefinitionElement() : null;
+        //we don't expect definitionalPart to be null but including a check just to be sure
+        if (objnew.isPublic() && !objnew.substanceClass.equals(Substance.SubstanceClass.concept)
+                && definitionalPart != null && definitionalPart.getAccess().isEmpty()
+                ) {
+            log.trace("in DefinitionalReferenceValidator with public substance.  class: " + objnew.substanceClass);
+            Stream<Reference> defRefs = getDefinitionalReferences(objnew);
+            boolean allowed = defRefs
+                            .filter(Reference::isPublic)
+                            .filter(Reference::isPublicDomain)
+                            .findAny()
+                            .isPresent();
+            log.trace("     allowed: " + allowed);
+            if (!allowed) {
+                callback.addMessage(GinasProcessingMessage
+                                .ERROR_MESSAGE("Public substance definitions require a public definitional reference.  Please add one."));
+            }
+        }
+    }
+    private Stream<Reference> getDefinitionalReferences(Substance sub) {
+        if (sub == null) {
+            log.debug("substance is null");
+            return Stream.empty();
+        }
+        Set<UUID> referenceIds = null;
+        GinasAccessControlled definitionalPart = (sub instanceof GinasSubstanceDefinitionAccess)
+                        ? ((GinasSubstanceDefinitionAccess) sub).getDefinitionElement() : null;
+        if (definitionalPart != null && definitionalPart instanceof GinasAccessReferenceControlled) {
+            log.trace(" definitionalPart not null");
+            referenceIds = ((GinasAccessReferenceControlled) definitionalPart).getReferencesAsUUIDs();
+        }
+        else {
+            log.warn("  definitionalPart not usable for references. ");
+        }
+        if (referenceIds != null && !referenceIds.isEmpty() && sub.references != null && !sub.references.isEmpty()) {
+            log.trace("in DefinitionalReferenceValidator.getDefinitionalReferences found some definitional references");
+            final Set<UUID> finalReferenceIds = referenceIds;
+            return sub.references.stream().filter(r -> finalReferenceIds.contains(r.uuid));
+        }
+        return Stream.empty();
+    }
 }
