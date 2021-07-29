@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.io.InputStreamSupplier;
 import gov.nih.ncats.common.sneak.Sneak;
+import gov.nih.ncats.common.yield.Yield;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GsrsControllerConfiguration;
@@ -63,6 +64,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -248,6 +250,18 @@ public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEnt
      * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
      * @throws IOException if there is a problem parsing the file.
      */
+    protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(Resource gsrsFile, Substance.SubstanceClass... substanceClasses) throws IOException {
+        return loadGsrsFile(gsrsFile.getFile(), substanceClasses);
+    }
+    /**
+     * Load the specially formatted GSRS format file (often with {@code .gsrs} extension although some
+     * GSRS 1.x verion files have the extension {@code .ginas}.  Either way, the file is a GZIPPED
+     * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
+     * with additional metadata.
+     * @param gsrsFile the GSRS file to load.
+     * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+     * @throws IOException if there is a problem parsing the file.
+     */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(Resource gsrsFile) throws IOException {
         return loadGsrsFile(gsrsFile.getFile());
     }
@@ -261,35 +275,104 @@ public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEnt
      * @throws IOException if there is a problem parsing the file.
      */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(File gsrsFile) throws IOException {
-        try(BufferedReader reader = new BufferedReader(new InputStreamReader( InputStreamSupplier.forFile(gsrsFile).get()))){
-            String line;
-            ObjectMapper mapper = new ObjectMapper();
+        return loadGsrsFile(gsrsFile, null);
+    }
+        /**
+         * Load the specially formatted GSRS format file (often with {@code .gsrs} extension although some
+         * GSRS 1.x verion files have the extension {@code .ginas}.  Either way, the file is a GZIPPED
+         * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
+         * with additional metadata.
+         * @param gsrsFile the GSRS file to load.
+         * @param substanceClasses a list of {@link ix.ginas.models.v1.Substance.SubstanceClass}es to include.
+         *                         only the records in the given file of these kinds will be loaded.
+         *                         If this var args is empty or null then all records in the file will be loaded.
+         * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+         * @throws IOException if there is a problem parsing the file.
+         */
+    protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(File gsrsFile, Substance.SubstanceClass... substanceClasses) throws IOException {
+
             TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
             List<GsrsEntityService.CreationResult<Substance>> list = new ArrayList<>();
-            Pattern gsrsFilePattern = Pattern.compile("\t");
-            while( (line=reader.readLine()) !=null){
-                if(line.isEmpty() || line.startsWith("#")){
-                    //skip
-                    continue;
-                }
-                String[] cols = gsrsFilePattern.split(line);
-                JsonNode json = mapper.readTree(cols[2]);
-                list.add(transactionTemplate.execute(status ->{
-                    try {
-                        GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json);
-                        //full fetch
-                        if(result.isCreated()){
-                            result.getCreatedEntity().toFullJsonNode();
+
+        yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses)
+                .forEach(json->{
+                    list.add(transactionTemplate.execute(status ->{
+                        try {
+                            GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json);
+                            //full fetch
+                            if(result.isCreated()){
+                                result.getCreatedEntity().toFullJsonNode();
+                            }
+                            return result;
+                        }catch(IOException e){
+                            return Sneak.sneakyThrow(e);
                         }
-                        return result;
-                    }catch(IOException e){
-                        return Sneak.sneakyThrow(e);
-                    }
-                }));
-            }
+                    }));
+                });
+
+
             return list;
-        }
+
+    }
+
+
+    /**
+     * Parse a Gsrs encoded Spring Resource object and return a {@link Yield}
+     * for each JsonNode parsed object.
+     * @param gsrsFile the file to parse.
+     * @param substanceClasses a list of {@link ix.ginas.models.v1.Substance.SubstanceClass}es to include.
+     *          only the records in the given file of these kinds will be included in the Yield.
+     *          If this var args is empty or null then all records in the file will be included.
+     * @return a {@link Yield}
+     * @throws IOException
+     */
+    protected Yield<JsonNode> yieldSubstancesFromGsrsFile(Resource gsrsFile,Substance.SubstanceClass... substanceClasses) throws IOException{
+        return yieldSubstancesFromGsrsFile(gsrsFile.getFile(), substanceClasses);
+    }
+
+    protected Yield<JsonNode> yieldSubstancesFromGsrsFile(File gsrsFile, Substance.SubstanceClass... substanceClass){
+        Yield<JsonNode> yield=null;
+
+        yield = Yield.create(r->{
+                String line;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(InputStreamSupplier.forFile(gsrsFile).get()))) {
+
+                ObjectMapper mapper = new ObjectMapper();
+                Pattern gsrsFilePattern = Pattern.compile("\t");
+                    while ((line = reader.readLine()) != null) {
+                        if (line.isEmpty() || line.startsWith("#")) {
+                            //skip
+                            continue;
+                        }
+                        String[] cols = gsrsFilePattern.split(line);
+                        String json = cols[2];
+                        boolean include=true;
+                        if(substanceClass !=null && substanceClass.length >0){
+                            include=false;
+                            for(Substance.SubstanceClass c : substanceClass){
+                                if(json.contains("\"substanceClass\":\""+c.jsonValue()+ "\"")){
+                                    include=true;
+                                    break;
+                                }
+                            }
+                        }
+                        if(!include){
+                            continue;
+                        }
+                        r.returning(mapper.readTree(json));
+
+                    }
+                }catch(IOException e){
+                    Sneak.sneakyThrow(e);
+                }finally{
+                    r.signalComplete();
+                }
+
+            });
+
+
+    return yield;
     }
     protected Substance assertCreated(JsonNode json){
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
