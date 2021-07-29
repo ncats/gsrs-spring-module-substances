@@ -13,11 +13,10 @@ public class GsrsSubstanceControllerUtil {
 
         if(json !=null){
             try {
-                return Optional.of(EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().readValue(json, objectClass));
+                return Optional.of(EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().readValue(json, objectClass));
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
-
         }
         return Optional.empty();
     }
