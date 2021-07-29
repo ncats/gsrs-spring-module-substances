@@ -44,10 +44,9 @@ import org.junit.jupiter.api.BeforeEach;
  * @author mitch
  */
 //Changed base clas from AbstractSubstanceJpaFullStackEntityTest to AbstractSubstanceJpaEntityTest
-// 16 July based on recommdendtion from Danny K.
+// 16 July based on recommendation from Danny K.
 @WithMockUser(username = "admin", roles = "Admin")
-public class DataSearchTests extends AbstractSubstanceJpaFullStackEntityTest
-{
+public class DataSearchTests extends AbstractSubstanceJpaFullStackEntityTest{
 
     @Autowired
     private StructureIndexerService indexer;
