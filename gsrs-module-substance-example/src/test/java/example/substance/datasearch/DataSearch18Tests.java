@@ -1,11 +1,26 @@
 package example.substance.datasearch;
 
+<<<<<<< HEAD
 import example.substance.AbstractSubstanceJpaEntityTest;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.services.DefinitionalElementFactory;
+=======
+
+import com.fasterxml.jackson.databind.JsonNode;
+import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.substance.AbstractSubstanceJpaEntityTest;
+import gsrs.indexer.IndexCreateEntityEvent;
+import gsrs.legacy.structureIndexer.StructureIndexerEventListener;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.definitional.DefinitionalElements;
+import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
+import gsrs.module.substance.services.DefinitionalElementFactory;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.TestIndexValueMakerFactory;
+>>>>>>> master
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
@@ -13,6 +28,10 @@ import ix.core.search.text.TextIndexerEntityListener;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
+<<<<<<< HEAD
+=======
+import org.springframework.context.annotation.Bean;
+>>>>>>> master
 import org.springframework.transaction.support.TransactionTemplate;
 import java.io.File;
 import java.io.IOException;
@@ -40,9 +59,14 @@ import org.springframework.test.context.event.RecordApplicationEvents;
  * @author mitch
  */
 //Changed base clas from AbstractSubstanceJpaFullStackEntityTest to AbstractSubstanceJpaEntityTest
+<<<<<<< HEAD
 // 16 July based on recommdendtion from Danny K.
 @WithMockUser(username = "admin", roles = "Admin")
 @RecordApplicationEvents
+=======
+// 16 July based on recommendation from Danny K.
+@WithMockUser(username = "admin", roles = "Admin")
+>>>>>>> master
 public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
@@ -54,24 +78,49 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private TextIndexerEntityListener textIndexEntityLister;
 
+<<<<<<< HEAD
     
     @BeforeEach
     public void clearIndexers() throws IOException {
         System.out.println("clearIndexers");
 
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
+=======
+    @Autowired
+    private TestIndexValueMakerFactory testIndexValueMakerFactory;
+
+    @Autowired
+    private StructureIndexerEventListener structureIndexerEventListener;
+
+    private String fileName= "rep18.gsrs";
+
+    @BeforeEach
+    public void clearIndexers() throws IOException {
+        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+        AutowireHelper.getInstance().autowire(hashIndexer);
+        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+        System.out.println("clearIndexers");
+
+        File dataFile = new ClassPathResource(fileName).getFile();
+>>>>>>> master
         loadGsrsFile(dataFile);
         //System.out.println("loaded rep18 data file");
     }
 
     @Test
+<<<<<<< HEAD
     public void testSearchByName(@Autowired ApplicationEvents events) {
         
+=======
+    public void testSearchByName() {
+
+>>>>>>> master
         String name1 = "THIOFLAVIN S2";
         String idForName = "e92bc4ad-250a-4eef-8cd7-0b0b1e3b6cf0";
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         List<Substance> substances = transactionSearch.execute(ts -> {
 
+<<<<<<< HEAD
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
                     .fdim(0)
@@ -110,11 +159,39 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 throw new RuntimeException(ex);
             }
         }
+=======
+                    SearchRequest request = new SearchRequest.Builder()
+                            .kind(Substance.class)
+                            .fdim(0)
+                            .query("root_names_name:\"" + name1 + "\"")
+                            .top(Integer.MAX_VALUE)
+                            .build();
+                    System.out.println("query: " + request.getQuery());
+                    try {
+                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
+                        sr.waitForFinish();
+
+                        List futureList = sr.getMatches();
+                        Stream<Substance> stream = futureList
+                                .stream();
+                        return stream.collect(Collectors.toList());
+
+                    } catch (Exception ex) {
+                        System.err.println("error in lambda");
+                        ex.printStackTrace();
+                        throw new RuntimeException(ex);
+                    }
+                }
+>>>>>>> master
         );
         /*
         as of 21 July 2021, I am puzzled by the inability to get a List<String> directly from
         transactionSearch.execute.
+<<<<<<< HEAD
         the IDE accepts the code like 
+=======
+        the IDE accepts the code like
+>>>>>>> master
             List<String> ids = transactionSearch.execute.....
                 with a lambda that returns a List<String>
         but there's a runtime class cast exception.
@@ -134,6 +211,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         List<Substance> substances = transactionSearch.execute(ts -> {
 
+<<<<<<< HEAD
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
                     .fdim(0)
@@ -154,6 +232,28 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 throw new RuntimeException(ex);
             }
         }
+=======
+                    SearchRequest request = new SearchRequest.Builder()
+                            .kind(Substance.class)
+                            .fdim(0)
+                            .query("root_approvalID:\"" + approvalID1 + "\"")
+                            .top(Integer.MAX_VALUE)
+                            .build();
+                    System.out.println("query: " + request.getQuery());
+                    try {
+                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
+                        sr.waitForFinish();
+
+                        Stream<Substance> stream = sr.getMatches()
+                                .stream();
+                        return stream.collect(Collectors.toList());
+                    } catch (Exception ex) {
+                        System.err.println("error in lambda");
+                        ex.printStackTrace();
+                        throw new RuntimeException(ex);
+                    }
+                }
+>>>>>>> master
         );
         System.out.println("substances size: " + substances.size());
         String actualId = substances.stream()
@@ -173,6 +273,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         List<Substance> substances = transactionSearch.execute(ts -> {
 
+<<<<<<< HEAD
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
                     .fdim(0)
@@ -193,6 +294,28 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 throw new RuntimeException(ex);
             }
         }
+=======
+                    SearchRequest request = new SearchRequest.Builder()
+                            .kind(Substance.class)
+                            .fdim(0)
+                            .query("root_codes_codeSystem:\"" + codeSystem1 + "\"")
+                            .top(Integer.MAX_VALUE)
+                            .build();
+                    System.out.println("query: " + request.getQuery());
+                    try {
+                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
+                        sr.waitForFinish();
+
+                        Stream<Substance> stream = sr.getMatches()
+                                .stream();
+                        return stream.collect(Collectors.toList());
+                    } catch (Exception ex) {
+                        System.err.println("error in lambda");
+                        ex.printStackTrace();
+                        throw new RuntimeException(ex);
+                    }
+                }
+>>>>>>> master
         );
         System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
@@ -212,6 +335,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         List<Substance> substances = transactionSearch.execute(ts -> {
 
+<<<<<<< HEAD
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
                     .fdim(0)
@@ -233,6 +357,29 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 throw new RuntimeException(ex);
             }
         }
+=======
+                    SearchRequest request = new SearchRequest.Builder()
+                            .kind(Substance.class)
+                            .fdim(0)
+                            .query("root_codes_codeSystem:\"" + codeSystem1 + "\"  AND root_substanceClass:\""
+                                    + substanceClass + "\"")
+                            .top(Integer.MAX_VALUE)
+                            .build();
+                    System.out.println("query: " + request.getQuery());
+                    try {
+                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
+                        sr.waitForFinish();
+
+                        Stream<Substance> stream = sr.getMatches()
+                                .stream();
+                        return stream.collect(Collectors.toList());
+                    } catch (Exception ex) {
+                        System.err.println("error in lambda");
+                        ex.printStackTrace();
+                        throw new RuntimeException(ex);
+                    }
+                }
+>>>>>>> master
         );
         System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
@@ -249,6 +396,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         List<Substance> substances = transactionSearch.execute(ts -> {
 
+<<<<<<< HEAD
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
                     .fdim(0)
@@ -269,12 +417,35 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
             }
 
         }
+=======
+                    SearchRequest request = new SearchRequest.Builder()
+                            .kind(Substance.class)
+                            .fdim(0)
+                            .query("root_substanceClass:\"" + substanceClass + "\"")
+                            .top(Integer.MAX_VALUE)
+                            .build();
+                    System.out.println("query: " + request.getQuery());
+                    try {
+                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
+                        sr.waitForFinish();
+
+                        List futureList = sr.getMatches();
+                        Stream<Substance> stream = futureList
+                                .stream();
+                        return stream.collect(Collectors.toList());
+                    } catch (Exception ex) {
+                        throw new RuntimeException(ex);
+                    }
+
+                }
+>>>>>>> master
         );
         substances.forEach(s -> System.out.println("substance with ID " + s.uuid));
         assertEquals(expectedNumber, substances.size());
     }
 
     @Test
+<<<<<<< HEAD
     public void testDuplicates(@Autowired ApplicationEvents events) {
         events.stream(IndexCreateEntityEvent.class)
                 .forEach((event) -> {
@@ -288,6 +459,11 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         Substance chemical = getSampleChemicalFromFile();
         chemical.uuid = UUID.randomUUID();
         substanceRepository.saveAndFlush(chemical);
+=======
+    public void testDuplicates() {
+        Substance chemical = getSampleChemicalFromFile();
+        chemical.uuid = UUID.randomUUID();
+>>>>>>> master
         List<Substance> matches = findFullDefinitionalDuplicateCandidates(chemical);
         assertTrue(matches.size() > 0, "must find some duplicates");
     }
@@ -363,9 +539,18 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     private Substance getSampleChemicalFromFile() {
         try {
+<<<<<<< HEAD
             File chemicalFile = new ClassPathResource("testJSON/editChemical.json").getFile();
             ChemicalSubstanceBuilder builder = SubstanceBuilder.from(chemicalFile);
             System.out.println("first name of read-in chem: " + builder.build().names.get(0).name);
+=======
+            File chemicalFile = new ClassPathResource(fileName).getFile();
+            JsonNode json = yieldSubstancesFromGsrsFile(chemicalFile, Substance.SubstanceClass.chemical)
+
+                    .stream().findFirst().get();
+            ChemicalSubstanceBuilder builder = SubstanceBuilder.from(json);
+
+>>>>>>> master
             return builder.build();
         } catch (IOException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);

@@ -106,7 +106,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
 
         String pathToLoadFile = System.getProperty("ix.ginas.load.file");
-        if (pathToLoadFile != null) {
+        if (pathToLoadFile != null && substanceRepository.count()==0) {
             File f = new File(pathToLoadFile);
             if(f.exists()) {
                 UserProfile up = userProfileRepository.findByUser_Username("admin");
