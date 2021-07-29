@@ -8,7 +8,6 @@ import gov.nih.ncats.common.yield.Yield;
 import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
@@ -21,7 +20,6 @@ import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
-import gsrs.startertests.jupiter.ClearAuditorBeforeEachExtension;
 import gsrs.startertests.jupiter.ResetAllEntityServicesBeforeEachExtension;
 import ix.core.models.Group;
 import ix.core.models.Principal;
@@ -30,16 +28,12 @@ import ix.core.models.UserProfile;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
-import ix.seqaln.service.SequenceIndexerService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -64,19 +58,24 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Parent Super-class of that should be used to
+ * test Substances interacting with a test database.
+ * Subclasses will have further configurations for different
+ * granularity tests unit vs end to end etc.
+ */
 @ActiveProfiles("test")
 @ContextConfiguration(classes = { GsrsEntityTestConfiguration.class, GsrsControllerConfiguration.class},
-        initializers= { AbstractSubstanceJpaEntityTest2.Initializer.class}
+        initializers= { AbstractSubstanceJpaEntityTestSuperClas.Initializer.class}
 )
 //@SpringBootTest
 
 @Import({AbstractSubstanceJpaEntityTest.TestConfig.class,  GsrsSubstanceModuleAutoConfiguration.class})
-public abstract class AbstractSubstanceJpaEntityTest2 extends AbstractGsrsJpaEntityJunit5Test {
+public abstract class AbstractSubstanceJpaEntityTestSuperClas extends AbstractGsrsJpaEntityJunit5Test {
     @TestConfiguration
 //    @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
     public static class TestConfig{

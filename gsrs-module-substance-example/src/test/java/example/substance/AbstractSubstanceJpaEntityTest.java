@@ -8,7 +8,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 @GsrsJpaTest
-public abstract class AbstractSubstanceJpaEntityTest extends AbstractSubstanceJpaEntityTest2 {
+public abstract class AbstractSubstanceJpaEntityTest extends AbstractSubstanceJpaEntityTestSuperClas {
 
     @Autowired
     protected TestEntityManager entityManager;
