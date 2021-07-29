@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Import;
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
         ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class
 
+
 })
 public class SubstanceCoreConfiguration {
 }
