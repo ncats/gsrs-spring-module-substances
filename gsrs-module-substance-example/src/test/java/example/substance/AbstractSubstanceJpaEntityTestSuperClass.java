@@ -70,12 +70,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @ActiveProfiles("test")
 @ContextConfiguration(classes = { GsrsEntityTestConfiguration.class, GsrsControllerConfiguration.class},
-        initializers= { AbstractSubstanceJpaEntityTestSuperClas.Initializer.class}
+        initializers= { AbstractSubstanceJpaEntityTestSuperClass.Initializer.class}
 )
 //@SpringBootTest
 
 @Import({AbstractSubstanceJpaEntityTest.TestConfig.class,  GsrsSubstanceModuleAutoConfiguration.class})
-public abstract class AbstractSubstanceJpaEntityTestSuperClas extends AbstractGsrsJpaEntityJunit5Test {
+public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractGsrsJpaEntityJunit5Test {
     @TestConfiguration
 //    @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
     public static class TestConfig{

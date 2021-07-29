@@ -10,7 +10,7 @@ import javax.persistence.EntityManager;
 
 @SpringBootTest(classes = {GsrsModuleSubstanceApplication.class})
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
-public abstract class AbstractSubstanceJpaFullStackEntityTest extends AbstractSubstanceJpaEntityTestSuperClas {
+public abstract class AbstractSubstanceJpaFullStackEntityTest extends AbstractSubstanceJpaEntityTestSuperClass {
     @Autowired
     protected EntityManager entityManager;
 
