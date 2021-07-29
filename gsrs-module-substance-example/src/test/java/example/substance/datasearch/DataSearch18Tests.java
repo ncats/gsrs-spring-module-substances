@@ -73,7 +73,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
         testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        System.out.println("clearIndexers");
+//        System.out.println("clearIndexers");
 
         File dataFile = new ClassPathResource(fileName).getFile();
         loadGsrsFile(dataFile);
