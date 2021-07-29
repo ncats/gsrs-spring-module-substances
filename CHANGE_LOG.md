@@ -7,7 +7,8 @@
   If not overridden by client conf, the default is specified in substances-core.conf is 
   `substance.renderer.configPath="substances-default-renderer.json"`.
   
-### 
+### Initial Substance Loader
+* gsrs file specified by property ix.ginas.load.file only loaded now if substance table is empty
 ### Testing
   * added new helper methods to `AbstractSubstanceJpaEntityTestSuperClass` to pull out
     filtered JSON records from gsrs encoded files either as a Stream or as a Yield. optional 
