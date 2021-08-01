@@ -42,9 +42,6 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
     private RelationshipRepository relationshipRepository;
 
     @Autowired
-    private RelationshipProcessor relationshipProcessor;
-
-    @Autowired
     private EntityPersistAdapter entityPersistAdapter;
 
     @Autowired
@@ -74,9 +71,6 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                             .relationshipIdToInvert(r.uuid)
                             .build()
                     );
-//            relationshipProcessor.createAndAddInvertedRelationship(r,
-//                    r.fetchOwner().asSubstanceReference(),
-//                    obj);
 
         }
     }
