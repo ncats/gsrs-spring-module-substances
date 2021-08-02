@@ -64,7 +64,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             Substance owner = r.fetchOwner();
             eventPublisher.publishEvent(
                     CreateInverseRelationshipEvent.builder()
-                            .forceCreation(true)
+                            .creationMode(CreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
                             .originatorSubstance(owner.uuid)
                             .toSubstance(owner.uuid)
                             .fromSubstance(obj.uuid)
@@ -77,7 +77,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
 
     @Override
-//    @Transactional
+    @Transactional
     public void prePersist(final Substance s) {
         savingSubstance(s, true);
     }
