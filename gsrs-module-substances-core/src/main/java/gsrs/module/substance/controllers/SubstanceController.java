@@ -813,7 +813,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 
                 ArrayNode an = mapper.createArrayNode();
                 for (Structure m : moieties) {
-                    // m.save();
                     saveTempStructure(m);
                     ObjectNode on = mapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
@@ -831,7 +830,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 Collection<PolymerDecode.StructuralUnit> o = PolymerDecode.DecomposePolymerSU(payload, true);
                 for (PolymerDecode.StructuralUnit su : o) {
                     Structure struc = structureProcessor.instrument(su.structure, null, false);
-                    // struc.save();
                     saveTempStructure(struc);
                     su._structure = struc;
                 }

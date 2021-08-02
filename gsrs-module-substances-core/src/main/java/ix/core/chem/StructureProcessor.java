@@ -123,7 +123,9 @@ public class StructureProcessor {
         boolean standardize = settings.isStandardize();
         boolean query = settings.isQuery();
 
-
+        if(mol.hasQueryAtoms()) {
+            query=true; 
+        }
 
         CachedSupplier<String> molSupplier = CachedSupplier.of(new Supplier<String>() {
             public String get(){
@@ -139,7 +141,7 @@ public class StructureProcessor {
             struc.digest = digest (molSupplier.get());
 
         }
-//katzelda this probably isn't needed anymore since now settings.getChemical should
+        //katzelda this probably isn't needed anymore since now settings.getChemical should
         //compute coords if needed ??
         if (!mol.hasCoordinates()) {
             try {
@@ -156,10 +158,10 @@ public class StructureProcessor {
             	try{
             		struc.smiles = mol.toSmiles();
             	}catch(Exception e2){
-                struc.smiles = mol.toSmarts();
+            	    struc.smiles = mol.toSmarts();
             	}
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         }
 
@@ -177,6 +179,7 @@ public class StructureProcessor {
         molSupplier.resetCache();
         if(!query){
 
+            
             struc.molfile = molSupplier.get();
         }
 
@@ -216,46 +219,20 @@ public class StructureProcessor {
         }
         }
 
-        String standardizedMol=null;
-        boolean updatedMol=false;
-
-        Chemical stdMol = mol;
+        Chemical stdMol = mol.copy();
         if (standardize) {
-
             try {
-
                 stdMol = standardizer.standardize(mol, molSupplier, struc.properties::add);
-                if (stdMol != mol) {
-                    standardizedMol = stdMol.toMol();
-                    updatedMol = true;
-
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
                 log.error("Can't standardize structure", e);
             }
         }
-        if(!updatedMol){
-            standardizedMol = molSupplier.get();
-        }
-
-
-
-        // TP: commented out standardization, and 2 moiety limit.
-        // the unfortunate side effect was to strip waters
-
-        // Also, probably better to be err on the side of
-        // preserving user input
-
-        // break this structure into its individual components
-        //System.out.print(mol.toFormat("mol"));
-//        String standardizedMol = stdmol.toFormat("mol");
-//        List<Chemical> frags;
-//        try {
-//            frags = Chemical.parseMol(standardizedMol).connectedComponentsAsStream().collect(Collectors.toList());
-//        }catch(IOException e){
-//            throw new UncheckedIOException(e);
+//        if(!updatedMol){
+//            standardizedMol = molSupplier.get();
 //        }
+
+
+
 
         //Note that this currently uses the non-standardized structure instead of the standardized one.
         //This is currently intentional, as the standardized structure does some charge balancing that might be unexpected.
@@ -308,7 +285,7 @@ public class StructureProcessor {
             });
 
         }catch(Exception e){
-            e.printStackTrace();
+            log.error("Error making structure hash", e);
         }
 
 
@@ -319,15 +296,15 @@ public class StructureProcessor {
         //struc.formula = mol.getFormula();
 
 
-
-//        if(!mol.hasQueryAtoms() && !mol.hasPseudoAtoms()) {
         Chem.setFormula(struc);
         struc.setMwt(mol.getMass());
-//        }
-        if(!query){
-            struc.smiles = standardizer.canonicalSmiles(struc, struc.molfile);
-        }
 
+        if(!query){
+            try {
+                struc.smiles = standardizer.canonicalSmiles(struc, struc.molfile);
+            }catch(Exception e) {}
+        }
+        
         calcStereo (struc);
 
 
