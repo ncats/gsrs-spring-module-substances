@@ -3,7 +3,6 @@ package gsrs.module.substance.processors;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.EntityPersistAdapter;
-import gsrs.module.substance.services.RelationshipService;
 import ix.core.EntityProcessor;
 
 import ix.ginas.models.v1.Relationship;
@@ -63,8 +62,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         for(Relationship r:refrel){
             Substance owner = r.fetchOwner();
             eventPublisher.publishEvent(
-                    CreateInverseRelationshipEvent.builder()
-                            .creationMode(CreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
+                    TryToCreateInverseRelationshipEvent.builder()
+                            .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
                             .originatorSubstance(owner.uuid)
                             .toSubstance(owner.uuid)
                             .fromSubstance(obj.uuid)

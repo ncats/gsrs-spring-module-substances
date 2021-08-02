@@ -3,7 +3,7 @@ package gsrs.module.substance.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
 import gsrs.EntityPersistAdapter;
-import gsrs.module.substance.processors.CreateInverseRelationshipEvent;
+import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
 import gsrs.module.substance.processors.UpdateInverseRelationshipEvent;
 import gsrs.module.substance.repository.RelationshipRepository;
@@ -17,7 +17,6 @@ import ix.ginas.models.utils.RelationshipUtil;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.SubstanceReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -273,7 +272,7 @@ public class RelationshipService {
 
     }
 
-    public void createNewInverseRelationshipFor(CreateInverseRelationshipEvent event) {
+    public void createNewInverseRelationshipFor(TryToCreateInverseRelationshipEvent event) {
         if (event.getFromSubstance() == null) {
             //TODO: Look into this
            return;

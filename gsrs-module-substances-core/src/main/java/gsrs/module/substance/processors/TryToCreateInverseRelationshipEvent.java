@@ -10,11 +10,20 @@ import lombok.NoArgsConstructor;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Event signaling that a bi-directional {@link Relationship}
+ * was created and an inverse- relationship
+ * with the following properties Should be attempted
+ * to be created.  These Events are published
+ * without the ability to check if this inverse already
+ * exists or not so care should be made to confirm
+ * new entities should be persisted.
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateInverseRelationshipEvent {
+public class TryToCreateInverseRelationshipEvent {
 
     private UUID toSubstance;
 

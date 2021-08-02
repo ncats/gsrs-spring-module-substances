@@ -1,20 +1,11 @@
 package gsrs.module.substance.processors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gov.nih.ncats.common.Tuple;
-import gsrs.EntityPersistAdapter;
 import ix.core.EntityProcessor;
 
-import ix.core.models.Edit;
-import ix.core.models.Keyword;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
-
 import ix.core.util.SemaphoreCounter;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
@@ -22,14 +13,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -103,7 +91,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 		transactionTemplate.executeWithoutResult( stauts -> {
 			if (thisRelationship.isAutomaticInvertible()) {
-				CreateInverseRelationshipEvent event = new CreateInverseRelationshipEvent();
+				TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
 				final Substance thisSubstance = thisRelationship.fetchOwner();
 				event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
 				event.setToSubstance(thisSubstance.getOrGenerateUUID());
@@ -114,7 +102,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 					event.setFromSubstance(UUID.fromString(otherSubstanceReference.refuuid));
 
 				}
-				event.setCreationMode(CreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
+				event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
 //			UUID newUUID = UUID.randomUUID();
 //			event.setNewRelationshipId(newUUID);
 				eventPublisher.publishEvent(event);
@@ -250,14 +238,14 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	private Relationship createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub, boolean force){
 		//doesn't exist yet
 		if(obj.isAutomaticInvertible()) {
-			CreateInverseRelationshipEvent event = new CreateInverseRelationshipEvent();
+			TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
 			event.setRelationshipIdToInvert(obj.getOrGenerateUUID());
 			event.setToSubstance(oldSub.getOrGenerateUUID());
 			event.setOriginatorSubstance(oldSub.getOrGenerateUUID());
 			if (newSub != null) {
 				event.setFromSubstance(newSub.getOrGenerateUUID());
 			}
-			event.setCreationMode(CreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
+			event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
 //			UUID newUUID = UUID.randomUUID();
 //			event.setNewRelationshipId(newUUID);
 			eventPublisher.publishEvent(event);
