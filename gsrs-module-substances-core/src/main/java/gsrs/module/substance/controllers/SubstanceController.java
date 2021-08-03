@@ -791,14 +791,26 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
            .map(std->std.getStandardizer())
            .reduce(SimpleStandardizer::and).orElse(null);
         
+        String mode = Optional.ofNullable(queryParameters.get("mode"))
+                .orElse("default");
+        
+        boolean isQuery="query".equalsIgnoreCase(mode);
+        
+        
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
             ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
             ObjectNode node = mapper.createObjectNode();
             try {
-                Structure struc = structureProcessor.instrument(payload, moieties, false); // don't
-                // standardize!
+                Structure struc = structureProcessor.taskFor(payload)
+                                                    .components(moieties)
+                                                    .standardize(false)
+                                                    .query(isQuery)
+                                                    .build()
+                                                    .instrument()
+                                                    .getStructure(); 
+                // don't standardize!
                 // we should be really use the PersistenceQueue to do this
                 // so that it doesn't block
                 // in fact, it probably shouldn't be saving this at all

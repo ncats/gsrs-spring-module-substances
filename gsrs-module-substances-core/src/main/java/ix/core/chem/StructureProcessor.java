@@ -62,26 +62,36 @@ public class StructureProcessor {
         return instrument (mol, components, true);
     }
 
-    public Structure instrument
-            (String mol, Collection<Structure> components, boolean standardize) {
+    public StructureProcessorTask.Builder taskFor(String mol) throws Exception {
         Structure struc = new Structure();
         struc.digest = digest (mol);
         try {
-            instrument (struc, components, Chemical.parse(mol), standardize);
-        }catch (Exception ex) {
-            ex.printStackTrace();
-            System.err.println("Trouble reading structure:");
-            System.err.println(mol);
-            System.err.println("Attempting to eliminate SGROUPS");
+            return new StructureProcessorTask.Builder()
+                    .structure(struc)
+                    .mol(mol)
+                    .processor(this);
+            
+        }catch(Exception e) {
             String nmol = ChemCleaner.removeSGroupsAndLegacyAtomLists(mol);
-            try{
-                instrument (struc, components, Chemical.parse(nmol), standardize);
-            }catch(Exception e){
-                System.err.println("Attempt failed");
-                throw new IllegalArgumentException (e);
-            }
+            return new StructureProcessorTask.Builder()
+                    .structure(struc)
+                    .mol(nmol)
+                    .processor(this);
         }
-        return struc;
+    }
+    public StructureProcessorTask.Builder taskFor(String mol, Collection<Structure> components, boolean standardize) throws Exception {
+        return taskFor(mol).components(components).standardize(false);
+    }
+    
+    public Structure instrument
+            (String mol, Collection<Structure> components, boolean standardize) {
+        try {
+            StructureProcessorTask task = taskFor(mol, components, standardize).build();
+            task.instrument();
+            return task.getStructure();
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Structure instrument (Chemical mol) {
@@ -331,9 +341,11 @@ public class StructureProcessor {
             return chem;
         }
     }
+    
+    
 
     /**
-     * This should return a decomposed version of a structure for G-SRS.
+     * This should return a decomposed version of a structure for GSRS.
      *
      * This means that a molfile should come back with moieties
      * and a structure, with statistics and predicted stereo

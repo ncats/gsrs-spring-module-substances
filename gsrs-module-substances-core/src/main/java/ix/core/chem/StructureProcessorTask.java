@@ -54,6 +54,17 @@ public class StructureProcessorTask {
 		this.components = components;
 	}
 	
+	public StructureProcessorTask instrument(StructureProcessor proc) {
+	    proc.instrument(this);
+	    return this;
+	}
+	/**
+	 * If built with an {@link StructureProcessor} then directly
+	 * instrument
+	 */
+	public StructureProcessorTask instrument() {
+	    return instrument(this.processor);
+    }
 	
 
 
@@ -62,6 +73,7 @@ public class StructureProcessorTask {
 	private Chemical mol;
 	private Structure structure;
 	private Collection<Structure> components;
+    private StructureProcessor processor;
 
 	public static class Builder {
 		private boolean standardize=true;
@@ -71,6 +83,7 @@ public class StructureProcessorTask {
 		private Chemical mol=null;
 		private Structure structure = new Structure();
 		private Collection<Structure> components = new ArrayList<>();
+		private StructureProcessor processor =null;
 
 		public Builder standardize(boolean standardize) {
 			this.standardize = standardize;
@@ -86,6 +99,10 @@ public class StructureProcessorTask {
 			this.mol = mol;
 			return this;
 		}
+		public Builder processor(StructureProcessor p) {
+            this.processor=p;
+            return this;
+        }
 		
 
 		
@@ -117,5 +134,6 @@ public class StructureProcessorTask {
 		this.mol = builder.mol;
 		this.structure = builder.structure;
 		this.components = builder.components;
+		this.processor = builder.processor;
 	}
 }
