@@ -779,7 +779,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
 
-        @PostGsrsRestApiMapping("/interpretStructure")
+    @PostGsrsRestApiMapping("/interpretStructure")
     public ResponseEntity<Object> interpretStructure(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
         String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
                                      .orElse("NONE")

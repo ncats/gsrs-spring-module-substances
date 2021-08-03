@@ -123,7 +123,8 @@ public class StructureProcessor {
         boolean standardize = settings.isStandardize();
         boolean query = settings.isQuery();
 
-        if(mol.hasQueryAtoms()) {
+        if(mol.hasQueryAtoms() || mol.hasPseudoAtoms()) {
+            
             query=true; 
         }
 
