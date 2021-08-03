@@ -201,6 +201,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         public SimpleStandardizer getStandardizer() {
             return this.std;
         }
+        public static Optional<StructureStandardizerPresets> value(String s){
+            try {
+                return Optional.of(StructureStandardizerPresets.valueOf(s.toUpperCase()));
+            }catch(Exception e) {
+                return Optional.empty();
+            }
+        }
     }
     @Autowired
     private SubstanceSequenceSearchService substanceSequenceSearchService;
@@ -787,7 +794,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         SimpleStandardizer simpStd=Arrays.stream(standardize)
                 .filter(s->!s.equals("NONE"))
            .map(val->val.toUpperCase())
-           .map(val->StructureStandardizerPresets.valueOf(val))
+           .map(val->StructureStandardizerPresets.value(val))
+           .filter(v->v.isPresent())
+           .map(v->v.get())
            .map(std->std.getStandardizer())
            .reduce(SimpleStandardizer::and).orElse(null);
         
