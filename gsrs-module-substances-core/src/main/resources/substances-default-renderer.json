@@ -1,0 +1,19 @@
+{
+  "options" : {
+    "DEF_FONT_GAP_PERCENT" : 1.02,
+    "DEF_WEDGE_ANG" : 0.1156106096521044,
+    "PROP_KEY_DRAW_GREYSCALE" : true,
+    "PROP_KEY_DRAW_WEDGE_AS_POINT" : false,
+    "SUBSCRIPT_Y_DISPLACEMENT_FRACTION" : 0.17,
+    "DEF_FONT_PERCENT" : 0.47918,
+    "DEF_STROKE_PERCENT" : 0.032,
+    "DEF_DBL_BOND_GAP" : 0.19949999999999998,
+    "PROP_KEY_DRAW_STEREO_LAST_DASH_ON_NON_SYMBOLS" : false,
+    "PROP_KEY_DRAW_STEREO_WEDGE_JOIN" : true,
+    "DEF_NUM_DASH" : 8.0
+  },
+  "add-shadow" : true,
+  "add-border" : true,
+  "color-bg" : "0",
+  "color-border" : "ff000000"
+}
