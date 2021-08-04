@@ -291,7 +291,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         for(Keyword k:tags){
             if(k.getValue().equals(tag.getValue()))return;
         }
+
         tags.add(tag);
+        setIsDirty("tags");
     }
 
     public void addTagString(String tag){
@@ -1160,6 +1162,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
                 iter.remove();
                 removed.add(k);
             }
+        }
+        if(!removed.isEmpty()){
+            setIsDirty("tags");
         }
         return removed;
     }

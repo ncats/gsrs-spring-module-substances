@@ -3,7 +3,7 @@ package gsrs.module.substance.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
 import gsrs.EntityPersistAdapter;
-import gsrs.module.substance.processors.CreateInverseRelationshipEvent;
+import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
 import gsrs.module.substance.processors.UpdateInverseRelationshipEvent;
 import gsrs.module.substance.repository.RelationshipRepository;
@@ -272,11 +272,17 @@ public class RelationshipService {
 
     }
 
-    public void createNewInverseRelationshipFor(CreateInverseRelationshipEvent event) {
+    public void createNewInverseRelationshipFor(TryToCreateInverseRelationshipEvent event) {
         if (event.getFromSubstance() == null) {
             //TODO: Look into this
            return;
         }
+        //we are making a new relationship with from -> to.
+        //this event means we already have a to -> from relationship.
+        //Due to transaction issues we can't actually check yet that we can make this relationship
+        //when we make the event:
+        //1.  this "from" substance might not exist yet
+        // 2. the "from" substance might already have this relationship and we didn't know
             EntityUtils.EntityWrapper<?> change = entityPersistAdapter.change(
                     EntityUtils.Key.of(Substance.class, event.getFromSubstance()),
                     s -> {
@@ -286,14 +292,16 @@ public class RelationshipService {
 
                         Relationship r = obj.fetchInverseRelationship();
                         r.originatorUuid = event.getOriginatorSubstance().toString();
-                        r.relatedSubstance = substanceRepository.findById(event.getToSubstance()).get().asSubstanceReference();
+                        Optional<Substance> otherSubstanceOpt = substanceRepository.findById(event.getToSubstance());
+                        if(!otherSubstanceOpt.isPresent()){
+                            return Optional.empty();
+                        }
 
-                        if (!event.isForceCreation()) {
-                            for (Relationship rOld : newSub.relationships) {
-                                if (r.type.equals(rOld.type) && r.relatedSubstance.isEquivalentTo(rOld.relatedSubstance)) {
-                                    return Optional.empty();
-                                }
-                            }
+                        Substance otherSubstance = otherSubstanceOpt.get();
+                        r.relatedSubstance = otherSubstance.asSubstanceReference();
+
+                        if (!event.getCreationMode().shouldAdd(r, newSub, otherSubstance)) {
+                            return Optional.empty();
                         }
                         Reference ref1 = Reference.SYSTEM_GENERATED();
                         ref1.citation = "Generated from relationship on:'" + r.relatedSubstance.refPname + "'";
@@ -326,5 +334,7 @@ public class RelationshipService {
                     });
 
         }
+
+
 
 }

@@ -1,20 +1,11 @@
 package gsrs.module.substance.processors;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gov.nih.ncats.common.Tuple;
-import gsrs.EntityPersistAdapter;
 import ix.core.EntityProcessor;
 
-import ix.core.models.Edit;
-import ix.core.models.Keyword;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
-
 import ix.core.util.SemaphoreCounter;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
@@ -26,9 +17,7 @@ import org.springframework.transaction.support.TransactionSynchronizationAdapter
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -47,10 +36,6 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	@Autowired
 	private PlatformTransactionManager transactionManager;
 
-	@Autowired
-	private EntityManager entityManager;
-	@Autowired
-	private EntityPersistAdapter entityPersistAdapter;
 	@Autowired
 	private SubstanceRepository substanceRepository;
 
@@ -98,32 +83,30 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	/**
 	 * This is really "pre-create" only called when new object persisted for 1st time- not updates
-	 * @param obj
+	 * @param thisRelationship
 	 */
 	@Override
-	public void prePersist(Relationship obj) {
+	public void prePersist(Relationship thisRelationship) {
+
 		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 		transactionTemplate.executeWithoutResult( stauts -> {
-//		System.out.println("Adding a relationship:" + obj.getOrGenerateUUID() + " to :" + obj.relatedSubstance.refPname);
-			String uuid = obj.getOrGenerateUUID().toString();
-			boolean isBeingDeleted = relationshipUuidsBeingDeleted.contains(uuid);
-//		if(isBeingDeleted){
-//			System.out.println("And that relationship is being delted already");
-//		}else{
-//			System.out.println("And that relationship is NOT being deleted");
-//		}
-//			if (notWorkingOn(uuid) || isBeingDeleted) {
-				addInverse(obj);
-//			}
-			//check if substance reference has been added or not
-//			if(obj.relatedSubstance !=null) {
-//				if(!entityManager.contains(obj.relatedSubstance)){
-//					entityManager.merge(obj.relatedSubstance);
-//				}
-//			}
-//		else{
-//			System.out.println("But we're already doing something with that one, so don't trigger anything");
-//		}
+			if (thisRelationship.isAutomaticInvertible()) {
+				TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
+				final Substance thisSubstance = thisRelationship.fetchOwner();
+				event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
+				event.setToSubstance(thisSubstance.getOrGenerateUUID());
+				event.setOriginatorSubstance(thisSubstance.getOrGenerateUUID());
+				SubstanceReference otherSubstanceReference = thisRelationship.relatedSubstance;
+				//TODO maybe change the fromSubstance from UUID to a substance reference incase the uuid changes we could use approval id or name etc?
+				if (otherSubstanceReference != null && otherSubstanceReference.refuuid !=null) {
+					event.setFromSubstance(UUID.fromString(otherSubstanceReference.refuuid));
+
+				}
+				event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
+//			UUID newUUID = UUID.randomUUID();
+//			event.setNewRelationshipId(newUUID);
+				eventPublisher.publishEvent(event);
+			}
 		});
 	}
 
@@ -179,90 +162,90 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 //		System.out.println("Removal done for:" + obj.uuid.toString());
 	}
 
-	private void addInverse(final Relationship thisRelationship){
-//		System.out.println("Adding an inverse for:" + thisRelationship.toSimpleString());
-		if(thisRelationship.isAutomaticInvertible()) {
-			final Substance thisSubstance = thisRelationship.fetchOwner();
-			final Substance otherSubstance = substanceRepository.findBySubstanceReference(thisRelationship.relatedSubstance); //db fetch
-
-			if (otherSubstance == null) { //probably warn
-//				System.out.println("Related substance for inverse relationship doesn't exist!");
-				return;
-			}
-			try {
-				//this still needs to be fixes, since there are cases where a new relationship should be added, but it won't be currently
-
-				if (!canCreateInverseFor(thisRelationship, thisSubstance.asSubstanceReference(), otherSubstance)) {
-//					System.out.println("already exists ?");
-					return;
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				return;
-			}
-//createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub, boolean force){
-//		//doesn't exist yet
-			if (thisRelationship.isAutomaticInvertible()) {
-				CreateInverseRelationshipEvent event = new CreateInverseRelationshipEvent();
-				event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
-				event.setToSubstance(thisSubstance.getOrGenerateUUID());
-				event.setOriginatorSubstance(thisSubstance.getOrGenerateUUID());
-				if (otherSubstance != null) {
-					event.setFromSubstance(otherSubstance.getOrGenerateUUID());
-
-				}
-				event.setForceCreation(true);
-//			UUID newUUID = UUID.randomUUID();
-//			event.setNewRelationshipId(newUUID);
-				eventPublisher.publishEvent(event);
-			}
-
-/*
-			EntityWrapper<?> change = entityPersistAdapter.change(
-					EntityWrapper.of(otherSubstance).getKey(),
-					 s -> {
-						Substance substance = (Substance)s;
-//						System.out.println("Adding directly now");
-						Relationship r=createAndAddInvertedRelationship(thisRelationship, thisSubstance.asSubstanceReference(), substance, true);
-
-						if (r != null) {
-							notWorkingOn(r.getOrGenerateUUID().toString());
-							try {
-
-								substance.forceUpdate();
-								substanceRepository.save(substance);
-//								System.out.println("updated inverse " + r.getOrGenerateUUID());
-							}catch(Throwable t){ t.printStackTrace();} finally{
-								relationshipUuidsBeingWorkedOn.remove(r.getOrGenerateUUID().toString());
-							}
-						}else{
-							return Optional.empty();
-						}
-						return Optional.of(s);
-					}
-			);
-		}
-//		else{
-//			System.out.println("But it's not invertible");
+//	private void addInverse(final Relationship thisRelationship){
+////		System.out.println("Adding an inverse for:" + thisRelationship.toSimpleString());
+//		if(thisRelationship.isAutomaticInvertible()) {
+//			final Substance thisSubstance = thisRelationship.fetchOwner();
+//			final Substance otherSubstance = substanceRepository.findBySubstanceReference(thisRelationship.relatedSubstance); //db fetch
+//
+//			if (otherSubstance == null) { //probably warn
+////				System.out.println("Related substance for inverse relationship doesn't exist!");
+//				return;
+//			}
+//			try {
+//				//this still needs to be fixes, since there are cases where a new relationship should be added, but it won't be currently
+//
+//				if (!canCreateInverseFor(thisRelationship, thisSubstance.asSubstanceReference(), otherSubstance)) {
+////					System.out.println("already exists ?");
+//					return;
+//				}
+//			} catch (Exception e) {
+//				e.printStackTrace();
+//				return;
+//			}
+////createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub, boolean force){
+////		//doesn't exist yet
+//			if (thisRelationship.isAutomaticInvertible()) {
+//				CreateInverseRelationshipEvent event = new CreateInverseRelationshipEvent();
+//				event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
+//				event.setToSubstance(thisSubstance.getOrGenerateUUID());
+//				event.setOriginatorSubstance(thisSubstance.getOrGenerateUUID());
+//				if (otherSubstance != null) {
+//					event.setFromSubstance(otherSubstance.getOrGenerateUUID());
+//
+//				}
+//				event.setForceCreation(true);
+////			UUID newUUID = UUID.randomUUID();
+////			event.setNewRelationshipId(newUUID);
+//				eventPublisher.publishEvent(event);
+//			}
+//
+///*
+//			EntityWrapper<?> change = entityPersistAdapter.change(
+//					EntityWrapper.of(otherSubstance).getKey(),
+//					 s -> {
+//						Substance substance = (Substance)s;
+////						System.out.println("Adding directly now");
+//						Relationship r=createAndAddInvertedRelationship(thisRelationship, thisSubstance.asSubstanceReference(), substance, true);
+//
+//						if (r != null) {
+//							notWorkingOn(r.getOrGenerateUUID().toString());
+//							try {
+//
+//								substance.forceUpdate();
+//								substanceRepository.save(substance);
+////								System.out.println("updated inverse " + r.getOrGenerateUUID());
+//							}catch(Throwable t){ t.printStackTrace();} finally{
+//								relationshipUuidsBeingWorkedOn.remove(r.getOrGenerateUUID().toString());
+//							}
+//						}else{
+//							return Optional.empty();
+//						}
+//						return Optional.of(s);
+//					}
+//			);
 //		}
-
- */
-		}
-	}
+////		else{
+////			System.out.println("But it's not invertible");
+////		}
+//
+// */
+//		}
+//	}
 	public Relationship createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub){
 		return createAndAddInvertedRelationship(obj, oldSub,newSub, false);
 	}
 	private Relationship createAndAddInvertedRelationship(Relationship obj, SubstanceReference oldSub, Substance newSub, boolean force){
 		//doesn't exist yet
 		if(obj.isAutomaticInvertible()) {
-			CreateInverseRelationshipEvent event = new CreateInverseRelationshipEvent();
+			TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
 			event.setRelationshipIdToInvert(obj.getOrGenerateUUID());
 			event.setToSubstance(oldSub.getOrGenerateUUID());
 			event.setOriginatorSubstance(oldSub.getOrGenerateUUID());
 			if (newSub != null) {
 				event.setFromSubstance(newSub.getOrGenerateUUID());
 			}
-			event.setForceCreation(force);
+			event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
 //			UUID newUUID = UUID.randomUUID();
 //			event.setNewRelationshipId(newUUID);
 			eventPublisher.publishEvent(event);

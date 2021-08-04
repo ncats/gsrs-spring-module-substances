@@ -314,7 +314,7 @@ public class SubstanceStructureSearchService {
 
             EntityUtils.Key k = EntityUtils.Key.of(subMeta, UUID.fromString(r.getId()));
 
-            Optional<EntityUtils.EntityWrapper<?>> efetch = k.fetch(entityManager);
+            Optional<EntityUtils.EntityWrapper<Substance>> efetch = k.fetch(substanceRepository);
 
 
             if (efetch.isPresent()) {

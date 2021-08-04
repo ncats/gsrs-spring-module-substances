@@ -286,6 +286,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
         try {
             proteinsubstance.protein.subunits
                     .stream()
+                    .filter(su-> su !=null && su.sequence !=null)
                     .collect(Collectors.groupingBy(su -> su.sequence))
                     .entrySet()
                     .stream()

@@ -3,7 +3,6 @@ package gsrs.module.substance.processors;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.EntityPersistAdapter;
-import gsrs.module.substance.services.RelationshipService;
 import ix.core.EntityProcessor;
 
 import ix.ginas.models.v1.Relationship;
@@ -42,9 +41,6 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
     private RelationshipRepository relationshipRepository;
 
     @Autowired
-    private RelationshipProcessor relationshipProcessor;
-
-    @Autowired
     private EntityPersistAdapter entityPersistAdapter;
 
     @Autowired
@@ -66,24 +62,21 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         for(Relationship r:refrel){
             Substance owner = r.fetchOwner();
             eventPublisher.publishEvent(
-                    CreateInverseRelationshipEvent.builder()
-                            .forceCreation(true)
+                    TryToCreateInverseRelationshipEvent.builder()
+                            .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
                             .originatorSubstance(owner.uuid)
                             .toSubstance(owner.uuid)
                             .fromSubstance(obj.uuid)
                             .relationshipIdToInvert(r.uuid)
                             .build()
                     );
-//            relationshipProcessor.createAndAddInvertedRelationship(r,
-//                    r.fetchOwner().asSubstanceReference(),
-//                    obj);
 
         }
     }
 
 
     @Override
-//    @Transactional
+    @Transactional
     public void prePersist(final Substance s) {
         savingSubstance(s, true);
     }
