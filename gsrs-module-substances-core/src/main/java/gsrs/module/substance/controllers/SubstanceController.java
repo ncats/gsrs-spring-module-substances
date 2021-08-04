@@ -705,13 +705,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public ResponseEntity<Object> substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
         context.setAdapter((srequest, ctx) -> {
             try {
+                srequest.getOptions().setKind(Substance.class);
                 SearchResult sr = getResultFor(ctx, srequest,true);
 
                 List<Substance> rlist = new ArrayList<Substance>();
 
                 sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
                 for (Substance s : rlist) {
-
                     s.setMatchContextProperty(ixCache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey()));
                 }
                 return sr;
