@@ -201,6 +201,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         public SimpleStandardizer getStandardizer() {
             return this.std;
         }
+        public static Optional<StructureStandardizerPresets> value(String s){
+            try {
+                return Optional.of(StructureStandardizerPresets.valueOf(s.toUpperCase()));
+            }catch(Exception e) {
+                return Optional.empty();
+            }
+        }
     }
     @Autowired
     private SubstanceSequenceSearchService substanceSequenceSearchService;
@@ -779,7 +786,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
 
-        @PostGsrsRestApiMapping("/interpretStructure")
+    @PostGsrsRestApiMapping("/interpretStructure")
     public ResponseEntity<Object> interpretStructure(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
         String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
                                      .orElse("NONE")
@@ -787,9 +794,17 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         SimpleStandardizer simpStd=Arrays.stream(standardize)
                 .filter(s->!s.equals("NONE"))
            .map(val->val.toUpperCase())
-           .map(val->StructureStandardizerPresets.valueOf(val))
+           .map(val->StructureStandardizerPresets.value(val))
+           .filter(v->v.isPresent())
+           .map(v->v.get())
            .map(std->std.getStandardizer())
            .reduce(SimpleStandardizer::and).orElse(null);
+        
+        String mode = Optional.ofNullable(queryParameters.get("mode"))
+                .orElse("default");
+        
+        boolean isQuery="query".equalsIgnoreCase(mode);
+        
         
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
@@ -797,8 +812,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
             ObjectNode node = mapper.createObjectNode();
             try {
-                Structure struc = structureProcessor.instrument(payload, moieties, false); // don't
-                // standardize!
+                Structure struc = structureProcessor.taskFor(payload)
+                                                    .components(moieties)
+                                                    .standardize(false)
+                                                    .query(isQuery)
+                                                    .build()
+                                                    .instrument()
+                                                    .getStructure(); 
+                // don't standardize!
                 // we should be really use the PersistenceQueue to do this
                 // so that it doesn't block
                 // in fact, it probably shouldn't be saving this at all
@@ -813,7 +834,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 
                 ArrayNode an = mapper.createArrayNode();
                 for (Structure m : moieties) {
-                    // m.save();
                     saveTempStructure(m);
                     ObjectNode on = mapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
@@ -831,7 +851,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 Collection<PolymerDecode.StructuralUnit> o = PolymerDecode.DecomposePolymerSU(payload, true);
                 for (PolymerDecode.StructuralUnit su : o) {
                     Structure struc = structureProcessor.instrument(su.structure, null, false);
-                    // struc.save();
                     saveTempStructure(struc);
                     su._structure = struc;
                 }
