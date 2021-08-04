@@ -8,6 +8,8 @@ import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import java.util.Collections;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -104,9 +106,11 @@ public class PrivateDefInPublicSubstanceTests extends AbstractSubstanceJpaEntity
         ethanol.uuid = UUID.randomUUID();
         JsonNode ethanolNode = ethanol.toFullJsonNode();
         ValidationResponse response = substanceEntityService.validateEntity(ethanolNode);
-        Stream<ValidationMessage> messages = response.getValidationMessages().stream();
+        List<ValidationMessage> messages = response.getValidationMessages();
+        
+        
         assertEquals("expecting no errors when private structure is attached to public chemical",
-                0, messages.filter(m -> m.getMessageType() == MESSAGE_TYPE.ERROR).count());
+                0, messages.stream().filter(m -> m.getMessageType() == MESSAGE_TYPE.ERROR).count());
     }
 
     @Test

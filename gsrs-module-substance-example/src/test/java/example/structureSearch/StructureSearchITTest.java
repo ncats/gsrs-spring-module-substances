@@ -201,7 +201,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         while(result.hasMoreElements()){
             matches.add(UUID.fromString(result.nextElement().getId()));
         }
-        assertEquals(new LinkedHashSet<>(Arrays.asList(uuid)), matches);
+        assertEquals(new LinkedHashSet<>(Arrays.asList(uuid,uuid2)), matches);
     }
 
     @Test

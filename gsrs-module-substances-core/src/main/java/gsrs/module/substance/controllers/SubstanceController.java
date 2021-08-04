@@ -705,15 +705,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public ResponseEntity<Object> substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
         context.setAdapter((srequest, ctx) -> {
             try {
-                //TODO: technically this shouldn't be needed,
-                // but something is getting lost in translation between 2.X and 3.0
-                srequest.getOptions().setKind(Substance.class);
                 SearchResult sr = getResultFor(ctx, srequest,true);
 
                 List<Substance> rlist = new ArrayList<Substance>();
 
                 sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
                 for (Substance s : rlist) {
+
                     s.setMatchContextProperty(ixCache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey()));
                 }
                 return sr;

@@ -10,15 +10,12 @@ import gsrs.junit.json.JsonUtil;
 import gsrs.module.substance.processors.*;
 import gsrs.module.substance.services.RelationshipService;
 import gsrs.repository.EditRepository;
-import gsrs.service.GsrsEntityService;
 import gsrs.services.EditEventService;
 import gsrs.services.PrincipalService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestEntityProcessorFactory;
 import ix.core.models.Edit;
-import ix.core.models.Principal;
 import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 
@@ -33,7 +30,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
@@ -132,22 +128,43 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 .setUUID(uuid1)
                 .addRelationshipTo(substance2, "foo->bar")
                 .buildJsonAnd(this::assertCreated);
-
-        //now submit with one sided reference, processors should add the other side.
-        assertCreated(substance2.toFullJsonNode());
-
-
-        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+        //inverse relationship event is made but the relationship service can't do anything about it since substance2 isn't in DB yet
+        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
                 .collect(Collectors.toList());
         assertEquals(1, inverseCreateEvents.size());
+
         applicationEvents.clear();
-//
-//
+
         TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
         transactionTemplate.executeWithoutResult(s->
                 relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0))
         );
-        assertEquals(0, applicationEvents.stream(CreateInverseRelationshipEvent.class).count());
+        assertEquals(0, applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).count());
+
+        applicationEvents.clear();
+        //now submit with one sided reference, processors should add the other side.
+        assertCreated(substance2.toFullJsonNode());
+
+        //this also makes an inverse event because the substance processor finds the dangling relationship
+        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents2 = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, inverseCreateEvents2.size());
+        applicationEvents.clear();
+
+        transactionTemplate.executeWithoutResult(s->
+                relationshipService.createNewInverseRelationshipFor(inverseCreateEvents2.get(0))
+        );
+
+        //this makes ANOTHER create inverse event and the relationship service doesnt do anything since it already exists
+        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents3 = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, inverseCreateEvents3.size());
+        applicationEvents.clear();
+
+        transactionTemplate.executeWithoutResult(s->
+                relationshipService.createNewInverseRelationshipFor(inverseCreateEvents3.get(0))
+        );
+        assertEquals(0, applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).count());
 
 
         Substance fetchedSubstance2 = substanceEntityService.get(uuid2).get();
@@ -182,9 +199,11 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         assertCreated(substance2.toFullJsonNode());
 
 
-	        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+	        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
                                                                             .collect(Collectors.toList());
-	        assertEquals(1, inverseCreateEvents.size());
+	        //this will create  2 events because we can't check if we need to create the inverse event or not yet
+        //(that check is done in the relationship service)
+	        assertEquals(2, inverseCreateEvents.size());
         applicationEvents.clear();
 //
 //
@@ -192,8 +211,26 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         transactionTemplate.executeWithoutResult(s->
 	        relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0))
         );
-        assertEquals(0, applicationEvents.stream(CreateInverseRelationshipEvent.class).count());
+        transactionTemplate.executeWithoutResult(s->
+                relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(1))
+        );
+        //these are 2 events for the same relationship to be created (one from relationship processor which
+        //can't be handled because sub1 doesn't exist yet
+        //and one from substance processor that does get handled
+
+
+        List<TryToCreateInverseRelationshipEvent> secondPassEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toList());
+        assertEquals(1, secondPassEvents.size());
+        applicationEvents.clear();
+        secondPassEvents.forEach(e->{
+            transactionTemplate.executeWithoutResult(s->
+                    relationshipService.createNewInverseRelationshipFor(e)
+            );
+        });
         em.flush();
+
+        //now there should be no new createRelationship events
+        assertEquals(0, applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).count());
 
         Substance fetchedSubstance2 = substanceEntityService.get(uuid2).get();
 	        Relationship relationshipA = fetchedSubstance2.relationships.get(0);
@@ -257,7 +294,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                         .addRelationshipTo(substance2, "foo->bar")
                         .buildJsonAnd(this::assertUpdated);
 
-        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
                 .collect(Collectors.toList());
         assertEquals(1, inverseCreateEvents.size());
         applicationEvents.clear();
@@ -275,8 +312,22 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         assertEquals("bar->foo", relationships.get(0).type);
         assertEquals(uuid1.toString(), relationships.get(0).relatedSubstance.refuuid);
 
-        assertEquals(0L, applicationEvents.stream(CreateInverseRelationshipEvent.class)
-                .count());
+        //we don't have a way to check if we need to create this inverted relationship or not yet so
+        // another event is created. the relationship service will figure out if it needs to be made or not.
+        List<TryToCreateInverseRelationshipEvent> secondPassEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, secondPassEvents.size());
+        applicationEvents.clear();
+        secondPassEvents.forEach(e->{
+            transactionTemplate.executeWithoutResult(s->
+                    relationshipService.createNewInverseRelationshipFor(e)
+            );
+        });
+        //the relationship service should see there is nothing else to make
+
+        assertEquals(0, applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).count());
+
+
     	
     }
 
@@ -309,7 +360,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 .addRelationshipTo(substance2, "foo2->bar2")
                 .buildJsonAnd(this::assertUpdated);
 
-        List<CreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class)
+        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
                 .collect(Collectors.toList());
         assertEquals(2, inverseCreateEvents.size());
         applicationEvents.clear();
@@ -319,7 +370,19 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
             relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0));
             relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(1));
         });
+        //this actually creates 2 NEW events to make the other side of the inverted relationship
 
+        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents2 = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(2, inverseCreateEvents2.size());
+        applicationEvents.clear();
+        //but when we run them through the relationshipService no new relationships are created...
+        transactionTemplate.executeWithoutResult(s-> {
+            relationshipService.createNewInverseRelationshipFor(inverseCreateEvents2.get(0));
+            relationshipService.createNewInverseRelationshipFor(inverseCreateEvents2.get(1));
+        });
+        assertEquals(0, applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).count());
+        //and we only updated the substance version once
         Substance substance = substanceEntityService.get(uuid2).get();
         assertEquals("2", substance.version);
         List<Relationship> relationships = substance.relationships;
@@ -329,8 +392,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
         assertEquals(uuid1.toString(), relationships.get(0).relatedSubstance.refuuid);
         assertEquals(uuid1.toString(), relationships.get(1).relatedSubstance.refuuid);
-        assertEquals(0L, applicationEvents.stream(CreateInverseRelationshipEvent.class)
-                .count());
+
 
     }
 
@@ -396,14 +458,14 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 //        assertEquals(parts[1] + "->" + parts[0],relationshipA.type);
 //    	assertEquals("2",substanceA.version);
 
-    	List<CreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toList());
+    	List<TryToCreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toList());
 
     	Substance updatedSubstance = SubstanceBuilder.from(updatedJson).build();
 
     	assertEquals(1, createInverseEvents.size());
-    	assertEquals(CreateInverseRelationshipEvent.builder()
+    	assertEquals(TryToCreateInverseRelationshipEvent.builder()
                         .relationshipIdToInvert(updatedSubstance.relationships.get(0).uuid)
-                        .forceCreation(true)
+                        .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
                         .fromSubstance(UUID.fromString(uuidA))
                         .toSubstance(updatedSubstance.uuid)
                         .originatorSubstance(updatedSubstance.uuid)
@@ -458,7 +520,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         transactionTemplate.executeWithoutResult( status->
                 applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
         );
-        assertEquals(0L, applicationEvents.stream(CreateInverseRelationshipEvent.class).count());
+        assertEquals(0L, applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).count());
         applicationEvents.clear();
 
         JsonNode beforeA = transactionTemplate.execute(s->{
@@ -482,7 +544,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                     list.forEach(editEventService::createNewEditFromEvent);
                 }
                 );
-        List<CreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toList());
+        List<TryToCreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toList());
         applicationEvents.clear();
         assertEquals(1, createInverseEvents.size());
         transactionTemplate.executeWithoutResult( status-> {
@@ -775,7 +837,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
        Substance createdInhibitor = assertCreated(inhibitor.toFullJsonNode());
 
-        Set<CreateInverseRelationshipEvent> createInverseRelationshipEvents = applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toSet());
+        Set<TryToCreateInverseRelationshipEvent> createInverseRelationshipEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toSet());
         //active moeities don't have inverse relationships
         assertEquals(0, createInverseRelationshipEvents.size());
 
@@ -794,7 +856,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
 
         transactionTemplate.executeWithoutResult(s->{
-            applicationEvents.stream(CreateInverseRelationshipEvent.class).collect(Collectors.toList()).forEach(relationshipService::createNewInverseRelationshipFor);
+            applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toList()).forEach(relationshipService::createNewInverseRelationshipFor);
         });
 
 
