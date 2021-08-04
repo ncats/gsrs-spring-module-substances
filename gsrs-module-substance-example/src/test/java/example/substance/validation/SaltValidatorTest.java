@@ -1,7 +1,6 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
-import gsrs.EnableGsrsApi;
+import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.validator.DefaultValidatorConfig;
@@ -38,10 +37,10 @@ import org.springframework.test.context.event.RecordApplicationEvents;
  *
  * @author mitch miller
  */
-@EnableGsrsApi(indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CONF)
+
 @RecordApplicationEvents
 @WithMockUser(username = "admin", roles = "Admin")
-public class SaltValidatorTest extends AbstractSubstanceJpaEntityTest {
+public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest  {
 
     public SaltValidatorTest() {
         System.out.println("SaltValidatorTest()");
@@ -75,7 +74,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaEntityTest {
         }
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
         loadGsrsFile(dataFile);
-        applicationEvents.notifyAll();
+        //applicationEvents.notifyAll();
         setup = true;
         System.out.println("loaded rep18 data file");
     }
@@ -97,7 +96,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
-    public void findDuplicates1() {
+    public void TestFindDefHashDuplicates() {
         System.out.println("findDuplicates1");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);

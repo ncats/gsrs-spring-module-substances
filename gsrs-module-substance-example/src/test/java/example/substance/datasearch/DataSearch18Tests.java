@@ -1,6 +1,5 @@
 package example.substance.datasearch;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
