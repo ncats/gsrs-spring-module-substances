@@ -62,26 +62,36 @@ public class StructureProcessor {
         return instrument (mol, components, true);
     }
 
-    public Structure instrument
-            (String mol, Collection<Structure> components, boolean standardize) {
+    public StructureProcessorTask.Builder taskFor(String mol) throws Exception {
         Structure struc = new Structure();
         struc.digest = digest (mol);
         try {
-            instrument (struc, components, Chemical.parse(mol), standardize);
-        }catch (Exception ex) {
-            ex.printStackTrace();
-            System.err.println("Trouble reading structure:");
-            System.err.println(mol);
-            System.err.println("Attempting to eliminate SGROUPS");
+            return new StructureProcessorTask.Builder()
+                    .structure(struc)
+                    .mol(mol)
+                    .processor(this);
+            
+        }catch(Exception e) {
             String nmol = ChemCleaner.removeSGroupsAndLegacyAtomLists(mol);
-            try{
-                instrument (struc, components, Chemical.parse(nmol), standardize);
-            }catch(Exception e){
-                System.err.println("Attempt failed");
-                throw new IllegalArgumentException (e);
-            }
+            return new StructureProcessorTask.Builder()
+                    .structure(struc)
+                    .mol(nmol)
+                    .processor(this);
         }
-        return struc;
+    }
+    public StructureProcessorTask.Builder taskFor(String mol, Collection<Structure> components, boolean standardize) throws Exception {
+        return taskFor(mol).components(components).standardize(false);
+    }
+    
+    public Structure instrument
+            (String mol, Collection<Structure> components, boolean standardize) {
+        try {
+            StructureProcessorTask task = taskFor(mol, components, standardize).build();
+            task.instrument();
+            return task.getStructure();
+        }catch(Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public Structure instrument (Chemical mol) {
@@ -123,7 +133,10 @@ public class StructureProcessor {
         boolean standardize = settings.isStandardize();
         boolean query = settings.isQuery();
 
-
+        if(mol.hasQueryAtoms() || mol.hasPseudoAtoms()) {
+            
+            query=true; 
+        }
 
         CachedSupplier<String> molSupplier = CachedSupplier.of(new Supplier<String>() {
             public String get(){
@@ -139,7 +152,7 @@ public class StructureProcessor {
             struc.digest = digest (molSupplier.get());
 
         }
-//katzelda this probably isn't needed anymore since now settings.getChemical should
+        //katzelda this probably isn't needed anymore since now settings.getChemical should
         //compute coords if needed ??
         if (!mol.hasCoordinates()) {
             try {
@@ -156,10 +169,10 @@ public class StructureProcessor {
             	try{
             		struc.smiles = mol.toSmiles();
             	}catch(Exception e2){
-                struc.smiles = mol.toSmarts();
+            	    struc.smiles = mol.toSmarts();
             	}
             } catch (Exception e) {
-                e.printStackTrace();
+//                e.printStackTrace();
             }
         }
 
@@ -177,6 +190,7 @@ public class StructureProcessor {
         molSupplier.resetCache();
         if(!query){
 
+            
             struc.molfile = molSupplier.get();
         }
 
@@ -216,46 +230,20 @@ public class StructureProcessor {
         }
         }
 
-        String standardizedMol=null;
-        boolean updatedMol=false;
-
-        Chemical stdMol = mol;
+        Chemical stdMol = mol.copy();
         if (standardize) {
-
             try {
-
                 stdMol = standardizer.standardize(mol, molSupplier, struc.properties::add);
-                if (stdMol != mol) {
-                    standardizedMol = stdMol.toMol();
-                    updatedMol = true;
-
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            } catch (Exception e) {
                 log.error("Can't standardize structure", e);
             }
         }
-        if(!updatedMol){
-            standardizedMol = molSupplier.get();
-        }
-
-
-
-        // TP: commented out standardization, and 2 moiety limit.
-        // the unfortunate side effect was to strip waters
-
-        // Also, probably better to be err on the side of
-        // preserving user input
-
-        // break this structure into its individual components
-        //System.out.print(mol.toFormat("mol"));
-//        String standardizedMol = stdmol.toFormat("mol");
-//        List<Chemical> frags;
-//        try {
-//            frags = Chemical.parseMol(standardizedMol).connectedComponentsAsStream().collect(Collectors.toList());
-//        }catch(IOException e){
-//            throw new UncheckedIOException(e);
+//        if(!updatedMol){
+//            standardizedMol = molSupplier.get();
 //        }
+
+
+
 
         //Note that this currently uses the non-standardized structure instead of the standardized one.
         //This is currently intentional, as the standardized structure does some charge balancing that might be unexpected.
@@ -308,7 +296,7 @@ public class StructureProcessor {
             });
 
         }catch(Exception e){
-            e.printStackTrace();
+            log.error("Error making structure hash", e);
         }
 
 
@@ -319,15 +307,15 @@ public class StructureProcessor {
         //struc.formula = mol.getFormula();
 
 
-
-//        if(!mol.hasQueryAtoms() && !mol.hasPseudoAtoms()) {
         Chem.setFormula(struc);
         struc.setMwt(mol.getMass());
-//        }
-        if(!query){
-            struc.smiles = standardizer.canonicalSmiles(struc, struc.molfile);
-        }
 
+        if(!query){
+            try {
+                struc.smiles = standardizer.canonicalSmiles(struc, struc.molfile);
+            }catch(Exception e) {}
+        }
+        
         calcStereo (struc);
 
 
@@ -353,9 +341,11 @@ public class StructureProcessor {
             return chem;
         }
     }
+    
+    
 
     /**
-     * This should return a decomposed version of a structure for G-SRS.
+     * This should return a decomposed version of a structure for GSRS.
      *
      * This means that a molfile should come back with moieties
      * and a structure, with statistics and predicted stereo
