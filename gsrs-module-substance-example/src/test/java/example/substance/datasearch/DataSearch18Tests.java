@@ -46,7 +46,7 @@ import org.springframework.test.context.event.RecordApplicationEvents;
  *
  * @author mitch
  */
-//Changed base clas from AbstractSubstanceJpaFullStackEntityTest to AbstractSubstanceJpaEntityTest
+//Changed base class from AbstractSubstanceJpaFullStackEntityTest to AbstractSubstanceJpaEntityTest
 // 16 July based on recommendation from Danny K.
 @WithMockUser(username = "admin", roles = "Admin")
 public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
@@ -73,11 +73,9 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
         testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-//        System.out.println("clearIndexers");
 
         File dataFile = new ClassPathResource(fileName).getFile();
         loadGsrsFile(dataFile);
-        //System.out.println("loaded rep18 data file");
     }
 
     @Test
@@ -286,14 +284,12 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         List<Substance> candidates = new ArrayList<>();
         try {
             DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
-            //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
             int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
             System.out.println("in findFullDefinitionalDuplicateCandidates, searchItem: " + searchItem);
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "layer query: " + searchItem);
-            //searchBuilder = searchBuilder.query(searchItem);
 
             TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
             List<String> nameValues = (List<String>) transactionSearch.execute(ts
@@ -327,24 +323,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 return new ArrayList<>();
             });
             nameValues.forEach(n -> System.out.println(n));
-            //        });
-            //
-            //			SearchResult sres = searchBuilder
-            //							.kind(Substance.class)
-            //							.fdim(0)
-            //							.build()
-            //                    .
-            //							.execute();
-            //			sres.waitForFinish();
-            /*List<Substance> submatches = (List<Substance>) sres.getMatches();
-			Logger.getLogger(this.getClass().getName()).log(Level.FINE, "total submatches: " + submatches.size());
-
-			for (int i = 0; i < submatches.size(); i++)	{
-				Substance s = submatches.get(i);
-				if (!s.getUuid().equals(substance.getUuid()))	{
-					candidates.add(s);
-				}
-			}*/
         } catch (Exception ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error running query", ex);
         }
