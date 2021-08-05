@@ -80,6 +80,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         //System.out.println("loaded rep18 data file");
     }
 
+    @Test
     public void testSearchByName() {
 
         String name1 = "THIOFLAVIN S2";
@@ -132,30 +133,26 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         List<String> nameValues = transactionSearch.execute(ts -> {
 
-            SearchRequest request = new SearchRequest.Builder()
-                    .kind(Substance.class)
-                    .fdim(0)
-                    .query("root_names_name:\"" + name1 + "\"")
-                    .top(Integer.MAX_VALUE)
-                    .build();
-            try {
-                SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                sr.waitForFinish();
+                    SearchRequest request = new SearchRequest.Builder()
+                            .kind(Substance.class)
+                            .fdim(0)
+                            .query("root_approvalID:\"" + approvalID1 + "\"")
+                            .top(Integer.MAX_VALUE)
+                            .build();
+                    System.out.println("query: " + request.getQuery());
+                    try {
+                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
+                        sr.waitForFinish();
 
-                List futureList = sr.getMatches();
-                Stream<String> stream = futureList
-                        .stream()
-                        .flatMap(sub -> {
-                            Substance ps = (Substance) sub;
-                            return ps.names.stream()
-                                    .map(n -> n.name);
-                        });
-                return stream.collect(Collectors.toList());
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
-            }
-
-        }
+                        Stream<Substance> stream = sr.getMatches()
+                                .stream();
+                        return stream.collect(Collectors.toList());
+                    } catch (Exception ex) {
+                        System.err.println("error in lambda");
+                        ex.printStackTrace();
+                        throw new RuntimeException(ex);
+                    }
+                }
         );
 
         assertTrue(nameValues.contains(name1));
@@ -308,6 +305,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         assertEquals(expectedNumber, substances.size());
     }
 
+    @Test
     public void testDuplicates() {
         Substance chemical = getSampleChemicalFromFile();
         chemical.uuid = UUID.randomUUID();
