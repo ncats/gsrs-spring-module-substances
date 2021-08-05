@@ -1,23 +1,26 @@
 package example.substance.validation;
 
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.module.substance.definitional.DefinitionalElement;
+import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
+import gsrs.module.substance.services.DefinitionalElementFactory;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
-import ix.core.search.text.IndexValueMaker;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.validators.ProteinValidator;
 import ix.ginas.utils.validation.validators.SaltValidator;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -26,25 +29,19 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 
 /**
  *
  * @author mitch miller
  */
-
-@RecordApplicationEvents
+//@RecordApplicationEvents
 @WithMockUser(username = "admin", roles = "Admin")
-public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest  {
+@Slf4j
+public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     public SaltValidatorTest() {
-        System.out.println("SaltValidatorTest()");
-                
     }
 
     private boolean setup = false;
@@ -52,25 +49,25 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest  
     @Autowired
     private TestGsrsValidatorFactory factory;
 
-    @TestConfiguration
-    public static class Configuration {
+    @Autowired
+    private TestIndexValueMakerFactory testIndexValueMakerFactory;
 
-        @Bean
-        public IndexValueMaker defHashIndexer() {
-            return new SubstanceDefinitionalHashIndexer();
-        }
-    }
+    @Autowired(required = true)
+    private DefinitionalElementFactory definitionalElementFactory;
 
     @BeforeEach
-    public void runSetup(@Autowired ApplicationEvents applicationEvents) throws IOException {
+    public void runSetup() throws IOException {
         System.out.println("runSetup");
+        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+        AutowireHelper.getInstance().autowire(hashIndexer);
+        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+
+        //prevent validations from occurring multiple times
         if (!setup) {
             ValidatorConfig config = new DefaultValidatorConfig();
-            config.setValidatorClass(ProteinValidator.class);
-            config.setNewObjClass(ProteinSubstance.class);
-
+            config.setValidatorClass(SaltValidator.class);
+            config.setNewObjClass(ChemicalSubstance.class);
             factory.addValidator("substances", config);
-
         }
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
         loadGsrsFile(dataFile);
@@ -100,9 +97,26 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest  
         System.out.println("findDuplicates1");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
+        DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(chemical);
+        DefinitionalElement elem = newDefinitionalElements.getElements().get(0);
+        String msg = String.format("ID: %s; SMILES: %s; def hash layer 1: %s; value: %s", chemical.approvalID,
+                chemical.getStructure().smiles, chemical.getDefinitionElement(), elem.getValue());
+        System.out.println(msg);
+        log.debug(msg);
+        int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
+        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
         SaltValidator validator = new SaltValidator();
 
         List<Substance> duplicates = validator.findDefinitionaLayer1lDuplicateCandidates(chemical);
+        System.out.println("duplicate list size: " + duplicates.size() + "; items: ");
+        duplicates.forEach(s -> {
+            ChemicalSubstance chem = (ChemicalSubstance) s;
+            DefinitionalElements cDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(chem);
+            String msg2 = String.format("ID: %s; SMILES: %s; def hash layer 1: %s; value: %s", chem.approvalID,
+                    chem.getStructure().smiles, chem.getDefinitionElement(), cDefinitionalElements.getElements().get(0).getValue());
+            System.out.println(msg2);
+        });
+
         assertFalse(duplicates.isEmpty());
     }
 
