@@ -14,6 +14,7 @@ import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SaltValidator;
 import java.io.File;
 import java.io.IOException;
@@ -64,10 +65,18 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
         //prevent validations from occurring multiple times
         if (!setup) {
-            ValidatorConfig config = new DefaultValidatorConfig();
-            config.setValidatorClass(SaltValidator.class);
-            config.setNewObjClass(ChemicalSubstance.class);
-            factory.addValidator("substances", config);
+            {
+                ValidatorConfig config = new DefaultValidatorConfig();
+                config.setValidatorClass(SaltValidator.class);
+                config.setNewObjClass(ChemicalSubstance.class);
+                factory.addValidator("substances", config);
+            }
+            {
+                ValidatorConfig config = new DefaultValidatorConfig();
+                config.setValidatorClass(ChemicalValidator.class);
+                config.setNewObjClass(ChemicalSubstance.class);
+                factory.addValidator("substances", config);
+            }
         }
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
         loadGsrsFile(dataFile);
