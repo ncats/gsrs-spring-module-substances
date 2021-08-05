@@ -11,14 +11,21 @@ import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
+import gsrs.validator.DefaultValidatorConfig;
+import gsrs.validator.ValidatorConfig;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexerEntityListener;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.ValidationUtils.ValidationRule;
+import ix.ginas.utils.validation.validators.ChemicalValidator;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.io.File;
@@ -65,7 +72,11 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     private StructureIndexerEventListener structureIndexerEventListener;
+    
 
+    @Autowired
+    private TestGsrsValidatorFactory factory;
+    
     private String fileName= "rep18.gsrs";
 
     @BeforeEach
@@ -73,6 +84,12 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
         testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+        {
+            ValidatorConfig config = new DefaultValidatorConfig();
+            config.setValidatorClass(ChemicalValidator.class);
+            config.setNewObjClass(ChemicalSubstance.class);
+            factory.addValidator("substances", config);
+        }
 
         File dataFile = new ClassPathResource(fileName).getFile();
         loadGsrsFile(dataFile);
@@ -258,11 +275,12 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                         SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
                         sr.waitForFinish();
 
-                        List futureList = sr.getMatches();
-                        Stream<Substance> stream = futureList
+                        Stream<Substance> stream = sr.getMatches()
                                 .stream();
                         return stream.collect(Collectors.toList());
                     } catch (Exception ex) {
+                        System.err.println("error in lambda");
+                        ex.printStackTrace();
                         throw new RuntimeException(ex);
                     }
 
