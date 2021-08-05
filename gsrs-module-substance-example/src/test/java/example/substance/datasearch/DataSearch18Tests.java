@@ -128,37 +128,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
-    public void testSearchByName2() {
-        String name1 = "THIOFLAVIN S2";
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<String> nameValues = transactionSearch.execute(ts -> {
-
-                    SearchRequest request = new SearchRequest.Builder()
-                            .kind(Substance.class)
-                            .fdim(0)
-                            .query("root_approvalID:\"" + approvalID1 + "\"")
-                            .top(Integer.MAX_VALUE)
-                            .build();
-                    System.out.println("query: " + request.getQuery());
-                    try {
-                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                        sr.waitForFinish();
-
-                        Stream<Substance> stream = sr.getMatches()
-                                .stream();
-                        return stream.collect(Collectors.toList());
-                    } catch (Exception ex) {
-                        System.err.println("error in lambda");
-                        ex.printStackTrace();
-                        throw new RuntimeException(ex);
-                    }
-                }
-        );
-
-        assertTrue(nameValues.contains(name1));
-    }
-
-    @Test
     public void testSearchByApprovalID() {
         String approvalID1 = "D733ET3F9O";
         String idForName = "deb33005-e87e-4e7f-9704-d5b4c80d3023";
