@@ -75,15 +75,18 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         ChemicalSubstance cs = (ChemicalSubstance)s;
 
         if (cs.getStructure() == null) {
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Chemical substance must have a chemical structure"));
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "Chemical substance must have a chemical structure"));
             return;
         }
-				
-				if( !allow0AtomStructures && cs.getStructure().toChemical().getAtomCount()==0
-								&& !substanceIs0AtomChemical(objold)){
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Chemical substance must have a chemical structure with one or more atoms"));
+
+        if (!allow0AtomStructures
+                && cs.getStructure().toChemical().getAtomCount() == 0
+                && !substanceIs0AtomChemical(objold)) {
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "Chemical substance must have a chemical structure with one or more atoms"));
             return;
-				}
+        }
         String payload = cs.getStructure().molfile;
         if (payload != null) {
 
@@ -110,8 +113,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
             List<Structure> moieties = new ArrayList<Structure>();
 						//computed, idealized structure info.
-            Structure struc = structureProcessor.instrument(payload, moieties, true); // don't
-            // standardize
+            Structure struc = structureProcessor.instrument(payload, moieties, true); 
 
             if(!payload.contains("M  END")){
                 //not a mol convert it
@@ -147,7 +149,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                     && cs.moieties.size() != moietiesForSub.size()) {
 
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE("Incorrect number of moieties")
+                        .INFO_MESSAGE("Incorrect number of moieties")
                         .appliableChange(true);
                 callback.addMessage(mes, ()-> cs.moieties = moietiesForSub);
 
@@ -171,8 +173,9 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             validateChemicalStructure(cs.getStructure(), struc, deduplicateCallback);
 
             ChemUtils.fixChiralFlag(cs.getStructure(), callback);
-						//check on Racemic stereochemistry October 2020 MAM
-						ChemUtils.checkRacemicStereo(cs.getStructure(), callback);
+            
+            // check on Racemic stereochemistry October 2020 MAM
+            ChemUtils.checkRacemicStereo(cs.getStructure(), callback);
 
 //            ChemUtils.checkChargeBalance(cs.structure, gpm);
             if (cs.getStructure().charge != 0) {
@@ -255,23 +258,22 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             GinasChemicalStructure oldstr, Structure newstr,
             ValidatorCallback callback) {
         List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
-
-        String oldhash = null;
-        String newhash = null;
-        oldhash = oldstr.getExactHash();
-        newhash = newstr.getExactHash();
-        // Should always use the calculated pieces
-        // TODO: Come back to this and allow for SOME things to be overloaded
-        if (true || !newhash.equals(oldhash)) {
-            GinasProcessingMessage mes = GinasProcessingMessage.INFO_MESSAGE(
-                    "Recomputing structure hash")
-                    .appliableChange(true);
-            callback.addMessage(mes, ()->{
-                    Structure struc2 = new GinasChemicalStructure(newstr);
-                    oldstr.updateStructureFields(struc2);
-
-            });
-        }
+//
+//        String oldhash = null;
+//        String newhash = null;
+        // oldhash = oldstr.getExactHash();
+        // newhash = newstr.getExactHash();
+        // // Should always use the calculated pieces
+        // // TODO: Come back to this and allow for SOME things to be overloaded
+        // if (true || !newhash.equals(oldhash)) {
+        
+        GinasProcessingMessage mes = GinasProcessingMessage
+                .INFO_MESSAGE("Recomputing structure hash");
+//                .appliableChange(true);
+        Structure struc2 = new GinasChemicalStructure(newstr);
+        oldstr.updateStructureFields(struc2);
+        
+        // }
         if (oldstr.digest == null) {
             oldstr.digest = newstr.digest;
         }
@@ -305,12 +307,12 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
         ChemUtils.checkValance(newstr, callback);
 
-				ChemUtils.fix0Stereo(oldstr, gpm);
-				
-				gpm.forEach(m->{
-					callback.addMessage(m);
-//					System.out.println(m);
-				});
+        ChemUtils.fix0Stereo(oldstr, gpm);
+
+        gpm.forEach(m -> {
+            callback.addMessage(m);
+            // System.out.println(m);
+        });
     }
 
     private static class DeduplicateCallback implements ValidatorCallback {

@@ -10,6 +10,10 @@ import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.chem.StructureProcessor;
+import ix.core.chem.StructureStandardizer;
+import ix.core.models.Keyword;
+import ix.core.models.Structure;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
@@ -56,6 +60,14 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired(required = true)
     private DefinitionalElementFactory definitionalElementFactory;
 
+    @Autowired
+    StructureProcessor structureProcessor;
+
+  
+
+    @Autowired
+    StructureStandardizer standardizer;
+    
     @BeforeEach
     public void runSetup() throws IOException {
         System.out.println("runSetup");
@@ -65,18 +77,14 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
         //prevent validations from occurring multiple times
         if (!setup) {
-            {
-                ValidatorConfig config = new DefaultValidatorConfig();
-                config.setValidatorClass(SaltValidator.class);
-                config.setNewObjClass(ChemicalSubstance.class);
-                factory.addValidator("substances", config);
-            }
-            {
-                ValidatorConfig config = new DefaultValidatorConfig();
-                config.setValidatorClass(ChemicalValidator.class);
-                config.setNewObjClass(ChemicalSubstance.class);
-                factory.addValidator("substances", config);
-            }
+            ValidatorConfig configChemValidator = new DefaultValidatorConfig();
+            configChemValidator.setValidatorClass(ChemicalValidator.class);
+            configChemValidator.setNewObjClass(ChemicalSubstance.class);
+            factory.addValidator("substances", configChemValidator);
+            ValidatorConfig configSaltValidator = new DefaultValidatorConfig();
+            configSaltValidator.setValidatorClass(SaltValidator.class);
+            configSaltValidator.setNewObjClass(ChemicalSubstance.class);
+            factory.addValidator("substances", configSaltValidator);
         }
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
         loadGsrsFile(dataFile);
@@ -113,9 +121,31 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         System.out.println(msg);
         log.debug(msg);
         int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
+        msg = String.format("total properties before validation: %d; names: %d",
+                chemical.getStructure().properties.size(), chemical.names.size());
+        log.error(msg);
+        System.out.println(msg);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
+        //hack. TODO: find a nicer way to set the hash
+        if (chemical.getStructure().properties.size() == 1) {
+            chemical.getStructure().properties.clear();
+            String value = chemical.getStructure().getInChIKey();
+            System.out.println("property value: " + value);
+            int layerOffset = value.indexOf('-');
+            if(layerOffset==-1) {
+                chemical.getStructure().properties.add(new Keyword(Structure.H_STEREO_INSENSITIVE_HASH, value));
+            }
+            else {
+                chemical.getStructure().properties.add(new Keyword(Structure.H_EXACT_HASH, value));
+                chemical.getStructure().properties.add(new Keyword(Structure.H_InChI_Key, value));
+                String connectionOnly = value.substring(0, layerOffset);
+                chemical.getStructure().properties.add(new Keyword(Structure.H_STEREO_INSENSITIVE_HASH, connectionOnly));
+            }
+        }
+        msg = String.format("total properties after validation: %d", chemical.getStructure().properties.size());
+        log.error(msg);
+        System.out.println(msg);
         SaltValidator validator = new SaltValidator();
-
         List<Substance> duplicates = validator.findDefinitionaLayer1lDuplicateCandidates(chemical);
         System.out.println("duplicate list size: " + duplicates.size() + "; items: ");
         duplicates.forEach(s -> {
@@ -126,7 +156,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
             System.out.println(msg2);
         });
 
-        assertFalse(duplicates.isEmpty());
+        assertEquals(1, duplicates.size());
     }
 
     private ChemicalSubstance getChemicalFromFile(String name) {
@@ -134,7 +164,15 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
             File chemicalFile = new ClassPathResource("testJSON/" + name + ".json").getFile();
             ChemicalSubstanceBuilder builder = SubstanceBuilder.from(chemicalFile);
             System.out.println("first name of read-in chem: " + builder.build().names.get(0).name);
-            return builder.build();
+            ChemicalSubstance s = builder.build();
+
+            ChemicalValidator chemicalValidator = new ChemicalValidator();
+            chemicalValidator.setStructureProcessor(structureProcessor);
+            chemicalValidator.validate(s, null);
+            
+//            Structure structure = structureProcessor.instrument(s.getStructure().toChemical(), true);
+//            s.getStructure().updateStructureFields(structure);
+            return s;
         } catch (IOException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
         }
