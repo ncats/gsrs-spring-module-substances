@@ -331,15 +331,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
                     Stream<String> names = fut.stream()
                             .map(s -> (Substance) s)
-                            .peek(s->{
-                                if( s instanceof ChemicalSubstance) {
-                                    ChemicalSubstance chem = (ChemicalSubstance)s;
-                                    String message = String.format("smiles: %s; ste-ins hash: %s", 
-                                            chem.getStructure().smiles,
-                                    chem.getStructure().getStereoInsensitiveHash());
-                                    System.out.println(message);
-                                }
-                            })
                             .flatMap(sub -> {
                                 Substance ps = (Substance) sub;
                                 candidates.add(ps);
@@ -368,12 +359,14 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                     .stream().findFirst().get();
             ChemicalSubstanceBuilder builder = SubstanceBuilder.from(json);
 
-            ChemicalSubstance cs=builder.build();
+            ChemicalSubstance s=builder.build();
             
-            Structure structure = structureProcessor.instrument(cs.getStructure().toChemical(), true);
-            cs.getStructure().updateStructureFields(structure);
+
+            ChemicalValidator chemicalValidator = new ChemicalValidator();
+            chemicalValidator.setStructureProcessor(structureProcessor);
+            chemicalValidator.validate(s, null);
             
-            return cs;
+            return s;
         } catch (IOException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
         }
