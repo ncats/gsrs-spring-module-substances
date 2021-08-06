@@ -1,6 +1,7 @@
 package gsrs.module.substance.definitional;
 
 import gsrs.module.substance.services.DefinitionalElementImplementation;
+import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
@@ -16,16 +17,35 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
+        log.error("starting in ChemicalSubstanceDefinitionalElementImpl.computeDefinitionalElements");
         ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
         Structure structure = chemicalSubstance.getStructure();
         if(structure==null){
+            log.warn("structure null!");
+            System.out.println("structure null!");
             //shouldn't happen unless we get invalid submission
             return;
         }
+        log.error("structure properties");
+        structure.properties.forEach(p->{
+            StringBuilder msgB = new StringBuilder();
+            msgB.append("label: ");
+            msgB.append(p.label);
+            msgB.append("; value:");
+            if( p.getValue() instanceof Keyword) {
+                Keyword kw = (Keyword) p.getValue();
+                msgB.append( kw.term);
+            }
+            else {
+              msgB.append(p.getValue());
+            }
+            log.error(msgB.toString());
+        });
         log.debug("starting addStructureDefinitialElements (ChemicalSubstance)");
         consumer.accept(DefinitionalElement.of("structure.properties.hash1",
                 structure.getStereoInsensitiveHash(), 1));
-        log.debug("structure.getStereoInsensitiveHash(): "  + structure.getStereoInsensitiveHash());
+        log.error("structure.getStereoInsensitiveHash(): "  + structure.getStereoInsensitiveHash());
+        System.out.println("structure.getStereoInsensitiveHash(): "  + structure.getStereoInsensitiveHash());
         consumer.accept(DefinitionalElement.of("structure.properties.hash2",
                 structure.getExactHash(), 2));
         log.debug("structure.getExactHash(): " + structure.getExactHash());

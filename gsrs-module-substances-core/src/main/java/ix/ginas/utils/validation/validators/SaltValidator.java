@@ -135,11 +135,12 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
             //SearchRequest.Builder searchBuilder = new SearchRequest.Builder();
             DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
             //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
+            log.debug("handling layer: " + (layer + 1));
             System.out.println("findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "layer query: " + searchItem);
+            log.error("layer query: " + searchItem);
+            System.out.println("layer query: " + searchItem);
 
             TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
             candidates = (List<Substance>) transactionSearch.execute(ts

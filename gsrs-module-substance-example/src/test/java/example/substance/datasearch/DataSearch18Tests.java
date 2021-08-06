@@ -18,6 +18,7 @@ import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexerEntityListener;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -309,6 +310,15 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
                     Stream<String> names = fut.stream()
                             .map(s -> (Substance) s)
+                            .peek(s->{
+                                if( s instanceof ChemicalSubstance) {
+                                    ChemicalSubstance chem = (ChemicalSubstance)s;
+                                    String message = String.format("smiles: %s; ste-ins hash: %s", 
+                                            chem.getStructure().smiles,
+                                    chem.getStructure().getStereoInsensitiveHash());
+                                    System.out.println(message);
+                                }
+                            })
                             .flatMap(sub -> {
                                 Substance ps = (Substance) sub;
                                 candidates.add(ps);

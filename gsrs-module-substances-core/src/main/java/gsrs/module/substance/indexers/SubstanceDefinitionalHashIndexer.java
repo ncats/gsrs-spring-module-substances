@@ -36,13 +36,17 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 	@Override
 	public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer)
 	{
-		LogUtil.trace(()->String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. class: %s ",
-						substance.getClass().getName()));
+        String debugMessage= String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. class: %s; definitionalElementFactory class: %s",
+						substance.getClass().getName(), definitionalElementFactory.getClass().getName());
+		log.debug( debugMessage);
+        System.out.println(debugMessage);
+        
 		try
 		{
 			DefinitionalElements elements =  definitionalElementFactory.computeDefinitionalElementsFor(substance);
 
 			LogUtil.trace(()->String.format(" received %d elements", elements.getElements().size()));
+            System.out.println(String.format(" received %d elements", elements.getElements().size()));
 			if( elements==null)
 			{
 				log.trace("elements null");
@@ -61,6 +65,7 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 				String layerName = "root_definitional_hash_layer_" + layer;
 				LogUtil.trace(()->"layerName: " + layerName);
 				consumer.accept(IndexableValue.simpleStringValue(layerName, layerHashes.get(layer - 1)));
+                System.out.println(String.format("layer name: %s; value: %s", layerName, layerHashes.get(layer - 1)));
 			}
 		} catch (Exception ex)
 		{
