@@ -127,21 +127,21 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         System.out.println(msg);
         Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
         //hack. TODO: find a nicer way to set the hash
-        if (chemical.getStructure().properties.size() == 1) {
-            chemical.getStructure().properties.clear();
-            String value = chemical.getStructure().getInChIKey();
-            System.out.println("property value: " + value);
-            int layerOffset = value.indexOf('-');
-            if(layerOffset==-1) {
-                chemical.getStructure().properties.add(new Keyword(Structure.H_STEREO_INSENSITIVE_HASH, value));
-            }
-            else {
-                chemical.getStructure().properties.add(new Keyword(Structure.H_EXACT_HASH, value));
-                chemical.getStructure().properties.add(new Keyword(Structure.H_InChI_Key, value));
-                String connectionOnly = value.substring(0, layerOffset);
-                chemical.getStructure().properties.add(new Keyword(Structure.H_STEREO_INSENSITIVE_HASH, connectionOnly));
-            }
-        }
+//        if (chemical.getStructure().properties.size() == 1) {
+//            chemical.getStructure().properties.clear();
+//            String value = chemical.getStructure().getInChIKey();
+//            System.out.println("property value: " + value);
+//            int layerOffset = value.indexOf('-');
+//            if(layerOffset==-1) {
+//                chemical.getStructure().properties.add(new Keyword(Structure.H_STEREO_INSENSITIVE_HASH, value));
+//            }
+//            else {
+//                chemical.getStructure().properties.add(new Keyword(Structure.H_EXACT_HASH, value));
+//                chemical.getStructure().properties.add(new Keyword(Structure.H_InChI_Key, value));
+//                String connectionOnly = value.substring(0, layerOffset);
+//                chemical.getStructure().properties.add(new Keyword(Structure.H_STEREO_INSENSITIVE_HASH, connectionOnly));
+//            }
+//        }
         msg = String.format("total properties after validation: %d", chemical.getStructure().properties.size());
         log.error(msg);
         System.out.println(msg);
