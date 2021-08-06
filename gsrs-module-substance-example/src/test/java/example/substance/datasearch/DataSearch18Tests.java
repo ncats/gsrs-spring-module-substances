@@ -15,6 +15,8 @@ import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
@@ -73,7 +75,9 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private StructureIndexerEventListener structureIndexerEventListener;
     
-
+    @Autowired
+    StructureProcessor structureProcessor;
+    
     @Autowired
     private TestGsrsValidatorFactory factory;
     
@@ -294,6 +298,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     public void testDuplicates() {
         Substance chemical = getSampleChemicalFromFile();
         chemical.uuid = UUID.randomUUID();
+        
         List<Substance> matches = findFullDefinitionalDuplicateCandidates(chemical);
         assertTrue(matches.size() > 0, "must find some duplicates");
     }
@@ -320,8 +325,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                         .build();
                 System.out.println("built query: " + request.getQuery());
                 try {
-                    SearchOptions options = new SearchOptions();
-                    SearchResult sr = searchService.search(request.getQuery(), options);
+                    SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
                     sr.waitForFinish();
                     List fut = sr.getMatches();
 
@@ -355,7 +359,12 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                     .stream().findFirst().get();
             ChemicalSubstanceBuilder builder = SubstanceBuilder.from(json);
 
-            return builder.build();
+            ChemicalSubstance cs=builder.build();
+            
+            Structure structure = structureProcessor.instrument(cs.getStructure().toChemical(), true);
+            cs.getStructure().updateStructureFields(structure);
+            
+            return cs;
         } catch (IOException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
         }

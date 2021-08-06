@@ -264,7 +264,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         // TODO: Come back to this and allow for SOME things to be overloaded
         if (true || !newhash.equals(oldhash)) {
             GinasProcessingMessage mes = GinasProcessingMessage.INFO_MESSAGE(
-                    "Given structure hash disagrees with computed")
+                    "Recomputing structure hash")
                     .appliableChange(true);
             callback.addMessage(mes, ()->{
                     Structure struc2 = new GinasChemicalStructure(newstr);
