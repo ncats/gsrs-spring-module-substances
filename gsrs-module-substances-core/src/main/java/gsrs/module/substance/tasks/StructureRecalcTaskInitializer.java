@@ -51,7 +51,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer
 	private AdminService adminService;
 
 	@Override
-	@Transactional(readOnly = true)
+	@Transactional
 	public void run(SchedulerPlugin.TaskListener l)
 	{
 		l.message("Initializing rehashing");
@@ -69,29 +69,34 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer
 			List<UUID> ids = structureRepository.getAllIds();
 			listen.newProcess();
 			listen.totalRecordsToProcess(ids.size());
-			//we want to run this in a background thread
-			new Thread(()-> {
+
 				ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
 				for (UUID id : ids) {
 
 					executor.submit(() -> {
 						adminService.runAsAdmin(() -> {
 							TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+							tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+							tx.setReadOnly(false);
 							try {
 								tx.executeWithoutResult(status -> {
 									structureRepository.findById(id).ifPresent(s -> {
 										listen.preRecordProcess(s);
 										try {
+
 											System.out.println("recalcing "+  id);
 											recalcStructurePropertiesService.recalcStructureProperties(s);
 											System.out.println("done recalcing "+ id);
 											listen.recordProcessed(s);
+
 										} catch(Throwable t) {
+											t.printStackTrace();
 											listen.error(t);
 										}
 									});
 								});
 							} catch (Throwable ex) {
+								ex.printStackTrace();
 								Logger.getLogger(StructureRecalcTaskInitializer.class.getName()).log(Level.SEVERE, null, ex);
 							}
 						});
@@ -107,7 +112,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer
 				}
 				System.out.println("done!!!!");
 				listen.doneProcess();
-			}).start();
+
 
 	}
 
