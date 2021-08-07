@@ -85,8 +85,9 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer
 											System.out.println("recalcing "+  id);
 											recalcStructurePropertiesService.recalcStructureProperties(s);
 											System.out.println("done recalcing "+ id);
-										} finally {
 											listen.recordProcessed(s);
+										} catch(Throwable t) {
+											listen.error(t);
 										}
 									});
 								});
@@ -104,6 +105,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer
 					//should never happen
 
 				}
+				System.out.println("done!!!!");
 				listen.doneProcess();
 			}).start();
 
