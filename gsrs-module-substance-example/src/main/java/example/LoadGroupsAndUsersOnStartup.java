@@ -81,6 +81,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 up.user = new Principal("admin", "admin@example.com");
                 up.setPassword("admin");
                 up.active = true;
+                up.user.admin = true;
                 up.deprecated = false;
                 up.setRoles(Arrays.asList(Role.values()));
 
