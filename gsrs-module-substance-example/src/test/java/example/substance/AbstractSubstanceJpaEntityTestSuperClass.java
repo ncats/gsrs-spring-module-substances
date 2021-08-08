@@ -114,6 +114,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
         @Override
         public void initialize(ConfigurableApplicationContext context) {
+            
             TestPropertyValues.of(
                     "ix.structure.base=" + tempDir+"/structure",
                     "ix.sequence.base=" + tempDir+"/sequence"

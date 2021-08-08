@@ -35,6 +35,7 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     private GinasChemicalStructure structure;
 
 
+    @Indexable()
     public GinasChemicalStructure getStructure() {
         return structure;
     }

@@ -66,7 +66,7 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
                             +property+"\" while parsing "
                             +bean+"; skipping it.."));
                 	
-                    log.warn("Unknown property \""
+                    log.debug("Unknown property \""
                                 +property+"\" while parsing "
                                 +bean+"; skipping it..");
                     log.debug("Token: "+parser.getCurrentToken());

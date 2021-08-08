@@ -15,16 +15,21 @@ import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
+import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexerEntityListener;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.utils.validation.ValidationUtils.ValidationRule;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
+import lombok.SneakyThrows;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -33,6 +38,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -73,7 +79,9 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private StructureIndexerEventListener structureIndexerEventListener;
     
-
+    @Autowired
+    StructureProcessor structureProcessor;
+    
     @Autowired
     private TestGsrsValidatorFactory factory;
     
@@ -140,6 +148,69 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .findFirst().get();
 
         assertEquals(idForName, actualId);
+    }
+    
+    @Test
+    public void testFacetRestrictChemicals() {
+        SearchRequest sreq = new SearchRequest.Builder()
+                .addFacet("Substance Class", "chemical")
+                .kind(Substance.class)
+                .build();
+
+        List<Substance> matches= getSearchList(sreq);
+        int chems = 0;
+        int others=0;
+
+        for(Substance s: matches) {
+            if(s.substanceClass.equals(SubstanceClass.chemical)){
+                chems++;
+            }else {
+                others++;
+            }
+        }
+        assertEquals(0,others,"Expect only chemicals to come back on faceted search for chemicals");
+        assertEquals(9,chems,"Expect 9 chemicals to come back on faceted search for chemicals");
+    }
+    @Test
+    public void testSortMwt() {
+        SearchRequest sreq = new SearchRequest.Builder()
+                .addFacet("Substance Class", "chemical")
+                .addOrder("^root_structure_mwt")
+                .kind(Substance.class)
+                .build();
+
+        List<Substance> matches= getSearchList(sreq);
+        List<Substance> sorted = matches.stream()
+                .map(s->(ChemicalSubstance)s)
+                .sorted(Comparator.comparing(cs->cs.getStructure().mwt))
+                .collect(Collectors.toList());
+        
+
+        for(int i=0;i<matches.size();i++) {
+            Substance r1 = matches.get(i);
+            Substance e1 = sorted.get(i);
+            assertEquals(e1.uuid,r1.uuid, "Expected chemicals sorted by molecular weight, but were returned in the wrong order");
+        }
+//        assertEquals(0,others,"Expect only chemicals to come back on faceted search for chemicals");
+//        assertEquals(9,chems,"Expect 9 chemicals to come back on faceted search for chemicals");
+    }
+    
+    public List<Substance> getSearchList(SearchRequest sr){
+        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+        List<Substance> substances = transactionSearch.execute(ts -> {
+            try {
+            SearchResult sresult=searchService.search(sr.getQuery(), sr.getOptions());            
+            List<Substance> first = sresult.getMatches();            
+            return first.stream()
+                    //force fetching
+                    .peek(ss->EntityWrapper.of(ss).toInternalJson())
+                    .collect(Collectors.toList());
+            }catch(Exception e) {
+                throw new RuntimeException(e);
+                
+            }
+        });
+        return substances;
     }
 
     @Test
@@ -294,6 +365,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     public void testDuplicates() {
         Substance chemical = getSampleChemicalFromFile();
         chemical.uuid = UUID.randomUUID();
+        
         List<Substance> matches = findFullDefinitionalDuplicateCandidates(chemical);
         assertTrue(matches.size() > 0, "must find some duplicates");
     }
@@ -320,8 +392,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                         .build();
                 System.out.println("built query: " + request.getQuery());
                 try {
-                    SearchOptions options = new SearchOptions();
-                    SearchResult sr = searchService.search(request.getQuery(), options);
+                    SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
                     sr.waitForFinish();
                     List fut = sr.getMatches();
 
@@ -355,7 +426,14 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                     .stream().findFirst().get();
             ChemicalSubstanceBuilder builder = SubstanceBuilder.from(json);
 
-            return builder.build();
+            ChemicalSubstance s=builder.build();
+            
+
+            ChemicalValidator chemicalValidator = new ChemicalValidator();
+            chemicalValidator.setStructureProcessor(structureProcessor);
+            chemicalValidator.validate(s, null);
+            
+            return s;
         } catch (IOException ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
         }
