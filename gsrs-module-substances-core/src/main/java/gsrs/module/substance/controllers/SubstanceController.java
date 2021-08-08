@@ -345,16 +345,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         + (fin.getType().equals(SubstanceHierarchyFinder.getHierarchyRootType()) ? "" : " {" + fin.getType() + "}")).toUpperCase();
 
                 builder.addNode(text, fin.getType(), l.size() - 1, fin.getValue().asSubstanceReference());
-//				System.out.println(text + "\n  " + namer.apply(fin) + "  depth = " + l.size() );
                 return true;
             });
         }
         List<SubstanceHierarchyFinder.TreeNode2> nodes = builder.build();
-//		try {
-//			System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(nodes));
-//		} catch (JsonProcessingException e) {
-//			e.printStackTrace();
-//		}
 
         return nodes;
     }
@@ -506,7 +500,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam(required = false) String q, @RequestParam(required = false) String type, @RequestParam(required = false, defaultValue = "0.9") Double cutoff,
             @RequestParam(required = false) Integer top, @RequestParam(required = false) Integer skip, @RequestParam(required = false) Integer fdim, @RequestParam(required = false) String field,
 
-            @RequestParam(value = "sync", required = false, defaultValue = "true") boolean sync,
+            @RequestParam(value = "sync", required = false, defaultValue = "false") boolean sync,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest,
             HttpServletRequest httpRequest,
@@ -553,7 +547,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
             attributes.addAttribute("q", hash);
             attributes.addAttribute("includeBreakdown", false);
-            //do a text search for that hash value?
+            // do a text search for that hash value?
             // This technically breaks things, but is probably okay for now
             //
             return new ModelAndView("redirect:/api/v1/substances/search");
@@ -563,7 +557,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SIMILARITY) {
             resultContext = substanceStructureSearchService.search(sanitizedRequest, hashKey.get());
         }
-        //TODO add other search types here
 
         //we have to manually set the actual request uri here as it's the only place we know it!!
         //for some reason the spring boot methods to get the current quest  URI don't include the parameters
@@ -577,7 +570,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }
             queryParamBuilder.append(k).append("=").append(v);
         });
-        resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder);
+        String oldURL = resultContext.getGeneratingUrl();
+        //It will go on forever if not for this if statement
+        if(!oldURL.contains("?")) {
+            resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder);
+        }
         //TODO move to service
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
@@ -705,7 +702,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public ResponseEntity<Object> substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
         context.setAdapter((srequest, ctx) -> {
             try {
-                //TODO: technically this shouldn't be needed,
+                // TODO: technically this shouldn't be needed,
                 // but something is getting lost in translation between 2.X and 3.0
                 srequest.getOptions().setKind(Substance.class);
                 SearchResult sr = getResultFor(ctx, srequest,true);
@@ -726,13 +723,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         if (sync) {
             try {
-
                 context.getDeterminedFuture().get(1, TimeUnit.MINUTES);
-
 //                return play.mvc.Controller.redirect(context.getResultCall());
                 HttpHeaders headers = new HttpHeaders();
 //                String url = .toUri().toString();
-                headers.add("Location", GsrsLinkUtil.adapt(context.getKey(),entityLinks.linkFor(SearchResultContext.class).slash(context.getKey()).slash("result").withSelfRel())
+                //TODO this should actually forward to "status(<key>)/results", but it's currently status/<key>/results
+                headers.add("Location", GsrsLinkUtil.adapt(context.getKey(),entityLinks.linkFor(SearchResultContext.class).slash(context.getKey()).slash("results").withSelfRel())
                         .toUri().toString() );
                 return new ResponseEntity<>(headers,HttpStatus.FOUND);
             } catch (TimeoutException e) {
@@ -766,7 +762,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }else{
                 //katzelda : run it through the text indexer for the facets?
 //                searchResult = SearchFactory.search (request);
-                searchResult = legacySearchService.search(null, request.getOptions(), request.getSubset());
+                searchResult = legacySearchService.search(request.getQuery(), request.getOptions(), request.getSubset());
                 log.debug("Cache misses: "
                         +key+" size="+results.size()
                         +" class="+searchResult);
