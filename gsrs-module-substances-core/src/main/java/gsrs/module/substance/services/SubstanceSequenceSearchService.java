@@ -43,23 +43,7 @@ public interface SubstanceSequenceSearchService {
         private double identity = 0.5D;
         private SequenceSearchType searchType = SequenceSearchType.GLOBAL;
         private String order;
-        /*
-         Map<String, String[]> params = request().body().asFormUrlEncoded();
-        String q =      getLastStringOrElse(params.get("q"), null);
-        String type =   getLastStringOrElse(params.get("type"), "SUB");
-        Double co =     getLastDoubleOrElse(params.get("cutoff"), 0.8);
-        Integer top =   getLastIntegerOrElse(params.get("top"), 10);
-        Integer skip=   getLastIntegerOrElse(params.get("skip"), 0);
-        Integer fdim =  getLastIntegerOrElse(params.get("fdim"), 10);
-        String field =  getLastStringOrElse(params.get("field"), "");
-        String seqType = getLastStringOrElse(params.get("seqType"), "Protein");
-
-        String iden = request.getParameter("identity");
-                    if (iden == null) {
-                        iden = "0.5";
-                    }
-                    String idenType = request.getParameter("identityType");
-         */
+       
 
         public SanitizedSequenceSearchRequest sanitize() throws IOException {
             return new SanitizedSequenceSearchRequest(this);
@@ -190,19 +174,6 @@ public interface SubstanceSequenceSearchService {
             putIfNotNull("order", order, map);
             putIfNotNull("searchType", searchType, map);
             map.put("cutoff", Double.toString(identity));
-/*
-private String q;
-        private SequenceIndexer.CutoffType type;
-        private Double cutoff;
-        private Integer top;
-        private Integer skip;
-        private Integer fdim;
-        private String field;
-        private String seqType;
-        private double identity;
-        private String order;
-        private SequenceSearchType searchType;
- */
             return map;
         }
     }
