@@ -116,8 +116,7 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
     public List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance) {
         DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
         int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
-        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
-        System.out.println("findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
+        log.debug("handling layer: " + (layer + 1));
         return findLayerNDefinitionalDuplicateCandidates(substance, layer);
     }
 
@@ -136,12 +135,11 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
             DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
             //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
             log.debug("handling layer: " + (layer + 1));
-            System.out.println("findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
+            //System.out.println("findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
-            log.error("layer query: " + searchItem);
-            System.out.println("layer query: " + searchItem);
-
+            log.debug("layer query: " + searchItem);
+            
             TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
             candidates = (List<Substance>) transactionSearch.execute(ts
                     -> {
@@ -152,7 +150,7 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
                         .query(searchItem)
                         .top(Integer.MAX_VALUE)
                         .build();
-                System.out.println("built query: " + request.getQuery());
+                //System.out.println("built query: " + request.getQuery());
                 try {
                     SearchOptions options = new SearchOptions();
                     SearchResult sr = searchService.search(request.getQuery(), options);
@@ -188,7 +186,7 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
 				}
 			}*/
         } catch (Exception ex) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error running query", ex);
+            log.error("Error running query", ex);
         }
         return candidates;
     }

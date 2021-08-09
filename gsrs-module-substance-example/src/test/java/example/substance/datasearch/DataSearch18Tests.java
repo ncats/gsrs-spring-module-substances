@@ -21,12 +21,15 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexerEntityListener;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.utils.validation.ValidationUtils.ValidationRule;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
+import lombok.SneakyThrows;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -35,6 +38,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -57,6 +61,7 @@ import org.springframework.test.context.event.RecordApplicationEvents;
  */
 //Changed base class from AbstractSubstanceJpaFullStackEntityTest to AbstractSubstanceJpaEntityTest
 // 16 July based on recommendation from Danny K.
+// 7 August Tyler Peryea refactored this class to be cleaner and more DRY-adherent 
 @WithMockUser(username = "admin", roles = "Admin")
 public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
@@ -104,8 +109,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
         String name1 = "THIOFLAVIN S2";
         String idForName = "e92bc4ad-250a-4eef-8cd7-0b0b1e3b6cf0";
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<Substance> substances = transactionSearch.execute(ts -> {
 
                     SearchRequest request = new SearchRequest.Builder()
                             .kind(Substance.class)
@@ -113,23 +116,9 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                             .query("root_names_name:\"" + name1 + "\"")
                             .top(Integer.MAX_VALUE)
                             .build();
-                    System.out.println("query: " + request.getQuery());
-                    try {
-                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                        sr.waitForFinish();
 
-                        List futureList = sr.getMatches();
-                        Stream<Substance> stream = futureList
-                                .stream();
-                        return stream.collect(Collectors.toList());
+        List<Substance> substances= getSearchList(request);
 
-                    } catch (Exception ex) {
-                        System.err.println("error in lambda");
-                        ex.printStackTrace();
-                        throw new RuntimeException(ex);
-                    }
-                }
-        );
         /*
         as of 21 July 2021, I am puzzled by the inability to get a List<String> directly from
         transactionSearch.execute.
@@ -147,11 +136,53 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
+    public void testFacetRestrictChemicals() {
+        SearchRequest sreq = new SearchRequest.Builder()
+                .addFacet("Substance Class", "chemical")
+                .kind(Substance.class)
+                .build();
+
+        List<Substance> matches= getSearchList(sreq);
+        int chems = 0;
+        int others=0;
+
+        for(Substance s: matches) {
+            if(s.substanceClass.equals(SubstanceClass.chemical)){
+                chems++;
+            }else {
+                others++;
+            }
+        }
+        assertEquals(0,others,"Expect only chemicals to come back on faceted search for chemicals");
+        assertEquals(9,chems,"Expect 9 chemicals to come back on faceted search for chemicals");
+    }
+    @Test
+    public void testSortMwt() {
+        SearchRequest sreq = new SearchRequest.Builder()
+                .addFacet("Substance Class", "chemical")
+                .addOrder("^root_structure_mwt")
+                .kind(Substance.class)
+                .build();
+
+        List<Substance> matches= getSearchList(sreq);
+        List<Substance> sorted = matches.stream()
+                .map(s->(ChemicalSubstance)s)
+                .sorted(Comparator.comparing(cs->cs.getStructure().mwt))
+                .collect(Collectors.toList());
+        
+
+        for(int i=0;i<matches.size();i++) {
+            Substance r1 = matches.get(i);
+            Substance e1 = sorted.get(i);
+            assertEquals(e1.uuid,r1.uuid, "Expected chemicals sorted by molecular weight, but were returned in the wrong order");
+        }
+    }
+    
+
+    @Test
     public void testSearchByApprovalID() {
         String approvalID1 = "D733ET3F9O";
         String idForName = "deb33005-e87e-4e7f-9704-d5b4c80d3023";
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<Substance> substances = transactionSearch.execute(ts -> {
 
                     SearchRequest request = new SearchRequest.Builder()
                             .kind(Substance.class)
@@ -159,21 +190,10 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                             .query("root_approvalID:\"" + approvalID1 + "\"")
                             .top(Integer.MAX_VALUE)
                             .build();
-                    System.out.println("query: " + request.getQuery());
-                    try {
-                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                        sr.waitForFinish();
+        List<Substance> substances = getSearchList(request);
+        
+        
 
-                        Stream<Substance> stream = sr.getMatches()
-                                .stream();
-                        return stream.collect(Collectors.toList());
-                    } catch (Exception ex) {
-                        System.err.println("error in lambda");
-                        ex.printStackTrace();
-                        throw new RuntimeException(ex);
-                    }
-                }
-        );
         System.out.println("substances size: " + substances.size());
         String actualId = substances.stream()
                 .map(s -> s.uuid.toString())
@@ -189,8 +209,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 "deb33005-e87e-4e7f-9704-d5b4c80d3023", "5b611b0d-b798-45ed-ba02-6f0a2f85986b",
                 "306d24b9-a6b8-4091-8024-02f9ec24b705", "90e9191d-1a81-4a53-b7ee-560bf9e68109");
         Collections.sort(expectedIds);//use default sort order
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<Substance> substances = transactionSearch.execute(ts -> {
 
                     SearchRequest request = new SearchRequest.Builder()
                             .kind(Substance.class)
@@ -198,21 +216,8 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                             .query("root_codes_codeSystem:\"" + codeSystem1 + "\"")
                             .top(Integer.MAX_VALUE)
                             .build();
-                    System.out.println("query: " + request.getQuery());
-                    try {
-                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                        sr.waitForFinish();
+        List<Substance> substances = getSearchList(request);
 
-                        Stream<Substance> stream = sr.getMatches()
-                                .stream();
-                        return stream.collect(Collectors.toList());
-                    } catch (Exception ex) {
-                        System.err.println("error in lambda");
-                        ex.printStackTrace();
-                        throw new RuntimeException(ex);
-                    }
-                }
-        );
         System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
@@ -228,9 +233,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         String substanceClass = "protein";
         List<String> expectedIds = Arrays.asList("044e6d9c-37c0-42ac-848e-2e41937216b1", "deb33005-e87e-4e7f-9704-d5b4c80d3023");
         Collections.sort(expectedIds);//use default sort order
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<Substance> substances = transactionSearch.execute(ts -> {
-
                     SearchRequest request = new SearchRequest.Builder()
                             .kind(Substance.class)
                             .fdim(0)
@@ -238,21 +240,8 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                                     + substanceClass + "\"")
                             .top(Integer.MAX_VALUE)
                             .build();
-                    System.out.println("query: " + request.getQuery());
-                    try {
-                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                        sr.waitForFinish();
+        List<Substance> substances = getSearchList(request);
 
-                        Stream<Substance> stream = sr.getMatches()
-                                .stream();
-                        return stream.collect(Collectors.toList());
-                    } catch (Exception ex) {
-                        System.err.println("error in lambda");
-                        ex.printStackTrace();
-                        throw new RuntimeException(ex);
-                    }
-                }
-        );
         System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
@@ -265,31 +254,12 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     public void testSearchForChemicals() {
         String substanceClass = "chemical";
         int expectedNumber = 9;
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<Substance> substances = transactionSearch.execute(ts -> {
-
                     SearchRequest request = new SearchRequest.Builder()
                             .kind(Substance.class)
-                            .fdim(0)
                             .query("root_substanceClass:\"" + substanceClass + "\"")
-                            .top(Integer.MAX_VALUE)
                             .build();
-                    System.out.println("query: " + request.getQuery());
-                    try {
-                        SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                        sr.waitForFinish();
+        List<Substance> substances = getSearchList(request);
 
-                        Stream<Substance> stream = sr.getMatches()
-                                .stream();
-                        return stream.collect(Collectors.toList());
-                    } catch (Exception ex) {
-                        System.err.println("error in lambda");
-                        ex.printStackTrace();
-                        throw new RuntimeException(ex);
-                    }
-
-                }
-        );
         substances.forEach(s -> System.out.println("substance with ID " + s.uuid));
         assertEquals(expectedNumber, substances.size());
     }
@@ -313,42 +283,45 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
             System.out.println("in findFullDefinitionalDuplicateCandidates, searchItem: " + searchItem);
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "layer query: " + searchItem);
-
-            TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-            List<String> nameValues = (List<String>) transactionSearch.execute(ts
-                    -> {
                 SearchRequest request = new SearchRequest.Builder()
                         .kind(Substance.class)
-                        .fdim(0)
                         .query(searchItem)
-                        .top(Integer.MAX_VALUE)
                         .build();
-                System.out.println("built query: " + request.getQuery());
-                try {
-                    SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-                    sr.waitForFinish();
-                    List fut = sr.getMatches();
-
-                    Stream<String> names = fut.stream()
-                            .map(s -> (Substance) s)
-                            .flatMap(sub -> {
-                                Substance ps = (Substance) sub;
-                                candidates.add(ps);
-                                return ps.names.stream()
-                                        .map(n -> n.name);
-                            });
-                    return names.collect(Collectors.toList());
-                } catch (Exception ex) {
-                    System.err.println("error during search");
-                    ex.printStackTrace();
-                }
-                return new ArrayList<>();
-            });
-            nameValues.forEach(n -> System.out.println(n));
+            candidates = getSearchList(request);
+            
+            candidates.stream()
+                      .flatMap(ss->ss.names.stream())
+                      .map(n->n.name)
+                      .forEach(n -> System.out.println(n));
         } catch (Exception ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error running query", ex);
         }
         return candidates;
+    }
+    
+
+    /**
+     * Return a list of substances based on the {@link SearchRequest}. This takes care of
+     * some tricky transaction issues.
+     * @param sr
+     * @return
+     */
+    private List<Substance> getSearchList(SearchRequest sr){
+        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+        List<Substance> substances = transactionSearch.execute(ts -> {
+            try {
+            SearchResult sresult=searchService.search(sr.getQuery(), sr.getOptions());            
+            List<Substance> first = sresult.getMatches();            
+            return first.stream()
+                    //force fetching
+                    .peek(ss->EntityWrapper.of(ss).toInternalJson())
+                    .collect(Collectors.toList());
+            }catch(Exception e) {
+                throw new RuntimeException(e);
+                
+            }
+        });
+        return substances;
     }
 
     private Substance getSampleChemicalFromFile() {

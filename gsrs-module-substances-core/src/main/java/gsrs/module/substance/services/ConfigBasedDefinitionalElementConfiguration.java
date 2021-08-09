@@ -43,17 +43,11 @@ public class ConfigBasedDefinitionalElementConfiguration{
     });
 
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer){
-        System.out.println("starting in computeDefinitionalElements");
         if(s==null){
             return;
         }
         for(DefinitionalElementImplementation impl : cachedInstances.getSync()){
-            //temporarily debug
-            String debugMessage= String.format("computeDefinitionalElements object class %s; impl class: %s",
-                    s.getClass().getName(), impl.getClass().getName());
-            System.out.println(debugMessage);
             if(impl.supports(s)){
-                System.out.println("supports!");
                 impl.computeDefinitionalElements(s, consumer);
             }
         }

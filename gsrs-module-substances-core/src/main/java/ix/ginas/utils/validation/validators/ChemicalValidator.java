@@ -214,7 +214,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     private void validateStructureDuplicates(
             ChemicalSubstance cs, ValidatorCallback callback) {
-
+        if(chemicalDuplicateFinder==null)return;
         try {
 
             List<SubstanceReference> sr = chemicalDuplicateFinder.findPossibleDuplicatesFor(cs.asSubstanceReference());
