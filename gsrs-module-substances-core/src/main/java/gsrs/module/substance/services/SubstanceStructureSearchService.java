@@ -340,7 +340,6 @@ public class SubstanceStructureSearchService {
                     matchingContext.put("atomMaps", amap);
                 }
                 matchingContext.put("similarity", similarity);
-                //Util.debugSpin(100);
                 EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(chem);
                 gsrsCache.setMatchingContext(this.getContext().getId(), ew.getKey(), matchingContext);
                 return chem;

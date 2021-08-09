@@ -32,6 +32,7 @@ import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.ReindexService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.module.substance.services.SubstanceSequenceSearchService.SequenceSearchType;
 import gsrs.repository.EditRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.hasAdminRole;
@@ -66,6 +67,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -179,9 +181,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 c=this.standardize(c);
                 return c.toMol();
             } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                
+                log.warn("issue standardizing mol", e);                
                 return mol;
             }
         
@@ -317,10 +317,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public static String getKey (String q, double t) {
         return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
     }
-//    @GetGsrsRestApiMapping("({ID}/@hierarchy")
-//    public Object getHierarchy(@PathVariable("ID") String id){
-//
-//    }
 
 
     @Override
@@ -353,15 +349,28 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return nodes;
     }
 
+    /**
+     * Produce a roughly canonical hash of the specific query parameters so that
+     * it can be adequately cached and the results can be returned on subsequent calls.
+     * This key is intended to preserve the "fundamental" parts of the query so that queries
+     * which mean the same thing will return the same cached result, even if there are superficial
+     * differences in how the query is built. This key takes into account:
+     * <ul>
+     * <li>the query: verbatim text OR a canonical SMILES/SMARTS OR a sequence on search type</li>
+     * <li>the search type: substructure, similarity, sequence, etc</li>
+     * <li>the similarity cutoff: for structure similarity and sequence searches</li>
+     * <li>the order: sorting order given</li>
+     * </ul>
+     * 
+     * Note that the sequence searches no longer use this method for their hash keys. Only
+     * the structure searches do.
+     * @param request
+     * @return
+     */
     public Optional<String> getKeyForCurrentRequest(HttpServletRequest request){
-
-
-
         String query = request.getParameter("q") + request.getParameter("order");
         String type = request.getParameter("type");
-
-
-
+        
         log.debug("checkStatus: q=" + query + " type=" + type);
         if (type != null && request.getParameter("q") != null) {
             try {
@@ -374,31 +383,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     String c = request.getParameter("cutoff");
                     String sq = getSmiles(request.getParameter("q"));
                     key = "similarity/"+getKey (sq + request.getParameter("order"), Double.parseDouble(c));
-                }
-                else if (type.toLowerCase().startsWith("seq")) {
-                    String iden = request.getParameter("identity");
-                    if (iden == null) {
-                        iden = "0.5";
-                    }
-                    String idenType = request.getParameter("identityType");
-                    if(idenType==null){
-                        idenType="GLOBAL";
-                    }
-                    key = "sequence/"+getKey (getSequence(request.getParameter("q")) +idenType + request.getParameter("order"), Double.parseDouble(iden));
-
-                }else if(type.toLowerCase().startsWith("flex")) {
+                }else if(type.toLowerCase().startsWith("fle")) {
                     String sq = getSmiles(request.getParameter("q"));
                     key = "flex/"+Util.sha1(sq + request.getParameter("order"));
 
                     return Optional.of(signature (key, request));
-                }else if(type.toLowerCase().startsWith("exact")) {
+                }else if(type.toLowerCase().startsWith("exa")) {
                     String sq = getSmiles(request.getParameter("q"));
                     key = "exact/"+Util.sha1(sq + request.getParameter("order"));
                     return Optional.of(signature (key, request));
                 }else{
                     key = type + "/"+Util.sha1(query);
                 }
-
                 return Optional.of(Util.sha1(key));
 
             }catch (Exception ex) {
@@ -435,10 +431,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 && q.indexOf('/') > 0 && q.indexOf("\"") < 0;
         if (hasFacets) {
             // treat this as facet
-            qfacets.add("MeSH/"+q);
+            qfacets.add("QFACET/"+q);
             query.put("facet", qfacets.toArray(new String[0]));
         }
-        //query.put("drill", new String[]{"down"});
 
         List<String> args = new ArrayList<String>();
         args.add(request.getRequestURI());
@@ -454,52 +449,60 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String dep = query.getOrDefault("showDeprecated", new String[]{"false"})[0];
         args.add("dep" + dep);
-
-
-
+        
         Collections.sort(args);
         return Util.sha1(args.toArray(new String[0]));
     }
 
-    @PostGsrsRestApiMapping("/structureSearch")
-    public Object structureSearchPost(@NotNull @RequestBody SubstanceStructureSearchService.SearchRequest request,
-                                                      @RequestParam(value="sync", required= false, defaultValue="true") boolean sync,
-                                                      @RequestParam Map<String, String> queryParameters,
-                                                      HttpServletRequest httpRequest,
-                                      RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
+    @PostGsrsRestApiMapping(path = "/structureSearch", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+    public Object structureSearchPost(
+            @RequestParam MultiValueMap<String,String> body, 
+                                                     HttpServletRequest httpRequest,
+                                                     RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
 
-        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = request.sanitize();
-
+        SubstanceStructureSearchService.SearchRequest.SearchRequestBuilder rb = SubstanceStructureSearchService.SearchRequest.builder();
+        
+        Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
+        Optional.ofNullable(body.getFirst("q")).ifPresent(c->rb.q(c));
+        Optional.ofNullable(body.getFirst("top")).map(s->Integer.parseInt(s)).ifPresent(c->rb.top(c));
+        Optional.ofNullable(body.getFirst("skip")).map(s->Integer.parseInt(s)).ifPresent(c->rb.skip(c));
+        Optional.ofNullable(body.getFirst("fdim")).map(s->Integer.parseInt(s)).ifPresent(c->rb.fdim(c));
+        Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
+        Optional.ofNullable(body.getFirst("type")).map(s->SubstanceStructureSearchService.StructureSearchType.parseType(s)).ifPresent(c->rb.type(c));
+        Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
+      
+        
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
+        
         boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT ||
                 sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX ;
         Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), !isHashQuery);
         if(!structure.isPresent()){
-            return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + sanitizedRequest.getQueryStructure());
+            return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), "query structure not found : " + sanitizedRequest.getQueryStructure());
         }
         httpRequest.setAttribute(
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
-
+        boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
+        
+        
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
-        if(isHashQuery){
-            if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-                attributes.addAttribute("q", "root_structure_properties_term:"+structure.get().getExactHash());
-
-            }else{
-                attributes.addAttribute("q", structure.get().getStereoInsensitiveHash());
-
-            }
-            return new ModelAndView("redirect:/api/v1/substances/search");
-        }else {
-            attributes.addAttribute("q", structure.get().id.toString());
-            return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+        attributes.addAttribute("q", structure.get().id.toString());
+        if(sync) {
+            attributes.addAttribute("sync", true);
         }
+        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
     }
+    
     @GetGsrsRestApiMapping("/structureSearch")
     public Object structureSearchGet(
-            @RequestParam(required = false) String q, @RequestParam(required = false) String type, @RequestParam(required = false, defaultValue = "0.9") Double cutoff,
-            @RequestParam(required = false) Integer top, @RequestParam(required = false) Integer skip, @RequestParam(required = false) Integer fdim, @RequestParam(required = false) String field,
-
+            @RequestParam(required = false) String q, 
+            @RequestParam(required = false) String type, 
+            @RequestParam(required = false, defaultValue = "0.9") Double cutoff,
+            @RequestParam(required = false) Integer top, 
+            @RequestParam(required = false) Integer skip, 
+            @RequestParam(required = false) Integer fdim, 
+            @RequestParam(required = false) String field,
             @RequestParam(value = "sync", required = false, defaultValue = "false") boolean sync,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest,
@@ -514,10 +517,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         Structure structure = structureOp.get();
         
-
-
         String cleaned = CtTableCleaner.clean(structure.molfile);
-
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
                         .q(cleaned)
@@ -558,23 +558,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             resultContext = substanceStructureSearchService.search(sanitizedRequest, hashKey.get());
         }
 
-        //we have to manually set the actual request uri here as it's the only place we know it!!
-        //for some reason the spring boot methods to get the current quest  URI don't include the parameters
-        //so we have to append them manually here from our controller
-        StringBuilder queryParamBuilder = new StringBuilder();
-        queryParameters.forEach((k,v)->{
-            if(queryParamBuilder.length()==0){
-                queryParamBuilder.append("?");
-            }else{
-                queryParamBuilder.append("&");
-            }
-            queryParamBuilder.append(k).append("=").append(v);
-        });
-        String oldURL = resultContext.getGeneratingUrl();
-        //It will go on forever if not for this if statement
-        if(!oldURL.contains("?")) {
-            resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder);
-        }
+
+        updateSearchContextGenerator(resultContext, queryParameters);
+        
         //TODO move to service
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
@@ -605,15 +591,22 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     //context: String, q: String ?= null, type: String ?= "GLOBAL", cutoff: Double ?= .9, top: Int ?= 10, skip: Int ?= 0, fdim: Int ?= 10, field: String ?= "", seqType: String ?="Protein")
     @GetGsrsRestApiMapping("/sequenceSearch")
     public ResponseEntity<Object> sequenceSearchGet(
-            @RequestParam(required= false) String q,  @RequestParam(required= false) String type, @RequestParam(required= false,  defaultValue = "0.9") Double cutoff,
-            @RequestParam(required= false) Integer top, @RequestParam(required= false) Integer skip, @RequestParam(required= false) Integer fdim, @RequestParam(required= false) String field,
+            @RequestParam(required= false) String q,  
+            @RequestParam(required= false) String type, 
+            @RequestParam(required= false,  defaultValue = "0.9") Double cutoff,
+            @RequestParam(required= false) Integer top, 
+            @RequestParam(required= false) Integer skip, 
+            @RequestParam(required= false) Integer fdim, 
+            @RequestParam(required= false) String field,
+            @RequestParam(required= false, defaultValue = "GLOBAL") String searchType,
             @RequestParam(required= false, defaultValue = "Protein") String seqType,
-                                                 @RequestParam(value="sync", required= false, defaultValue="true") boolean sync,
+            @RequestParam(value="sync", required= false, defaultValue="false") boolean sync,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest) throws IOException, ExecutionException, InterruptedException {
 
-        Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
-        //TODO use hashKey to store in ixcache
+//        Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
+//        //TODO use hashKey to store in ixcache
+        
         Optional<Subunit> subunit = convertQueryStringToSequence(q, false);
         if(!subunit.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query sequence not found : " + q);
@@ -622,30 +615,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         SubstanceSequenceSearchService.SequenceSearchRequest request = SubstanceSequenceSearchService.SequenceSearchRequest.builder()
                 .q(subunit.get().sequence)
                 .type(SequenceIndexer.CutoffType.valueOfOrDefault(type))
+                .seqType(seqType)
+                .searchType(SequenceSearchType.valueOf(searchType))
                 .cutoff(cutoff)
                 .top(top)
                 .skip(skip)
                 .fdim(fdim)
                 .field(field)
-                .seqType(seqType)
                 .build();
 
         SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
         SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
-        //we have to manually set the actual request uri here as it's the only place we know it!!
-        //for some reason the spring boot methods to get the current quest  URI don't include the parameters
-        //so we have to append them manually here from our controller
-        StringBuilder queryParamBuilder = new StringBuilder();
-        queryParameters.forEach((k,v)->{
-            if(queryParamBuilder.length()==0){
-                queryParamBuilder.append("?");
-            }else{
-                queryParamBuilder.append("&");
-            }
-            queryParamBuilder.append(k).append("=").append(v);
-        });
-        resultContext.setGeneratingUrl(resultContext.getGeneratingUrl() + queryParamBuilder);
-        //TODO move to service
+        
+        updateSearchContextGenerator(resultContext, queryParameters);
+        
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
     }
@@ -672,23 +655,48 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return Optional.of(sub);
     }
 
-    @PostGsrsRestApiMapping("/sequenceSearch")
-    public Object sequenceSearchPost(@NotNull @RequestBody SubstanceSequenceSearchService.SequenceSearchRequest request,
-                                         @RequestParam(value="sync", required= false, defaultValue="true") boolean sync,
-                                                     @RequestParam Map<String, String> queryParameters,
+    @PostGsrsRestApiMapping(path = "/sequenceSearch", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
+    public Object sequenceSearchPost(
+            @RequestParam MultiValueMap<String,String> body, 
                                                      HttpServletRequest httpRequest,
                                                      RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
 
+        SubstanceSequenceSearchService.SequenceSearchRequest.SequenceSearchRequestBuilder rb = SubstanceSequenceSearchService.SequenceSearchRequest.builder();
+        
+        Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
+        Optional.ofNullable(body.getFirst("q")).ifPresent(c->rb.q(c));
+        Optional.ofNullable(body.getFirst("top")).map(s->Integer.parseInt(s)).ifPresent(c->rb.top(c));
+        Optional.ofNullable(body.getFirst("skip")).map(s->Integer.parseInt(s)).ifPresent(c->rb.skip(c));
+        Optional.ofNullable(body.getFirst("fdim")).map(s->Integer.parseInt(s)).ifPresent(c->rb.fdim(c));
+        Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
+        Optional.ofNullable(body.getFirst("seqType")).ifPresent(c->rb.seqType(c));
+        Optional.ofNullable(body.getFirst("searchType")).map(s->SequenceSearchType.valueOf(s)).ifPresent(c->rb.searchType(c));
+        Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
+        
+        
+
+        //TODO: TP: I'm not sure these are actually used, may want to remove all mentions entirely
+        Optional.ofNullable(body.getFirst("identity")).map(s->Double.parseDouble(s)).ifPresent(c->rb.identity(c));
+        Optional.ofNullable(body.getFirst("type")).map(s->SequenceIndexer.CutoffType.valueOfOrDefault(s)).ifPresent(c->rb.type(c));
+        
+        
+        SubstanceSequenceSearchService.SequenceSearchRequest request = rb.build();
+        
         Optional<Subunit> querySequence= convertQueryStringToSequence(request.getQ(), true);
         if(!querySequence.isPresent()){
-            return getGsrsControllerConfiguration().handleNotFound(queryParameters, request.getQ());
+            return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), request.getQ());
         }
 
         httpRequest.setAttribute(
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
+        boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
+        
         attributes.mergeAttributes(request.sanitize().toMap());
         attributes.addAttribute("q", querySequence.get().uuid.toString());
+        if(sync) {
+            attributes.addAttribute("sync", true);
+        }
         return new ModelAndView("redirect:/api/v1/substances/sequenceSearch");
 
     }
@@ -699,11 +707,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
     }
 
+    private void updateSearchContextGenerator(SearchResultContext resultContext, Map<String,String> queryParameters) {
+        String oldURL = resultContext.getGeneratingUrl();
+        if(oldURL!=null && !oldURL.contains("?")) {
+            //we have to manually set the actual request uri here as it's the only place we know it!!
+            //for some reason the spring boot methods to get the current quest  URI don't include the parameters
+            //so we have to append them manually here from our controller
+            StringBuilder queryParamBuilder = new StringBuilder();
+            queryParameters.forEach((k,v)->{
+                if(queryParamBuilder.length()==0){
+                    queryParamBuilder.append("?");
+                }else{
+                    queryParamBuilder.append("&");
+                }
+                queryParamBuilder.append(k).append("=").append(v);
+            });
+            resultContext.setGeneratingUrl(oldURL + queryParamBuilder);
+        }
+    }
+    
     public ResponseEntity<Object> substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
         context.setAdapter((srequest, ctx) -> {
             try {
                 // TODO: technically this shouldn't be needed,
                 // but something is getting lost in translation between 2.X and 3.0
+                // and it's leading to some results coming back which are not substances.
+                // This is particularly strange since there is an explicit subset which IS
+                // all substacnes given.
                 srequest.getOptions().setKind(Substance.class);
                 SearchResult sr = getResultFor(ctx, srequest,true);
 
@@ -724,9 +754,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if (sync) {
             try {
                 context.getDeterminedFuture().get(1, TimeUnit.MINUTES);
-//                return play.mvc.Controller.redirect(context.getResultCall());
                 HttpHeaders headers = new HttpHeaders();
-//                String url = .toUri().toString();
+                
                 //TODO this should actually forward to "status(<key>)/results", but it's currently status/<key>/results
                 headers.add("Location", GsrsLinkUtil.adapt(context.getKey(),entityLinks.linkFor(SearchResultContext.class).slash(context.getKey()).slash("results").withSelfRel())
                         .toUri().toString() );
