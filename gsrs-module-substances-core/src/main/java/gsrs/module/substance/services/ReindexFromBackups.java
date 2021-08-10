@@ -8,8 +8,11 @@ import gsrs.scheduledTasks.SchedulerPlugin;
 import ix.core.models.BackupEntity;
 import ix.core.util.EntityUtils;
 import ix.core.utils.executor.ProcessListener;
+import lombok.Builder;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -27,7 +31,27 @@ public class ReindexFromBackups implements ReindexService{
     @Autowired
     private BackupRepository backupRepository;
 
+    private Map<UUID, CountDownLatch> latchMap = new ConcurrentHashMap<>();
+    private Map<UUID, TaskProgress> listenerMap = new ConcurrentHashMap<>();
+
+    @Data
+    @Builder
+    private static class TaskProgress{
+        private SchedulerPlugin.TaskListener listener;
+        private UUID id;
+        private long totalCount;
+        private long currentCount;
+
+        public synchronized void increment(){
+            listener.message("Indexed:" + (++currentCount) + "of " + totalCount);
+        }
+    }
     @Async
+    @Override
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    public void executeAsync(Object id, SchedulerPlugin.TaskListener l) throws IOException {
+        execute(id, l);
+    }
     @Override
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public void execute(Object id, SchedulerPlugin.TaskListener l) throws IOException {
@@ -40,7 +64,16 @@ public class ReindexFromBackups implements ReindexService{
         System.out.println("found count of " + count);
         //single thread for now...
         UUID reindexId = (UUID) id;
+        CountDownLatch latch = new CountDownLatch(1);
+        latchMap.put(reindexId, latch);
+        listenerMap.put(reindexId, TaskProgress.builder()
+                                    .id(reindexId)
+                                    .totalCount(count)
+                                    .listener(l)
+                                    .build());
+
         eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
+
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
 
             stream.forEach(be ->{
@@ -85,7 +118,28 @@ public class ReindexFromBackups implements ReindexService{
                     });
         }
         //other index listeners now figure out when indexing end is so don't need to that publish anymore (here)
+        //but we will block until we get that end event
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
+    }
 
+    @EventListener(EndReindexEvent.class)
+    public void endReindex(EndReindexEvent event){
+        CountDownLatch latch = latchMap.remove(event.getId());
+        if(latch !=null){
+            latch.countDown();
+        }
+    }
+
+    @EventListener(IncrementReindexEvent.class)
+    public void endReindex(IncrementReindexEvent event){
+        TaskProgress progress = listenerMap.get(event.getId());
+        if(progress !=null){
+            progress.increment();
+        }
     }
 }
