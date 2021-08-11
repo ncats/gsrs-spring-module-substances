@@ -89,7 +89,7 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
         assertCreated(s2.buildJson());
 //        applicationEvents.stream().forEach(System.out::println);
 //        System.out.println("Just backup events:");
-        assertEquals(2, applicationEvents.stream().filter( e -> e instanceof BackupEvent).peek(System.out::println).count());
+        assertEquals(2, applicationEvents.stream(BackupEvent.class).count());
 
 
     }

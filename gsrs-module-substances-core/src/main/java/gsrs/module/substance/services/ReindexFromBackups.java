@@ -24,6 +24,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+/**
+ * A {@link ReindexService} that pulls all {@link BackupEntity}
+ * objects from the back up table and re-indexes the backed up objects.
+ * The indexes are updated using the Reindex Events.
+ *
+ * @see BeginReindexEvent
+ * @see EndReindexEvent
+ * @see IncrementReindexEvent
+ */
 public class ReindexFromBackups implements ReindexService{
 
     @Autowired
