@@ -177,49 +177,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     }
     
 
-    @Test
-    public void testFacetRestrictChemicals() {
-        SearchRequest sreq = new SearchRequest.Builder()
-                .addFacet("Substance Class", "chemical")
-                .kind(Substance.class)
-                .build();
-
-        List<Substance> matches= getSearchList(sreq);
-        int chems = 0;
-        int others=0;
-
-        for(Substance s: matches) {
-            if(s.substanceClass.equals(SubstanceClass.chemical)){
-                chems++;
-            }else {
-                others++;
-            }
-        }
-        assertEquals(0,others,"Expect only chemicals to come back on faceted search for chemicals");
-        assertEquals(9,chems,"Expect 9 chemicals to come back on faceted search for chemicals");
-    }
-    @Test
-    public void testSortMwt() {
-        SearchRequest sreq = new SearchRequest.Builder()
-                .addFacet("Substance Class", "chemical")
-                .addOrder("^root_structure_mwt")
-                .kind(Substance.class)
-                .build();
-
-        List<Substance> matches= getSearchList(sreq);
-        List<Substance> sorted = matches.stream()
-                .map(s->(ChemicalSubstance)s)
-                .sorted(Comparator.comparing(cs->cs.getStructure().mwt))
-                .collect(Collectors.toList());
-        
-
-        for(int i=0;i<matches.size();i++) {
-            Substance r1 = matches.get(i);
-            Substance e1 = sorted.get(i);
-            assertEquals(e1.uuid,r1.uuid, "Expected chemicals sorted by molecular weight, but were returned in the wrong order");
-        }
-    }
-    
 
     @Test
     public void testSearchByApprovalID() {

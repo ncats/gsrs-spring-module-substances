@@ -28,11 +28,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ReindexTaskInitializer extends ScheduledTaskInitializer {
 
-    @Autowired
-    private ReindexService reindexService;
-
-    @Autowired
-    private ReindexService reindexService;
+        @Autowired
+        private ReindexService reindexService;
 
 	@Override
 	public void run(SchedulerPlugin.TaskListener l){
