@@ -1,7 +1,3 @@
-/*
-	* When a substance is saved and has an approvalID, check for a corresponding Code.
-	* If necessary, create a new Code
- */
 package gsrs.module.substance.processors;
 
 import ix.core.EntityProcessor;
@@ -16,13 +12,13 @@ import java.io.IOException;
 import java.util.List;
 
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 /**
+ * When a substance is saved and has an approvalID, check for a corresponding
+ * Code. If necessary, create a new Code
  *
  * @author Mitch Miller
  */
@@ -96,7 +92,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
                         }
 
                     } catch (IOException ex) {
-                        log.error("Error in addCodeSystem",ex);
+                        log.error("Error in addCodeSystem", ex);
                     }
                 }
             }
@@ -125,7 +121,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
                     if (code.code == null || code.code.length() == 0 || !code.code.equals(s.approvalID)) {
                         code.code = s.approvalID;
                         code.setDeprecated(true);
-                        log.trace( "deleted old code");
+                        log.trace("deleted old code");
                     }
                     else if (code.code != null && code.code.equals(s.approvalID)) {
                         needCode = false;
