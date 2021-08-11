@@ -118,7 +118,11 @@
             <artifactId>molwitch</artifactId>
             <version>0.6.1-SNAPSHOT</version>
         </dependency>
-
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-controlled-vocabulary</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.jcvi.jillion</groupId>
             <artifactId>jillion</artifactId>
