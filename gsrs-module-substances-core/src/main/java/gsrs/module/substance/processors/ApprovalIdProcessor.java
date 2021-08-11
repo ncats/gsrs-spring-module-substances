@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
  *
  * @author Mitch Miller
  */
+@Slf4j
 public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     @Value("${ix.gsrs.vocabulary.ApprovalIDCodeSystem:FDA UNII}")
@@ -38,7 +40,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     public ApprovalIdProcessor() {
         if (null == codeSystem || codeSystem.length() == 0) {
-            System.out.println("codeSystem was null/empty!");
+            log.trace("codeSystem was null/empty!");
             codeSystem = "FDA UNII";
         }
         addCodeSystem();
@@ -94,7 +96,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
                         }
 
                     } catch (IOException ex) {
-                        Logger.getLogger(ApprovalIdProcessor.class.getName()).log(Level.SEVERE, null, ex);
+                        log.error("Error in addCodeSystem",ex);
                     }
                 }
             }
@@ -110,21 +112,20 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     @Override
     public void preUpdate(Substance obj) {
-		System.out.println("preUpdate");
+        log.trace("preUpdate");
         prePersist(obj);
     }
 
     public void copyCodeIfNecessary(Substance s) {
         if (s.approvalID != null && s.approvalID.length() > 0) {
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling approval ID " + s.approvalID);
-            System.out.println("handling approval ID " + s.approvalID);
+            log.trace("handling approval ID " + s.approvalID);
             boolean needCode = true;
             for (Code code : s.getCodes()) {
                 if (code.codeSystem.equals(codeSystem)) {
                     if (code.code == null || code.code.length() == 0 || !code.code.equals(s.approvalID)) {
                         code.code = s.approvalID;
                         code.setDeprecated(true);
-                        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "deleted old code");
+                        log.trace( "deleted old code");
                     }
                     else if (code.code != null && code.code.equals(s.approvalID)) {
                         needCode = false;
@@ -134,8 +135,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
             if (needCode) {
                 Code newCode = new Code(codeSystem, s.approvalID);
                 s.codes.add(newCode);
-                Logger.getLogger(this.getClass().getName()).log(Level.FINE, "Added new code for approvalId");
-                System.out.println("Added new code for approvalId");
+                log.trace("Added new code for approvalId");
             }
         }
     }
@@ -144,4 +144,9 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     public Class<Substance> getEntityClass() {
         return Substance.class;
     }
+
+    public String getCodeSystem() {
+        return codeSystem;
+    }
+
 }
