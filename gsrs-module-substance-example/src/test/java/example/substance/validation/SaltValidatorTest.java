@@ -65,7 +65,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @BeforeEach
     public void runSetup() throws IOException {
-        System.out.println("runSetup");
+        log.trace("runSetup");
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
         testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
@@ -83,9 +83,14 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         }
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
         loadGsrsFile(dataFile);
+        log.trace("loaded rep18 data file");
+        log.debug("starting fragments");
+        File dataFile2 = new ClassPathResource("testdumps/fragments.gsrs").getFile();
+        loadGsrsFile(dataFile2);
+        log.debug("finished fragments");
         //applicationEvents.notifyAll();
         setup = true;
-        System.out.println("loaded rep18 data file");
+        
     }
 
     @BeforeClass
@@ -105,7 +110,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
-    public void TestFindLayer1DefHashDuplicates() {
+    public void testFindLayer1DefHashDuplicates() {
         System.out.println("findDuplicates1");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
@@ -124,7 +129,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
-    public void TestFindFullDefHashDuplicates() {
+    public void testFindFullDefHashDuplicates() {
         System.out.println("TestFindFullDefHashDuplicates");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
@@ -148,7 +153,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     0 full duplicates
      */
     @Test
-    public void TestFindLayer1NotFullDefHashDuplicates() {
+    public void testFindLayer1NotFullDefHashDuplicates() {
         System.out.println("findDuplicates1");
         String approvalID = "G6867RWN6N.diastereomer";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
@@ -182,7 +187,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     0 full duplicates
      */
     @Test
-    public void TestFin0DefHashDuplicates() {
+    public void testFin0DefHashDuplicates() {
         log.debug("TestFin0DefHashDuplicates");
         String approvalID = "PJY633525U";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
@@ -211,7 +216,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
-    public void TestValidateSaltFragment() {
+    public void testValidateSaltFragment() {
         log.debug("TestValidateSalt");
         String approvalID = "chemical other salt";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
@@ -228,13 +233,9 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     Load a JSON file of a chemical substance whose structure consists of 2 moieties, each of which is already present
      */
     @Test
-    public void TestValidateSaltFragments() throws IOException {
+    public void testValidateSaltFragments() throws IOException {
         log.debug("TestValidateSaltFragments");
-        //load 2 substances that match the 2 fragments not in the 18-record set already loaded
-        log.debug("starting fragments");
-        File dataFile = new ClassPathResource("testdumps/fragments.txt").getFile();
-        loadGsrsFile(dataFile);
-        log.debug("finished fragments");
+         //load 2 substances that match the 2 fragments not in the 18-record set already loaded
         String substanceName = "chemical salt";
         ChemicalSubstance chemical = getChemicalFromFile(substanceName);
         //some debug info
@@ -255,7 +256,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
-    public void TestValidateSalt() {
+    public void testValidateSalt() {
         log.debug("TestValidateSalt");
         String approvalID = "2R5VJA8RQB";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
