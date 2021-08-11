@@ -84,10 +84,10 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
         loadGsrsFile(dataFile);
         log.trace("loaded rep18 data file");
-        log.debug("starting fragments");
-        File dataFile2 = new ClassPathResource("testdumps/fragments.gsrs").getFile();
-        loadGsrsFile(dataFile2);
-        log.debug("finished fragments");
+//        log.debug("starting fragments");
+//        File dataFile2 = new ClassPathResource("testdumps/fragments.gsrs").getFile();
+//        loadGsrsFile(dataFile2);
+//        log.debug("finished fragments");
         //applicationEvents.notifyAll();
         setup = true;
         
@@ -167,6 +167,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
                     chem.getStructure().smiles, chem.getDefinitionElement(), cDefinitionalElements.getElements().get(0).getValue());
             System.out.println(msg2);
         });*/
+        
 
         assertEquals(1, duplicates.size());
         List<Substance> fullDuplicates = validator.findFullDefinitionalDuplicateCandidates(chemical);
@@ -236,6 +237,11 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     public void testValidateSaltFragments() throws IOException {
         log.debug("TestValidateSaltFragments");
          //load 2 substances that match the 2 fragments not in the 18-record set already loaded
+        log.debug("starting fragments");
+        File dataFile = new ClassPathResource("testdumps/fragments.txt").getFile();
+        loadGsrsFile(dataFile);
+        log.debug("finished fragments");
+
         String substanceName = "chemical salt";
         ChemicalSubstance chemical = getChemicalFromFile(substanceName);
         //some debug info
