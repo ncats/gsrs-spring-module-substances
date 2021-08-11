@@ -18,6 +18,7 @@ import gsrs.repository.EditRepository;
 import gsrs.repository.GroupRepository;
 import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
+import gsrs.services.BackupService;
 import gsrs.startertests.*;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.jupiter.ResetAllEntityServicesBeforeEachExtension;
@@ -108,6 +109,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
             return StdSchedulerFactory.getDefaultScheduler();
         }
 
+        @Bean
+        @Primary
+        public BackupService backupService(){
+            return new BackupService();
+        }
 
     }
 

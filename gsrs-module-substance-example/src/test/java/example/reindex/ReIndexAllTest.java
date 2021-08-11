@@ -19,11 +19,15 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
@@ -43,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 
 @RecordApplicationEvents()
+@Import(ReIndexAllTest.TestConfig.class)
 //@SpringBootTest(classes = {GsrsModuleSubstanceApplication.class,  GsrsEntityTestConfiguration.class})
 //@ActiveProfiles("test")
 //@DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
@@ -51,11 +56,19 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
 
 
+    @TestConfiguration
+    public static class TestConfig{
+        @Bean
+        public ReindexFromBackups reindexFromBackups(){
+            return new ReindexFromBackups();
+        }
+    }
 
     @Autowired
     PlatformTransactionManager platformTransactionManager;
 
-
+    @Autowired
+            ReindexFromBackups reindexFromBackups;
 //    @Autowired
 //    ApplicationContextRunner contextRunner
 
@@ -89,7 +102,7 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
         assertCreated(s2.buildJson());
 //        applicationEvents.stream().forEach(System.out::println);
 //        System.out.println("Just backup events:");
-        assertEquals(2, applicationEvents.stream().filter( e -> e instanceof BackupEvent).peek(System.out::println).count());
+        assertEquals(2, applicationEvents.stream(BackupEvent.class).count());
 
 
     }
@@ -103,6 +116,10 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     @WithMockUser(username = "admin", roles="Admin")
+    //this time out is here to fail the test if it takes > 10 secs
+    //this can happen if the Reindex from backups isn't set up correctly and the events don't fire
+    //so the backup service blocks forever waiting for that event that never comes
+    @Timeout(value = 10, unit = TimeUnit.SECONDS)
     public void reindex(@Autowired ApplicationEvents applicationEvents) throws Exception {
 
         SubstanceBuilder s1 = new SubstanceBuilder()
@@ -124,11 +141,10 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
 
         applicationEvents.clear();
 
-        ReindexFromBackups sut = new ReindexFromBackups();
-        AutowireHelper.getInstance().autowire(sut);
+
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
         UUID uuid = UUID.randomUUID();
-        sut.execute(uuid, listener);
+        reindexFromBackups.execute(uuid, listener);
         //2 substances each with ( 1 sub, 1 name, 1 ref) = 6 indexed events
         assertEquals(6L, applicationEvents.stream(ReindexEntityEvent.class).count());
         assertEquals(1L, applicationEvents.stream(BeginReindexEvent.class).count());
