@@ -109,6 +109,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
         String name1 = "THIOFLAVIN S2";
         String idForName = "e92bc4ad-250a-4eef-8cd7-0b0b1e3b6cf0";
+        
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
@@ -117,6 +118,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .build();
 
         List<Substance> substances= getSearchList(request);
+        
         /*
         as of 21 July 2021, I am puzzled by the inability to get a List<String> directly from
         transactionSearch.execute.
@@ -177,11 +179,11 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     }
     
 
-
     @Test
     public void testSearchByApprovalID() {
         String approvalID1 = "D733ET3F9O";
         String idForName = "deb33005-e87e-4e7f-9704-d5b4c80d3023";
+        
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
@@ -189,6 +191,9 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .top(Integer.MAX_VALUE)
                 .build();
         List<Substance> substances = getSearchList(request);
+        
+        
+        
         System.out.println("substances size: " + substances.size());
         String actualId = substances.stream()
                 .map(s -> s.uuid.toString())
@@ -204,6 +209,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 "deb33005-e87e-4e7f-9704-d5b4c80d3023", "5b611b0d-b798-45ed-ba02-6f0a2f85986b",
                 "306d24b9-a6b8-4091-8024-02f9ec24b705", "90e9191d-1a81-4a53-b7ee-560bf9e68109");
         Collections.sort(expectedIds);//use default sort order
+        
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
@@ -211,6 +217,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .top(Integer.MAX_VALUE)
                 .build();
         List<Substance> substances = getSearchList(request);
+        
         System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
@@ -234,6 +241,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .top(Integer.MAX_VALUE)
                 .build();
         List<Substance> substances = getSearchList(request);
+        
         System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
@@ -251,6 +259,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .query("root_substanceClass:\"" + substanceClass + "\"")
                 .build();
         List<Substance> substances = getSearchList(request);
+        
         substances.forEach(s -> System.out.println("substance with ID " + s.uuid));
         assertEquals(expectedNumber, substances.size());
     }
