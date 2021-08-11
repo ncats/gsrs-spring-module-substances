@@ -108,6 +108,14 @@
             <artifactId>gsrs-controlled-vocabulary-api</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
+        
+        <!-- it's unclear if this should be here -->
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-controlled-vocabulary</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-scheduled-tasks</artifactId>
