@@ -77,7 +77,7 @@ public class ReIndexController {
         ixCache.setTemp(status.uuid.toString(), status);
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
         status.setListener(listener);
-        reindexService.execute(status.uuid, listener);
+        reindexService.executeAsync(status.uuid, listener);
 
         return GsrsControllerUtil.enhanceWithView(status, queryParameters);
     }

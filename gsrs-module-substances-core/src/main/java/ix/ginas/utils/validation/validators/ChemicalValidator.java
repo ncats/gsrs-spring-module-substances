@@ -179,10 +179,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             
             // check on Racemic stereochemistry October 2020 MAM
             ChemUtils.checkRacemicStereo(cs.getStructure(), callback);
-            try {
-                log.trace("toward the end of validate, SMILES: " + cs.getStructure().smiles);
-            }
-            catch(Exception ex){}
 
 //            ChemUtils.checkChargeBalance(cs.structure, gpm);
             if (cs.getStructure().charge != 0) {
