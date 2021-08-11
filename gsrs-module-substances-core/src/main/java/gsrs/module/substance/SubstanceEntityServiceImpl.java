@@ -26,9 +26,12 @@ import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.springUtils.StaticContextAccessor;
 import gsrs.validator.ValidatorConfig;
+import ix.core.models.Role;
+import ix.core.models.UserProfile;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
@@ -106,6 +109,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             .filter(m -> m instanceof GinasProcessingMessage)
                             .map(m -> (GinasProcessingMessage) m)
                             .collect(Collectors.toList());
+                    //processMessage, handleMessages, addProblems?
+                    //Why all 3?
                     messages.stream().forEach(strategy::processMessage);
                     resp.setValid(false);
                     if (strategy.handleMessages((Substance) object, messages)) {
@@ -130,6 +135,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         };
         if(type == ValidatorConfig.METHOD_TYPE.BATCH){
             builder.allowPossibleDuplicates(true);
+        }
+//      
+        if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+            builder.allowPossibleDuplicates(true);   
         }
 
         return builder;

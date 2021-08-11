@@ -299,7 +299,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
                 .forEach(json->{
                     list.add(transactionTemplate.execute(status ->{
                         try {
-                            GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json);
+                            GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json,true);
                             //full fetch
                             if(result.isCreated()){
                                 result.getCreatedEntity().toFullJsonNode();
