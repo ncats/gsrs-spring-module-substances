@@ -87,50 +87,5 @@ public class ReindexFromBackups implements ReindexService{
         //other index listeners now figure out when indexing end is so don't need to that publish anymore (here)
 
 
-        /*
-        new ProcessExecutionService(1, 10).buildProcess(BackupEntity.class)
-                .before(()->{
-                    eventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.BEGIN));
-                })
-                .after(()->{
-                    eventPublisher.publishEvent(new MaintenanceModeEvent(MaintenanceModeEvent.Mode.END));
-                })
-                .listener(listen)
-                .streamSupplier(ProcessExecutionService.EntityStreamSupplier.of(()->backupRepository.findAll().stream()))
-                .consumer( be->{
-                    try {
-                        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(be.getInstantiated());
-
-                        wrapper.traverse().execute((p, child)->{
-                            EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
-                            if(wrapped.isEntity()) {
-                                //this should speed up indexing so that we only index
-                                //things that are roots.  the actual indexing process of the root should handle any
-                                //child objects of that root.
-                                if(isRootIndexCache.computeIfAbsent(child.getEntityClass(), c->wrapped.getEntityInfo().isRootIndex())) {
-                                    try {
-                                        String key = wrapped.getKey().toString();
-
-                                        //TODO add only index if it has a controller
-                                        if (seen.add(key)) {
-                                            //is this a good idea ?
-                                            IndexCreateEntityEvent event = new IndexCreateEntityEvent(wrapped);
-                                            eventPublisher.publishEvent(event);
-                                        }
-                                    } catch (Throwable t) {
-                                        System.err.println("error handling " + wrapped);
-                                        t.printStackTrace();
-                                    }
-                                }
-                            }
-                        });
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                })
-                .build()
-                .execute();
-
-         */
     }
 }

@@ -1,7 +1,6 @@
 package example.substance.validation;
 
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.services.DefinitionalElementFactory;

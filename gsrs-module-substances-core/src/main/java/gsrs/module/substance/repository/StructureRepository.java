@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -15,4 +16,6 @@ import java.util.stream.Stream;
 public interface StructureRepository extends GsrsVersionedRepository<Structure, UUID> {
     @Query("select s from Structure s")
     Stream<Structure> streamAll();
+    @Query("select s.id from Structure s")
+    List<UUID> getAllIds();
 }
