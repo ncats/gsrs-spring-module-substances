@@ -7,7 +7,7 @@ import gsrs.repository.ControlledVocabularyRepository;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.CodeSystemVocabularyTerm;
 import java.util.List;
-
+import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -22,21 +22,19 @@ import org.springframework.context.annotation.Configuration;
  * @author Mitch Miller
  */
 @Slf4j
-@Configuration
-@Data
 public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
-    @Value("${approval_id_code_system}")
     private String codeSystem;
 
 // autoriring ControlledVocabularyRepository  causes exception as of 12 Aug 2021
 //    @Autowired
 //    ControlledVocabularyRepository repo;
 
-    public ApprovalIdProcessor() {
-        if (null == codeSystem || codeSystem.length() == 0) {
-            log.trace("codeSystem was null/empty!");
-            codeSystem = "FDA UNII";
+    public ApprovalIdProcessor(Map with) {
+        if (with!=null && with.get("codeSystem")!= null ) {
+            codeSystem = (String) with.get("codeSystem");
+//            log.trace("codeSystem was null/empty!");
+//            codeSystem = "FDA UNII";
         }
         //todo: find a way to access CVs programmatically 12 Aug 2021
         // rely on the admin/user to make sure the code system exists
