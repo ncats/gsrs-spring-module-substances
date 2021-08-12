@@ -65,6 +65,58 @@ public class MolfileFixTest {
         String mod = ChemCleaner.getCleanMolfile(molfileWithTooManyChargesOnOneLine);
         assertEquals(expected,mod);
     }
+    
+    @Test
+    public void testCleanNonAsciiNameMolfile() throws Exception {
+        String molfileWithTooManyChargesOnOneLine="1,3,5-Cyclohexanetriol, diammonium salt, (1α,3α,5α)-\n"
+                + "  ACCLDraw08122109502D\n"
+                + "60676-01-9 Copyright (C) 2021 ACS\n"
+                + "  9  9  0  0  0  0  0  0  0  0999 V2000\n"
+                + "   12.7447   -8.8649    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   15.4120   -4.2449    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   10.0773   -4.2449    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   14.0783   -6.5549    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   12.7447   -7.3249    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0\n"
+                + "   14.0783   -5.0149    0.0000 C   0  0  2  0  0  0  0  0  0  0  0  0\n"
+                + "   11.4110   -6.5549    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   12.7447   -4.2449    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   11.4110   -5.0149    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0\n"
+                + "  5  1  1  6  0  0  0\n"
+                + "  6  2  1  6  0  0  0\n"
+                + "  9  3  1  6  0  0  0\n"
+                + "  4  5  1  0  0  0  0\n"
+                + "  4  6  1  0  0  0  0\n"
+                + "  5  7  1  0  0  0  0\n"
+                + "  6  8  1  0  0  0  0\n"
+                + "  7  9  1  0  0  0  0\n"
+                + "  8  9  1  0  0  0  0\n"
+                + "M  END";
+        String expected="1,3,5-Cyclohexanetriol, diammonium salt, (1?,3?,5?)-\n"
+                + "  ACCLDraw08122109502D\n"
+                + "60676-01-9 Copyright (C) 2021 ACS\n"
+                + "  9  9  0  0  0  0  0  0  0  0999 V2000\n"
+                + "   12.7447   -8.8649    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   15.4120   -4.2449    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   10.0773   -4.2449    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   14.0783   -6.5549    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   12.7447   -7.3249    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0\n"
+                + "   14.0783   -5.0149    0.0000 C   0  0  2  0  0  0  0  0  0  0  0  0\n"
+                + "   11.4110   -6.5549    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   12.7447   -4.2449    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n"
+                + "   11.4110   -5.0149    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0\n"
+                + "  5  1  1  6  0  0  0\n"
+                + "  6  2  1  6  0  0  0\n"
+                + "  9  3  1  6  0  0  0\n"
+                + "  4  5  1  0  0  0  0\n"
+                + "  4  6  1  0  0  0  0\n"
+                + "  5  7  1  0  0  0  0\n"
+                + "  6  8  1  0  0  0  0\n"
+                + "  7  9  1  0  0  0  0\n"
+                + "  8  9  1  0  0  0  0\n"
+                + "M  END";
+        String mod = ChemCleaner.cleanMolfileWithNonASCIIName(molfileWithTooManyChargesOnOneLine);
+        assertEquals(expected,mod);
+    }
     @Test
     public void testTooManyMolfileEndsGetCleanedToOne() throws Exception {
         String molfileWithTooManyChargesOnOneLineAndAnExtraEnd="\n" +
