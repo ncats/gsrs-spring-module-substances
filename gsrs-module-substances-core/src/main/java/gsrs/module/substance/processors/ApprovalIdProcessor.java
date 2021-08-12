@@ -10,7 +10,7 @@ import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.CodeSystemVocabularyTerm;
 import java.io.IOException;
 import java.util.List;
-
+import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +25,8 @@ import org.springframework.context.annotation.Configuration;
  * @author Mitch Miller
  */
 @Slf4j
-@Configuration
-@Data
 public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
-    @Value("${approval_id_code_system}")
     private String codeSystem;
 
     @Autowired
@@ -38,10 +35,11 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     @Autowired
     ControlledVocabularyRepository repo;
 
-    public ApprovalIdProcessor() {
-        if (null == codeSystem || codeSystem.length() == 0) {
-            log.trace("codeSystem was null/empty!");
-            codeSystem = "FDA UNII";
+    public ApprovalIdProcessor(Map with) {
+        if (with!=null && with.get("codeSystem")!= null ) {
+            codeSystem = (String) with.get("codeSystem");
+//            log.trace("codeSystem was null/empty!");
+//            codeSystem = "FDA UNII";
         }
         addCodeSystem();
     }

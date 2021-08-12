@@ -1,19 +1,26 @@
 package example.substance.processor;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+
 import example.substance.AbstractSubstanceJpaEntityTest;
+import gsrs.entityProcessor.ConfigBasedEntityProcessorFactory;
 import gsrs.module.substance.processors.ApprovalIdProcessor;
-import gsrs.startertests.TestEntityProcessorFactory;
+import ix.core.EntityProcessor;
+import ix.core.EntityProcessor.FailProcessingException;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
-import java.io.File;
-import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 
 /**
  *
@@ -26,14 +33,21 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Autowired
-    TestEntityProcessorFactory processorFactory;
+    ConfigBasedEntityProcessorFactory processorFactory;
 
     @Test
-    public void testCopyCodeIfNecessary() {
+    public void testCopyCodeIfNecessary() throws FailProcessingException {
         log.trace("testCopyCodeIfNecessary");
         Substance approvedSubstance = getProteinFromFile();
         //substanceRepository.saveAndFlush(approvedSubstance);
-        ApprovalIdProcessor processor = new ApprovalIdProcessor();
+        EntityProcessor ep = processorFactory.getCombinedEntityProcessorFor(approvedSubstance);
+        ep.prePersist(approvedSubstance);
+        
+        //Setup directly
+        Map<String,String> mmap = new HashMap<String,String>();
+        mmap.put("codeSystem", "FDA UNII");
+        
+        ApprovalIdProcessor processor = new ApprovalIdProcessor(mmap);
         log.trace("code type " + processor.getCodeSystem()+ " for approval id: " + approvedSubstance.approvalID);
         processor.copyCodeIfNecessary(approvedSubstance);
         assertTrue( approvedSubstance.codes.stream().anyMatch(c
