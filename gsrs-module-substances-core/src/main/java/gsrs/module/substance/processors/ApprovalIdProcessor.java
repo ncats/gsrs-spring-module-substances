@@ -1,14 +1,11 @@
 package gsrs.module.substance.processors;
 
+import gov.nih.ncats.common.sneak.Sneak;
 import ix.core.EntityProcessor;
-
-import gsrs.cv.api.CodeSystemTermDTO;
-import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
 import gsrs.repository.ControlledVocabularyRepository;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.CodeSystemVocabularyTerm;
-import java.io.IOException;
 import java.util.List;
 
 import java.util.Optional;
@@ -32,64 +29,55 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     @Value("${approval_id_code_system}")
     private String codeSystem;
 
-    @Autowired
-    private ControlledVocabularyApi cvApi;
-
-    @Autowired
-    ControlledVocabularyRepository repo;
+// autoriring ControlledVocabularyRepository  causes exception as of 12 Aug 2021
+//    @Autowired
+//    ControlledVocabularyRepository repo;
 
     public ApprovalIdProcessor() {
         if (null == codeSystem || codeSystem.length() == 0) {
             log.trace("codeSystem was null/empty!");
             codeSystem = "FDA UNII";
         }
-        addCodeSystem();
+        //todo: find a way to access CVs programmatically 12 Aug 2021
+        // rely on the admin/user to make sure the code system exists
+        //addCodeSystem();
     }
 
-    private void addCodeSystem() {
-        Runnable r = new Runnable() {
-            @Override
-            public void run() {
-                log.trace("in addCodeSystem.run");
-                if (codeSystem != null) {
-                    Optional<GsrsCodeSystemControlledVocabularyDTO> cvvOpt;
-                    try {
-                        cvvOpt = cvApi.findByDomain("CODE_SYSTEM");
-                        log.trace("cvvOpt: " + cvvOpt.isPresent());
-                        if (!cvvOpt.isPresent()) {
-                            return;
-                        }
-                        GsrsCodeSystemControlledVocabularyDTO cvv = cvvOpt.get();
-                        boolean addNew = true;
-                        for (CodeSystemTermDTO vt1 : cvv.getTerms()) {
-                            if (vt1.getValue().equals(codeSystem)) {
-                                addNew = false;
-                                break;
-                            }
-                        }
-                        if (addNew) {
-
-                            CodeSystemVocabularyTerm vt = new CodeSystemVocabularyTerm();
-                            vt.display = codeSystem;
-                            vt.value = codeSystem;
-                            vt.hidden = true;
-                            List<ControlledVocabulary> vocabs = repo.findByDomain(codeSystem);
-                            //assume there's one 
-                            ControlledVocabulary vocab = vocabs.get(0);
-                            vocab.getTerms().add(vt);
-
-                            repo.saveAndFlush(vocab);
-                            log.trace("saved code system");
-
-                        }
-
-                    } catch (IOException ex) {
-                        log.error("Error in addCodeSystem", ex);
-                    }
-                }
-            }
-        };
-    }
+//    private void addCodeSystem()  {
+//        Runnable r = new Runnable() {
+//            @Override
+//            public void run() {
+//                log.trace("in addCodeSystem.run");
+//                if (codeSystem != null) {
+//                    Optional<GsrsCodeSystemControlledVocabularyDTO> cvvOpt;
+//                    List<ControlledVocabulary> vocabList = repo.findByDomain("CODE_SYSTEM");
+//                    log.trace("vocabList size: " + vocabList.size());
+//                    ControlledVocabulary vocab = vocabList.get(0);
+//                    boolean addNew = true;
+//                    for (VocabularyTerm term : vocab.getTerms()) {
+//                        if (term.getValue().equals(codeSystem)) {
+//                            addNew = false;
+//                            break;
+//                        }
+//                    }
+//                    if (addNew) {
+//                        Sneak.sneakyThrow(new Exception("Create code system '" + codeSystem+ "' within GSRS"));
+//                        
+////                        CodeSystemVocabularyTerm vt = new CodeSystemVocabularyTerm();
+////                        vt.display = codeSystem;
+////                        vt.value = codeSystem;
+////                        vt.hidden = true;
+////                        List<ControlledVocabulary> vocabs = repo.findByDomain(codeSystem);
+////                        vocab.getTerms().add(vt);
+////
+////                        repo.saveAndFlush(vocab);
+////                        log.trace("saved code system");
+//                    }
+//                }
+//            }
+//        };
+//        r.run();
+//    }
 
     @Override
     public void prePersist(Substance s) {

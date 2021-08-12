@@ -1,7 +1,9 @@
 package gsrs.module.substance;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.EditController2;
 import gsrs.controller.EditEntityService;
+import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.module.substance.approvalId.ApprovalIdConfiguration;
 import gsrs.module.substance.controllers.*;
 import gsrs.module.substance.exporters.SubstanceSpreadsheetExporterConfiguration;
@@ -14,6 +16,7 @@ import gsrs.module.substance.services.StructureResolverService;
 import gsrs.module.substance.services.StructureResolverServiceConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
+import gsrs.repository.ControlledVocabularyRepository;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -29,7 +32,8 @@ import org.springframework.context.annotation.Import;
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
-        ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class
+        ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class/*,
+        ControlledVocabularyRepository.class*/
 
 
 })
