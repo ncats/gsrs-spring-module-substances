@@ -12,9 +12,11 @@ import java.io.IOException;
 import java.util.List;
 
 import java.util.Optional;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * When a substance is saved and has an approvalID, check for a corresponding
@@ -23,10 +25,12 @@ import org.springframework.beans.factory.annotation.Value;
  * @author Mitch Miller
  */
 @Slf4j
+@Configuration
+@Data
 public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
-    @Value("${ix.gsrs.vocabulary.ApprovalIDCodeSystem:FDA UNII}")
-    private String codeSystem = "";
+    @Value("${approval_id_code_system}")
+    private String codeSystem;
 
     @Autowired
     private ControlledVocabularyApi cvApi;
@@ -46,10 +50,12 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         Runnable r = new Runnable() {
             @Override
             public void run() {
+                log.trace("in addCodeSystem.run");
                 if (codeSystem != null) {
                     Optional<GsrsCodeSystemControlledVocabularyDTO> cvvOpt;
                     try {
                         cvvOpt = cvApi.findByDomain("CODE_SYSTEM");
+                        log.trace("cvvOpt: " + cvvOpt.isPresent());
                         if (!cvvOpt.isPresent()) {
                             return;
                         }
@@ -67,28 +73,14 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
                             vt.display = codeSystem;
                             vt.value = codeSystem;
                             vt.hidden = true;
-                            /*CodeSystemTermDTO term = new CodeSystemTermDTO();
-                        term.setDisplay(codeSystem);
-                        term.setValue(codeSystem);
-                        term.setHidden(true);*/
-
-                            //*************************************
-                            // This causes problems if done first
-                            // may have ramifications elsewhere
-                            //*************************************
-                            //vt.save();
-                            //cvv.getTerms().add(term);
-                            //ControlledVocabulary cv = new CodeSystemControlledVocabulary();
                             List<ControlledVocabulary> vocabs = repo.findByDomain(codeSystem);
                             //assume there's one 
                             ControlledVocabulary vocab = vocabs.get(0);
                             vocab.getTerms().add(vt);
 
                             repo.saveAndFlush(vocab);
+                            log.trace("saved code system");
 
-                            //Needed because update doesn't necessarily
-                            //trigger the update hooks
-                            //EntityPersistAdapter.getInstance().reindex(cvv);
                         }
 
                     } catch (IOException ex) {
@@ -97,8 +89,6 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
                 }
             }
         };
-        //GinasGlobal.runAfterStart(r);
-
     }
 
     @Override
@@ -113,6 +103,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     }
 
     public void copyCodeIfNecessary(Substance s) {
+        log.trace("copyCodeIfNecessary. codeSystem: " + codeSystem);
         if (s.approvalID != null && s.approvalID.length() > 0) {
             log.trace("handling approval ID " + s.approvalID);
             boolean needCode = true;

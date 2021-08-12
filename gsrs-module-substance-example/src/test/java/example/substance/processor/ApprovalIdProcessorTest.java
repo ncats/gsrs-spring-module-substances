@@ -34,7 +34,7 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
         Substance approvedSubstance = getProteinFromFile();
         //substanceRepository.saveAndFlush(approvedSubstance);
         ApprovalIdProcessor processor = new ApprovalIdProcessor();
-        log.trace("code type for approval id: " + approvedSubstance.approvalID);
+        log.trace("code type " + processor.getCodeSystem()+ " for approval id: " + approvedSubstance.approvalID);
         processor.copyCodeIfNecessary(approvedSubstance);
         assertTrue( approvedSubstance.codes.stream().anyMatch(c
                 -> (c.codeSystem.equals(processor.getCodeSystem()) && c.code.equals(approvedSubstance.approvalID))));
