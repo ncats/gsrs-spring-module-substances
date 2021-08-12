@@ -8,14 +8,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 
 import example.substance.AbstractSubstanceJpaEntityTest;
-import gsrs.entityProcessor.ConfigBasedEntityProcessorFactory;
 import gsrs.module.substance.processors.ApprovalIdProcessor;
-import ix.core.EntityProcessor;
-import ix.core.EntityProcessor.FailProcessingException;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ProteinSubstance;
@@ -32,16 +28,12 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     public ApprovalIdProcessorTest() {
     }
 
-    @Autowired
-    ConfigBasedEntityProcessorFactory processorFactory;
 
     @Test
-    public void testCopyCodeIfNecessary() throws FailProcessingException {
+    public void testCopyCodeIfNecessary() {
         log.trace("testCopyCodeIfNecessary");
         Substance approvedSubstance = getProteinFromFile();
         //substanceRepository.saveAndFlush(approvedSubstance);
-        EntityProcessor ep = processorFactory.getCombinedEntityProcessorFor(approvedSubstance);
-        ep.prePersist(approvedSubstance);
         
         //Setup directly
         Map<String,String> mmap = new HashMap<String,String>();
