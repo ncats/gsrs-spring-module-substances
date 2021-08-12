@@ -1,25 +1,35 @@
 package ix.core.chem;
 
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.text.Normalizer;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.apache.commons.lang3.StringEscapeUtils;
+
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import ix.utils.FortranLikeParserHelper;
 import ix.utils.FortranLikeParserHelper.LineParser;
 import ix.utils.FortranLikeParserHelper.LineParser.ParsedOperation;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.StringReader;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
 public class ChemCleaner {
 	
 	
 	private static LineParser MOLFILE_COUNT_LINE_PARSER=new LineParser("aaabbblllfffcccsssxxxrrrpppiiimmmvvvvvv");
+
+    private static Pattern NEW_LINE_PATTERN = Pattern.compile("\n");
 
 	private static char[] alpha="aAbBcCdDeEfFgGhHiIjJkKlLmMnNoOpPqQrRsStTuUvVwWxWyYzZ0123456789".toCharArray();
 	private static String[] nalpha=IntStream.range(0, alpha.length)
@@ -38,9 +48,74 @@ public class ChemCleaner {
 	}).get();
 
 	//										  new LineParser("......nnnaaaabbbbccccdddd");
+	private static String chr(int t){
+        return Character.toString((char)t);
+    }
+	private static String symbolsToASCII(String input){
+        
+        input = input.replaceAll("[\u00B4\u02B9\u02BC\u02C8\u0301\u2018\u2019\u201B\u2032\u2034\u2037]", chr(39)); /* apostrophe (') */
+        input = input.replaceAll("[\u00AB\u00BB\u02BA\u030B\u030E\u201C\u201D\u201E\u201F\u2033\u2036\u3003\u301D\u301E]", chr(34)); /* quotation mark (") */
+        input = input.replaceAll("[\u00AD\u2010\u2011\u2012\u2013\u2014\u2212\u2015]", chr(45)); /* hyphen (-) */
+        input = input.replaceAll("[\u01C3\u2762]", chr(33)); /* exclamation mark (!) */
+        input = input.replaceAll("[\u266F]", chr(35)); /* music sharp sign (#) */
+        input = input.replaceAll("[\u066A\u2052]", chr(37)); /* percent sign (%) */
+        input = input.replaceAll("[\u066D\u204E\u2217\u2731\u00D7]", chr(42)); /* asterisk (*) */
+        input = input.replaceAll("[\u201A\uFE51\uFF64\u3001]", chr(44)); /* comma (,) */
+        input = input.replaceAll("[\u00F7\u0338\u2044\u2215]", chr(47)); /* slash (/) */
+        input = input.replaceAll("[\u0589\u05C3\u2236]", chr(58)); /* colon (:) */
+        input = input.replaceAll("[\u203D]", chr(63)); /* question mark (?) */
+        input = input.replaceAll("[\u27E6]", chr(91)); /* opening square bracket ([) */
+        input = input.replaceAll("[\u20E5\u2216]", chr(92)); /* backslash (\) */
+        input = input.replaceAll("[\u301B]", chr(93));  /* closing square bracket ([) */
+        input = input.replaceAll("[\u02C4\u02C6\u0302\u2038\u2303]", chr(94)); /* caret (^) */
+        input = input.replaceAll("[\u02CD\u0331\u0332\u2017]", chr(95)); /* underscore (_) */
+        input = input.replaceAll("[\u02CB\u0300\u2035]", chr(96)); /* grave accent (`) */
+        input = input.replaceAll("[\u2983]", chr(123)); /* opening curly bracket ({) */
+        input = input.replaceAll("[\u01C0\u05C0\u2223\u2758]", chr(124)); /* vertical bar / pipe (|) */
+        input = input.replaceAll("[\u2016]", "#chr(124)##chr(124)#"); /* double vertical bar / double pipe (||) */
+        input = input.replaceAll("[\u02DC\u0303\u2053\u223C\u301C]", chr(126)); /* tilde (~) */
+        input = input.replaceAll("[\u2039\u2329\u27E8\u3008]", chr(60)); /* less-than sign (<) */
+        input = input.replaceAll("[\u2264\u2266]", "#chr(60)##chr(61)#"); /* less-than equal-to sign (<=) */
+        input = input.replaceAll("[\u203A\u232A\u27E9\u3009]", chr(62)); /* greater-than sign (>) */
+        input = input.replaceAll("[\u2265\u2267]", "#chr(62)##chr(61)#"); /* greater-than equal-to sign (>=) */
+        input = input.replaceAll("[\u200B\u2060\uFEFF]", chr(32)); /* space ( ) */
+        input = input.replaceAll("\u2153", "1/3");
+        input = input.replaceAll("\u2154", "2/3");
+        input = input.replaceAll("\u2155", "1/5");
+        input = input.replaceAll("\u2156", "2/5");
+        input = input.replaceAll("\u2157", "3/5");
+        input = input.replaceAll("\u2158", "4/5");
+        input = input.replaceAll("\u2159", "1/6");
+        input = input.replaceAll("\u215A", "5/6");
+        input = input.replaceAll("\u215B", "1/8");
+        input = input.replaceAll("\u215C", "3/8");
+        input = input.replaceAll("\u215D", "5/8");
+        input = input.replaceAll("\u215E", "7/8");
+        input = input.replaceAll("\u2026", "...");
+        return input;
+    }
+	private static String standardizeString(String entered) {
+       
+	    //TODO: use full name standardization rules
+	    // including special replacements
+	    String preform = symbolsToASCII(entered);
+	    String normalized= Normalizer
+	            .normalize(preform, Normalizer.Form.NFKD);
+	    normalized=normalized.replaceAll("\\p{Mn}+", "");
+	    normalized = normalized
+	            .replaceAll("[^\\p{ASCII}]", "?");
 
-	private static Pattern NEW_LINE_PATTERN = Pattern.compile("\n");
+	    return normalized;
+	}
 
+	public static String cleanMolfileWithNonASCIIName(String molfile) {
+	    String[] lines=NEW_LINE_PATTERN.split(molfile);
+	    if(!StandardCharsets.US_ASCII.newEncoder().canEncode(lines[0])) {
+	        lines[0]=standardizeString(lines[0]);
+	    }	    
+	    return Arrays.stream(lines).collect(Collectors.joining("\n"));
+	}
+	
 	public static String cleanMolfileWithTypicalWhiteSpaceIssues(String molfile){
 		String[] lines=NEW_LINE_PATTERN.split(molfile);
 		lines[3]=MOLFILE_COUNT_LINE_PARSER.parseAndOperate(lines[3])
@@ -161,7 +236,9 @@ public class ChemCleaner {
 			mfile+=add;
 		}
 		mfile+="M  END";
-		return cleanMolfileWithTypicalWhiteSpaceIssues(mfile);
+		mfile = cleanMolfileWithTypicalWhiteSpaceIssues(mfile);
+		mfile = cleanMolfileWithNonASCIIName(mfile);
+		return mfile;
 	}
 	
 	private static String removeLegacyAtomListLines(String mfile) {
