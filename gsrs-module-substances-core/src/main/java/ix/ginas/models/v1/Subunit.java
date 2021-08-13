@@ -4,6 +4,7 @@ package ix.ginas.models.v1;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
+import ix.core.models.IndexableRoot;
 import ix.core.models.SequenceEntity;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
@@ -17,6 +18,9 @@ import java.util.List;
 @Entity
 @Table(name="ix_ginas_subunit")
 @SingleParent
+@IndexableRoot //TP Note: there isn't a default controller for this, but the way indexing works
+               // for sequences actually indexes at the subunit level instead of the substance level,
+               // so we need reindexing events to trigger for this
 public class Subunit extends GinasCommonSubData implements SequenceEntity {
     @Lob
     @Basic(fetch= FetchType.EAGER)
