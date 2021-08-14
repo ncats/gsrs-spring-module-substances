@@ -1,17 +1,13 @@
 package gsrs.module.substance.processors;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.EntityProcessor;
-import ix.core.controllers.EntityFactory;
-import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.Code;
 import java.util.Map;
 
 import java.util.Optional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Configuration;
 
 @Slf4j
@@ -84,5 +80,10 @@ public class CodeProcessor implements EntityProcessor<Code> {
 	public void preUpdate(Code obj) throws ix.core.EntityProcessor.FailProcessingException {
 		generateURL(obj);
 	}
+
+    @Override
+    public Class<Code> getEntityClass() {
+        return Code.class;
+    }
 
 }
