@@ -243,7 +243,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
 
-    private GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
+    public static GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
         GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
         //TODO: it makes total sense that the REST API should return an API link, but it can't
         //for backwards compatibility
