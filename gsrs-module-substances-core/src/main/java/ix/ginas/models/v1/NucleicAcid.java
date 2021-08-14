@@ -125,6 +125,7 @@ public class NucleicAcid extends GinasCommonSubData {
 	public void setSequenceType(String sequenceType) {
 		this.sequenceType = sequenceType;
 	}
+	
 	@Indexable
 	public List<Subunit> getSubunits() {
 		Collections.sort(subunits, new Comparator<Subunit>() {

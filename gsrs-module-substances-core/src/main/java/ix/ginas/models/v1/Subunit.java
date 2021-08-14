@@ -96,6 +96,10 @@ public class Subunit extends GinasCommonSubData implements SequenceEntity {
         if(p instanceof NucleicAcid){
             return SequenceType.NUCLEIC_ACID;
         }
+        //TODO: this isn't ideal, because there are times when the 
+        //subunit is detached from the parent. The specific requirements
+        //of what to do with UNKNOWN types must also be determined 
+        
         return SequenceType.UNKNOWN;
     }
 }
