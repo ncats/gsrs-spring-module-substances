@@ -1,8 +1,25 @@
 package gsrs.module.substance.services;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import org.jcvi.jillion.core.Range;
+import org.jcvi.jillion.core.Ranges;
+
+import gov.nih.ncats.common.Tuple;
 import gsrs.cache.GsrsCache;
 import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
 import gsrs.module.substance.repository.ProteinSubstanceRepository;
+import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.search.ResultProcessor;
@@ -11,19 +28,13 @@ import ix.core.search.SearchResultProcessor;
 import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Subunit;
 import ix.seqaln.SequenceIndexer;
 import ix.seqaln.service.SequenceIndexerService;
 import ix.utils.CallableUtil;
+import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
-import org.jcvi.jillion.core.Range;
-import org.jcvi.jillion.core.Ranges;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 @Slf4j
 public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSearchService{
     private static Pattern FASTA_FILE_PATTERN = Pattern.compile(">(.+)\\|.+");
@@ -32,20 +43,32 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 
     private ProteinSubstanceRepository proteinSubstanceRepository;
     private NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository;
+    private SubunitRepository subunitRepository;
     private GsrsCache ixCache;
     private PayloadService payloadService;
 
 
+    private SubunitRepositoryWrapper proteinAdapter;
+    private SubunitRepositoryWrapper naAdapter;
+    
 
     public LegacySubstanceSequenceSearchService(SequenceIndexerService indexerService, GsrsCache ixCache,
                                                 PayloadService payloadService,
                                                 ProteinSubstanceRepository proteinSubstanceRepository,
-                                                NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository ) {
+                                                NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository,
+                                                SubunitRepository subunitRepository
+                                                ) {
         this.indexerService = indexerService;
         this.ixCache = ixCache;
         this.proteinSubstanceRepository = proteinSubstanceRepository;
         this.nucleicAcidSubstanceRepository = nucleicAcidSubstanceRepository;
+        this.subunitRepository=subunitRepository;
+        
         this.payloadService = payloadService;
+        
+        this.proteinAdapter = SubunitRepositoryWrapper.fromProtein(proteinSubstanceRepository, subunitRepository);
+        this.naAdapter = SubunitRepositoryWrapper.fromNA(nucleicAcidSubstanceRepository, subunitRepository);
+        
     }
 
 
@@ -56,11 +79,13 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
         try {
             return ixCache.getOrElse(indexerService.getLastModified() , hashKey, ()-> {
                 SearchResultProcessor<SequenceIndexer.Result, ?> processor;
+                
                 if ("protein".equalsIgnoreCase(request.getSeqType())) {
-                    processor = new GinasSequenceResultProcessor(proteinSubstanceRepository, ixCache);
+                    processor = new GinasSequenceResultProcessor(proteinAdapter, ixCache);
                 } else {
-                    processor = new GinasNucleicSequenceResultProcessor(nucleicAcidSubstanceRepository, ixCache);
+                    processor = new GinasSequenceResultProcessor(naAdapter, ixCache);
                 }
+               
                 AutowireHelper.getInstance().autowire(processor);
                 SequenceIndexer.ResultEnumeration resultEnumeration = indexerService.search(request.getQ(), request.getCutoff(), request.getType(), request.getSeqType());
                 try {
@@ -100,6 +125,86 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 //
 //    }
 
+    
+    private interface SubunitRepositoryWrapper {
+        public Optional<Substance> getSubstanceFromSubunitUUID(UUID uuid);
+        public Optional<Subunit> getSubunitFromSubunitUUID(UUID uuid);
+        public Optional<Substance> getSubstanceByID(UUID uuid);
+        default Optional<Tuple<Substance,Subunit>> getSubstanceAndSubunitFromSubunitUUID(UUID uuid){
+            return this.getSubunitFromSubunitUUID(uuid)
+                        .map(su->Tuple.of(getSubstanceFromSubunitUUID(uuid),su))
+                        .filter(t->t.k().isPresent())
+                        .map(Tuple.kmap(op->op.get()));            
+        }
+        
+        public static SubunitRepositoryWrapper fromNA(NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository, SubunitRepository subunitRepository) {
+            return NucleicAcidSubunitRepositoryWrapper.builder()
+            .nucleicAcidSubstanceRepository(nucleicAcidSubstanceRepository)
+            .subunitRepository(subunitRepository)
+            .build();
+        }
+        public static SubunitRepositoryWrapper fromProtein(ProteinSubstanceRepository proteinSubstanceRepository, SubunitRepository subunitRepository) {
+            return ProteinSubunitRepositoryWrapper.builder()
+            .proteinSubstanceRepository(proteinSubstanceRepository)
+            .subunitRepository(subunitRepository)
+            .build();
+        }
+    }
+    
+    @Builder
+    private static class NucleicAcidSubunitRepositoryWrapper implements SubunitRepositoryWrapper{
+
+        private NucleicAcidSubstanceRepository nucleicAcidSubstanceRepository;
+        private SubunitRepository subunitRepository;
+        
+        
+        @Override
+        public Optional<Substance> getSubstanceFromSubunitUUID(UUID uuid) {
+            return nucleicAcidSubstanceRepository.findNucleicAcidSubstanceByNucleicAcid_Subunits_Uuid(uuid)
+                    .stream()
+                    .findFirst()
+                    .map(na->(Substance)na);        
+        }
+
+        @Override
+        public Optional<Subunit> getSubunitFromSubunitUUID(UUID uuid) {
+            return subunitRepository.findById(uuid);
+        }
+
+        @Override
+        public Optional<Substance> getSubstanceByID(UUID uuid) {
+            return nucleicAcidSubstanceRepository.findById(uuid).map(s->(Substance)s);
+        }
+    }
+    
+    @Builder
+    private static class ProteinSubunitRepositoryWrapper implements SubunitRepositoryWrapper{
+
+        private ProteinSubstanceRepository proteinSubstanceRepository;
+        private SubunitRepository subunitRepository;
+        
+        
+        @Override
+        public Optional<Substance> getSubstanceFromSubunitUUID(UUID uuid) {
+            return proteinSubstanceRepository.findProteinSubstanceByProtein_Subunits_Uuid(uuid)
+                    .stream()
+                    .findFirst()
+                    .map(na->(Substance)na);        
+        }
+
+        @Override
+        public Optional<Subunit> getSubunitFromSubunitUUID(UUID uuid) {
+            return subunitRepository.findById(uuid);
+        }
+        
+
+        @Override
+        public Optional<Substance> getSubstanceByID(UUID uuid) {
+            return proteinSubstanceRepository.findById(uuid).map(s->(Substance)s);
+        }
+        
+    }
+    
     private SearchResultContext search(SearcherTask task, ResultProcessor processor) {
         try {
             final String key = task.getKey();
@@ -118,18 +223,19 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
     }
 
     public static class GinasSequenceResultProcessor
-            extends SearchResultProcessor<SequenceIndexer.Result, ProteinSubstance> {
-        private ProteinSubstanceRepository substanceRepository;
+            extends SearchResultProcessor<SequenceIndexer.Result, Substance> {
+        private SubunitRepositoryWrapper subunitRepoWrapper;
         private GsrsCache ixCache;
 
-        public GinasSequenceResultProcessor(ProteinSubstanceRepository substanceRepository, GsrsCache ixCache) {
-            this.substanceRepository = substanceRepository;
+        public GinasSequenceResultProcessor(SubunitRepositoryWrapper subunitRepoWrapper, GsrsCache ixCache) {
+            this.subunitRepoWrapper = subunitRepoWrapper;
+            
             this.ixCache = ixCache;
         }
 
         @Override
-        protected ProteinSubstance instrument(SequenceIndexer.Result r) throws Exception {
-            ProteinSubstance protein=null;
+        protected Substance instrument(SequenceIndexer.Result r) throws Exception {
+            
 
             //I don't understand the logic here ...
             //I don't think this does what it's supposed to.
@@ -139,18 +245,19 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                 Matcher m = FASTA_FILE_PATTERN.matcher(r.id);
                 if(m.find()){
                     String parentId = m.group(1);
-                    return substanceRepository.findById(UUID.fromString(parentId)).orElse(null);
-
-
+                    return subunitRepoWrapper.getSubstanceByID(UUID.fromString(parentId)).orElse(null);
                 }
-            }else {
-
-                Optional<ProteinSubstance> proteinMatch = substanceRepository.findProteinSubstanceByProtein_Subunits_Uuid(UUID.fromString(r.id)).stream().findFirst();
-                protein = !proteinMatch.isPresent() ? null : proteinMatch.get();
+                return null; //? maybe should do something else
             }
+            UUID subunitUUID = UUID.fromString(r.id);
+            
+            Optional<Tuple<Substance,Subunit>> substanceAndSubunit = subunitRepoWrapper.getSubstanceAndSubunitFromSubunitUUID(subunitUUID);
+            
+            Substance matched = substanceAndSubunit.map(t->{
+                Substance sub = t.k();
+                Subunit subunit = t.v();
 
-            if (protein != null) {
-                EntityUtils.Key key= EntityUtils.EntityWrapper.of(protein).getKey();
+                EntityUtils.Key key= EntityUtils.EntityWrapper.of(sub).getKey();
                 Map<String,Object> added = ixCache.getMatchingContextByContextID(this.getContext().getId(), key);
                 if(added==null){
                     added=new HashMap<String,Object>();
@@ -158,113 +265,34 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                 List<SequenceIndexer.Result> alignments = (List<SequenceIndexer.Result>)
                         added.computeIfAbsent("alignments", f->new ArrayList<SequenceIndexer.Result>());
                 alignments.add(r);
+
                 //GSRS 1512 add target site info
                 // this is the only place in the alignment code we have the aligned sequence
                 //AND we know what subunit it belongs to
-                UUID subunitUUID = UUID.fromString(r.id);
-//                System.out.println("looking for subunit id = " + subunitUUID );
-                Optional<Subunit> foundSubunit = protein.protein.getSubunits().stream()
+                int index = subunit.subunitIndex==null? 0: subunit.subunitIndex;
 
-                        .filter(sub-> Objects.equals(subunitUUID,sub.getUuid())).findAny();
-//                System.out.println("found subunit ? ="+ foundSubunit);
-                if(foundSubunit.isPresent()){
-                    Subunit subunit = foundSubunit.get();
-                    int index = subunit.subunitIndex==null? 0: subunit.subunitIndex;
-//                    System.out.println("index = " + index);
-                    Range.RangeAndCoordinateSystemToStringFunction function = (begin,end, ignored)-> index+"_"+begin + "-" +index+"_"+end;
-                    r.alignments.stream().forEach(a->{
-                        String shorthand = Ranges.asRanges(a.targetSites())
-                                .stream()
-                                .map(range-> range.toString(function, Range.CoordinateSystem.RESIDUE_BASED))
-                                .collect(Collectors.joining(";","Target Sites: ","\n\n"));
-//                            System.out.println("short hand -  " + shorthand);
-                        //this check is because sometimes we get here twice?
-                        if(a.alignment!=null && !a.alignment.startsWith("Target")) {
-                            a.alignment = shorthand + a.alignment;
-                        }
-//                            System.out.println("new alignment =\n"+a.alignment);
-                    });
-
-
-
-                }
+                Range.RangeAndCoordinateSystemToStringFunction function = (begin,end, ignored)-> index+"_"+begin + "-" +index+"_"+end;
+                r.alignments.stream().forEach(a->{
+                    String shorthand = Ranges.asRanges(a.targetSites())
+                            .stream()
+                            .map(range-> range.toString(function, Range.CoordinateSystem.RESIDUE_BASED))
+                            .collect(Collectors.joining(";","Target Sites: ","\n\n"));
+                    //this check is because sometimes we get here twice?
+                    if(a.alignment!=null && !a.alignment.startsWith("Target")) {
+                        a.alignment = shorthand + a.alignment;
+                    }
+                });
 
                 ixCache.setMatchingContext(this.getContext().getId(), key, added);
-            } else {
+                return sub;
+            }).orElse(null);
+            
+            if(!substanceAndSubunit.isPresent()) {
                 log.warn("Can't retrieve protein for subunit " + r.id);
             }
-            return protein;
+            
+            return matched;
         }
     }
 
-    public static class GinasNucleicSequenceResultProcessor
-            extends SearchResultProcessor<SequenceIndexer.Result, NucleicAcidSubstance> {
-
-        private NucleicAcidSubstanceRepository substanceRepository;
-        private GsrsCache ixCache;
-
-        public GinasNucleicSequenceResultProcessor(NucleicAcidSubstanceRepository substanceRepository, GsrsCache ixCache) {
-            this.substanceRepository = substanceRepository;
-            this.ixCache = ixCache;
-        }
-
-        @Override
-        protected NucleicAcidSubstance instrument(SequenceIndexer.Result r) throws Exception {
-//            NucleicAcidSubstance nuc= null;
-//            if(r.id.startsWith(">")){
-//                Matcher m = FASTA_FILE_PATTERN.matcher(r.id);
-//                if(m.find()){
-//                    String parentId = m.group(1);
-//                    nuc = SubstanceFactory.nucfinder.get().byId(UUID.fromString(parentId));
-//                }
-//            }else {
-            NucleicAcidSubstance nuc = substanceRepository.findNucleicAcidSubstanceByNucleicAcid_Subunits_Uuid(UUID.fromString(r.id))
-                                                                                    .stream()
-                                                                                    .findFirst()  // also slow
-                                                                                        .orElse(null);
-
-
-//            }
-
-            if (nuc != null) {
-                EntityUtils.Key key= EntityUtils.EntityWrapper.of(nuc).getKey();
-                Map<String,Object> added = ixCache.getMatchingContextByContextID(this.getContext().getId(), key);
-                if(added==null){
-                    added=new HashMap<>();
-                }
-                List<SequenceIndexer.Result> alignments = (List<SequenceIndexer.Result>)
-                        added.computeIfAbsent("alignments", f->new ArrayList<SequenceIndexer.Result>());
-                alignments.add(r);
-                //GSRS 1512 add target site info
-                // this is the only place in the alignment code we have the aligned sequence
-                //AND we know what subunit it belongs to
-                UUID subunitUUID = UUID.fromString(r.id);
-//                System.out.println("looking for subunit id = " + subunitUUID );
-                Optional<Subunit> foundSubunit = nuc.nucleicAcid.getSubunits().stream()
-                        .filter(sub-> Objects.equals(subunitUUID,sub.getUuid())).findAny();
-                if(foundSubunit.isPresent()) {
-                    Subunit subunit = foundSubunit.get();
-                    int index = subunit.subunitIndex == null ? 0 : subunit.subunitIndex;
-//                    System.out.println("index = " + index);
-                    Range.RangeAndCoordinateSystemToStringFunction function = (begin, end, ignored) -> index + "_" + begin + "-" + index + "_" + end;
-                    r.alignments.stream().forEach(a -> {
-                        String shorthand = Ranges.asRanges(a.targetSites())
-                                .stream()
-                                .map(range -> range.toString(function, Range.CoordinateSystem.RESIDUE_BASED))
-                                .collect(Collectors.joining(";", "Target Sites: ", "\n\n"));
-//                            System.out.println("short hand -  " + shorthand);
-                        //this check is because sometimes we get here twice?
-                        if (a.alignment != null && !a.alignment.startsWith("Target")) {
-                            a.alignment = shorthand + a.alignment;
-                        }
-//                            System.out.println("new alignment =\n"+a.alignment);
-                    });
-                }
-                ixCache.setMatchingContext(this.getContext().getId(), key, added);
-            } else {
-                log.warn("Can't retrieve nucleic for subunit " + r.id);
-            }
-            return nuc;
-        }
-    }
 }
