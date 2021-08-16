@@ -3,11 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package example.substance.codeprocessor;
+package example.substance.processors;
 
 import gsrs.module.substance.datasource.CodeSystemMeta;
 //import gsrs.module.substance.datasource.;
-import gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator;
 import gsrs.module.substance.processors.CodeProcessor;
 import gsrs.module.substance.processors.CodeSystemUrlGenerator;
 import java.io.IOException;
