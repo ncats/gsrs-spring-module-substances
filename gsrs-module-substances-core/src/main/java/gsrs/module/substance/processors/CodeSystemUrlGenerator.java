@@ -5,7 +5,7 @@ import ix.ginas.models.v1.Code;
 import java.util.Optional;
 
 /**
- * An interface to generate URLs fro given Code and codesystems.
+ * An interface to generate URLs for given Code and codeSystem.
  *
  * Created by katzelda on 6/29/18.
  */
