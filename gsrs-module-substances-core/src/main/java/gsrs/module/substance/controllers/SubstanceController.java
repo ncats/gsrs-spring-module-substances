@@ -733,7 +733,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 // but something is getting lost in translation between 2.X and 3.0
                 // and it's leading to some results coming back which are not substances.
                 // This is particularly strange since there is an explicit subset which IS
-                // all substacnes given.
+                // all substances given.
                 srequest.getOptions().setKind(Substance.class);
                 SearchResult sr = getResultFor(ctx, srequest,true);
 
