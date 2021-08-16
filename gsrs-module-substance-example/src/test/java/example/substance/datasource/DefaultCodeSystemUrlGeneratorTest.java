@@ -1,4 +1,4 @@
-package example.substance.codeProcessing;
+package example.substance.datasource;
 
 import gsrs.module.substance.datasource.CodeSystemMeta;
 import gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator;

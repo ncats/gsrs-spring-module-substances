@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package example.substance.codeProcessing;
+package example.substance.codeprocessor;
 
 import gsrs.module.substance.datasource.CodeSystemMeta;
 //import gsrs.module.substance.datasource.;
