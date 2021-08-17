@@ -82,6 +82,12 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
                 '}';
     }
 
+    public void addCode(Code newCode) {
+        this.codes.add(newCode);
+        newCode.setOwner(this);
+        setIsDirty("codes");
+    }
+
     public enum SubstanceClass {
         chemical,
         protein,
