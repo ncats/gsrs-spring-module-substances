@@ -34,26 +34,27 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Slf4j
 public class ValidationUtils {
 
-	private static final String VALIDATION_CONF = "validation.conf";
-
-	public static interface ValidationRule<K>{
-		public GinasProcessingMessage validate(K obj);
-	}
-
     @Autowired(required = true)
     private DefinitionalElementFactory definitionalElementFactory;
 
     @Autowired
-    protected PlatformTransactionManager transactionManager;
+    private SubstanceLegacySearchService searchService;
 
     @Autowired
-    private SubstanceLegacySearchService searchService;
+    protected PlatformTransactionManager transactionManager;
+
+	private static final String VALIDATION_CONF = "validation.conf";
 
     public ValidationUtils() {
         if (definitionalElementFactory == null) {
             AutowireHelper.getInstance().autowire(this);
         }
     }
+    
+	public static interface ValidationRule<K>{
+		public GinasProcessingMessage validate(K obj);
+	}
+	
 	public static class SubstanceCantBeNull implements ValidationRule<Substance>{
 		@Override
 		public GinasProcessingMessage validate(Substance s) {
@@ -1763,11 +1764,14 @@ public class ValidationUtils {
     public List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance) {
         DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
         int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
-        log.debug("handling layer: " + (layer + 1));
+        log.trace( "findFullDefinitionalDuplicateCandidates  handling layer: " + (layer + 1));
         return findLayerNDefinitionalDuplicateCandidates(substance, layer);
     }
 
     public List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance) {
+//        if (definitionalElementFactory == null) {
+//            AutowireHelper.getInstance().autowire(this);
+//        }
         int layer = 0;
         return findLayerNDefinitionalDuplicateCandidates(substance, layer);
     }
@@ -1775,12 +1779,14 @@ public class ValidationUtils {
     public List<Substance> findLayerNDefinitionalDuplicateCandidates(Substance substance, int layer) {
         List<Substance> candidates = new ArrayList<>();
         try {
+            //SearchRequest.Builder searchBuilder = new SearchRequest.Builder();
             DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
-            log.debug("handling layer: " + (layer + 1));
+            //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
+            log.trace( "findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
-            log.debug("layer query: " + searchItem);
-            
+            log.trace("layer query: " + searchItem);
+
             TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
             candidates = (List<Substance>) transactionSearch.execute(ts
                     -> {
@@ -1791,6 +1797,7 @@ public class ValidationUtils {
                         .query(searchItem)
                         .top(Integer.MAX_VALUE)
                         .build();
+                log.trace("built query: " + request.getQuery());
                 try {
                     SearchOptions options = new SearchOptions();
                     SearchResult sr = searchService.search(request.getQuery(), options);
@@ -1801,7 +1808,7 @@ public class ValidationUtils {
                             .collect(Collectors.toList());
                     return hits;
                 } catch (Exception ex) {
-                    System.err.println("error during search");
+                    log.error("error during search");
                     ex.printStackTrace();
                 }
                 return nameValues;
@@ -1826,7 +1833,7 @@ public class ValidationUtils {
 				}
 			}*/
         } catch (Exception ex) {
-            log.error("Error running query", ex);
+            log.error( "Error running query", ex);
         }
         return candidates;
     }

@@ -3,9 +3,18 @@ package example.substance.processor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+
+import gsrs.cv.ControlledVocabularyEntityService;
+import gsrs.cv.ControlledVocabularyEntityServiceImpl;
+import gsrs.cv.CvApiAdapter;
+import gsrs.cv.api.ControlledVocabularyApi;
+import gsrs.springUtils.AutowireHelper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.module.substance.processors.ApprovalIdProcessor;
@@ -22,44 +31,54 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * @author mitch miller
  */
 @Slf4j
+@Import(ApprovalIdProcessorTest.TestConfig.class)
 public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
 
-    public ApprovalIdProcessorTest() {
+
+    ApprovalIdProcessor processor;
+
+    @TestConfiguration
+    static class TestConfig{
+        @Bean
+        public ControlledVocabularyEntityService controlledVocabularyEntityService(){
+            return new ControlledVocabularyEntityServiceImpl();
+        }
+        @Bean
+        public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service){
+            return new CvApiAdapter(service);
+        }
+    }
+    @BeforeEach
+    public void setup(){
+        processor = new ApprovalIdProcessor();
+        processor.setCodeSystem("FDA UNII");
+
+        AutowireHelper.getInstance().autowire(processor);
     }
 
-
-    /*
-    the substance read in from file has an approval ID but no corrresponding code.  We expect one to be created
+    /**
+    the substance read in from file has an approval ID but no corresponding code.  We expect one to be created
      */
     @Test
     public void testCopyCodeIfNecessary() throws IOException {
-        log.trace("testCopyCodeIfNecessary");
         String unii = "88ECG9H7RA_minus_code";
         Substance approvedSubstance = getSubstanceFromFile(unii);
-        //Setup directly
-        Map<String, String> mmap = new HashMap<>();
-        mmap.put("codeSystem", "FDA UNII");
 
-        ApprovalIdProcessor processor = new ApprovalIdProcessor(mmap);
-        log.trace("code type " + processor.getCodeSystem() + " for approval id: " + approvedSubstance.approvalID);
-        processor.copyCodeIfNecessary(approvedSubstance);
+        processor.prePersist(approvedSubstance);
 
         assertTrue(approvedSubstance.codes.stream().anyMatch(c
                 -> (c.codeSystem.equals(processor.getCodeSystem()) && c.code.equals(approvedSubstance.approvalID))));
     }
 
-    /*
-    process a substance without an approval ID, but otherwise identical to what we had before. 
+    /**
+    process a substance without an approval ID, but otherwise identical to what we had before.
     Expect no new code
      */
     @Test
     public void testCopyCodeIfNecessaryNoApproval() {
         log.trace("testCopyCodeIfNecessaryApproval");
         Substance substance = getSubstanceFromFile("88ECG9H7RA_no_approval_id");
-        Map<String, String> paramMap = new HashMap<>();
-        paramMap.put("codeSystem", "FDA UNII");
 
-        ApprovalIdProcessor processor = new ApprovalIdProcessor(paramMap);
         int codesBefore = substance.codes.size();
         log.trace("code type " + processor.getCodeSystem() + " for approval id: " + substance.approvalID);
         processor.copyCodeIfNecessary(substance);
@@ -70,16 +89,14 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     /*
-    process a substance without an approval ID, but otherwise identical to what we had before. 
+    process a substance without an approval ID, but otherwise identical to what we had before.
     Expect no new code
      */
     @Test
     public void testCopyCodeNotNecessary() {
         log.trace("testCopyCodeNotNecessary");
         Substance substance = getSubstanceFromFile("88ECG9H7RA");
-        Map<String, String> paramMap = new HashMap<>();
-        paramMap.put("codeSystem", "FDA UNII");
-        ApprovalIdProcessor processor = new ApprovalIdProcessor(paramMap);
+
 
         int codesBefore = substance.codes.size();
         log.trace("code type " + processor.getCodeSystem() + " for approval id: " + substance.approvalID);

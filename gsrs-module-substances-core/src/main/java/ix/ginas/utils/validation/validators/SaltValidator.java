@@ -1,7 +1,5 @@
 package ix.ginas.utils.validation.validators;
 
-import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.springUtils.AutowireHelper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Amount;
@@ -20,18 +18,15 @@ import org.springframework.transaction.PlatformTransactionManager;
 /**
  *
  * @author Mitch Miller
+ * 
+ * methods that search for def hash duplicate candidates have been moved to
+ * ValidationUtils so that those methods can be called from other classes. 18 August 2021
  */
 @Slf4j
 public class SaltValidator extends AbstractValidatorPlugin<Substance> {
 
     public SaltValidator() {
-        if (definitionalElementFactory == null) {
-            AutowireHelper.getInstance().autowire(this);
-        }
     }
-
-    @Autowired(required = true)
-    private DefinitionalElementFactory definitionalElementFactory;
 
     @Autowired
     protected PlatformTransactionManager transactionManager;

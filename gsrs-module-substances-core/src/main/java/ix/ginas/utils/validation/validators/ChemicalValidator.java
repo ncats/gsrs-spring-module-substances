@@ -24,12 +24,10 @@ import org.springframework.hateoas.server.EntityLinks;
 import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.function.Supplier;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by katzelda on 5/14/18.
  */
-@Slf4j
 public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 	@Autowired
     private StructureProcessor structureProcessor;
@@ -73,7 +71,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        log.trace("start of ChemicalValidator.validate");
 
         ChemicalSubstance cs = (ChemicalSubstance)s;
 
@@ -243,7 +240,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
 
-    public static GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
+    private GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
         GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
         //TODO: it makes total sense that the REST API should return an API link, but it can't
         //for backwards compatibility

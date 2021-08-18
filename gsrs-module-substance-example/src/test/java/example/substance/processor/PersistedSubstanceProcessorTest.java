@@ -42,15 +42,21 @@ public class PersistedSubstanceProcessorTest extends AbstractSubstanceJpaEntityT
     @WithMockUser(username = "admin", roles="Admin")
     public void newSubstanceShouldCallNew() {
 
-
+        UUID uuid = UUID.randomUUID();
             new SubstanceBuilder()
+                    .setUUID(uuid)
                     .addName("aName")
                     .buildJsonAnd( this::assertCreated);
 
+            //for some reason now creating new substances calls insert to insert most of the fields
+            // and then also makes an update to set the created by and version fields
             assertEquals(1, PersistedSubstanceProcessorTestDouble.timesNewCalled);
             assertEquals(0, PersistedSubstanceProcessorTestDouble.timesUpdatedCalled);
 //            assertNotNull(PersistedSubstanceProcessorTestDouble.lastNewSubstance);
 
+        assertEquals("1",
+                substanceEntityService.get(uuid).get()
+                        .version);
 
 
 

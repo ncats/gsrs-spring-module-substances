@@ -1,19 +1,17 @@
 package gsrs.module.substance.processors;
 
-import gov.nih.ncats.common.sneak.Sneak;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.cv.api.*;
 import ix.core.EntityProcessor;
-import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
-import gsrs.repository.ControlledVocabularyRepository;
-import ix.ginas.models.v1.*;
-import ix.ginas.models.v1.CodeSystemVocabularyTerm;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import lombok.Data;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * When a substance is saved and has an approvalID, check for a corresponding
@@ -26,56 +24,52 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     private String codeSystem;
 
-// autoriring ControlledVocabularyRepository  causes exception as of 12 Aug 2021
-//    @Autowired
-//    ControlledVocabularyRepository repo;
+    private CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addCodeSystemIfNeeded);
 
-    public ApprovalIdProcessor(Map with) {
-        if (with!=null && with.get("codeSystem")!= null ) {
-            codeSystem = (String) with.get("codeSystem");
-//            log.trace("codeSystem was null/empty!");
-//            codeSystem = "FDA UNII";
-        }
-        //todo: find a way to access CVs programmatically 12 Aug 2021
-        // rely on the admin/user to make sure the code system exists
-        //addCodeSystem();
+    public void setCodeSystem(String codeSystem) {
+        this.codeSystem = codeSystem;
     }
 
-//    private void addCodeSystem()  {
-//        Runnable r = new Runnable() {
-//            @Override
-//            public void run() {
-//                log.trace("in addCodeSystem.run");
-//                if (codeSystem != null) {
-//                    Optional<GsrsCodeSystemControlledVocabularyDTO> cvvOpt;
-//                    List<ControlledVocabulary> vocabList = repo.findByDomain("CODE_SYSTEM");
-//                    log.trace("vocabList size: " + vocabList.size());
-//                    ControlledVocabulary vocab = vocabList.get(0);
-//                    boolean addNew = true;
-//                    for (VocabularyTerm term : vocab.getTerms()) {
-//                        if (term.getValue().equals(codeSystem)) {
-//                            addNew = false;
-//                            break;
-//                        }
-//                    }
-//                    if (addNew) {
-//                        Sneak.sneakyThrow(new Exception("Create code system '" + codeSystem+ "' within GSRS"));
-//                        
-////                        CodeSystemVocabularyTerm vt = new CodeSystemVocabularyTerm();
-////                        vt.display = codeSystem;
-////                        vt.value = codeSystem;
-////                        vt.hidden = true;
-////                        List<ControlledVocabulary> vocabs = repo.findByDomain(codeSystem);
-////                        vocab.getTerms().add(vt);
-////
-////                        repo.saveAndFlush(vocab);
-////                        log.trace("saved code system");
-//                    }
-//                }
-//            }
-//        };
-//        r.run();
-//    }
+    @Autowired
+    private ControlledVocabularyApi api;
+
+
+    private void addCodeSystemIfNeeded(){
+        if(codeSystem ==null){
+            return;
+        }
+        try {
+            Optional<AbstractGsrsControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
+
+        boolean addNew=true;
+        if(opt.isPresent()){
+            for(GsrsVocabularyTermDTO term : ((GsrsControlledVocabularyDTO)opt.get()).getTerms()){
+                if (term.getValue().equals(codeSystem)) {
+                    addNew = false;
+                    break;
+                }
+            }
+        }
+
+        if(addNew) {
+            List<CodeSystemTermDTO> list = new ArrayList<>();
+            list.add(CodeSystemTermDTO.builder()
+                    .display(codeSystem)
+                    .value(codeSystem)
+                    .hidden(true)
+                    .build());
+
+            api.create(GsrsCodeSystemControlledVocabularyDTO.builder()
+                    .domain("CODE_SYSTEM")
+                    .terms(list)
+                    .build());
+
+        }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 
     @Override
     public void prePersist(Substance s) {
@@ -83,31 +77,36 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     }
 
     @Override
-    public void preUpdate(Substance obj) {
+    public void preUpdate(Substance s) {
         log.trace("preUpdate");
-        prePersist(obj);
+        copyCodeIfNecessary(s);
     }
 
     public void copyCodeIfNecessary(Substance s) {
+        if(codeSystem ==null){
+            return;
+        }
+        initializer.getSync();
         log.trace("copyCodeIfNecessary. codeSystem: " + codeSystem);
         if (s.approvalID != null && s.approvalID.length() > 0) {
             log.trace("handling approval ID " + s.approvalID);
             boolean needCode = true;
             for (Code code : s.getCodes()) {
-                if (code.codeSystem.equals(codeSystem)) {
+                if (codeSystem.equals(code.codeSystem)) {
                     if (code.code == null || code.code.length() == 0 || !code.code.equals(s.approvalID)) {
                         code.code = s.approvalID;
-                        code.setDeprecated(true);
+                        code.deprecate(true);
                         log.trace("deleted old code");
                     }
                     else if (code.code != null && code.code.equals(s.approvalID)) {
+                        //don't put a break here because there may be other codes to be deprecated
                         needCode = false;
                     }
                 }
             }
             if (needCode) {
                 Code newCode = new Code(codeSystem, s.approvalID);
-                s.codes.add(newCode);
+                s.addCode(newCode);
                 log.trace("Added new code for approvalId");
             }
         }

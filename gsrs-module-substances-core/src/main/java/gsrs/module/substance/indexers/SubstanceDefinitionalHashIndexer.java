@@ -1,3 +1,7 @@
+/*
+ * Get the Definitional Elements collection for the Substance -- which comes from a class-specific routine
+ * and create a hash that will enable (Lucene) searching.
+ */
 package gsrs.module.substance.indexers;
 
 import gsrs.module.substance.definitional.DefinitionalElements;
@@ -14,8 +18,6 @@ import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Get the Definitional Elements collection for the Substance -- which comes from a class-specific routine
- * and create a hash that will enable (Lucene) searching.
  *
  * @author Mitch Miller
  */
@@ -34,13 +36,13 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 	@Override
 	public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer)
 	{
-		log.trace(String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. class: %s ",
+		LogUtil.trace(()->String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. class: %s ",
 						substance.getClass().getName()));
 		try
 		{
 			DefinitionalElements elements =  definitionalElementFactory.computeDefinitionalElementsFor(substance);
 
-			log.trace(String.format(" received %d elements", elements.getElements().size()));
+			LogUtil.trace(()->String.format(" received %d elements", elements.getElements().size()));
 			if( elements==null)
 			{
 				log.trace("elements null");
@@ -56,8 +58,8 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 			LogUtil.trace(()->String.format(" %d layers", layerHashes.size()));
 			for (int layer = 1; layer <= layerHashes.size(); layer++)
 			{
-			    String layerName = "root_definitional_hash_layer_" + layer;
-				log.trace("layerName: " + layerName);
+				String layerName = "root_definitional_hash_layer_" + layer;
+				LogUtil.trace(()->"layerName: " + layerName);
 				consumer.accept(IndexableValue.simpleStringValue(layerName, layerHashes.get(layer - 1)));
 			}
 		} catch (Exception ex)

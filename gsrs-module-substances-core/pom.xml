@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>0.6.8-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -80,6 +80,11 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-controlled-vocabulary</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-legacy-indexer</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
@@ -108,14 +113,6 @@
             <artifactId>gsrs-controlled-vocabulary-api</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
-        
-        <!-- it's unclear if this should be here -->
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-controlled-vocabulary</artifactId>
-            <version>${gsrs.version}</version>
-        </dependency>
-        
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-scheduled-tasks</artifactId>
@@ -126,6 +123,7 @@
             <artifactId>molwitch</artifactId>
             <version>0.6.1-SNAPSHOT</version>
         </dependency>
+
         <dependency>
             <groupId>org.jcvi.jillion</groupId>
             <artifactId>jillion</artifactId>
