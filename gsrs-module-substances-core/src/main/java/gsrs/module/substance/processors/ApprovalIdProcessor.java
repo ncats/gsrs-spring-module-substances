@@ -2,16 +2,20 @@ package gsrs.module.substance.processors;
 
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.cv.api.*;
 import ix.core.EntityProcessor;
-import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
 import gsrs.repository.ControlledVocabularyRepository;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.CodeSystemVocabularyTerm;
+
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Arrays;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -34,48 +38,42 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     }
 
     @Autowired
-    private ControlledVocabularyRepository repo;
+    private ControlledVocabularyApi api;
 
-
-
-    public ControlledVocabularyRepository getRepo() {
-        return repo;
-    }
-
-    public void setRepo(ControlledVocabularyRepository repo) {
-        this.repo = repo;
-    }
 
     private void addCodeSystemIfNeeded(){
         if(codeSystem ==null){
             return;
         }
-        List<ControlledVocabulary> vocabList = repo.findByDomain("CODE_SYSTEM");
+        try {
+            Optional<AbstractGsrsControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
+
         boolean addNew=true;
-        for(ControlledVocabulary v : vocabList){
-            for (VocabularyTerm term : v.getTerms()) {
+        if(opt.isPresent()){
+            for(GsrsVocabularyTermDTO term : ((GsrsControlledVocabularyDTO)opt.get()).getTerms()){
                 if (term.getValue().equals(codeSystem)) {
                     addNew = false;
                     break;
                 }
             }
         }
-        if(addNew) {
-            CodeSystemVocabularyTerm vt = new CodeSystemVocabularyTerm();
-            vt.display = codeSystem;
-            vt.value = codeSystem;
-            vt.hidden = true;
 
-            ControlledVocabulary cv;
-            if (vocabList.isEmpty()) {
-                //make new cv
-                cv = new ControlledVocabulary();
-                cv.domain = "CODE_SYSTEM";
-            } else {
-                cv = vocabList.get(0);
-            }
-            cv.addTerms(vt);
-            repo.saveAndFlush(cv);
+        if(addNew) {
+            List<CodeSystemTermDTO> list = new ArrayList<>();
+            list.add(CodeSystemTermDTO.builder()
+                    .display(codeSystem)
+                    .value(codeSystem)
+                    .hidden(true)
+                    .build());
+
+            api.create(GsrsCodeSystemControlledVocabularyDTO.builder()
+                    .domain("CODE_SYSTEM")
+                    .terms(list)
+                    .build());
+
+        }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
     }

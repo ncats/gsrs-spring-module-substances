@@ -6,11 +6,18 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import gsrs.cv.ControlledVocabularyEntityService;
+import gsrs.cv.ControlledVocabularyEntityServiceImpl;
+import gsrs.cv.CvApiAdapter;
+import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.repository.ControlledVocabularyRepository;
 import gsrs.springUtils.AutowireHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.module.substance.processors.ApprovalIdProcessor;
@@ -27,18 +34,28 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * @author mitch miller
  */
 @Slf4j
+@Import(ApprovalIdProcessorTest.TestConfig.class)
 public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
 
 
     ApprovalIdProcessor processor;
 
-    @Autowired
-    private ControlledVocabularyRepository repo;
+    @TestConfiguration
+    static class TestConfig{
+        @Bean
+        public ControlledVocabularyEntityService controlledVocabularyEntityService(){
+            return new ControlledVocabularyEntityServiceImpl();
+        }
+        @Bean
+        public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service){
+            return new CvApiAdapter(service);
+        }
+    }
     @BeforeEach
     public void setup(){
         processor = new ApprovalIdProcessor();
         processor.setCodeSystem("FDA UNII");
-        processor.setRepo(repo);
+
         AutowireHelper.getInstance().autowire(processor);
     }
 
