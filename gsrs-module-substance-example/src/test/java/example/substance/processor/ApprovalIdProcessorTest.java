@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import gsrs.repository.ControlledVocabularyRepository;
 import gsrs.springUtils.AutowireHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.module.substance.processors.ApprovalIdProcessor;
@@ -30,11 +32,13 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
 
     ApprovalIdProcessor processor;
 
+    @Autowired
+    private ControlledVocabularyRepository repo;
     @BeforeEach
     public void setup(){
         processor = new ApprovalIdProcessor();
         processor.setCodeSystem("FDA UNII");
-
+        processor.setRepo(repo);
         AutowireHelper.getInstance().autowire(processor);
     }
 
@@ -45,11 +49,8 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     public void testCopyCodeIfNecessary() throws IOException {
         String unii = "88ECG9H7RA_minus_code";
         Substance approvedSubstance = getSubstanceFromFile(unii);
-        //Setup directly
-        Map<String, String> mmap = new HashMap<>();
-        mmap.put("codeSystem", "FDA UNII");
 
-        processor.copyCodeIfNecessary(approvedSubstance);
+        processor.prePersist(approvedSubstance);
 
         assertTrue(approvedSubstance.codes.stream().anyMatch(c
                 -> (c.codeSystem.equals(processor.getCodeSystem()) && c.code.equals(approvedSubstance.approvalID))));
