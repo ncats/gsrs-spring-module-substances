@@ -1,24 +1,17 @@
 package gsrs.module.substance.processors;
 
-import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.cv.api.*;
 import ix.core.EntityProcessor;
-import gsrs.repository.ControlledVocabularyRepository;
-import ix.ginas.models.v1.*;
-import ix.ginas.models.v1.CodeSystemVocabularyTerm;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Arrays;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * When a substance is saved and has an approvalID, check for a corresponding
