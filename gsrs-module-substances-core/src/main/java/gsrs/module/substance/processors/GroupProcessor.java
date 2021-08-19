@@ -18,12 +18,14 @@ public class GroupProcessor implements EntityProcessor<Group> {
     @Autowired
     private ControlledVocabularyApi cvApi;
 
+    private final String ACCESS_DOMAIN = "ACCESS_GROUP";
+
     @Override
     public void prePersist(Group obj) {
         log.debug("GroupProcessor.prePersist");
         Optional<GsrsControlledVocabularyDTO> cvv = null;
         try {
-            cvv = cvApi.findByDomain("ACCESS_GROUP");
+            cvv = cvApi.findByDomain(ACCESS_DOMAIN);
         } catch (IOException ex) {
             Logger.getLogger(GroupProcessor.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -36,20 +38,22 @@ public class GroupProcessor implements EntityProcessor<Group> {
             }
 
             //log.debug("The domain is:" + cvv.domain + " with " + cvv.terms.size() + " terms");
-        }
-
-        if (vt == null) {
-            log.debug("Group didn't exist before");
-            vt = new GsrsVocabularyTermDTO();
-            vt.setDisplay(obj.name);
-            vt.setValue(obj.name);
-            //vt.save();
-            cvv.get().getTerms().add(vt);
-            try {
-                cvApi.update(cvv.get());
-            } catch (IOException ex) {
-                log.error("Error updating CV", ex);
-                //throw ex;
+            if (vt == null) {
+                log.debug("Group didn't exist before");
+                vt = new GsrsVocabularyTermDTO();
+                vt.setDisplay(obj.name);
+                vt.setValue(obj.name);
+                //vt.save();
+                cvv.get().getTerms().add(vt);
+                if( cvv.get().getVocabularyTermType() == null || cvv.get().getVocabularyTermType().length()==0) {
+                    cvv.get().setVocabularyTermType("ix.ginas.models.v1.ControlledVocabulary");
+                }
+                try {
+                    cvApi.update(cvv.get());
+                } catch (IOException ex) {
+                    log.error("Error updating CV", ex);
+                    //throw ex;
+                }
             }
         }
     }

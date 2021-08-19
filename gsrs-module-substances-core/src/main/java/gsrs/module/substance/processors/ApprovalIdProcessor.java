@@ -63,6 +63,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
                     opt.get().setTerms(list);
                     //the following line prevents an exception while saving the CV
+                    //todo: figure out why this is necessary
                     opt.get().setVocabularyTermType("ix.ginas.models.v1.CodeSystemControlledVocabulary");
                     api.update(opt.get());
                     log.trace("saved updated CV");
