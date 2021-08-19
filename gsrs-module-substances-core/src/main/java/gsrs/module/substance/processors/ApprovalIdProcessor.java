@@ -9,9 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * When a substance is saved and has an approvalID, check for a corresponding
@@ -24,47 +24,55 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     private String codeSystem;
 
-    private CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addCodeSystemIfNeeded);
+    private final CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addCodeSystemIfNeeded);
 
     public void setCodeSystem(String codeSystem) {
         this.codeSystem = codeSystem;
     }
 
+    private final String CV_DOMAIN = "CODE_SYSTEM";
+
     @Autowired
     private ControlledVocabularyApi api;
 
-
-    private void addCodeSystemIfNeeded(){
-        if(codeSystem ==null){
+    private void addCodeSystemIfNeeded() {
+        if (codeSystem == null) {
             return;
         }
         try {
-            Optional<AbstractGsrsControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
+            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain(CV_DOMAIN);
 
-        boolean addNew=true;
-        if(opt.isPresent()){
-            for(GsrsVocabularyTermDTO term : ((GsrsControlledVocabularyDTO)opt.get()).getTerms()){
-                if (term.getValue().equals(codeSystem)) {
-                    addNew = false;
-                    break;
+            boolean addNew = true;
+            if (opt.isPresent()) {
+                log.trace("CV_DOMAIN found");
+                for (GsrsVocabularyTermDTO term : ( opt.get()).getTerms()) {
+                    if (term.getValue().equals(codeSystem)) {
+                        addNew = false;
+                        break;
+                    }
+                }
+                log.trace("addNew: " + addNew);
+                if (addNew) {
+                    List<CodeSystemTermDTO> list = opt.get().getTerms().stream()
+                            .map(t -> (CodeSystemTermDTO) t).collect(Collectors.toList());
+                    list.add(CodeSystemTermDTO.builder()
+                            .display(codeSystem)
+                            .value(codeSystem)
+                            .hidden(true)
+                            .build());
+
+                    opt.get().setTerms(list);
+                    //the following line prevents an exception while saving the CV
+                    opt.get().setVocabularyTermType("ix.ginas.models.v1.CodeSystemControlledVocabulary");
+                    api.update(opt.get());
+                    log.trace("saved updated CV");
                 }
             }
-        }
+            else {
+                log.error("no code system CV found!");
+                //todo: throw an exception
+            }
 
-        if(addNew) {
-            List<CodeSystemTermDTO> list = new ArrayList<>();
-            list.add(CodeSystemTermDTO.builder()
-                    .display(codeSystem)
-                    .value(codeSystem)
-                    .hidden(true)
-                    .build());
-
-            api.create(GsrsCodeSystemControlledVocabularyDTO.builder()
-                    .domain("CODE_SYSTEM")
-                    .terms(list)
-                    .build());
-
-        }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -83,7 +91,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     }
 
     public void copyCodeIfNecessary(Substance s) {
-        if(codeSystem ==null){
+        if (codeSystem == null) {
             return;
         }
         initializer.getSync();

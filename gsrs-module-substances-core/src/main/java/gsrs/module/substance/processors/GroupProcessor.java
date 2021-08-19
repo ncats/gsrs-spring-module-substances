@@ -45,7 +45,12 @@ public class GroupProcessor implements EntityProcessor<Group> {
             vt.setValue(obj.name);
             //vt.save();
             cvv.get().getTerms().add(vt);
-
+            try {
+                cvApi.update(cvv.get());
+            } catch (IOException ex) {
+                log.error("Error updating CV", ex);
+                //throw ex;
+            }
         }
     }
 
