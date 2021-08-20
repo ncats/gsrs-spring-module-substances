@@ -12,15 +12,5 @@ import java.util.UUID;
 @Transactional
 public interface NucleicAcidSubstanceRepository extends GsrsVersionedRepository<NucleicAcidSubstance, UUID> {
 
-
-    /*
-    SubstanceFactory.nucfinder.get()
-				.where()
-				.eq("nucleicAcid.subunits.uuid", suid)
-				.findList()
-				.stream()
-				.findFirst();
-     */
-
     List<NucleicAcidSubstance> findNucleicAcidSubstanceByNucleicAcid_Subunits_Uuid(UUID uuid);
 }

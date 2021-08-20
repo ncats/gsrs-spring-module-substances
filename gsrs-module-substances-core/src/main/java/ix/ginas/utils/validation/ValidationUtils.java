@@ -1,9 +1,16 @@
 package ix.ginas.utils.validation;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.module.substance.services.DefinitionalElementFactory;
+import gsrs.springUtils.AutowireHelper;
 
 import ix.core.models.*;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
 
 import ix.core.validator.*;
 
@@ -19,12 +26,31 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 public class ValidationUtils {
 
+    @Autowired(required = true)
+    private DefinitionalElementFactory definitionalElementFactory;
+
+    @Autowired
+    private SubstanceLegacySearchService searchService;
+
+    @Autowired
+    protected PlatformTransactionManager transactionManager;
+
 	private static final String VALIDATION_CONF = "validation.conf";
 
+    public ValidationUtils() {
+        if (definitionalElementFactory == null) {
+            AutowireHelper.getInstance().autowire(this);
+        }
+    }
+    
 	public static interface ValidationRule<K>{
 		public GinasProcessingMessage validate(K obj);
 	}
@@ -1735,69 +1761,81 @@ public class ValidationUtils {
 //		}
 //	}
 
-//	public static List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance){
-//		Logger.trace("starting in findDefinitionaLayer1lDuplicateCandidates. ");
-//		List<Substance> candidates = new ArrayList<>();
-//		try	{
-//			String layer1Search = "root_definitional_hash_layer_1:"
-//											+ substance.getDefinitionalElements().getDefinitionalHashLayers().get(0);
-//			Logger.trace("	layer1Search: " + layer1Search);
-//			SearchResult sres = new SearchRequest.Builder()
-//							.simpleSearchOnly(true)
-//							.query(layer1Search)
-//							.kind(Substance.class)
-//							.fdim(0)
-//							.build()
-//							.execute();
-//			sres.waitForFinish();
-//			List<Substance> submatches = (List<Substance>) sres.getMatches();
-//			Logger.trace("size of initial match list in findDefinitionaLayer1lDuplicateCandidates: "
-//							+ submatches.size());
-//
-//			//return submatches.stream().filter(s -> !s.getUuid().equals(substance.getUuid())).collect(Collectors.toList());
-//			for (int i = 0; i < submatches.size(); i++)	{
-//				Substance s = submatches.get(i);
-//				if (s !=null && !s.getUuid().equals(substance.getUuid()))	{
-//					candidates.add(s);
-//				}
-//			}
-//		} catch (Exception ex){
-//			Logger.error("Error running query", ex);
-//		}
-//		return candidates;
-//	}
+    public List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance) {
+        DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
+        int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
+        log.trace( "findFullDefinitionalDuplicateCandidates  handling layer: " + (layer + 1));
+        return findLayerNDefinitionalDuplicateCandidates(substance, layer);
+    }
 
-//	public static List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance){
-//		List<Substance> candidates = new ArrayList<>();
-//		try	{
-//			Builder searchBuilder= new SearchRequest.Builder();
-//			List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
-//			int layer = hashes.size()-1;
-//			Logger.trace("handling layer: " + (layer+1));
-//				String searchItem = "root_definitional_hash_layer_" + (layer+1) + ":"
-//                                                                + hashes.get(layer);
-//				searchBuilder = searchBuilder.query(searchItem);
-//
-//			SearchResult sres = searchBuilder
-//							.kind(Substance.class)
-//							.simpleSearchOnly(true)
-//							.fdim(0)
-//							.build()
-//							.execute();
-//			sres.waitForFinish();
-//			List<Substance> submatches = (List<Substance>) sres.getMatches();
-//			Logger.trace("total submatches: " + submatches.size());
-//
-//			for (int i = 0; i < submatches.size(); i++)	{
-//				Substance s = submatches.get(i);
-//				if (!s.getUuid().equals(substance.getUuid()))	{
-//					candidates.add(s);
-//				}
-//			}
-//		} catch (Exception ex) {
-//			Logger.error("Error running query", ex);
-//		}
-//		return candidates;
-//	}
+    public List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance) {
+//        if (definitionalElementFactory == null) {
+//            AutowireHelper.getInstance().autowire(this);
+//        }
+        int layer = 0;
+        return findLayerNDefinitionalDuplicateCandidates(substance, layer);
+    }
+
+    public List<Substance> findLayerNDefinitionalDuplicateCandidates(Substance substance, int layer) {
+        List<Substance> candidates = new ArrayList<>();
+        try {
+            //SearchRequest.Builder searchBuilder = new SearchRequest.Builder();
+            DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
+            //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
+            log.trace( "findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
+            String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
+                    + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
+            log.trace("layer query: " + searchItem);
+
+            TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+            candidates = (List<Substance>) transactionSearch.execute(ts
+                    -> {
+                List<String> nameValues = new ArrayList<>();
+                SearchRequest request = new SearchRequest.Builder()
+                        .kind(Substance.class)
+                        .fdim(0)
+                        .query(searchItem)
+                        .top(Integer.MAX_VALUE)
+                        .build();
+                log.trace("built query: " + request.getQuery());
+                try {
+                    SearchOptions options = new SearchOptions();
+                    SearchResult sr = searchService.search(request.getQuery(), options);
+                    sr.waitForFinish();
+                    List fut = sr.getMatches();
+                    List<Substance> hits = (List<Substance>) fut.stream()
+                            .map(s -> (Substance) s)
+                            .collect(Collectors.toList());
+                    return hits;
+                } catch (Exception ex) {
+                    log.error("error during search");
+                    ex.printStackTrace();
+                }
+                return nameValues;
+            });
+            //nameValues.forEach(n -> System.out.println(n));
+            //        });
+            //
+            //			SearchResult sres = searchBuilder
+            //							.kind(Substance.class)
+            //							.fdim(0)
+            //							.build()
+            //                    .
+            //							.execute();
+            //			sres.waitForFinish();
+            /*List<Substance> submatches = (List<Substance>) sres.getMatches();
+			Logger.getLogger(this.getClass().getName()).log(Level.FINE, "total submatches: " + submatches.size());
+
+			for (int i = 0; i < submatches.size(); i++)	{
+				Substance s = submatches.get(i);
+				if (!s.getUuid().equals(substance.getUuid()))	{
+					candidates.add(s);
+				}
+			}*/
+        } catch (Exception ex) {
+            log.error( "Error running query", ex);
+        }
+        return candidates;
+    }
 
 }

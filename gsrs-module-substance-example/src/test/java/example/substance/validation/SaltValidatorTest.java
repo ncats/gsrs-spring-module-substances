@@ -17,6 +17,7 @@ import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.ValidationUtils;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SaltValidator;
 import java.io.File;
@@ -84,13 +85,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
         loadGsrsFile(dataFile);
         log.trace("loaded rep18 data file");
-//        log.debug("starting fragments");
-//        File dataFile2 = new ClassPathResource("testdumps/fragments.gsrs").getFile();
-//        loadGsrsFile(dataFile2);
-//        log.debug("finished fragments");
-        //applicationEvents.notifyAll();
         setup = true;
-        
     }
 
     @BeforeClass
@@ -114,8 +109,8 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace("testFindLayer1DefHashDuplicates");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
-        SaltValidator validator = new SaltValidator();
-        List<Substance> duplicates = validator.findDefinitionaLayer1lDuplicateCandidates(chemical);
+        ValidationUtils validatorUtils = new ValidationUtils();
+        List<Substance> duplicates = validatorUtils.findDefinitionaLayer1lDuplicateCandidates(chemical);
         log.trace("duplicate list size: " + duplicates.size() + "; items: ");
         duplicates.forEach(s -> {
             ChemicalSubstance chem = (ChemicalSubstance) s;
@@ -133,17 +128,8 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace("TestFindFullDefHashDuplicates");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
-        SaltValidator validator = new SaltValidator();
-        List<Substance> duplicates = validator.findFullDefinitionalDuplicateCandidates(chemical);
-        /*log.trace("duplicate list size: " + duplicates.size() + "; items: ");
-        duplicates.forEach(s -> {
-            ChemicalSubstance chem = (ChemicalSubstance) s;
-            DefinitionalElements cDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(chem);
-            String msg2 = String.format("ID: %s; SMILES: %s; def hash layer 1: %s; value: %s", chem.approvalID,
-                    chem.getStructure().smiles, chem.getDefinitionElement(), cDefinitionalElements.getElements().get(0).getValue());
-            log.trace(msg2);
-        });*/
-
+        ValidationUtils validatorUtils = new ValidationUtils();
+        List<Substance> duplicates = validatorUtils.findFullDefinitionalDuplicateCandidates(chemical);
         assertEquals(1, duplicates.size());
     }
 
@@ -157,28 +143,11 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace("findDuplicates1");
         String approvalID = "G6867RWN6N.diastereomer";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
-        SaltValidator validator = new SaltValidator();
-        List<Substance> duplicates = validator.findDefinitionaLayer1lDuplicateCandidates(chemical);
-        /*log.trace("duplicate list size: " + duplicates.size() + "; items: ");
-        duplicates.forEach(s -> {
-            ChemicalSubstance chem = (ChemicalSubstance) s;
-            DefinitionalElements cDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(chem);
-            String msg2 = String.format("ID: %s; SMILES: %s; def hash layer 1: %s; value: %s", chem.approvalID,
-                    chem.getStructure().smiles, chem.getDefinitionElement(), cDefinitionalElements.getElements().get(0).getValue());
-            log.trace(msg2);
-        });*/
-        
+        ValidationUtils validatorUtils = new ValidationUtils();
+        List<Substance> duplicates = validatorUtils.findDefinitionaLayer1lDuplicateCandidates(chemical);
 
         assertEquals(1, duplicates.size());
-        List<Substance> fullDuplicates = validator.findFullDefinitionalDuplicateCandidates(chemical);
-        /*log.trace("full duplicate list size: " + fullDuplicates.size() + "; items: ");
-        duplicates.forEach(s -> {
-            ChemicalSubstance chem = (ChemicalSubstance) s;
-            DefinitionalElements cDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(chem);
-            String msg2 = String.format("ID: %s; SMILES: %s; def hash layer 1: %s; value: %s", chem.approvalID,
-                    chem.getStructure().smiles, chem.getDefinitionElement(), cDefinitionalElements.getElements().get(0).getValue());
-            log.trace(msg2);
-        });*/
+        List<Substance> fullDuplicates = validatorUtils.findFullDefinitionalDuplicateCandidates(chemical);
         assertTrue(fullDuplicates.isEmpty());
     }
 
@@ -193,18 +162,11 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         String approvalID = "PJY633525U";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
 
-        SaltValidator validator = new SaltValidator();
-        List<Substance> duplicates = validator.findDefinitionaLayer1lDuplicateCandidates(chemical);
-        /*log.trace("duplicate list size: " + duplicates.size() + "; items: ");
-        duplicates.forEach(s -> {
-            ChemicalSubstance chem = (ChemicalSubstance) s;
-            DefinitionalElements cDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(chem);
-            String msg2 = String.format("ID: %s; SMILES: %s; def hash layer 1: %s; value: %s", chem.approvalID,
-                    chem.getStructure().smiles, chem.getDefinitionElement(), cDefinitionalElements.getElements().get(0).getValue());
-            log.trace(msg2);
-        });*/
+        ValidationUtils validatorUtils = new ValidationUtils();
+        List<Substance> duplicates = validatorUtils.findDefinitionaLayer1lDuplicateCandidates(chemical);
+        
         assertTrue(duplicates.isEmpty());
-        List<Substance> fullDuplicates = validator.findFullDefinitionalDuplicateCandidates(chemical);
+        List<Substance> fullDuplicates = validatorUtils.findFullDefinitionalDuplicateCandidates(chemical);
         /*log.trace("full duplicate list size: " + fullDuplicates.size() + "; items: ");
         duplicates.forEach(s -> {
             ChemicalSubstance chem = (ChemicalSubstance) s;
@@ -273,6 +235,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         assertTrue(response.getValidationMessages().stream().anyMatch(
                 m
                 -> ((ValidationMessage) m).getMessage().contains("Each fragment should be present as a separate record in the database.")));
+        System.out.println("finished testValidateSalt");
      }
 
     private ChemicalSubstance getChemicalFromFile(String name) {

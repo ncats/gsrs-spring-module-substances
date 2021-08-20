@@ -42,7 +42,9 @@ import javax.persistence.EntityManager;
 import java.io.IOException;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 
@@ -100,9 +102,12 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
 
        assertCreated(s1.buildJson());
         assertCreated(s2.buildJson());
-//        applicationEvents.stream().forEach(System.out::println);
+        System.out.println("=====");
+        applicationEvents.stream(BackupEvent.class).forEach(System.out::println);
 //        System.out.println("Just backup events:");
-        assertEquals(2, applicationEvents.stream(BackupEvent.class).count());
+        assertThat( applicationEvents.stream(BackupEvent.class).map(e->e.getSource().getRefid()).collect(Collectors.toSet()))
+                .contains("ee9d929d-41a8-43ec-a041-f90d0e5dc21c","2947b944-ab26-47d4-b160-f0d8149e4d77");
+
 
 
     }

@@ -369,13 +369,22 @@ public class Protein extends GinasCommonSubData {
 		return _modifiedCache;
 	}
 
+	@Indexable
 	public List<Subunit> getSubunits() {
-		Collections.sort(subunits, new Comparator<Subunit>() {
-			@Override
-			public int compare(Subunit o1, Subunit o2) {
-				return o1.subunitIndex - o2.subunitIndex;
-			}
-		});
+	    Collections.sort(subunits, new Comparator<Subunit>() {
+            @Override
+            public int compare(Subunit o1, Subunit o2) {
+                if(o1.subunitIndex ==null){
+//                  System.out.println("null subunit index");
+                    if(o2.subunitIndex ==null){
+                        return Integer.compare(o2.getLength(), o1.getLength());
+                    }else{
+                        return 1;
+                    }
+                }
+                return o1.subunitIndex - o2.subunitIndex;
+            }
+        });
 		adoptChildSubunits();
 		return this.subunits;
 	}
@@ -384,6 +393,8 @@ public class Protein extends GinasCommonSubData {
 		this.subunits = subunits;
 		adoptChildSubunits();
 	}
+	
+	
 
 
 

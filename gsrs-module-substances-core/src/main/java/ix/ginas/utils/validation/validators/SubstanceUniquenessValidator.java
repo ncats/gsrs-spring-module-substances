@@ -1,5 +1,6 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Role;
 import ix.core.validator.GinasProcessingMessage;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *
@@ -23,19 +25,23 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 	private static final List<String> SubstanceClassesHandled = Arrays.asList("chemical", "mixture",
 					"structurallyDiverse", "polymer", "concept", "specifiedSubstanceG1");
 
+    @Autowired(required = true)
+    private DefinitionalElementFactory definitionalElementFactory;
+
 
 	@Override
 	public void validate(Substance testSubstance, Substance oldSubstance, ValidatorCallback callback) {
-		log.debug(String.format("starting in SubstanceUniquenessValidator. substance type: <%s>", testSubstance.substanceClass));
+		log.trace(String.format("starting in SubstanceUniquenessValidator. substance type: <%s>", testSubstance.substanceClass));
+        ValidationUtils validationUtils = new ValidationUtils();
 		if( !SubstanceClassesHandled.stream().anyMatch(s->s.equalsIgnoreCase(testSubstance.substanceClass.toString()))){
 			log.debug("skipping this substance because of class");
 			return;
 		}
-		if(testSubstance.getDefinitionalElements().getElements().isEmpty()){
+		if(definitionalElementFactory.computeDefinitionalElementsFor(testSubstance).getElements().isEmpty()){
 			return;
 		}
 		
-		List<Substance> fullMatches = ValidationUtils.findFullDefinitionalDuplicateCandidates(testSubstance);
+		List<Substance> fullMatches = validationUtils.findFullDefinitionalDuplicateCandidates(testSubstance);
 		log.debug("total fullMatches " + fullMatches.size());
 		if (fullMatches.size() > 0) {
 			for (int i = 0; i < fullMatches.size(); i++) {
@@ -49,12 +55,13 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 				}else{
 					mes= GinasProcessingMessage.WARNING_MESSAGE(messageText);
 				}
-				mes.addLink(GinasUtils.createSubstanceLink(possibleMatch));
+                mes.addLink(createSubstanceLink(possibleMatch));
+				//.createSubstanceLink((possibleMatch));
 				callback.addMessage(mes);
 			}
 		}
 		else {
-			List<Substance> matches = ValidationUtils.findDefinitionaLayer1lDuplicateCandidates(testSubstance);
+			List<Substance> matches = validationUtils.findDefinitionaLayer1lDuplicateCandidates(testSubstance);
 			log.debug("substance of type " + testSubstance.substanceClass.name() + " total matches: " + matches.size());
 			if (matches.size() > 0) {
 				for (int i = 0; i < matches.size(); i++) {
@@ -64,10 +71,24 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 					log.debug("in SubstanceUniquenessValidator, creating warning with message " + message);
 					GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(message);
 					log.debug("in SubstanceUniquenessValidator after message creation");
-					mes.addLink(GinasUtils.createSubstanceLink(possibleMatch));
+                    mes.addLink(createSubstanceLink(possibleMatch));
+					//mes.addLink(GinasUtils.createSubstanceLink(possibleMatch));
 					callback.addMessage(mes);
 				}
 			}
 		}
 	}
+    
+    public static GinasProcessingMessage.Link createSubstanceLink(Substance s){
+		GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
+        //fake this for now.
+		l.href= "substances/"+  s.getLinkingID();
+        //todo: get the  real link
+        //l.href=ix.ginas.controllers.routes.GinasApp.substance(s.getLinkingID())+"";
+		l.text="[" + s.getApprovalIDDisplay() + "]" + s.getName();
+
+		return l;
+	}
+
+
 }
