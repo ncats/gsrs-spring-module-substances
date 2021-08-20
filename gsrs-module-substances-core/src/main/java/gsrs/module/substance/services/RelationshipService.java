@@ -21,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,7 +36,8 @@ public class RelationshipService {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    @Autowired
+//    @Autowired
+    @PersistenceContext(unitName =  "defaultEntityManager")
     private EntityManager entityManager;
 
     @Autowired

@@ -31,6 +31,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -198,7 +200,9 @@ public class SubstanceStructureSearchService {
     private MixtureSubstanceRepository mixtureSubstanceRepository;
     @Autowired
     private GsrsCache gsrsCache;
-    @Autowired
+    
+    @PersistenceContext(unitName =  "defaultEntityManager")
+//    @Autowired
     private EntityManager entityManager;
 
     public SearchResultContext search(SanitizedSearchRequest request, String hashKey) throws Exception {
