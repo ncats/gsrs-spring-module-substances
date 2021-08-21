@@ -40,11 +40,12 @@ public class GroupProcessor implements EntityProcessor<Group> {
             //log.debug("The domain is:" + cvv.domain + " with " + cvv.terms.size() + " terms");
             if (vt == null) {
                 log.debug("Group didn't exist before");
-                vt = new GsrsVocabularyTermDTO();
-                vt.setDisplay(obj.name);
-                vt.setValue(obj.name);
-                //vt.save();
+                vt =GsrsVocabularyTermDTO.builder()
+                        .display(obj.name)
+                        .value(obj.name)
+                        .build();
                 cvv.get().getTerms().add(vt);
+                //not sure why term type is ix.ginas.models.v1.ControlledVocabulary but other values lead to errors
                 if( cvv.get().getVocabularyTermType() == null || cvv.get().getVocabularyTermType().length()==0) {
                     cvv.get().setVocabularyTermType("ix.ginas.models.v1.ControlledVocabulary");
                 }

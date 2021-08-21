@@ -3,8 +3,6 @@ package example.substance.datasearch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
-import example.substance.AbstractSubstanceJpaEntityTest;
-import gsrs.indexer.IndexCreateEntityEvent;
 import gsrs.legacy.structureIndexer.StructureIndexerEventListener;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
@@ -16,8 +14,6 @@ import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.chem.StructureProcessor;
-import ix.core.models.Structure;
-import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.text.TextIndexerEntityListener;
@@ -27,11 +23,7 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
-import ix.ginas.utils.validation.ValidationUtils.ValidationRule;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
-import lombok.SneakyThrows;
-
-import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionTemplate;
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +36,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -52,8 +43,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
 
 /**
  *
@@ -72,14 +61,8 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     private DefinitionalElementFactory definitionalElementFactory;
 
     @Autowired
-    private TextIndexerEntityListener textIndexEntityLister;
-
-    @Autowired
     private TestIndexValueMakerFactory testIndexValueMakerFactory;
 
-    @Autowired
-    private StructureIndexerEventListener structureIndexerEventListener;
-    
     @Autowired
     StructureProcessor structureProcessor;
     

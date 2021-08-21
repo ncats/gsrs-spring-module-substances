@@ -21,8 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substance> {
 
-	private final String DEFINITION_CHANGED = "Primary defintion of substance has changed!";
-	private static final List<String> SubstanceClassesHandled = Arrays.asList("chemical", "mixture",
+	private static final List<String> SUBSTANCE_CLASSES_HANDLED = Arrays.asList("chemical", "mixture",
 					"structurallyDiverse", "polymer", "concept", "specifiedSubstanceG1");
 
     @Autowired(required = true)
@@ -33,7 +32,7 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 	public void validate(Substance testSubstance, Substance oldSubstance, ValidatorCallback callback) {
 		log.trace(String.format("starting in SubstanceUniquenessValidator. substance type: <%s>", testSubstance.substanceClass));
         ValidationUtils validationUtils = new ValidationUtils();
-		if( !SubstanceClassesHandled.stream().anyMatch(s->s.equalsIgnoreCase(testSubstance.substanceClass.toString()))){
+		if( !SUBSTANCE_CLASSES_HANDLED.stream().anyMatch(s->s.equalsIgnoreCase(testSubstance.substanceClass.toString()))){
 			log.debug("skipping this substance because of class");
 			return;
 		}
@@ -89,6 +88,5 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 
 		return l;
 	}
-
 
 }
