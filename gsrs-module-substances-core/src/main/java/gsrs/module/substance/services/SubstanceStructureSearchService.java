@@ -5,6 +5,7 @@ import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.repository.MixtureSubstanceRepository;
@@ -201,7 +202,7 @@ public class SubstanceStructureSearchService {
     @Autowired
     private GsrsCache gsrsCache;
     
-    @PersistenceContext(unitName =  "defaultEntityManager")
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
 //    @Autowired
     private EntityManager entityManager;
 

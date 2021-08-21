@@ -2,6 +2,7 @@ package gsrs.module.substance.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
@@ -37,7 +38,7 @@ public class RelationshipService {
     private SubstanceRepository substanceRepository;
 
 //    @Autowired
-    @PersistenceContext(unitName =  "defaultEntityManager")
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
 
     @Autowired

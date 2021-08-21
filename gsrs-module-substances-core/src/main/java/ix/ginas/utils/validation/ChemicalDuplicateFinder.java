@@ -1,5 +1,6 @@
 package ix.ginas.utils.validation;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -41,7 +42,7 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
     private KeywordRepository keywordRepository;
 
 //    @Autowired
-    @PersistenceContext(unitName =  "defaultEntityManager")
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
     /**
      * Currently uses the structure.properties.term keys for the duplicate matching
