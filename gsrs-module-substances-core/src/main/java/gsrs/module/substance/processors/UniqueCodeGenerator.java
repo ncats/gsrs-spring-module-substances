@@ -1,15 +1,14 @@
 package gsrs.module.substance.processors;
 
-import gsrs.cv.api.CodeSystemTermDTO;
-import gsrs.cv.api.ControlledVocabularyApi;
-import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.cv.api.*;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.CodeSequentialGenerator;
-import java.io.IOException;
+import ix.ginas.utils.validation.ValidationUtils;
 
 import java.util.Map;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,9 +19,8 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
     private String codeSystem;
     private final String CODE_SYSTEM_VOCABULARY = "CODE_SYSTEM";
 
-    public UniqueCodeGenerator() {
-    }
-
+    private final CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addCodeSystem);
+    
     @Autowired
     private ControlledVocabularyApi cvApi;
 
@@ -37,55 +35,17 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         if (codeSystem != null) {
             seqGen = new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
         }
-        addCodeSystem();
+        //addCodeSystem();
     }
 
     private void addCodeSystem() {
-        if (codeSystem != null) {
-            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = null;
-            try {
-                opt = cvApi.findByDomain(CODE_SYSTEM_VOCABULARY);
-                if (opt.isPresent()) {
-                    GsrsCodeSystemControlledVocabularyDTO vocab = opt.get();
-                    boolean addNew = true;
-                    for (CodeSystemTermDTO vt1 : vocab.getTerms()) {
-                        if (vt1.getValue().equals(codeSystem)) {
-                            addNew = false;
-                            break;
-                        }
-                    }
-                    if (addNew) {
-                        CodeSystemTermDTO vt
-                                = CodeSystemTermDTO.builder()
-                                        .display(codeSystem)
-                                        .value(codeSystem)
-                                        .hidden(true)
-                                        .build();
-
-                        //*************************************
-                        // This causes problems if done first
-                        // may have ramifications elsewhere
-                        //*************************************
-                        //vt.save();
-                        vocab.getTerms().add(vt);
-                        cvApi.update(vocab);
-                        log.debug("done adding code system CV");
-                    }
-
-                }
-            } catch (IOException ex) {
-                log.error("Error creating code CV: ", ex);
-                ex.printStackTrace();
-            }
-
-            //System.out.println("Done adding code system");
-        }
-
-        //GinasGlobal.runAfterStart(r);
+        ValidationUtils.addCodeSystemIfNeeded(cvApi, codeSystem, CODE_SYSTEM_VOCABULARY);
     }
 
     public void generateCodeIfNecessary(Substance s) {
         log.trace("starting in generateCodeIfNecessary");
+        initializer.getSync();
+
         if (seqGen != null && s.isPrimaryDefinition()) {
             boolean hasCode = false;
             for (Code c : s.codes) {
@@ -97,7 +57,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
             if (!hasCode) {
                 try {
                     seqGen.addCode(s);
-                    //System.out.println("Generating new code:" + c.code);
+                    log.trace("Generating new code for substance" );
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
