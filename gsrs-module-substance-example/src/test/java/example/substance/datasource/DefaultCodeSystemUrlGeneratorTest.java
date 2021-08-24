@@ -67,10 +67,6 @@ public class DefaultCodeSystemUrlGeneratorTest {
 
         Optional<String> actualUrl = generator.generateUrlFor(code);
         Assert.assertEquals(expectedUrl, actualUrl.get());
-
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.writeValue(new File("d:\\temp\\test1.json"), generator);
-        System.out.println("serialized: ");
     }
 
 }

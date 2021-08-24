@@ -4,7 +4,6 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.cv.api.CodeSystemTermDTO;
 import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
-import gsrs.cv.api.GsrsVocabularyTermDTO;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.repository.ReferenceRepository;
@@ -1774,9 +1773,6 @@ public class ValidationUtils {
     }
 
     public List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance) {
-//        if (definitionalElementFactory == null) {
-//            AutowireHelper.getInstance().autowire(this);
-//        }
         int layer = 0;
         return findLayerNDefinitionalDuplicateCandidates(substance, layer);
     }
@@ -1784,10 +1780,9 @@ public class ValidationUtils {
     public List<Substance> findLayerNDefinitionalDuplicateCandidates(Substance substance, int layer) {
         List<Substance> candidates = new ArrayList<>();
         try {
-            //SearchRequest.Builder searchBuilder = new SearchRequest.Builder();
             DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
-            //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
-            log.trace( "findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
+            log.trace( "findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1) 
+                    + newDefinitionalElements.getDefinitionalHashLayers().get(layer));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
             log.trace("layer query: " + searchItem);
@@ -1818,25 +1813,6 @@ public class ValidationUtils {
                 }
                 return nameValues;
             });
-            //nameValues.forEach(n -> System.out.println(n));
-            //        });
-            //
-            //			SearchResult sres = searchBuilder
-            //							.kind(Substance.class)
-            //							.fdim(0)
-            //							.build()
-            //                    .
-            //							.execute();
-            //			sres.waitForFinish();
-            /*List<Substance> submatches = (List<Substance>) sres.getMatches();
-			Logger.getLogger(this.getClass().getName()).log(Level.FINE, "total submatches: " + submatches.size());
-
-			for (int i = 0; i < submatches.size(); i++)	{
-				Substance s = submatches.get(i);
-				if (!s.getUuid().equals(substance.getUuid()))	{
-					candidates.add(s);
-				}
-			}*/
         } catch (Exception ex) {
             log.error( "Error running query", ex);
         }

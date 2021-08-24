@@ -2,6 +2,7 @@ package ix.ginas.utils.validation.validators;
 
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Role;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
@@ -31,12 +32,18 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 	@Override
 	public void validate(Substance testSubstance, Substance oldSubstance, ValidatorCallback callback) {
 		log.trace(String.format("starting in SubstanceUniquenessValidator. substance type: <%s>", testSubstance.substanceClass));
+        if( definitionalElementFactory == null ){
+            log.error("definitionalElementFactory is null!");
+            return;
+        }
+        
         ValidationUtils validationUtils = new ValidationUtils();
 		if( !SUBSTANCE_CLASSES_HANDLED.stream().anyMatch(s->s.equalsIgnoreCase(testSubstance.substanceClass.toString()))){
 			log.debug("skipping this substance because of class");
 			return;
 		}
 		if(definitionalElementFactory.computeDefinitionalElementsFor(testSubstance).getElements().isEmpty()){
+            log.warn("substance has no def elements!");
 			return;
 		}
 		
