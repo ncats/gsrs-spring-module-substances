@@ -4,15 +4,17 @@ import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.cv.ControlledVocabularyEntityService;
 import gsrs.cv.ControlledVocabularyEntityServiceImpl;
 import gsrs.cv.CvApiAdapter;
+import gsrs.cv.api.CodeSystemTermDTO;
 import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
 import gsrs.cv.api.GsrsControlledVocabularyDTO;
-import gsrs.cv.api.GsrsVocabularyTermDTO;
 import gsrs.module.substance.processors.UniqueCodeGenerator;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.utils.CodeSequentialGenerator;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -36,11 +38,11 @@ import org.springframework.core.io.ClassPathResource;
  */
 @Slf4j
 @Import(UniqueCodeGeneratorTest.TestConfig.class)
-public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest{
+public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
-    private UniqueCodeGenerator processor;
+    private final String CV_DOMAIN = "ACCESS_GROUP";
 
-    private final String CV_DOMAIN = "CODE_SYSTEM";
+    private AutowireHelper autowireHelpr;
 
     @TestConfiguration
     static class TestConfig {
@@ -59,9 +61,14 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest{
     @Autowired(required = true)
     private ControlledVocabularyApi controlledVocabularyApi;
 
+    private final String codeSystemName = "NCATSID";
+    private UniqueCodeGenerator generator;
+
     @BeforeEach
     public void setup() throws IOException {
         log.trace("starting in setup");
+
+        autowireHelpr = AutowireHelper.getInstance();
 
         createCv();
         log.debug("completed setup");
@@ -70,14 +77,14 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest{
     private void createCv() throws IOException {
         log.trace("starting in createCv");
         String accessGroup = "protected";
-        List<GsrsVocabularyTermDTO> list = new ArrayList<>();
-        list.add(GsrsVocabularyTermDTO.builder()
+        List<CodeSystemTermDTO> list = new ArrayList<>();
+        list.add(CodeSystemTermDTO.builder()
                 .display(accessGroup)
                 .value(accessGroup)
                 .hidden(true)
                 .build());
 
-        GsrsControlledVocabularyDTO vocab = GsrsControlledVocabularyDTO.builder()
+        GsrsCodeSystemControlledVocabularyDTO vocab = GsrsCodeSystemControlledVocabularyDTO.builder()
                 .domain(CV_DOMAIN)
                 .terms(list)
                 .vocabularyTermType("ix.ginas.models.v1.ControlledVocabulary")
@@ -88,35 +95,92 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest{
     }
 
     @Test
+    public void testSeqGen() {
+        String seqGenName = "not used";
+        int length = 14;
+        String suffix = "SUFFIX";
+        boolean padding = true;
+        String codeSystem = "Codes R Us";
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, codeSystem);//removed 'last'
+        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        autowireHelpr.autowire(codeGenerator);
+        codeGenerator.addCode(substance);
+        Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
+    }
+
+    @Test
     public void testCreateCodeSystem() {
-        //verify that a call to the constructor of the class results in a new term added to the CV
-        String codeSystemName ="NCATSID";
         Map<String, Object> instantiationMap = new HashMap<>();
         instantiationMap.put("name", "whatever");
         instantiationMap.put("suffix", "OO");
         instantiationMap.put("length", 9);
         instantiationMap.put("codesystem", codeSystemName);
         instantiationMap.put("padding", true);
-        
-        UniqueCodeGenerator generator = new UniqueCodeGenerator(instantiationMap);
-        //AutowireHelper.getInstance().autowire(processor);
-        ProteinSubstance substance= getSubstanceFromFile("YYD6UT8T47");
-        generator.prePersist(substance);
-        Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt=null;
+        UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
+        autowireHelpr.autowire(uniqueCodeGenerator);
+
+        //verify that a call to the constructor of the class results in a new term added to the CV
+        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        uniqueCodeGenerator.generateCodeIfNecessary(substance);
+        boolean anyMatch = false;
+        Optional<GsrsControlledVocabularyDTO> cvOpt = null;
         try {
             //now check for a CV term with the expected value
-            cvOpt= controlledVocabularyApi.findByDomain(CV_DOMAIN);
-            
+            cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
+            anyMatch = cvOpt.get().getTerms().stream().anyMatch(t -> t.getValue().equals(codeSystemName));
+
         } catch (IOException ex) {
             log.error("Error during cv retrieval", ex);
         }
-        
-        boolean anyMatch = cvOpt.get().getTerms().stream().anyMatch(t-> t.getValue().equals(codeSystemName));
+
         Assertions.assertTrue(anyMatch);
-        
-        Assertions.assertTrue(substance.codes.stream().anyMatch(c->c.codeSystem.equals(codeSystemName)));
     }
-    
+
+    @Test
+    public void testAddCode() {
+        Map<String, Object> instantiationMap = new HashMap<>();
+        instantiationMap.put("name", "whatever");
+        instantiationMap.put("suffix", "OO");
+        instantiationMap.put("length", 9);
+        instantiationMap.put("codesystem", codeSystemName);
+        instantiationMap.put("padding", true);
+        UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
+        autowireHelpr.autowire(uniqueCodeGenerator);
+
+        //verify that a call to the constructor of the class results in a new term added to the CV
+        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        uniqueCodeGenerator.prePersist(substance);
+        Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystemName)));
+    }
+
+    @Test
+    public void testSkipAddingCode() {
+        Map<String, Object> instantiationMap = new HashMap<>();
+        instantiationMap.put("name", "whatever");
+        instantiationMap.put("suffix", "OO");
+        instantiationMap.put("length", 9);
+        instantiationMap.put("codesystem", codeSystemName);
+        instantiationMap.put("padding", true);
+        UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
+        autowireHelpr.autowire(uniqueCodeGenerator);
+
+        //verify that a call to the constructor of the class results in a new term added to the CV
+        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        //manually create a code
+        Code newCode = new Code();
+        newCode.codeSystem= codeSystemName;
+        newCode.code="Blah";
+        newCode.type="PRIMAY";
+        substance.codes.add(newCode);
+        int totalBefore = substance.codes.size();
+        
+        uniqueCodeGenerator.prePersist(substance);
+        int totalAfter = substance.codes.size();
+        
+        Assertions.assertEquals(totalBefore, totalAfter);
+    }
+
+
     private ProteinSubstance getSubstanceFromFile(String name) {
         try {
             File proteinFile = new ClassPathResource("testJSON/" + name + ".json").getFile();

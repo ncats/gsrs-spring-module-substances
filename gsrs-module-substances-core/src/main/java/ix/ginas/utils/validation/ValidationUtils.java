@@ -1848,14 +1848,14 @@ public class ValidationUtils {
     This method was used by both UniqueCodeGenerator and ApprovalIdProcessor
     */
     public static void addCodeSystemIfNeeded(ControlledVocabularyApi api, String codeSystem, String cvDomain) {
-        
+        log.trace("starting addCodeSystemIfNeeded");
         try {
             Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain(cvDomain);
 
             boolean addNew = true;
             if (opt.isPresent()) {
                 log.trace("CV_DOMAIN found");
-                for (GsrsVocabularyTermDTO term : ( opt.get()).getTerms()) {
+                for (CodeSystemTermDTO term : ( opt.get()).getTerms()) {
                     if (term.getValue().equals(codeSystem)) {
                         addNew = false;
                         break;
@@ -1885,6 +1885,7 @@ public class ValidationUtils {
             }
 
         } catch (IOException e) {
+            log.error("Error updating GSRS vocabulary: " + e.getMessage());
             e.printStackTrace();
         }
 
