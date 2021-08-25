@@ -45,6 +45,11 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-module-substances-core</artifactId>
+            <version>${gsrs.substance.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-entities</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
@@ -81,6 +86,13 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-controlled-vocabulary</artifactId>
             <version>${gsrs.version}</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/net.sf.jni-inchi/jni-inchi -->
+        <dependency>
+            <groupId>net.sf.jni-inchi</groupId>
+            <artifactId>jni-inchi</artifactId>
+            <version>0.8</version>
+
         </dependency>
 
 
