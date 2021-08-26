@@ -89,6 +89,9 @@ public class CodeProcessorTest {
         assertTrue(testCode.url == null || testCode.url.isEmpty());
     }
 
+/* depends upon mangled version of codeSystem.json with this line added:
+    ,{"codeSystem":"EVMPD","url":"https://www.google.com/?q=EVMPD:$CODETEXT$"} 
+
     @Test
     public void CodeProcessorTextTest() throws IOException, EntityProcessor.FailProcessingException {
 
@@ -109,5 +112,5 @@ public class CodeProcessorTest {
         processor.prePersist(testCode);
         assertEquals(expectedUrl, testCode.url);
     }
-
+*/
 }

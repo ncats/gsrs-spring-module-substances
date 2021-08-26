@@ -95,4 +95,27 @@ public class DefaultCodeSystemUrlGeneratorTest {
     }
 
 
+    @Test
+    public void DefaultCodeSystemUrlGeneratorGenerationCodeTextTest() throws IOException {
+        String codeSystemForTest = "BLAHSYSTEM";
+        String codeUrlForTest = "http://www.blah.com/drugs/$CODETEXT$";
+        String codeValueForTest = "a5b2c8d8e2f6";
+        String codeTextForTest ="othervalue";
+        String expectedUrl = "http://www.blah.com/drugs/othervalue";
+
+        Map<String, String> codeSystemUrl = new HashMap<>();
+        codeSystemUrl.put(codeSystemForTest, codeUrlForTest);
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("codeSystems", codeSystemUrl);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
+        Code code = new Code();
+        code.code = codeValueForTest;
+        code.codeSystem = codeSystemForTest;
+        code.codeText=codeTextForTest;
+
+        Optional<String> actualUrl = generator.generateUrlFor(code);
+        Assert.assertEquals(expectedUrl, actualUrl.get());
+    }
+
+
 }
