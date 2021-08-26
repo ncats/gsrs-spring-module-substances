@@ -150,7 +150,7 @@ public class ProteinUtils
     }
 
     public static Map<String, SingleThreadCounter> getSingleAAFormula(String c) {
-        return atomCounts.getOrDefault(c, Collections.emptyMap());
+        return atomCounts.getOrDefault(c.toUpperCase(), Collections.emptyMap());
     }
 
     public static double getSubunitWeight(Subunit sub, Set<String> unknownRes) {
