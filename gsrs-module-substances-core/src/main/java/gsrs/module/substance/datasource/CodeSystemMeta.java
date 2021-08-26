@@ -23,7 +23,11 @@ public class CodeSystemMeta {
 		if(url==null || url.trim().isEmpty()){
 			return null;
 		}
-		return StringUtils.replace(url,"$CODE$", code.code).trim();
+		String result = StringUtils.replace(url,"$CODE$", code.code);
+        if( code.codeText!=null && code.codeText.length()>0){
+            result = StringUtils.replace(url, "$CODETEXT$", code.codeText);
+        }
+        return result.trim();
 	}
 
 }

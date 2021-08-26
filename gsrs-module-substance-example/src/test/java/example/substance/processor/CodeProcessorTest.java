@@ -6,8 +6,6 @@ import gsrs.module.substance.processors.CodeSystemUrlGenerator;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -82,13 +80,34 @@ public class CodeProcessorTest {
         configMap.put("json", innerFileMap);
         CodeProcessor processor = new CodeProcessor(configMap);
 
-        Code casCode = new Code();
-        casCode.code = "AAAAAAA";
-        casCode.codeSystem = "EC";
-        casCode.type = "PRIMARY";
+        Code testCode = new Code();
+        testCode.code = "AAAAAAA";
+        testCode.codeSystem = "EC";
+        testCode.type = "PRIMARY";
 
-        processor.prePersist(casCode);
-        assertTrue(casCode.url == null || casCode.url.isEmpty());
+        processor.prePersist(testCode);
+        assertTrue(testCode.url == null || testCode.url.isEmpty());
+    }
+
+    @Test
+    public void CodeProcessorTextTest() throws IOException, EntityProcessor.FailProcessingException {
+
+        Map<String, String> innerFileMap = new HashMap<>();
+        innerFileMap.put("filename", "codeSystem.json");
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("class", "gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator");
+        configMap.put("json", innerFileMap);
+        CodeProcessor processor = new CodeProcessor(configMap);
+
+        Code testCode = new Code();
+        testCode.code = "999999";
+        testCode.codeSystem = "EVMPD";
+        testCode.type = "PRIMARY";
+        testCode.codeText="lookup";
+        String expectedUrl = "https://www.google.com/?q=EVMPD:lookup";
+
+        processor.prePersist(testCode);
+        assertEquals(expectedUrl, testCode.url);
     }
 
 }
