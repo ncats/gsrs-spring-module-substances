@@ -90,4 +90,10 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
 
         return Optional.ofNullable(meta.generateUrlFor(code));
     }
+    
+    //used for testing --making sure the Map gets instantiated after a call to the constructor
+    public Map getMap() {
+        return map;
+    }
+
 }

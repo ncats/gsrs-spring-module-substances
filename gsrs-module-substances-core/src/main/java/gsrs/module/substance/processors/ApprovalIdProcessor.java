@@ -6,6 +6,10 @@ import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.ValidationUtils;
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,7 +37,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     private ControlledVocabularyApi api;
 
     private void addCodeSystemIfNeeded() {
-        ValidationUtils.addCodeSystemIfNeeded(api, codeSystem, CV_DOMAIN);
+        addCodeSystemIfNeeded(api, codeSystem, CV_DOMAIN);
     }
 
     @Override
@@ -84,6 +88,50 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     public String getCodeSystem() {
         return codeSystem;
+    }
+
+    private void addCodeSystemIfNeeded(ControlledVocabularyApi api, String codeSystem, String cvDomain) {
+        log.trace("starting addCodeSystemIfNeeded");
+        try {
+            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain(cvDomain);
+
+            boolean addNew = true;
+            if (opt.isPresent()) {
+                log.trace("CV_DOMAIN found");
+                for (CodeSystemTermDTO term : ( opt.get()).getTerms()) {
+                    if (term.getValue().equals(codeSystem)) {
+                        addNew = false;
+                        break;
+                    }
+                }
+                log.trace("addNew: " + addNew);
+                if (addNew) {
+                    List<CodeSystemTermDTO> list = opt.get().getTerms().stream()
+                            .map(t -> (CodeSystemTermDTO) t).collect(Collectors.toList());
+                    list.add(CodeSystemTermDTO.builder()
+                            .display(codeSystem)
+                            .value(codeSystem)
+                            .hidden(true)
+                            .build());
+
+                    opt.get().setTerms(list);
+                    //the following line prevents an exception while saving the CV
+                    //todo: figure out why this is necessary
+                    opt.get().setVocabularyTermType("ix.ginas.models.v1.CodeSystemControlledVocabulary");
+                    api.update(opt.get());
+                    log.trace("saved updated CV");
+                }
+            }
+            else {
+                log.error("no code system CV found!");
+                //todo: throw an exception
+            }
+
+        } catch (IOException e) {
+            log.error("Error updating GSRS vocabulary: " + e.getMessage());
+            e.printStackTrace();
+        }
+
     }
 
 }

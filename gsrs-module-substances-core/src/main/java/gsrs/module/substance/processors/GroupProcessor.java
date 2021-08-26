@@ -1,5 +1,6 @@
 package gsrs.module.substance.processors;
 
+import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.cv.api.ControlledVocabularyApi;
 import ix.core.EntityProcessor;
 import ix.core.models.Group;
@@ -53,7 +54,7 @@ public class GroupProcessor implements EntityProcessor<Group> {
                     cvApi.update(cvv.get());
                 } catch (IOException ex) {
                     log.error("Error updating CV", ex);
-                    //throw ex;
+                    Sneak.sneakyThrow(ex);
                 }
             }
         }
@@ -62,36 +63,6 @@ public class GroupProcessor implements EntityProcessor<Group> {
     @Override
     public void preUpdate(Group obj) {
         prePersist(obj);
-    }
-
-    @Override
-    public void postPersist(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void preRemove(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postRemove(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postUpdate(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postLoad(Group obj) {
-        // TODO Auto-generated method stub
-
     }
 
     @Override

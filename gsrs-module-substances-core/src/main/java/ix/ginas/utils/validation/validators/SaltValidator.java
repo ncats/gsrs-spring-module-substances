@@ -1,5 +1,8 @@
 package ix.ginas.utils.validation.validators;
 
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.services.DefinitionalElementFactory;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Amount;
@@ -7,6 +10,7 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
+import ix.ginas.utils.validation.DefHashCalcRequirements;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,6 +34,12 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
+    
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
+
+    @Autowired
+    private SubstanceLegacySearchService searchService;
 
     @Override
     public void validate(Substance substanceORIG, Substance oldSubstanceORIG, ValidatorCallback callback) {
@@ -37,18 +47,21 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
             return;
         }
         ChemicalSubstance substance = (ChemicalSubstance) substanceORIG;
-        ValidationUtils validationUtils = new ValidationUtils();
-
-        log.trace("starting in SaltValidator.validate");
+        
         //is this a salt?
         log.trace("starting in SaltValidator.validate. substance.moieties.size() " + substance.moieties.size());
         if (substance.moieties.size() > 1) {
             List<String> smilesWithoutMatch = new ArrayList();
             List<String> smilesWithPartialMatch = new ArrayList();
 
-            for (Moiety moiety : substance.moieties) {
+            if( definitionalElementFactory == null ) {
+                log.warn("definitionalElementFactory null!");
+                AutowireHelper.getInstance().autowire(this);
+            }
+            substance.moieties.stream().map((moiety) -> {
                 log.trace("Looking up moiety with SMILES " + moiety.structure.smiles);
-
+                return moiety;
+            }).forEachOrdered((moiety) -> {
                 ChemicalSubstance moietyChemical = new ChemicalSubstance();
                 moietyChemical.setStructure(moiety.structure);
                 //clone the moiety and set fixed values so that we avoid flagging a moiety as not matching
@@ -60,15 +73,14 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
                 cloneAmount.type = "MOL RATIO";
                 clone.setCountAmount(cloneAmount);
                 moietyChemical.moieties.add(clone);
-
-                List<Substance> layer1Matches = validationUtils.findDefinitionaLayer1lDuplicateCandidates(moietyChemical);
+                List<Substance> layer1Matches = ValidationUtils.findDefinitionaLayer1lDuplicateCandidates(moietyChemical, 
+                        new DefHashCalcRequirements(definitionalElementFactory, searchService, transactionManager));
                 log.trace("(SaltValidator) total layer1 matches: " + layer1Matches.size());
-
                 //skip the look-up of full matches when there are no layer1 matches
                 List<Substance> fullMatches = (layer1Matches.isEmpty()) ? new ArrayList()
-                        : validationUtils.findFullDefinitionalDuplicateCandidates(moietyChemical);
+                        : ValidationUtils.findFullDefinitionalDuplicateCandidates(moietyChemical,
+                                new DefHashCalcRequirements(definitionalElementFactory, searchService, transactionManager));
                 log.trace("(SaltValidator) total full matches: " + fullMatches.size());
-
                 if (fullMatches.isEmpty()) {
                     if (layer1Matches.isEmpty()) {
                         smilesWithoutMatch.add(moiety.structure.smiles);
@@ -77,7 +89,7 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
                         smilesWithPartialMatch.add(moiety.structure.smiles);
                     }
                 }
-            }
+            });
 
             if (!smilesWithoutMatch.isEmpty()) {
                 smilesWithoutMatch.forEach(s -> {
