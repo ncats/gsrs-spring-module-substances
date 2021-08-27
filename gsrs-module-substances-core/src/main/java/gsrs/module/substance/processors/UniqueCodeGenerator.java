@@ -35,6 +35,9 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         //Long last = (Long) with.computeIfPresent("last", (key, val) -> ((Number) val).longValue());
         int length = (Integer) with.get("length");
         boolean padding = (Boolean) with.get("padding");
+        String msg = String.format("codeSystem: %s; codeSystemSuffix: %s; length: %d;  padding: %b", 
+                codeSystem, codeSystemSuffix, length, padding);
+        log.trace(msg);
         if (codeSystem != null) {
             seqGen = new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
         }
@@ -79,38 +82,8 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
     }
 
     @Override
-    public void postPersist(Substance obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void preRemove(Substance obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postRemove(Substance obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void preUpdate(Substance obj) {
-        prePersist(obj);
-    }
-
-    @Override
-    public void postUpdate(Substance obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postLoad(Substance obj) {
-        // TODO Auto-generated method stub
-
+    public void preUpdate(Substance s) {
+        generateCodeIfNecessary(s);
     }
 
     @Override
@@ -119,7 +92,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
     }
 
     private static void addCodeSystemIfNeeded(ControlledVocabularyApi api, String codeSystem, String cvDomain) {
-        log.trace("starting addCodeSystemIfNeeded");
+        log.trace("starting addCodeSystemIfNeeded. cvDomain: " + cvDomain + "; codeSystem: " + codeSystem);
         try {
             Optional<GsrsControlledVocabularyDTO> opt = api.findByDomain(cvDomain);
 
@@ -135,7 +108,8 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
                 log.trace("addNew: " + addNew);
                 if (addNew) {
                     List<GsrsVocabularyTermDTO> list = opt.get().getTerms().stream()
-                            .map(t -> (GsrsVocabularyTermDTO) t).collect(Collectors.toList());
+                            .map(t -> (GsrsVocabularyTermDTO) t)
+                            .collect(Collectors.toList());
                     list.add(GsrsVocabularyTermDTO.builder()
                             .display(codeSystem)
                             .value(codeSystem)
