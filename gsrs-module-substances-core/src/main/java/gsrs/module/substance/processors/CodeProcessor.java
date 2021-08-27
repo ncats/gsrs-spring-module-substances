@@ -18,7 +18,7 @@ public class CodeProcessor implements EntityProcessor<Code> {
 	public CodeSystemUrlGenerator codeSystemData;
 	
 	public CodeProcessor(Map with){
-        log.trace("starting in CodeProcessor constructor");
+        log.debug("starting in CodeProcessor constructor");
 		try{
 			// It used to be that the codeSystem.json file was found by
 			// looking for the root config JSON found under ix.codeSystemUrlGenerator
@@ -42,8 +42,9 @@ public class CodeProcessor implements EntityProcessor<Code> {
 			
 			String key = "class";
 			String classname = (String)with.get(key);
+            log.trace("classname: " + classname);
 			if(classname ==null){
-				log.error("config =\n" + with);
+				log.error("error loading class from config =\n" + with);
 				throw new IllegalStateException("could not find " + key + " in codesystem initialization file");
 			}
 			Class<?> cls = CodeProcessor.class.getClassLoader().loadClass(classname);
@@ -55,6 +56,7 @@ public class CodeProcessor implements EntityProcessor<Code> {
         		codeSystemData = (CodeSystemUrlGenerator) mapper.convertValue(jsonObj, cls);
 			}
 		}catch(Exception e){
+            log.error("Error in CodeProcessor constructor: ", e);
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}

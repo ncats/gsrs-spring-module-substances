@@ -1,11 +1,13 @@
 package ix.ginas.utils.validation;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.cv.api.CodeSystemTermDTO;
+import gsrs.cv.api.ControlledVocabularyApi;
+import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.springUtils.AutowireHelper;
 
 import ix.core.models.*;
 import ix.core.search.SearchOptions;
@@ -19,6 +21,7 @@ import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.NucleicAcidUtils;
+import java.io.IOException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -27,30 +30,16 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.jcvi.jillion.internal.core.util.Sneak;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 public class ValidationUtils {
 
-    @Autowired(required = true)
-    private DefinitionalElementFactory definitionalElementFactory;
-
-    @Autowired
-    private SubstanceLegacySearchService searchService;
-
-    @Autowired
-    protected PlatformTransactionManager transactionManager;
 
 	private static final String VALIDATION_CONF = "validation.conf";
 
-    public ValidationUtils() {
-        if (definitionalElementFactory == null) {
-            AutowireHelper.getInstance().autowire(this);
-        }
-    }
-    
 	public static interface ValidationRule<K>{
 		public GinasProcessingMessage validate(K obj);
 	}
@@ -1761,33 +1750,30 @@ public class ValidationUtils {
 //		}
 //	}
 
-    public List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance) {
-        DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
+    public static List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance, DefHashCalcRequirements defHashCalcRequirements) {
+        DefinitionalElements newDefinitionalElements = defHashCalcRequirements.getDefinitionalElementFactory().computeDefinitionalElementsFor(substance);
         int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
         log.trace( "findFullDefinitionalDuplicateCandidates  handling layer: " + (layer + 1));
-        return findLayerNDefinitionalDuplicateCandidates(substance, layer);
+        return findLayerNDefinitionalDuplicateCandidates(substance, layer, defHashCalcRequirements);
     }
 
-    public List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance) {
-//        if (definitionalElementFactory == null) {
-//            AutowireHelper.getInstance().autowire(this);
-//        }
+    public static List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance, DefHashCalcRequirements defHashCalcRequirements) {
         int layer = 0;
-        return findLayerNDefinitionalDuplicateCandidates(substance, layer);
+        return findLayerNDefinitionalDuplicateCandidates(substance, layer, defHashCalcRequirements);
     }
 
-    public List<Substance> findLayerNDefinitionalDuplicateCandidates(Substance substance, int layer) {
+    public static List<Substance> findLayerNDefinitionalDuplicateCandidates(Substance substance, int layer, 
+            DefHashCalcRequirements defHashCalcRequirements) {
         List<Substance> candidates = new ArrayList<>();
         try {
-            //SearchRequest.Builder searchBuilder = new SearchRequest.Builder();
-            DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
-            //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
-            log.trace( "findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
+            DefinitionalElements newDefinitionalElements = defHashCalcRequirements.getDefinitionalElementFactory().computeDefinitionalElementsFor(substance);
+            log.trace( "findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1) 
+                    + newDefinitionalElements.getDefinitionalHashLayers().get(layer));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
             log.trace("layer query: " + searchItem);
 
-            TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+            TransactionTemplate transactionSearch = new TransactionTemplate(defHashCalcRequirements.getPlatformTransactionManager());
             candidates = (List<Substance>) transactionSearch.execute(ts
                     -> {
                 List<String> nameValues = new ArrayList<>();
@@ -1800,7 +1786,7 @@ public class ValidationUtils {
                 log.trace("built query: " + request.getQuery());
                 try {
                     SearchOptions options = new SearchOptions();
-                    SearchResult sr = searchService.search(request.getQuery(), options);
+                    SearchResult sr = defHashCalcRequirements.getSubstanceLegacySearchService().search(request.getQuery(), options);
                     sr.waitForFinish();
                     List fut = sr.getMatches();
                     List<Substance> hits = (List<Substance>) fut.stream()
@@ -1813,29 +1799,13 @@ public class ValidationUtils {
                 }
                 return nameValues;
             });
-            //nameValues.forEach(n -> System.out.println(n));
-            //        });
-            //
-            //			SearchResult sres = searchBuilder
-            //							.kind(Substance.class)
-            //							.fdim(0)
-            //							.build()
-            //                    .
-            //							.execute();
-            //			sres.waitForFinish();
-            /*List<Substance> submatches = (List<Substance>) sres.getMatches();
-			Logger.getLogger(this.getClass().getName()).log(Level.FINE, "total submatches: " + submatches.size());
-
-			for (int i = 0; i < submatches.size(); i++)	{
-				Substance s = submatches.get(i);
-				if (!s.getUuid().equals(substance.getUuid()))	{
-					candidates.add(s);
-				}
-			}*/
         } catch (Exception ex) {
             log.error( "Error running query", ex);
+            ex.printStackTrace();
+            Sneak.sneakyThrow(ex);
         }
         return candidates;
     }
+
 
 }

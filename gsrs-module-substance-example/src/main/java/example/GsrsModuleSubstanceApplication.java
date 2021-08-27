@@ -1,5 +1,6 @@
 package example;
 
+import gov.hhs.gsrs.applications.ApplicationsDataSourceConfig;
 import gsrs.*;
 import gsrs.EnableGsrsLegacyStructureSearch;
 import gsrs.cv.EnableControlledVocabulary;
@@ -17,7 +18,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 //import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 
 @SpringBootApplication
-@EnableGsrsApi(indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CONF)
+@EnableGsrsApi(indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CONF
+//     additionalDatabaseSourceConfigs = {ApplicationsDataSourceConfig.class}
+)
 @EnableGsrsJpaEntities
 @EnableGsrsLegacyAuthentication
 @EnableGsrsLegacyCache

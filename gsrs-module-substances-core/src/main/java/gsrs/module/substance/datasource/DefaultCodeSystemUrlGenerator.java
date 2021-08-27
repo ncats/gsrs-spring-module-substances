@@ -15,8 +15,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.processors.CodeSystemUrlGenerator;
 
 import ix.ginas.models.v1.Code;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 
+@Slf4j
 public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, CodeSystemUrlGenerator {
 
     @JsonIgnore
@@ -47,6 +49,7 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
 
     @JsonCreator
     public DefaultCodeSystemUrlGenerator(@JsonProperty("filename") String filename) throws IOException {
+        ClassPathResource t= new ClassPathResource(filename);
         try (InputStream is = new ClassPathResource(filename).getInputStream();) {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode tree = mapper.readTree(is);
@@ -76,6 +79,7 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
 
     @Override
     public Optional<String> generateUrlFor(Code code) {
+        log.trace("DefaultCodeSystemUrlGenerator generateUrlFor");
         if (code.code == null) {
             return Optional.empty();
         }
@@ -86,4 +90,10 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
 
         return Optional.ofNullable(meta.generateUrlFor(code));
     }
+    
+    //used for testing --making sure the Map gets instantiated after a call to the constructor
+    public Map getMap() {
+        return map;
+    }
+
 }

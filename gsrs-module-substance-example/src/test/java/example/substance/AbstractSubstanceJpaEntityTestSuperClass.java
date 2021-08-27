@@ -403,14 +403,14 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
             }
         });
     }
-    protected static <T> T ensurePass(GsrsEntityService.UpdateResult<T> creationResult){
-        ValidationResponse<T> resp = creationResult.getValidationResponse();
+    protected static <T> T ensurePass(GsrsEntityService.UpdateResult<T> updateResult){
+        ValidationResponse<T> resp = updateResult.getValidationResponse();
         assertTrue(resp.isValid(), ()->"response is not valid "+ resp.getValidationMessages());
         assertTrue(!resp.hasError(), ()->"response has error "+ resp.getValidationMessages());
 
-        assertEquals(GsrsEntityService.UpdateResult.STATUS.UPDATED, creationResult.getStatus(), ()->"was not updated "+ resp.getValidationMessages());
+        assertEquals(GsrsEntityService.UpdateResult.STATUS.UPDATED, updateResult.getStatus(), ()->"was not updated "+ resp.getValidationMessages());
 
-        return creationResult.getUpdatedEntity();
+        return updateResult.getUpdatedEntity();
     }
     protected static <T> T ensurePass(GsrsEntityService.CreationResult<T> creationResult){
         ValidationResponse<T> resp = creationResult.getValidationResponse();

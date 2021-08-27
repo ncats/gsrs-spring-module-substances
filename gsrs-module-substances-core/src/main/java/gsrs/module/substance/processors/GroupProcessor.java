@@ -1,5 +1,6 @@
 package gsrs.module.substance.processors;
 
+import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.cv.api.ControlledVocabularyApi;
 import ix.core.EntityProcessor;
 import ix.core.models.Group;
@@ -40,11 +41,12 @@ public class GroupProcessor implements EntityProcessor<Group> {
             //log.debug("The domain is:" + cvv.domain + " with " + cvv.terms.size() + " terms");
             if (vt == null) {
                 log.debug("Group didn't exist before");
-                vt = new GsrsVocabularyTermDTO();
-                vt.setDisplay(obj.name);
-                vt.setValue(obj.name);
-                //vt.save();
+                vt =GsrsVocabularyTermDTO.builder()
+                        .display(obj.name)
+                        .value(obj.name)
+                        .build();
                 cvv.get().getTerms().add(vt);
+                //not sure why term type is ix.ginas.models.v1.ControlledVocabulary but other values lead to errors
                 if( cvv.get().getVocabularyTermType() == null || cvv.get().getVocabularyTermType().length()==0) {
                     cvv.get().setVocabularyTermType("ix.ginas.models.v1.ControlledVocabulary");
                 }
@@ -52,7 +54,7 @@ public class GroupProcessor implements EntityProcessor<Group> {
                     cvApi.update(cvv.get());
                 } catch (IOException ex) {
                     log.error("Error updating CV", ex);
-                    //throw ex;
+                    Sneak.sneakyThrow(ex);
                 }
             }
         }
@@ -61,36 +63,6 @@ public class GroupProcessor implements EntityProcessor<Group> {
     @Override
     public void preUpdate(Group obj) {
         prePersist(obj);
-    }
-
-    @Override
-    public void postPersist(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void preRemove(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postRemove(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postUpdate(Group obj) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void postLoad(Group obj) {
-        // TODO Auto-generated method stub
-
     }
 
     @Override

@@ -65,6 +65,11 @@ public class GroupProcessorTest extends AbstractSubstanceJpaEntityTest {
     private void createCv() throws IOException {
         log.trace("starting in createCv");
         String accessGroup = "protected";
+        Optional<GsrsControlledVocabularyDTO> vocabOpt= controlledVocabularyApi.findByDomain(ACCESS_DOMAIN);
+        if( vocabOpt.isPresent()) {
+            log.trace("CV for ACCESS_DOMAIN already exists");
+            return;
+        }
         List<GsrsVocabularyTermDTO> list = new ArrayList<>();
         list.add(GsrsVocabularyTermDTO.builder()
                 .display(accessGroup)
@@ -87,14 +92,30 @@ public class GroupProcessorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void testProcessGroup() throws IOException {
-        Optional<GsrsControlledVocabularyDTO> optVocab= controlledVocabularyApi.findByDomain(ACCESS_DOMAIN);
-        GsrsControlledVocabularyDTO vocab= optVocab.get();
-        long totalBefore =vocab.getTerms().size();
+        //verify that a term is added to the CV when necessary
+        GsrsControlledVocabularyDTO vocabBefore= (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
+        long totalBefore =vocabBefore.getTerms().size();
         Group labWorkers= new Group();
         labWorkers.name="Lab Workers";
         processor.prePersist(labWorkers);
-        long totalAfter = ((GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get()).getTerms().size();
+        GsrsControlledVocabularyDTO vocabAfter = (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
+        Assertions.assertTrue(vocabAfter.getTerms().stream().anyMatch(t-> t.getValue().equalsIgnoreCase(labWorkers.name)));
+        long totalAfter = vocabAfter.getTerms().size();
         Assertions.assertEquals(totalAfter, (totalBefore+1));
+    }
+
+     @Test
+    public void testProcessGroupNotAdded() throws IOException {
+        //verify that when the CV already contains an item for the group, a duplicate is NOT created
+        GsrsControlledVocabularyDTO vocabBefore= (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
+        long totalBefore =vocabBefore.getTerms().size();
+        Group protectedGroup= new Group();
+        protectedGroup.name="protected";
+        processor.prePersist(protectedGroup);
+        GsrsControlledVocabularyDTO vocabAfter = (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
+        Assertions.assertEquals(1, vocabAfter.getTerms().stream().filter(t-> t.getValue().equalsIgnoreCase(protectedGroup.name)).count());
+        long totalAfter = vocabAfter.getTerms().size();
+        Assertions.assertEquals(totalAfter, totalBefore);
     }
 
 }
