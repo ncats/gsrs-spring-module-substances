@@ -41,6 +41,11 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         if (codeSystem != null) {
             seqGen = new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
         }
+        try {
+            initializer.getSync();
+        }catch(Exception e) {
+            log.warn("Error initializing codesystem generator, will be attempted again as needed");
+        }
         //addCodeSystem();
     }
 
