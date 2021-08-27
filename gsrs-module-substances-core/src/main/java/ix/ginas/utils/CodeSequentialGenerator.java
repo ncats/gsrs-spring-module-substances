@@ -17,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
+import lombok.extern.slf4j.Slf4j;
 @Component
+@Slf4j
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
 	@Autowired
 	private CodeRepository codeRepository;
@@ -64,14 +66,15 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		//this method must be in @Transactional so the underlying connection for the stream stays open
 		@Transactional(readOnly = true)
 		protected AtomicLong findHighestValueCode() {
+            return new AtomicLong(999);
 		//need to create Stream in try-with-resource so it gets closed correctly
-			try (Stream<Code> codesByCodeSystemAndCodeLike = getCodeRepository().findCodesByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
-				String lastCode = codesByCodeSystemAndCodeLike
-						.map(Code::getCode)
-						.max(getCodeSystemComparator())
-						.orElse("0" + suffix);
-				return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
-			}
+//			try (Stream<Code> codesByCodeSystemAndCodeLike = getCodeRepository().findCodesByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
+//				String lastCode = codesByCodeSystemAndCodeLike
+//						.map(Code::getCode)
+//						.max(getCodeSystemComparator())
+//						.orElse("0" + suffix);
+//				return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
+//			}
 		}
 	@Override
 	public String getName() {
@@ -84,25 +87,30 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	}
 	
 	public Code getCode(){
+        log.debug("starting in getCode");
 		Code c = new Code();
 		c.codeSystem=this.codeSystem;
-		c.code=this.generateID();
+		c.code="some hard-coded value";//this.generateID();
 		c.type="PRIMARY";
+        log.debug("finished in getCode");
 		return c;
 	}
 	public Code addCode(Substance s){
+        log.debug("starting in addCode");
 		Code c=getCode();
 		s.codes.add(c);
-		Reference r = new Reference();
-		r.docType="SYSTEM";
-		r.citation="System Generated Code";
-		Group g = groupRepository.findByName("protected");
-		if(g ==null){
-			g= new Group("protected");
-		}
-		r.addRestrictGroup(g);
-		c.addRestrictGroup(g);
-		c.addReference(r, s);
+        log.debug("done with addCode");
+        
+//		Reference r = new Reference();
+//		r.docType="SYSTEM";
+//		r.citation="System Generated Code";
+//		Group g = groupRepository.findByName("protected");
+//		if(g ==null){
+//			g= new Group("protected");
+//		}
+//		r.addRestrictGroup(g);
+//		c.addRestrictGroup(g);
+//		c.addReference(r, s);
 		return c;
 	}
 

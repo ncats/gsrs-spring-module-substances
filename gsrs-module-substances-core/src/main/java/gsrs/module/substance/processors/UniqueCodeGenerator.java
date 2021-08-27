@@ -46,7 +46,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
 
     private void addCodeSystem() {
         log.trace("addCodeSystem");
-        addCodeSystemIfNeeded(cvApi, codeSystem, CODE_SYSTEM_VOCABULARY);
+        //addCodeSystemIfNeeded(cvApi, codeSystem, CODE_SYSTEM_VOCABULARY);
     }
 
     public void generateCodeIfNecessary(Substance s) {
