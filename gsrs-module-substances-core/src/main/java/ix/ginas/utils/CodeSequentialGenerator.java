@@ -1,7 +1,20 @@
 package ix.ginas.utils;
 
+import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.repository.CodeRepository;
 import gsrs.repository.GroupRepository;
@@ -9,24 +22,32 @@ import ix.core.models.Group;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
-
-import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
 @Component
-@Slf4j
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
-	@Autowired
+	private static final String SYSTEM_GENERATED_CODE = "System Generated Code";
+
+    private static final String SYSTEM = "SYSTEM";
+
+    private static final String GROUP_PROTECTED = "protected";
+
+    @Autowired
 	private CodeRepository codeRepository;
 
 	@Autowired
 	private GroupRepository groupRepository;
+	
+	@Autowired
+	private PlatformTransactionManager  transactionManager;
 
+	
+	CachedSupplier<Group> protectedGroup = CachedSupplier.of(()->{
+	    Group g= groupRepository.findByName(GROUP_PROTECTED);
+	    if(g ==null){
+            g= new Group(GROUP_PROTECTED);
+        }
+	    return g;
+	});
+	
 	private final CachedSupplier<AtomicLong> lastNum;
 	private String codeSystem;
 	private String name;
@@ -63,18 +84,25 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	}
 
 
-		//this method must be in @Transactional so the underlying connection for the stream stays open
-		@Transactional(readOnly = true)
+		
 		protected AtomicLong findHighestValueCode() {
-            return new AtomicLong(999);
-		//need to create Stream in try-with-resource so it gets closed correctly
-//			try (Stream<Code> codesByCodeSystemAndCodeLike = getCodeRepository().findCodesByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
-//				String lastCode = codesByCodeSystemAndCodeLike
-//						.map(Code::getCode)
-//						.max(getCodeSystemComparator())
-//						.orElse("0" + suffix);
-//				return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
-//			}
+		    //this method must be in transaction so the underlying connection for the stream stays open
+		    //for the stream.
+		    //
+		    
+		    
+		    TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
+		    txTemplate.setReadOnly(true);
+		    txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
+		    return txTemplate.execute(status -> {
+		        try (Stream<Code> codesByCodeSystemAndCodeLike = getCodeRepository().findCodesByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
+	                String lastCode = codesByCodeSystemAndCodeLike
+	                        .map(Code::getCode)
+	                        .max(getCodeSystemComparator())
+	                        .orElse("0" + suffix);
+	                return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
+	            }
+		    });
 		}
 	@Override
 	public String getName() {
@@ -87,30 +115,23 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	}
 	
 	public Code getCode(){
-        log.debug("starting in getCode");
 		Code c = new Code();
 		c.codeSystem=this.codeSystem;
-		c.code="some hard-coded value";//this.generateID();
+		c.code=this.generateID();
 		c.type="PRIMARY";
-        log.debug("finished in getCode");
 		return c;
 	}
 	public Code addCode(Substance s){
-        log.debug("starting in addCode");
 		Code c=getCode();
-		s.codes.add(c);
-        log.debug("done with addCode");
-        
-//		Reference r = new Reference();
-//		r.docType="SYSTEM";
-//		r.citation="System Generated Code";
-//		Group g = groupRepository.findByName("protected");
-//		if(g ==null){
-//			g= new Group("protected");
-//		}
-//		r.addRestrictGroup(g);
-//		c.addRestrictGroup(g);
-//		c.addReference(r, s);
+		s.addCode(c);
+		Reference r = new Reference();
+		r.docType=SYSTEM;
+		r.citation=SYSTEM_GENERATED_CODE;
+		
+		Group g = protectedGroup.get();		
+		r.addRestrictGroup(g);
+		c.addRestrictGroup(g);
+		c.addReference(r, s);
 		return c;
 	}
 

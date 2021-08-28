@@ -7,7 +7,6 @@ import gsrs.cv.CvApiAdapter;
 import gsrs.cv.api.CodeSystemTermDTO;
 import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
-import gsrs.cv.api.GsrsControlledVocabularyDTO;
 import gsrs.module.substance.processors.UniqueCodeGenerator;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
@@ -40,7 +39,7 @@ import org.springframework.core.io.ClassPathResource;
 @Import(UniqueCodeGeneratorTest.TestConfig.class)
 public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
-    private final String CV_DOMAIN = "ACCESS_GROUP";
+    private final String CV_DOMAIN = "CODE_SYSTEM";
 
     private AutowireHelper autowireHelpr;
 
@@ -62,8 +61,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
     private ControlledVocabularyApi controlledVocabularyApi;
 
     private final String codeSystemName = "NCATSID";
-    private UniqueCodeGenerator generator;
-
+    
     @BeforeEach
     public void setup() throws IOException {
         log.trace("starting in setup");
@@ -123,7 +121,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         uniqueCodeGenerator.generateCodeIfNecessary(substance);
         boolean anyMatch = false;
-        Optional<GsrsControlledVocabularyDTO> cvOpt = null;
+        Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt = null;
         try {
             //now check for a CV term with the expected value
             cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
