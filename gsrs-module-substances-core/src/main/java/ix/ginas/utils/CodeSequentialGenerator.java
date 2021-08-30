@@ -22,6 +22,8 @@ import ix.core.models.Group;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
 	private static final String SYSTEM_GENERATED_CODE = "System Generated Code";
@@ -89,7 +91,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		    //this method must be in transaction so the underlying connection for the stream stays open
 		    //for the stream.
 		    //
-		    
+		    log.debug( transactionManager== null ? "transactionManager null" : "transactionManager not null");
 		    
 		    TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
 		    txTemplate.setReadOnly(true);

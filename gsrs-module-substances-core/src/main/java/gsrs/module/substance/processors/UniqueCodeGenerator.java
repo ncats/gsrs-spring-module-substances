@@ -35,6 +35,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
+    private static boolean initializedSeqGen= false;
     public UniqueCodeGenerator(Map with) {
         log.trace("UniqueCodeGenerator constructor with Map");
         String name = (String) with.get("name");
@@ -49,28 +50,30 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         if (codeSystem != null) {
             seqGen = new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
         }
-        try {
-            initializer.getSync();
-        } catch (Exception e) {
-            log.warn("Error initializing codesystem generator, will be attempted again as needed");
-        }
+//        try {
+//            initializer.getSync();
+//        } catch (Exception e) {
+//            log.warn("Error initializing codesystem generator, will be attempted again as needed");
+//        }
         //addCodeSystem();
     }
 
     private void addCodeSystem() {
-        log.trace("addCodeSystem");
-        addCodeSystemIfNecessary(cvApi, codeSystem, CODE_SYSTEM_VOCABULARY);
+        log.trace("addCodeSystem and gone");
+        //addCodeSystemIfNecessary(cvApi, codeSystem, CODE_SYSTEM_VOCABULARY);
     }
 
     public void generateCodeIfNecessary(Substance s) {
         log.trace("starting in generateCodeIfNecessary");
         initializer.getSync();
-        if (seqGen != null) {
+        if (!initializedSeqGen && seqGen != null) {
             AutowireHelper.getInstance().autowire(seqGen);
             log.trace("autowired seqGen");
+            initializedSeqGen=true;
         }
 
         if (seqGen != null && s.isPrimaryDefinition()) {
+            log.trace("looking for code");
             boolean hasCode = false;
             for (Code c : s.codes) {
                 if (c.codeSystem.equals(seqGen.getCodeSystem())) {
@@ -105,11 +108,9 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
     }
 
     private void addCodeSystemIfNecessary(ControlledVocabularyApi api, String codeSystem, String cvDomain) {
-        log.trace("starting and stopping addCodeSystemIfNecessary. cvDomain: " + cvDomain + "; codeSystem: " + codeSystem);
-//        TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
-//        txTemplate.setReadOnly(true);
-//        txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
-//        txTemplate.execute(status -> {
+        log.trace("starting addCodeSystemIfNecessary. cvDomain: " + cvDomain + "; codeSystem: " + codeSystem);
+        
+//        try {
 //            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain(cvDomain);
 //
 //            boolean addNew = true;
@@ -145,52 +146,10 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
 //                //todo: throw an exception
 //            }
 //
-//        });
-//
-//        try {
-//            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain(cvDomain);
-//
-//        boolean addNew = true;
-//        if (opt.isPresent()) {
-//            log.trace("CV_DOMAIN found");
-//            for (CodeSystemTermDTO term : (opt.get()).getTerms()) {
-//                if (term.getValue().equals(codeSystem)) {
-//                    addNew = false;
-//                    break;
-//                }
-//            }
-//            log.trace("addNew: " + addNew);
-//            if (addNew) {
-//                List<CodeSystemTermDTO> list = opt.get().getTerms().stream()
-//                        .map(t -> (CodeSystemTermDTO) t)
-//                        .collect(Collectors.toList());
-//                list.add(CodeSystemTermDTO.builder()
-//                        .display(codeSystem)
-//                        .value(codeSystem)
-//                        .hidden(true)
-//                        .build());
-//
-//                opt.get().setTerms(list);
-//                //the following line prevents an exception while saving the CV
-//                //todo: figure out why this is necessary
-//                opt.get().setVocabularyTermType("ix.ginas.models.v1.ControlledVocabulary");
-//                api.update(opt.get());
-//                log.trace("saved updated CV");
-//            }
-//        }
-//        else {
-//            log.error("no code system CV found!");
-//            //todo: throw an exception
-//        }
-//
-//    }
-//    catch (IOException e
-//
-//    
-//        ) {
+//        } catch (IOException e) {
 //            log.error("Error updating GSRS vocabulary: " + e.getMessage());
-//        e.printStackTrace();
-//    }
-}
+//            e.printStackTrace();
+//        }
+    }
 
 }
