@@ -85,7 +85,7 @@ public abstract class UniiLikeGenerator extends RandomAlphaNumericIDGenerator<Su
             return false;
         }
 
-        return substanceRepository.existsByApprovalID(fullId);
+        return !substanceRepository.existsByApprovalID(fullId);
 
     }
 

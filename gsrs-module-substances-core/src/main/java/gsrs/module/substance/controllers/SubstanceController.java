@@ -931,15 +931,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     private synchronized void approveSubstance(Substance s) {
-
-        if (s.status == Substance.STATUS_APPROVED) {
+        //TODO move this to a service method
+        if (Substance.STATUS_APPROVED.equals(s.status)) {
             throw new IllegalStateException("Cannot approve an approved substance");
         }
         Optional<String> loggedInUsername = GsrsSecurityUtils.getCurrentUsername();
         if (!loggedInUsername.isPresent()) {
             throw new IllegalStateException("Must be logged in user to approve substance");
         }
-//        user = up.user;
+
         if (s.lastEditedBy == null) {
             throw new IllegalStateException(
                     "There is no last editor associated with this record. One must be present to allow approval. Please contact your system administrator.");
