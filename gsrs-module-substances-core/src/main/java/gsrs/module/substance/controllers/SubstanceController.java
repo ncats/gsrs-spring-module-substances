@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.molwitch.MolwitchException;
 import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
@@ -34,8 +35,11 @@ import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SequenceSearchType;
 import gsrs.repository.EditRepository;
+import gsrs.repository.PrincipalRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.hasAdminRole;
+import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.GsrsSpringUtils;
@@ -43,12 +47,15 @@ import ix.core.EntityMapperOptions;
 import ix.core.chem.*;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
+import ix.core.models.Principal;
 import ix.core.models.Structure;
+import ix.core.models.UserProfile;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.*;
+import ix.ginas.utils.SubstanceApprovalIdGenerator;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
@@ -67,6 +74,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -252,7 +260,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private RendererOptionsConfig rendererOptionsConfig;
 
+    @Autowired
+    private SubstanceApprovalIdGenerator approvalIdGenerator;
 
+    @Autowired
+    private PrincipalRepository principalRepository;
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -902,6 +914,63 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
 
+    }
+
+    @Transactional
+    @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
+    @hasApproverRole
+    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters){
+
+       Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
+
+       if(!substance.isPresent()){
+           return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+       }
+        approveSubstance(substance.get());
+       return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(substance.get(), queryParameters), HttpStatus.OK);
+    }
+
+    private synchronized void approveSubstance(Substance s) {
+
+        if (s.status == Substance.STATUS_APPROVED) {
+            throw new IllegalStateException("Cannot approve an approved substance");
+        }
+        Optional<String> loggedInUsername = GsrsSecurityUtils.getCurrentUsername();
+        if (!loggedInUsername.isPresent()) {
+            throw new IllegalStateException("Must be logged in user to approve substance");
+        }
+//        user = up.user;
+        if (s.lastEditedBy == null) {
+            throw new IllegalStateException(
+                    "There is no last editor associated with this record. One must be present to allow approval. Please contact your system administrator.");
+        } else {
+            if (s.lastEditedBy.username.equals(loggedInUsername.get())) {
+                throw new IllegalStateException(
+                        "You cannot approve a substance if you are the last editor of the substance.");
+            }
+        }
+        if (!s.isPrimaryDefinition()) {
+            throw new IllegalStateException("Cannot approve non-primary definitions.");
+        }
+        if (Substance.SubstanceClass.concept.equals(s.substanceClass)) {
+            throw new IllegalStateException("Cannot approve non-substance concepts.");
+        }
+        for (SubstanceReference sr : s.getDependsOnSubstanceReferences()) {
+            Optional<SubstanceRepository.SubstanceSummary> s2 = substanceRepository.findSummaryBySubstanceReference(sr);
+            if (!s2.isPresent()) {
+                throw new IllegalStateException("Cannot approve substance that depends on " + sr.toString()
+                        + " which is not found in database.");
+            }
+            if (!s2.get().isValidated()) {
+                throw new IllegalStateException(
+                        "Cannot approve substance that depends on " + sr.toString() + " which is not approved.");
+            }
+        }
+
+        s.approvalID = approvalIdGenerator.generateId(s);
+        s.approved = TimeUtil.getCurrentDate();
+        s.approvedBy = principalRepository.findDistinctByUsernameIgnoreCase(loggedInUsername.get());
+        s.status = Substance.STATUS_APPROVED;
     }
 
 
