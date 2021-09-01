@@ -2,6 +2,7 @@ package gsrs.module.substance.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
@@ -21,6 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -34,7 +37,8 @@ public class RelationshipService {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    @Autowired
+//    @Autowired
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
 
     @Autowired

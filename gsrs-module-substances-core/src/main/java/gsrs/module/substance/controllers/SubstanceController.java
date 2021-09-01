@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.molwitch.MolwitchException;
 import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
@@ -15,6 +16,7 @@ import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
@@ -34,8 +36,11 @@ import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SequenceSearchType;
 import gsrs.repository.EditRepository;
+import gsrs.repository.PrincipalRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.hasAdminRole;
+import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.GsrsSpringUtils;
@@ -43,12 +48,15 @@ import ix.core.EntityMapperOptions;
 import ix.core.chem.*;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
+import ix.core.models.Principal;
 import ix.core.models.Structure;
+import ix.core.models.UserProfile;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.*;
+import ix.ginas.utils.SubstanceApprovalIdGenerator;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
@@ -67,6 +75,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -252,6 +261,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private RendererOptionsConfig rendererOptionsConfig;
 
+//    @Autowired
+//    private SubstanceApprovalIdGenerator approvalIdGenerator;
+//
+//    @Autowired
+//    private PrincipalRepository principalRepository;
+
+    @Autowired
+    private ApprovalService approvalService;
 
 
     @Override
@@ -902,6 +919,41 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
 
+    }
+
+    @Transactional
+    @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
+    @hasApproverRole
+    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
+
+       Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
+
+       if(!substance.isPresent()){
+           return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+       }
+       String[] error = new String[1];
+       GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {
+                   //The approval will throw an exception which we can propagate up
+                   //the result has other fields but we don't need to use them right now since we return the whole substance
+                   // but if we change the API to just have the approval specific update we have all that's needed in this result obj
+
+                   try {
+                       ApprovalService.ApprovalResult result = approvalService.approve(s);
+
+                       return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
+                   } catch (ApprovalService.ApprovalException e) {
+                       error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
+                       return Optional.empty();
+                   }
+               });
+
+        if(error[0] !=null){
+            return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
+        }
+        if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
+            return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
+        }
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(savedVersion.getUpdatedEntity(), queryParameters), HttpStatus.OK);
     }
 
 
