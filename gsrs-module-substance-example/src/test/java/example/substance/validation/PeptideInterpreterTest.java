@@ -35,6 +35,7 @@ public class PeptideInterpreterTest{
     @MethodSource("peptideData")
     public void assertSequenceIntepretedCorrectly(String smiles, String expectedSequence) throws Exception{
         PeptideInterpreter.Protein p = PeptideInterpreter.getAminoAcidSequence(smiles);
+        
         List<PeptideInterpreter.Protein.Subunit> subunits = p.getSubunits();
         assertEquals(1, subunits.size());
         String t=subunits.get(0).getSequence();

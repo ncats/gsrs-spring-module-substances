@@ -1,5 +1,6 @@
 package ix.ginas.utils.validation;
 
+import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -14,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -38,7 +41,8 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
     @Autowired
     private KeywordRepository keywordRepository;
 
-    @Autowired
+//    @Autowired
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
     /**
      * Currently uses the structure.properties.term keys for the duplicate matching

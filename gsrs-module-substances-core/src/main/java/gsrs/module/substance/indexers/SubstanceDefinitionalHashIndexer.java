@@ -55,11 +55,11 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 			}
 			
 			List<String> layerHashes = elements.getDefinitionalHashLayers();
-			log.trace(String.format(" %d layers", layerHashes.size()));
+			LogUtil.trace(()->String.format(" %d layers", layerHashes.size()));
 			for (int layer = 1; layer <= layerHashes.size(); layer++)
 			{
 				String layerName = "root_definitional_hash_layer_" + layer;
-				log.trace("layerName: " + layerName + ":" + layerHashes.get(layer - 1));
+				LogUtil.trace(()->"layerName: " + layerName);
 				consumer.accept(IndexableValue.simpleStringValue(layerName, layerHashes.get(layer - 1)));
 			}
 		} catch (Exception ex)
