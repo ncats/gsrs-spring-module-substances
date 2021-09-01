@@ -111,6 +111,10 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         String getStatus();
         String getApprovalID();
 
+        default boolean isValidated(){
+            //copied from Substance class
+            return Substance.STATUS_APPROVED.equalsIgnoreCase(getStatus());
+        }
         default SubstanceReference toSubstanceReference(){
             SubstanceReference ref = new SubstanceReference();
             ref.approvalID = getApprovalID();

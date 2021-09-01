@@ -1,10 +1,12 @@
-package gsrs.module.substance.approvalId;
+package gsrs.module.substance.approval;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.repository.PrincipalRepository;
 import ix.ginas.utils.DefaultApprovalIDGenerator;
 import ix.ginas.utils.SubstanceApprovalIdGenerator;
-import ix.ginas.utils.UniiLikeGenerator;
 import lombok.Data;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +24,15 @@ public class ApprovalIdConfiguration {
     private Map<String, Object> parameters;
 
     @Bean
+    @ConditionalOnMissingBean
+    public ApprovalService defaultApprovalService(SubstanceApprovalIdGenerator approvalIdGenerator,
+                                                  SubstanceRepository substanceRepository,
+                                                  PrincipalRepository principalRepository){
+        return new DefaultApprovalService(approvalIdGenerator, substanceRepository, principalRepository);
+
+    }
+    @Bean
+    @ConditionalOnMissingBean
     public SubstanceApprovalIdGenerator substanceApprovalIdGenerator(){
         if(generatorClass ==null){
             //no generator specified use default

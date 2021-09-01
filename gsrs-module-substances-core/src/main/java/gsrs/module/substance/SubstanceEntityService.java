@@ -28,4 +28,6 @@ public interface SubstanceEntityService extends GsrsEntityService<Substance, UUI
     Optional<Substance> get(UUID id);
 
     Optional<Substance> flexLookup(String someKindOfId);
+
+
 }

@@ -28,7 +28,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @EnableGsrsLegacySequenceSearch
 @EnableGsrsLegacyStructureSearch
 @EntityScan(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
-@EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
+//@EnableJpaRepositories(basePackages ={"ix","gsrs", "gov.nih.ncats"} )
 @EnableGsrsScheduler
 @EnableGsrsBackup
 @EnableAsync

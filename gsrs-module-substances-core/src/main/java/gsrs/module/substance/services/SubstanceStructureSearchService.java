@@ -5,6 +5,7 @@ import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.repository.MixtureSubstanceRepository;
@@ -31,6 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -198,7 +201,9 @@ public class SubstanceStructureSearchService {
     private MixtureSubstanceRepository mixtureSubstanceRepository;
     @Autowired
     private GsrsCache gsrsCache;
-    @Autowired
+    
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
+//    @Autowired
     private EntityManager entityManager;
 
     public SearchResultContext search(SanitizedSearchRequest request, String hashKey) throws Exception {

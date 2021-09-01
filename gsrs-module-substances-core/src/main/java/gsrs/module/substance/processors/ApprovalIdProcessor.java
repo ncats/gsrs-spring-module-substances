@@ -5,13 +5,13 @@ import gsrs.cv.api.*;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
-import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * When a substance is saved and has an approvalID, check for a corresponding
@@ -24,20 +24,87 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     private String codeSystem;
 
-    private final CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addCodeSystemIfNeeded);
+    private CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addCodeSystemIfNeeded);
 
     public void setCodeSystem(String codeSystem) {
         this.codeSystem = codeSystem;
     }
 
-    private final String CV_DOMAIN = "CODE_SYSTEM";
-
     @Autowired
     private ControlledVocabularyApi api;
 
-    private void addCodeSystemIfNeeded() {
-        addCodeSystemIfNeeded(api, codeSystem, CV_DOMAIN);
+
+    private void addCodeSystemIfNeeded(){
+        if(codeSystem ==null){
+            return;
+        }
+        try {
+            Optional<AbstractGsrsControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
+
+        boolean addNew=true;
+        if(opt.isPresent()){
+            for(GsrsVocabularyTermDTO term : ((GsrsControlledVocabularyDTO)opt.get()).getTerms()){
+                if (term.getValue().equals(codeSystem)) {
+                    addNew = false;
+                    break;
+                }
+            }
+        }
+
+        if(addNew) {
+            List<CodeSystemTermDTO> list = new ArrayList<>();
+            list.add(CodeSystemTermDTO.builder()
+                    .display(codeSystem)
+                    .value(codeSystem)
+                    .hidden(true)
+                    .build());
+
+            api.create(GsrsCodeSystemControlledVocabularyDTO.builder()
+                    .domain("CODE_SYSTEM")
+                    .terms(list)
+                    .build());
+
+        }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
+//    private void addCodeSystem()  {
+//        Runnable r = new Runnable() {
+//            @Override
+//            public void run() {
+//                log.trace("in addCodeSystem.run");
+//                if (codeSystem != null) {
+//                    Optional<GsrsCodeSystemControlledVocabularyDTO> cvvOpt;
+//                    List<ControlledVocabulary> vocabList = repo.findByDomain("CODE_SYSTEM");
+//                    log.trace("vocabList size: " + vocabList.size());
+//                    ControlledVocabulary vocab = vocabList.get(0);
+//                    boolean addNew = true;
+//                    for (VocabularyTerm term : vocab.getTerms()) {
+//                        if (term.getValue().equals(codeSystem)) {
+//                            addNew = false;
+//                            break;
+//                        }
+//                    }
+//                    if (addNew) {
+//                        Sneak.sneakyThrow(new Exception("Create code system '" + codeSystem+ "' within GSRS"));
+//
+////                        CodeSystemVocabularyTerm vt = new CodeSystemVocabularyTerm();
+////                        vt.display = codeSystem;
+////                        vt.value = codeSystem;
+////                        vt.hidden = true;
+////                        List<ControlledVocabulary> vocabs = repo.findByDomain(codeSystem);
+////                        vocab.getTerms().add(vt);
+////
+////                        repo.saveAndFlush(vocab);
+////                        log.trace("saved code system");
+//                    }
+//                }
+//            }
+//        };
+//        r.run();
+//    }
 
     @Override
     public void prePersist(Substance s) {
@@ -51,7 +118,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     }
 
     public void copyCodeIfNecessary(Substance s) {
-        if (codeSystem == null) {
+        if(codeSystem ==null){
             return;
         }
         initializer.getSync();
@@ -87,50 +154,6 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     public String getCodeSystem() {
         return codeSystem;
-    }
-
-    private void addCodeSystemIfNeeded(ControlledVocabularyApi api, String codeSystem, String cvDomain) {
-        log.trace("starting addCodeSystemIfNeeded");
-        try {
-            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain(cvDomain);
-
-            boolean addNew = true;
-            if (opt.isPresent()) {
-                log.trace("CV_DOMAIN found");
-                for (CodeSystemTermDTO term : ( opt.get()).getTerms()) {
-                    if (term.getValue().equals(codeSystem)) {
-                        addNew = false;
-                        break;
-                    }
-                }
-                log.trace("addNew: " + addNew);
-                if (addNew) {
-                    List<CodeSystemTermDTO> list = opt.get().getTerms().stream()
-                            .map(t -> (CodeSystemTermDTO) t).collect(Collectors.toList());
-                    list.add(CodeSystemTermDTO.builder()
-                            .display(codeSystem)
-                            .value(codeSystem)
-                            .hidden(true)
-                            .build());
-
-                    opt.get().setTerms(list);
-                    //the following line prevents an exception while saving the CV
-                    //todo: figure out why this is necessary
-                    opt.get().setVocabularyTermType("ix.ginas.models.v1.CodeSystemControlledVocabulary");
-                    api.update(opt.get());
-                    log.trace("saved updated CV");
-                }
-            }
-            else {
-                log.error("no code system CV found!");
-                //todo: throw an exception
-            }
-
-        } catch (IOException e) {
-            log.error("Error updating GSRS vocabulary: " + e.getMessage());
-            e.printStackTrace();
-        }
-
     }
 
 }
