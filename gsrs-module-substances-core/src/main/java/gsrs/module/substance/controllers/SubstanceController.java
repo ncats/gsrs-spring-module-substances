@@ -16,6 +16,7 @@ import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
@@ -260,11 +261,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private RendererOptionsConfig rendererOptionsConfig;
 
-    @Autowired
-    private SubstanceApprovalIdGenerator approvalIdGenerator;
+//    @Autowired
+//    private SubstanceApprovalIdGenerator approvalIdGenerator;
+//
+//    @Autowired
+//    private PrincipalRepository principalRepository;
 
     @Autowired
-    private PrincipalRepository principalRepository;
+    private ApprovalService approvalService;
+
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -919,58 +924,36 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Transactional
     @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
     @hasApproverRole
-    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters){
+    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
 
        Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
 
        if(!substance.isPresent()){
            return getGsrsControllerConfiguration().handleNotFound(queryParameters);
        }
-        approveSubstance(substance.get());
-       return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(substance.get(), queryParameters), HttpStatus.OK);
-    }
+       String[] error = new String[1];
+       GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {
+                   //The approval will throw an exception which we can propagate up
+                   //the result has other fields but we don't need to use them right now since we return the whole substance
+                   // but if we change the API to just have the approval specific update we have all that's needed in this result obj
 
-    private synchronized void approveSubstance(Substance s) {
-        //TODO move this to a service method
-        if (Substance.STATUS_APPROVED.equals(s.status)) {
-            throw new IllegalStateException("Cannot approve an approved substance");
-        }
-        Optional<String> loggedInUsername = GsrsSecurityUtils.getCurrentUsername();
-        if (!loggedInUsername.isPresent()) {
-            throw new IllegalStateException("Must be logged in user to approve substance");
-        }
+                   try {
+                       ApprovalService.ApprovalResult result = approvalService.approve(s);
 
-        if (s.lastEditedBy == null) {
-            throw new IllegalStateException(
-                    "There is no last editor associated with this record. One must be present to allow approval. Please contact your system administrator.");
-        } else {
-            if (s.lastEditedBy.username.equals(loggedInUsername.get())) {
-                throw new IllegalStateException(
-                        "You cannot approve a substance if you are the last editor of the substance.");
-            }
-        }
-        if (!s.isPrimaryDefinition()) {
-            throw new IllegalStateException("Cannot approve non-primary definitions.");
-        }
-        if (Substance.SubstanceClass.concept.equals(s.substanceClass)) {
-            throw new IllegalStateException("Cannot approve non-substance concepts.");
-        }
-        for (SubstanceReference sr : s.getDependsOnSubstanceReferences()) {
-            Optional<SubstanceRepository.SubstanceSummary> s2 = substanceRepository.findSummaryBySubstanceReference(sr);
-            if (!s2.isPresent()) {
-                throw new IllegalStateException("Cannot approve substance that depends on " + sr.toString()
-                        + " which is not found in database.");
-            }
-            if (!s2.get().isValidated()) {
-                throw new IllegalStateException(
-                        "Cannot approve substance that depends on " + sr.toString() + " which is not approved.");
-            }
-        }
+                       return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
+                   } catch (ApprovalService.ApprovalException e) {
+                       error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
+                       return Optional.empty();
+                   }
+               });
 
-        s.approvalID = approvalIdGenerator.generateId(s);
-        s.approved = TimeUtil.getCurrentDate();
-        s.approvedBy = principalRepository.findDistinctByUsernameIgnoreCase(loggedInUsername.get());
-        s.status = Substance.STATUS_APPROVED;
+        if(error[0] !=null){
+            return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
+        }
+        if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
+            return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
+        }
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(savedVersion.getUpdatedEntity(), queryParameters), HttpStatus.OK);
     }
 
 

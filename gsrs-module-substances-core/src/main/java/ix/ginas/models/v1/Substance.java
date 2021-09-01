@@ -88,6 +88,32 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         setIsDirty("codes");
     }
 
+    /**
+     * Mark this Substance as Approved.
+     * This method will set the status to {@link #STATUS_APPROVED},
+     * and set the passed in approval ID, the approval Date and the person who approved it.
+     * Any JPA dirty tracking is also correctly set by calling this method.
+     *
+     * @param approvalID the approval ID to use.
+     * @param approvedDate the Date this was approved.
+     * @param approvedBy who approved it.
+     *
+     * @throws NullPointerException if any of these parameters are null.
+     */
+    public void markApproved(String approvalID, Date approvedDate, Principal approvedBy) {
+        this.approved = Objects.requireNonNull(approvedDate);
+        this.approvalID = Objects.requireNonNull(approvalID);
+        this.approvedBy = Objects.requireNonNull(approvedBy);
+        this.status = Substance.STATUS_APPROVED;
+
+        this.setIsDirty("approved");
+        this.setIsDirty("approvalID");
+        this.setIsDirty("approvedBy");
+        this.setIsDirty("status");
+
+        this.forceUpdate();
+    }
+
     public enum SubstanceClass {
         chemical,
         protein,
