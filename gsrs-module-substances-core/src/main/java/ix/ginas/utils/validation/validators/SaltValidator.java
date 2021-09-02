@@ -1,12 +1,8 @@
 package ix.ginas.utils.validation.validators;
 
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
-import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.springUtils.AutowireHelper;
-import ix.core.search.SearchOptions;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Amount;
@@ -14,35 +10,33 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
+import ix.ginas.utils.validation.DefHashCalcRequirements;
+import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
  * @author Mitch Miller
+ * 
+ * methods that search for def hash duplicate candidates have been moved to
+ * ValidationUtils so that those methods can be called from other classes. 18 August 2021
  */
 @Slf4j
 public class SaltValidator extends AbstractValidatorPlugin<Substance> {
 
     public SaltValidator() {
-        if (definitionalElementFactory == null) {
-            AutowireHelper.getInstance().autowire(this);
-        }
     }
-
-    @Autowired(required = true)
-    private DefinitionalElementFactory definitionalElementFactory;
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
+    
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
 
     @Autowired
     private SubstanceLegacySearchService searchService;
@@ -53,17 +47,21 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
             return;
         }
         ChemicalSubstance substance = (ChemicalSubstance) substanceORIG;
-
-        log.trace("starting in SaltValidator.validate");
+        
         //is this a salt?
         log.trace("starting in SaltValidator.validate. substance.moieties.size() " + substance.moieties.size());
         if (substance.moieties.size() > 1) {
             List<String> smilesWithoutMatch = new ArrayList();
             List<String> smilesWithPartialMatch = new ArrayList();
 
-            for (Moiety moiety : substance.moieties) {
+            if( definitionalElementFactory == null ) {
+                log.warn("definitionalElementFactory null!");
+                AutowireHelper.getInstance().autowire(this);
+            }
+            substance.moieties.stream().map((moiety) -> {
                 log.trace("Looking up moiety with SMILES " + moiety.structure.smiles);
-
+                return moiety;
+            }).forEachOrdered((moiety) -> {
                 ChemicalSubstance moietyChemical = new ChemicalSubstance();
                 moietyChemical.setStructure(moiety.structure);
                 //clone the moiety and set fixed values so that we avoid flagging a moiety as not matching
@@ -75,15 +73,14 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
                 cloneAmount.type = "MOL RATIO";
                 clone.setCountAmount(cloneAmount);
                 moietyChemical.moieties.add(clone);
-
-                List<Substance> layer1Matches = findDefinitionaLayer1lDuplicateCandidates(moietyChemical);
+                List<Substance> layer1Matches = ValidationUtils.findDefinitionaLayer1lDuplicateCandidates(moietyChemical, 
+                        new DefHashCalcRequirements(definitionalElementFactory, searchService, transactionManager));
                 log.trace("(SaltValidator) total layer1 matches: " + layer1Matches.size());
-
                 //skip the look-up of full matches when there are no layer1 matches
                 List<Substance> fullMatches = (layer1Matches.isEmpty()) ? new ArrayList()
-                        : findFullDefinitionalDuplicateCandidates(moietyChemical);
+                        : ValidationUtils.findFullDefinitionalDuplicateCandidates(moietyChemical,
+                                new DefHashCalcRequirements(definitionalElementFactory, searchService, transactionManager));
                 log.trace("(SaltValidator) total full matches: " + fullMatches.size());
-
                 if (fullMatches.isEmpty()) {
                     if (layer1Matches.isEmpty()) {
                         smilesWithoutMatch.add(moiety.structure.smiles);
@@ -92,7 +89,7 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
                         smilesWithPartialMatch.add(moiety.structure.smiles);
                     }
                 }
-            }
+            });
 
             if (!smilesWithoutMatch.isEmpty()) {
                 smilesWithoutMatch.forEach(s -> {
@@ -111,85 +108,6 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
                 log.trace("all moieties are present in the database");
             }
         }
-    }
-
-    public List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance) {
-        DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
-        int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
-        Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
-        System.out.println("findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
-        return findLayerNDefinitionalDuplicateCandidates(substance, layer);
-    }
-
-    public List<Substance> findDefinitionaLayer1lDuplicateCandidates(Substance substance) {
-//        if (definitionalElementFactory == null) {
-//            AutowireHelper.getInstance().autowire(this);
-//        }
-        int layer = 0;
-        return findLayerNDefinitionalDuplicateCandidates(substance, layer);
-    }
-
-    public List<Substance> findLayerNDefinitionalDuplicateCandidates(Substance substance, int layer) {
-        List<Substance> candidates = new ArrayList<>();
-        try {
-            //SearchRequest.Builder searchBuilder = new SearchRequest.Builder();
-            DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
-            //List<String> hashes= substance.getDefinitionalElements().getDefinitionalHashLayers();
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
-            System.out.println("findFullDefinitionalDuplicateCandidates handling layer: " + (layer + 1));
-            String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
-                    + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "layer query: " + searchItem);
-
-            TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-            candidates = (List<Substance>) transactionSearch.execute(ts
-                    -> {
-                List<String> nameValues = new ArrayList<>();
-                SearchRequest request = new SearchRequest.Builder()
-                        .kind(Substance.class)
-                        .fdim(0)
-                        .query(searchItem)
-                        .top(Integer.MAX_VALUE)
-                        .build();
-                System.out.println("built query: " + request.getQuery());
-                try {
-                    SearchOptions options = new SearchOptions();
-                    SearchResult sr = searchService.search(request.getQuery(), options);
-                    sr.waitForFinish();
-                    List fut = sr.getMatches();
-                    List<Substance> hits = (List<Substance>) fut.stream()
-                            .map(s -> (Substance) s)
-                            .collect(Collectors.toList());
-                    return hits;
-                } catch (Exception ex) {
-                    System.err.println("error during search");
-                    ex.printStackTrace();
-                }
-                return nameValues;
-            });
-            //nameValues.forEach(n -> System.out.println(n));
-            //        });
-            //
-            //			SearchResult sres = searchBuilder
-            //							.kind(Substance.class)
-            //							.fdim(0)
-            //							.build()
-            //                    .
-            //							.execute();
-            //			sres.waitForFinish();
-            /*List<Substance> submatches = (List<Substance>) sres.getMatches();
-			Logger.getLogger(this.getClass().getName()).log(Level.FINE, "total submatches: " + submatches.size());
-
-			for (int i = 0; i < submatches.size(); i++)	{
-				Substance s = submatches.get(i);
-				if (!s.getUuid().equals(substance.getUuid()))	{
-					candidates.add(s);
-				}
-			}*/
-        } catch (Exception ex) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error running query", ex);
-        }
-        return candidates;
     }
 
 }
