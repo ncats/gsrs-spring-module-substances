@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -61,7 +62,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private ObjectMapper objectMapper;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupService groupRepository;
 
 //    @Autowired
 //    private CvSearchService searchService;

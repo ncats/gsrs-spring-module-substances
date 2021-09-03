@@ -2,6 +2,7 @@ package gsrs.module.substance.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.events.CodeCreatedEvent;
 import gsrs.module.substance.events.CodeUpdatedEvent;
 import gsrs.module.substance.repository.CodeRepository;
@@ -10,14 +11,18 @@ import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.GroupRepository;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
+import ix.core.models.Group;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.IdGeneratorForType;
 import ix.utils.Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -27,17 +32,24 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
 public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     public static final String  CONTEXT = "codes";
+
+    private static final String SYSTEM_GENERATED_CODE = "System Generated Code";
+
+    private static final String SYSTEM = "SYSTEM";
 
 
     public CodeEntityService() {
@@ -51,7 +63,10 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupService groupService;
+
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
+    private EntityManager entityManager;
 
 //    @Autowired
 //    private CvSearchService searchService;
@@ -68,7 +83,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     }
 
     private  GinasProcessingStrategy createAcceptApplyAllStrategy() {
-        return new GinasProcessingStrategy(groupRepository) {
+        return new GinasProcessingStrategy(groupService) {
             @Override
             public void processMessage(GinasProcessingMessage gpm) {
                 if (gpm.suggestedChange) {
@@ -254,7 +269,40 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
         return Optional.empty();
     }
 
+    @Transactional
+    public Code createNewCode(Substance substance, String codeSystem, String code){
+        Code newCode = new Code(codeSystem, code);
+        substance.addCode(newCode);
+        entityManager.merge(newCode);
+        return newCode;
+    }
+    @Transactional
+    public Code createNewSystemCode(Substance substance, String codeSystem, Function<Code, String> idGenerator,
+                                    String... groups){
+        Code c = new Code();
+        c.codeSystem=codeSystem;
+        c.code=idGenerator.apply(c);
+        c.type="PRIMARY";
 
+        Reference r = new Reference();
+        r.docType=SYSTEM;
+        r.citation=SYSTEM_GENERATED_CODE;
+        if(groups !=null) {
+            for (String groupName : groups) {
+                if (groupName == null) {
+                    continue;
+                }
+                Group g = groupService.registerIfAbsent(groupName);
+                r.addRestrictGroup(g);
+                c.addRestrictGroup(g);
+            }
+        }
+        substance.addCode(c);
+        c.addReference(r, substance);
+        entityManager.merge(c);
+        entityManager.merge(r);
+        return c;
+    }
 
 
 }

@@ -2,6 +2,7 @@ package gsrs.module.substance.processors;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.cv.api.*;
+import gsrs.module.substance.services.CodeEntityService;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
@@ -32,6 +33,9 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
     @Autowired
     private ControlledVocabularyApi api;
+
+    @Autowired
+    private CodeEntityService codeEntityService;
 
 
     private void addCodeSystemIfNeeded(){
@@ -140,8 +144,8 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
                 }
             }
             if (needCode) {
-                Code newCode = new Code(codeSystem, s.approvalID);
-                s.addCode(newCode);
+                codeEntityService.createNewCode(s, codeSystem, s.approvalID);
+
                 log.trace("Added new code for approvalId");
             }
         }

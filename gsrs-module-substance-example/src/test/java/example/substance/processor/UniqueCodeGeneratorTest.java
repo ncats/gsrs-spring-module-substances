@@ -30,6 +30,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -55,7 +56,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         }
     }
 
-    @Autowired(required = true)
+    @Autowired
     private ControlledVocabularyApi controlledVocabularyApi;
 
     private final String codeSystemName = "NCATSID";
@@ -130,6 +131,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
+//    @Transactional
     public void testAddCode() {
         Map<String, Object> instantiationMap = new HashMap<>();
         instantiationMap.put("name", "whatever");
