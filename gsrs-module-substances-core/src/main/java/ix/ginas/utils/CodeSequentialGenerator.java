@@ -28,17 +28,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
-	private static final String SYSTEM_GENERATED_CODE = "System Generated Code";
-
-    private static final String SYSTEM = "SYSTEM";
 
     private static final String GROUP_PROTECTED = "protected";
 
     @Autowired
 	private CodeRepository codeRepository;
-
-	@Autowired
-	private GroupService groupService;
 
 	@Autowired
 	private CodeEntityService codeEntityService;
@@ -124,17 +118,6 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	}
 	public Code addCode(Substance s){
 		return codeEntityService.createNewSystemCode(s, this.codeSystem,c-> this.generateID(),GROUP_PROTECTED);
-//		Code c=getCode();
-//		s.addCode(c);
-//		Reference r = new Reference();
-//		r.docType=SYSTEM;
-//		r.citation=SYSTEM_GENERATED_CODE;
-//
-//		Group g = groupService.registerIfAbsent(GROUP_PROTECTED);
-//		r.addRestrictGroup(g);
-//		c.addRestrictGroup(g);
-//		c.addReference(r, s);
-//		return c;
 	}
 
 	@Override

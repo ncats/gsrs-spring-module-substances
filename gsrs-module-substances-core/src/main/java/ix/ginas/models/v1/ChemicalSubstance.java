@@ -125,13 +125,24 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     @JsonIgnore
     @Indexable(indexed=false, structure=true)
     public String getStructureMolfile(){
-        return getStructure().molfile;
+
+        GinasChemicalStructure structure = getStructure();
+        if(structure ==null){
+            return null;
+        }
+        return structure.molfile;
     }
 
     @JsonIgnore
     @Indexable(name = "Molecular Weight", dranges = { 0, 200, 400, 600, 800, 1000 }, format = "%1$.0f", facet=true)
-    public double getMolecularWeight(){
-        return getStructure().mwt;
+    public Double getMolecularWeight(){
+        GinasChemicalStructure structure = getStructure();
+        if(structure ==null){
+            //this shouldn't happen?
+            return null;
+
+        }
+        return structure.mwt;
     }
 
 

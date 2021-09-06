@@ -231,6 +231,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<Code> flexLookup(String someKindOfId) {
         if(someKindOfId==null){
             return Optional.empty();
@@ -273,7 +274,6 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     public Code createNewCode(Substance substance, String codeSystem, String code){
         Code newCode = new Code(codeSystem, code);
         substance.addCode(newCode);
-        entityManager.merge(newCode);
         return newCode;
     }
     @Transactional
@@ -299,8 +299,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
         }
         substance.addCode(c);
         c.addReference(r, substance);
-        entityManager.merge(c);
-        entityManager.merge(r);
+
         return c;
     }
 

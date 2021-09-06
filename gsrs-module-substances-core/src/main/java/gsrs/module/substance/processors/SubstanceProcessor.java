@@ -55,7 +55,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
     }
 
 
-    public void addWaitingRelationships(Substance obj){
+    private void addWaitingRelationships(Substance obj){
 
         List<Relationship> refrel = relationshipRepository.findByRelatedSubstance_Refuuid(obj.getOrGenerateUUID().toString());
 
@@ -160,7 +160,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             //which might have the change reason set so force it to be null for new inserts
             s.changeReason=null;
 
-        addWaitingRelationships(s);
+            addWaitingRelationships(s);
     }
     }
 
@@ -171,8 +171,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         savingSubstance(obj, false);
     }
 
-    @Override
-    public void preRemove(Substance obj) {}
+
 
 
 

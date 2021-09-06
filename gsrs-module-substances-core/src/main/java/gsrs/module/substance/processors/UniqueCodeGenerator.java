@@ -7,6 +7,7 @@ import ix.core.EntityProcessor;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.CodeSequentialGenerator;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import java.util.Map;
@@ -32,8 +33,6 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
     @Autowired
     private ControlledVocabularyApi cvApi;
 
-    @Autowired
-    private PlatformTransactionManager transactionManager;
 
     public UniqueCodeGenerator(Map with) {
         log.trace("UniqueCodeGenerator constructor with Map");
@@ -53,17 +52,15 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
                 return gen;
             });
         }
-//        try {
-//            initializer.getSync();
-//        } catch (Exception e) {
-//            log.warn("Error initializing codesystem generator, will be attempted again as needed");
-//        }
-        //addCodeSystem();
     }
 
     private void addCodeSystem() {
         log.trace("addCodeSystem and gone");
-        addCodeSystemIfNecessary(cvApi, codeSystem, CODE_SYSTEM_VOCABULARY);
+        try {
+            addCodeSystemIfNecessary();
+        }catch(Throwable t){
+            t.printStackTrace();
+        }
     }
 
     public void generateCodeIfNecessary(Substance s) {
@@ -107,11 +104,11 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         return Substance.class;
     }
 
-    private void addCodeSystemIfNecessary(ControlledVocabularyApi api, String codeSystem, String cvDomain) {
-        log.trace("starting addCodeSystemIfNecessary. cvDomain: " + cvDomain + "; codeSystem: " + codeSystem);
+    private void addCodeSystemIfNecessary() {
+        log.trace("starting addCodeSystemIfNecessary. cvDomain: " + CODE_SYSTEM_VOCABULARY + "; codeSystem: " + codeSystem);
         
         try {
-            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain(cvDomain);
+            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = cvApi.findByDomain(CODE_SYSTEM_VOCABULARY);
 
             boolean addNew = true;
             if (opt.isPresent()) {
@@ -134,16 +131,25 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
                             .build());
 
                     opt.get().setTerms(list);
-                    //the following line prevents an exception while saving the CV
-                    //todo: figure out why this is necessary
-                    opt.get().setVocabularyTermType("ix.ginas.models.v1.ControlledVocabulary");
-                    api.update(opt.get());
+
+                    cvApi.update(opt.get());
                     log.trace("saved updated CV");
                 }
             }
             else {
                 log.error("no code system CV found!");
-                //todo: throw an exception
+                //create it ?
+                GsrsCodeSystemControlledVocabularyDTO dto =  GsrsCodeSystemControlledVocabularyDTO.builder()
+                        .domain(CODE_SYSTEM_VOCABULARY)
+
+                        .terms(Arrays.asList(  CodeSystemTermDTO.builder()
+                                .display(codeSystem)
+                                .value(codeSystem)
+                                .hidden(true)
+                                .build()))
+                        .build();
+                cvApi.create(dto);
+                log.trace("created CV");
             }
 
         } catch (IOException e) {
