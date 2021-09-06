@@ -53,14 +53,14 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     }
     @BeforeEach
     public void setup(){
-        processor = new ApprovalIdProcessor();
+        processor = new ApprovalIdProcessor(null);
         processor.setCodeSystem("FDA UNII");
 
         AutowireHelper.getInstance().autowire(processor);
     }
 
     /**
-    the substance read in from file has an approval ID but no corrresponding code.  We expect one to be created
+    the substance read in from file has an approval ID but no corresponding code.  We expect one to be created
      */
     @Test
     public void testCopyCodeIfNecessary() throws IOException {

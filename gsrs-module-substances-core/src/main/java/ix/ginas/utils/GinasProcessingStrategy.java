@@ -1,6 +1,7 @@
 package ix.ginas.utils;
 
 import gsrs.repository.GroupRepository;
+import gsrs.services.GroupService;
 import ix.core.models.Group;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.ValidationMessageHolder;
@@ -15,9 +16,9 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 	public static final String WARNING = "WARNING";
 	public static final String FAIL_REASON = "FAIL_REASON";
 
-	private final GroupRepository groupRepository;
+	private final GroupService groupRepository;
 
-	public GinasProcessingStrategy(GroupRepository groupRepository){
+	public GinasProcessingStrategy(GroupService groupRepository){
 		this.groupRepository = Objects.requireNonNull(groupRepository);
 	}
 	//TODO: add messages directly here
@@ -173,13 +174,7 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 	}
 
 	public Group getGroupByName(String groupName, Map<String, Group> cache){
-		return cache.computeIfAbsent(groupName, n-> {
-			Group g = groupRepository.findByName(n);
-			if (g == null) {
-				g = new Group(n);
-			}
-			return g;
-		});
+		return groupRepository.registerIfAbsent(groupName);
 	}
 
 	public void addProblems(Substance cs, List<GinasProcessingMessage> list) {

@@ -16,6 +16,7 @@ import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.utils.CodeSequentialGenerator;
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +31,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -55,7 +58,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         }
     }
 
-    @Autowired(required = true)
+    @Autowired
     private ControlledVocabularyApi controlledVocabularyApi;
 
     private final String codeSystemName = "NCATSID";
@@ -81,7 +84,6 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         GsrsCodeSystemControlledVocabularyDTO vocab = GsrsCodeSystemControlledVocabularyDTO.builder()
                 .domain(CV_DOMAIN)
                 .terms(list)
-                .vocabularyTermType("ix.ginas.models.v1.ControlledVocabulary")
                 .build();
 
         controlledVocabularyApi.create(vocab);
@@ -114,22 +116,24 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
 
         //verify that a call to the constructor of the class results in a new term added to the CV
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
-        uniqueCodeGenerator.generateCodeIfNecessary(substance);
-        boolean anyMatch = false;
-        try {
-            //now check for a CV term with the expected value
-            Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
-            anyMatch = cvOpt.get().getTerms().stream().anyMatch(t -> t.getValue().equals(codeSystemName));
 
-        } catch (IOException ex) {
-            log.error("Error during cv retrieval", ex);
-        }
+        TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
+        transactionTemplate.executeWithoutResult(s->{
+                    ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+                    uniqueCodeGenerator.generateCodeIfNecessary(substance);
+                    try {
+                        Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
+                        Assertions.assertTrue(cvOpt.get().getTerms().stream().anyMatch(t -> t.getValue().equals(codeSystemName)));
+                    }catch(IOException e){
+                        throw new UncheckedIOException(e);
+                    }
+                }
+        );
 
-        Assertions.assertTrue(anyMatch);
     }
 
     @Test
+//    @Transactional
     public void testAddCode() {
         Map<String, Object> instantiationMap = new HashMap<>();
         instantiationMap.put("name", "whatever");

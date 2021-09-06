@@ -2,6 +2,7 @@ package gsrs.module.substance.processors;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.cv.api.*;
+import gsrs.module.substance.services.CodeEntityService;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -33,17 +35,24 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
     @Autowired
     private ControlledVocabularyApi api;
 
+    @Autowired
+    private CodeEntityService codeEntityService;
 
+    public ApprovalIdProcessor(Map with){
+        if( with != null && with.containsKey("codeSystem")) {
+            codeSystem = (String) with.get("codeSystem");
+        }
+    }
     private void addCodeSystemIfNeeded(){
         if(codeSystem ==null){
             return;
         }
         try {
-            Optional<AbstractGsrsControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
+            Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
 
         boolean addNew=true;
         if(opt.isPresent()){
-            for(GsrsVocabularyTermDTO term : ((GsrsControlledVocabularyDTO)opt.get()).getTerms()){
+            for(GsrsVocabularyTermDTO term : opt.get().getTerms()){
                 if (term.getValue().equals(codeSystem)) {
                     addNew = false;
                     break;
@@ -52,17 +61,29 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         }
 
         if(addNew) {
-            List<CodeSystemTermDTO> list = new ArrayList<>();
-            list.add(CodeSystemTermDTO.builder()
-                    .display(codeSystem)
-                    .value(codeSystem)
-                    .hidden(true)
-                    .build());
+            if(!opt.isPresent()) {
+                List<CodeSystemTermDTO> list = new ArrayList<>();
+                list.add(CodeSystemTermDTO.builder()
+                        .display(codeSystem)
+                        .value(codeSystem)
+                        .hidden(true)
+                        .build());
 
-            api.create(GsrsCodeSystemControlledVocabularyDTO.builder()
-                    .domain("CODE_SYSTEM")
-                    .terms(list)
-                    .build());
+                api.create(GsrsCodeSystemControlledVocabularyDTO.builder()
+                        .domain("CODE_SYSTEM")
+                        .terms(list)
+                        .build());
+            }else{
+                //append to list
+                List<CodeSystemTermDTO> list = new ArrayList<>(opt.get().getTerms());
+                list.add(CodeSystemTermDTO.builder()
+                        .display(codeSystem)
+                        .value(codeSystem)
+                        .hidden(true)
+                        .build());
+                opt.get().setTerms(list);
+                api.update(opt.get());
+            }
 
         }
         } catch (IOException e) {
@@ -140,8 +161,8 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
                 }
             }
             if (needCode) {
-                Code newCode = new Code(codeSystem, s.approvalID);
-                s.addCode(newCode);
+                codeEntityService.createNewCode(s, codeSystem, s.approvalID);
+
                 log.trace("Added new code for approvalId");
             }
         }

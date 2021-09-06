@@ -104,10 +104,10 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         testEntityProcessorFactory.addEntityProcessor(substanceProcessor);
         testEntityProcessorFactory.addEntityProcessor(relationshipProcessor);
         testEntityProcessorFactory.addEntityProcessor(referenceProcessor);
-
-        AutowireHelper.getInstance().autowire(substanceProcessor);
-        AutowireHelper.getInstance().autowire(relationshipProcessor);
-        AutowireHelper.getInstance().autowire(referenceProcessor);
+//
+//        AutowireHelper.getInstance().autowire(substanceProcessor);
+//        AutowireHelper.getInstance().autowire(relationshipProcessor);
+//        AutowireHelper.getInstance().autowire(referenceProcessor);
 
     }
     

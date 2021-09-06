@@ -4,6 +4,8 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import gsrs.module.substance.services.CodeEntityService;
+import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -26,9 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
-	private static final String SYSTEM_GENERATED_CODE = "System Generated Code";
-
-    private static final String SYSTEM = "SYSTEM";
 
     private static final String GROUP_PROTECTED = "protected";
 
@@ -36,19 +35,13 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	private CodeRepository codeRepository;
 
 	@Autowired
-	private GroupRepository groupRepository;
+	private CodeEntityService codeEntityService;
 	
 	@Autowired
 	private PlatformTransactionManager  transactionManager;
 
 	
-	CachedSupplier<Group> protectedGroup = CachedSupplier.of(()->{
-	    Group g= groupRepository.findByName(GROUP_PROTECTED);
-	    if(g ==null){
-            g= new Group(GROUP_PROTECTED);
-        }
-	    return g;
-	});
+
 	
 	private final CachedSupplier<AtomicLong> lastNum;
 	private String codeSystem;
@@ -124,17 +117,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		return c;
 	}
 	public Code addCode(Substance s){
-		Code c=getCode();
-		s.addCode(c);
-		Reference r = new Reference();
-		r.docType=SYSTEM;
-		r.citation=SYSTEM_GENERATED_CODE;
-		
-		Group g = protectedGroup.get();		
-		r.addRestrictGroup(g);
-		c.addRestrictGroup(g);
-		c.addReference(r, s);
-		return c;
+		return codeEntityService.createNewSystemCode(s, this.codeSystem,c-> this.generateID(),GROUP_PROTECTED);
 	}
 
 	@Override

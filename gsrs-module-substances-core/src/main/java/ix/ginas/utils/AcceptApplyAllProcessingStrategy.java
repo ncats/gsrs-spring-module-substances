@@ -1,12 +1,13 @@
 package ix.ginas.utils;
 
 import gsrs.repository.GroupRepository;
+import gsrs.services.GroupService;
 import ix.core.validator.GinasProcessingMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class AcceptApplyAllProcessingStrategy extends GinasProcessingStrategy{
     @Autowired
-    public AcceptApplyAllProcessingStrategy(GroupRepository groupRepository) {
+    public AcceptApplyAllProcessingStrategy(GroupService groupRepository) {
         super(groupRepository);
     }
 

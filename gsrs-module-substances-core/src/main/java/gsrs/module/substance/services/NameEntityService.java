@@ -10,6 +10,7 @@ import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.repository.GroupRepository;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
@@ -51,7 +52,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     private ObjectMapper objectMapper;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private GroupService groupRepository;
 
 //    @Autowired
 //    private CvSearchService searchService;
