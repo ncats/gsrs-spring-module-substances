@@ -142,7 +142,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         if(codeSystem ==null){
             return;
         }
-        initializer.getSync();
+        //initializer.getSync();
         log.trace("copyCodeIfNecessary. codeSystem: " + codeSystem);
         if (s.approvalID != null && s.approvalID.length() > 0) {
             log.trace("handling approval ID " + s.approvalID);
