@@ -70,6 +70,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
             for (Code c : s.codes) {
                 if (c.codeSystem.equals(codeSequentialGenerator.getCodeSystem())) {
                     hasCode = true;
+                    log.trace("found!");
                     break;
                 }
             }

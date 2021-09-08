@@ -36,7 +36,8 @@ public class ApprovalIdConfiguration {
     public SubstanceApprovalIdGenerator substanceApprovalIdGenerator(){
         if(generatorClass ==null){
             //no generator specified use default
-            return new DefaultApprovalIDGenerator("GID", 8,true, "GID-");
+            return new DefaultApprovalIDGenerator("GID", 8,true, null);//used to be 'GID-' but that was causing errors when the resulting ID
+            // was stored in the DB
         }
         ObjectMapper mapper = new ObjectMapper();
 

@@ -3,14 +3,11 @@ package example.substance.processor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import gsrs.cv.ControlledVocabularyEntityService;
 import gsrs.cv.ControlledVocabularyEntityServiceImpl;
 import gsrs.cv.CvApiAdapter;
 import gsrs.cv.api.ControlledVocabularyApi;
-import gsrs.repository.ControlledVocabularyRepository;
 import gsrs.springUtils.AutowireHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

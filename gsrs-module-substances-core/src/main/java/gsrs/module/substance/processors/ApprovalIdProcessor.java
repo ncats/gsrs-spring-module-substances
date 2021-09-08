@@ -127,8 +127,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
             }
             if (needCode) {
                 codeEntityService.createNewCode(s, codeSystem, s.approvalID);
-
-                log.trace("Added new code for approvalId");
+                log.trace("Added new code for approvalId. system: " + codeSystem + "; code: " + s.approvalID);
             }
         }
     }
