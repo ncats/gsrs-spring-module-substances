@@ -91,41 +91,6 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         }
 
     }
-//    private void addCodeSystem()  {
-//        Runnable r = new Runnable() {
-//            @Override
-//            public void run() {
-//                log.trace("in addCodeSystem.run");
-//                if (codeSystem != null) {
-//                    Optional<GsrsCodeSystemControlledVocabularyDTO> cvvOpt;
-//                    List<ControlledVocabulary> vocabList = repo.findByDomain("CODE_SYSTEM");
-//                    log.trace("vocabList size: " + vocabList.size());
-//                    ControlledVocabulary vocab = vocabList.get(0);
-//                    boolean addNew = true;
-//                    for (VocabularyTerm term : vocab.getTerms()) {
-//                        if (term.getValue().equals(codeSystem)) {
-//                            addNew = false;
-//                            break;
-//                        }
-//                    }
-//                    if (addNew) {
-//                        Sneak.sneakyThrow(new Exception("Create code system '" + codeSystem+ "' within GSRS"));
-//
-////                        CodeSystemVocabularyTerm vt = new CodeSystemVocabularyTerm();
-////                        vt.display = codeSystem;
-////                        vt.value = codeSystem;
-////                        vt.hidden = true;
-////                        List<ControlledVocabulary> vocabs = repo.findByDomain(codeSystem);
-////                        vocab.getTerms().add(vt);
-////
-////                        repo.saveAndFlush(vocab);
-////                        log.trace("saved code system");
-//                    }
-//                }
-//            }
-//        };
-//        r.run();
-//    }
 
     @Override
     public void prePersist(Substance s) {
@@ -142,7 +107,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         if(codeSystem ==null){
             return;
         }
-        //initializer.getSync();
+        initializer.getSync();
         log.trace("copyCodeIfNecessary. codeSystem: " + codeSystem);
         if (s.approvalID != null && s.approvalID.length() > 0) {
             log.trace("handling approval ID " + s.approvalID);

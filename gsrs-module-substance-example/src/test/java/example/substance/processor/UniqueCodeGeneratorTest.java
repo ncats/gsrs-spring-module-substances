@@ -31,7 +31,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 /**
@@ -62,7 +61,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
     private ControlledVocabularyApi controlledVocabularyApi;
 
     private final String codeSystemName = "NCATSID";
-    
+
     @BeforeEach
     public void setup() throws IOException {
         log.trace("starting in setup");
@@ -107,27 +106,55 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
     @Test
     public void testCreateCodeSystem() {
         Map<String, Object> instantiationMap = new HashMap<>();
+        Integer codeLength = 9;
         instantiationMap.put("name", "whatever");
         instantiationMap.put("suffix", "OO");
-        instantiationMap.put("length", 9);
+        instantiationMap.put("length", codeLength);
         instantiationMap.put("codesystem", codeSystemName);
         instantiationMap.put("padding", true);
         UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
 
         //verify that a call to the constructor of the class results in a new term added to the CV
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+            ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+            uniqueCodeGenerator.generateCodeIfNecessary(substance);
+            try {
+                boolean match = substance.codes.stream()
+                        .anyMatch(c -> c.codeSystem.equals(codeSystemName) && c.code.length() == codeLength);
+                Assertions.assertTrue(match);
+                Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
+                Assertions.assertTrue(cvOpt.get().getTerms().stream().anyMatch(t -> t.getValue().equals(codeSystemName)));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        }
+        );
 
-        TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
-        transactionTemplate.executeWithoutResult(s->{
-                    ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
-                    uniqueCodeGenerator.generateCodeIfNecessary(substance);
-                    try {
-                        Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
-                        Assertions.assertTrue(cvOpt.get().getTerms().stream().anyMatch(t -> t.getValue().equals(codeSystemName)));
-                    }catch(IOException e){
-                        throw new UncheckedIOException(e);
-                    }
-                }
+    }
+
+    @Test
+    public void testCreateCodeSystemNoPadding() {
+        Integer codeLength = 9;
+        Map<String, Object> instantiationMap = new HashMap<>();
+        instantiationMap.put("name", "whatever");
+        instantiationMap.put("suffix", "OO");
+        instantiationMap.put("length", codeLength);
+        instantiationMap.put("codesystem", codeSystemName);
+        instantiationMap.put("padding", false);
+        UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
+        AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
+
+        //verify that a call to the constructor of the class results in a new term added to the CV
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+            ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+            uniqueCodeGenerator.generateCodeIfNecessary(substance);
+            boolean match = substance.codes.stream()
+                    .anyMatch(c -> c.codeSystem.equals(codeSystemName) && c.code.length() < codeLength);
+            Assertions.assertTrue(match);
+        }
         );
 
     }
@@ -165,18 +192,17 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         //manually create a code
         Code newCode = new Code();
-        newCode.codeSystem= codeSystemName;
-        newCode.code="Blah";
-        newCode.type="PRIMAY";
+        newCode.codeSystem = codeSystemName;
+        newCode.code = "Blah";
+        newCode.type = "PRIMAY";
         substance.codes.add(newCode);
         int totalBefore = substance.codes.size();
-        
+
         uniqueCodeGenerator.prePersist(substance);
         int totalAfter = substance.codes.size();
-        
+
         Assertions.assertEquals(totalBefore, totalAfter);
     }
-
 
     private ProteinSubstance getSubstanceFromFile(String name) {
         try {
