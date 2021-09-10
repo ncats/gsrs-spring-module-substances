@@ -90,11 +90,11 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		    txTemplate.setReadOnly(true);
 		    txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
 		    return txTemplate.execute(status -> {
-		        try (Stream<Code> codesByCodeSystemAndCodeLike = getCodeRepository().findCodesByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
+		        try (Stream<String> codesByCodeSystemAndCodeLike = getCodeRepository().findCodeByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
 	                String lastCode = codesByCodeSystemAndCodeLike
-	                        .map(Code::getCode)
+//	                        .map(Code::getCode)
 				//TODO fix this. It's inefficient and also probably a source of lots of issues
-				.peek(c->System.out.println("CODE:" + c));
+//				.peek(c->System.out.println("CODE:" + c))
 	                        .max(getCodeSystemComparator())
 	                        .orElse("0" + suffix);
 	                return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
