@@ -229,6 +229,27 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
+    public void testSearchByCodeSystemFacets() {
+        String codeSystem1 = "DRUG CENTRAL";
+        List<String> expectedIds = Arrays.asList("302cedcc-895f-421c-acf4-1348bbdb31f4", "79dbcc59-e887-40d1-a0e3-074379b755e4",
+                "deb33005-e87e-4e7f-9704-d5b4c80d3023", "5b611b0d-b798-45ed-ba02-6f0a2f85986b",
+                "306d24b9-a6b8-4091-8024-02f9ec24b705", "90e9191d-1a81-4a53-b7ee-560bf9e68109");
+        Collections.sort(expectedIds);//use default sort order
+
+        SearchRequest request = new SearchRequest.Builder()
+                .kind(Substance.class)
+                .fdim(10)
+                .query("root_codes_codeSystem:\"" + codeSystem1 + "\"")
+                .top(Integer.MAX_VALUE)
+                .build();
+          List < String > facetNames = getSearchFacetNames(request);
+
+        System.out.println("facetNames size: " + facetNames.size());
+        facetNames.forEach(n-> System.out.println("facet: " + n));
+        assertTrue(facetNames.contains(codeSystem1));
+    }
+
+    @Test
     public void testSearchForChemicals() {
         String substanceClass = "chemical";
         int expectedNumber = 9;
@@ -300,6 +321,20 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
             }
         });
         return substances;
+    }
+
+    private List<String> getSearchFacetNames(SearchRequest sr) {
+        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+        return transactionSearch.execute(ts -> {
+            try {
+                SearchResult sresult = searchService.search(sr.getQuery(), sr.getOptions());
+                return sresult.getFacets().stream()
+                        .map(f -> f.getName())
+                        .collect(Collectors.toList());
+            } catch (Exception e1) {
+                return new ArrayList<>();
+            }
+        });
     }
 
     private Substance getSampleChemicalFromFile() {
