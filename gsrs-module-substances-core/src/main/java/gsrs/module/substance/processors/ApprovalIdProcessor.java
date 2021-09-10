@@ -39,7 +39,10 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
 
 
     private void addCodeSystemIfNeeded(){
+        log.debug("starting to add codesystem if needed");
         if(codeSystem ==null){
+            
+            log.debug("no codesystem to add");
             return;
         }
         try {
@@ -83,6 +86,9 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally{
+
+            log.debug("finished codesystem add routine");
         }
 
     }
