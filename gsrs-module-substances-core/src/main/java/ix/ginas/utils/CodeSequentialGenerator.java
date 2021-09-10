@@ -85,8 +85,8 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		    //this method must be in transaction so the underlying connection for the stream stays open
 		    //for the stream.
 		    //
-		    log.debug( transactionManager== null ? "transactionManager null" : "transactionManager not null");
-		    log.debug("begin findHighestValueCode");
+		    log.debug("Starting to find highest Value Codesystem");
+		    
 		    TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
 		    txTemplate.setReadOnly(true);
 		    txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
@@ -104,7 +104,8 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 				})
 	                        .max(getCodeSystemComparator())
 	                        .orElse("0" + suffix);
-					log.debug("end findHighestValueCode");
+
+		        log.debug("found highest value codesystem");
 	                return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
 	            }
 		    });
