@@ -93,6 +93,8 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		        try (Stream<Code> codesByCodeSystemAndCodeLike = getCodeRepository().findCodesByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
 	                String lastCode = codesByCodeSystemAndCodeLike
 	                        .map(Code::getCode)
+				//TODO fix this. It's inefficient and also probably a source of lots of issues
+				.peek(c->System.out.println("CODE:" + c));
 	                        .max(getCodeSystemComparator())
 	                        .orElse("0" + suffix);
 	                return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
