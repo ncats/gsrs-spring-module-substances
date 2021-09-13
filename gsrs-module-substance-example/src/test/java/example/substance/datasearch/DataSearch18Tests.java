@@ -229,22 +229,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
-    public void testSearchByCodeSystemFacets() {
-        String codeSystem1 = "DRUG CENTRAL";
-        SearchRequest request = new SearchRequest.Builder()
-                .kind(Substance.class)
-                .fdim(10)
-                .query("root_codes_codeSystem:\"" + codeSystem1 + "\"")
-                .top(Integer.MAX_VALUE)
-                .build();
-          List < String > facetNames = getSearchFacetNames(request);
-
-        System.out.println("facetNames size: " + facetNames.size());
-        facetNames.forEach(n-> System.out.println("facet: " + n));
-        assertTrue(facetNames.contains(codeSystem1));
-    }
-
-    @Test
     public void testSearchForChemicals() {
         String substanceClass = "chemical";
         int expectedNumber = 9;

@@ -138,6 +138,56 @@ public class LoaderFacetTest extends AbstractSubstanceJpaFullStackEntityTest {
                                 .anyMatch(p2->p2.getLabel().equals(codeSystem) ))));
     }
 
+    @Test
+    public void testSearchByStereoFacetValues() {
+        String stereochemistry="ACHIRAL";
+        SearchRequest request = new SearchRequest.Builder()
+                .kind(Substance.class)
+                .fdim(10)
+                .query("root_structure_stereoChemistry:\"" + stereochemistry + "\"")
+                .top(Integer.MAX_VALUE)
+                .build();
+        final AtomicInteger listNum = new AtomicInteger(0);
+        
+        List<List<FV>> stringValues = getSearchFacetValues(request, "Substance Class");
+        listNum.set(0);
+        stringValues.forEach(vList->{
+            log.trace("values for " + listNum.incrementAndGet());
+            vList.forEach(i-> log.trace(i.getLabel() + ":" + i.getCount()));
+        });
+        
+        List<String> expectedValues = Arrays.asList("chemical");
+        assertTrue(expectedValues.stream()
+                .allMatch(codeSystem -> stringValues.stream()
+                        .allMatch(p->p.stream()
+                                .allMatch(p2->p2.getLabel().equals(codeSystem) ))));
+    }
+
+    @Test
+    public void testSearchBySourceMaterialFacetValues() {
+        String strDivSourceMatType="VIRUS";
+        SearchRequest request = new SearchRequest.Builder()
+                .kind(Substance.class)
+                .fdim(10)
+                .query("root_structure_structurallyDiverse_sourceMaterialType:\"" + strDivSourceMatType + "\"")
+                .top(Integer.MAX_VALUE)
+                .build();
+        final AtomicInteger listNum = new AtomicInteger(0);
+        
+        List<List<FV>> stringValues = getSearchFacetValues(request, "Material Type");
+        listNum.set(0);
+        stringValues.forEach(vList->{
+            log.trace("values for " + listNum.incrementAndGet());
+            vList.forEach(i-> log.trace(i.getLabel() + ":" + i.getCount()));
+        });
+        
+        List<String> expectedValues = Arrays.asList(strDivSourceMatType);
+        assertTrue(expectedValues.stream()
+                .allMatch(codeSystem -> stringValues.stream()
+                        .allMatch(p->p.stream()
+                                .allMatch(p2->p2.getLabel().equals(codeSystem) ))));
+    }
+    
     private List<String> getSearchFacetNames(SearchRequest sr) {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         return transactionSearch.execute(ts -> {
