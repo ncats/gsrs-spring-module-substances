@@ -6,6 +6,7 @@ import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.services.DefinitionalElementFactory;
+import gsrs.service.GsrsEntityService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
@@ -33,6 +34,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -40,6 +43,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -49,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 // 16 July based on recommendation from Danny K.
 // 7 August Tyler Peryea refactored this class to be cleaner and more DRY-adherent 
 @WithMockUser(username = "admin", roles = "Admin")
+@Slf4j
 public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
@@ -251,6 +256,69 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         assertTrue(matches.size() > 0, "must find some duplicates");
     }
 
+    @Test
+    public void testSearchAfterRelationshipCreation() {
+        //step 1: look for substance:
+        String approvalID1 = "D733ET3F9O";
+        String idForName = "deb33005-e87e-4e7f-9704-d5b4c80d3023";
+
+        SearchRequest request = new SearchRequest.Builder()
+                .kind(Substance.class)
+                .fdim(0)
+                .query("root_approvalID:\"" + approvalID1 + "\"")
+                .top(Integer.MAX_VALUE)
+                .build();
+        List<Substance> substances = getSearchList(request);
+
+        System.out.println("substances size: " + substances.size());
+        String actualId = substances.stream()
+                .map(s -> s.uuid.toString())
+                .findFirst().get();
+
+        assertEquals(idForName, actualId);
+        Substance baseSubstance = this.substanceRepository.getOne(UUID.fromString(idForName));
+
+        //step 2: retrieve a second substance, add a relationship to the first substance
+        String idToLookup = "1cf410f9-3eeb-41ed-ab69-eeb5076901e5";
+        String relationshipType = "PARENT->SALT/SOLVATE";
+        Substance toModify = getSubstanceFromUUID(idToLookup);
+        //this.substanceRepository.getOne(UUID.fromString(idToLookup));
+        Assert.assertNotNull(toModify);
+        TransactionTemplate transactionMod = new TransactionTemplate(transactionManager);
+        transactionMod.executeWithoutResult(a -> {
+            JsonNode node = toModify.toBuilder()
+                    .addRelationshipTo(baseSubstance, relationshipType)
+                    .buildJson();
+            try {
+                GsrsEntityService.UpdateResult<Substance> result = this.substanceEntityService.updateEntity(node);
+                assertEquals(result.getStatus(), GsrsEntityService.UpdateResult.STATUS.UPDATED);
+            } catch (Exception ex) {
+                log.error("Error updating substance: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        });
+
+        Substance modified = toModify.toBuilder()
+                .addRelationshipTo(baseSubstance, relationshipType)
+                .build();
+        this.substanceRepository.save(modified);
+
+        //step 3: look up the first substance again
+        List<Substance> substancesAfer = getSearchList(request);
+        assertEquals(substances.size(), substancesAfer.size());
+
+        //step 3: look up the second substance
+        String approvalID2 = "E89JCB6A9Q";
+        SearchRequest request2 = new SearchRequest.Builder()
+                .kind(Substance.class)
+                .fdim(0)
+                .query("root_approvalID:\"" + approvalID2 + "\"")
+                .top(Integer.MAX_VALUE)
+                .build();
+        List<Substance> substances2 = getSearchList(request2);
+        assertEquals(1, substances2.size());
+    }
+
     public List<Substance> findFullDefinitionalDuplicateCandidates(Substance substance) {
         List<Substance> candidates = new ArrayList<>();
         try {
@@ -302,18 +370,19 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         return substances;
     }
 
-    private List<String> getSearchFacetNames(SearchRequest sr) {
+    @Transactional
+    private Substance getSubstanceFromUUID(String uuid) {
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        return transactionSearch.execute(ts -> {
+        Substance substance = transactionSearch.execute(ts -> {
             try {
-                SearchResult sresult = searchService.search(sr.getQuery(), sr.getOptions());
-                return sresult.getFacets().stream()
-                        .map(f -> f.getName())
-                        .collect(Collectors.toList());
-            } catch (Exception e1) {
-                return new ArrayList<>();
+                return this.substanceRepository.getOne(UUID.fromString(uuid));
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+
             }
         });
+        return substance;
     }
 
     private Substance getSampleChemicalFromFile() {
