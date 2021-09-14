@@ -4,6 +4,7 @@ import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
+import gov.nih.ncats.common.util.SingleThreadCounter;
 import gsrs.module.substance.services.CodeEntityService;
 import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,17 +85,27 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		    //this method must be in transaction so the underlying connection for the stream stays open
 		    //for the stream.
 		    //
-		    log.debug( transactionManager== null ? "transactionManager null" : "transactionManager not null");
+		    log.debug("Starting to find highest Value Codesystem");
 		    
 		    TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
 		    txTemplate.setReadOnly(true);
 		    txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
 		    return txTemplate.execute(status -> {
-		        try (Stream<Code> codesByCodeSystemAndCodeLike = getCodeRepository().findCodesByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
+				SingleThreadCounter counter = new SingleThreadCounter();
+		        try (Stream<String> codesByCodeSystemAndCodeLike = getCodeRepository().findCodeByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
 	                String lastCode = codesByCodeSystemAndCodeLike
-	                        .map(Code::getCode)
+//	                        .map(Code::getCode)
+				//TODO fix this. It's inefficient and also probably a source of lots of issues
+				.peek(c->{
+					int currentCount = counter.increment().getAsInt();
+					if((currentCount  % 1000) ==0){
+						log.debug("find max code count at " + currentCount);
+					}
+				})
 	                        .max(getCodeSystemComparator())
 	                        .orElse("0" + suffix);
+
+		        log.debug("found highest value codesystem");
 	                return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
 	            }
 		    });

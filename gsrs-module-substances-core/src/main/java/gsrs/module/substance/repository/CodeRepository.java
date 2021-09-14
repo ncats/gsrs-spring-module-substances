@@ -16,6 +16,9 @@ import java.util.stream.Stream;
 @Transactional
 public interface CodeRepository extends GsrsVersionedRepository<Code, UUID> {
 
+    @Query("select s.code from Code s where s.codeSystem = ?1 and s.code like ?2")
+    Stream<String> findCodeByCodeSystemAndCodeLike(String codesystem, String codeLike);
+
     Stream<Code> findCodesByCodeSystemAndCodeLike(String codesystem, String codeLike);
 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.

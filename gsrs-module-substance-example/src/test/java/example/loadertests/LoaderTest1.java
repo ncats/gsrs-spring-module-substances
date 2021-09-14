@@ -2,6 +2,7 @@ package example.loadertests;
 
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
+import gov.nih.ncats.structureIndexer.StructureIndexer.Result;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.services.PrincipalServiceImpl;
@@ -66,7 +67,8 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
             assertTrue(result.hasMoreElements());
         }
         while (result.hasMoreElements()) {
-            result.nextElement();
+            Result next =result.nextElement();
+            System.out.println("ID: " + next.getId() + "; formula: "+ next.getMol().getFormula());
             count.incrementAndGet();
 //            Chemical currentMol = r1.getMol();
 //            String msg = String.format("hit %d. ID: %s; total atoms: %d, formula: %s", count.incrementAndGet(),
@@ -76,16 +78,6 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         return count.get();
     }
 
-    /*private void substructureSearchShouldWaitAndLaterPagesShouldReturn(String structureToSearch) throws IOException, AssertionError{
-        RestSession restSession = session.newRestSession();
-        RestSubstanceSubstanceSearcher searcher = restSession.searcher();
-        SubstanceSearcher.SearchRequestOptions opts = new SubstanceSearcher.SearchRequestOptions(structureToSearch);
-
-        opts.setRows(2);
-    	SearchResult results =searcher.structureSearch(opts).getSomeResults(searcher, new ObjectMapper(), 6).get();
-
-    	assertFalse("6th page on substructure search should have 2 entries", results.getUuids().isEmpty());
-    }*/
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void loadAsAdmin() throws Exception {
@@ -98,7 +90,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         indexer.removeAll();
         loadGsrsFile(dataFile);
         int actualHits2 = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 19;
+        int totalExpectedHits = 21;
         assertEquals(totalExpectedHits, actualHits2);
     }
 
@@ -112,7 +104,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
 
         String structure = "c1ccccc1";
         int actualHits = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 19;
+        int totalExpectedHits = 20;
         assertEquals(totalExpectedHits, actualHits);
     }
 
@@ -125,7 +117,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
 
         String structure = "c1ccccc1";
         int actualHits = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 19;
+        int totalExpectedHits = 20;
         assertEquals(totalExpectedHits, actualHits);
     }
 

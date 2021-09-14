@@ -140,6 +140,9 @@ public class LoaderFacetTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Test
     public void testSearchByStereoFacetValues() {
+        /*
+        search for structure field and verify that all results have the class facet with the expected value
+        */
         String stereochemistry="ACHIRAL";
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -165,6 +168,10 @@ public class LoaderFacetTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Test
     public void testSearchBySourceMaterialFacetValues() {
+        /*
+        Search for source material type == 'VIRUS' and retrieve the corresponding facet.
+        Make sure the values are the same
+        */
         String strDivSourceMatType="VIRUS";
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -183,9 +190,9 @@ public class LoaderFacetTest extends AbstractSubstanceJpaFullStackEntityTest {
         
         List<String> expectedValues = Arrays.asList(strDivSourceMatType);
         assertTrue(expectedValues.stream()
-                .allMatch(codeSystem -> stringValues.stream()
+                .allMatch(type -> stringValues.stream()
                         .allMatch(p->p.stream()
-                                .allMatch(p2->p2.getLabel().equals(codeSystem) ))));
+                                .allMatch(p2->p2.getLabel().equals(type) ))));
     }
     
     private List<String> getSearchFacetNames(SearchRequest sr) {

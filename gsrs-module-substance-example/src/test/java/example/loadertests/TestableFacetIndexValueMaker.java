@@ -7,6 +7,8 @@ import java.util.function.Consumer;
 
 /**
  *
+ * populate a facet with the ration of letter to numbers in the substance GUIID.
+ * Useful only to test that we can create arbitrary facets.
  * @author mitch
  */
 public class TestableFacetIndexValueMaker implements IndexValueMaker<Substance> {

@@ -88,6 +88,9 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         }
         } catch (IOException e) {
             e.printStackTrace();
+        } finally{
+
+            log.debug("finished codesystem add routine");
         }
 
     }
