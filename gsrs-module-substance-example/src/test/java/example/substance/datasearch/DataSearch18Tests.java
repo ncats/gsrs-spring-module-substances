@@ -29,10 +29,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
@@ -112,7 +112,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 with a lambda that returns a List<String>
         but there's a runtime class cast exception.
          */
-        System.out.println("substances size: " + substances.size());
+        log.trace("in testSearchByName, substances list size: " + substances.size());
         String actualId = substances.stream()
                 .map(s -> s.uuid.toString())
                 .findFirst().get();
@@ -257,7 +257,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
-    public void testSearchAfterRelationshipCreation() {
+    public void testSearchAfterRelationshipCreation() throws Exception {
         //step 1: look for substance:
         String approvalID1 = "D733ET3F9O";
         String idForName = "deb33005-e87e-4e7f-9704-d5b4c80d3023";
@@ -270,38 +270,43 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .build();
         List<Substance> substances = getSearchList(request);
 
-        System.out.println("substances size: " + substances.size());
+        log.trace("initial search list size: " + substances.size());
         String actualId = substances.stream()
                 .map(s -> s.uuid.toString())
                 .findFirst().get();
 
         assertEquals(idForName, actualId);
-        Substance baseSubstance = this.substanceRepository.getOne(UUID.fromString(idForName));
 
+        AtomicInteger counter = new AtomicInteger(0);
         //step 2: retrieve a second substance, add a relationship to the first substance
         String idToLookup = "1cf410f9-3eeb-41ed-ab69-eeb5076901e5";
         String relationshipType = "PARENT->SALT/SOLVATE";
-        Substance toModify = getSubstanceFromUUID(idToLookup);
-        //this.substanceRepository.getOne(UUID.fromString(idToLookup));
-        Assert.assertNotNull(toModify);
         TransactionTemplate transactionMod = new TransactionTemplate(transactionManager);
-        transactionMod.executeWithoutResult(a -> {
-            JsonNode node = toModify.toBuilder()
-                    .addRelationshipTo(baseSubstance, relationshipType)
-                    .buildJson();
-            try {
-                GsrsEntityService.UpdateResult<Substance> result = this.substanceEntityService.updateEntity(node);
-                assertEquals(result.getStatus(), GsrsEntityService.UpdateResult.STATUS.UPDATED);
-            } catch (Exception ex) {
-                log.error("Error updating substance: " + ex.getMessage());
-                ex.printStackTrace();
-            }
-        });
+        try {
+            log.trace("starting 'interation' " + counter.getAndIncrement());
+            transactionMod.executeWithoutResult(a -> {
+                Substance baseSubstance = this.substanceRepository.findById(UUID.fromString(idForName)).get();
+                Substance toModify = this.substanceRepository.findById(UUID.fromString(idToLookup)).get();
+                //this.substanceRepository.getOne(UUID.fromString(idToLookup));
+                Assert.assertNotNull(toModify);
+                Assert.assertNotNull(baseSubstance);
+                JsonNode node = toModify.toBuilder()
+                        .addRelationshipTo(baseSubstance, relationshipType)
+                        .buildJson();
+                try {
+                    log.debug("substance with ID " + idToLookup + " to be saved at " + (new Date()));
+                    GsrsEntityService.UpdateResult<Substance> result = this.substanceEntityService.updateEntity(node);
+                    assertEquals(result.getStatus(), GsrsEntityService.UpdateResult.STATUS.UPDATED);
+                } catch (Exception ex) {
+                    log.error("Error (inner) updating substance: " + ex.getMessage());
+                    ex.printStackTrace();
+                }
+            });
 
-        Substance modified = toModify.toBuilder()
-                .addRelationshipTo(baseSubstance, relationshipType)
-                .build();
-        this.substanceRepository.save(modified);
+        } catch (Exception e) {
+            log.error("outer error");
+            e.printStackTrace();
+        }
 
         //step 3: look up the first substance again
         List<Substance> substancesAfer = getSearchList(request);
@@ -324,11 +329,11 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         try {
             DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
             int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
+            log.trace( "handling layer: " + (layer + 1));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
             System.out.println("in findFullDefinitionalDuplicateCandidates, searchItem: " + searchItem);
-            Logger.getLogger(this.getClass().getName()).log(Level.FINE, "layer query: " + searchItem);
+            log.trace( "layer query: " + searchItem);
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
                     .query(searchItem)
@@ -340,7 +345,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                     .map(n -> n.name)
                     .forEach(n -> System.out.println(n));
         } catch (Exception ex) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error running query", ex);
+            log.error( "Error running query", ex);
         }
         return candidates;
     }
@@ -399,7 +404,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
             return s;
         } catch (IOException ex) {
-            Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, null, ex);
+            log.error( "Error retrieving substance from file", ex);
         }
         return null;
     }
