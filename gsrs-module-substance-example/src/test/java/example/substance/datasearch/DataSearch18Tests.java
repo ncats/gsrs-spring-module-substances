@@ -2,12 +2,10 @@ package example.substance.datasearch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.service.GsrsEntityService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
@@ -46,7 +44,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.springframework.security.test.context.support.WithMockUser;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -74,7 +71,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private TestGsrsValidatorFactory factory;
 
-    private String fileName = "rep18.gsrs";
+    private final String fileName = "rep18.gsrs";
 
     @BeforeEach
     public void clearIndexers() throws IOException {
