@@ -2,6 +2,7 @@ package example.substance.datasearch;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
@@ -31,11 +32,13 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -282,31 +285,29 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         String idToLookup = "1cf410f9-3eeb-41ed-ab69-eeb5076901e5";
         String relationshipType = "PARENT->SALT/SOLVATE";
         TransactionTemplate transactionMod = new TransactionTemplate(transactionManager);
-        try {
-            log.trace("starting 'interation' " + counter.getAndIncrement());
-            transactionMod.executeWithoutResult(a -> {
-                Substance baseSubstance = this.substanceRepository.findById(UUID.fromString(idForName)).get();
-                Substance toModify = this.substanceRepository.findById(UUID.fromString(idToLookup)).get();
-                //this.substanceRepository.getOne(UUID.fromString(idToLookup));
-                Assert.assertNotNull(toModify);
-                Assert.assertNotNull(baseSubstance);
-                JsonNode node = toModify.toBuilder()
+        log.trace("starting 'interation' " + counter.getAndIncrement());
+        transactionMod.executeWithoutResult(a -> {
+            Substance baseSubstance = this.substanceRepository.findById(UUID.fromString(idForName)).get();
+            Substance toModify = this.substanceRepository.findById(UUID.fromString(idToLookup)).get();
+            Assert.assertNotNull(toModify);
+            Assert.assertNotNull(baseSubstance);
+            try {
+                log.debug("substance with ID " + idToLookup + " to be saved at " + (new Date()));
+                Substance toSave = toModify.toBuilder()
                         .addRelationshipTo(baseSubstance, relationshipType)
-                        .buildJson();
-                try {
-                    log.debug("substance with ID " + idToLookup + " to be saved at " + (new Date()));
-                    GsrsEntityService.UpdateResult<Substance> result = this.substanceEntityService.updateEntity(node);
-                    assertEquals(result.getStatus(), GsrsEntityService.UpdateResult.STATUS.UPDATED);
-                } catch (Exception ex) {
-                    log.error("Error (inner) updating substance: " + ex.getMessage());
-                    ex.printStackTrace();
-                }
-            });
-
-        } catch (Exception e) {
-            log.error("outer error");
-            e.printStackTrace();
-        }
+                        .build();
+                //substanceRepository.saveAndFlush(toSave); causes error:
+                // A different object with the same identifier value was already associated with the session
+                this.substanceEntityService.updateEntity(toSave, (s) -> {
+                    return Optional.of(toSave);
+                });
+                log.trace("save completed");
+            } catch (Exception ex) {
+                log.error("Error (inner) updating substance: " + ex.getMessage());
+                ex.printStackTrace();
+                Assertions.fail("Test must not produce an error");
+            }
+        });
 
         //step 3: look up the first substance again
         List<Substance> substancesAfer = getSearchList(request);
@@ -329,11 +330,11 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         try {
             DefinitionalElements newDefinitionalElements = definitionalElementFactory.computeDefinitionalElementsFor(substance);
             int layer = newDefinitionalElements.getDefinitionalHashLayers().size() - 1; // hashes.size()-1;
-            log.trace( "handling layer: " + (layer + 1));
+            log.trace("handling layer: " + (layer + 1));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
             System.out.println("in findFullDefinitionalDuplicateCandidates, searchItem: " + searchItem);
-            log.trace( "layer query: " + searchItem);
+            log.trace("layer query: " + searchItem);
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
                     .query(searchItem)
@@ -345,7 +346,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                     .map(n -> n.name)
                     .forEach(n -> System.out.println(n));
         } catch (Exception ex) {
-            log.error( "Error running query", ex);
+            log.error("Error running query", ex);
         }
         return candidates;
     }
@@ -375,21 +376,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         return substances;
     }
 
-    @Transactional
-    private Substance getSubstanceFromUUID(String uuid) {
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        Substance substance = transactionSearch.execute(ts -> {
-            try {
-                return this.substanceRepository.getOne(UUID.fromString(uuid));
-
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-
-            }
-        });
-        return substance;
-    }
-
     private Substance getSampleChemicalFromFile() {
         try {
             File chemicalFile = new ClassPathResource(fileName).getFile();
@@ -404,7 +390,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
             return s;
         } catch (IOException ex) {
-            log.error( "Error retrieving substance from file", ex);
+            log.error("Error retrieving substance from file", ex);
         }
         return null;
     }

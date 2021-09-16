@@ -104,7 +104,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
 
         String structure = "c1ccccc1";
         int actualHits = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 20;
+        int totalExpectedHits = 21;
         assertEquals(totalExpectedHits, actualHits);
     }
 
@@ -117,7 +117,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
 
         String structure = "c1ccccc1";
         int actualHits = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 20;
+        int totalExpectedHits = 21;
         assertEquals(totalExpectedHits, actualHits);
     }
 

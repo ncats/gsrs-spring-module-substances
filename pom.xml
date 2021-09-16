@@ -32,6 +32,7 @@
         <lucene.version>4.10.0</lucene.version>
         <gsrs.version>0.8.2-SNAPSHOT</gsrs.version>
         <gsrs.substance.version>0.7.2-SNAPSHOT</gsrs.substance.version>
+        <spring-boot.version>2.4.5</spring-boot.version>
     </properties>
 
     <repositories>
