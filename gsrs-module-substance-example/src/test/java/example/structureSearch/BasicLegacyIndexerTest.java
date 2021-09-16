@@ -41,6 +41,8 @@ public class BasicLegacyIndexerTest {
     public void setupIndexer() throws IOException {
         indexer = new LegacyStructureIndexerService(tempDir);
         eventListener = new StructureIndexerEventListener(indexer, mockEntityManager);
+        eventListener.useExplicitEM(true);
+        
     }
     @AfterEach
     public void shutdown(){
