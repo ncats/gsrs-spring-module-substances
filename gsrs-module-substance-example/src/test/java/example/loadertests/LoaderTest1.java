@@ -43,8 +43,6 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         principalService.clearCache();
     }
 
-    public LoaderTest1() {
-    }
 
     private int countStructureSearchHits(String structure, String compoundName) throws Exception {
         UUID uuid = UUID.randomUUID();
@@ -61,6 +59,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         }
 
         StructureIndexer.ResultEnumeration result = indexer.substructure(structure);
+
         AtomicInteger count = new AtomicInteger(0);
         if (compoundName != null && compoundName.length() > 0) {
             assertTrue(result.hasMoreElements());
@@ -98,7 +97,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         indexer.removeAll();
         loadGsrsFile(dataFile);
         int actualHits2 = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 19;
+        int totalExpectedHits = 21;
         assertEquals(totalExpectedHits, actualHits2);
     }
 
@@ -112,7 +111,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
 
         String structure = "c1ccccc1";
         int actualHits = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 19;
+        int totalExpectedHits = 21;
         assertEquals(totalExpectedHits, actualHits);
     }
 
@@ -125,7 +124,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
 
         String structure = "c1ccccc1";
         int actualHits = countStructureSearchHits(structure, "benzene");
-        int totalExpectedHits = 19;
+        int totalExpectedHits = 21;
         assertEquals(totalExpectedHits, actualHits);
     }
 
