@@ -16,4 +16,35 @@
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
 
+
+    <dependencies>
+
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-rest-api</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>molwitch</artifactId>
+            <version>0.6.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
 </project>
