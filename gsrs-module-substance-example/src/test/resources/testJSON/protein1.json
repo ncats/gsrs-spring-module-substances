@@ -1,0 +1,95 @@
+{
+  "substanceClass": "protein",
+  "references": [],
+  "names": [
+    {
+      "references": [],
+      "access": [],
+      "languages": [
+        "en"
+      ],
+      "type": "cn",
+      "name": "test"
+    }
+  ],
+  "protein": {
+    "proteinType": "",
+    "references": [],
+    "subunits": [
+      {
+        "references": [],
+        "access": [],
+        "sequence": "QVQLQQSGSELKKPGASVKVSCKASGYTFTNYGMNWVKQAPGQGLKWMGWINTYTGEPTYTDDFKGRFAFSLDTSVSTAYLQISSLKADDTAVYFCARGGFGSSYWYFDVWGQGSLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKRVEPKSCDKTHTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSREEMTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK",
+        "subunitIndex": 1
+      }
+    ],
+    "otherLinks": [],
+    "disulfideLinks": [
+      {
+        "sites": [
+          {
+            "subunitIndex": 1,
+            "residueIndex": 265
+          },
+          {
+            "subunitIndex": 1,
+            "residueIndex": 204
+          }
+        ]
+      },
+      {
+        "sites": [
+          {
+            "subunitIndex": 1,
+            "residueIndex": 224
+          },
+          {
+            "subunitIndex": 1,
+            "residueIndex": 224
+          }
+        ]
+      }
+    ],
+    "glycosylation": {}
+  },
+  "codes": [],
+  "relationships": [],
+  "properties": [],
+  "access": [
+    "protected"
+  ],
+  "definitionLevel": "COMPLETE",
+  "definitionType": "PRIMARY",
+  "tags": [],
+  "modifications": {
+    "agentModifications": [],
+    "structuralModifications": [
+      {
+        "references": [],
+        "sites": [
+          {
+            "subunitIndex": 1,
+            "residueIndex": 204
+          },
+          {
+            "subunitIndex": 1,
+            "residueIndex": 265
+          }
+        ],
+        "access": [],
+        "molecularFragment": {
+          "refPname": "IROXANADINE SULFATE",
+          "name": "IROXANADINE SULFATE",
+          "refuuid": "8f728898-b2b3-4997-b703-4e2ca25ee650",
+          "substanceClass": "reference",
+          "approvalID": "G8BQX4L89S"
+        },
+        "structuralModificationType": "AMINO_ACID_SUBSTITUTION",
+        "extent": "PARTIAL",
+        "locationType": "N-TERMINUS"
+      }
+    ],
+    "physicalModifications": []
+  },
+  "notes": []
+}
