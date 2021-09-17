@@ -6,26 +6,15 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.UUID;
-@Data
+import java.util.*;
+
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SubstanceReferenceDTO extends BaseEditableDTO{
+public class MixtureDTO extends SubstanceComponentBaseDTO{
 
     private UUID uuid;
-
-    private String refPname;
-
-    private String refuuid;
-
-    private String approvalID;
-
-    private String linkingID;
-
-    private String name;
-
-    private SubstanceDTO.SubstanceClass substanceClass;
-
+    private List<MixtureComponentDTO> components = new ArrayList<>();
 }

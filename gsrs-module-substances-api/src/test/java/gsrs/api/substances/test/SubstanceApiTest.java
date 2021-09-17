@@ -1,9 +1,9 @@
 package gsrs.api.substances.test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.api.substances.LazyFetchedCollection;
-import gsrs.api.substances.SubstanceDTO;
-import gsrs.api.substances.SubstanceRestApi;
+import gov.nih.ncats.molwitch.Chemical;
+import gsrs.api.substances.*;
+import gsrs.assertions.GsrsMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,14 +16,17 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
-import static org.assertj.core.api.Assertions.as;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.*;
+import static org.hamcrest.Matchers.*;
 
 @RestClientTest(SubstanceRestApi.class)
 public class SubstanceApiTest {
@@ -94,8 +97,73 @@ public class SubstanceApiTest {
                 .expect(requestTo("/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)"))
                 .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
 
-        Optional<SubstanceDTO> opt= api.findByResolvedId("00003c75-39d4-4005-9fde-f5eca9abd4f1");
+        Optional<ChemicalSubstanceDTO> opt= api.findByResolvedId("00003c75-39d4-4005-9fde-f5eca9abd4f1");
         assertTrue(opt.isPresent());
-        SubstanceDTO substanceDTO = opt.get();
+        ChemicalSubstanceDTO substanceDTO = opt.get();
+
+        assertEquals(SubstanceDTO.SubstanceClass.chemical, substanceDTO.getSubstanceClass());
+        assertEquals(substanceDTO.get_names(), new LazyFetchedCollection(4, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/names"));
+        assertEquals(substanceDTO.get_codes(), new LazyFetchedCollection(5, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/codes"));
+        assertEquals(substanceDTO.get_references(), new LazyFetchedCollection(7, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/references"));
+
+        Chemical actualChemical = substanceDTO.getStructure().asChemical().get();
+        assertEquals(15, actualChemical.getAtomCount());
+    }
+
+    @Test
+    public void singleMixtureCompactRecord() throws IOException {
+        String json = "{\"uuid\":\"4fb9df0c-6693-4dbb-baf3-6cba2c3d013e\",\"created\":1628189922000,\"createdBy\":\"admin\",\"lastEdited\":1628189922000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"mixture\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"LR135I04CJ\",\"mixture\":{\"uuid\":\"471e79c8-72c6-4cdc-b942-1148d1447ea5\",\"created\":1628189922000,\"createdBy\":\"admin\",\"lastEdited\":1628189922000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"components\":[{\"uuid\":\"1fcd4d82-1179-4d70-84e8-3d653dd5f32b\",\"created\":1628189922000,\"createdBy\":\"admin\",\"lastEdited\":1628189922000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"type\":\"MUST_BE_PRESENT\",\"substance\":{\"uuid\":\"0c094892-0dd6-4171-96c9-70c3ba7cdc6b\",\"created\":1628189922000,\"createdBy\":\"admin\",\"lastEdited\":1628189922000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"MANGANESE 2-GLYCEROPHOSPHATE\",\"refuuid\":\"563f3732-2e8f-4962-b97b-9c7ebf1d62cc\",\"substanceClass\":\"reference\",\"approvalID\":\"94215249TT\",\"linkingID\":\"94215249TT\",\"name\":\"MANGANESE 2-GLYCEROPHOSPHATE\",\"_nameHTML\":\"MANGANESE 2-GLYCEROPHOSPHATE\",\"references\":[],\"access\":[]},\"references\":[],\"access\":[]},{\"uuid\":\"f2674498-7ed5-401f-97f6-aca47ee8dd45\",\"created\":1628189922000,\"createdBy\":\"admin\",\"lastEdited\":1628189922000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"type\":\"MUST_BE_PRESENT\",\"substance\":{\"uuid\":\"370722ae-c239-4fb8-afe7-7881414d1e44\",\"created\":1628189922000,\"createdBy\":\"admin\",\"lastEdited\":1628189922000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"MANGANESE RAC-GLYCERYL-1-PHOSPHATE\",\"refuuid\":\"11bd0803-9f22-4ca6-a1c1-ccd15c7580b4\",\"substanceClass\":\"reference\",\"approvalID\":\"O8CNB3NY0U\",\"linkingID\":\"O8CNB3NY0U\",\"name\":\"MANGANESE RAC-GLYCERYL-1-PHOSPHATE\",\"_nameHTML\":\"MANGANESE RAC-GLYCERYL-1-PHOSPHATE\",\"references\":[],\"access\":[]},\"references\":[],\"access\":[]}],\"references\":[\"ace06802-d644-4e26-afc2-ab26607c1fda\",\"ecc3e268-830d-4482-88a2-71441e1b76f1\"],\"access\":[]},\"_names\":{\"count\":6,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(4fb9df0c-6693-4dbb-baf3-6cba2c3d013e)/names\"},\"_references\":{\"count\":16,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(4fb9df0c-6693-4dbb-baf3-6cba2c3d013e)/references\"},\"_codes\":{\"count\":3,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(4fb9df0c-6693-4dbb-baf3-6cba2c3d013e)/codes\"},\"_nameHTML\":\"MANGANESE GLYCEROPHOSPHATE\",\"_approvalIDDisplay\":\"LR135I04CJ\",\"_name\":\"MANGANESE GLYCEROPHOSPHATE\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(4fb9df0c-6693-4dbb-baf3-6cba2c3d013e)?view=full\"}";
+
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(4fb9df0c-6693-4dbb-baf3-6cba2c3d013e)"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        Optional<MixtureSubstanceDTO> opt= api.findByResolvedId("4fb9df0c-6693-4dbb-baf3-6cba2c3d013e");
+        assertTrue(opt.isPresent());
+
+        MixtureSubstanceDTO mixtureSubstanceDTO = opt.get();
+        assertEquals("4fb9df0c-6693-4dbb-baf3-6cba2c3d013e", mixtureSubstanceDTO.getUuid().toString());
+        assertEquals("LR135I04CJ", mixtureSubstanceDTO.getApprovalID());
+        assertEquals("FDA_SRS", mixtureSubstanceDTO.getApprovedBy());
+        assertEquals(SubstanceDTO.SubstanceClass.mixture, mixtureSubstanceDTO.getSubstanceClass());
+
+        MixtureDTO mixtureDTO = mixtureSubstanceDTO.getMixture();
+        assertEquals("471e79c8-72c6-4cdc-b942-1148d1447ea5", mixtureDTO.getUuid().toString());
+        assertEquals(2, mixtureDTO.getReferences().size());
+
+        assertEquals(2, mixtureDTO.getComponents().size());
+
+        assertEquals(Arrays.asList("MANGANESE 2-GLYCEROPHOSPHATE", "MANGANESE RAC-GLYCERYL-1-PHOSPHATE"),
+               mixtureDTO.getComponents().stream().map(m-> m.getSubstance().getRefPname()).collect(Collectors.toList()));
+    }
+
+    @Test
+    public void polymerCompactRecord() throws IOException{
+        String json = "{\"uuid\":\"7acf5be1-360c-42ce-aea5-9c2969ee410c\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"INCOMPLETE\",\"substanceClass\":\"polymer\",\"status\":\"approved\",\"version\":\"3\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"4GAS6381TX\",\"polymer\":{\"uuid\":\"acbd989b-91ae-49a5-889f-db62f0314799\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"classification\":{\"uuid\":\"de21fea5-70e9-4a7b-b48b-723b6dec104d\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"polymerClass\":\"HOMOPOLYMER\",\"polymerGeometry\":\"LINEAR\",\"polymerSubclass\":[],\"references\":[],\"access\":[]},\"displayStructure\":{\"id\":\"4a483119-9005-4c0e-9318-08bba9974dcf\",\"created\":1628152616000,\"lastEdited\":1628152616000,\"deprecated\":false,\"digest\":\"49b3575ec034401019a488fb6a4ee150d7a65b59\",\"molfile\":\"\\n  Marvin  01132104232D          \\n\\n  6  5  0  0  0  0            999 V2000\\n    8.0382   -6.5429    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.7095   -5.7862    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.8482   -5.3835    0.0000 *   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.0244   -5.3882    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    6.1404   -5.7908    0.0000 *   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.2735   -6.5399    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  2  1  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  4  2  1  0  0  0  0\\n  5  4  1  0  0  0  0\\n  2  6  1  0  0  0  0\\nM  STY  1   1 SRU\\nM  SCN  1   1 HT \\nM  SAL   1  4   1   2   4   6\\nM  SDI   1  4    6.6044   -6.9629    6.6044   -4.9682\\nM  SDI   1  4    8.4582   -4.9682    8.4582   -6.9629\\nM  END\",\"smiles\":\"[He]CC([He])(C)C\",\"formula\":\"C4H8\",\"opticalActivity\":\"NONE\",\"atropisomerism\":\"No\",\"stereoCenters\":0,\"definedStereo\":0,\"ezCenters\":0,\"charge\":0,\"mwt\":56.1063,\"count\":1,\"createdBy\":\"admin\",\"lastEditedBy\":\"admin\",\"self\":\"https://ginas.ncats.nih.gov/app/api/v1/structures(4a483119-9005-4c0e-9318-08bba9974dcf)?view=full\",\"access\":[],\"references\":[],\"_formulaHTML\":\"C<sub>4</sub>H<sub>8</sub>\"},\"idealizedStructure\":{\"id\":\"544e0b30-5a6f-4835-8dd2-20a6579fd37d\",\"created\":1628152616000,\"lastEdited\":1628152616000,\"deprecated\":false,\"digest\":\"49b3575ec034401019a488fb6a4ee150d7a65b59\",\"molfile\":\"\\n  Marvin  01132104232D          \\n\\n  6  5  0  0  0  0            999 V2000\\n    8.0382   -6.5429    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.7095   -5.7862    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.8482   -5.3835    0.0000 *   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.0244   -5.3882    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    6.1404   -5.7908    0.0000 *   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.2735   -6.5399    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  2  1  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  4  2  1  0  0  0  0\\n  5  4  1  0  0  0  0\\n  2  6  1  0  0  0  0\\nM  STY  1   1 SRU\\nM  SCN  1   1 HT \\nM  SAL   1  4   1   2   4   6\\nM  SDI   1  4    6.6044   -6.9629    6.6044   -4.9682\\nM  SDI   1  4    8.4582   -4.9682    8.4582   -6.9629\\nM  END\",\"smiles\":\"[He]CC([He])(C)C\",\"formula\":\"C4H8\",\"opticalActivity\":\"NONE\",\"atropisomerism\":\"No\",\"stereoCenters\":0,\"definedStereo\":0,\"ezCenters\":0,\"charge\":0,\"mwt\":56.1063,\"count\":1,\"createdBy\":\"admin\",\"lastEditedBy\":\"admin\",\"self\":\"https://ginas.ncats.nih.gov/app/api/v1/structures(544e0b30-5a6f-4835-8dd2-20a6579fd37d)?view=full\",\"access\":[],\"references\":[],\"_formulaHTML\":\"C<sub>4</sub>H<sub>8</sub>\",\"_properties\":{\"count\":1,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/structures(544e0b30-5a6f-4835-8dd2-20a6579fd37d)/properties\"}},\"monomers\":[{\"uuid\":\"c85ad8f8-63af-4e49-a821-db7e69d0aada\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"amount\":{\"uuid\":\"bcaa2de3-3a6d-46e3-b427-89a4c3cb43d4\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"type\":\"WEIGHT PERCENTAGE\",\"average\":100.0,\"references\":[],\"access\":[]},\"monomerSubstance\":{\"uuid\":\"39f072b9-1de0-4ba3-8617-d4e1053da452\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"ISOBUTYLENE\",\"refuuid\":\"6789212e-f4a0-407b-8d3e-37e3876d4dfe\",\"substanceClass\":\"reference\",\"approvalID\":\"QA2LMR467H\",\"linkingID\":\"QA2LMR467H\",\"name\":\"ISOBUTYLENE\",\"_nameHTML\":\"ISOBUTYLENE\",\"references\":[],\"access\":[]},\"type\":\"MONOMER\",\"defining\":false,\"references\":[],\"access\":[]}],\"structuralUnits\":[],\"references\":[\"70bde78b-a0bd-4b81-8181-20b8c96310fe\",\"baeac6ef-1618-4124-bc88-dd6a224e550e\"],\"access\":[]},\"_properties\":{\"count\":1,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)/properties\"},\"_names\":{\"count\":6,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)/names\"},\"_modifications\":{\"count\":0,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)/modifications\"},\"_references\":{\"count\":8,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)/references\"},\"_codes\":{\"count\":2,\"href\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)/codes\"},\"_nameHTML\":\"POLYISOBUTYLENE (2600000 MW)\",\"_approvalIDDisplay\":\"4GAS6381TX\",\"_name\":\"POLYISOBUTYLENE (2600000 MW)\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)?view=full\"}";
+
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        Optional<PolymerSubstanceDTO> opt= api.findByResolvedId("7acf5be1-360c-42ce-aea5-9c2969ee410c");
+        assertTrue(opt.isPresent());
+
+        PolymerSubstanceDTO polymerSubstance = opt.get();
+        assertEquals("7acf5be1-360c-42ce-aea5-9c2969ee410c", polymerSubstance.getUuid().toString());
+
+        assertEquals(new LazyFetchedCollection(0, "https://ginas.ncats.nih.gov/app/api/v1/substances(7acf5be1-360c-42ce-aea5-9c2969ee410c)/modifications"),
+                polymerSubstance.get_modifications());
+
+        PolymerClassificationDTO expected = PolymerClassificationDTO.builder()
+                                                .uuid(UUID.fromString("de21fea5-70e9-4a7b-b48b-723b6dec104d"))
+                                                .polymerClass("HOMOPOLYMER")
+                                                .polymerGeometry("LINEAR")
+                                                .build();
+
+
+        assertThat(polymerSubstance.getPolymer().getClassification(), GsrsMatchers.matchesExample(expected));
+
+        assertEquals("C4H8", polymerSubstance.getPolymer().getDisplayStructure().getFormula());
+        assertEquals("C4H8", polymerSubstance.getPolymer().getIdealizedStructure().getFormula());
     }
 }

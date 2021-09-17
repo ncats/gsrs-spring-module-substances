@@ -11,9 +11,9 @@ import java.util.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ReferenceDTO extends BaseEditableDTO{
-    private UUID uuid;
+public class ReferenceDTO extends SubstanceComponentBaseDTO{
 
+    private UUID uuid;
     private String citation;
     private String docType;
     private boolean publicDomain;
@@ -21,6 +21,4 @@ public class ReferenceDTO extends BaseEditableDTO{
 
     private String url;
 
-    private List<String> tags = new ArrayList<>();
-    private Set<String> access = new LinkedHashSet<>();
 }

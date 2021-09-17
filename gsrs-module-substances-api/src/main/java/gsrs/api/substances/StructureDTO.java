@@ -1,16 +1,25 @@
 package gsrs.api.substances;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.io.ChemFormat;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.util.*;
 
 @Data
-public class StructureDTO extends BaseEditableDTO{
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class StructureDTO extends SubstanceComponentBaseDTO{
 
 
+    private UUID id;
     private String molfile;
 
     private String smiles;
@@ -23,8 +32,6 @@ public class StructureDTO extends BaseEditableDTO{
     private int ezCenters;
     private int charge;
 
-    private Set<String> access = new LinkedHashSet<>();
-    private Set<UUID> references = new LinkedHashSet<>();
 
     public synchronized Optional<Chemical> asChemical() throws IOException {
         if(molfile !=null){
