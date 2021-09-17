@@ -258,7 +258,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                                                 + n.name
                                                 + "' collides (possible duplicate) with existing name for substance:")
                                //TODO katzelda Feb 2021: add link back
-//                                .addLink(GinasUtils.createSubstanceLink(s2))
+                                . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
                                 ;
                         callback.addMessage(mes);
                     }
