@@ -359,12 +359,12 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                                     .findFirst()
                                     .ifPresent(suResults -> {
                                         List<GinasProcessingMessage.Link> links = new ArrayList<>();
-                                        GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
-//                                        Call call = ix.ginas.controllers.routes.GinasApp
-//                                                .substances(payload.id.toString(), 16, 1);
-//                                        l.href = call.url() + "&type=sequence&identity=" + SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF + "&identityType=SUB&seqType=Protein";
-                                        l.text = "(Perform similarity search on subunit ["
-                                                + su.subunitIndex + "])";
+//                                        GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
+////                                        Call call = ix.ginas.controllers.routes.GinasApp
+////                                                .substances(payload.id.toString(), 16, 1);
+////                                        l.href = call.url() + "&type=sequence&identity=" + SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF + "&identityType=SUB&seqType=Protein";
+//                                        l.text = "(Perform similarity search on subunit ["
+//                                                + su.subunitIndex + "])";
 
                                         String warnMessage = msgOne;
 
@@ -374,7 +374,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 
                                         GinasProcessingMessage dupMessage = GinasProcessingMessage
                                                 .WARNING_MESSAGE(warnMessage);
-                                        dupMessage.addLink(l);
+//                                        dupMessage.addLink(l);
 
                                         suResults.stream()
                                                 .map(t -> t.withKSortOrder(d -> d))
