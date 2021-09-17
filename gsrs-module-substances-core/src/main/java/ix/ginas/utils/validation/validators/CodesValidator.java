@@ -89,35 +89,6 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
         }
 
 
-        for(Code cd : s.codes){
-
-            if("CAS".equals(cd.codeSystem)){
-                boolean found=false;
-                for(Keyword keywords :cd.getReferences()){
-                    Reference ref =s.getReferenceByUUID(keywords.term);
-                    if("STN (SCIFINDER)".equalsIgnoreCase(ref.docType)){
-                        found=true;
-                        break;
-                    }
-                }
-                if(!found){
-                    GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "Must specify STN reference for CAS")
-                            .appliableChange(true);
-                    callback.addMessage(mes, ()-> {
-                        Reference newRef = new Reference();
-                        newRef.citation ="STN";
-                        newRef.docType="STN (SCIFINDER)";
-                        newRef.publicDomain = true;
-
-                        cd.addReference(newRef, s);
-                    });
-                }
-            }
-
-
-        }
 
         for (Code cd : s.codes) {
             try {
