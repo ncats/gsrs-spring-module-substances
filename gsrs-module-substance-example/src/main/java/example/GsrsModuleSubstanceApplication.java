@@ -1,6 +1,5 @@
 package example;
 
-import gov.hhs.gsrs.applications.ApplicationsDataSourceConfig;
 import gsrs.*;
 import gsrs.EnableGsrsLegacyStructureSearch;
 import gsrs.cv.EnableControlledVocabulary;

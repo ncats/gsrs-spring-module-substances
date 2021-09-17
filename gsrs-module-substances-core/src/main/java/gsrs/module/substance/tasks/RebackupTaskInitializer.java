@@ -1,23 +1,17 @@
 package gsrs.module.substance.tasks;
 
-import gsrs.controller.OffsetBasedPageRequest;
-import gsrs.module.substance.repository.SubstanceRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.repository.JpaRepository;
+
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.services.BackupService;
 import gsrs.springUtils.StaticContextAccessor;
-import ix.ginas.models.v1.Substance;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 public class RebackupTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private BackupService backupService;
-
-    @Autowired
-    private SubstanceRepository substanceRepository;
 
     private String description;
 

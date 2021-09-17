@@ -16,8 +16,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.apache.commons.lang3.StringEscapeUtils;
-
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.CachedSupplier;
 import ix.utils.FortranLikeParserHelper;
@@ -116,8 +114,37 @@ public class ChemCleaner {
 	    return Arrays.stream(lines).collect(Collectors.joining("\n"));
 	}
 	
+	private static boolean isLikelyCountLine(String l) {
+	    if(l.contains("V2000") || l.contains("V3000")) {
+	        return true;
+	    }
+	    return false;
+	}
+	
 	public static String cleanMolfileWithTypicalWhiteSpaceIssues(String molfile){
 		String[] lines=NEW_LINE_PATTERN.split(molfile);
+		
+		if(!isLikelyCountLine(lines[3])) {
+		    int addLines =0;
+		    if(isLikelyCountLine(lines[2])) {
+		        addLines=1;
+		    }else if(isLikelyCountLine(lines[1])) {
+		        addLines=2;
+		    }else if(isLikelyCountLine(lines[0])) {
+                addLines=3;
+            }
+		    if(addLines>0) {
+		        StringBuilder sb = new StringBuilder();
+		        
+		        for(int i=0;i<addLines;i++) {
+		            sb.append("\n");
+		        }
+		        molfile=sb.toString()+molfile;
+		        lines=NEW_LINE_PATTERN.split(molfile);
+		    }
+		}
+		
+		
 		lines[3]=MOLFILE_COUNT_LINE_PARSER.parseAndOperate(lines[3])
 				.remove("iii")
 				.set("mmm", "999")
@@ -171,6 +198,10 @@ public class ChemCleaner {
 	public static String getCleanMolfile(String mfile) {
 
 		if(mfile == null || !mfile.contains("M  END"))return mfile;
+		
+		//TODO fix the potentially missing line
+		
+		
 		
 		// JSdraw adds this to some S-GROUPS
 		// that aren't always good

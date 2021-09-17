@@ -359,12 +359,12 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                                     .findFirst()
                                     .ifPresent(suResults -> {
                                         List<GinasProcessingMessage.Link> links = new ArrayList<>();
-                                        GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
-//                                        Call call = ix.ginas.controllers.routes.GinasApp
-//                                                .substances(payload.id.toString(), 16, 1);
-//                                        l.href = call.url() + "&type=sequence&identity=" + SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF + "&identityType=SUB&seqType=Protein";
-                                        l.text = "(Perform similarity search on subunit ["
-                                                + su.subunitIndex + "])";
+//                                        GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
+////                                        Call call = ix.ginas.controllers.routes.GinasApp
+////                                                .substances(payload.id.toString(), 16, 1);
+////                                        l.href = call.url() + "&type=sequence&identity=" + SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF + "&identityType=SUB&seqType=Protein";
+//                                        l.text = "(Perform similarity search on subunit ["
+//                                                + su.subunitIndex + "])";
 
                                         String warnMessage = msgOne;
 
@@ -374,7 +374,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 
                                         GinasProcessingMessage dupMessage = GinasProcessingMessage
                                                 .WARNING_MESSAGE(warnMessage);
-                                        dupMessage.addLink(l);
+//                                        dupMessage.addLink(l);
 
                                         suResults.stream()
                                                 .map(t -> t.withKSortOrder(d -> d))
@@ -383,8 +383,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                                                     Tuple<ProteinSubstance, Subunit> tup = tupTotal.v();
                                                     double globalScore = tupTotal.k();
                                                     String globalScoreString = (int) Math.round(globalScore * 100) + "%";
-
-                                                    GinasProcessingMessage.Link l2 = new GinasProcessingMessage.Link();
+                                                    SubstanceReference sr = tup.k().asSubstanceReference();
+                                                    GinasProcessingMessage.Link l2 = ValidationUtils.createSubstanceLink(sr);
 //                                                    Call call2 = ix.ginas.controllers.routes.GinasApp.substance(tup.k().uuid.toString());
 //                                                    l2.href = call2.url();
                                                     if (globalScore == 1) {

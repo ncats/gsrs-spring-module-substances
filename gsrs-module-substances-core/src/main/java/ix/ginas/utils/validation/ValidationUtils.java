@@ -56,6 +56,18 @@ public class ValidationUtils {
 	}
 	
 	
+	public static GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
+        GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
+        //TODO: it makes total sense that the REST API should return an API link, but it can't
+        //for backwards compatibility
+        
+//        l.href= GsrsLinkUtil.computeSelfLinkFor(entityLinks, Substance.class, s.getLinkingID()).getHref();
+        
+        l.href= "/app/substance/" + s.getLinkingID();
+        l.text="[" + s.refPname + "]" + s.getName();
+        return l;
+    }
+	
 //	private static CachedSupplier<PayloadPlugin> _payload = CachedSupplier.of(()->Play.application().plugin(PayloadPlugin.class));
 //	static CachedSupplier<ValidationConfig> validationConf = CachedSupplier.of(()->{
 //		return new ValidationConfig(Play.application());

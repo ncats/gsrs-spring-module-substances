@@ -68,7 +68,7 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 				}else{
 					mes= GinasProcessingMessage.WARNING_MESSAGE(messageText);
 				}
-                mes.addLink(createSubstanceLink(possibleMatch));
+                mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
 				//.createSubstanceLink((possibleMatch));
 				callback.addMessage(mes);
 			}
@@ -85,7 +85,7 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 					log.debug("in SubstanceUniquenessValidator, creating warning with message " + message);
 					GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(message);
 					log.debug("in SubstanceUniquenessValidator after message creation");
-                    mes.addLink(createSubstanceLink(possibleMatch));
+					  mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
 					//mes.addLink(GinasUtils.createSubstanceLink(possibleMatch));
 					callback.addMessage(mes);
 				}
@@ -93,15 +93,5 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 		}
 	}
     
-    public static GinasProcessingMessage.Link createSubstanceLink(Substance s){
-		GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
-        //fake this for now.
-		l.href= "substances/"+  s.getLinkingID();
-        //todo: get the  real link
-        //l.href=ix.ginas.controllers.routes.GinasApp.substance(s.getLinkingID())+"";
-		l.text="[" + s.getApprovalIDDisplay() + "]" + s.getName();
-
-		return l;
-	}
 
 }
