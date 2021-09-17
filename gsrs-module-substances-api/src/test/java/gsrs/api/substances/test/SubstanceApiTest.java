@@ -166,4 +166,27 @@ public class SubstanceApiTest {
         assertEquals("C4H8", polymerSubstance.getPolymer().getDisplayStructure().getFormula());
         assertEquals("C4H8", polymerSubstance.getPolymer().getIdealizedStructure().getFormula());
     }
+
+    @Test
+    public void namesList() throws IOException{
+        String json= "[{\"uuid\":\"bbc560bc-4d3f-4718-87ba-466599170172\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"name\":\"POLYISOBUTYLENE (2600000 MW)\",\"type\":\"cn\",\"domains\":[],\"languages\":[\"en\"],\"nameJurisdiction\":[],\"nameOrgs\":[],\"preferred\":false,\"displayName\":true,\"_name\":\"POLYISOBUTYLENE (2600000 MW)\",\"_nameHTML\":\"POLYISOBUTYLENE (2600000 MW)\",\"references\":[\"9d99629a-a0f3-4533-87c2-cd508892ab4a\"],\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/names(bbc560bc-4d3f-4718-87ba-466599170172)?view=full\"},{\"uuid\":\"0678d775-1274-4546-9f74-48bdd8582bbd\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"name\":\"POLYISOBUTYLENE 416-479\",\"type\":\"cn\",\"domains\":[],\"languages\":[\"en\"],\"nameJurisdiction\":[],\"nameOrgs\":[],\"preferred\":false,\"displayName\":false,\"_name\":\"POLYISOBUTYLENE 416-479\",\"_nameHTML\":\"POLYISOBUTYLENE 416-479\",\"references\":[\"9d99629a-a0f3-4533-87c2-cd508892ab4a\"],\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/names(0678d775-1274-4546-9f74-48bdd8582bbd)?view=full\"},{\"uuid\":\"5e23a748-b818-459e-9806-d625aac1193e\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"name\":\"POLYISOBUTYLENE (2600000 MW(SUB V))\",\"type\":\"cn\",\"domains\":[],\"languages\":[\"en\"],\"nameJurisdiction\":[],\"nameOrgs\":[],\"preferred\":false,\"displayName\":false,\"_name\":\"POLYISOBUTYLENE (2600000 MW(SUB V))\",\"_nameHTML\":\"POLYISOBUTYLENE (2600000 MW(SUB V))\",\"references\":[\"9d99629a-a0f3-4533-87c2-cd508892ab4a\"],\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/names(5e23a748-b818-459e-9806-d625aac1193e)?view=full\"},{\"uuid\":\"47de8127-e0ac-4395-9b00-540809dc3d52\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"name\":\"POLYISOBUTYLENE (2500000 MW)\",\"type\":\"cn\",\"domains\":[],\"languages\":[\"en\"],\"nameJurisdiction\":[],\"nameOrgs\":[],\"preferred\":false,\"displayName\":false,\"_name\":\"POLYISOBUTYLENE (2500000 MW)\",\"_nameHTML\":\"POLYISOBUTYLENE (2500000 MW)\",\"references\":[\"baeac6ef-1618-4124-bc88-dd6a224e550e\"],\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/names(47de8127-e0ac-4395-9b00-540809dc3d52)?view=full\"},{\"uuid\":\"4748ad90-8c77-4217-888b-12a308017fd8\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"name\":\"OPPANOL B-150\",\"type\":\"bn\",\"domains\":[],\"languages\":[\"en\"],\"nameJurisdiction\":[],\"nameOrgs\":[],\"preferred\":false,\"displayName\":false,\"_name\":\"OPPANOL B-150\",\"_nameHTML\":\"OPPANOL B-150\",\"references\":[\"baeac6ef-1618-4124-bc88-dd6a224e550e\"],\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/names(4748ad90-8c77-4217-888b-12a308017fd8)?view=full\"},{\"uuid\":\"581228b3-4c1a-42df-b030-9a4122ae58b6\",\"created\":1628152616000,\"createdBy\":\"admin\",\"lastEdited\":1628152616000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"name\":\"OPPANOL B 150\",\"type\":\"bn\",\"domains\":[],\"languages\":[\"en\"],\"nameJurisdiction\":[],\"nameOrgs\":[],\"preferred\":false,\"displayName\":false,\"_name\":\"OPPANOL B 150\",\"_nameHTML\":\"OPPANOL B 150\",\"references\":[\"baeac6ef-1618-4124-bc88-dd6a224e550e\"],\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/names(581228b3-4c1a-42df-b030-9a4122ae58b6)?view=full\"}]";
+
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(bbc560bc-4d3f-4718-87ba-466599170172)/names"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+
+        Optional<List<NameDTO>> opt = api.getNamesOfSubstance("bbc560bc-4d3f-4718-87ba-466599170172");
+
+        List<NameDTO> names = opt.get();
+
+        assertEquals(6, names.size());
+        assertEquals(Arrays.asList("POLYISOBUTYLENE (2600000 MW)",
+                "POLYISOBUTYLENE 416-479",
+                "POLYISOBUTYLENE (2600000 MW(SUB V))",
+                "POLYISOBUTYLENE (2500000 MW)",
+                "OPPANOL B-150",
+                "OPPANOL B 150"
+                ), names.stream().map(NameDTO::getName).collect(Collectors.toList()));
+
+    }
 }
