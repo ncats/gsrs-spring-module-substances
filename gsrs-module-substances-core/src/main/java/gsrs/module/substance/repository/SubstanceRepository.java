@@ -121,6 +121,9 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             ref.refuuid = getUuid()==null?null: getUuid().toString();
             ref.substanceClass = getSubstanceClass().toString();
 
+            //TODO: REALLY REALLY need refPname here
+            //How best to do this?
+            
             return ref;
         }
     }
