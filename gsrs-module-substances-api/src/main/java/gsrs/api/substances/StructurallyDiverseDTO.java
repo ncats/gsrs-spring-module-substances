@@ -1,15 +1,24 @@
 package gsrs.api.substances;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
-
-public class StructurallyDiverseDTO extends BaseEditableDTO{
+@Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class StructurallyDiverseDTO extends SubstanceComponentBaseDTO{
 
     private UUID uuid;
-
     private String sourceMaterialClass;
 
     private String sourceMaterialType;
@@ -34,6 +43,4 @@ public class StructurallyDiverseDTO extends BaseEditableDTO{
     private String fractionName;
     private String fractionMaterialType;
 
-    private Set<String> access = new LinkedHashSet<>();
-    private Set<UUID> references = new LinkedHashSet<>();
 }

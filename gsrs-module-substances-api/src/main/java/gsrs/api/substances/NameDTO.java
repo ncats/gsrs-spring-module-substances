@@ -14,14 +14,12 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NameDTO extends BaseEditableDTO{
-    private UUID uuid;
+public class NameDTO extends SubstanceComponentBaseDTO{
 
+    private UUID uuid;
     private String name;
     private String displayName;
     private boolean preferred;
     private String type;
 
-    private Set<String> access = new LinkedHashSet<>();
-    private Set<UUID> references = new LinkedHashSet<>();
 }

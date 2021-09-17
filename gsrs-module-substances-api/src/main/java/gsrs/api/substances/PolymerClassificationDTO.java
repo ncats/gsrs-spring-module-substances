@@ -7,25 +7,18 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.UUID;
+
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SubstanceReferenceDTO extends BaseEditableDTO{
+public class PolymerClassificationDTO extends SubstanceComponentBaseDTO{
 
     private UUID uuid;
 
-    private String refPname;
-
-    private String refuuid;
-
-    private String approvalID;
-
-    private String linkingID;
-
-    private String name;
-
-    private SubstanceDTO.SubstanceClass substanceClass;
+    private String sourceType;
+    private String polymerClass;
+    private String polymerGeometry;
 
 }

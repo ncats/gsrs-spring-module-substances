@@ -13,9 +13,9 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CodeDTO extends BaseEditableDTO{
-    private UUID uuid;
+public class CodeDTO extends SubstanceComponentBaseDTO{
 
+    private UUID uuid;
     private String name;
     private String displayName;
     private boolean preferred;
@@ -23,6 +23,4 @@ public class CodeDTO extends BaseEditableDTO{
     private String code;
     private String codeSystem;
 
-    private Set<String> access = new LinkedHashSet<>();
-    private Set<UUID> references = new LinkedHashSet<>();
 }

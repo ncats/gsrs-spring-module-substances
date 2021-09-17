@@ -24,6 +24,8 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = ConceptSubstanceDTO.class, name= "concept"),
         @JsonSubTypes.Type(value = ChemicalSubstanceDTO.class, name= "chemical"),
         @JsonSubTypes.Type(value = StructurallyDiverseSubstanceDTO.class, name= "structurallyDiverse"),
+        @JsonSubTypes.Type(value = MixtureSubstanceDTO.class, name= "mixture"),
+        @JsonSubTypes.Type(value = PolymerSubstanceDTO.class, name= "polymer"),
 
 })
 public class SubstanceDTO{
@@ -37,6 +39,9 @@ public class SubstanceDTO{
     private Date modified;
     private boolean deprecated;
 
+    private String approvalID;
+    private String approvedBy;
+
     private SubstanceDefinitionType definitionType = SubstanceDefinitionType.PRIMARY;
     private SubstanceDefinitionLevel  definitionLevel= SubstanceDefinitionLevel.COMPLETE;
 
@@ -47,6 +52,8 @@ public class SubstanceDTO{
     private LazyFetchedCollection _codes;
     @Setter(AccessLevel.NONE)
     private LazyFetchedCollection _references;
+    @Setter(AccessLevel.NONE)
+    private LazyFetchedCollection _modifications;
 
     private List<NameDTO> names = new ArrayList<>();
     private List<CodeDTO> codes= new ArrayList<>();
