@@ -383,8 +383,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                                                     Tuple<ProteinSubstance, Subunit> tup = tupTotal.v();
                                                     double globalScore = tupTotal.k();
                                                     String globalScoreString = (int) Math.round(globalScore * 100) + "%";
-
-                                                    GinasProcessingMessage.Link l2 = new GinasProcessingMessage.Link();
+                                                    SubstanceReference sr = tup.k().asSubstanceReference();
+                                                    GinasProcessingMessage.Link l2 = ValidationUtils.createSubstanceLink(sr);
 //                                                    Call call2 = ix.ginas.controllers.routes.GinasApp.substance(tup.k().uuid.toString());
 //                                                    l2.href = call2.url();
                                                     if (globalScore == 1) {

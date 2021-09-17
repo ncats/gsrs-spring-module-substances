@@ -328,22 +328,19 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                                      	 double globalScore = tupTotal.k();
                                      	 String globalScoreString = (int)Math.round(globalScore*100) + "%";
                                      	 
-                                     	 GinasProcessingMessage.Link l2 = new GinasProcessingMessage.Link();
-                                     	 /*
-                                          Call call2 = ix.ginas.controllers.routes.GinasApp.substance(tup.k().uuid.toString());
-                                          l2.href = call2.url();
-
-                                     	  */
-                                          if(globalScore==1){
-         	                                 l2.text = "found exact duplicate (" + globalScoreString + ") sequence in " + 
-         	                                          "Subunit [" +tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" " + 
-         	                                                                            "(\"" + tup.k().getName() + "\")";
-                                          }else{
-                                         	 l2.text = "found approximate duplicate (" + globalScoreString + ") sequence in " + 
-         	                                          "Subunit [" +tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" " + 
-         	                                                                            "(\"" + tup.k().getName() + "\")";
-                                          }
-                                          links.add(l2);
+                                     	 SubstanceReference sr = tup.k().asSubstanceReference();
+                                         GinasProcessingMessage.Link l2 = ValidationUtils.createSubstanceLink(sr);
+                                         if (globalScore == 1) {
+                                             l2.text = "found exact duplicate (" + globalScoreString + ") sequence in "
+                                                     + "Subunit [" + tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" "
+                                                     + "(\"" + tup.k().getName() + "\")";
+                                         }
+                                         else {
+                                             l2.text = "found approximate duplicate (" + globalScoreString + ") sequence in "
+                                                     + "Subunit [" + tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" "
+                                                     + "(\"" + tup.k().getName() + "\")";
+                                         }
+                                         links.add(l2);
                                       });
                              
                              

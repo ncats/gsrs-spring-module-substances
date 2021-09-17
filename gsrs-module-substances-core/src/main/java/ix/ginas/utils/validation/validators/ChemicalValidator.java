@@ -230,7 +230,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                     mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate: " + sr.get(0).refuuid);
                 }
                 for (SubstanceReference s : sr) {
-                    mes.addLink(createSubstanceLink(s));
+                    mes.addLink(ValidationUtils.createSubstanceLink(s));
                     
                 }
                 callback.addMessage(mes);
@@ -240,19 +240,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
 
-    private GinasProcessingMessage.Link createSubstanceLink(SubstanceReference s){
-        GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
-        //TODO: it makes total sense that the REST API should return an API link, but it can't
-        //for backwards compatibility
-        
-//        l.href= GsrsLinkUtil.computeSelfLinkFor(entityLinks, Substance.class, s.getLinkingID()).getHref();
-        
-        l.href= "/app/substance/" + s.getLinkingID();
-        
-        l.text="[" + s.refPname + "]" + s.getName();
-
-        return l;
-    }
 
     private void validateChemicalStructure(
             GinasChemicalStructure oldstr, Structure newstr,
