@@ -2,6 +2,7 @@ HELP.md
 target/
 ginas.ix
 exports/
+nbproject/
 
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/

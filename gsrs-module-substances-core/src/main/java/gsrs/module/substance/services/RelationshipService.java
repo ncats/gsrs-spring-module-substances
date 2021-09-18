@@ -118,7 +118,7 @@ public class RelationshipService {
     }
 
     private Optional<String> findOldType(UpdateInverseRelationshipEvent event, Substance owner) {
-        Edit edit = editRepository.findByRefidAndVersion(owner.uuid.toString(), Integer.toString(Integer.parseInt(owner.version)-1)).get();
+        Edit edit = editRepository.findByRefidAndVersion(owner.uuid.toString(), Integer.toString(Integer.parseInt(owner.version)-1)).get(0);
         try {
             Relationship oldRelationship = SubstanceBuilder.from(edit.newValue).build()
                     .relationships.stream()
