@@ -93,22 +93,6 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         setup = true;
     }
 
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    @Before
-    public void setUp() {
-    }
-
-    @After
-    public void tearDown() {
-    }
-
     @Test
     public void testFindLayer1DefHashDuplicates() {
         log.trace("testFindLayer1DefHashDuplicates");

@@ -4,8 +4,6 @@ import example.substance.AbstractSubstanceJpaEntityTest;
 import gov.nih.ncats.common.Tuple;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
 import ix.core.models.Keyword;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.SubstanceBuilder;
@@ -15,9 +13,7 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.NamesValidator;
 import java.util.HashSet;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -27,22 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class NameValidationTest extends AbstractSubstanceJpaEntityTest {
 
-    private static boolean configured = false;
-
     @Autowired
     private TestGsrsValidatorFactory factory;
-
-    @BeforeEach
-    public void setup() {
-        if (!configured) {
-            ValidatorConfig config = new DefaultValidatorConfig();
-            config.setValidatorClass(NamesValidator.class);
-            config.setNewObjClass(Substance.class);
-            factory.addValidator("substances", config);
-            configured = true;
-            System.out.println("configured!");
-        }
-    }
 
     @Test
     public void testDisplayNameChange() {
@@ -119,6 +101,7 @@ public class NameValidationTest extends AbstractSubstanceJpaEntityTest {
         name2.addReference(ref1);
 
         builder
+                .addReference(ref1)
                 .addName(name1)
                 .addName(name2);
         Substance substance1 = builder.build();
