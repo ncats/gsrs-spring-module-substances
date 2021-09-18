@@ -19,6 +19,7 @@ import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
+import gsrs.module.substance.repository.StructuralUnitRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
@@ -223,6 +224,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     
     @Autowired
     private StructureRepository structureRepository;
+    
+
+    @Autowired
+    private StructuralUnitRepository structuralUnitRepository;
 
     @Autowired
     private EditRepository editRepository;
@@ -986,15 +991,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     if (substance.isPresent()) {
                         actualSubstance = substance.get();
                         structure = actualSubstance.getStructureToRender();
-
-
+                    }else {
+                        Optional<Unit> unit = structuralUnitRepository.findById(uuid);
+                        if(unit.isPresent()) {
+                            Unit u = unit.get();
+                            input = u.structure;
+                        }
+//                        unit.
                     }
-
-
                 }
             }
 
-            if (!structure.isPresent()) {
+            if (!structure.isPresent() && input==null) {
                 if(actualSubstance ==null) {
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
@@ -1021,7 +1029,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
 
             }
-            input = fixMolIfNeeded(structure.get());
+            if (structure.isPresent()) {
+                input = fixMolIfNeeded(structure.get());
+            }
         }else {
             //string must be a smiles (or mol ?)
             input = idOrSmiles;
