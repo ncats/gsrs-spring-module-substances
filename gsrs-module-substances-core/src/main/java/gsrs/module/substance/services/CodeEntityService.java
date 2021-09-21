@@ -297,9 +297,15 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
                 c.addRestrictGroup(g);
             }
         }
+        
         substance.addCode(c);
         c.addReference(r, substance);
 
+        //Is this a good idea?
+        c.clearDirtyFields();
+        r.clearDirtyFields();
+        substance.clearDirtyFields();
+        
         return c;
     }
 

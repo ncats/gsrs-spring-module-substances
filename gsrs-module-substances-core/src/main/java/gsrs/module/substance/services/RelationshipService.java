@@ -328,6 +328,8 @@ public class RelationshipService {
                         }
 
                         if (newSub != null) {
+                            // TODO: Are we sure about this? This feels like a hack to make something
+                            // behave as it used to in Play, but I think it's brittle. [TP]
                             newSub.updateVersion();
                             relationshipRepository.save(r);
                             newSub = substanceRepository.save(newSub);
