@@ -36,6 +36,12 @@ public class LegacyAuditInfoParserITTest extends AbstractSubstanceJpaEntityTest 
 	@RegisterExtension
 	TimeTraveller timeTraveller = new TimeTraveller();
 
+
+    public void assertEqualsIgnoreCase(String expected, String test) {
+        assertEquals(expected.toUpperCase(), test.toUpperCase());
+    }
+    
+	
 	@BeforeEach
 	public void addEntityProcessor(){
 		LegacyAuditInfoProcessor legacyAuditInfoProcessor = new LegacyAuditInfoProcessor();
@@ -125,7 +131,7 @@ public class LegacyAuditInfoParserITTest extends AbstractSubstanceJpaEntityTest 
 		assertCreated(jsn);
 
 		Optional<Substance> substance = substanceEntityService.get(uuid);
-		assertEquals(forcedApprovedBy, substance.get().approvedBy.username);
+		assertEqualsIgnoreCase(forcedApprovedBy, substance.get().approvedBy.username);
 	}
 	
 	
@@ -172,7 +178,7 @@ public class LegacyAuditInfoParserITTest extends AbstractSubstanceJpaEntityTest 
 				.buildJsonAnd(this::assertCreated);
 
 		Substance substance = substanceEntityService.get(uuid).get();
-		assertEquals(forcedApprovedBy, substance.approvedBy.username);
+		assertEqualsIgnoreCase(forcedApprovedBy, substance.approvedBy.username);
 		//the legacy date processor only keeps time to the second so we can't just do an equals check on the date object as the millis will be different
 		assertEquals(TimeUtil.asLocalDate(approvalDate), TimeUtil.asLocalDate(substance.approved));
 		assertEquals(timeTraveller.getCurrentDate(), substance.created);
