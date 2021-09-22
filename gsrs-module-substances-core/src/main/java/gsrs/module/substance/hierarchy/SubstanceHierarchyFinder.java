@@ -69,7 +69,7 @@ public class SubstanceHierarchyFinder {
 				.map(r-> {
 					try{
 						HierarchyFinder finder = r.makeFinder();
-						AutowireHelper.getInstance().autowire(finder);
+						AutowireHelper.getInstance().autowireAndProxy(finder);
 						return finder;
 					}catch(Exception e){
 						throw new RuntimeException(e);

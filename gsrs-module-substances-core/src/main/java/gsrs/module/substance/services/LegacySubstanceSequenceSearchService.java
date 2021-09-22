@@ -86,7 +86,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                     processor = new GinasSequenceResultProcessor(naAdapter, ixCache);
                 }
                
-                AutowireHelper.getInstance().autowire(processor);
+                processor = AutowireHelper.getInstance().autowireAndProxy(processor);
                 SequenceIndexer.ResultEnumeration resultEnumeration = indexerService.search(request.getQ(), request.getCutoff(), request.getType(), request.getSeqType());
                 try {
                     processor.setResults(1, resultEnumeration);

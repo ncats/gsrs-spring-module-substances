@@ -48,7 +48,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         if (codeSystem != null) {
             seqGen = CachedSupplier.runOnce(()->{
                 CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
-                AutowireHelper.getInstance().autowire(gen);
+                AutowireHelper.getInstance().autowireAndProxy(gen);
                 return gen;
             });
         }
