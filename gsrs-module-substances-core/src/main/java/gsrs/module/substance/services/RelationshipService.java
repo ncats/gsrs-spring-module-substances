@@ -118,7 +118,7 @@ public class RelationshipService {
     }
 
     private Optional<String> findOldType(UpdateInverseRelationshipEvent event, Substance owner) {
-        Edit edit = editRepository.findByRefidAndVersion(owner.uuid.toString(), Integer.toString(Integer.parseInt(owner.version)-1)).get();
+        Edit edit = editRepository.findByRefidAndVersion(owner.uuid.toString(), Integer.toString(Integer.parseInt(owner.version)-1)).get(0);
         try {
             Relationship oldRelationship = SubstanceBuilder.from(edit.newValue).build()
                     .relationships.stream()
@@ -328,6 +328,8 @@ public class RelationshipService {
                         }
 
                         if (newSub != null) {
+                            // TODO: Are we sure about this? This feels like a hack to make something
+                            // behave as it used to in Play, but I think it's brittle. [TP]
                             newSub.updateVersion();
                             relationshipRepository.save(r);
                             newSub = substanceRepository.save(newSub);

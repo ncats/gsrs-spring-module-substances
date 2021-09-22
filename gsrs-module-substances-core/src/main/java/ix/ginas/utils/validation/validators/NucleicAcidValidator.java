@@ -299,14 +299,14 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                          .findFirst()
                          .ifPresent(suResults->{
                              List<GinasProcessingMessage.Link> links = new ArrayList<>();
-                             GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
-                             /*
-                             Call call = ix.ginas.controllers.routes.GinasApp
-                                     .substances(payload.id.toString(), 16,1);
-                             l.href = call.url() + "&type=sequence&identity=" + SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF + "&identityType=SUB&seqType=NucleicAcid";
-                             */
-                             l.text = "(Perform similarity search on subunit ["
-                                     + su.subunitIndex + "])";
+//                             GinasProcessingMessage.Link l = new GinasProcessingMessage.Link();
+//                             /*
+//                             Call call = ix.ginas.controllers.routes.GinasApp
+//                                     .substances(payload.id.toString(), 16,1);
+//                             l.href = call.url() + "&type=sequence&identity=" + SubstanceFactory.SEQUENCE_IDENTITY_CUTOFF + "&identityType=SUB&seqType=NucleicAcid";
+//                             */
+//                             l.text = "(Perform similarity search on subunit ["
+//                                     + su.subunitIndex + "])";
 
                              String warnMessage=msgOne;
                              
@@ -316,7 +316,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                              
                              GinasProcessingMessage dupMessage = GinasProcessingMessage
                                      .WARNING_MESSAGE(warnMessage);
-                             dupMessage.addLink(l);
+//                             dupMessage.addLink(l);
                              
                              
                              
@@ -328,22 +328,19 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                                      	 double globalScore = tupTotal.k();
                                      	 String globalScoreString = (int)Math.round(globalScore*100) + "%";
                                      	 
-                                     	 GinasProcessingMessage.Link l2 = new GinasProcessingMessage.Link();
-                                     	 /*
-                                          Call call2 = ix.ginas.controllers.routes.GinasApp.substance(tup.k().uuid.toString());
-                                          l2.href = call2.url();
-
-                                     	  */
-                                          if(globalScore==1){
-         	                                 l2.text = "found exact duplicate (" + globalScoreString + ") sequence in " + 
-         	                                          "Subunit [" +tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" " + 
-         	                                                                            "(\"" + tup.k().getName() + "\")";
-                                          }else{
-                                         	 l2.text = "found approximate duplicate (" + globalScoreString + ") sequence in " + 
-         	                                          "Subunit [" +tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" " + 
-         	                                                                            "(\"" + tup.k().getName() + "\")";
-                                          }
-                                          links.add(l2);
+                                     	 SubstanceReference sr = tup.k().asSubstanceReference();
+                                         GinasProcessingMessage.Link l2 = ValidationUtils.createSubstanceLink(sr);
+                                         if (globalScore == 1) {
+                                             l2.text = "found exact duplicate (" + globalScoreString + ") sequence in "
+                                                     + "Subunit [" + tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" "
+                                                     + "(\"" + tup.k().getName() + "\")";
+                                         }
+                                         else {
+                                             l2.text = "found approximate duplicate (" + globalScoreString + ") sequence in "
+                                                     + "Subunit [" + tup.v().subunitIndex + "] of \"" + tup.k().getApprovalIDDisplay() + "\" "
+                                                     + "(\"" + tup.k().getName() + "\")";
+                                         }
+                                         links.add(l2);
                                       });
                              
                              

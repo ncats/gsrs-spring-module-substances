@@ -46,7 +46,9 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
             callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Substance version '" + objnew.version +  "', does not match the stored version '" +  objold.version +"', record may have been changed while being updated"));
         }
         UserProfile up =auditorAware.getCurrentAuditor()
-                .map(p->userProfileRepository.findByUser_Username(p.username))
+                .map(p->userProfileRepository.findByUser_UsernameIgnoreCase(p.username))
+                .filter(oo->oo!=null)
+                .map(oo->oo.standardize())
                 .orElse(UserProfile.GUEST());
         if (objnew.isPublic() && !objold.isPublic()) {
 

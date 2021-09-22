@@ -258,7 +258,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                                                 + n.name
                                                 + "' collides (possible duplicate) with existing name for substance:")
                                //TODO katzelda Feb 2021: add link back
-//                                .addLink(GinasUtils.createSubstanceLink(s2))
+                                . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
                                 ;
                         callback.addMessage(mes);
                     }
@@ -268,28 +268,14 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
             if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().name.equalsIgnoreCase(n.name)
                     && s.names.stream().anyMatch(nm->nm.name.equals(oldDisplayName.get().name)) //make sure the old display name is still present
-                ) {
-                GinasProcessingMessage mes;
-                if( s.changeReason==null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED)) {
-                 mes = GinasProcessingMessage
-                        .ERROR_MESSAGE(
-                                "Preferred Name has been changed from '"
-                                        + oldDisplayName.get().name
-                                        + "' to '"
-                                        + n.name
-                                        + "'. It is not customary to change the preferred name! Please confirm that this change is intentional by setting the Change Reason to '"
-                                                + CHANGE_REASON_DISPLAYNAME_CHANGED+ "'.");
-                 } else {
-                                    mes = GinasProcessingMessage
+                &&  (s.changeReason==null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
+                GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
                                 "Preferred Name has been changed from '"
                                         + oldDisplayName.get().name
                                         + "' to '"
                                         + n.name
                                         + "'. It is not customary to change the preferred name! Please confirm that this change is intentional by submitting.");
- 
-                }
-                    
                 callback.addMessage(mes);
             }
         }

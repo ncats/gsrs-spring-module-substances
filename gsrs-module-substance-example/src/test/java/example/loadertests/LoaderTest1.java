@@ -2,7 +2,6 @@ package example.loadertests;
 
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
-import gov.nih.ncats.structureIndexer.StructureIndexer.Result;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.services.PrincipalServiceImpl;
@@ -44,8 +43,6 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         principalService.clearCache();
     }
 
-    public LoaderTest1() {
-    }
 
     private int countStructureSearchHits(String structure, String compoundName) throws Exception {
         UUID uuid = UUID.randomUUID();
@@ -62,13 +59,13 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         }
 
         StructureIndexer.ResultEnumeration result = indexer.substructure(structure);
+
         AtomicInteger count = new AtomicInteger(0);
         if (compoundName != null && compoundName.length() > 0) {
             assertTrue(result.hasMoreElements());
         }
         while (result.hasMoreElements()) {
-            Result next =result.nextElement();
-            System.out.println("ID: " + next.getId() + "; formula: "+ next.getMol().getFormula());
+            result.nextElement();
             count.incrementAndGet();
 //            Chemical currentMol = r1.getMol();
 //            String msg = String.format("hit %d. ID: %s; total atoms: %d, formula: %s", count.incrementAndGet(),
@@ -78,6 +75,16 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         return count.get();
     }
 
+    /*private void substructureSearchShouldWaitAndLaterPagesShouldReturn(String structureToSearch) throws IOException, AssertionError{
+        RestSession restSession = session.newRestSession();
+        RestSubstanceSubstanceSearcher searcher = restSession.searcher();
+        SubstanceSearcher.SearchRequestOptions opts = new SubstanceSearcher.SearchRequestOptions(structureToSearch);
+
+        opts.setRows(2);
+    	SearchResult results =searcher.structureSearch(opts).getSomeResults(searcher, new ObjectMapper(), 6).get();
+
+    	assertFalse("6th page on substructure search should have 2 entries", results.getUuids().isEmpty());
+    }*/
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void loadAsAdmin() throws Exception {
