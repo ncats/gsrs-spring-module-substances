@@ -119,7 +119,12 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             SubstanceReference ref = new SubstanceReference();
             ref.approvalID = getApprovalID();
             ref.refuuid = getUuid()==null?null: getUuid().toString();
-            ref.substanceClass = getSubstanceClass().toString();
+            
+            ref.substanceClass = Substance.SubstanceClass.reference.toString();
+            
+            //This is reasonable to have done, but it's not the way references work
+            //now. The substance class is set to be a reference if it's a reference.
+//            ref.substanceClass = getSubstanceClass().toString();
 
             //TODO: REALLY REALLY need refPname here
             //How best to do this?
