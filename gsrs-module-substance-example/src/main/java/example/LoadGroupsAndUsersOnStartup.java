@@ -117,7 +117,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
             File f = new File(pathToLoadFile);
             if(f.exists()) {
                 transactionTemplate.executeWithoutResult(status-> {
-                    UserProfile up = userProfileRepository.findByUser_Username("admin");
+                    UserProfile up = userProfileRepository.findByUser_UsernameIgnoreCase("admin").standardize();
 
                     Authentication auth = new UsernamePasswordAuthenticationToken(up.user.username, null,
                             up.getRoles().stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r.name())).collect(Collectors.toList()));

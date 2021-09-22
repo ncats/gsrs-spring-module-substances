@@ -1231,7 +1231,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 	return (int) references.stream()
 		         .filter(new Predicate<Reference>(){
 				public boolean test(Reference r){
-					if(r.docType.equals("SYSTEM") || r.docType.equals("VALIDATION_MESSAGE")){
+					if(r.docType==null || r.docType.equals("SYSTEM") || r.docType.equals("VALIDATION_MESSAGE")){
 						return false;	
 					}
 					return true;
