@@ -35,6 +35,7 @@ import org.quartz.Scheduler;
 import org.quartz.SchedulerException;
 import org.quartz.impl.StdSchedulerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -62,7 +63,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
+import static org.mockito.Mockito.*;
 /**
  * Parent Super-class of that should be used to
  * test Substances interacting with a test database.
@@ -113,6 +114,20 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         @Primary
         public BackupService backupService(){
             return new BackupService();
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        @Primary
+        public ExportService mockExportService(){
+            return mock(ExportService.class);
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        @Primary
+        protected GsrsExportConfiguration mockGsrsExportConfiguration(){
+            return mock(GsrsExportConfiguration.class);
         }
 
     }
@@ -196,13 +211,13 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     protected GsrsCache mockGsrsCache;
 
 
-    @MockBean
+    @Autowired
     protected ExportService mockExportService;
 
     @MockBean
     protected TaskExecutor mockTaskExecutor;
 
-    @MockBean
+    @Autowired
     protected GsrsExportConfiguration mockGsrsExportConfiguration;
 
     @Autowired
