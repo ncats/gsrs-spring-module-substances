@@ -17,12 +17,12 @@ import java.io.InputStream;
 public class RendererOptionsConfig {
 
 
-    @Value("${substance.renderer.configPath}")
+    @Value("${substance.renderer.configPath:#{null}}")
     private String rendererOptionsJsonFilePath;
-    @Value("${substance.renderer.style}")
+    @Value("${substance.renderer.style:#{null}}")
     private String style;
     //this was the way to specify it in GSRS 2.x.  if this is in the conf then we use it
-    @Value("${gsrs.renderers.selected}")
+    @Value(value ="${gsrs.renderers.selected:#{null}}" )
     private String legacyStyle;
 
     private CachedSupplier<RendererOptions> rendererSupplier = CachedSupplier.of(()->{

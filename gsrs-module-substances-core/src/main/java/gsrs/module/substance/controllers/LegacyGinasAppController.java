@@ -167,6 +167,7 @@ public class LegacyGinasAppController {
                               @RequestParam("context") Optional<String> context,
                               @RequestParam("version") Optional<String> version,
                               @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
+                              @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                               HttpServletRequest httpRequest, RedirectAttributes attributes,
                               @RequestParam Map<String, String> queryParameters){
 
@@ -189,7 +190,42 @@ public class LegacyGinasAppController {
         if(stereo !=null){
             attributes.addAttribute("stereo", stereo);
         }
+        if(standardize !=null){
+            attributes.addAttribute("standardize", standardize);
+        }
         return new ModelAndView("redirect:/api/v1/substances/render(" +id +")");
+    }
+
+    //GET	 /render	ix.ncats.controllers.App.renderParam(structure: String ?= null, size: Int ?= 150)
+    @GetMapping({"/render", "/ginas/app/render"})
+    public Object cvRenderImage(@RequestParam String structure,
+                              @RequestParam(value = "size", required = false, defaultValue = "150") int size,
+                              @RequestParam("context") Optional<String> context,
+                              @RequestParam("version") Optional<String> version,
+                              @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
+                              @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
+                              HttpServletRequest httpRequest, RedirectAttributes attributes,
+                              @RequestParam Map<String, String> queryParameters){
+
+
+        httpRequest.setAttribute(
+                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
+
+        attributes.addAttribute("format", "svg");
+        attributes.addAttribute("size", size);
+        if(context.isPresent()) {
+            attributes.addAttribute("context", context.get());
+        }
+        if(version.isPresent()) {
+            attributes.addAttribute("version", version.get());
+        }
+        if(stereo !=null){
+            attributes.addAttribute("stereo", stereo);
+        }
+        if(standardize !=null){
+            attributes.addAttribute("standardize", standardize);
+        }
+        return new ModelAndView("redirect:/api/v1/substances/render/" +structure);
     }
 
     @GetGsrsRestApiMapping("/suggest/@fields")
