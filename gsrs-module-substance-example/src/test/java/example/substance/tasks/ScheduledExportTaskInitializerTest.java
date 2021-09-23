@@ -1,4 +1,4 @@
-package example.substance.initializer;
+package example.substance.tasks;
 
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.autoconfigure.GsrsExportConfiguration;
@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
@@ -32,7 +33,7 @@ public class ScheduledExportTaskInitializerTest extends AbstractSubstanceJpaFull
 
     private final String fileName = "rep18.gsrs";
 
-    /*@TestConfiguration
+    @TestConfiguration
     public static class TestConfig {
 
         @Bean
@@ -40,16 +41,16 @@ public class ScheduledExportTaskInitializerTest extends AbstractSubstanceJpaFull
             GsrsExportConfiguration config = new GsrsExportConfiguration();
             return new DefaultExportService(config);
         }
-    }*/
+    }
     
-//    @Autowired
-//    ExportService exportService;
+    @Autowired
+    ExportService exportService;
 
     @BeforeEach
     public void clearIndexers() throws IOException {
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
-        //testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+       //testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
         /*{
             ValidatorConfig config = new DefaultValidatorConfig();
             config.setValidatorClass(ChemicalValidator.class);
