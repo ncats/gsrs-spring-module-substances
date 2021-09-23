@@ -1,6 +1,6 @@
 # Change Log For Substance Module
 
-## 0.8.2
+## 0.8.2 
 
 ### Renderer
 * new conf property for named renderer options so you don't need to include a json file.
