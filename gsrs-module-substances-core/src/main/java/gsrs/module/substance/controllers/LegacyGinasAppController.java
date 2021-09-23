@@ -1,6 +1,8 @@
 package gsrs.module.substance.controllers;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -205,7 +207,7 @@ public class LegacyGinasAppController {
                               @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                               @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                               HttpServletRequest httpRequest, RedirectAttributes attributes,
-                              @RequestParam Map<String, String> queryParameters){
+                              @RequestParam Map<String, String> queryParameters) throws UnsupportedEncodingException {
 
 
         httpRequest.setAttribute(
@@ -225,7 +227,7 @@ public class LegacyGinasAppController {
         if(standardize !=null){
             attributes.addAttribute("standardize", standardize);
         }
-        return new ModelAndView("redirect:/api/v1/substances/render/" +structure);
+        return new ModelAndView("redirect:/api/v1/substances/render/" + URLEncoder.encode(structure, "UTF-8"));
     }
 
     @GetGsrsRestApiMapping("/suggest/@fields")
