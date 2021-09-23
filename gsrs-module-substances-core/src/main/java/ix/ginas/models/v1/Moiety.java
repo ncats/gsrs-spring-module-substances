@@ -1,19 +1,30 @@
 package ix.ginas.models.v1;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToOne;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+
+import ix.core.SingleParent;
 import ix.core.models.Indexable;
 import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
-
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 /**
  * Conceptually, a Moiety is a {@link GinasChemicalStructure}
@@ -25,6 +36,7 @@ import java.util.UUID;
 @JSONEntity(name = "moiety", title = "Moiety")
 @Entity
 @Table(name = "ix_ginas_moiety")
+@SingleParent
 //@JsonIgnoreProperties({ "id" })
 public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
 	public static String JSON_NULL="JSON_NULL";
