@@ -10,8 +10,13 @@ import java.util.UUID;
 
 import javax.servlet.http.HttpServletRequest;
 
+import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.molwitch.MolwitchException;
+import gov.nih.ncats.molwitch.renderer.RendererOptions;
+import gsrs.module.substance.RendererOptionsConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,6 +82,9 @@ public class LegacyGinasAppController {
     
     @Autowired
     private PayloadController payloadController;
+
+    @Autowired
+    private SubstanceController substanceController;
 
 
     //POST        /register/duplicateCheck          ix.ginas.controllers.GinasFactory.validateChemicalDuplicates
@@ -207,27 +215,47 @@ public class LegacyGinasAppController {
                               @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                               @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                               HttpServletRequest httpRequest, RedirectAttributes attributes,
-                              @RequestParam Map<String, String> queryParameters) throws UnsupportedEncodingException {
+                              @RequestParam Map<String, String> queryParameters) throws Exception {
 
 
-        httpRequest.setAttribute(
-                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
+//        httpRequest.setAttribute(
+//                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
+//
+//        attributes.addAttribute("format", "svg");
+//        attributes.addAttribute("size", size);
+//        if(context.isPresent()) {
+//            attributes.addAttribute("context", context.get());
+//        }
+//        if(version.isPresent()) {
+//            attributes.addAttribute("version", version.get());
+//        }
+//        if(stereo !=null){
+//            attributes.addAttribute("stereo", stereo);
+//        }
+//        if(standardize !=null){
+//            attributes.addAttribute("standardize", standardize);
+//        }
+//        System.out.println("structure = " + structure);
+        Chemical c = parseAndComputeCoordsIfNeeded(structure);
 
-        attributes.addAttribute("format", "svg");
-        attributes.addAttribute("size", size);
-        if(context.isPresent()) {
-            attributes.addAttribute("context", context.get());
+
+        byte [] data = substanceController.renderChemical(c,"svg", size, null, null, stereo, standardize);
+        HttpHeaders headers = new HttpHeaders();
+
+        headers.set("Content-Type", "image/svg+xml");
+        return new ResponseEntity<>(data, headers, HttpStatus.OK);
+    }
+
+    private static Chemical parseAndComputeCoordsIfNeeded(String input) throws IOException{
+        Chemical c = Chemical.parse(input);
+        if(!c.getSource().get().getType().includesCoordinates()){
+            try {
+                c.generateCoordinates();
+            } catch (MolwitchException e) {
+                throw new IOException("error generating coordinates",e);
+            }
         }
-        if(version.isPresent()) {
-            attributes.addAttribute("version", version.get());
-        }
-        if(stereo !=null){
-            attributes.addAttribute("stereo", stereo);
-        }
-        if(standardize !=null){
-            attributes.addAttribute("standardize", standardize);
-        }
-        return new ModelAndView("redirect:/api/v1/substances/render/" + URLEncoder.encode(structure, "UTF-8"));
+        return c;
     }
 
     @GetGsrsRestApiMapping("/suggest/@fields")

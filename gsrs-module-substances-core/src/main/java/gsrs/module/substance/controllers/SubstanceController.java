@@ -1124,7 +1124,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
     }
 
-    private byte[] renderChemical (Chemical chem, String format,
+    public byte[] renderChemical (Chemical chem, String format,
                            int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize)
             throws Exception {
 
