@@ -293,7 +293,9 @@ public class RelationshipService {
                         Substance newSub = (Substance) s;
 //						System.out.println("Adding directly now");
                         Relationship obj = relationshipRepository.findById(event.getRelationshipIdToInvert()).get();
-
+                        if(!obj.isAutomaticInvertible()){
+                            return Optional.empty();
+                        }
                         Relationship r = obj.fetchInverseRelationship();
                         r.originatorUuid = event.getOriginatorSubstance().toString();
                         Optional<Substance> otherSubstanceOpt = substanceRepository.findById(event.getToSubstance());

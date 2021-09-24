@@ -69,7 +69,7 @@ public class SubstanceHierarchyFinder {
 				.map(r-> {
 					try{
 						HierarchyFinder finder = r.makeFinder();
-						AutowireHelper.getInstance().autowireAndProxy(finder);
+//						finder= AutowireHelper.getInstance().autowireAndProxy(finder);
 						return finder;
 					}catch(Exception e){
 						throw new RuntimeException(e);
@@ -77,8 +77,8 @@ public class SubstanceHierarchyFinder {
 				})
 				.collect(Collectors.toList());
 
-		l.add(new SubstanceHierarchyFinder.G1SSConstituentFinder().renameChildType("IS G1SS CONSTITUENT OF"));
-		l.add(new SubstanceHierarchyFinder.StructurallyDiverseParentFinder());
+		l.add(AutowireHelper.getInstance().autowireAndProxy(new SubstanceHierarchyFinder.G1SSConstituentFinder()).renameChildType("IS G1SS CONSTITUENT OF"));
+		l.add(AutowireHelper.getInstance().autowireAndProxy(new SubstanceHierarchyFinder.StructurallyDiverseParentFinder()));
 
 		return Collections.unmodifiableList(l);
 	});
