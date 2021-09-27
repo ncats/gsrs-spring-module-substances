@@ -80,7 +80,9 @@ public class StructureProcessor {
         }
     }
     public StructureProcessorTask.Builder taskFor(String mol, Collection<Structure> components, boolean standardize) throws Exception {
-        return taskFor(mol).components(components).standardize(false);
+        return taskFor(mol)
+                .components(components)
+                .standardize(standardize);
     }
     
     public Structure instrument

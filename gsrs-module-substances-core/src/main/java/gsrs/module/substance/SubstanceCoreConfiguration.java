@@ -15,6 +15,10 @@ import gsrs.module.substance.services.StructureResolverServiceConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
+import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
@@ -34,4 +38,21 @@ import org.springframework.context.annotation.Import;
 
 })
 public class SubstanceCoreConfiguration {
+
+    @Bean
+    public WebServerFactoryCustomizer<TomcatServletWebServerFactory>
+    containerCustomizer(){
+        return new EmbeddedTomcatCustomizer();
+    }
+
+    private static class EmbeddedTomcatCustomizer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory> {
+
+        @Override
+        public void customize(TomcatServletWebServerFactory factory) {
+            factory.addConnectorCustomizers((TomcatConnectorCustomizer) connector -> {
+                connector.setAttribute("relaxedPathChars", "<>[\\]^`{|}");
+                connector.setAttribute("relaxedQueryChars", "<>[\\]^`{|}");
+            });
+        }
+    }
 }

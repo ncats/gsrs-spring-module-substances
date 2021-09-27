@@ -1,11 +1,8 @@
 package gsrs.module.substance.tasks;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Optional;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
 import gov.nih.ncats.common.util.TimeUtil;
@@ -25,31 +22,41 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import gov.nih.ncats.common.yield.Yield;
-import gsrs.controller.GsrsControllerUtil;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.security.AdminService;
 import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.OutputFormat;
-import ix.ginas.models.v1.Code;
-import static java.lang.String.format;
 import java.util.HashMap;
 import java.util.UUID;
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
 
     private String username;
+    private boolean publicOnly =false;
+    
+    @JsonProperty("publicOnly")
+    public void setPublicOnly(boolean p) {
+        publicOnly=p;
+    }
+
+    @JsonProperty("username")
+    public void setUsername(String username) {
+        this.username = username;
+    }
     private String name = "Full Data Export";
+
+    @JsonProperty("name")
+    public void setName(String name) {
+        this.name = name;
+    }
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -63,10 +70,9 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private SubstanceEntityService substanceEntityService;
 
+    
     @Autowired
-    private TaskExecutor taskExecutor;
-
-
+    protected PlatformTransactionManager transactionManager;
     /*@Override
     public Initializer initializeWith(Map<String, ?> m) {
     	super.initializeWith(m);
@@ -93,10 +99,6 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
         return "export-all-gsrs";
     }
 
-    public boolean publicOnly() {
-        return false;
-    }
-
     public Function<String, String> fileNameGenerator() {
         return date -> "auto-export-" + date;
     }
@@ -111,6 +113,17 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
 
     @Override
     public void run(TaskListener l) {
+        log.debug("About to call runAsAdmin with transaction");
+        
+        TransactionTemplate transactionRunReport = new TransactionTemplate(transactionManager);
+        transactionRunReport.setReadOnly(true);
+        transactionRunReport.executeWithoutResult((s)->{
+            handleRun(l);
+            log.debug("completed handleRun");
+        });
+    }
+    
+    private void handleRun(TaskListener l) {
         // TODO Auto-generated method stub
 
         log.debug("Running export");
@@ -119,7 +132,6 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
             Principal user = new Principal(username, null);
             String collectionID = getCollectionID();
             String extension = getExtension();
-            boolean publicOnly = publicOnly();
 
             ExportMetaData emd = new ExportMetaData(collectionID, null, user.username, publicOnly, extension)
                     .onTotalChanged((c) -> {
@@ -146,12 +158,11 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
             Stream<Substance> substanceStream = getStreamSupplier();
             Stream<Substance> effectivelyFinalStream = filterStream(substanceStream, publicOnly, parameters);
             log.trace("exportService: " + exportService.getClass().getName() + exportService.getClass().getCanonicalName());
-            ExportProcess<Substance> p = exportService.createExport(emd,
-                    () -> effectivelyFinalStream);
+            ExportProcess<Substance> p = exportService.createExport(emd,() -> effectivelyFinalStream);
             log.trace("p: " + (p==null ? "null" : "not null"));
-            log.trace("taskExecutor: " + (taskExecutor==null ? "null" : "not null"));
-            log.trace("publicOnly: " + publicOnly);
-            p.run(taskExecutor, out -> Unchecked.uncheck(() -> getExporterFor(extension, out, publicOnly, parameters)));
+                        log.trace("publicOnly: " + publicOnly);
+            //based on troubleshooting session 27 Sept 2021
+            p.run(r->r.run(), out -> Unchecked.uncheck(() -> getExporterFor(extension, out, publicOnly, parameters)));
 
             /*boolean stillRunning = true;
             do {
@@ -211,7 +222,7 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     }
 
     private Stream<Substance> getStreamSupplier() {
-        return substanceRepository.findAll().stream();
+        return substanceRepository.streamAll();
     }
 
     

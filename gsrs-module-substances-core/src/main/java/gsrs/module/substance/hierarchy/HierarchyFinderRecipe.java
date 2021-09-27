@@ -9,6 +9,7 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 
 import gsrs.GsrsUtils;
+import gsrs.springUtils.AutowireHelper;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,6 +59,7 @@ public class HierarchyFinderRecipe {
         } else { // if not set then not invertible ?
             finder = new SubstanceHierarchyFinder.NonInvertibleRelationshipHierarchyFinder(relationship);
         }
+        finder = AutowireHelper.getInstance().autowireAndProxy(finder);
         if (renameChildTo != null) {
             finder = finder.renameChildType(renameChildTo);
         } else if (renameChildLambda != null) {

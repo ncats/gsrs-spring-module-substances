@@ -36,8 +36,8 @@ public class ConfigBasedDefinitionalElementConfiguration{
            }else{
                implementation = (DefinitionalElementImplementation) mapper.convertValue(config.getParameters(), config.getImplementationClass());
            }
-           AutowireHelper.getInstance().autowire(implementation);
-           list.add(implementation);
+
+           list.add(AutowireHelper.getInstance().autowireAndProxy(implementation));
        }
        return list;
     });

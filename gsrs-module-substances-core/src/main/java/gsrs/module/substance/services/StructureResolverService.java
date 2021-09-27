@@ -39,7 +39,7 @@ public class StructureResolverService {
                                 return null;
                             }
                             if(resolver !=null){
-                                AutowireHelper.getInstance().autowire(resolver);
+                                resolver = AutowireHelper.getInstance().autowireAndProxy(resolver);
                             }
                             return resolver;
                         })
