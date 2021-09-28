@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Repository
 @Transactional
@@ -132,4 +133,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             return ref;
         }
     }
+    
+    @Query("select s from Substance s")
+    public Stream<Substance> streamAll();
 }
