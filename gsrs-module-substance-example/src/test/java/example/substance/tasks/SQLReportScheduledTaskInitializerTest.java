@@ -47,7 +47,7 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
         }
         SQLReportScheduledTaskInitializer sqlReport = new SQLReportScheduledTaskInitializer();
         sqlReport.setSql("select uuid, dtype, current_version, created from ix_ginas_substance ");
-        sqlReport.setPath(reportFilePath);
+        sqlReport.setOutputPath(reportFilePath);
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
         sqlReport.run(listener);
         Assertions.assertTrue(report.exists(), "Report file must be created");
@@ -62,7 +62,7 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
         }
         SQLReportScheduledTaskInitializer sqlReport = new SQLReportScheduledTaskInitializer();
         sqlReport.setSql("select s.uuid, dtype, s.current_version, s.created, n.name from ix_ginas_substance s, ix_ginas_name n where s.uuid =n.owner_uuid and n.display_name = true");
-        sqlReport.setPath(reportFilePath);
+        sqlReport.setOutputPath(reportFilePath);
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
         sqlReport.run(listener);
         Assertions.assertTrue(report.exists(), "Report file must be created");
