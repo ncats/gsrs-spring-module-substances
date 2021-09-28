@@ -1,7 +1,6 @@
 package gsrs.module.substance.repository;
 
 import gsrs.repository.GsrsVersionedRepository;
-import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.*;
 import ix.utils.UUIDUtil;
@@ -13,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Repository
 @Transactional
@@ -43,12 +43,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 
         return null;
     }
-    
-    
-    
     @Query("select s from Substance s where s.approvalID= ?1")
     Substance findByApprovalID(String approvalID);
-    
     @Query("select s from Substance s where s.approvalID= ?1")
     SubstanceSummary findSummaryByApprovalID(String approvalID);
 
@@ -115,10 +111,6 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         Substance.SubstanceDefinitionLevel getDefinitionLevel();
         String getStatus();
         String getApprovalID();
-        
-        // It may be this can be done with a fancy query annotation
-        // but for now it's done explicitly as needed
-//        String getName();
 
         default boolean isValidated(){
             //copied from Substance class
@@ -130,21 +122,18 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             ref.refuuid = getUuid()==null?null: getUuid().toString();
             
             ref.substanceClass = Substance.SubstanceClass.reference.toString();
-
-            //TODO: REALLY need refPname here
-            //How best to do this?
-            
-            //For now use explicit query
-            NameRepository nr= StaticContextAccessor.getBean(NameRepository.class);
-            ref.refPname = nr.findDisplayNameByOwnerID(getUuid()).map(nn->nn.getName())
-                             .orElse("NO NAME");
             
             //This is reasonable to have done, but it's not the way references work
             //now. The substance class is set to be a reference if it's a reference.
 //            ref.substanceClass = getSubstanceClass().toString();
 
+            //TODO: REALLY REALLY need refPname here
+            //How best to do this?
             
             return ref;
         }
     }
+    
+    @Query("select s from Substance s")
+    public Stream<Substance> streamAll();
 }
