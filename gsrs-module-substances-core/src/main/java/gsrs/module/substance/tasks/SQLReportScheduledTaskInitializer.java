@@ -36,7 +36,7 @@ public class SQLReportScheduledTaskInitializer
 
     private String name = "sqlReport";
     private String sql;
-    private String path;
+    private String outputPath;
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
     private DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HHmmss");
     private String dataSourceQualifier;
@@ -49,30 +49,18 @@ public class SQLReportScheduledTaskInitializer
      * @return
      */
     public File getWriteFile() {
+        if(outputPath ==null) {
+            outputPath= "reports/" + name + "-%DATE%.txt";
+        }
         String date = formatter.format(TimeUtil.getCurrentLocalDateTime());
         String time = formatterTime.format(TimeUtil.getCurrentLocalDateTime());
 
-        String fpath = path.replace("%DATE%", date)
+        String fpath = outputPath.replace("%DATE%", date)
                 .replace("%TIME%", time);
 
         return new File(fpath);
     }
 
-    /*@Override
-	public Initializer initializeWith(Map<String, ?> m) {
-		super.initializeWith(m);
-		sql = Optional.ofNullable((String) m.get("sql")).get();
-
-		name = Optional.ofNullable((String) m.get("name")).orElse(name);
-
-		path = (String) m.get("output.path");
-
-		if (path == null) {
-			path = "reports/" + name + "-%DATE%.txt";
-		}
-
-		return this;
-	}*/
     private PrintStream makePrintStream(File writeFile) throws IOException {
         return new PrintStream(
                 new BufferedOutputStream(new FileOutputStream(writeFile)),
@@ -85,7 +73,10 @@ public class SQLReportScheduledTaskInitializer
             l.message("Initializing SQL");
 
             File writeFile = getWriteFile();
-            writeFile.getParentFile().mkdirs();
+            File abfile = writeFile.getAbsoluteFile();
+            File pfile = abfile.getParentFile();
+            
+            pfile.mkdirs();
 
             try (PrintStream out = makePrintStream(writeFile)) {
 
