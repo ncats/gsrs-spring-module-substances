@@ -61,8 +61,10 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
         for(Relationship r:refrel){
             Substance owner = r.fetchOwner();
+            log.debug("finding inverse owner simple method:" + owner);
             if(owner==null) {
                 owner= substanceRepository.findByRelationships_Uuid(r.uuid);
+                log.debug("finding inverse owner direct lookup method:" + owner);
             }
             if(owner==null) {
                 owner= obj.relationships
@@ -77,6 +79,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                        return substanceRepository.findBySubstanceReference(rr.relatedSubstance);
                    })
                    .orElse(null);
+
+                log.debug("finding inverse owner convoluted method:" + owner);
             }
             eventPublisher.publishEvent(
                     TryToCreateInverseRelationshipEvent.builder()
