@@ -16,8 +16,11 @@ import java.util.List;
 @Table(name="ix_ginas_agentmod")
 @SingleParent
 public class AgentModification extends GinasCommonSubData {
-	@ManyToOne(cascade = CascadeType.PERSIST)
+
     @ParentReference
+	@ManyToOne(
+	        cascade = CascadeType.PERSIST
+	        )
 	private Modifications owner;
 	
     @JSONEntity(title = "Process")

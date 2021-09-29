@@ -59,6 +59,10 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
     Substance findByModifications_Uuid(UUID uuid);
+    
+
+    @Query("select s from Substance s JOIN s.relationships r where r.uuid = ?1")
+    Substance findByRelationships_Uuid(UUID uuid);
 
 
 
@@ -93,6 +97,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     @Query("select s from Substance s JOIN s.relationships r where r.relatedSubstance.refuuid=?1 and r.type='"+ Substance.ALTERNATE_SUBSTANCE_REL +"'")
     List<Substance> findSubstancesWithAlternativeDefinition(String alternativeUuid);
 
+    
     default List<Substance> findSubstancesWithAlternativeDefinition(Substance alternative){
         return findSubstancesWithAlternativeDefinition(alternative.getOrGenerateUUID().toString());
     }

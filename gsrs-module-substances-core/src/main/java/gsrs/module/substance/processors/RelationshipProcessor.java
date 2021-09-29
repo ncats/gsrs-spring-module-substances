@@ -320,7 +320,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	@Override
 	public void preRemove(Relationship obj) {
-		Substance s = obj.getOwner();
+		Substance s = obj.fetchOwner();
 		s.removeRelationship(obj);
 
 			if (obj.isAutomaticInvertible()) {

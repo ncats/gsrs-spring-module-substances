@@ -16,8 +16,11 @@ import java.util.List;
 @JSONEntity(title = "Physical Modification", isFinal = true)
 @SingleParent
 public class PhysicalModification extends GinasCommonSubData {
-	@ManyToOne(cascade = CascadeType.PERSIST)
-	@ParentReference
+
+    @ParentReference
+	@ManyToOne(
+	        cascade = CascadeType.PERSIST
+	        )
 	private Modifications owner;
     @JSONEntity(title = "Physical Modification Role", isRequired = true)
     public String physicalModificationRole;

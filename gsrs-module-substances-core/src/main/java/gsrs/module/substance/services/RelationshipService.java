@@ -80,7 +80,7 @@ public class RelationshipService {
 
     private Optional<Relationship> findReverseRelationship(UpdateInverseRelationshipEvent event){
 
-        Substance owner = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated()).get().getOwner();
+        Substance owner = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated()).get().fetchOwner();
 
 
         Optional<Relationship> opt = relationshipRepository.findByOriginatorUuid(event.getOriginatorIdToUpdate().toString())
@@ -138,7 +138,7 @@ public class RelationshipService {
             return;
         }
         Relationship r1 = opt.get();
-        final Substance osub = r1.getOwner();
+        final Substance osub = r1.fetchOwner();
         Relationship updatedInverseRelationship = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated()).get();
         entityPersistAdapter.performChangeOn(osub, osub2 -> {
             Relationship toUpdate =null;
@@ -213,7 +213,7 @@ public class RelationshipService {
 
             osub2.references.removeAll(refsToRemove);
 
-            Substance otherSubstance = updatedInverseRelationship.getOwner();
+            Substance otherSubstance = updatedInverseRelationship.fetchOwner();
             for (Keyword k : updatedInverseRelationship.getReferences()) {
 
                 Reference ref = otherSubstance.getReferenceByUUID(k.getValue());
@@ -251,7 +251,7 @@ public class RelationshipService {
         }
         Relationship r1 = opt.get();
         r1.setOkToRemove();
-        final Substance osub = r1.getOwner();
+        final Substance osub = r1.fetchOwner();
         if (osub != null) {
             entityPersistAdapter.performChangeOn(osub, osub2 -> {
 //									System.out.println("Okay, going to delete the inverse");

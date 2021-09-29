@@ -74,7 +74,7 @@ public class RelationshipRepositoryITTest extends AbstractSubstanceJpaEntityTest
                     UUID uuid = UUID.randomUUID();
                     r.uuid = uuid;
                     r.relatedSubstance = savedSubstanceB.asSubstanceReference();
-                    r.setOwner(savedSubstance);
+                    r.assignOwner(savedSubstance);
 
 
                     Relationship saved = relationshipRepository.save(r);
@@ -85,7 +85,7 @@ public class RelationshipRepositoryITTest extends AbstractSubstanceJpaEntityTest
                     other.originatorUuid = uuid.toString();
                     other.uuid = UUID.randomUUID();
                     other.relatedSubstance = savedSubstance.asSubstanceReference();
-                    other.setOwner(savedSubstanceB);
+                    other.assignOwner(savedSubstanceB);
                     Relationship savedOther = relationshipRepository.save(other);
 
                     return Arrays.asList(uuid, savedOther.uuid);
