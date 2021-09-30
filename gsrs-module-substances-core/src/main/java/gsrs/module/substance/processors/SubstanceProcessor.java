@@ -82,15 +82,19 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
                 log.debug("finding inverse owner convoluted method:" + owner);
             }
-            eventPublisher.publishEvent(
-                    TryToCreateInverseRelationshipEvent.builder()
-                            .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
-                            .originatorSubstance(owner.uuid)
-                            .toSubstance(owner.uuid)
-                            .fromSubstance(obj.uuid)
-                            .relationshipIdToInvert(r.uuid)
-                            .build()
-                    );
+            if(owner!=null) {
+                eventPublisher.publishEvent(
+                        TryToCreateInverseRelationshipEvent.builder()
+                                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
+                                .originatorSubstance(owner.uuid)
+                                .toSubstance(owner.uuid)
+                                .fromSubstance(obj.uuid)
+                                .relationshipIdToInvert(r.uuid)
+                                .build()
+                        );
+            }else {
+                log.error("Could not find the owner of relationship:" + r.uuid + " it may be that the relationship was saved without an owner present.");
+            }
 
         }
     }
