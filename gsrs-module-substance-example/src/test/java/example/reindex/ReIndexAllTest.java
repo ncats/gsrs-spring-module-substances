@@ -13,6 +13,7 @@ import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.GsrsJpaTest;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.util.TaskListener;
 import ix.core.models.BackupEntity;
 import ix.core.models.BaseModel;
 import ix.ginas.modelBuilders.SubstanceBuilder;
@@ -147,7 +148,7 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
         applicationEvents.clear();
 
 
-        SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
+        TaskListener listener = new TaskListener();
         UUID uuid = UUID.randomUUID();
         reindexFromBackups.execute(uuid, listener);
         //2 substances each with ( 1 sub, 1 name, 1 ref) = 6 indexed events

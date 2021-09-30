@@ -16,10 +16,10 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.util.TaskListener;
 import ix.core.util.KeepLastList;
 import ix.utils.Util;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
 
 public class DataRecorder extends ScheduledTaskInitializer {
 

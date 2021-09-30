@@ -1,11 +1,11 @@
 package gsrs.module.substance.tasks;
 
+import gsrs.util.TaskListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.services.BackupService;
 import gsrs.springUtils.StaticContextAccessor;
 
@@ -36,7 +36,7 @@ public class RebackupTaskInitializer extends ScheduledTaskInitializer {
 
 
     @Override
-    public void run(SchedulerPlugin.TaskListener l){
+    public void run(TaskListener l){
             backupService.reBackupAllEntitiesOfType(StaticContextAccessor.getBean(repositoryClass),
                     PageRequest.of(0, 200), taskProgress -> {
                 l.message(taskProgress.getCurrentCount() + "  of " + taskProgress.getTotalCount());

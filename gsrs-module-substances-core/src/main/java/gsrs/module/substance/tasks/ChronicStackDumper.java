@@ -14,9 +14,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.scheduledTasks.CronExpressionBuilder;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
+import gsrs.util.TaskListener;
 import ix.utils.Util;
 
 /**

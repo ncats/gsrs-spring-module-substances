@@ -23,7 +23,7 @@ import java.util.List;
 public class Relationship extends /*CommonDataElementOfCollection */ GinasCommonSubData {
     
 	public static final String ACTIVE_MOIETY_RELATIONSHIP_TYPE="ACTIVE MOIETY";
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne(cascade = CascadeType.PERSIST )
     @JsonIgnore
     @ParentReference
     private Substance owner;

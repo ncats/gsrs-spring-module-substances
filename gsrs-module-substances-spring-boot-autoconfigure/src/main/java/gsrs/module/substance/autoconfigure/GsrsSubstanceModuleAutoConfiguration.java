@@ -139,8 +139,8 @@ public class GsrsSubstanceModuleAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(ReindexService.class)
-    public ReindexService reindexService(){
+    @ConditionalOnMissingBean(ReindexFromBackups.class)
+    public ReindexFromBackups reindexService(){
         return new ReindexFromBackups();
     }
 

@@ -32,7 +32,6 @@ import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.SubunitRepository;
-import gsrs.module.substance.services.ReindexService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SequenceSearchType;

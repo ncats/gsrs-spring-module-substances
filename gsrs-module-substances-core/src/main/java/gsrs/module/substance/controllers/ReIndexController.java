@@ -3,10 +3,9 @@ package gsrs.module.substance.controllers;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
-import gsrs.module.substance.services.ReindexService;
-import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.module.substance.services.ReindexFromBackups;
 import gsrs.security.hasAdminRole;
+import gsrs.util.TaskListener;
 import ix.core.EntityMapperOptions;
 import ix.ginas.models.v1.Substance;
 import lombok.Data;
@@ -32,7 +31,7 @@ public class ReIndexController {
     private GsrsCache ixCache;
 
     @Autowired
-    private ReindexService reindexService;
+    private ReindexFromBackups reindexService;
 
     @Autowired
     private GsrsControllerConfiguration gsrsControllerConfiguration;
@@ -41,7 +40,7 @@ public class ReIndexController {
     @EntityMapperOptions()
     public static class ReindexStatus {
         @JsonProperty("status")
-        private SchedulerPlugin.TaskListener listener;
+        private TaskListener listener;
         @Id
         private UUID uuid;
 
@@ -75,7 +74,7 @@ public class ReIndexController {
         ReIndexController.ReindexStatus status = new ReIndexController.ReindexStatus();
         status.setUuid(UUID.randomUUID());
         ixCache.setTemp(status.uuid.toString(), status);
-        SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
+        TaskListener listener = new TaskListener();
         status.setListener(listener);
         reindexService.executeAsync(status.uuid, listener);
 

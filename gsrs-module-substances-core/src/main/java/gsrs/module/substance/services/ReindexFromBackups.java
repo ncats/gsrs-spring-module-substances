@@ -2,12 +2,15 @@ package gsrs.module.substance.services;
 
 import gsrs.events.*;
 import gsrs.indexer.IndexCreateEntityEvent;
+import gsrs.legacy.ReindexService;
 import gsrs.module.substance.tasks.ProcessExecutionService;
 import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.util.TaskListener;
 import ix.core.models.BackupEntity;
 import ix.core.util.EntityUtils;
 import ix.core.utils.executor.ProcessListener;
+import ix.ginas.models.v1.Substance;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +39,7 @@ import java.util.stream.Stream;
  * @see IncrementReindexEvent
  */
 @Slf4j
-public class ReindexFromBackups implements ReindexService{
+public class ReindexFromBackups implements ReindexService<Substance> {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -49,7 +52,7 @@ public class ReindexFromBackups implements ReindexService{
     @Data
     @Builder
     private static class TaskProgress{
-        private SchedulerPlugin.TaskListener listener;
+        private TaskListener listener;
         private UUID id;
         private long totalCount;
         private long currentCount;
@@ -61,12 +64,12 @@ public class ReindexFromBackups implements ReindexService{
     @Async
     @Override
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public void executeAsync(Object id, SchedulerPlugin.TaskListener l) throws IOException {
-        execute(id, l);
+    public void executeAsync(Object id, TaskListener l, boolean ignore) throws IOException {
+        execute(id, l, ignore);
     }
     @Override
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
-    public void execute(Object id, SchedulerPlugin.TaskListener l) throws IOException {
+    public void execute(Object id, TaskListener l, boolean ignore) throws IOException {
         l.message("Initializing reindexing");
 
 //this is all handled now by Spring events
@@ -83,7 +86,11 @@ public class ReindexFromBackups implements ReindexService{
                                     .listener(l)
                                     .build());
 
-        eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
+        eventPublisher.publishEvent(BeginReindexEvent.builder()
+                .wipeIndexStrategy(BeginReindexEvent.WipeIndexStrategy.CLEAR_ALL)
+                .id(reindexId)
+                .numberOfExpectedRecord(count)
+                .build());
 
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
 
