@@ -1,6 +1,7 @@
 package gsrs.module.substance.repository;
 
 import gsrs.repository.GsrsVersionedRepository;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.*;
 import ix.utils.UUIDUtil;
@@ -55,6 +56,10 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
     Substance findByModifications_Uuid(UUID uuid);
+    
+
+    @Query("select s from Substance s JOIN s.relationships r where r.uuid = ?1")
+    Substance findByRelationships_Uuid(UUID uuid);
 
 
 
@@ -89,6 +94,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     @Query("select s from Substance s JOIN s.relationships r where r.relatedSubstance.refuuid=?1 and r.type='"+ Substance.ALTERNATE_SUBSTANCE_REL +"'")
     List<Substance> findSubstancesWithAlternativeDefinition(String alternativeUuid);
 
+    
     default List<Substance> findSubstancesWithAlternativeDefinition(Substance alternative){
         return findSubstancesWithAlternativeDefinition(alternative.getOrGenerateUUID().toString());
     }
@@ -129,6 +135,15 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 
             //TODO: REALLY REALLY need refPname here
             //How best to do this?
+            //For now use explicit query
+            NameRepository nr= StaticContextAccessor.getBean(NameRepository.class);
+            ref.refPname = nr.findDisplayNameByOwnerID(getUuid()).map(nn->nn.getName())
+                             .orElse("NO NAME");
+            
+            //This is reasonable to have done, but it's not the way references work
+            //now. The substance class is set to be a reference if it's a reference.
+            //            ref.substanceClass = getSubstanceClass().toString();
+
             
             return ref;
         }

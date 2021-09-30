@@ -44,11 +44,11 @@ public class SplExportInitializer extends ScheduledExportTaskInitializer{
     }
 
 
-    protected String getCollectionID() {
+    public String getCollectionID() {
         return "export-spl";
     }
 
-    protected String getExtension() {
+    public String getExtension() {
         return "spl.xml";
     }
 

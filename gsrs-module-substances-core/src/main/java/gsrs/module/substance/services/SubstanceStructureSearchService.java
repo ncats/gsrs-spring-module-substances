@@ -217,7 +217,7 @@ public class SubstanceStructureSearchService {
                     gsrsCache,
                     entityManager);
 
-            AutowireHelper.getInstance().autowire(processor);
+            processor = AutowireHelper.getInstance().autowireAndProxy(processor);
             StructureIndexer.ResultEnumeration resultEnumeration=null;
             if(request.getType() == StructureSearchType.SUBSTRUCTURE) {
                 resultEnumeration = structureIndexerService.substructure(request.getQueryStructure());

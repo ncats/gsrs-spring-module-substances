@@ -1006,7 +1006,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     }
     public Relationship addRelationship(Relationship r){
         this.relationships.add(Objects.requireNonNull(r));
-        r.setOwner(this);
+        r.assignOwner(this);
         this.setIsDirty("relationships");
         return r;
     }

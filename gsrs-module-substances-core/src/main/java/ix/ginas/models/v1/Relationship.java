@@ -31,14 +31,7 @@ public class Relationship extends /*CommonDataElementOfCollection */ GinasCommon
     public Substance fetchOwner(){
         return this.owner;
     }
-    public Substance getOwner(){
-        return this.owner;
-    }
-
-    public void setOwner(Substance owner) {
-        this.owner = owner;
-    }
-
+    
     public void assignOwner(Substance own){
         this.owner=own;
     }

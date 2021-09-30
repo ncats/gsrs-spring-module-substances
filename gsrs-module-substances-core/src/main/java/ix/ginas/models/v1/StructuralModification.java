@@ -17,7 +17,9 @@ import java.util.List;
 @SingleParent
 public class StructuralModification extends GinasCommonSubData {
 	@ParentReference
-	@ManyToOne(cascade = CascadeType.PERSIST)
+	@ManyToOne(
+	        cascade = CascadeType.PERSIST
+	        )
 	private Modifications owner;
 	
     @JSONEntity(title = "Modification Type", isRequired = true)

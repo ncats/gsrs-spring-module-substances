@@ -12,9 +12,14 @@ import java.util.List;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 public class UniqueCodeGenerator implements EntityProcessor<Substance> {
@@ -43,7 +48,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         if (codeSystem != null) {
             seqGen = CachedSupplier.runOnce(()->{
                 CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
-                AutowireHelper.getInstance().autowire(gen);
+                AutowireHelper.getInstance().autowireAndProxy(gen);
                 return gen;
             });
         }
@@ -64,13 +69,12 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
 
 
         if (seqGen != null && s.isPrimaryDefinition()) {
+            log.trace("looking for code");
             CodeSequentialGenerator codeSequentialGenerator = seqGen.getSync();
-            log.trace("looking for code of system " +codeSequentialGenerator.getCodeSystem());
             boolean hasCode = false;
             for (Code c : s.codes) {
                 if (c.codeSystem.equals(codeSequentialGenerator.getCodeSystem())) {
                     hasCode = true;
-                    log.trace("found!");
                     break;
                 }
             }

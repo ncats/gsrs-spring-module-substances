@@ -1,6 +1,7 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import ix.core.models.Indexable;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.SubstanceReferenceEntityListener;
@@ -40,6 +41,7 @@ public class SubstanceReference extends GinasCommonSubData {
      */
     @Transient
     @JsonIgnore
+    @Indexable(indexed = false)
     public Substance wrappedSubstance;
 
     @JSONEntity(title = "Substance Name")

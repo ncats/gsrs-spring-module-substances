@@ -969,6 +969,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                          @RequestParam(value = "context", required = false) String contextId,
                          @RequestParam(value = "size", required = false, defaultValue = "150") int size,
+                         @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
         int[] amaps = null;
         String input=null;
@@ -1046,7 +1047,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }
         }
 
-        byte[] data = renderChemical(parseAndComputeCoordsIfNeeded(input), format, size, amaps, null, stereo);
+        byte[] data = renderChemical(parseAndComputeCoordsIfNeeded(input), format, size, amaps, null, stereo, standardize);
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", parseContentType(format));
@@ -1123,8 +1124,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
     }
 
-    private byte[] renderChemical (Chemical chem, String format,
-                           int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo)
+    public byte[] renderChemical (Chemical chem, String format,
+                           int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize)
             throws Exception {
 
         try {
@@ -1195,6 +1196,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             Chem.fixMetals(chem);
 
+            if(Boolean.TRUE.equals(standardize)){
+                chem.kekulize();
+                chem.makeHydrogensImplicit();
+            }
             ChemicalRenderer renderer = new ChemicalRenderer(rendererOptons);
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream ();
@@ -1402,7 +1407,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         return c;
     }
-    private byte[] render (Structure struc, String format, int size, int[] amap, Boolean stereo)
+    private byte[] render (Structure struc, String format, int size, int[] amap, Boolean stereo, Boolean structure)
             throws Exception {
         Map<String, Boolean> newDisplay = new HashMap<>();
         newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS_AS_RELATIVE.name(),
@@ -1440,7 +1445,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(newDisplay.size()==0)newDisplay=null;
 
 
-        return renderChemical (c, format, size, amap,newDisplay,stereo);
+        return renderChemical (c, format, size, amap,newDisplay,stereo, structure);
     }
 
 }

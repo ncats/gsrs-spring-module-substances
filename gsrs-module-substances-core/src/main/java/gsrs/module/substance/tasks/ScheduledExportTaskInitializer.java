@@ -1,6 +1,5 @@
 package gsrs.module.substance.tasks;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
@@ -25,11 +24,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.service.ExportService;
-import gsrs.service.GsrsEntityService;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.OutputFormat;
 import java.util.HashMap;
-import java.util.UUID;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -39,18 +36,19 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     private String username;
     private boolean publicOnly =false;
     
-    @JsonProperty("publicOnly")
+    //removing @JsonProperty per suggestion from Danny 29 September 2021
+    //@JsonProperty("publicOnly")
     public void setPublicOnly(boolean p) {
         publicOnly=p;
     }
 
-    @JsonProperty("username")
+    //@JsonProperty("username")
     public void setUsername(String username) {
         this.username = username;
     }
     private String name = "Full Data Export";
 
-    @JsonProperty("name")
+    //@JsonProperty("name")
     public void setName(String name) {
         this.name = name;
     }
@@ -76,11 +74,11 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
         return name + " for " + username;
     }
 
-    protected String getExtension() {
+    public String getExtension() {
         return "gsrs";
     }
 
-    protected String getCollectionID() {
+    public String getCollectionID() {
         return "export-all-gsrs";
     }
 
@@ -156,7 +154,7 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
         log.trace("create params");
 
         log.trace("gsrsExportConfiguration: " + (gsrsExportConfiguration==null ? "null" : "not null"));
-        ExporterFactory<Substance> factory = gsrsExportConfiguration.getExporterFor(this.getEntityService().getContext(), params);
+        ExporterFactory<Substance> factory = gsrsExportConfiguration.getExporterFor(substanceEntityService.getContext(), params);
         log.trace("factory: " + factory);
         if (factory == null) {
             // TODO handle null couldn't find factory for params
@@ -166,7 +164,7 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     }
 
     protected ExporterFactory.Parameters createParamters(String extension, boolean publicOnly, Map<String, String> parameters) {
-        for (OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(this.getEntityService().getContext())) {
+        for (OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(substanceEntityService.getContext())) {
             if (extension.equals(f.getExtension())) {
                 return new DefaultParameters(f, publicOnly);
             }
@@ -187,9 +185,5 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
         return stream;
     }
 
-    public GsrsEntityService<Substance, UUID> getEntityService() {
-        log.trace("substanceEntityService: " + substanceEntityService);
-        return substanceEntityService;
-    }
 
 }
