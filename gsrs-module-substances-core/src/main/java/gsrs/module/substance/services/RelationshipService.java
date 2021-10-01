@@ -210,8 +210,9 @@ public class RelationshipService {
             r1.setReferences(keepRefs);
             r1.setAccess(inverse.getAccess()); //Should take care of access problem
 
-
+            
             osub2.references.removeAll(refsToRemove);
+            osub2.setIsDirty("references");
 
             Substance otherSubstance = updatedInverseRelationship.fetchOwner();
             for (Keyword k : updatedInverseRelationship.getReferences()) {
@@ -233,10 +234,6 @@ public class RelationshipService {
                     }
                 }
             }
-//            if(forceToBeGenerator.get()){
-//                r1.originatorUuid=obj.getOrGenerateUUID().toString();
-//            }
-            r1.forceUpdate();
             osub2.forceUpdate();
             return Optional.of(osub2);
         });
