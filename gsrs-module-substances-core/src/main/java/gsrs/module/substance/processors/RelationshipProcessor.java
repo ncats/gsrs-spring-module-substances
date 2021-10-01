@@ -103,8 +103,6 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 				}
 				event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
-//			UUID newUUID = UUID.randomUUID();
-//			event.setNewRelationshipId(newUUID);
 				eventPublisher.publishEvent(event);
 			}
 		});
@@ -298,12 +296,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	@Override
 	public void preUpdate(Relationship obj) {
 
-//		System.out.println("Going to update:" + obj.uuid);
-//		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-//
-//		transactionTemplate.executeWithoutResult( stauts -> {
 		if(!notWorkingOn(obj.getOrGenerateUUID().toString())){
-//			System.out.println("already worked on it!!");
 			return;
 		}
 		UpdateInverseRelationshipEvent.UpdateInverseRelationshipEventBuilder builder = UpdateInverseRelationshipEvent.builder();
@@ -320,22 +313,25 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	@Override
 	public void preRemove(Relationship obj) {
-		Substance s = obj.fetchOwner();
-		s.removeRelationship(obj);
 
-			if (obj.isAutomaticInvertible()) {
-				RemoveInverseRelationshipEvent.RemoveInverseRelationshipEventBuilder builder = RemoveInverseRelationshipEvent.builder();
-				builder.relationshipIdThatWasRemoved(obj.getOrGenerateUUID());
-				builder.relationshipTypeThatWasRemoved(obj.type);
-				builder.substanceRefIdOfRemovedRelationship(obj.fetchOwner().getOrGenerateUUID().toString());
-				builder.relatedSubstanceRefId(obj.relatedSubstance.refuuid);
-				if (obj.isGenerator()) {
-					builder.relationshipOriginatorIdToRemove(obj.getOrGenerateUUID());
-				} else {
-					builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
-				}
-				eventPublisher.publishEvent(builder.build());
-			}
+	    if(!notWorkingOn(obj.getOrGenerateUUID().toString(),true)){
+	        return;
+	    }
+
+	    if (obj.isAutomaticInvertible()) {
+	        RemoveInverseRelationshipEvent.RemoveInverseRelationshipEventBuilder builder = RemoveInverseRelationshipEvent.builder();
+	        builder.relationshipIdThatWasRemoved(obj.getOrGenerateUUID());
+	        builder.relationshipTypeThatWasRemoved(obj.type);
+	        builder.substanceRefIdOfRemovedRelationship(obj.fetchOwner().getOrGenerateUUID().toString());
+	        builder.relatedSubstanceRefId(obj.relatedSubstance.refuuid);
+	        if (obj.isGenerator()) {
+	            builder.relationshipOriginatorIdToRemove(obj.getOrGenerateUUID());
+	        } else {
+	            builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
+	        }
+	        eventPublisher.publishEvent(builder.build());
+	        
+	    }
 	}
 
 }

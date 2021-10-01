@@ -292,7 +292,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     public List<Property> properties = new ArrayList<Property>();
 
     @JSONEntity(title = "Relationships")
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL
+//    , orphanRemoval = true
+    )
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<Relationship> relationships = new ArrayList<Relationship>();
