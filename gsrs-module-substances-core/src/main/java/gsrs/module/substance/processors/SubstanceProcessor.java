@@ -132,6 +132,10 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                     if(oldPri ==null){
                         continue;
                     }
+                    //no need to remove the same relationship
+                    if(oldPri.getUuid().toString().equals(sr.refuuid)) {
+                        continue;
+                    }
                     log.debug("Removing stale bidirectional relationships");
 
 
@@ -157,7 +161,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
                 if (subPrimary != null) {
                     log.debug("Got parent sub, which is:" + subPrimary.getName());
-                    if (subPrimary.definitionType == SubstanceDefinitionType.PRIMARY) {
+                    if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
 
                         log.debug("Going to save");
 
@@ -186,7 +190,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             s.changeReason=null;
 
             addWaitingRelationships(s);
-    }
+        }
     }
 
 

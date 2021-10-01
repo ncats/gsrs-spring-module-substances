@@ -806,13 +806,13 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     }
     @JsonIgnore
     public List<Relationship> getAlternativeDefinitionRelationships() {
-        List<Relationship> subConcepts = new ArrayList<Relationship>();
+        List<Relationship> altSubs = new ArrayList<Relationship>();
         for (Relationship r : relationships) {
             if (r.type != null && r.type.equals(ALTERNATE_SUBSTANCE_REL)) {
-                subConcepts.add(r);
+                altSubs.add(r);
             }
         }
-        return subConcepts;
+        return altSubs;
     }
 
     @JsonIgnore
@@ -867,8 +867,8 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         }else{
             System.out.println("primary def not found!!!!");
         }
-
-        this.relationships.add(r);
+        addRelationship(r);
+//        this.relationships.add(r);
         return false;
     }
     @JsonIgnore
@@ -879,7 +879,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
                 toRemove.add(sref);
             }
         }
-        this.relationships.removeAll(toRemove);
+        toRemove.forEach(r->removeRelationship(r));
+//        this.removeRelationship(null)
+//        this.relationships.removeAll(toRemove);
         return toRemove;
     }
 
