@@ -95,10 +95,11 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     @Query("select s from Substance s JOIN s.relationships r where r.relatedSubstance.refuuid=?1 and r.type='"+ Substance.ALTERNATE_SUBSTANCE_REL +"'")
     List<Substance> findSubstancesWithAlternativeDefinition(String alternativeUuid);
 
-    @Transactional(readOnly=true)
+    
     default List<Substance> findSubstancesWithAlternativeDefinition(Substance alternative){
         return findSubstancesWithAlternativeDefinition(alternative.getOrGenerateUUID().toString());
     }
+    
     default Optional<SubstanceSummary> findSummaryBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
             return Optional.empty();
