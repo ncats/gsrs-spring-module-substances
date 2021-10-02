@@ -114,6 +114,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         if (s.isAlternativeDefinition()) {
 
             log.debug("It's alternative");
+            boolean skipSaving = false;
+            
             //If it's alternative, find the primary substance (there should only be 1, but this returns a list anyway)
             List<Substance> realPrimarysubs=substanceRepository.findSubstancesWithAlternativeDefinition(s);
             log.debug("Got some relationships:" + realPrimarysubs.size());
@@ -134,6 +136,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                     }
                     //no need to remove the same relationship
                     if(oldPri.getUuid().toString().equals(sr.refuuid)) {
+                        skipSaving=true;
                         continue;
                     }
                     log.debug("Removing stale bidirectional relationships");
@@ -151,29 +154,31 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
 
                 }
-                log.debug("Expanding reference");
-                Substance subPrimary=null;
-                try{
-                    subPrimary = substanceRepository.findBySubstanceReference(sr);
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
-
-                if (subPrimary != null) {
-                    log.debug("Got parent sub, which is:" + subPrimary.getName());
-                    if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
-
-                        log.debug("Going to save");
-
-                        entityPersistAdapter.performChangeOn(subPrimary, obj -> {
-                            if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
-                                log.info("Saving alt definition, now has:"
-                                        + obj.getAlternativeDefinitionReferences().size());
-                            }
-                            obj.forceUpdate();
-                            return Optional.of(obj);
-                        });
-
+                if(!skipSaving) {
+                    log.debug("Expanding reference");
+                    Substance subPrimary=null;
+                    try{
+                        subPrimary = substanceRepository.findBySubstanceReference(sr);
+                    }catch(Exception e){
+                        e.printStackTrace();
+                    }
+    
+                    if (subPrimary != null) {
+                        log.debug("Got parent sub, which is:" + subPrimary.getName());
+                        if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
+    
+                            log.debug("Going to save");
+    
+                            entityPersistAdapter.performChangeOn(subPrimary, obj -> {
+                                if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
+                                    log.info("Saving alt definition, now has:"
+                                            + obj.getAlternativeDefinitionReferences().size());
+                                }
+                                obj.forceUpdate();
+                                return Optional.of(obj);
+                            });
+    
+                        }
                     }
                 }
 
@@ -187,7 +192,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             //it might have been from copying and pasting old json
             //of an already existing substance
             //which might have the change reason set so force it to be null for new inserts
-            s.changeReason=null;
+            //TP: commenting out for now.
+//            s.changeReason=null;
 
             addWaitingRelationships(s);
         }
