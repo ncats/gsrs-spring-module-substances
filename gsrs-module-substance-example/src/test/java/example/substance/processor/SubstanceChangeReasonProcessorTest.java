@@ -45,7 +45,7 @@ public class SubstanceChangeReasonProcessorTest extends AbstractSubstanceJpaEnti
 
 
     }
-
+/* might not be what we want to happen, commenting our for now
     @Test
     @WithMockUser(username = "admin", roles="Admin")
     public void newRecordShouldHaveChangeReasonSetToNull(){
@@ -63,6 +63,7 @@ public class SubstanceChangeReasonProcessorTest extends AbstractSubstanceJpaEnti
             assertNull(saved.changeReason);
 
     }
+    */
 
     @Test
     @WithMockUser(username = "admin", roles="Admin")
