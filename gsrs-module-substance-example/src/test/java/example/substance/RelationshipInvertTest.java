@@ -486,7 +486,6 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 //    	assertEquals( 2, edits.size());
 //
     	assertEquals("2", edits.get(0).version);
-        assertEquals("1", edits.get(1).version);
     	
     }
 
@@ -580,11 +579,11 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 //        em.flush();
         transactionTemplate.executeWithoutResult( s->{
             List<Edit> otherSubEdits = editRepository.findByRefidOrderByCreatedDesc(uuid);
-//            JsonNode historyFetchedForFirst=editRepository.findByRefidOrderByCreatedDesc(uuid).get(0).getOldValueReference().rawJson();
+            //            JsonNode historyFetchedForFirst=editRepository.findByRefidOrderByCreatedDesc(uuid).get(0).getOldValueReference().rawJson();
             List<Edit> byRefidOrderByCreatedDesc = editRepository.findByRefidOrderByCreatedDesc(uuidA);
             Edit edit = byRefidOrderByCreatedDesc.get(0);
             JsonNode historyFetchedForSecond= edit.getOldValueReference().rawJson();
-    	Changes changes= JsonUtil.computeChanges(beforeA, historyFetchedForSecond, new ChangeFilter[0]);
+            Changes changes= JsonUtil.computeChanges(beforeA, historyFetchedForSecond, new ChangeFilter[0]);
 
             assertEquals(beforeA,historyFetchedForSecond);
         });

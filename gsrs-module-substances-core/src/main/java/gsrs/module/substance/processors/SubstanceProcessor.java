@@ -8,6 +8,7 @@ import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
@@ -54,7 +55,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
-
+ 
     
     @Override
     public Class<Substance> getEntityClass() {
@@ -197,14 +198,16 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
 
                         entityPersistAdapter.performChangeOn(oldPri, obj->{
-                            List<Relationship> related=oldPri.removeAlternativeSubstanceDefinitionRelationship(s);
+                            List<Relationship> related=obj.removeAlternativeSubstanceDefinitionRelationship(s);
                             for(Relationship r:related){
                                 relationshipRepository.delete(r);
                             }
-                            oldPri.forceUpdate();
+                            //TODO: This is likely broken in 3.0 and may need to have a force
+                            //save to the repo instead?
+                            obj.forceUpdate();
+
                             return Optional.of(obj);
-                        }
-                                );
+                        });
 
 
                     }
@@ -228,6 +231,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                                         log.info("Saving alt definition, now has:"
                                                 + obj.getAlternativeDefinitionReferences().size());
                                     }
+                                    //TODO: This is likely broken in 3.0 and may need to have a force
+                                    //save to the repo instead?
                                     obj.forceUpdate();
                                     return Optional.of(obj);
                                 });
