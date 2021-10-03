@@ -1,7 +1,10 @@
 package gsrs.module.substance.processors;
 
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.cv.api.*;
+import gsrs.cv.api.CodeSystemTermDTO;
+import gsrs.cv.api.ControlledVocabularyApi;
+import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
+import gsrs.cv.api.GsrsVocabularyTermDTO;
 import gsrs.module.substance.services.CodeEntityService;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
@@ -48,6 +51,7 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         try {
             Optional<GsrsCodeSystemControlledVocabularyDTO> opt = api.findByDomain("CODE_SYSTEM");
 
+//            boolean addNew=false;
         boolean addNew=true;
         if(opt.isPresent()){
             for(GsrsVocabularyTermDTO term : opt.get().getTerms()){
@@ -91,6 +95,11 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
             log.debug("finished codesystem add routine");
         }
 
+    }
+
+    @Override
+    public void initialize() throws FailProcessingException{
+        initializer.getSync();
     }
 //    private void addCodeSystem()  {
 //        Runnable r = new Runnable() {
@@ -143,7 +152,6 @@ public class ApprovalIdProcessor implements EntityProcessor<Substance> {
         if(codeSystem ==null){
             return;
         }
-        initializer.getSync();
         log.trace("copyCodeIfNecessary. codeSystem: " + codeSystem);
         if (s.approvalID != null && s.approvalID.length() > 0) {
             log.trace("handling approval ID " + s.approvalID);

@@ -1,25 +1,23 @@
 package gsrs.module.substance.processors;
 
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.cv.api.*;
+import gsrs.cv.api.CodeSystemTermDTO;
+import gsrs.cv.api.ControlledVocabularyApi;
+import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
-import ix.ginas.models.v1.*;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.CodeSequentialGenerator;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
-
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
 
 @Slf4j
 public class UniqueCodeGenerator implements EntityProcessor<Substance> {
@@ -48,12 +46,16 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         if (codeSystem != null) {
             seqGen = CachedSupplier.runOnce(()->{
                 CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
-                AutowireHelper.getInstance().autowireAndProxy(gen);
-                return gen;
+                return AutowireHelper.getInstance().autowireAndProxy(gen);
+
             });
         }
     }
 
+    @Override
+    public void initialize() throws FailProcessingException{
+        initializer.getSync();
+    }
     private void addCodeSystem() {
         log.trace("addCodeSystem and gone");
         try {
@@ -63,9 +65,11 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         }
     }
 
+
+
     public void generateCodeIfNecessary(Substance s) {
         log.trace("starting in generateCodeIfNecessary");
-        initializer.getSync();
+
 
 
         if (seqGen != null && s.isPrimaryDefinition()) {

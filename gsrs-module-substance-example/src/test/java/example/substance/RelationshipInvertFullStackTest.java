@@ -110,13 +110,16 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
                 .addRelationshipTo(substance2, "foo->bar")
                 .buildJsonAnd(this::assertCreated);
 
+        Mockito.verify(relationshipService, Mockito.times(1)).createNewInverseRelationshipFor(Mockito.any(TryToCreateInverseRelationshipEvent.class));
+        Mockito.reset(relationshipService);
+
         Substance originalFetchedSubstance = substanceEntityService.get(uuid1).get();
         assertEquals("1", originalFetchedSubstance.version);
         //now submit with one sided reference, processors should add the other side.
         assertCreated(substance2.toFullJsonNode());
 
 
-        Mockito.verify(relationshipService, Mockito.times(1)).createNewInverseRelationshipFor(Mockito.any(TryToCreateInverseRelationshipEvent.class));
+        Mockito.verify(relationshipService, Mockito.times(2)).createNewInverseRelationshipFor(Mockito.any(TryToCreateInverseRelationshipEvent.class));
 
         Substance fetchedSubstance2 = substanceEntityService.get(uuid2).get();
         Relationship relationshipA = fetchedSubstance2.relationships.get(0);

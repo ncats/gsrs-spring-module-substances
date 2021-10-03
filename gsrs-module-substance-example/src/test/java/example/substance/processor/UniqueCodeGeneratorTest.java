@@ -1,6 +1,7 @@
 package example.substance.processor;
 
 import example.substance.AbstractSubstanceJpaEntityTest;
+import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.cv.ControlledVocabularyEntityService;
 import gsrs.cv.ControlledVocabularyEntityServiceImpl;
 import gsrs.cv.CvApiAdapter;
@@ -9,19 +10,12 @@ import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
 import gsrs.module.substance.processors.UniqueCodeGenerator;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.EntityProcessor;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.utils.CodeSequentialGenerator;
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,8 +25,12 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.*;
 
 /**
  *
@@ -119,7 +117,12 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
         TransactionTemplate transactionTemplate = new TransactionTemplate( transactionManager);
         transactionTemplate.executeWithoutResult(s->{
-                    ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+            try {
+                uniqueCodeGenerator.initialize();
+            } catch (EntityProcessor.FailProcessingException e) {
+                Sneak.sneakyThrow(e);
+            }
+            ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
                     uniqueCodeGenerator.generateCodeIfNecessary(substance);
                     try {
                         Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
