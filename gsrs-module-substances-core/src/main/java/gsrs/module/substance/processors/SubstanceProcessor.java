@@ -4,7 +4,10 @@ import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.EntityPersistAdapter;
 import ix.core.EntityProcessor;
-
+import ix.core.models.Group;
+import ix.core.models.Principal;
+import ix.core.models.Role;
+import ix.core.models.UserProfile;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
@@ -12,8 +15,11 @@ import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import gov.nih.ncats.common.util.TimeUtil;
 
 import java.util.*;
 
@@ -49,6 +55,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
+    
     @Override
     public Class<Substance> getEntityClass() {
         return Substance.class;
@@ -114,71 +121,124 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         if (s.isAlternativeDefinition()) {
 
             log.debug("It's alternative");
+            boolean skipSaving = false;
+            
             //If it's alternative, find the primary substance (there should only be 1, but this returns a list anyway)
-            List<Substance> realPrimarysubs=substanceRepository.findSubstancesWithAlternativeDefinition(s);
-            log.debug("Got some relationships:" + realPrimarysubs.size());
-            Set<String> oldprimary = new HashSet<String>();
-            for(Substance pri:realPrimarysubs){
-                oldprimary.add(pri.getUuid().toString());
+            //
+            // Tyler Oct 1 2021:
+            //TODO: edits /operations tend to get triggered and flushed from a call to the substanceRepository!
+            // This is a big liability. Essentially every time a substanceRepository query method like this is called
+            // it will flush out the waiting operations, including inserts and updates ... even including the very
+            // statements that this "prePersist" or "preUpdate" hook is meant to pre-empt. I don't know how to deal with
+            // this. We either need repository calls to NEVER flush, or we need an alternative way to get this information
+            // and warn devs never to do lookups on repositories in "pre" hooks.
+            
+            // Due to auto flushing in hibernate, this is very tricky to avoid in newer versions of hibernate
+            // https://stackoverflow.com/questions/14403498/how-to-prevent-hibernate-from-flushing-in-list/14454358
+            
+            // One option is to just move pre-update/pre-persist hooks like these to validation rules,
+            // which effectively work as pre-pre hooks?
+            
+            // Just to make it work, for now, don't bother doing this lookup at all unless something changes
+            // with the primary definition. This is a bad check for a lot of reasons but may work for right now
+            
+            Relationship r1=s.getPrimaryDefinitionRelationships().get();
+            boolean worthChecking = false;
+            if(r1.isDirty() || r1.relatedSubstance.isDirty()) {
+                worthChecking=true;
+            }else {
+                //terrible hack to check if the relationship was edited recently
+                if(r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-5000) {
+                    worthChecking=true;
+                }
             }
+            
+            if(worthChecking) {
 
 
-            SubstanceReference sr = s.getPrimaryDefinitionReference();
-            if (sr != null) {
-
-                log.debug("Enforcing bidirectional relationship");
-                //remove old references
-                for(final Substance oldPri: realPrimarysubs){
-                    if(oldPri ==null){
-                        continue;
-                    }
-                    //no need to remove the same relationship
-                    if(oldPri.getUuid().toString().equals(sr.refuuid)) {
-                        continue;
-                    }
-                    log.debug("Removing stale bidirectional relationships");
+                List<Substance> realPrimarysubs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
+                //Note: trying to isolate in a transaction (shown below) doesn't work.
+                //            TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+                //            transactionTemplate.setReadOnly(true);
+                //            List<Substance> realPrimarysubs= transactionTemplate.execute(status->{
+                //                System.out.println("Test");
+                //                List<Substance> subs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
+                //                System.out.println("Test");
+                //                return subs;
+                //            });
 
 
-                    entityPersistAdapter.performChangeOn(oldPri, obj->{
-                        List<Relationship> related=oldPri.removeAlternativeSubstanceDefinitionRelationship(s);
-                        for(Relationship r:related){
-                            relationshipRepository.delete(r);
+
+
+
+                //            List<Substance> realPrimarysubs=substanceRepository.findSubstancesWithAlternativeDefinition(s);
+                log.debug("Got some relationships:" + realPrimarysubs.size());
+                Set<String> oldprimary = new HashSet<String>();
+                for(Substance pri:realPrimarysubs){
+                    oldprimary.add(pri.getUuid().toString());
+                }
+
+
+                SubstanceReference sr = s.getPrimaryDefinitionReference();
+                if (sr != null) {
+
+                    log.debug("Enforcing bidirectional relationship");
+                    //remove old references
+                    for(final Substance oldPri: realPrimarysubs){
+                        if(oldPri ==null){
+                            continue;
                         }
-                        oldPri.forceUpdate();
-                        return Optional.of(obj);
-                    }
-                            );
+                        //no need to remove the same relationship
+                        if(oldPri.getUuid().toString().equals(sr.refuuid)) {
+                            skipSaving=true;
+                            continue;
+                        }
+                        log.debug("Removing stale bidirectional relationships");
 
 
-                }
-                log.debug("Expanding reference");
-                Substance subPrimary=null;
-                try{
-                    subPrimary = substanceRepository.findBySubstanceReference(sr);
-                }catch(Exception e){
-                    e.printStackTrace();
-                }
-
-                if (subPrimary != null) {
-                    log.debug("Got parent sub, which is:" + subPrimary.getName());
-                    if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
-
-                        log.debug("Going to save");
-
-                        entityPersistAdapter.performChangeOn(subPrimary, obj -> {
-                            if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
-                                log.info("Saving alt definition, now has:"
-                                        + obj.getAlternativeDefinitionReferences().size());
+                        entityPersistAdapter.performChangeOn(oldPri, obj->{
+                            List<Relationship> related=oldPri.removeAlternativeSubstanceDefinitionRelationship(s);
+                            for(Relationship r:related){
+                                relationshipRepository.delete(r);
                             }
-                            obj.forceUpdate();
+                            oldPri.forceUpdate();
                             return Optional.of(obj);
-                        });
+                        }
+                                );
+
 
                     }
-                }
+                    if(!skipSaving) {
+                        log.debug("Expanding reference");
+                        Substance subPrimary=null;
+                        try{
+                            subPrimary = substanceRepository.findBySubstanceReference(sr);
+                        }catch(Exception e){
+                            e.printStackTrace();
+                        }
 
-            }else{
-                log.error("Persist error. Alternative definition has no primary relationship");
+                        if (subPrimary != null) {
+                            log.debug("Got parent sub, which is:" + subPrimary.getName());
+                            if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
+
+                                log.debug("Going to save");
+
+                                entityPersistAdapter.performChangeOn(subPrimary, obj -> {
+                                    if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
+                                        log.info("Saving alt definition, now has:"
+                                                + obj.getAlternativeDefinitionReferences().size());
+                                    }
+                                    obj.forceUpdate();
+                                    return Optional.of(obj);
+                                });
+
+                            }
+                        }
+                    }
+
+                }else{
+                    log.error("Persist error. Alternative definition has no primary relationship");
+                }
             }
         }
 
@@ -187,7 +247,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             //it might have been from copying and pasting old json
             //of an already existing substance
             //which might have the change reason set so force it to be null for new inserts
-            s.changeReason=null;
+            //TP: commenting out for now.
+//            s.changeReason=null;
 
             addWaitingRelationships(s);
         }

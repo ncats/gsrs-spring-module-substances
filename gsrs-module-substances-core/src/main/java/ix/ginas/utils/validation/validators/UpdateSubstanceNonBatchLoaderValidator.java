@@ -49,7 +49,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
                 .map(p->userProfileRepository.findByUser_UsernameIgnoreCase(p.username))
                 .filter(oo->oo!=null)
                 .map(oo->oo.standardize())
-                .orElse(UserProfile.GUEST());
+                .orElseGet(()->UserProfile.GUEST());
         if (objnew.isPublic() && !objold.isPublic()) {
 
 
