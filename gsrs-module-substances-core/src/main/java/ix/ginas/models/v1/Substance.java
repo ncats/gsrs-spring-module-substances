@@ -204,7 +204,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
 
 
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne()
     @JsonSerialize(using = PrincipalSerializer.class)
     @JsonDeserialize(using = PrincipalDeserializer.class)
     @Indexable(facet = true, name = "Approved By", sortable=true, recurse=false)

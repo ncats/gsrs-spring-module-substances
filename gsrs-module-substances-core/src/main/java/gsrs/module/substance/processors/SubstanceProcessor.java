@@ -8,6 +8,7 @@ import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
@@ -16,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -54,7 +57,11 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
+    
 
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+ 
     
     @Override
     public Class<Substance> getEntityClass() {
@@ -142,36 +149,39 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             // Just to make it work, for now, don't bother doing this lookup at all unless something changes
             // with the primary definition. This is a bad check for a lot of reasons but may work for right now
             
+            // Tyler Oct 4 2021: It turns out setting the propagation settings helps isolate the session/
+            // transactions okay. We may need to default to things like this in the future:
+            // transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            
             Relationship r1=s.getPrimaryDefinitionRelationships().get();
             boolean worthChecking = false;
             if(r1.isDirty() || r1.relatedSubstance.isDirty()) {
                 worthChecking=true;
             }else {
                 //terrible hack to check if the relationship was edited recently
-                if(r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-5000) {
+                if(r1.lastEdited!=null && r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-5000) {
                     worthChecking=true;
                 }
             }
             
-            if(worthChecking) {
+            if(worthChecking ) {
 
 
-                List<Substance> realPrimarysubs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
-                //Note: trying to isolate in a transaction (shown below) doesn't work.
-                //            TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
-                //            transactionTemplate.setReadOnly(true);
-                //            List<Substance> realPrimarysubs= transactionTemplate.execute(status->{
-                //                System.out.println("Test");
-                //                List<Substance> subs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
-                //                System.out.println("Test");
-                //                return subs;
-                //            });
+//                List<Substance> realPrimarysubs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
+                  //Note: trying to isolate in a transaction with propagation settings
+                  // DOES prevent transaction problems.
+                            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+                            transactionTemplate.setReadOnly(true);
+                            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                            List<Substance> realPrimarysubs= transactionTemplate.execute(status->{
+                                List<Substance> subs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
+                                return subs;
+                            });
 
 
 
 
 
-                //            List<Substance> realPrimarysubs=substanceRepository.findSubstancesWithAlternativeDefinition(s);
                 log.debug("Got some relationships:" + realPrimarysubs.size());
                 Set<String> oldprimary = new HashSet<String>();
                 for(Substance pri:realPrimarysubs){
@@ -197,14 +207,16 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
 
                         entityPersistAdapter.performChangeOn(oldPri, obj->{
-                            List<Relationship> related=oldPri.removeAlternativeSubstanceDefinitionRelationship(s);
+                            List<Relationship> related=obj.removeAlternativeSubstanceDefinitionRelationship(s);
                             for(Relationship r:related){
                                 relationshipRepository.delete(r);
                             }
-                            oldPri.forceUpdate();
+                            //TODO: This is likely broken in 3.0 and may need to have a force
+                            //save to the repo instead?
+                            obj.forceUpdate();
+
                             return Optional.of(obj);
-                        }
-                                );
+                        });
 
 
                     }
@@ -228,6 +240,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                                         log.info("Saving alt definition, now has:"
                                                 + obj.getAlternativeDefinitionReferences().size());
                                     }
+                                    //TODO: This is likely broken in 3.0 and may need to have a force
+                                    //save to the repo instead?
                                     obj.forceUpdate();
                                     return Optional.of(obj);
                                 });
