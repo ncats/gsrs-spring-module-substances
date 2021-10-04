@@ -55,7 +55,7 @@ public class ReindexFromBackups implements ReindexService{
         private long currentCount;
 
         public synchronized void increment(){
-            listener.message("Indexed:" + (++currentCount) + "of " + totalCount);
+            listener.message("Indexed:" + (++currentCount) + " of " + totalCount);
         }
     }
     @Async
