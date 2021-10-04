@@ -85,7 +85,8 @@ public class ReindexFromBackups implements ReindexService{
 
         eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
 
-        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
+//        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
+        try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
 
             stream.forEach(be ->{
                 try {
