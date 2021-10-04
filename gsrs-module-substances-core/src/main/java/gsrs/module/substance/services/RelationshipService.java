@@ -302,7 +302,7 @@ public class RelationshipService {
                         Relationship obj = relationshipRepository.findById(event.getRelationshipIdToInvert()).get();
                         if(!obj.isAutomaticInvertible()){
                             return Optional.empty();
-                        }
+                        }                    
                         Relationship r = obj.fetchInverseRelationship();
                         r.originatorUuid = event.getOriginatorSubstance().toString();
                         Optional<Substance> otherSubstanceOpt = substanceRepository.findById(event.getToSubstance());
@@ -341,9 +341,8 @@ public class RelationshipService {
                             // behave as it used to in Play, but I think it's brittle. [TP]
                             newSub.updateVersion();
 //                            relationshipRepository.save(r);
-                            newSub = substanceRepository.save(newSub);
+                            newSub = substanceRepository.saveAndFlush(newSub);
                         }
-
                         return Optional.ofNullable(newSub);
 
                     });
