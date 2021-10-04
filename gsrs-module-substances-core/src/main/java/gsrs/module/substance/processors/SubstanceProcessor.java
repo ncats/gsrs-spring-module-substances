@@ -149,7 +149,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                 worthChecking=true;
             }else {
                 //terrible hack to check if the relationship was edited recently
-                if(r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-5000) {
+                if(r1.lastEdited!=null && r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-5000) {
                     worthChecking=true;
                 }
             }
