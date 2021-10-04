@@ -85,7 +85,7 @@ public class ReindexFromBackups implements ReindexService{
 
         eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
 
-        try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
+        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
 
             stream.forEach(be ->{
                 try {
@@ -109,7 +109,10 @@ public class ReindexFromBackups implements ReindexService{
                                     // however, you could argue there SHOULD be a controller for them
                                     if (seen.add(keyString)) {
                                         //is this a good idea ?
-                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
+                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped));
+                                        
+//                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
+                                        
                                         eventPublisher.publishEvent(event);
                                     }
                                 } catch (Throwable t) {
