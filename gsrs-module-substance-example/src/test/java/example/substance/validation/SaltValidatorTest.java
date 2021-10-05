@@ -25,6 +25,8 @@ import ix.ginas.utils.validation.validators.SaltValidator;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -114,6 +116,8 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace("testFindLayer1DefHashDuplicates");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
+        chemical.uuid=UUID.randomUUID();
+        
         List<Substance> duplicates = ValidationUtils.findDefinitionaLayer1lDuplicateCandidates(chemical, 
                new DefHashCalcRequirements(definitionalElementFactory, searchService, transactionManager) );
         log.trace("duplicate list size: " + duplicates.size() + "; items: ");
@@ -133,6 +137,8 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace("TestFindFullDefHashDuplicates");
         String approvalID = "660YQ98I10";
         ChemicalSubstance chemical = getChemicalFromFile(approvalID);
+        chemical.uuid=UUID.randomUUID();
+        
         List<Substance> duplicates = ValidationUtils.findFullDefinitionalDuplicateCandidates(chemical,
                new DefHashCalcRequirements( definitionalElementFactory, searchService, transactionManager));
         assertEquals(1, duplicates.size());
