@@ -223,6 +223,7 @@ public class Structure extends BaseModel {
             this.mwt = other.mwt;
             this.formula = other.formula;
             this.digest = other.digest;
+            //TODO: only set as dirty if there's a real change.
             setIsDirty("properties");
             setIsDirty("ezCenters");
             setIsDirty("definedStereo");

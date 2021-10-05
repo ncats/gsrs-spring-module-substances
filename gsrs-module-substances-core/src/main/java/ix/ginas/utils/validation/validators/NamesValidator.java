@@ -147,6 +147,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                         n.languages = new EmbeddedKeywordList();
                     }
                     n.languages.add(new Keyword("en"));
+                    n.addLanguage("en");
+                    s.setIsDirty("names");
                 });
             }
             if (n.type == null) {

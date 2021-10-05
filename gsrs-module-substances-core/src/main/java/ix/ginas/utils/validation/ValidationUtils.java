@@ -1799,10 +1799,17 @@ public class ValidationUtils {
                 try {
                     SearchOptions options = new SearchOptions();
                     SearchResult sr = defHashCalcRequirements.getSubstanceLegacySearchService().search(request.getQuery(), options);
+                    
+                    //this might not be necessary anymore
                     sr.waitForFinish();
-                    List fut = sr.getMatches();
-                    List<Substance> hits = (List<Substance>) fut.stream()
+                    
+                    List<Object> fut = sr.getMatches();
+                    List<Substance> hits = fut.stream()
                             .map(s -> (Substance) s)
+                            .filter(ss->{
+                                //filter out exact matches
+                                return !substance.getOrGenerateUUID().equals(ss.getOrGenerateUUID());
+                            })
                             .collect(Collectors.toList());
                     return hits;
                 } catch (Exception ex) {

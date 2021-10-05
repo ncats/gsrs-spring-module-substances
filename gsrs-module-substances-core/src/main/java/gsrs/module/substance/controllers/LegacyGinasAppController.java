@@ -1,39 +1,8 @@
 package gsrs.module.substance.controllers;
 
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-
-import javax.servlet.http.HttpServletRequest;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.MolwitchException;
-import gov.nih.ncats.molwitch.renderer.RendererOptions;
-import gsrs.module.substance.RendererOptionsConfig;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsControllerConfiguration;
@@ -46,10 +15,23 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Structure;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidatorCategory;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.*;
 import ix.utils.UUIDUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Some heavily used API calls in GSRS 2.x did not get moved over to a `api/v1` route
@@ -163,10 +145,73 @@ public class LegacyGinasAppController {
                     return structure.get().smiles;
                 }
             }
-        }else{
-            //TODO add support for fasta ? do we need to ?
+        }else if("fas".equalsIgnoreCase(format)){
+            if (UUIDUtil.isUUID(id)){
+                //assume this is a substance id
+                Optional<Substance> substance = substanceRepository.findById(UUID.fromString(id));
+                if(!substance.isPresent()){
+                    return gsrsControllerConfiguration.handleNotFound(queryParameters);
+                }
+                if(substance.get() instanceof ProteinSubstance){
+                    return makeFastaFromProtein( (ProteinSubstance)substance.get());
+
+                }else if(substance.get() instanceof NucleicAcidSubstance){
+                    return makeFastaFromNA( (NucleicAcidSubstance)substance.get());
+
+                }
+                return gsrsControllerConfiguration.handleBadRequest(400, "could not convert substance to fasta not a protein or nucleic acid" + id, queryParameters);
+            }
         }
             return gsrsControllerConfiguration.handleBadRequest(400, "unknown id " + id, queryParameters);
+    }
+
+
+    public static String makeFastaFromProtein(ProteinSubstance p) {
+        StringBuilder sb = new StringBuilder();
+
+        List<Subunit> subs = p.protein.getSubunits();
+        Collections.sort(subs, new Comparator<Subunit>() {
+            @Override
+            public int compare(Subunit o1, Subunit o2) {
+                return o1.subunitIndex - o2.subunitIndex;
+            }
+        });
+        for (Subunit s : subs) {
+
+            sb.append(">" + p.getBestId().replace(" ", "_") + "|SUBUNIT_" + s.subunitIndex + "\n");
+            for (String seq : splitBuffer(s.sequence, 80)) {
+                sb.append(seq + "\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    public static String makeFastaFromNA(NucleicAcidSubstance p) {
+        String resp = "";
+        List<Subunit> subs = p.nucleicAcid.getSubunits();
+        Collections.sort(subs, new Comparator<Subunit>() {
+            @Override
+            public int compare(Subunit o1, Subunit o2) {
+                return o1.subunitIndex - o2.subunitIndex;
+            }
+        });
+
+        for (Subunit s : subs) {
+            resp += ">" + p.getBestId().replace(" ", "_") + "|SUBUNIT_" + s.subunitIndex + "\n";
+            for (String seq : splitBuffer(s.sequence, 80)) {
+                resp += seq + "\n";
+            }
+        }
+        return resp;
+    }
+    public static String[] splitBuffer(String input, int maxLength) {
+        int elements = (input.length() - 1) / maxLength + 1;
+        String[] ret = new String[elements];
+        for (int i = 0; i < elements; i++) {
+            int start = i * maxLength;
+            ret[i] = input.substring(start, Math.min(input.length(), start + maxLength));
+        }
+        return ret;
     }
 
     //ginas/app/img/$id<[a-f0-9\-]+>.$format<(svg|png|mol|sdf|smi|smiles)>

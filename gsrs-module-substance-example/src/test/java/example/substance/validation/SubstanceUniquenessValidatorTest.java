@@ -19,6 +19,8 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
 import java.io.File;
 import java.io.IOException;
+import java.util.UUID;
+
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -75,6 +77,7 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         String name ="G6867RWN6N";
         String completeDuplicateMessage= "appears to be a full duplicate";
         ChemicalSubstance protein = getChemicalSubstanceFromFile(name);
+        protein.uuid= UUID.randomUUID();
         SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse response = validator.validate(protein, null);
@@ -87,6 +90,8 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         String name ="N5WWR36MDJ";
         String completeDuplicateMessage= "appears to be a full duplicate";
         Substance substance = getSubstanceFromFile(name);
+        substance.uuid= UUID.randomUUID();
+        
         SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse response = validator.validate(substance, null);
@@ -97,11 +102,26 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         log.trace("Starting in testValidation");
         String name ="G6867RWN6N-diast";
         String possibleDuplicateMessage= "is a possible duplicate";
-        ChemicalSubstance protein = getChemicalSubstanceFromFile(name);
+        ChemicalSubstance chem = getChemicalSubstanceFromFile(name);
+        chem.uuid=UUID.randomUUID();
+        
         SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
         AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(protein, null);
+        ValidationResponse response = validator.validate(chem, null);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
+    }
+    
+    @Test
+    public void testDuplicateDoesNotFindItself() {
+        log.trace("Starting in testValidation");
+        String name ="G6867RWN6N-diast";
+        String possibleDuplicateMessage= "is a possible duplicate";
+        ChemicalSubstance chem = getChemicalSubstanceFromFile(name);
+        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
+        AutowireHelper.getInstance().autowire(validator);
+        ValidationResponse response = validator.validate(chem, null);
+        //should not contain a duplicate message
+        Assertions.assertFalse(response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
     }
 
     @Test

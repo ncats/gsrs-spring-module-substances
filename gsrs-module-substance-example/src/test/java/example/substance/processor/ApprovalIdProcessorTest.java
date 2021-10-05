@@ -50,7 +50,7 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     }
     @BeforeEach
     public void setup(){
-        processor = new ApprovalIdProcessor(null);
+        processor = new ApprovalIdProcessor();
         processor.setCodeSystem("FDA UNII");
 
         AutowireHelper.getInstance().autowire(processor);

@@ -204,7 +204,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
 
 
-    @ManyToOne(cascade = CascadeType.PERSIST)
+    @ManyToOne()
     @JsonSerialize(using = PrincipalSerializer.class)
     @JsonDeserialize(using = PrincipalDeserializer.class)
     @Indexable(facet = true, name = "Approved By", sortable=true, recurse=false)
@@ -292,7 +292,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     public List<Property> properties = new ArrayList<Property>();
 
     @JSONEntity(title = "Relationships")
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL
+//    , orphanRemoval = true
+    )
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<Relationship> relationships = new ArrayList<Relationship>();
@@ -806,13 +808,13 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     }
     @JsonIgnore
     public List<Relationship> getAlternativeDefinitionRelationships() {
-        List<Relationship> subConcepts = new ArrayList<Relationship>();
+        List<Relationship> altSubs = new ArrayList<Relationship>();
         for (Relationship r : relationships) {
             if (r.type != null && r.type.equals(ALTERNATE_SUBSTANCE_REL)) {
-                subConcepts.add(r);
+                altSubs.add(r);
             }
         }
-        return subConcepts;
+        return altSubs;
     }
 
     @JsonIgnore
@@ -867,8 +869,8 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         }else{
             System.out.println("primary def not found!!!!");
         }
-
-        this.relationships.add(r);
+        addRelationship(r);
+//        this.relationships.add(r);
         return false;
     }
     @JsonIgnore
@@ -879,7 +881,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
                 toRemove.add(sref);
             }
         }
-        this.relationships.removeAll(toRemove);
+        toRemove.forEach(r->removeRelationship(r));
+//        this.removeRelationship(null)
+//        this.relationships.removeAll(toRemove);
         return toRemove;
     }
 

@@ -18,11 +18,13 @@ import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
  * @author Mitch Miller
  */
+@Slf4j
 public class CodeFormatValidator extends AbstractValidatorPlugin<Substance>
 {
 
@@ -32,6 +34,7 @@ public class CodeFormatValidator extends AbstractValidatorPlugin<Substance>
     @Override
     public void validate(Substance s, Substance oldSubstance, ValidatorCallback callback)
     {
+        log.trace("CodeFormatValidator.validate");
         Map<String, List<Code>> codesBySystem = s.getCodes().stream()
 								.filter(c-> c.codeSystem != null)
                 .collect(Collectors.groupingBy(c-> c.codeSystem,

@@ -1,57 +1,67 @@
 package gsrs.module.substance.tasks;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
+import gsrs.service.DefaultExportService;
+import gsrs.service.ExportService;
 import ix.core.models.Principal;
+import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
-import ix.ginas.models.v1.Substance;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.Map;
-import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.service.ExportService;
-import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.OutputFormat;
-import java.util.HashMap;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
+import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
 
     private String username;
     private boolean publicOnly =false;
+    private File rootDir =null;
+    private String name = "Full Data Export";
     
-    //removing @JsonProperty per suggestion from Danny 29 September 2021
-    //@JsonProperty("publicOnly")
+    
     public void setPublicOnly(boolean p) {
         publicOnly=p;
     }
 
-    //@JsonProperty("username")
     public void setUsername(String username) {
         this.username = username;
     }
-    private String name = "Full Data Export";
+    
 
-    //@JsonProperty("name")
     public void setName(String name) {
         this.name = name;
     }
+    
+
+    public void setOutputPath(String path) {
+        if(path!=null) {
+            rootDir = new File(path);   
+        }
+    }
+
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -86,6 +96,16 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
         return date -> "auto-export-" + date;
     }
 
+    public ExportService getExportService() {
+        if(rootDir==null) {
+            return this.exportService;
+        }else {
+            //This isn't ideal as there's a disconnect between what the config says and what the export
+            //service says.
+            ExportService es = new DefaultExportService(gsrsExportConfiguration, rootDir);
+            return es;
+        }
+    }
 
     @Override
     public void run(TaskListener l) {
@@ -100,8 +120,6 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     }
     
     private void handleRun(TaskListener l) {
-        // TODO Auto-generated method stub
-
         log.debug("Running export");
         try {
 
@@ -121,20 +139,14 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
             emd.setDisplayFilename(fname);
             emd.originalQuery = null;
 
-//TODO: There's no equivalent to any of this in 3.0 right now.
-// we probably need to add it.
-//            ExportProcess<Substance> p = new ExportProcessFactory().getProcess(emd,
-//                    ProcessExecutionService.CommonStreamSuppliers.allForDeep(Substance.class));
-            //can get all substances from repository... get a supplier for a stream 
-            //don't run in a background thread
-            //  inject substance repo
-            //  inject gsrs configuration
             Map<String, String> parameters = new HashMap<>();
 
             Stream<Substance> substanceStream = getStreamSupplier();
             Stream<Substance> effectivelyFinalStream = filterStream(substanceStream, publicOnly, parameters);
-            log.trace("exportService: " + exportService.getClass().getName() + exportService.getClass().getCanonicalName());
-            ExportProcess<Substance> p = exportService.createExport(emd,() -> effectivelyFinalStream);
+            ExportService usedExportService = getExportService();
+            
+            log.trace("exportService: " + usedExportService.getClass().getName() + usedExportService.getClass().getCanonicalName());
+            ExportProcess<Substance> p = usedExportService.createExport(emd,() -> effectivelyFinalStream);
             log.trace("p: " + (p==null ? "null" : "not null"));
                         log.trace("publicOnly: " + publicOnly);
             //based on troubleshooting session 27 Sept 2021
@@ -153,8 +165,10 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
         ExporterFactory.Parameters params = createParamters(extension, publicOnly, parameters);
         log.trace("create params");
 
+        
         log.trace("gsrsExportConfiguration: " + (gsrsExportConfiguration==null ? "null" : "not null"));
         ExporterFactory<Substance> factory = gsrsExportConfiguration.getExporterFor(substanceEntityService.getContext(), params);
+        
         log.trace("factory: " + factory);
         if (factory == null) {
             // TODO handle null couldn't find factory for params

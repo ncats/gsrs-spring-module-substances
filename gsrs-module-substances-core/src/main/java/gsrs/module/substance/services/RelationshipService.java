@@ -13,6 +13,7 @@ import gsrs.repository.EditRepository;
 import ix.core.models.Edit;
 import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.utils.RelationshipUtil;
 import ix.ginas.models.v1.Reference;
@@ -210,8 +211,9 @@ public class RelationshipService {
             r1.setReferences(keepRefs);
             r1.setAccess(inverse.getAccess()); //Should take care of access problem
 
-
+            
             osub2.references.removeAll(refsToRemove);
+            osub2.setIsDirty("references");
 
             Substance otherSubstance = updatedInverseRelationship.fetchOwner();
             for (Keyword k : updatedInverseRelationship.getReferences()) {
@@ -233,10 +235,6 @@ public class RelationshipService {
                     }
                 }
             }
-//            if(forceToBeGenerator.get()){
-//                r1.originatorUuid=obj.getOrGenerateUUID().toString();
-//            }
-            r1.forceUpdate();
             osub2.forceUpdate();
             return Optional.of(osub2);
         });
@@ -285,17 +283,26 @@ public class RelationshipService {
         //this event means we already have a to -> from relationship.
         //Due to transaction issues we can't actually check yet that we can make this relationship
         //when we make the event:
-        //1.  this "from" substance might not exist yet
+        // 1. this "from" substance might not exist yet
         // 2. the "from" substance might already have this relationship and we didn't know
             EntityUtils.EntityWrapper<?> change = entityPersistAdapter.change(
-                    EntityUtils.Key.of(Substance.class, event.getFromSubstance()),
+                    // TP 10/02/2021 : this form of key instantiation below is more dangerous
+                    // because we TYPICALLY make keys from their "actual" classes, not their root
+                    // classes. So things may be inconsistent. In the future, we could change how the
+                    // EntityWrapper.getKey() method works to return a root key sometimes,
+                    // or change the way the change operation works to use the root-level key,
+                    // but for consistently we should get keys in a similar way every time
+                    // TODO: change the event to have the Keys rather than just the IDs
+                    
+                    EntityUtils.Key.of(Substance.class, event.getFromSubstance())
+                    ,
                     s -> {
                         Substance newSub = (Substance) s;
 //						System.out.println("Adding directly now");
                         Relationship obj = relationshipRepository.findById(event.getRelationshipIdToInvert()).get();
                         if(!obj.isAutomaticInvertible()){
                             return Optional.empty();
-                        }
+                        }                    
                         Relationship r = obj.fetchInverseRelationship();
                         r.originatorUuid = event.getOriginatorSubstance().toString();
                         Optional<Substance> otherSubstanceOpt = substanceRepository.findById(event.getToSubstance());
@@ -333,10 +340,9 @@ public class RelationshipService {
                             // TODO: Are we sure about this? This feels like a hack to make something
                             // behave as it used to in Play, but I think it's brittle. [TP]
                             newSub.updateVersion();
-                            relationshipRepository.save(r);
-                            newSub = substanceRepository.save(newSub);
+//                            relationshipRepository.save(r);
+                            newSub = substanceRepository.saveAndFlush(newSub);
                         }
-
                         return Optional.ofNullable(newSub);
 
                     });

@@ -91,6 +91,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     @Query("select case when count(s)> 0 then true else false end from Substance s where s.approvalID= ?1")
     boolean existsByApprovalID(String approvalID);
 
+    @Transactional(readOnly=true)
     @Query("select s from Substance s JOIN s.relationships r where r.relatedSubstance.refuuid=?1 and r.type='"+ Substance.ALTERNATE_SUBSTANCE_REL +"'")
     List<Substance> findSubstancesWithAlternativeDefinition(String alternativeUuid);
 
@@ -98,6 +99,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     default List<Substance> findSubstancesWithAlternativeDefinition(Substance alternative){
         return findSubstancesWithAlternativeDefinition(alternative.getOrGenerateUUID().toString());
     }
+    
     default Optional<SubstanceSummary> findSummaryBySubstanceReference(SubstanceReference substanceReference){
         if(substanceReference ==null){
             return Optional.empty();

@@ -55,7 +55,7 @@ public class ReindexFromBackups implements ReindexService{
         private long currentCount;
 
         public synchronized void increment(){
-            listener.message("Indexed:" + (++currentCount) + "of " + totalCount);
+            listener.message("Indexed:" + (++currentCount) + " of " + totalCount);
         }
     }
     @Async
@@ -85,6 +85,7 @@ public class ReindexFromBackups implements ReindexService{
 
         eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
 
+//        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
 
             stream.forEach(be ->{
@@ -109,7 +110,10 @@ public class ReindexFromBackups implements ReindexService{
                                     // however, you could argue there SHOULD be a controller for them
                                     if (seen.add(keyString)) {
                                         //is this a good idea ?
-                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
+                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped));
+                                        
+//                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
+                                        
                                         eventPublisher.publishEvent(event);
                                     }
                                 } catch (Throwable t) {
