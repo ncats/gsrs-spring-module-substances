@@ -8,7 +8,6 @@ import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
-import ix.core.util.LogUtil;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,13 +35,13 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 	@Override
 	public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer)
 	{
-		LogUtil.trace(()->String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. class: %s ",
-						substance.getClass().getName()));
+		log.trace(String.format("Starting in SubstanceDefinitionalHashIndexer.createIndexableValues. id: %s; class: %s ",
+						substance.getOrGenerateUUID(), substance.getClass().getName()));
 		try
 		{
 			DefinitionalElements elements =  definitionalElementFactory.computeDefinitionalElementsFor(substance);
 
-			LogUtil.trace(()->String.format(" received %d elements", elements.getElements().size()));
+			log.trace(String.format(" received %d elements", elements.getElements().size()));
 			if( elements==null)
 			{
 				log.trace("elements null");

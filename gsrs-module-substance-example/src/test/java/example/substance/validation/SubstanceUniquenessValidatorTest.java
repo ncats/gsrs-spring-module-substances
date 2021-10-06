@@ -150,17 +150,31 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
     }
 
     @Test
-    public void testValidationNoDuplicates() {
-        log.trace("Starting in testValidationNoDuplicates");
-        String idToLookup = "1cf410f9-3eeb-41ed-ab69-eeb5076901e5";
+    public void testValidationRetrievedItem() {
+        /*
+        retrieve a substance, make a small change, validate to confirm that def hash search does NOT include the substance itself
+        */
+        log.trace("Starting in testValidationRetrievedItem");
+        String idToLookup = "ac776f92-b90f-48a0-a54e-7461a60c84b3";
         String fullDuplicateWarning ="appears to be a full duplicate";
         TransactionTemplate transactionMod = new TransactionTemplate(transactionManager);
         transactionMod.executeWithoutResult(a -> {
-            Substance toModify = this.substanceRepository.findById(UUID.fromString(idToLookup)).get();
+            ChemicalSubstance toModify = (ChemicalSubstance) this.substanceRepository.findById(UUID.fromString(idToLookup)).get();
             Assertions.assertTrue(toModify.names.size() > 0);
             SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
             AutowireHelper.getInstance().autowire(validator);
-            ValidationResponse response = validator.validate(toModify, null);
+            ValidationResponse response =null;
+            try {
+                response = substanceEntityService.validateEntity( toModify.toFullJsonNode());
+            } catch (Exception ex) {
+                log.error(ex.getMessage(), ex);
+            }
+            //ValidationResponse response = validator.validate(toModify, null);
+            log.debug("total validation messages: " +response.getValidationMessages().size());
+            response.getValidationMessages().forEach(m->{
+                ValidationMessage msg = (ValidationMessage)m;
+                log.debug(String.format("message type: %s; message: %s", msg.getMessageType(), msg.getMessage()));
+            });
             long countOfMessages = response.getValidationMessages().stream()
                     .filter(m-> ((ValidationMessage)m).getMessageType()==ValidationMessage.MESSAGE_TYPE.WARNING)
                     .filter(m-> ((ValidationMessage)m).getMessage().contains(fullDuplicateWarning))
@@ -168,8 +182,8 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
             Assertions.assertEquals(0, countOfMessages);
             
         });
-    }
 
+    }
     private ChemicalSubstance getChemicalSubstanceFromFile(String name) {
         try {
             File proteinFile = new ClassPathResource("testJSON/" + name + ".json").getFile();
