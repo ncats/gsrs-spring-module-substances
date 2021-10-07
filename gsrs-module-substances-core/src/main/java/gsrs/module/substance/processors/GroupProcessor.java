@@ -12,6 +12,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 public class GroupProcessor implements EntityProcessor<Group> {
@@ -22,7 +24,8 @@ public class GroupProcessor implements EntityProcessor<Group> {
     private final String ACCESS_DOMAIN = "ACCESS_GROUP";
 
     @Override
-    public void prePersist(Group obj) {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void postPersist(Group obj) {
         log.debug("GroupProcessor.prePersist");
         Optional<GsrsControlledVocabularyDTO> cvv = null;
         try {
@@ -61,8 +64,9 @@ public class GroupProcessor implements EntityProcessor<Group> {
     }
 
     @Override
-    public void preUpdate(Group obj) {
-        prePersist(obj);
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void postUpdate(Group obj) {
+        postPersist(obj);
     }
 
     @Override

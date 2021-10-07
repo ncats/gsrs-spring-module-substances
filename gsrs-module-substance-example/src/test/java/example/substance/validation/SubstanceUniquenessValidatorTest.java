@@ -15,13 +15,11 @@ import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
 import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
@@ -128,10 +126,11 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         //should not contain a duplicate message
         Assertions.assertFalse(response.getValidationMessages().stream().anyMatch(m -> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
     }
+    
     @Test
     public void testValidationNoDuplicates() {
         log.trace("Starting in testValidationNoDuplicates");
-        String idToLookup = "1cf410f9-3eeb-41ed-ab69-eeb5076901e5";
+        String idToLookup = "90e9191d-1a81-4a53-b7ee-560bf9e68109";
         String fullDuplicateWarning ="appears to be a full duplicate";
         TransactionTemplate transactionMod = new TransactionTemplate(transactionManager);
         transactionMod.executeWithoutResult(a -> {
