@@ -19,7 +19,6 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
 import java.io.File;
 import java.io.IOException;
-import java.util.Optional;
 import java.util.UUID;
 
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  *
@@ -138,42 +136,6 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         Assertions.assertTrue( response.getValidationMessages().stream().noneMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
     }
 
-    @Test
-    public void testValidationRetrievedItem() {
-        /*
-        retrieve a substance, make a small change, validate to confirm that def hash search does NOT include the substance itself
-        */
-        log.trace("Starting in testValidationRetrievedItem");
-        String uuidToProcess ="1cf410f9-3eeb-41ed-ab69-eeb5076901e5";
-        String completeDuplicateMessage= "appears to be a full duplicate";
-         TransactionTemplate transactionMod = new TransactionTemplate(transactionManager);
-        transactionMod.executeWithoutResult(a -> {
-            Substance toModify = this.substanceRepository.findById(UUID.fromString(uuidToProcess)).get();
-            Assertions.assertNull(toModify);
-            Assertions.assertTrue(toModify.names.size()>0);
-            try {
-                log.debug("substance with ID " + uuidToProcess + " to be saved at " + (new Date()));
-                Substance toSave = toModify.toBuilder()
-                        .addRelationshipTo(baseSubstance, relationshipType)
-                        .build();
-                //substanceRepository.saveAndFlush(toSave); causes error:
-                // A different object with the same identifier value was already associated with the session
-                this.substanceEntityService.updateEntity(toSave, (s) -> {
-                    return Optional.of(toSave);
-                });
-                log.trace("save completed");
-            } catch (Exception ex) {
-                log.error("Error (inner) updating substance: " + ex.getMessage());
-                ex.printStackTrace();
-                Assertions.fail("Test must not produce an error");
-            }
-        });
-        ChemicalSubstance protein = getChemicalSubstanceFromFile(name);
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(protein, null);
-        Assertions.assertTrue( response.getValidationMessages().stream().noneMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
-    }
     private ChemicalSubstance getChemicalSubstanceFromFile(String name) {
         try {
             File proteinFile = new ClassPathResource("testJSON/" + name + ".json").getFile();
