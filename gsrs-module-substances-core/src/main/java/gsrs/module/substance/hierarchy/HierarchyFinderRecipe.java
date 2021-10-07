@@ -109,7 +109,7 @@ public class HierarchyFinderRecipe {
                         new GsrsUtils.LambdaTypeReference<BiFunction<Substance, Substance, String>>() {},
                         Substance.class);
             }catch(Exception e) {
-                log.warn("classloader " + i + " failed",e );
+                log.warn("classloader " + i + " failed to make full lambda for:" + lambdaString);
                 if(i==cls.size()-1) {
                     throw e;
                 }
