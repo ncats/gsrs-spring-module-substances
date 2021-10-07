@@ -97,7 +97,7 @@ public class GroupProcessorTest extends AbstractSubstanceJpaEntityTest {
         long totalBefore =vocabBefore.getTerms().size();
         Group labWorkers= new Group();
         labWorkers.name="Lab Workers";
-        processor.prePersist(labWorkers);
+        processor.postPersist(labWorkers);
         GsrsControlledVocabularyDTO vocabAfter = (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
         Assertions.assertTrue(vocabAfter.getTerms().stream().anyMatch(t-> t.getValue().equalsIgnoreCase(labWorkers.name)));
         long totalAfter = vocabAfter.getTerms().size();
@@ -111,7 +111,7 @@ public class GroupProcessorTest extends AbstractSubstanceJpaEntityTest {
         long totalBefore =vocabBefore.getTerms().size();
         Group protectedGroup= new Group();
         protectedGroup.name="protected";
-        processor.prePersist(protectedGroup);
+        processor.postPersist(protectedGroup);
         GsrsControlledVocabularyDTO vocabAfter = (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
         Assertions.assertEquals(1, vocabAfter.getTerms().stream().filter(t-> t.getValue().equalsIgnoreCase(protectedGroup.name)).count());
         long totalAfter = vocabAfter.getTerms().size();
