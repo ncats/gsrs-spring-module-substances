@@ -12,10 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
@@ -32,11 +30,11 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
     private GroupRepository groupRepository;
 
     //temporarily instantiate from hard-coded strings
-    private List<String> alwaysPublic = new ArrayList<>();
-    private List<String> alwaysPrivate  = new ArrayList<>();
-    private List<String> suggestedPublic = new ArrayList<>();
+    private LinkedHashMap<Integer, String> alwaysPublic = new LinkedHashMap<>();
+    private LinkedHashMap<Integer, String> alwaysPrivate  = new LinkedHashMap<>();
+    private LinkedHashMap<Integer, String> suggestedPublic = new LinkedHashMap<>();
 
-    private List<Pattern> referenceCitationPatterns  = new ArrayList<>();
+    private LinkedHashMap<Integer, Pattern> referenceCitationPatterns  = new LinkedHashMap<>();
 
     public SetReferenceAccess() {
         log.debug("in SetReferenceAccess ctor" );
@@ -54,7 +52,7 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
                     r.docType, r.isPublic(), r.isPublicDomain(), r.isPublicReleaseReference());
             log.debug(msg);
 
-            if ((alwaysPrivate.contains(r.docType))
+            if ((alwaysPrivate.values().contains(r.docType))
                     && (r.isPublic() || r.isPublicDomain() || r.isPublicReleaseReference())) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
@@ -62,7 +60,7 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
                                         + r.docType + ":" + r.citation + "\" cannot be public. Setting to protected.")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> makeReferenceProtected(r));
-            }else if (referenceCitationPatterns.stream().anyMatch(p -> p.matcher((" " + r.citation).toUpperCase()).find()) ) {
+            }else if (referenceCitationPatterns.values().stream().anyMatch(p -> p.matcher((" " + r.citation).toUpperCase()).find()) ) {
 							if (r.isPublic() || r.isPublicDomain() || r.isPublicReleaseReference()) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
@@ -71,7 +69,7 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
                         .appliableChange(true);
                 callback.addMessage(mes, () -> makeReferenceProtected(r));
 							}
-            }else if (alwaysPublic.contains(r.docType)
+            }else if (alwaysPublic.values().contains(r.docType)
                     && (!r.isPublic() || !r.isPublicDomain())) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
@@ -79,7 +77,7 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
                                         + r.docType + ":" + r.citation + "\" cannot be private. Setting to public.")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> makeReferencePublic(r));
-            }else if(suggestedPublic.contains(r.docType) && (!r.isPublic() || !r.isPublicDomain())) {
+            }else if(suggestedPublic.containsValue(r.docType) && (!r.isPublic() || !r.isPublicDomain())) {
                 String messageText =String.format("References of type %s, such as \"%s:%s,\" are typically public. Consider modifying the access and public domain flag, unless there is an explicit reason to keep it restricted.", 
                         r.docType, r.docType, r.citation);
                 if(!substanceNotesContainWarning(substance, messageText)){
@@ -120,35 +118,35 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
         r.setAccess(emptyGroup);
     }
 
-    public List<String> getAlwaysPublic() {
+    public LinkedHashMap<Integer, String> getAlwaysPublic() {
         return alwaysPublic;
     }
 
-    public void setAlwaysPublic(List<String> alwaysPublic) {
+    public void setAlwaysPublic(LinkedHashMap<Integer, String> alwaysPublic) {
         this.alwaysPublic = alwaysPublic;
     }
 
-    public List<String> getAlwaysPrivate() {
+    public LinkedHashMap<Integer, String> getAlwaysPrivate() {
         return alwaysPrivate;
     }
 
-    public void setAlwaysPrivate(List<String> alwaysPrivate) {
+    public void setAlwaysPrivate(LinkedHashMap<Integer, String> alwaysPrivate) {
         this.alwaysPrivate = alwaysPrivate;
     }
 
-    public List<Pattern> getReferenceCitationPatterns() {
+    public LinkedHashMap<Integer, Pattern> getReferenceCitationPatterns() {
         return referenceCitationPatterns;
     }
 
-    public void setReferenceCitationPatterns(List<Pattern> referenceCitationPatterns) {
-        this.referenceCitationPatterns = referenceCitationPatterns;
+    public void setReferenceCitationPatterns(LinkedHashMap<Integer, Pattern> referenceCitationPatterns) {
+        this.referenceCitationPatterns  = referenceCitationPatterns;
     }
     
-    public List<String> getSuggestedPublic() {
+    public LinkedHashMap<Integer, String> getSuggestedPublic() {
         return suggestedPublic;
     }
 
-    public void setSuggestedPublic(List<String> suggestedPublic) {
+    public void setSuggestedPublic(LinkedHashMap<Integer, String> suggestedPublic) {
         this.suggestedPublic = suggestedPublic;
     }
 
