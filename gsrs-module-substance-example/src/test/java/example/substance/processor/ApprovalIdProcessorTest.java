@@ -3,14 +3,11 @@ package example.substance.processor;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import gsrs.cv.ControlledVocabularyEntityService;
 import gsrs.cv.ControlledVocabularyEntityServiceImpl;
 import gsrs.cv.CvApiAdapter;
 import gsrs.cv.api.ControlledVocabularyApi;
-import gsrs.repository.ControlledVocabularyRepository;
 import gsrs.springUtils.AutowireHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,7 +57,7 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     /**
-    the substance read in from file has an approval ID but no corrresponding code.  We expect one to be created
+    the substance read in from file has an approval ID but no corresponding code.  We expect one to be created
      */
     @Test
     public void testCopyCodeIfNecessary() throws IOException {
