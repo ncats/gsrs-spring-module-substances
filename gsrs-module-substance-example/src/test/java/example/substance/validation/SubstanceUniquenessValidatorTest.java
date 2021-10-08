@@ -93,7 +93,6 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         String completeDuplicateMessage = "appears to be a full duplicate";
         Substance substance = getSubstanceFromFile(name);
         substance.uuid = UUID.randomUUID();
-
         SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse response = validator.validate(substance, null);
@@ -113,19 +112,20 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         ValidationResponse response = validator.validate(chem, null);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(m -> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
     }
-
+    
     @Test
     public void testDuplicateDoesNotFindItself() {
         log.trace("Starting in testValidation");
-        String name = "G6867RWN6N-diast";
-        String possibleDuplicateMessage = "is a possible duplicate";
+        String name ="G6867RWN6N-diast";
+        String possibleDuplicateMessage= "is a possible duplicate";
         ChemicalSubstance chem = getChemicalSubstanceFromFile(name);
         SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse response = validator.validate(chem, null);
         //should not contain a duplicate message
-        Assertions.assertFalse(response.getValidationMessages().stream().anyMatch(m -> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
+        Assertions.assertFalse(response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
     }
+
     
     @Test
     public void testValidationNoDuplicates() {

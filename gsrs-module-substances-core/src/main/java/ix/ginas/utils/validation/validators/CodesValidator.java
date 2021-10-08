@@ -125,7 +125,7 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                                                 + "'[" +cd.codeSystem
                                                 + "] collides (possible duplicate) with existing code & codeSystem for substance:")
 //                               TODO katelda Feb 2021 : add link support back!
-//                                . addLink(GinasUtils.createSubstanceLink(s2))
+                                . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
                                 ;
                         callback.addMessage(mes);
                     }

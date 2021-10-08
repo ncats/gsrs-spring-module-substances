@@ -14,9 +14,6 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.utils.CodeSequentialGenerator;
-import java.io.File;
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +29,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.support.TransactionTemplate;
+import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 
 /**
  *
@@ -148,7 +148,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
         //verify that a call to the constructor of the class results in a new term added to the CV
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(s -> {
+        transactionTemplate.executeWithoutResult(() -> {
             ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
             uniqueCodeGenerator.generateCodeIfNecessary(substance);
             boolean match = substance.codes.stream()
