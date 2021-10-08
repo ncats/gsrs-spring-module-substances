@@ -26,7 +26,9 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = StructurallyDiverseSubstanceDTO.class, name= "structurallyDiverse"),
         @JsonSubTypes.Type(value = MixtureSubstanceDTO.class, name= "mixture"),
         @JsonSubTypes.Type(value = PolymerSubstanceDTO.class, name= "polymer"),
-
+        @JsonSubTypes.Type(value = NucleicAcidSubstanceDTO.class, name= "nucleicAcid"),
+        @JsonSubTypes.Type(value = SSG1SubstanceDTO.class, name= "specifiedSubstanceG1"),
+        @JsonSubTypes.Type(value = ProteinSubstanceDTO.class, name= "protein"),
 })
 public class SubstanceDTO{
 

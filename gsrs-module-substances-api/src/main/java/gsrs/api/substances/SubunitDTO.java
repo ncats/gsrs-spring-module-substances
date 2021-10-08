@@ -2,15 +2,21 @@ package gsrs.api.substances;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class LazyFetchedCollection {
+import java.util.UUID;
 
-    private int count;
-    private String url;
+@Builder
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class SubunitDTO extends SubstanceComponentBaseDTO{
+
+    private UUID uuid;
+    private int subunitIndex;
+    private int length;
+    private String sequence;
 }
