@@ -3,7 +3,7 @@ package gsrs.api.substances;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.api.GsrsEntityRestTemplate;
+import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
 
@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public class SubstanceRestApi extends GsrsEntityRestTemplate<SubstanceDTO, UUID> implements SubstanceApi{
+public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate<SubstanceDTO, UUID> implements SubstanceApi{
     public SubstanceRestApi(RestTemplateBuilder restTemplateBuilder, String baseUrl, ObjectMapper mapper) {
         super(restTemplateBuilder, baseUrl, "substances", mapper);
     }

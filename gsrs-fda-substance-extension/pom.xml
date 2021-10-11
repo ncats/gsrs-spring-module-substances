@@ -22,7 +22,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core-entities</artifactId>
-            <version>${gsrs.substance.version}</version>
+            <version>${gsrs.version}</version>
             <scope>compile</scope>
         </dependency>
 
