@@ -1,24 +1,36 @@
 package gsrs.module.substance.hierarchy;
 
-import java.util.List;
-import java.util.function.BiFunction;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineManager;
-
 import gsrs.GsrsUtils;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+import java.util.function.BiFunction;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 @Slf4j
 public class HierarchyFinderRecipe {
     private String renameChildTo;
     private String renameChildLambda;
+    /**
+     * a SpEL expression as a String which
+     *                       can invoke methods on 2 Substance objects:
+     *                       `parent` and `child`.
+     * @see <a href=https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions>SpEL documentation</a>
+     */
+    private String renameChildSpel;
     private String relationship;
     private Boolean invertible;
+
+    public String getRenameChildSpel() {
+        return renameChildSpel;
+    }
+
+    public void setRenameChildSpel(String renameChildSpel) {
+        this.renameChildSpel = renameChildSpel;
+    }
 
     public String getRenameChildTo() {
         return renameChildTo;
@@ -64,6 +76,9 @@ public class HierarchyFinderRecipe {
             finder = finder.renameChildType(renameChildTo);
         } else if (renameChildLambda != null) {
             finder = finder.renameChildType(toLambda(renameChildLambda));
+        }else if (renameChildSpel !=null){
+            finder = finder.renameChildTypeSpel(renameChildSpel);
+
         }
         return finder;
     }

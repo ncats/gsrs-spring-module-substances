@@ -9,13 +9,17 @@ import gsrs.cache.GsrsCache;
 import gsrs.legacy.GsrsSearchService;
 import gsrs.module.substance.repository.*;
 import gsrs.springUtils.AutowireHelper;
-
 import ix.ginas.models.utils.RelationshipUtil;
 import ix.ginas.models.v1.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
-
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -325,7 +329,7 @@ public class SubstanceHierarchyFinder {
 			};			
 		}
 		
-		public default HierarchyFinder renameChildType(String newName){
+		default HierarchyFinder renameChildType(String newName){
 			HierarchyFinder _this=this;
 			
 				return new HierarchyFinder(){
@@ -342,8 +346,54 @@ public class SubstanceHierarchyFinder {
 					}
 				};			
 		}
-		
-		public default HierarchyFinder renameChildType(BiFunction<Substance,Substance,String> parentChildRenamer){
+
+		/**
+		 * Simple class holding the parent and child
+		 * Substances that we will pass to the SpEL expression
+		 * for evaluation.
+		 */
+		@Data
+		@AllArgsConstructor
+		public static class ParentChild{
+			private Substance parent;
+			private Substance child;
+		}
+
+		/**
+		 * Create a {@link HierarchyFinder}
+		 * that invokes the given SpEL (Spring Expression Language).
+		 * @param spelExpression a SpEL expression as a String which
+		 *                       can invoke methods on 2 Substance objects:
+		 *                       `parent` and `child`.
+		 * @return a new {@link HierarchyFinder}.
+		 * @see <a href=https://docs.spring.io/spring-framework/docs/current/reference/html/core.html#expressions>SpEL documentation</a>
+		 */
+		default HierarchyFinder renameChildTypeSpel(String spelExpression){
+			HierarchyFinder _this=this;
+			ExpressionParser parser = new SpelExpressionParser();
+			Expression exp = parser.parseExpression(spelExpression);
+			return new HierarchyFinder(){
+				@Override
+				public List<Tuple<String, Substance>> findChildren(Substance s) {
+					return _this.findChildren(s).stream()
+							.map( t->{
+									ParentChild pc = new ParentChild(s, t.v());
+
+										EvaluationContext context = new StandardEvaluationContext(pc);
+
+										String newName = (String) exp.getValue(context);
+										return Tuple.of(newName,t.v());
+									})
+							.collect(Collectors.toList());
+				}
+				@Override
+				public List<Tuple<String, Substance>> findParents(
+						Substance s) {
+					return _this.findParents(s);
+				}
+			};
+		}
+		default HierarchyFinder renameChildType(BiFunction<Substance,Substance,String> parentChildRenamer){
 			HierarchyFinder _this=this;
 
 				return new HierarchyFinder(){
