@@ -89,25 +89,25 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	@Override
 	public void prePersist(Relationship thisRelationship) {
 
-		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-		  transactionTemplate.setReadOnly(true);
-          transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-		transactionTemplate.executeWithoutResult( stauts -> {
-			if (thisRelationship.isAutomaticInvertible()) {
-				TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
-				final Substance thisSubstance = thisRelationship.fetchOwner();
-				event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
-				event.setToSubstance(thisSubstance.getOrGenerateUUID());
-				event.setOriginatorSubstance(thisSubstance.getOrGenerateUUID());
-				SubstanceReference otherSubstanceReference = thisRelationship.relatedSubstance;
-				//TODO maybe change the fromSubstance from UUID to a substance reference incase the uuid changes we could use approval id or name etc?
-				if (otherSubstanceReference != null && otherSubstanceReference.refuuid !=null) {
-					event.setFromSubstance(UUID.fromString(otherSubstanceReference.refuuid));
-				}
-				event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
-				eventPublisher.publishEvent(event);
-			}
-		});
+	    TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+	    transactionTemplate.setReadOnly(true);
+	    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+	    transactionTemplate.executeWithoutResult( stauts -> {
+	        if (thisRelationship.isAutomaticInvertible()) {
+	            TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
+	            final Substance thisSubstance = thisRelationship.fetchOwner();
+	            event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
+	            event.setToSubstance(thisSubstance.getOrGenerateUUID());
+	            event.setOriginatorSubstance(thisSubstance.getOrGenerateUUID());
+	            SubstanceReference otherSubstanceReference = thisRelationship.relatedSubstance;
+	            //TODO maybe change the fromSubstance from UUID to a substance reference incase the uuid changes we could use approval id or name etc?
+	            if (otherSubstanceReference != null && otherSubstanceReference.refuuid !=null) {
+	                event.setFromSubstance(UUID.fromString(otherSubstanceReference.refuuid));
+	            }
+	            event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
+	            eventPublisher.publishEvent(event);
+	        }
+	    });
 	}
 
 	private boolean notWorkingOn(String uuid){
@@ -321,6 +321,11 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	    }
 
 	    if (obj.isAutomaticInvertible()) {
+
+	        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+	        transactionTemplate.setReadOnly(true);
+	        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+	        transactionTemplate.executeWithoutResult( stauts -> {
 	        RemoveInverseRelationshipEvent.RemoveInverseRelationshipEventBuilder builder = RemoveInverseRelationshipEvent.builder();
 	        builder.relationshipIdThatWasRemoved(obj.getOrGenerateUUID());
 	        builder.relationshipTypeThatWasRemoved(obj.type);
@@ -332,6 +337,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	            builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
 	        }
 	        eventPublisher.publishEvent(builder.build());
+	        });
 	        
 	    }
 	}

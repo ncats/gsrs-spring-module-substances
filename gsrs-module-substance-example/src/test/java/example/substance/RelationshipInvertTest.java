@@ -81,10 +81,6 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
     private EntityManager em;
 
     @Autowired
-    private PrincipalService principalService;
-
-
-    @Autowired
     private RelationshipService relationshipService;
 
     @Autowired
@@ -127,9 +123,9 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
     public void addSubstanceWithRelationshipThenAddRelatedSubstanceShouldResultInBirectionalRelationship(@Autowired ApplicationEvents applicationEvents)   throws Exception {
 
         applicationEvents.clear();
-        UUID uuid1 = UUID.randomUUID();
-
-        UUID uuid2 = UUID.randomUUID();
+        UUID uuid1 = UUID.fromString("b1b1c28e-82d3-4c1b-9e5d-af9a7faaddec");
+        UUID uuid2 = UUID.fromString("2408e789-ee6c-4378-8f97-1f0326f3bf64");
+        
         Substance substance2 = new SubstanceBuilder()
                 .addName("sub2")
                 .setUUID(uuid2)
@@ -140,6 +136,10 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 .setUUID(uuid1)
                 .addRelationshipTo(substance2, "foo->bar")
                 .buildJsonAnd(this::assertCreated);
+        
+        //State 0: created sub1, dangling relationship
+        
+        
         //inverse relationship event is made but the relationship service can't do anything about it since substance2 isn't in DB yet
         List<TryToCreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
                 .collect(Collectors.toList());
@@ -156,6 +156,9 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         applicationEvents.clear();
         //now submit with one sided reference, processors should add the other side.
         assertCreated(substance2.toFullJsonNode());
+        
+        //State 1: created sub2
+        
 
         //this also makes an inverse event because the substance processor finds the dangling relationship
         List<TryToCreateInverseRelationshipEvent> inverseCreateEvents2 = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)

@@ -71,8 +71,12 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
     private void addWaitingRelationships(Substance obj){
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+       
+        
         transactionTemplate.setReadOnly(true);
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        //This can't be a new isolated propagation transaction for some tests to pass. There
+        //may be issues here to investigate.
+//        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         List<Relationship> refrel = transactionTemplate.execute(stat->relationshipRepository.findByRelatedSubstance_Refuuid(obj.getOrGenerateUUID().toString()));
 
         for(Relationship r:refrel){
