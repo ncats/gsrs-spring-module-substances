@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -89,6 +90,8 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	public void prePersist(Relationship thisRelationship) {
 
 		TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+		  transactionTemplate.setReadOnly(true);
+          transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 		transactionTemplate.executeWithoutResult( stauts -> {
 			if (thisRelationship.isAutomaticInvertible()) {
 				TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
@@ -100,7 +103,6 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 				//TODO maybe change the fromSubstance from UUID to a substance reference incase the uuid changes we could use approval id or name etc?
 				if (otherSubstanceReference != null && otherSubstanceReference.refuuid !=null) {
 					event.setFromSubstance(UUID.fromString(otherSubstanceReference.refuuid));
-
 				}
 				event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
 				eventPublisher.publishEvent(event);
