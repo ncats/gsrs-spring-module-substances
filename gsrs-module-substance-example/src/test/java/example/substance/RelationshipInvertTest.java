@@ -4,22 +4,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,12 +44,15 @@ import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.services.RelationshipService;
 import gsrs.repository.EditRepository;
 import gsrs.services.EditEventService;
-import gsrs.services.PrincipalService;
 import gsrs.startertests.TestEntityProcessorFactory;
 import ix.core.models.Edit;
+import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Protein;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.Substance.SubstanceClass;
 //@GsrsJpaTest
 @ActiveProfiles("test")
 @RecordApplicationEvents
@@ -617,59 +615,6 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
     	
     }
     
-    /*
-    @Test
-    public void testAddRelationshipAfterAddingEachSubstanceThenRemovingInvertedRelationshipShouldFail() throws Exception {
-
-	        //submit primary
-	        JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
-	        JsonNode newRelate = js.at("/relationships/0");
-	        js=new JsonUtil.JsonNodeBuilder(js)
-				.remove("/relationships/1")
-				.remove("/relationships/0")
-				.ignoreMissing()
-				.build();
-	        
-	        String uuid = js.get("uuid").asText();
-	        SubstanceAPI.ValidationResponse validationResult = api.validateSubstance(js);
-	        assertTrue(validationResult.isValid());
-	        ensurePass(api.submitSubstance(js));
-	        js =api.fetchSubstanceJsonByUuid(uuid);
-	        
-	        
-	        //submit alternative
-	        JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
-	        String uuidA = jsA.get("uuid").asText();
-	        SubstanceAPI.ValidationResponse validationResultA = api.validateSubstance(js);
-	        assertTrue(validationResultA.isValid());
-	        ensurePass(api.submitSubstance(jsA));
-	        
-	        //add relationship
-	        JsonNode updated=new JsonUtil.JsonNodeBuilder(js)
-			.add("/relationships/-", newRelate)
-			.ignoreMissing().build();
-	        ensurePass(api.updateSubstance(updated));
-	        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updated);
-	        String[] parts=type1.split("->");
-	        
-	        //check inverse relationship with primary
-	        JsonNode fetchedA = api.fetchSubstanceJsonByUuid(uuidA);
-	        String refUuidA = SubstanceJsonUtil.getRefUuidOnFirstRelationship(fetchedA);
-	        assertTrue(refUuidA.equals(uuid));
-	        assertEquals(parts[1] + "->" + parts[0],SubstanceJsonUtil.getTypeOnFirstRelationship(fetchedA));
-	        
-	        JsonNode updatedA=new JsonUtil.JsonNodeBuilder(fetchedA)
-			.remove("/relationships/0")
-			.ignoreMissing().build();
-	        
-	        ensurePass(api.updateSubstance(updatedA));
-
-        assertEquals(Collections.emptyList(),  SubstanceBuilder.from(api.fetchSubstanceJsonByUuid(uuid)).build().relationships);
-        assertEquals("substance with uuid " + uuidA, Collections.emptyList(),  SubstanceBuilder.from(api.fetchSubstanceJsonByUuid(uuidA)).build().relationships);
-
-
-    }
-*/
     @Test
     public void testAddRelationshipAfterAddingEachSubstanceThenRemovingFromPrimaryRelationshipShouldPass() throws Exception {
 
@@ -717,659 +662,89 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(Collections.emptyList(),  substanceEntityService.get(UUID.fromString(uuid)).get().relationships);
         assertEquals(Collections.emptyList(),  substanceEntityService.get(UUID.fromString(uuidA)).get().relationships);
     }
+    
     /*
-    @Test
-    public void testDontAddRelationshipIfOneLikeItAlreadyExists()   throws Exception {
-    	
-        //submit primary
-        JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
-        JsonNode newRelate = js.at("/relationships/0");
-        String uuid = js.get("uuid").asText();
-        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(js);
-        String[] parts=type1.split("->");
-        
-        newRelate=new JsonUtil.JsonNodeBuilder(newRelate)
-			.set("/relatedSubstance/refuuid",uuid)
-			.set("/relatedSubstance/refPname",js.at("/names/0/name").asText())
-			.set("/type",parts[1] + "->" + parts[0])
-			.ignoreMissing()
-			.build();
-
-
-        SubstanceAPI.ValidationResponse validationResult = api.validateSubstance(js);
-        assertTrue(validationResult.isValid());
-        ensurePass(api.submitSubstance(js));
-        js =api.fetchSubstanceJsonByUuid(uuid);
-        
-        
-        //submit alternative
-        JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
-        String uuidA = jsA.get("uuid").asText();
-        jsA=new JsonUtil.JsonNodeBuilder(jsA)
-		.add("/relationships/-",newRelate)
-		.ignoreMissing()
-		.build();
-        SubstanceAPI.ValidationResponse validationResultA = api.validateSubstance(js);
-        assertTrue(validationResultA.isValid());
-        ensurePass(api.submitSubstance(jsA));
-        
-        
-        //check inverse relationship with primary
-        JsonNode fetchedA = api.fetchSubstanceJsonByUuid(uuidA);
-        String refUuidA = SubstanceJsonUtil.getRefUuidOnFirstRelationship(fetchedA);
-        assertTrue(refUuidA.equals(uuid));
-        assertEquals(parts[1] + "->" + parts[0],SubstanceJsonUtil.getTypeOnFirstRelationship(fetchedA));
-        assertEquals(1,fetchedA.at("/relationships").size());
-        
-    }
+     * 4. Change an existing alternative definition substance to have a different primary definition
+        4.1. Confirm that the change works.
+        4.2. Confirm that the new primary has the correct relationship now
+        4.3. Confirm that the old primary is lacking the alt relationship
+        4.4. Confirm that a rollback would rollback everything (not sure how to test this)
+     */
     
     @Test
-    public void testDontAddRelationshipIfOneLikeItAlreadyExistsAndDontMakeEdit()   throws Exception {
-    	
+    public void testChangeSubstanceClassShouldKeepRelationships() throws Exception {
+
         //submit primary
         JsonNode js = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
         JsonNode newRelate = js.at("/relationships/0");
+        js=new JsonUtil.JsonNodeBuilder(js)
+                .remove("/relationships/1")
+                .remove("/relationships/0")
+                .ignoreMissing()
+                .build();
+
         String uuid = js.get("uuid").asText();
-        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(js);
-        String[] parts=type1.split("->");
-        
-        newRelate=new JsonUtil.JsonNodeBuilder(newRelate)
-			.set("/relatedSubstance/refuuid",uuid)
-			.set("/relatedSubstance/refPname",js.at("/names/0/name").asText())
-			.set("/type",parts[1] + "->" + parts[0])
-			.ignoreMissing()
-			.build();
+        assertCreated(js);
 
-        SubstanceAPI.ValidationResponse validationResponse = api.validateSubstance(js);
-        assertTrue(validationResponse.isValid());
-        ensurePass(api.submitSubstance(js));
 
-        api.fetchSubstanceJsonByUuid(uuid);
-        
-        
-        //submit alternative
+        //submit inverse
         JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
         String uuidA = jsA.get("uuid").asText();
-        jsA=new JsonUtil.JsonNodeBuilder(jsA)
-			.add("/relationships/-",newRelate)
-			.ignoreMissing()
-			.build();
+        assertCreated(jsA);
 
-        SubstanceAPI.ValidationResponse validationResponseA = api.validateSubstance(jsA);
-
-        assertTrue(validationResponseA.isValid());
-        ensurePass(api.submitSubstance(jsA));
+        JsonNode updatedA=new JsonUtil.JsonNodeBuilder(jsA)
+                .set("/changeReason", "test")
+                .ignoreMissing().build();
+        assertUpdated(updatedA);
+        
+        //add relationship
+        JsonNode updated=new JsonUtil.JsonNodeBuilder(js)
+                .add("/relationships/-", newRelate)
+                .ignoreMissing().build();
+        assertUpdated(updated);
         
         
+        
+        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updated);
+        String[] parts=type1.split("->");
+
         //check inverse relationship with primary
-        JsonNode fetchedA = api.fetchSubstanceJsonByUuid(uuidA);
-        String refUuidA = SubstanceJsonUtil.getRefUuidOnFirstRelationship(fetchedA);
-        assertTrue(refUuidA.equals(uuid));
-        assertEquals(parts[1] + "->" + parts[0],SubstanceJsonUtil.getTypeOnFirstRelationship(fetchedA));
-        assertEquals(1,fetchedA.at("/relationships").size());
+        Substance fetchedA = substanceEntityService.get(UUID.fromString(uuid)).get();
+        assertEquals(uuidA, fetchedA.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(parts[0] + "->" + parts[1],fetchedA.relationships.get(0).type);
         
-        //Shouldn't be any edit history either
-        assertEquals(404,api.fetchAllSubstanceHistory(uuid).getStatus());
+        Substance fetchedP = substanceEntityService.get(UUID.fromString(uuidA)).get();
+        assertEquals(uuid, fetchedP.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(parts[1] + "->" + parts[0],fetchedP.relationships.get(0).type);
+//        
+//        ChemicalSubstance csub = (ChemicalSubstance) fetchedA;
+//        
+//        Protein prot =new ProteinSubstanceBuilder().addSubUnit("TTTTTTT").build().protein;
+//        prot.setReferences(csub.getStructure().getReferences());
+//        
+//        JsonNode updatedA=new JsonUtil.JsonNodeBuilder(fetchedA.toFullJsonNode())
+//                                        .remove("/structure")
+//                                        .remove("/moieties")
+//                                        .add("/protein", prot)
+//                                        .set("/substanceClass", SubstanceClass.protein.toString())
+//                                        .ignoreMissing().build();
+//
+//        assertUpdated(updatedA);
+//
+//        Substance fetchedBack = substanceEntityService.get(UUID.fromString(uuid)).get();
+//
+//        assertEquals(SubstanceClass.protein, fetchedBack.substanceClass);
+//        assertEquals(uuidA, fetchedBack.relationships.get(0).relatedSubstance.refuuid);
+//        assertEquals(parts[0] + "->" + parts[1],fetchedBack.relationships.get(0).type);
+//        
+//
+//        Substance fetchedBack2 = substanceEntityService.get(UUID.fromString(uuidA)).get();
+//
+//        assertEquals(uuid, fetchedBack2.relationships.get(0).relatedSubstance.refuuid);
+//        assertEquals(parts[1] + "->" + parts[0],fetchedBack2.relationships.get(0).type);
+
+
+//        assertEquals(Collections.emptyList(),  substanceEntityService.get(UUID.fromString(uuid)).get().relationships);
+//        assertEquals(Collections.emptyList(),  substanceEntityService.get(UUID.fromString(uuidA)).get().relationships);
     }
-
-    /**
-     * On trying to delete a INHIBITOR -> TRANSPORTER relationship,
-     * the validation rules portion of the form returned:
-     *
-     * ERROR
-     Error updating entity [Error ID:e86fed46]:java.lang.IllegalStateException: java.lang.IllegalStateException: java.lang.IllegalStateException: javax.persistence.OptimisticLockException: Data has changed. updated [0] rows sql[update ix_ginas_substance set current_version=?, last_edited=?, version=?, internal_version=? where uuid=? and internal_version=?] bind[null]. See applicaiton log for more details.
-
-
-     root cause is
-
-     Caused by: javax.persistence.OptimisticLockException: Data has changed. updated [0] rows sql[update ix_ginas_substance set current_version=?, last_edited=?, version=?, internal_version=? where uuid=? and internal_version=?] bind[null]
-     at com.avaje.ebeaninternal.server.persist.dml.DmlHandler.checkRowCount(DmlHandler.java:95) ~[org.avaje.ebeanorm.avaje-ebeanorm-3.3.4.jar:na]
-     at com.avaje.ebeaninternal.server.persist.dml.UpdateHandler.execute(UpdateHandler.java:81) ~[org.avaje.ebeanorm.avaje-ebeanorm-3.3.4.jar:na]
-
-     */
-
-    @Test
-    public void removeRelationshipWithActiveMoeityGsrs587FromOriginal(@Autowired ApplicationEvents applicationEvents)   throws Exception {
-
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        applicationEvents.clear();
-
-        UUID parentUUID = UUID.fromString(substanceEntityService.createEntity( new SubstanceBuilder()
-                .addName("parent", name -> name.displayName =true)
-                .generateNewUUID()
-                .buildJson())
-                .getCreatedEntity().uuid.toString());
-
-        Substance inhibitor = new SubstanceBuilder()
-                                        .addName("inhibitor", name -> name.displayName =true)
-                                        .addActiveMoiety()
-                                        .generateNewUUID()
-                                        .build();
-
-        List<Relationship> activeMoeity = inhibitor.getActiveMoieties();
-
-        assertEquals(1, activeMoeity.size());
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter", name -> name.displayName =true)
-                .generateNewUUID()
-                .build();
-
-       Substance createdInhibitor = assertCreated(inhibitor.toFullJsonNode());
-
-        Set<TryToCreateInverseRelationshipEvent> createInverseRelationshipEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toSet());
-        //active moeities don't have inverse relationships
-        assertEquals(0, createInverseRelationshipEvents.size());
-
-        Substance storedTransporter = substanceEntityService.createEntity(transporter.toFullJsonNode()).getCreatedEntity();
-
-
-        SubstanceBuilder.from(substanceRepository.getOne(parentUUID).toFullJsonNode())
-                .addRelationshipTo(createdInhibitor, "INFRASPECIFIC->PARENT ORGANISM")
-                .buildJsonAnd( this::assertUpdated);
-
-
-
-        SubstanceBuilder.from(substanceRepository.getOne(createdInhibitor.getUuid()).toFullJsonNode())
-                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
-                .buildJsonAnd(this::assertUpdated);
-
-
-        transactionTemplate.executeWithoutResult(s->{
-            applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toList()).forEach(relationshipService::createNewInverseRelationshipFor);
-        });
-
-
-        transactionTemplate.executeWithoutResult(s-> {
-            Substance actualTransporter = substanceRepository.findById(storedTransporter.getUuid()).get();
-
-            assertEquals(1, actualTransporter.relationships.size());
-            applicationEvents.clear();
-            System.out.println("inhibior uuid = " + inhibitor.getUuid());
-            SubstanceBuilder.from(substanceRepository.findById(inhibitor.getUuid()).get().toFullJsonNode())
-                                                .andThen(substance->{
-                                                    UUID relationshipIdToRemove=null;
-                                                    try(Stream<Relationship> rels = substance.relationships.stream()){
-                                                        relationshipIdToRemove= rels.filter(r->  r.type.equals("INHIBITOR->TRANSPORTER")).findAny().get().uuid;
-                                                    }
-                                                    assertNotNull(relationshipIdToRemove);
-                                                    substance.removeRelationshipByUUID(relationshipIdToRemove);
-                                                    return substance;
-                                                })
-                            .buildJsonAnd(this::assertUpdated);
-
-                });
-        Set<RemoveInverseRelationshipEvent> removeInverseRelationshipEvents = applicationEvents.stream(RemoveInverseRelationshipEvent.class).collect(Collectors.toSet());
-
-        assertEquals(1, removeInverseRelationshipEvents.size());
-
-        transactionTemplate.executeWithoutResult(s->{
-            removeInverseRelationshipEvents.forEach(relationshipService::removeInverseRelationshipFor);
-        });
-
-
-        Substance actualInhibitor =substanceRepository.findById(inhibitor.getUuid()).get();
-
-        assertEquals(2, actualInhibitor.relationships.size());
-        assertFalse(actualInhibitor.relationships.stream()
-                .filter(r -> r.type.equals("INHIBITOR->TRANSPORTER"))
-                .findAny()
-                .isPresent());
-
-        Optional<Substance> opt = substanceRepository.findById(transporter.getUuid());
-        Substance modifiedTransporter = opt.get();
-        assertEquals(Collections.emptyList(), modifiedTransporter.relationships);
-
-
-    }
-/*
-    @Test
-    public void removeRelationshipWithActiveMoeityGsrs587FromOtherSide(){
-
-        Substance parent = new SubstanceBuilder()
-                                .addName("parent")
-                                .generateNewUUID()
-                                .build();
-
-        api.submitSubstance(parent);
-
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .addActiveMoiety()
-
-                .build();
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .build();
-
-        JsonNode json = api.submitSubstance(inhibitor);
-
-        Substance storedInhibitor = SubstanceBuilder.from(json).build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-
-
-        JsonNode withRel = new SubstanceBuilder(storedInhibitor)
-                .addRelationshipTo(storedTransporter, "INHIBITOR -> TRANSPORTER")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-        SubstanceBuilder.from(api.fetchSubstanceJsonByUuid(parent.getUuid()))
-                .addRelationshipTo(inhibitor, "INFRASPECIFIC->PARENT ORGANISM")
-                .buildJsonAnd( js -> api.updateSubstanceJson(js));
-
-
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(storedTransporter.getUuid().toString(), Substance.class);
-
-        assertEquals(1, actualTransporter.relationships.size());
-
-        actualTransporter.relationships.remove(0);
-
-        api.updateSubstanceJson(new SubstanceBuilder(actualTransporter).buildJson());
-
-        Substance actualInhibitor = api.fetchSubstanceObjectByUuid(storedInhibitor.getUuid().toString(), Substance.class);
-
-        assertFalse(actualInhibitor.relationships.stream()
-                                        .filter(r -> r.type.equals("INHIBITOR -> TRANSPORTER"))
-                                        .findAny()
-                                        .isPresent());
-//        assertEquals(actualInhibitor.getActiveMoieties(), actualInhibitor.relationships);
-
-        Substance modifiedTransporter = api.fetchSubstanceObjectByUuid(storedTransporter.getUuid().toString(), Substance.class);
-        assertEquals(Collections.emptyList(), modifiedTransporter.relationships);
-
-
-    }
-
-    @Test
-    public void changeCommentOrRelationshipOnGeneratorSideShouldAlsoBeReflectedOnOtherSide(){
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .generateNewUUID()
-                .build();
-
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .generateNewUUID()
-                .build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-        JsonNode withRel = SubstanceBuilder.from(api.submitSubstance(inhibitor))
-                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-
-        assertEquals(Arrays.asList("INHIBITOR->TRANSPORTER"), storedWithRel.relationships.stream()
-                                                                                .map(r-> r.type)
-                                                                                 .collect(Collectors.toList()));
-
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("TRANSPORTER->INHIBITOR"), actualTransporter.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-        storedWithRel.relationships.get(0).comments= "BEAN ME UP SCOTTY";
-        Substance storedWithRel2 = SubstanceBuilder.from(api.updateSubstanceJson(storedWithRel.toFullJsonNode())).build();
-
-
-        assertEquals(Arrays.asList("BEAN ME UP SCOTTY"), storedWithRel2.relationships.stream()
-                .map(r-> r.comments)
-                .collect(Collectors.toList()));
-
-
-        Substance actualTransporter2 = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("BEAN ME UP SCOTTY"), actualTransporter2.relationships.stream()
-                .map(r-> r.comments)
-                .collect(Collectors.toList()));
-
-
-    }
-
-    @Test
-    public void changeCommentOnRelationshipOnNonGeneratorSideShouldAlsoBeReflectedOnOtherSide(){
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .generateNewUUID()
-                .build();
-
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .generateNewUUID()
-                .build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-        JsonNode withRel = SubstanceBuilder.from(api.submitSubstance(inhibitor))
-                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-
-        assertEquals(Arrays.asList("INHIBITOR->TRANSPORTER"), storedWithRel.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("TRANSPORTER->INHIBITOR"), actualTransporter.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-        actualTransporter.relationships.get(0).comments= "BEAN ME UP SCOTTY";
-        Substance storedWithRel2 = SubstanceBuilder.from(api.updateSubstanceJson(actualTransporter.toFullJsonNode())).build();
-
-
-        assertEquals(Arrays.asList("BEAN ME UP SCOTTY"), storedWithRel2.relationships.stream()
-                .map(r-> r.comments)
-                .collect(Collectors.toList()));
-
-
-        Substance actualInhibitor2 = api.fetchSubstanceObjectByUuid(inhibitor.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("BEAN ME UP SCOTTY"), actualInhibitor2.relationships.stream()
-                .map(r-> r.comments)
-                .collect(Collectors.toList()));
-
-
-    }
-
-    @Test
-    public void changeTypeOnRelationshipOnGeneratorSideShouldAlsoBeReflectedOnOtherSide(){
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .generateNewUUID()
-                .build();
-
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .generateNewUUID()
-                .build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-        JsonNode withRel = SubstanceBuilder.from(api.submitSubstance(inhibitor))
-                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-
-        assertEquals(Arrays.asList("INHIBITOR->TRANSPORTER"), storedWithRel.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("TRANSPORTER->INHIBITOR"), actualTransporter.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-        storedWithRel.relationships.get(0).type= "KIRK->TRANSPORTER";
-        Substance storedWithRel2 = SubstanceBuilder.from(api.updateSubstanceJson(storedWithRel.toFullJsonNode())).build();
-
-
-        assertEquals(Arrays.asList("KIRK->TRANSPORTER"), storedWithRel2.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-
-        Substance actualTransporter2 = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("TRANSPORTER->KIRK"), actualTransporter2.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-
-    }
-
-    @Test
-    public void changeTypeOnRelationshipOnNonGeneratorSideShouldAlsoBeReflectedOnOtherSide(){
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .generateNewUUID()
-                .build();
-
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .generateNewUUID()
-                .build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-        JsonNode withRel = SubstanceBuilder.from(api.submitSubstance(inhibitor))
-                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-
-        assertEquals(Arrays.asList("INHIBITOR->TRANSPORTER"), storedWithRel.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("TRANSPORTER->INHIBITOR"), actualTransporter.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-        actualTransporter.relationships.get(0).type= "TRANSPORTER->KIRK";
-        Substance storedWithRel2 = SubstanceBuilder.from(api.updateSubstanceJson(actualTransporter.toFullJsonNode())).build();
-
-
-        assertEquals(Arrays.asList("TRANSPORTER->KIRK"), storedWithRel2.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-
-        Substance actualInhibitor2 = api.fetchSubstanceObjectByUuid(inhibitor.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("KIRK->TRANSPORTER"), actualInhibitor2.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-
-    }
-
-    @Test
-    public void multipleChangesAllOnOneSide(){
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .generateNewUUID()
-                .build();
-
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .generateNewUUID()
-                .build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-        JsonNode withRel = SubstanceBuilder.from(api.submitSubstance(inhibitor))
-                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
-                .addRelationshipTo(storedTransporter, "SOMETHING->DIFFERENT")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-
-        //using TreeSets so they are sorted because
-        // the relationships can be stored or come back in any order...
-        assertEquals(setOf("INHIBITOR->TRANSPORTER","SOMETHING->DIFFERENT"), storedWithRel.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toCollection(TreeSet::new)));
-
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(setOf("DIFFERENT->SOMETHING", "TRANSPORTER->INHIBITOR" ), actualTransporter.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toCollection(TreeSet::new)));
-
-        storedWithRel.relationships.get(0).comments= "BEAN ME UP SCOTTY";
-        storedWithRel.relationships.remove(1);
-        Substance storedWithRel2 = SubstanceBuilder.from(api.updateSubstanceJson(storedWithRel.toFullJsonNode())).build();
-
-
-        assertEquals(Arrays.asList("BEAN ME UP SCOTTY"), storedWithRel2.relationships.stream()
-                .map(r-> r.comments)
-                .collect(Collectors.toList()));
-
-
-        Substance actualTransporter2 = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("BEAN ME UP SCOTTY"), actualTransporter2.relationships.stream()
-                .map(r-> r.comments)
-                .collect(Collectors.toList()));
-
-
-    }
-
-    @Test
-    public void relatedSubstanceAddedLaterShouldGetWaitingRelationshipAddedOnLoad() {
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .generateNewUUID()
-                .build();
-
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .generateNewUUID()
-                .build();
-
-
-        JsonNode withRel = SubstanceBuilder.from(api.submitSubstance(inhibitor))
-                .addRelationshipTo(transporter, "INHIBITOR->TRANSPORTER")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-        List<Relationship> relationships = storedWithRel.relationships;
-        assertEquals(Arrays.asList(transporter.getOrGenerateUUID().toString()), relationships.stream()
-                                                                            .map(r-> r.relatedSubstance.refuuid)
-                                                                            .collect(Collectors.toList()));
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-        List<Relationship> otherRelationships = storedTransporter.relationships;
-        assertEquals(Arrays.asList(inhibitor.getOrGenerateUUID().toString()), otherRelationships.stream()
-                .map(r-> r.relatedSubstance.refuuid)
-                .collect(Collectors.toList()));
-
-    }
-
-        private static <T> Set<T> setOf(T... ts){
-        Set<T> s = new HashSet<>();
-        for(T t : ts){
-            s.add(t);
-        }
-        return s;
-    }
-
-    /**
-     * This tests to make sure if for some reason
-     * the first commit fails,
-     * follow up attempts still work - our procesor's set of ids in progress handle rollbacks
-     *
-     */
-    /*
-    @Test
-    public void rollbackFirstTryAllow2ndFixed() {
-        Substance inhibitor = new SubstanceBuilder()
-                .addName("inhibitor")
-                .generateNewUUID()
-                .build();
-
-
-        Substance transporter = new SubstanceBuilder()
-                .addName("transporter")
-                .generateNewUUID()
-                .build();
-
-        Substance storedTransporter = SubstanceBuilder.from(api.submitSubstance(transporter)).build();
-
-        JsonNode withRel = SubstanceBuilder.from(api.submitSubstance(inhibitor))
-                .addRelationshipTo(storedTransporter, "INHIBITOR->TRANSPORTER")
-                .buildJson();
-
-        Substance storedWithRel = SubstanceBuilder.from(api.updateSubstanceJson(withRel)).build();
-
-
-        assertEquals(Arrays.asList("INHIBITOR->TRANSPORTER"), storedWithRel.relationships.stream()
-                .map(r -> r.type)
-                .collect(Collectors.toList()));
-
-        Substance actualTransporter = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("TRANSPORTER->INHIBITOR"), actualTransporter.relationships.stream()
-                .map(r -> r.type)
-                .collect(Collectors.toList()));
-
-
-        ts.addEntityProcessor(Relationship.class, ProcessorThatFailsFirstTime.class );
-
-        logout();
-
-        ts.restart();
-
-        login();
-
-        storedWithRel.relationships.get(0).type= "KIRK->TRANSPORTER";
-        JsonNode updatedJson = storedWithRel.toFullJsonNode();
-
-        SubstanceJsonUtil.ensureFailure(api.updateSubstance(updatedJson));
-
-        Substance storedWithRel2 = SubstanceBuilder.from(api.updateSubstanceJson(updatedJson)).build();
-
-
-        assertEquals(Arrays.asList("KIRK->TRANSPORTER"), storedWithRel2.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-
-        Substance actualTransporter2 = api.fetchSubstanceObjectByUuid(transporter.getUuid().toString(), Substance.class);
-
-        assertEquals(Arrays.asList("TRANSPORTER->KIRK"), actualTransporter2.relationships.stream()
-                .map(r-> r.type)
-                .collect(Collectors.toList()));
-
-
-    }
-
-    /**
-     * processor that is used in a test that will throw an exception
-     * and therefore rollback the transaction the first time it's update method is called.
-     */
-    /*
-    public static class ProcessorThatFailsFirstTime implements EntityProcessor<Relationship> {
-
-        private boolean shouldFail=true;
-
-        @Override
-        public void preUpdate(Relationship obj) throws FailProcessingException {
-            try {
-                if(shouldFail) {
-                    throw new FailProcessingException("supposed to fail");
-                }
-            }finally {
-                //only fail the 1st time
-                shouldFail = false;
-            }
-        }
-    }
-*/
 }

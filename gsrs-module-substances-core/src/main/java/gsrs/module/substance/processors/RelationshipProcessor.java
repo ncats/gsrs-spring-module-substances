@@ -132,8 +132,8 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	public void prePersist(Relationship thisRelationship) {
 
 	    TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-	    transactionTemplate.setReadOnly(true);
-	    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+//	    transactionTemplate.setReadOnly(true);
+//	    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	    transactionTemplate.executeWithoutResult( stauts -> {
 	        if (thisRelationship.isAutomaticInvertible()) {
 	            TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();

@@ -400,7 +400,9 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         return transactionTemplate.execute( status -> {
             try {
-                return ensurePass(substanceEntityService.createEntity(json));
+                Substance s= ensurePass(substanceEntityService.createEntity(json));
+                substanceRepository.flush();
+                return s;
             } catch (Exception e) {
                 return Sneak.sneakyThrow(e);
             }
@@ -411,8 +413,10 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         return transactionTemplate.execute( stauts -> {
-            try {
-                return ensurePass(substanceEntityService.updateEntity(json));
+            try {  
+                Substance s= ensurePass(substanceEntityService.updateEntity(json));
+                substanceRepository.flush();
+                return s;
             } catch (Exception e) {
                 return Sneak.sneakyThrow(e);
             }
