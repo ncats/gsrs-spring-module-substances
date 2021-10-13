@@ -44,14 +44,6 @@ public class RelationshipService {
 
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
-    /**
-     * Our personal copy of relationshipProcessor which we only use
-     * for turning off firing pre/post hooks.  Note we dont need dependency injection
-     * since we aren't going to use any of those fields.
-     */
-    private RelationshipProcessor relationshipProcessor = new RelationshipProcessor();
-    
-//    private RelationshipProcessor relationshipProcessor;
     
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
 
@@ -162,7 +154,7 @@ public class RelationshipService {
             //Relationship removed
             if(!osub2.uuid.toString().equals(updatedInverseRelationship.relatedSubstance.refuuid)) {
                 //relationship removed
-                relationshipProcessor.doWithoutEventTracking(()->{
+                RelationshipProcessor.doWithoutEventTracking(()->{
                     relationshipRepository.delete(toUpdate);    
                 });
                 osub2.removeRelationship(toUpdate);
@@ -262,7 +254,7 @@ public class RelationshipService {
                 }
             }
             osub2.forceUpdate();
-            Substance osub3=relationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
+            Substance osub3=RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
             
             return Optional.of(osub3);
         });
@@ -291,7 +283,7 @@ public class RelationshipService {
                 if (rem != null) {
                     // We never want this to trigger an event
                     Relationship rrem=rem;
-                    relationshipProcessor.doWithoutEventTracking(()->{
+                    RelationshipProcessor.doWithoutEventTracking(()->{
                         relationshipRepository.delete(rrem);    
                     });
                     osub2.removeRelationship(rem);
@@ -374,7 +366,7 @@ public class RelationshipService {
                             newSub.updateVersion();
 //                            relationshipRepository.save(r);
                             Substance upSub=newSub;
-                            newSub = relationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
+                            newSub = RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
                             
                         }
                         return Optional.ofNullable(newSub);

@@ -146,12 +146,11 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
      * Disable this {@link EntityProcessor} from having events fire from operations
      * performed in the supplied {@link Runnable} within its executing thread. This
      * is accomplished by using a {@link ThreadLocal} flag which temporarily
-     * disables this processor until the {@link Runnable} execution finishes. 
-     * @param <T>
-     * @param r
-     * @return
+     * disables this processor until the {@link Runnable} execution finishes.
+     * @param r the runnable to invoke; can not be null.
+     * @throws NullPointerException if r is null.
      */
-    public void doWithoutEventTracking(Runnable r) {
+    public static void doWithoutEventTracking(Runnable r) {
         doWithoutEventTracking(()->{
             r.run();
             return null;
@@ -166,14 +165,17 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
      * a {@link Supplier} here is just to allow a convenient way for processes that
      * would typically return a value to still return a value. If no value needs to be
      * returned {@link #doWithoutEventTracking(Runnable)} can be used instead.
-     * @param <T>
-     * @param r
-     * @return
+     * @param <T> the type to return.
+     * @param supplier the supplier to invoke; can not be null.
+     * @return the result from the Supplier.
+	 * @throws NullPointerException if supplier is null.
+	 * 
+	 * @see #doWithoutEventTracking(Runnable) 
      */
-    public <T> T doWithoutEventTracking(Supplier<T> r) {
+    public static <T> T doWithoutEventTracking(Supplier<T> supplier) {
         enabled.get().set(false);
         try {
-            return r.get();
+            return supplier.get();
         }finally {
             enabled.get().set(true);
         }
