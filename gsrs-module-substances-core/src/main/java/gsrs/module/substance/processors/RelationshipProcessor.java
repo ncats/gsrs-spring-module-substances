@@ -119,12 +119,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	        builder.relationshipIdThatWasUpdated(obj.uuid);
 	        builder.substanceIdToUpdate(UUID.fromString(obj.relatedSubstance.refuuid));
 	        builder.substanceIdThatWasUpdated(obj.fetchOwner().getOrGenerateUUID());
-	        if(obj.isGenerator()){
-	            builder.originatorUUID(obj.uuid);
-	        }else{
-	            builder.originatorUUID(UUID.fromString(obj.originatorUuid));
-	        }
-
+	        builder.originatorUUID(UUID.fromString(obj.originatorUuid));
 	        eventPublisher.publishEvent(builder.build());
 	    });
 
@@ -142,11 +137,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	            builder.relationshipTypeThatWasRemoved(obj.type);
 	            builder.substanceRefIdOfRemovedRelationship(obj.fetchOwner().getOrGenerateUUID().toString());
 	            builder.relatedSubstanceRefId(obj.relatedSubstance.refuuid);
-                builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
-	            if (obj.isGenerator()) {
-	                builder.relationshipOriginatorIdToRemove(obj.getOrGenerateUUID());
-	            } else {
-	            }
+	            builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
 	            eventPublisher.publishEvent(builder.build());
 	        });
 
