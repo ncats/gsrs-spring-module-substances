@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.controllers.EntityFactory;
 import ix.ginas.models.v1.*;
+import ix.ginas.models.v1.Substance.SubstanceClass;
+import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
+import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
 import ix.ginas.utils.JsonSubstanceFactory;
 
 import java.io.File;
@@ -39,24 +42,33 @@ public class SubstanceBuilder extends AbstractSubstanceBuilder<Substance, Substa
 	}
 
 	public ChemicalSubstanceBuilder asChemical(){
-		return new ChemicalSubstanceBuilder(this);
+		return new ChemicalSubstanceBuilder(this).setSubstanceClass(SubstanceClass.chemical);
 	}
 	
 	public ProteinSubstanceBuilder asProtein(){
-		return new ProteinSubstanceBuilder(this);
+		return new ProteinSubstanceBuilder(this).setSubstanceClass(SubstanceClass.protein);
 	}
 
 	public PolymerSubstanceBuilder asPolymer(){
-		return new PolymerSubstanceBuilder(this);
+		return new PolymerSubstanceBuilder(this).setSubstanceClass(SubstanceClass.polymer);
 	}
 
 	public MixtureSubstanceBuilder asMixture() {
-		return new MixtureSubstanceBuilder(this);
+		return new MixtureSubstanceBuilder(this).setSubstanceClass(SubstanceClass.mixture);
 	}
 
 	public NucleicAcidSubstanceBuilder asNucleicAcid(){
-		return new NucleicAcidSubstanceBuilder();
+		return new NucleicAcidSubstanceBuilder(this).setSubstanceClass(SubstanceClass.nucleicAcid);
 	}
+	
+	public StructurallyDiverseSubstanceBuilder asStructruallyDiverse(){
+        return new StructurallyDiverseSubstanceBuilder(this).setSubstanceClass(SubstanceClass.structurallyDiverse);
+    }
+	
+	protected <S extends Substance> SubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
+	    this.andThen = (s)-> (Substance) builder.andThen.apply((S) s);
+	}
+	
     public static <S extends Substance, B extends AbstractSubstanceBuilder<S,B>> B  from(String json) throws IOException{
         return from(mapper.readTree(json));
     }

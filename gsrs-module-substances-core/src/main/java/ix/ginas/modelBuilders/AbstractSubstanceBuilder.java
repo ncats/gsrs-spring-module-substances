@@ -6,6 +6,9 @@ import ix.core.models.Group;
 import ix.core.models.Keyword;
 import ix.core.models.Principal;
 import ix.ginas.models.v1.*;
+import ix.ginas.models.v1.Substance.SubstanceClass;
+import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
+import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -173,6 +176,10 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
     }
     public T addRelationship(Relationship r) {
         return andThen(s -> {s.relationships.add(r);});
+    }
+    
+    public T clearRelationships() {
+        return andThen(s -> {s.relationships.clear();});
     }
 
     public T addKeyword(Keyword k) {
@@ -369,7 +376,6 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
         rel.type = type;
         rel.relatedSubstance = relatedSubstance.asSubstanceReference();
         return addRelationship(rel);
-
     }
 
     public T addActiveMoiety(){
@@ -380,5 +386,16 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
 
             s.relationships.add(rel);
         });
+    }
+    
+    public T makeAlternativeFor(
+            Substance sub1Fetched) {
+        return this.clearRelationships()
+                   .addRelationshipTo(sub1Fetched, Substance.PRIMARY_SUBSTANCE_REL)
+                   .setDefinition(SubstanceDefinitionType.ALTERNATIVE, SubstanceDefinitionLevel.COMPLETE);
+    }
+    
+    public SubstanceBuilder asConcept(){
+        return new SubstanceBuilder(this).setSubstanceClass(SubstanceClass.concept);
     }
 }

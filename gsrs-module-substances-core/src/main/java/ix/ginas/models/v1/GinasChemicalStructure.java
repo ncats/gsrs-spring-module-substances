@@ -35,14 +35,14 @@ public class GinasChemicalStructure extends Structure implements GinasAccessRefe
 	@CreatedDate
     public Date created=null;
     
-    @OneToOne()
+    @ManyToOne()
     @JsonSerialize(using = PrincipalSerializer.class)
     @JsonDeserialize(using = PrincipalDeserializer.class)
     @Indexable(facet = true, name = "Created By", recurse=false)
 	@CreatedBy
     public Principal createdBy;
     
-    @OneToOne()
+    @ManyToOne()
     @JsonSerialize(using = PrincipalSerializer.class)
     @JsonDeserialize(using = PrincipalDeserializer.class)
     @Indexable(facet = true, name = "Last Edited By", recurse=false)

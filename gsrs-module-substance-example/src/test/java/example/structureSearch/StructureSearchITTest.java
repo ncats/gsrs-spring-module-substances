@@ -55,7 +55,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         transactionTemplate.executeWithoutResult(s -> {
             new ChemicalSubstanceBuilder()
 
-                    .setStructure(structure)
+                    .setStructureWithDefaultReference(structure)
                     .addName("Test")
                     .setUUID(uuid)
                     .buildJsonAnd(this::assertCreated);
@@ -78,14 +78,14 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         transactionTemplate.executeWithoutResult(s -> {
             new ChemicalSubstanceBuilder()
 
-                    .setStructure(structure)
+                    .setStructureWithDefaultReference(structure)
                     .addName("Test")
                     .setUUID(uuid)
                     .buildJsonAnd(this::assertCreated);
 
             new ChemicalSubstanceBuilder()
 
-                    .setStructure("[Na+][Cl-]")
+                    .setStructureWithDefaultReference("[Na+][Cl-]")
                     .addName("something Else")
                     .buildJsonAnd(this::assertCreated);
         });
@@ -118,7 +118,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                             "M  END";
                     new ChemicalSubstanceBuilder()
 
-                            .setStructure(mol1)
+                            .setStructureWithDefaultReference(mol1)
                             .addName("Test")
                             .setUUID(uuid)
                             .buildJsonAnd(this::assertCreated);
@@ -165,7 +165,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
 
         new ChemicalSubstanceBuilder()
 
-                .setStructure(mol1)
+                .setStructureWithDefaultReference(mol1)
                 .addName("Test")
                 .setUUID(uuid)
                 .buildJsonAnd(this::assertCreated);
@@ -182,7 +182,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         UUID uuid = UUID.randomUUID();
         new ChemicalSubstanceBuilder()
 
-                .setStructure("COC1=CC=C(O)C2=C(O)C(C)=C3OC(C)(O)C(=O)C3=C12")
+                .setStructureWithDefaultReference("COC1=CC=C(O)C2=C(O)C(C)=C3OC(C)(O)C(=O)C3=C12")
                 .addName("Test")
                 .setUUID(uuid)
                 .buildJsonAnd(this::assertCreated);
@@ -190,7 +190,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         UUID uuid2 = UUID.randomUUID();
         new ChemicalSubstanceBuilder()
 
-                .setStructure("CC1=C2OC(C)(O)C(=O)C2=C3C4=C(C=C(O)C3=C1O)N5C=CC=CC5=N4")
+                .setStructureWithDefaultReference("CC1=C2OC(C)(O)C(=O)C2=C3C4=C(C=C(O)C3=C1O)N5C=CC=CC5=N4")
                 .addName("Test2")
                 .setUUID(uuid2)
                 .buildJsonAnd(this::assertCreated);
@@ -214,7 +214,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         transactionTemplate.executeWithoutResult(s -> {
                     new ChemicalSubstanceBuilder()
 
-                            .setStructure("C(=CC=C1)C=C1")
+                            .setStructureWithDefaultReference("C(=CC=C1)C=C1")
                             .addName("Test")
                             .setUUID(uuid)
                             .buildJsonAnd(this::assertCreated);

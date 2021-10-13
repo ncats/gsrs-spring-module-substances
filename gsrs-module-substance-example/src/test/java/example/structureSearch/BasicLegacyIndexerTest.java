@@ -61,7 +61,7 @@ public class BasicLegacyIndexerTest {
         String structure="C1CCCCC1";
         ChemicalSubstance cs=new ChemicalSubstanceBuilder()
 
-                .setStructure(structure)
+                .setStructureWithDefaultReference(structure)
                 .addName("Test")
                 .generateNewUUID()
                 .build();
@@ -83,7 +83,7 @@ public class BasicLegacyIndexerTest {
         String structure="C1CCCCC1";
         ChemicalSubstance cs=new ChemicalSubstanceBuilder()
 
-                .setStructure(structure)
+                .setStructureWithDefaultReference(structure)
                 .addName("Test")
                 .generateNewUUID()
                 .build();
@@ -93,7 +93,7 @@ public class BasicLegacyIndexerTest {
 
         ChemicalSubstance cs2 = new ChemicalSubstanceBuilder()
 
-                .setStructure("[Na+].[Cl-]")
+                .setStructureWithDefaultReference("[Na+].[Cl-]")
                 .addName("somethingElse")
                 .generateNewUUID()
                 .build();
@@ -116,7 +116,7 @@ public class BasicLegacyIndexerTest {
         String structure="C1CCCCC1";
         ChemicalSubstance cs=new ChemicalSubstanceBuilder()
 
-                .setStructure(structure)
+                .setStructureWithDefaultReference(structure)
                 .addName("Test")
                 .generateNewUUID()
                 .build();
@@ -125,7 +125,7 @@ public class BasicLegacyIndexerTest {
         eventListener.onCreate(new IndexCreateEntityEvent(EntityUtils.EntityWrapper.of(cs).getKey()));
 
         ChemicalSubstance updatedCs = cs.toChemicalBuilder()
-                .setStructure("[Na+].[Cl-]")
+                .setStructureWithDefaultReference("[Na+].[Cl-]")
                 .build();
 
         Mockito.when(mockEntityManager.find(ChemicalSubstance.class, cs.uuid)).thenReturn(updatedCs);
@@ -143,7 +143,7 @@ public class BasicLegacyIndexerTest {
         String structure="C1CCCCC1";
         ChemicalSubstance cs=new ChemicalSubstanceBuilder()
 
-                .setStructure(structure)
+                .setStructureWithDefaultReference(structure)
                 .addName("Test")
                 .generateNewUUID()
                 .build();

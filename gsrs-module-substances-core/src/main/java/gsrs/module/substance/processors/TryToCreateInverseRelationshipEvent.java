@@ -29,7 +29,7 @@ public class TryToCreateInverseRelationshipEvent {
 
     private UUID fromSubstance;
 
-    private UUID originatorSubstance;
+    private UUID originatorUUID;
     private UUID relationshipIdToInvert;
 
     private CreationMode creationMode = CreationMode.CREATE_IF_MISSING;

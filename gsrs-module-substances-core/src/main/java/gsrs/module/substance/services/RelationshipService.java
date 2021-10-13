@@ -4,8 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.EntityPersistAdapter;
-import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
+import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
+import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.processors.UpdateInverseRelationshipEvent;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -13,7 +14,7 @@ import gsrs.repository.EditRepository;
 import ix.core.models.Edit;
 import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
+import ix.core.util.EntityUtils.Key;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.utils.RelationshipUtil;
 import ix.ginas.models.v1.Reference;
@@ -24,7 +25,6 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,7 +44,7 @@ public class RelationshipService {
 
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
-
+    
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
 
 
@@ -84,7 +84,7 @@ public class RelationshipService {
         Substance owner = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated()).get().fetchOwner();
 
 
-        Optional<Relationship> opt = relationshipRepository.findByOriginatorUuid(event.getOriginatorIdToUpdate().toString())
+        Optional<Relationship> opt = relationshipRepository.findByOriginatorUuid(event.getOriginatorUUID().toString())
                 .stream()
                 .filter(r-> !event.getRelationshipIdThatWasUpdated().equals(r.uuid))
                 .findAny();
@@ -118,6 +118,7 @@ public class RelationshipService {
         return Optional.empty();
     }
 
+    //TODO: This needs tests, it is unlikely to work as consistently as desired
     private Optional<String> findOldType(UpdateInverseRelationshipEvent event, Substance owner) {
         Edit edit = editRepository.findByRefidAndVersion(owner.uuid.toString(), Integer.toString(Integer.parseInt(owner.version)-1)).get(0);
         try {
@@ -142,16 +143,25 @@ public class RelationshipService {
         final Substance osub = r1.fetchOwner();
         Relationship updatedInverseRelationship = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated()).get();
         entityPersistAdapter.performChangeOn(osub, osub2 -> {
-            Relationship toUpdate =null;
-            for (Relationship r : osub2.relationships) {
-                if (r.uuid.equals(r1.uuid)) {
-                    toUpdate = r;
-                    break;
-                }
-            }
+            Relationship toUpdate =osub2.relationships.stream()
+                    .filter(r->r.uuid.equals(r1.uuid))
+                    .findFirst()
+                    .orElse(null);
             if(toUpdate ==null){
                 //can this happen?
                 return Optional.empty();
+            }
+            //Relationship removed
+            if(!osub2.uuid.toString().equals(updatedInverseRelationship.relatedSubstance.refuuid)) {
+                //relationship removed
+                RelationshipProcessor.doWithoutEventTracking(()->{
+                    relationshipRepository.delete(toUpdate);    
+                });
+                osub2.removeRelationship(toUpdate);
+                osub2.forceUpdate();
+                Substance osub3=substanceRepository.saveAndFlush(osub2);
+                createNewInverseRelationshipFor(event.toCreateEvent());
+                return Optional.of(osub3);
             }
 
             //logic mostly borrowed from GSRS 2.x RelationshipProcessor
@@ -210,11 +220,20 @@ public class RelationshipService {
 
             r1.setReferences(keepRefs);
             r1.setAccess(inverse.getAccess()); //Should take care of access problem
-
+            
+            r1.setIsDirty("type");
+            r1.setIsDirty("access");
+            r1.setIsDirty("mediatorSubstance");
+            r1.setIsDirty("interactionType");
+            r1.setIsDirty("qualification");
+            r1.setIsDirty("comments");
+            r1.setIsDirty("amount");
             
             osub2.references.removeAll(refsToRemove);
             osub2.setIsDirty("references");
-
+            osub2.setIsDirty("relationships");
+           
+            
             Substance otherSubstance = updatedInverseRelationship.fetchOwner();
             for (Keyword k : updatedInverseRelationship.getReferences()) {
 
@@ -223,7 +242,6 @@ public class RelationshipService {
                     continue;
                 }
 
-//												System.out.println("adding ref" +  ref);
                 if(ref!=null){
                     try {
                         Reference newRef = EntityUtils.EntityWrapper.of(ref).getClone();
@@ -236,7 +254,9 @@ public class RelationshipService {
                 }
             }
             osub2.forceUpdate();
-            return Optional.of(osub2);
+            Substance osub3=RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
+            
+            return Optional.of(osub3);
         });
     }
 
@@ -261,12 +281,15 @@ public class RelationshipService {
                     }
                 }
                 if (rem != null) {
-
-                    relationshipRepository.delete(rem);
+                    // We never want this to trigger an event
+                    Relationship rrem=rem;
+                    RelationshipProcessor.doWithoutEventTracking(()->{
+                        relationshipRepository.delete(rrem);    
+                    });
                     osub2.removeRelationship(rem);
                 }
                 osub2.forceUpdate();
-                substanceRepository.save(osub2);
+                substanceRepository.saveAndFlush(osub2);
 //									System.out.println("Inverse should be deleted now");
                 return Optional.of(osub2);
             });
@@ -279,6 +302,8 @@ public class RelationshipService {
             //TODO: Look into this
            return;
         }
+        Key mkey = EntityUtils.Key.of(Substance.class, event.getFromSubstance());
+        
         //we are making a new relationship with from -> to.
         //this event means we already have a to -> from relationship.
         //Due to transaction issues we can't actually check yet that we can make this relationship
@@ -294,17 +319,16 @@ public class RelationshipService {
                     // but for consistently we should get keys in a similar way every time
                     // TODO: change the event to have the Keys rather than just the IDs
                     
-                    EntityUtils.Key.of(Substance.class, event.getFromSubstance())
+                    mkey
                     ,
                     s -> {
                         Substance newSub = (Substance) s;
-//						System.out.println("Adding directly now");
                         Relationship obj = relationshipRepository.findById(event.getRelationshipIdToInvert()).get();
                         if(!obj.isAutomaticInvertible()){
                             return Optional.empty();
                         }                    
                         Relationship r = obj.fetchInverseRelationship();
-                        r.originatorUuid = event.getOriginatorSubstance().toString();
+                        r.originatorUuid = event.getRelationshipIdToInvert().toString();
                         Optional<Substance> otherSubstanceOpt = substanceRepository.findById(event.getToSubstance());
                         if(!otherSubstanceOpt.isPresent()){
                             return Optional.empty();
@@ -341,7 +365,9 @@ public class RelationshipService {
                             // behave as it used to in Play, but I think it's brittle. [TP]
                             newSub.updateVersion();
 //                            relationshipRepository.save(r);
-                            newSub = substanceRepository.saveAndFlush(newSub);
+                            Substance upSub=newSub;
+                            newSub = RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
+                            
                         }
                         return Optional.ofNullable(newSub);
 

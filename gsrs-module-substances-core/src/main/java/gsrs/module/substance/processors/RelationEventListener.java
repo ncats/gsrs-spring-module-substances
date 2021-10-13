@@ -12,9 +12,6 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class RelationEventListener {
 
     @Autowired
-    private EntityPersistAdapter entityPersistAdapter;
-
-    @Autowired
     private RelationshipService relationshipService;
 
     @TransactionalEventListener

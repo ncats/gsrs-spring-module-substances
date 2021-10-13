@@ -42,7 +42,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
                                 .setUUID(uuid)
-                                .setStructure("C1CC=CC=C1")
+                                .setStructureWithDefaultReference("C1CC=CC=C1")
                                 .addName("a name")
                                 .build();
         //have to structure process first to generate hashes
@@ -57,7 +57,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
                 .setUUID(uuid)
-                .setStructure("C1CC=CC=C1")
+                .setStructureWithDefaultReference("C1CC=CC=C1")
                 .addName("a name")
                 .build();
         //have to structure process first to generate hashes
@@ -77,7 +77,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         }
         ChemicalSubstance s2 = new ChemicalSubstanceBuilder()
 
-                .setStructure("C1CC=CC=C1")
+                .setStructureWithDefaultReference("C1CC=CC=C1")
                 .addName("different name")
                 .build();
         //have to structure process first to generate hashes
@@ -92,7 +92,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
                 .setUUID(uuid)
-                .setStructure("C1CC=CC=C1")
+                .setStructureWithDefaultReference("C1CC=CC=C1")
                 .addName("a name")
                 .build();
         //have to structure process first to generate hashes
@@ -117,7 +117,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
                 .setUUID(uuid)
-                .setStructure("C1CC=CC=C1")
+                .setStructureWithDefaultReference("C1CC=CC=C1")
                 .addName("a name")
                 .build();
         Structure structure = structureProcessor.instrument(s.getStructure().toChemical(), true);
@@ -128,7 +128,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
         ChemicalSubstance s2 = new ChemicalSubstanceBuilder()
 
-                .setStructure("[Na+].[Cl-]")
+                .setStructureWithDefaultReference("[Na+].[Cl-]")
                 .addName("different structure")
                 .build();
         //have to structure process first to generate hashes

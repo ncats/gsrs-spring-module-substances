@@ -51,7 +51,7 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
             TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
             transactionTemplate.executeWithoutResult(s -> {
                 new ChemicalSubstanceBuilder()
-                        .setStructure(structure)
+                        .setStructureWithDefaultReference(structure)
                         .addName(compoundName)
                         .setUUID(uuid)
                         .buildJsonAnd(this::assertCreated);

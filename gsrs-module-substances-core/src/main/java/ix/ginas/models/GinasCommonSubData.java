@@ -42,6 +42,7 @@ public abstract class GinasCommonSubData extends GinasCommonData implements Gina
 	@Override
 	public void setReferences(Set<Keyword> references) {
     	this.internalReferences = new EmbeddedKeywordList(references);
+
 	}
 
 
