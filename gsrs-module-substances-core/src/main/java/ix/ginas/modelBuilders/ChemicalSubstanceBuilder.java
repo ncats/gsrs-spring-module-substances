@@ -28,7 +28,7 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
     protected <S extends Substance> ChemicalSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
         this.andThen = (s)-> (ChemicalSubstance) builder.andThen.apply((S) s);
     }
-	public ChemicalSubstanceBuilder setStructure(String smiles){
+	public ChemicalSubstanceBuilder setStructureWithDefaultReference(String smiles){
 		return andThen(cs->{
 			cs.setStructure(new GinasChemicalStructure());
             try {
@@ -56,14 +56,6 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
         for(Moiety m : cs.moieties){
             addMoiety(m);
         }
-        if(cs.getAtomMaps().length !=0){
-            setAtomMap(cs.getAtomMaps());
-        }
-    }
-    public ChemicalSubstanceBuilder setAtomMap(int[] atoms){
-        //make defensive copy
-        int[] copy = Arrays.copyOf(atoms, atoms.length);
-        return andThen( s-> { s.setAtomMaps(copy);});
     }
     public ChemicalSubstanceBuilder addMoiety(Moiety m){
         return andThen( s-> { s.moieties.add(m);});

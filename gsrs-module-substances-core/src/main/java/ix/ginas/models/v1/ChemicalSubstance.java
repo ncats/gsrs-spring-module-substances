@@ -8,7 +8,9 @@ import ix.core.models.BeanViews;
 import ix.core.models.Indexable;
 import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import ix.ginas.models.utils.JSONEntity;
@@ -66,8 +68,6 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
         return getStructure() != null ? structure.stereoChemistry : null;
     }
 
-    @Transient
-    private int[] atomMaps=null;
 
 
     public ChemicalSubstance () {
@@ -79,8 +79,9 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     }
 
     public ChemicalSubstanceBuilder toChemicalBuilder() {
-        return super.toBuilder().asChemical();
+        return new ChemicalSubstanceBuilder(this);
     }
+    
     
     
     @Indexable(name="moieties")
@@ -96,25 +97,7 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
 
     
     
-    @JsonIgnore
-    @Transient
-    public int[] getAtomMaps(){
-        if(atomMaps==null)return new int[0];
-        return atomMaps;
-    }
-
-    @JsonIgnore
-    @Transient
-    public String getAtomMapsString() {
-        return Arrays.toString(getAtomMaps()).replace("[", "").replace("]", "")
-                .replace(" ", "");
-    }
-
-    @JsonIgnore
-    @Transient
-    public void setAtomMaps(int[] am){
-        atomMaps=am;
-    }
+  
 
 
     @Override

@@ -422,6 +422,34 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
             }
         });
     }
+    
+    protected Substance assertCreatedAPI(JsonNode json){
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return transactionTemplate.execute( status -> {
+            try {
+                Substance s= ensurePass(substanceEntityService.createEntity(json));
+                substanceRepository.flush();
+                return s;
+            } catch (Exception e) {
+                return Sneak.sneakyThrow(e);
+            }
+        });
+    }
+
+    protected Substance assertUpdatedAPI(JsonNode json){
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return transactionTemplate.execute( status -> {
+            try {  
+                Substance s= ensurePass(substanceEntityService.updateEntity(json));
+                substanceRepository.flush();
+                return s;
+            } catch (Exception e) {
+                return Sneak.sneakyThrow(e);
+            }
+        });
+    }
     protected static <T> T ensurePass(GsrsEntityService.UpdateResult<T> updateResult){
         ValidationResponse<T> resp = updateResult.getValidationResponse();
         assertTrue(resp.isValid(), ()->"response is not valid "+ resp.getValidationMessages());

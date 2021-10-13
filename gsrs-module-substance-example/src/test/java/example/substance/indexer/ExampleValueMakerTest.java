@@ -86,7 +86,7 @@ public class ExampleValueMakerTest extends AbstractSubstanceJpaEntityTest {
 		
 		Substance s=new SubstanceBuilder()
 			.asChemical()
-			.setStructure("CCC1CCCC1")
+			.setStructureWithDefaultReference("CCC1CCCC1")
 			.addName("Test Guy")
 			.addReflexiveActiveMoietyRelationship()
 			.build();
@@ -99,14 +99,14 @@ public class ExampleValueMakerTest extends AbstractSubstanceJpaEntityTest {
 		
 		Substance amSub=new SubstanceBuilder()
 				.asChemical()
-				.setStructure("COCCO")
+				.setStructureWithDefaultReference("COCCO")
 				.addName("Am record")
 				.addReflexiveActiveMoietyRelationship()
 				.build();
 		
 		Substance childSub=new SubstanceBuilder()
 				.asChemical()
-				.setStructure("COCC[O-].[Na+]")
+				.setStructureWithDefaultReference("COCC[O-].[Na+]")
 				.addName("Non-am record")
 				.andThenMutate(sb->{
 					Relationship r = new Relationship();

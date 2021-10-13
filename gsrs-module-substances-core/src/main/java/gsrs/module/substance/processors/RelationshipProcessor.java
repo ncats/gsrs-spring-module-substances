@@ -1,25 +1,22 @@
 package gsrs.module.substance.processors;
 
-import gsrs.module.substance.repository.RelationshipRepository;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gov.nih.ncats.common.Tuple;
-import ix.core.EntityProcessor;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import ix.core.EntityProcessor;
 import ix.core.util.SemaphoreCounter;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Processor to handle both sides of the Relationship.
@@ -34,13 +31,17 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
-	@Autowired
-	private PlatformTransactionManager transactionManager;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
 
-	@Autowired
-	private ApplicationEventPublisher eventPublisher;
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
+
+
+    ThreadLocal<AtomicBoolean> enabled = ThreadLocal.withInitial(()->new AtomicBoolean(true));
+    
 	//TODO:
 	/*
 	 * There are some issues remaining here, specifically the following:
@@ -66,40 +67,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	private static final String MENTION = "mention";
 
-
-	//These fields keep track of what UUIDs we are in the middle
-	//of processing since several of these actions will trigger
-	//other updates/creates/delete calls on this processor for the
-	//other side of the relationship and we don't want to get trapped in a cycle.
-
-	private SemaphoreCounter<String> relationshipUuidsBeingWorkedOn = new  SemaphoreCounter<String>();
-
-	private SemaphoreCounter<String> relationshipUuidsBeingDeleted = new  SemaphoreCounter<String>();
-
-
-
-	private boolean notWorkingOn(String uuid){
-		return notWorkingOn(uuid,false);
-	}
-
-	private boolean notWorkingOn(String uuid, boolean isRemove){
-		if(relationshipUuidsBeingWorkedOn.add(uuid)){
-			if(isRemove){
-				relationshipUuidsBeingDeleted.add(uuid);
-			}
-			TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronizationAdapter(){
-				@Override
-				public void afterCompletion(int status) {
-					//this should be called if commit or rollback
-					relationshipUuidsBeingWorkedOn.removeCompletely(uuid);
-					relationshipUuidsBeingDeleted.removeCompletely(uuid);
-				}
-			});
-			return true;
-		}
-		return false;
-	}
-
+	
 
 	@Override
 	public Class<Relationship> getEntityClass() {
@@ -107,40 +75,28 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	}
 
 
-    @Override
-    public void postPersist(Relationship obj) throws FailProcessingException {
-        relationshipUuidsBeingWorkedOn.removeCompletely(obj.getOrGenerateUUID().toString());
-        relationshipUuidsBeingDeleted.removeCompletely(obj.getOrGenerateUUID().toString());
-    }
-
-    @Override
-    public void postUpdate(Relationship obj) throws FailProcessingException {
-        relationshipUuidsBeingWorkedOn.removeCompletely(obj.getOrGenerateUUID().toString());
-        relationshipUuidsBeingDeleted.removeCompletely(obj.getOrGenerateUUID().toString());
-    }
-	@Override
-	public void postRemove(Relationship obj) throws FailProcessingException {
-		relationshipUuidsBeingWorkedOn.removeCompletely(obj.getOrGenerateUUID().toString());
-		relationshipUuidsBeingDeleted.removeCompletely(obj.getOrGenerateUUID().toString());
-	}
-
+    
     /**
      * This is really "pre-create" only called when new object persisted for 1st time- not updates
      * @param thisRelationship
      */
 	@Override
 	public void prePersist(Relationship thisRelationship) {
+	    if(!enabled.get().get()) return;
+	    
+	    if (thisRelationship.isAutomaticInvertible()) {
+	        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+	        transactionTemplate.executeWithoutResult( stauts -> {
 
-	    TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-//	    transactionTemplate.setReadOnly(true);
-//	    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-	    transactionTemplate.executeWithoutResult( stauts -> {
-	        if (thisRelationship.isAutomaticInvertible()) {
 	            TryToCreateInverseRelationshipEvent event = new TryToCreateInverseRelationshipEvent();
 	            final Substance thisSubstance = thisRelationship.fetchOwner();
 	            event.setRelationshipIdToInvert(thisRelationship.getOrGenerateUUID());
 	            event.setToSubstance(thisSubstance.getOrGenerateUUID());
-	            event.setOriginatorSubstance(thisSubstance.getOrGenerateUUID());
+	            if(thisRelationship.isGenerator()){
+	                event.setOriginatorUUID(thisRelationship.uuid);
+	            }else{
+	                event.setOriginatorUUID(UUID.fromString(thisRelationship.originatorUuid));
+	            }
 	            SubstanceReference otherSubstanceReference = thisRelationship.relatedSubstance;
 	            //TODO maybe change the fromSubstance from UUID to a substance reference incase the uuid changes we could use approval id or name etc?
 	            if (otherSubstanceReference != null && otherSubstanceReference.refuuid !=null) {
@@ -148,28 +104,25 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	            }
 	            event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
 	            eventPublisher.publishEvent(event);
-	        }
-	    });
+
+	        });
+	    }
 	}
 
 	@Override
 	public void preUpdate(Relationship obj) {
-
-	    if(!notWorkingOn(obj.getOrGenerateUUID().toString())){
-	        return;
-	    }
+	    if(!enabled.get().get()) return;
 
 	    TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-	    transactionTemplate.setReadOnly(true);
-	    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	    transactionTemplate.executeWithoutResult( stauts -> {
 	        UpdateInverseRelationshipEvent.UpdateInverseRelationshipEventBuilder builder = UpdateInverseRelationshipEvent.builder();
 	        builder.relationshipIdThatWasUpdated(obj.uuid);
 	        builder.substanceIdToUpdate(UUID.fromString(obj.relatedSubstance.refuuid));
+	        builder.substanceIdThatWasUpdated(obj.fetchOwner().getOrGenerateUUID());
 	        if(obj.isGenerator()){
-	            builder.originatorIdToUpdate(obj.uuid);
+	            builder.originatorUUID(obj.uuid);
 	        }else{
-	            builder.originatorIdToUpdate(UUID.fromString(obj.originatorUuid));
+	            builder.originatorUUID(UUID.fromString(obj.originatorUuid));
 	        }
 
 	        eventPublisher.publishEvent(builder.build());
@@ -179,31 +132,64 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	@Override
 	public void preRemove(Relationship obj) {
-
-	    if(!notWorkingOn(obj.getOrGenerateUUID().toString(),true)){
-	        return;
-	    }
-
+	    if(!enabled.get().get()) return;
 	    if (obj.isAutomaticInvertible()) {
 
 	        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-	        transactionTemplate.setReadOnly(true);
-	        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 	        transactionTemplate.executeWithoutResult( stauts -> {
 	            RemoveInverseRelationshipEvent.RemoveInverseRelationshipEventBuilder builder = RemoveInverseRelationshipEvent.builder();
 	            builder.relationshipIdThatWasRemoved(obj.getOrGenerateUUID());
 	            builder.relationshipTypeThatWasRemoved(obj.type);
 	            builder.substanceRefIdOfRemovedRelationship(obj.fetchOwner().getOrGenerateUUID().toString());
 	            builder.relatedSubstanceRefId(obj.relatedSubstance.refuuid);
+                builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
 	            if (obj.isGenerator()) {
 	                builder.relationshipOriginatorIdToRemove(obj.getOrGenerateUUID());
 	            } else {
-	                builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
 	            }
 	            eventPublisher.publishEvent(builder.build());
 	        });
 
 	    }
 	}
+	
+	
+	
+	 /**
+     * Disable this {@link EntityProcessor} from having events fire from operations
+     * performed in the supplied {@link Runnable} within its executing thread. This
+     * is accomplished by using a {@link ThreadLocal} flag which temporarily
+     * disables this processor until the {@link Runnable} execution finishes. 
+     * @param <T>
+     * @param r
+     * @return
+     */
+    public void doWithoutEventTracking(Runnable r) {
+        doWithoutEventTracking(()->{
+            r.run();
+            return null;
+        });
+    }
+    
+    /**
+     * Disable this {@link EntityProcessor} from having events fire from operations
+     * performed in the supplied {@link Supplier} within its executing thread. This
+     * is accomplished by using a {@link ThreadLocal} flag which temporarily
+     * disables this processor until the {@link Supplier} finishes. The use of 
+     * a {@link Supplier} here is just to allow a convenient way for processes that
+     * would typically return a value to still return a value. If no value needs to be
+     * returned {@link #doWithoutEventTracking(Runnable)} can be used instead.
+     * @param <T>
+     * @param r
+     * @return
+     */
+    public <T> T doWithoutEventTracking(Supplier<T> r) {
+        enabled.get().set(false);
+        try {
+            return r.get();
+        }finally {
+            enabled.get().set(true);
+        }
+    }
 
 }

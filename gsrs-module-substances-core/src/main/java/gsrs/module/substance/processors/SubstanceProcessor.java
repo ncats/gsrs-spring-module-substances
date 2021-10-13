@@ -76,7 +76,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         transactionTemplate.setReadOnly(true);
         //This can't be a new isolated propagation transaction for some tests to pass. There
         //may be issues here to investigate.
-//        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         List<Relationship> refrel = transactionTemplate.execute(stat->relationshipRepository.findByRelatedSubstance_Refuuid(obj.getOrGenerateUUID().toString()));
 
         for(Relationship r:refrel){
@@ -106,7 +106,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                 eventPublisher.publishEvent(
                         TryToCreateInverseRelationshipEvent.builder()
                                 .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
-                                .originatorSubstance(owner.uuid)
+                                .originatorUUID(UUID.fromString(r.originatorUuid))
                                 .toSubstance(owner.uuid)
                                 .fromSubstance(obj.uuid)
                                 .relationshipIdToInvert(r.uuid)
@@ -162,13 +162,9 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             
             Relationship r1=s.getPrimaryDefinitionRelationships().get();
             boolean worthChecking = false;
-            if(r1.isDirty() || r1.relatedSubstance.isDirty()) {
+            if(newInsert || r1.isDirty() || r1.relatedSubstance.isDirty() || r1.lastEdited==null || 
+                    (r1.lastEdited!=null && r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-60000)) {
                 worthChecking=true;
-            }else {
-                //terrible hack to check if the relationship was edited recently
-                if(r1.lastEdited!=null && r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-5000) {
-                    worthChecking=true;
-                }
             }
             
             if(worthChecking ) {
@@ -217,8 +213,6 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                             entityPersistAdapter.performChangeOn(oldPri, obj->{
                                 List<Relationship> related=obj.removeAlternativeSubstanceDefinitionRelationship(s);
                                 for(Relationship r:related){
-                                    obj.removeRelationship(r);
-                                    //unclear if this is needed or not
                                     relationshipRepository.delete(r);
                                 }
                                 obj.forceUpdate();
@@ -254,8 +248,6 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                                             log.info("Saving alt definition, now has:"
                                                     + obj.getAlternativeDefinitionReferences().size());
                                         }
-                                        //TODO: This is likely broken in 3.0 and may need to have a force
-                                        //save to the repo instead?
                                         obj.forceUpdate();
                                         substanceRepository.saveAndFlush(obj);
                                         return Optional.of(obj);
