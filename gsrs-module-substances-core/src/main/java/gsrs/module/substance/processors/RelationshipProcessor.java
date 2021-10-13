@@ -1,22 +1,18 @@
 package gsrs.module.substance.processors;
 
-import java.util.UUID;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import ix.core.EntityProcessor;
-import ix.core.util.SemaphoreCounter;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 /**
  * Processor to handle both sides of the Relationship.
@@ -40,7 +36,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 
 
-    ThreadLocal<AtomicBoolean> enabled = ThreadLocal.withInitial(()->new AtomicBoolean(true));
+    private static ThreadLocal<AtomicBoolean> enabled = ThreadLocal.withInitial(()->new AtomicBoolean(true));
     
 	//TODO:
 	/*

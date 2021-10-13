@@ -4,18 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.EntityPersistAdapter;
-import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
+import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
 import gsrs.module.substance.processors.UpdateInverseRelationshipEvent;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.EditRepository;
-import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Edit;
 import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.util.EntityUtils.Key;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.utils.RelationshipUtil;
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Service;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -47,7 +44,12 @@ public class RelationshipService {
 
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
-    
+    /**
+     * Our personal copy of relationshipProcessor which we only use
+     * for turning off firing pre/post hooks.  Note we dont need dependency injection
+     * since we aren't going to use any of those fields.
+     */
+    private RelationshipProcessor relationshipProcessor = new RelationshipProcessor();
     
 //    private RelationshipProcessor relationshipProcessor;
     
@@ -160,7 +162,7 @@ public class RelationshipService {
             //Relationship removed
             if(!osub2.uuid.toString().equals(updatedInverseRelationship.relatedSubstance.refuuid)) {
                 //relationship removed
-                StaticContextAccessor.getBean(RelationshipProcessor.class).doWithoutEventTracking(()->{
+                relationshipProcessor.doWithoutEventTracking(()->{
                     relationshipRepository.delete(toUpdate);    
                 });
                 osub2.removeRelationship(toUpdate);
@@ -260,7 +262,7 @@ public class RelationshipService {
                 }
             }
             osub2.forceUpdate();
-            Substance osub3=StaticContextAccessor.getBean(RelationshipProcessor.class).doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
+            Substance osub3=relationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
             
             return Optional.of(osub3);
         });
@@ -289,7 +291,7 @@ public class RelationshipService {
                 if (rem != null) {
                     // We never want this to trigger an event
                     Relationship rrem=rem;
-                    StaticContextAccessor.getBean(RelationshipProcessor.class).doWithoutEventTracking(()->{
+                    relationshipProcessor.doWithoutEventTracking(()->{
                         relationshipRepository.delete(rrem);    
                     });
                     osub2.removeRelationship(rem);
@@ -372,7 +374,7 @@ public class RelationshipService {
                             newSub.updateVersion();
 //                            relationshipRepository.save(r);
                             Substance upSub=newSub;
-                            newSub = StaticContextAccessor.getBean(RelationshipProcessor.class).doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
+                            newSub = relationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
                             
                         }
                         return Optional.ofNullable(newSub);
