@@ -28,7 +28,6 @@ public class RecalcStructurePropertiesService {
      *
      * @param s the Structure to recalculate, should exist in the database.
      */
-//    @Transactional
     public void recalcStructureProperties(Structure s) {
         List<Value> toDelete = s.properties.stream().collect(Collectors.toList());
         Structure newStructure = structureProcessor.instrument(s.molfile);
