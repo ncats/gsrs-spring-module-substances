@@ -117,7 +117,7 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     }
 
     @JsonIgnore
-    @Indexable(name = "Molecular Weight", dranges = { 0, 200, 400, 600, 800, 1000 }, format = "%1$.0f", facet=true)
+    @Indexable(name = "Molecular Weight", ranges = { 0, 200, 400, 600, 800, 1000 }, format = "%1$.0f", facet=true)
     public Double getMolecularWeight(){
         GinasChemicalStructure structure = getStructure();
         if(structure ==null){

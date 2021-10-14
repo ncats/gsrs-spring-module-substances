@@ -24,7 +24,8 @@ public class MolecularWeightPropertyIndexValueMaker implements IndexValueMaker<S
                     .forEach(p -> {
                         Double avg = p.getValue().average;
                         if (avg != null) {
-                            consumer.accept(IndexableValue.simpleFacetLongValue("Molecular Weight", Math.round(avg), new long[]{0, 200, 400, 600, 800, 1000}).setSortable());
+                            //
+                            consumer.accept(IndexableValue.simpleFacetLongValue("Molecular Weight", (long)Math.floor(avg), new long[]{0, 200, 400, 600, 800, 1000}).setFormat("%1$.0f").setSortable());
                             consumer.accept(IndexableValue.simpleDoubleValue("root_structure_mwt", avg).setSortable());
                         }
                     });

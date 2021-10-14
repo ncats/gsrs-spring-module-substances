@@ -33,8 +33,6 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     private StructureIndexerService indexer;
 
 
-    @Autowired
-    private SubstanceEntityService substanceEntityService;
 
     @Autowired
     private PrincipalServiceImpl principalService;
