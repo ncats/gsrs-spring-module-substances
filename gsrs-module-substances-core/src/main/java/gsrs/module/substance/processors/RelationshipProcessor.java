@@ -170,7 +170,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
      * @return the result from the Supplier.
 	 * @throws NullPointerException if supplier is null.
 	 * 
-	 * @see #doWithoutEventTracking(Runnable) 
+	 * @see #doWithoutEventTracking(Runnable)
      */
     public static <T> T doWithoutEventTracking(Supplier<T> supplier) {
         enabled.get().set(false);
