@@ -11,24 +11,17 @@ import gsrs.module.substance.services.RecalcStructurePropertiesService;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
-import gsrs.security.GsrsSecurityUtils;
-import gsrs.springUtils.GsrsSpringUtils;
-import ix.core.chem.StructureProcessorTask;
-import ix.core.models.Structure;
-import ix.core.models.Value;
 import ix.core.utils.executor.ProcessListener;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -67,17 +60,21 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer
 		});
 
 			List<UUID> ids = structureRepository.getAllIds();
+
 			listen.newProcess();
 			listen.totalRecordsToProcess(ids.size());
 
 				ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+			Authentication adminAuth = adminService.getAdminAuth();
 				for (UUID id : ids) {
 
 					executor.submit(() -> {
-						adminService.runAsAdmin(() -> {
+						adminService.runAs(adminAuth, () -> {
 							TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
 							tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-							tx.setReadOnly(false);
+//							tx.setReadOnly(false);
 							try {
 								tx.executeWithoutResult(status -> {
 									structureRepository.findById(id).ifPresent(s -> {
