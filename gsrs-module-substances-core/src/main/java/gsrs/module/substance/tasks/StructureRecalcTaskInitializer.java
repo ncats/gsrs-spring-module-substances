@@ -5,13 +5,13 @@
  */
 package gsrs.module.substance.tasks;
 
-import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
-import gsrs.module.substance.repository.StructureRepository;
-import gsrs.module.substance.services.RecalcStructurePropertiesService;
-import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.security.AdminService;
-import ix.core.utils.executor.ProcessListener;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,103 +20,101 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
+import gsrs.module.substance.repository.StructureRepository;
+import gsrs.module.substance.services.RecalcStructurePropertiesService;
+import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.security.AdminService;
+import ix.core.utils.executor.ProcessListener;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
  * @author Mitch Miller
  */
-public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer
-{
-	@Autowired
-	private StructureRepository structureRepository;
-	@Autowired
-	private RecalcStructurePropertiesService recalcStructurePropertiesService;
-	@Autowired
-	private PlatformTransactionManager platformTransactionManager;
+@Slf4j
+public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
+    @Autowired
+    private StructureRepository structureRepository;
+    @Autowired
+    private RecalcStructurePropertiesService recalcStructurePropertiesService;
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
 
-	@Autowired
-	private AdminService adminService;
+    @Autowired
+    private AdminService adminService;
 
-	@Override
-	@Transactional
-	public void run(SchedulerPlugin.TaskListener l)
-	{
-		l.message("Initializing rehashing");
-		ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->
-		{
-			if (total != null)
-			{
-				l.message("Rehashed:" + sofar + " of " + total);
-			} else
-			{
-				l.message("Rehashed:" + sofar);
-			}
-		});
+    @Override
+    @Transactional
+    public void run(SchedulerPlugin.TaskListener l)
+    {
+        l.message("Initializing rehashing");
+        ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->
+        {
+            if (total != null)
+            {
+                l.message("Rehashed:" + sofar + " of " + total);
+            } else
+            {
+                l.message("Rehashed:" + sofar);
+            }
+        });
 
-			List<UUID> ids = structureRepository.getAllIds();
+        List<UUID> ids = structureRepository.getAllIds();
 
-			listen.newProcess();
-			listen.totalRecordsToProcess(ids.size());
+        listen.newProcess();
+        listen.totalRecordsToProcess(ids.size());
 
-				ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
+        
+        Authentication adminAuth = adminService.getAdminAuth();
+        for (UUID id : ids) {
 
-			Authentication adminAuth = adminService.getAdminAuth();
-				for (UUID id : ids) {
+            executor.submit(() -> {
+                adminService.runAs(adminAuth, () -> {
+                    TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+                    tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    try {
+                        tx.executeWithoutResult(status -> {
+                            structureRepository.findById(id).ifPresent(s -> {
+                                listen.preRecordProcess(s);
+                                try {
 
-					executor.submit(() -> {
-						adminService.runAs(adminAuth, () -> {
-							TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-							tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-//							tx.setReadOnly(false);
-							try {
-								tx.executeWithoutResult(status -> {
-									structureRepository.findById(id).ifPresent(s -> {
-										listen.preRecordProcess(s);
-										try {
+                                    log.debug("recalcing "+  id);
+                                    recalcStructurePropertiesService.recalcStructureProperties(s);
+                                    log.debug("done recalcing "+ id);
+                                    listen.recordProcessed(s);
 
-											System.out.println("recalcing "+  id);
-											recalcStructurePropertiesService.recalcStructureProperties(s);
-											System.out.println("done recalcing "+ id);
-											listen.recordProcessed(s);
+                                } catch(Throwable t) {
+                                    log.error("error recalcing "+  id, t);
+                                    listen.error(t);
+                                }
+                            });
+                        });
+                    } catch (Throwable ex) {
+                        log.error("error recalcing structural properties", ex);
+                    }
+                });
+            });
+        }
 
-										} catch(Throwable t) {
-											t.printStackTrace();
-											listen.error(t);
-										}
-									});
-								});
-							} catch (Throwable ex) {
-								ex.printStackTrace();
-								Logger.getLogger(StructureRecalcTaskInitializer.class.getName()).log(Level.SEVERE, null, ex);
-							}
-						});
-					});
-				}
+        executor.shutdown();
+        try {
+            executor.awaitTermination(1, TimeUnit.DAYS );
+        } catch (InterruptedException e) {
+            //should never happen
 
-				executor.shutdown();
-				try {
-					executor.awaitTermination(1, TimeUnit.DAYS );
-				} catch (InterruptedException e) {
-					//should never happen
-
-				}
-				System.out.println("done!!!!");
-				listen.doneProcess();
+        }
+        listen.doneProcess();
 
 
-	}
+    }
 
-	@Override
-	public String getDescription()
-	{
-		return "Regenerate structure properties collection for all chemicals in the database";
-	}
+    @Override
+    public String getDescription()
+    {
+        return "Regenerate structure properties collection for all chemicals in the database";
+    }
 
 }
