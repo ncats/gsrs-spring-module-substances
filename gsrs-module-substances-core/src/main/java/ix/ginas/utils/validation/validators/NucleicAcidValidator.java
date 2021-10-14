@@ -70,7 +70,8 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 || subunits.isEmpty()) {
             if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
                 callback.addMessage(GinasProcessingMessage
-                        .WARNING_MESSAGE("Nucleic Acid substance should have at least 1 subunit.  This is allowed but discouraged for incomplete nucleic acid records."));
+                        //warning text changed 13 Oct 2021 https://cnigsllc.atlassian.net/browse/GSRS-1884
+                        .WARNING_MESSAGE("Warning - Nucleic Acid substances usually have at least 1 subunit, but zero subunits were found here.  This is discouraged and is only allowed for records labelled as incomplete"));
             }else {
                 callback.addMessage(GinasProcessingMessage
                         .ERROR_MESSAGE("Nucleic Acid substance must have at least 1 subunit"));
