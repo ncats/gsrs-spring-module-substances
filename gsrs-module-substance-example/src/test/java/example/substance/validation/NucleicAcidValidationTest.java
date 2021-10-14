@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
+import org.junit.jupiter.api.Assertions;
 
 /**
  * Created by katzelda on 8/9/18.
@@ -58,6 +59,22 @@ public class NucleicAcidValidationTest extends AbstractSubstanceJpaEntityTest {
 
 
 
+    }
+
+     @Test
+    public void flag0Subunit() throws Exception{
+            Substance substance = new NucleicAcidSubstanceBuilder()
+                    .addName("name")
+                    .build();
+            substance.definitionLevel = Substance.SubstanceDefinitionLevel.INCOMPLETE;
+            JsonNode sub =substance.toFullJsonNode();
+
+            ValidationResponse<Substance> response = substanceEntityService.validateEntity(sub);
+            assertFalse(response.isValid());
+
+            Assertions.assertEquals(1, response.getValidationMessages().stream()
+                    .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING &&  m.getMessage().contains("Warning - Nucleic Acid substances usually have at least 1 subunit, but zero subunits were found here.  This is discouraged and is only allowed for records labelled as incomplete"))
+                    .count());
     }
 
     private void assertArrayNotEquals(byte[] expecteds, byte[] actuals) {
