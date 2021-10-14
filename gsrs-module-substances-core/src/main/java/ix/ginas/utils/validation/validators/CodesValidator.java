@@ -88,40 +88,22 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
         }
 
-
-        for(Code cd : s.codes){
-
-            if("CAS".equals(cd.codeSystem)){
-                boolean found=false;
-                for(Keyword keywords :cd.getReferences()){
-                    Reference ref =s.getReferenceByUUID(keywords.term);
-                    if("STN (SCIFINDER)".equalsIgnoreCase(ref.docType)){
-                        found=true;
-                        break;
-                    }
-                }
-                if(!found){
-                    GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "Must specify STN reference for CAS")
-                            .appliableChange(true);
-                    callback.addMessage(mes, ()-> {
-                        Reference newRef = new Reference();
-                        newRef.citation ="STN";
-                        newRef.docType="STN (SCIFINDER)";
-                        newRef.publicDomain = true;
-
-                        cd.addReference(newRef, s);
-                    });
-                }
-            }
-
-
-        }
-
         for (Code cd : s.codes) {
             try {
-                if( singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem)) {
+                 if( containsLeadingTrailingSpaces(cd.comments) ) {
+                     cd.comments=cd.comments.trim();
+                     GinasProcessingMessage mes = GinasProcessingMessage
+                                .WARNING_MESSAGE(
+                                        "Code '"
+                                                + cd.code
+                                                + "'[" +cd.codeSystem
+                                                + "] "
+                                        + "code text: " +  cd.comments  +" contains one or more leading/trailing blanks that will be removed")
+                                .appliableChange(true);
+                     callback.addMessage(mes);
+                }
+                if(!cd.type.equalsIgnoreCase("PRIMARY") || 
+                        (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem))) {
                     LogUtil.trace( ()->String.format("skipping code of system %s", cd.codeSystem));
                     continue;
                 }
@@ -159,4 +141,19 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
         this.singletonCodeSystems = singletonCodeSystems;
     }
 
+    public static boolean containsLeadingTrailingSpaces(String comment) {
+        if( comment==null || comment.length()==0){
+            return false;
+        }
+        if( !comment.equals(comment.trim())){
+            return true;
+        }
+        String[] lines = comment.split("\\|");;
+        for(String line : lines) {
+            if( line!=null && line.length()>0 && !line.equals(line.trim())) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
