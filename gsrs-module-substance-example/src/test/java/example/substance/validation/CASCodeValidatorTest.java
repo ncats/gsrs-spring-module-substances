@@ -12,6 +12,7 @@ import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.CASUtilities;
 import ix.ginas.utils.validation.validators.CASCodeValidator;
 import java.util.stream.Stream;
 import org.junit.Assert;
@@ -87,34 +88,34 @@ public class CASCodeValidatorTest extends AbstractSubstanceJpaEntityTest {
     @Test
     public void testisValidCas() {
         String casNum = "103-90-2";
-        Assertions.assertTrue(CASCodeValidator.isValidCas(casNum));
+        Assertions.assertTrue(CASUtilities.isValidCas(casNum));
     }
 
     @Test
     public void testisValidCasPadded() {
         String casNum = "51-66-1 ";
-        Assertions.assertTrue(CASCodeValidator.isValidCas(casNum));
+        Assertions.assertTrue(CASUtilities.isValidCas(casNum));
     }
 
     @Test
     public void testisValidCasFalse() {
         //check digit is off
         String casNum = "103-90-4";
-        Assertions.assertFalse(CASCodeValidator.isValidCas(casNum));
+        Assertions.assertFalse(CASUtilities.isValidCas(casNum));
     }
 
     @Test
     public void testisValidCasLetters() {
         //check digit is off
         String casNum = "A103-90-2";
-        Assertions.assertFalse(CASCodeValidator.isValidCas(casNum));
+        Assertions.assertFalse(CASUtilities.isValidCas(casNum));
     }
 
     @Test
     public void testisValidCasBlank() {
         //no check digit
         String casNum = "";
-        Assertions.assertFalse(CASCodeValidator.isValidCas(casNum));
+        Assertions.assertFalse(CASUtilities.isValidCas(casNum));
     }
 
     private ChemicalSubstance buildChemicalWithCasNoStn() {

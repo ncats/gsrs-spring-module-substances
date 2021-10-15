@@ -7,8 +7,7 @@ import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.lang3.ArrayUtils;
+import ix.ginas.utils.CASUtilities;
 
 /**
  * Git Issue 275: CAS-specific validation rule should be refactored into its own
@@ -23,7 +22,7 @@ public class CASCodeValidator extends AbstractValidatorPlugin<Substance> {
         for (Code cd : substance.codes) {
 
             if ("CAS".equals(cd.codeSystem)) {
-                if (!isValidCas(cd.code)) {
+                if (!CASUtilities.isValidCas(cd.code)) {
                     GinasProcessingMessage mesWarn = GinasProcessingMessage
                             .WARNING_MESSAGE(
                                     String.format("CAS Number %s does not have the expected format. (Verify the check digit.)", cd.code))
@@ -59,25 +58,5 @@ public class CASCodeValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
 
-    public static boolean isValidCas(String candidate) {
-        String clean = candidate.trim().replace("-", "");
-        char[] chars = clean.toCharArray();
-        if (chars.length == 0) {
-            return false;
-        }
-
-        for (char c : chars) {
-            if (!Character.isDigit(c)) {
-                return false;
-            }
-        }
-        //calculate the expected value of the check digit
-        ArrayUtils.reverse(chars);
-        AtomicInteger count = new AtomicInteger(0);
-        for (int i = 1; i < chars.length; i++) {
-            count.getAndAdd(i * Character.getNumericValue(chars[i]));
-        }
-        //verify that it matches the actual
-        return Character.getNumericValue(chars[0]) == (count.get() % 10);
-    }
+    
 }
