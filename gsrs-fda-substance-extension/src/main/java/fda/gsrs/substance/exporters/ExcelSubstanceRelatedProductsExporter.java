@@ -9,7 +9,7 @@ import ix.ginas.exporters.OutputFormat;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.Substance;
 
-import gov.hhs.gsrs.applications.api.*;
+import gov.hhs.gsrs.products.api.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,30 +18,30 @@ import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
 
-public class ExcelSubstanceRelatedApplicationsExporter implements Exporter<Substance> {
+public class ExcelSubstanceRelatedProductsExporter implements Exporter<Substance> {
 	private OutputStream os;
-	private ApplicationsApi applicationsApi;
-	private ApplicationAllDTOExporter appExporter;
+	private ProductsApi productsApi;
+	private ProductAllDTOExporter prodExporter;
 
-	public ExcelSubstanceRelatedApplicationsExporter(OutputStream os, ApplicationsApi applicationsApi){
+	public ExcelSubstanceRelatedProductsExporter(OutputStream os, ProductsApi productsApi){
 		this.os = os; //probably use a buffer instead
-		this.applicationsApi = applicationsApi;
+		this.productsApi = productsApi;
 
 		try {
 			//Export Application Factory
-			OutputFormat format = new OutputFormat("xlsx", "SRS Application Data");
+			OutputFormat format = new OutputFormat("xlsx", "SRS Product Data");
 			ExporterFactory.Parameters params = new ExportParameters(format, true);
-			ApplicationAllDTOExporterFactory factory = new ApplicationAllDTOExporterFactory();
-			this.appExporter = factory.createNewExporter(os, params);
+			ProductAllDTOExporterFactory factory = new ProductAllDTOExporterFactory();
+			this.prodExporter = factory.createNewExporter(os, params);
 
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
 	}
 
-	private void exportApp(ApplicationAllDTO app){
+	private void exportProduct(ProductAllDTO app){
 		try {
-			this.appExporter.export(app);
+			this.prodExporter.export(app);
 		}catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -50,18 +50,18 @@ public class ExcelSubstanceRelatedApplicationsExporter implements Exporter<Subst
 	@Override
 	public void export(Substance s) throws IOException{
 
-		SearchResult<ApplicationAllDTO> result = getAllApplicationsRelatedToSubstance(s);
-		List<ApplicationAllDTO> appList = result.getContent();
+		SearchResult<ProductAllDTO> result = getAllProductsRelatedToSubstance(s);
+		List<ProductAllDTO> appList = result.getContent();
 
-		for (ApplicationAllDTO app: appList) {
-			exportApp(app);
+		for (ProductAllDTO app: appList) {
+			exportProduct(app);
 		}
 	}
 
-	public SearchResult<ApplicationAllDTO> getAllApplicationsRelatedToSubstance(Substance s) {
+	public SearchResult<ProductAllDTO> getAllProductsRelatedToSubstance(Substance s) {
 		try {
 			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:" + s.uuid).simpleSearchOnly(true).build();
-			return applicationsApi.search(searchRequest);
+			return productsApi.search(searchRequest);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -70,8 +70,12 @@ public class ExcelSubstanceRelatedApplicationsExporter implements Exporter<Subst
 
 	@Override
 	public void close() throws IOException {
-		if (appExporter != null) {
-			appExporter.close();
+		try {
+			if (prodExporter != null) {
+				prodExporter.close();
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
 		}
 	}
 

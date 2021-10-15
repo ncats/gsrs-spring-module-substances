@@ -32,5 +32,13 @@
             <artifactId>applications-api</artifactId>
             <version>0.1.1-SNAPSHOT</version>
         </dependency>
+
+        <!-- PRODUCT DEPENDENCIES FOR EXPORT -->
+        <dependency>
+            <groupId>gov.hhs.gsrs</groupId>
+            <artifactId>products-api</artifactId>
+            <version>0.1.2-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 </project>
