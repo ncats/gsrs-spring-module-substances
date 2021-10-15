@@ -52,6 +52,7 @@ import ix.core.models.Payload;
 import ix.core.models.Principal;
 import ix.core.models.Structure;
 import ix.core.models.UserProfile;
+import ix.core.search.SearchOptions;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
@@ -115,6 +116,16 @@ import java.util.stream.Stream;
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
 
+    @Override
+    public SearchOptions instrumentSearchOptions(SearchOptions so) {
+
+        so= super.instrumentSearchOptions(so);
+        so.addDateRangeFacet("root_lastEdited");
+        so.addDateRangeFacet("root_approved");
+        so.addDateRangeFacet("root_created");
+        
+        return so;
+    }
     private static interface SimpleStandardizer{
         public Chemical standardize(Chemical c);
         public static SimpleStandardizer REMOVE_HYDROGENS() {
@@ -803,7 +814,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     .top(results.size())
                     .query(req.getQuery())
                     .build();
-
+            request=instrumentSearchRequest(request);
 
             SearchResult searchResult =null;
 
