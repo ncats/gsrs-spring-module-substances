@@ -26,5 +26,11 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- APPLICATION DEPENDENCIES FOR EXPORT -->
+        <dependency>
+            <groupId>gov.hhs.gsrs</groupId>
+            <artifactId>applications-api</artifactId>
+            <version>0.1.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
