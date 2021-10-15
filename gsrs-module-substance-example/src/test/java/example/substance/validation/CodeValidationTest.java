@@ -14,7 +14,7 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.CodesValidator;
 import java.util.HashSet;
-import java.util.Set;
+import java.util.LinkedHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
 
-    private static boolean setup = false;
+    //private static boolean setup = false;
 
     @Autowired
     private TestGsrsValidatorFactory factory;
@@ -110,8 +110,8 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         substance2.addCode(code2);
 
         CodesValidator validator = new CodesValidator();
-        Set<String> singletons = new HashSet<>();
-        singletons.add(code1.codeSystem);
+        LinkedHashMap<Integer, String> singletons = new LinkedHashMap<>();
+        singletons.put(1, code1.codeSystem);
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
@@ -143,8 +143,8 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         substance2.addCode(code2);
 
         CodesValidator validator = new CodesValidator();
-        Set<String> singletons = new HashSet<>();
-        singletons.add("others");//bogus value; will prevent 'Drug Bank' codes from being duplicate checked
+        LinkedHashMap<Integer, String> singletons = new LinkedHashMap<>();
+        singletons.put(1, "others");//bogus value; will prevent 'Drug Bank' codes from being duplicate checked
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
@@ -176,8 +176,8 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         substance2.addCode(code2);
 
         CodesValidator validator = new CodesValidator();
-        Set<String> singletons = new HashSet<>();
-        singletons.add("others");//bogus value; will prevent 'Drug Bank' codes from being duplicate checked
+        LinkedHashMap<Integer, String> singletons = new LinkedHashMap<>();
+        singletons.put(1,"others");//bogus value; will prevent 'Drug Bank' codes from being duplicate checked
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);

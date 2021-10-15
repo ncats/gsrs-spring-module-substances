@@ -26,7 +26,7 @@ public class CASCodeValidator extends AbstractValidatorPlugin<Substance> {
                 if (!isValidCas(cd.code)) {
                     GinasProcessingMessage mesWarn = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    String.format("CAS Number %s does not have the expected format", cd.code))
+                                    String.format("CAS Number %s does not have the expected format. (Verify the check digit.)", cd.code))
                             .appliableChange(true);
 
                     callback.addMessage(mesWarn);
@@ -62,19 +62,22 @@ public class CASCodeValidator extends AbstractValidatorPlugin<Substance> {
     public static boolean isValidCas(String candidate) {
         String clean = candidate.trim().replace("-", "");
         char[] chars = clean.toCharArray();
+        if (chars.length == 0) {
+            return false;
+        }
+
         for (char c : chars) {
             if (!Character.isDigit(c)) {
                 return false;
             }
         }
-        if (chars.length == 0) {
-            return false;
-        }
+        //calculate the expected value of the check digit
         ArrayUtils.reverse(chars);
         AtomicInteger count = new AtomicInteger(0);
         for (int i = 1; i < chars.length; i++) {
             count.getAndAdd(i * Character.getNumericValue(chars[i]));
         }
+        //verify that it matches the actual
         return Character.getNumericValue(chars[0]) == (count.get() % 10);
     }
 }

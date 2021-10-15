@@ -15,15 +15,17 @@ import ix.ginas.utils.validation.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by katzelda on 5/14/18.
  */
+@Slf4j
 public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
-    private Set<String> singletonCodeSystems;
+    private LinkedHashMap<Integer, String> singletonCodeSystems;
 
     @Autowired
     private ReferenceRepository referenceRepository;
@@ -34,7 +36,7 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-
+        log.trace("starting in validate. singletonCodeSystems: " +singletonCodeSystems);
         Iterator<Code> codesIter = s.codes.iterator();
         while(codesIter.hasNext()){
             Code cd = codesIter.next();
@@ -89,6 +91,10 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
         }
 
         for (Code cd : s.codes) {
+//            String debug = String.format("code system: %s, code: %s; comments: %s; type: %s", 
+//                    cd.codeSystem, cd.code, cd.comments, cd.type);
+//            log.trace(debug);
+            
             try {
                  if( containsLeadingTrailingSpaces(cd.comments) ) {
                      cd.comments=cd.comments.trim();
@@ -103,13 +109,14 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                      callback.addMessage(mes);
                 }
                 if(!cd.type.equalsIgnoreCase("PRIMARY") || 
-                        (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem))) {
-                    LogUtil.trace( ()->String.format("skipping code of system %s", cd.codeSystem));
+                        (singletonCodeSystems != null && !singletonCodeSystems.values().contains(cd.codeSystem))) {
+                    log.trace( String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
                     continue;
                 }
                 List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByCodes_CodeAndCodes_CodeSystem(cd.code, cd.codeSystem);
 
                 if (sr != null && !sr.isEmpty()) {
+                    log.trace( "found some possible duplicates..");
                     //TODO we only check the first hit?
                     //would be nice to say instead of possible duplicate hit say we got X hits
                     SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
@@ -133,11 +140,11 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
 
-    public Set<String> getSingletonCodeSystems() {
+    public LinkedHashMap<Integer, String> getSingletonCodeSystems() {
         return singletonCodeSystems;
     }
 
-    public void setSingletonCodeSystems(Set<String> singletonCodeSystems) {
+    public void setSingletonCodeSystems(LinkedHashMap<Integer, String> singletonCodeSystems) {
         this.singletonCodeSystems = singletonCodeSystems;
     }
 
