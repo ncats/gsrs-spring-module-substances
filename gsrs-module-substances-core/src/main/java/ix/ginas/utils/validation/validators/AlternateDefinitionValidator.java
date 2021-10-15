@@ -68,11 +68,8 @@ public class AlternateDefinitionValidator extends AbstractValidatorPlugin<Substa
                                                 + sr.refuuid
                                                 + "). That definition is not definitional substance record."));
                             } else {
-                                subPrimary
-                                        .addAlternativeSubstanceDefinitionRelationship(s);
-
+                             //Everything is okay   
                             }
-
                         }
                     }
                 }

@@ -151,7 +151,7 @@ public class ProteinSubstanceBuilder  extends AbstractSubstanceBuilder<ProteinSu
      * @return this builder
      * @throws NullPointerException if sequence is null
      */
-    public ProteinSubstanceBuilder addSubUnit(String sequence){
+    public ProteinSubstanceBuilder addSubunitWithDefaultReference(String sequence){
         Objects.requireNonNull(sequence);
         return andThen( s->{
             if(s.protein ==null){

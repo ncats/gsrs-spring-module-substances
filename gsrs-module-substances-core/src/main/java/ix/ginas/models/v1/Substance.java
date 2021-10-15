@@ -798,13 +798,13 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
     @JsonIgnore
     public List<SubstanceReference> getAlternativeDefinitionReferences() {
-        List<SubstanceReference> subConcepts = new ArrayList<SubstanceReference>();
+        List<SubstanceReference> altSubs = new ArrayList<SubstanceReference>();
         for (Relationship r : relationships) {
             if (r.type != null && r.type.equals(ALTERNATE_SUBSTANCE_REL)) {
-                subConcepts.add(r.relatedSubstance);
+                altSubs.add(r.relatedSubstance);
             }
         }
-        return subConcepts;
+        return altSubs;
     }
     @JsonIgnore
     public List<Relationship> getAlternativeDefinitionRelationships() {

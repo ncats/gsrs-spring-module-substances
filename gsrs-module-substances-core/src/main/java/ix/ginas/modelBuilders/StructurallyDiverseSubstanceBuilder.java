@@ -1,11 +1,10 @@
 package ix.ginas.modelBuilders;
 
-import ix.ginas.models.v1.NucleicAcidSubstance;
+import java.util.function.Supplier;
+
 import ix.ginas.models.v1.StructurallyDiverse;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Substance;
-
-import java.util.function.Supplier;
 
 /**
  * Created by peryeat on 8/31/18.

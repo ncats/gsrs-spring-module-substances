@@ -70,14 +70,20 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
 
 
     private void addWaitingRelationships(Substance obj){
-
-        List<Relationship> refrel = relationshipRepository.findByRelatedSubstance_Refuuid(obj.getOrGenerateUUID().toString());
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+       
+        
+        transactionTemplate.setReadOnly(true);
+        //This can't be a new isolated propagation transaction for some tests to pass. There
+        //may be issues here to investigate.
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        List<Relationship> refrel = transactionTemplate.execute(stat->relationshipRepository.findByRelatedSubstance_Refuuid(obj.getOrGenerateUUID().toString()));
 
         for(Relationship r:refrel){
             Substance owner = r.fetchOwner();
             log.debug("finding inverse owner simple method:" + owner);
             if(owner==null) {
-                owner= substanceRepository.findByRelationships_Uuid(r.uuid);
+                owner= transactionTemplate.execute(stat->substanceRepository.findByRelationships_Uuid(r.uuid));
                 log.debug("finding inverse owner direct lookup method:" + owner);
             }
             if(owner==null) {
@@ -90,7 +96,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                        })
                    .findFirst()
                    .map(rr->{
-                       return substanceRepository.findBySubstanceReference(rr.relatedSubstance);
+                       return transactionTemplate.execute(stat->substanceRepository.findBySubstanceReference(rr.relatedSubstance));
                    })
                    .orElse(null);
 
@@ -100,7 +106,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                 eventPublisher.publishEvent(
                         TryToCreateInverseRelationshipEvent.builder()
                                 .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
-                                .originatorSubstance(owner.uuid)
+                                .originatorUUID(UUID.fromString(r.originatorUuid))
                                 .toSubstance(owner.uuid)
                                 .fromSubstance(obj.uuid)
                                 .relationshipIdToInvert(r.uuid)
@@ -121,7 +127,8 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
     }
 
     private void savingSubstance(final Substance s, boolean newInsert) {
-
+        TransactionTemplate transactionTemplate2 = new TransactionTemplate(transactionManager);
+        transactionTemplate2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
 
         log.debug("Persisting substance:" + s);
@@ -155,13 +162,9 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             
             Relationship r1=s.getPrimaryDefinitionRelationships().get();
             boolean worthChecking = false;
-            if(r1.isDirty() || r1.relatedSubstance.isDirty()) {
+            if(newInsert || r1.isDirty() || r1.relatedSubstance.isDirty() || r1.lastEdited==null || 
+                    (r1.lastEdited!=null && r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-60000)) {
                 worthChecking=true;
-            }else {
-                //terrible hack to check if the relationship was edited recently
-                if(r1.lastEdited!=null && r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-5000) {
-                    worthChecking=true;
-                }
             }
             
             if(worthChecking ) {
@@ -205,18 +208,20 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                         }
                         log.debug("Removing stale bidirectional relationships");
 
+                       
+                        transactionTemplate2.executeWithoutResult(stat->{
+                            entityPersistAdapter.performChangeOn(oldPri, obj->{
+                                List<Relationship> related=obj.removeAlternativeSubstanceDefinitionRelationship(s);
+                                for(Relationship r:related){
+                                    relationshipRepository.delete(r);
+                                }
+                                obj.forceUpdate();
+                                substanceRepository.saveAndFlush(obj);
 
-                        entityPersistAdapter.performChangeOn(oldPri, obj->{
-                            List<Relationship> related=obj.removeAlternativeSubstanceDefinitionRelationship(s);
-                            for(Relationship r:related){
-                                relationshipRepository.delete(r);
-                            }
-                            //TODO: This is likely broken in 3.0 and may need to have a force
-                            //save to the repo instead?
-                            obj.forceUpdate();
-
-                            return Optional.of(obj);
+                                return Optional.of(obj);
+                            }); 
                         });
+                        
 
 
                     }
@@ -224,27 +229,31 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
                         log.debug("Expanding reference");
                         Substance subPrimary=null;
                         try{
-                            subPrimary = substanceRepository.findBySubstanceReference(sr);
+                            subPrimary= transactionTemplate.execute(status->{
+                                return substanceRepository.findBySubstanceReference(sr);
+                            }); 
                         }catch(Exception e){
                             e.printStackTrace();
                         }
 
                         if (subPrimary != null) {
-                            log.debug("Got parent sub, which is:" + subPrimary.getName());
+                            log.debug("Got parent sub, which is:" + EntityWrapper.of(subPrimary).getKey());
                             if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
 
                                 log.debug("Going to save");
-
-                                entityPersistAdapter.performChangeOn(subPrimary, obj -> {
-                                    if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
-                                        log.info("Saving alt definition, now has:"
-                                                + obj.getAlternativeDefinitionReferences().size());
-                                    }
-                                    //TODO: This is likely broken in 3.0 and may need to have a force
-                                    //save to the repo instead?
-                                    obj.forceUpdate();
-                                    return Optional.of(obj);
+                                Substance pri=subPrimary;
+                                transactionTemplate2.executeWithoutResult(stat->{
+                                    entityPersistAdapter.performChangeOn(pri, obj -> {
+                                        if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
+                                            log.info("Saving alt definition, now has:"
+                                                    + obj.getAlternativeDefinitionReferences().size());
+                                        }
+                                        obj.forceUpdate();
+                                        substanceRepository.saveAndFlush(obj);
+                                        return Optional.of(obj);
+                                    });
                                 });
+                               
 
                             }
                         }

@@ -12,7 +12,7 @@ public final class SubstanceTestUtil {
                 .asChemical()
                 .generateNewUUID()
                 .addName(smiles + " name")
-                .setStructure(smiles)
+                .setStructureWithDefaultReference(smiles)
                 .build();
     }
 
