@@ -9,10 +9,7 @@ import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @SuperBuilder
 @Data
@@ -65,6 +62,17 @@ public class SubstanceDTO{
     @JsonSerialize(using = ToStringSerializer.class)
     private int version;
 
+    /**
+     * Get the {@link NameDTO} that is marked as {@link NameDTO#isPreferred()}.
+     * @return an Optional of that {@link NameDTO} or empty if there are no
+     * names or none are marked as preferred.
+     */
+    public Optional<NameDTO> getPreferredName(){
+        if(names ==null){
+            return Optional.empty();
+        }
+        return names.stream().filter(n-> n.isPreferred()).findAny();
+    }
 
     public enum SubstanceDefinitionType{
         PRIMARY,
