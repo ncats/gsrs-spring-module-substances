@@ -3,22 +3,17 @@ package gsrs.module.substance.controllers;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.services.ReindexService;
 import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.security.hasAdminRole;
 import ix.core.EntityMapperOptions;
-import ix.ginas.models.v1.Substance;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.persistence.Id;
-import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,7 +62,7 @@ public class ReIndexController {
 
         return GsrsControllerUtil.enhanceWithView(status, queryParameters);
     }
-
+    /*
     @PostGsrsRestApiMapping("/@reindex")
     @hasAdminRole
     public Object reindex( @RequestParam Map<String, String> queryParameters) throws IOException {
@@ -82,5 +77,5 @@ public class ReIndexController {
         return GsrsControllerUtil.enhanceWithView(status, queryParameters);
     }
 
-   
+   */
 }
