@@ -26,14 +26,14 @@
             <scope>compile</scope>
         </dependency>
 
-        <!-- APPLICATION DEPENDENCIES FOR EXPORT -->
+        <!-- applications-api DEPENDENCIES FOR Application EXPORT -->
         <dependency>
             <groupId>gov.hhs.gsrs</groupId>
             <artifactId>applications-api</artifactId>
-            <version>0.1.1-SNAPSHOT</version>
+            <version>0.1.2-SNAPSHOT</version>
         </dependency>
 
-        <!-- PRODUCT DEPENDENCIES FOR EXPORT -->
+        <!-- products-api DEPENDENCIES FOR Product EXPORT -->
         <dependency>
             <groupId>gov.hhs.gsrs</groupId>
             <artifactId>products-api</artifactId>
