@@ -1,6 +1,7 @@
 package fda.gsrs.substance;
 
 import gov.hhs.gsrs.applications.api.*;
+import gov.hhs.gsrs.products.api.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.cv.api.ControlledVocabularyApi;
@@ -18,9 +19,12 @@ public class FdaSubstanceExtensionConfiguration {
     //Put FDA specific API @Bean definitions here
     @Bean
     public ApplicationsApi applicationsApi(RestTemplateBuilder builder, @Value("${gsrs.microservice.applications.api.baseURL}") String applicationHost){
-    //public ApplicationsApi applicationsApi(RestTemplateBuilder builder, @Value("${application.host}") String applicationHost){
+        return new ApplicationsApi(builder,applicationHost, mapper);
+    }
 
-        return new ApplicationsApi(builder,applicationHost, mapper );
+    @Bean
+    public ProductsApi productsApi(RestTemplateBuilder builder, @Value("${gsrs.microservice.products.api.baseURL}") String productHost){
+        return new ProductsApi(builder,productHost, mapper);
     }
 
     private ObjectMapper mapper = new ObjectMapper();

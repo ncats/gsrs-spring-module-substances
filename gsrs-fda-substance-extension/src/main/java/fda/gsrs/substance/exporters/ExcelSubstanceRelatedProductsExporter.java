@@ -39,7 +39,7 @@ public class ExcelSubstanceRelatedProductsExporter implements Exporter<Substance
 		}
 	}
 
-	private void exportProduct(ProductAllDTO app){
+	private void exportProduct(ProductMainAllDTO app){
 		try {
 			this.prodExporter.export(app);
 		}catch (Exception ex) {
@@ -50,15 +50,15 @@ public class ExcelSubstanceRelatedProductsExporter implements Exporter<Substance
 	@Override
 	public void export(Substance s) throws IOException{
 
-		SearchResult<ProductAllDTO> result = getAllProductsRelatedToSubstance(s);
-		List<ProductAllDTO> appList = result.getContent();
+		SearchResult<ProductMainAllDTO> result = getAllProductsRelatedToSubstance(s);
+		List<ProductMainAllDTO> appList = result.getContent();
 
-		for (ProductAllDTO app: appList) {
+		for (ProductMainAllDTO app: appList) {
 			exportProduct(app);
 		}
 	}
 
-	public SearchResult<ProductAllDTO> getAllProductsRelatedToSubstance(Substance s) {
+	public SearchResult<ProductMainAllDTO> getAllProductsRelatedToSubstance(Substance s) {
 		try {
 			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:" + s.uuid).simpleSearchOnly(true).build();
 			return productsApi.search(searchRequest);
