@@ -86,23 +86,6 @@ public class Protein extends GinasCommonSubData {
 	@JsonView(BeanViews.Compact.class)
 	@JsonProperty("_disulfideLinks")
 	public DisulfideLinksSummary getJsonDisulfideLinks() {
-//		JsonNode node = null;
-//		List<DisulfideLink> links = this.getDisulfideLinks();
-//		if (links.size() > 0) {
-//			try {
-//				ObjectNode n = mapper.createObjectNode();
-//				n.put("count", links.size());
-//				n.put("href", Global.getRef(getProteinSubstance().getClass(), getProteinSubstance().getUuid())
-//						+ "/protein/disulfideLinks");
-//				n.put("shorthand", ModelUtils.shorthandNotationForLinks(links));
-//
-//				node = n;
-//			} catch (Exception ex) {
-//				ex.printStackTrace();
-//				node = mapper.valueToTree(links);
-//			}
-//		}
-//		return node;
 
 		List<DisulfideLink> links = getDisulfideLinks();
 		if(links.isEmpty()){
