@@ -25,18 +25,14 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
-    private LinkedHashMap<Integer, String> singletonCodeSystems;
-
+    
     @Autowired
     private ReferenceRepository referenceRepository;
-
-    @Autowired
-    private SubstanceRepository substanceRepository;
 
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        log.trace("starting in validate. singletonCodeSystems: " +singletonCodeSystems);
+        log.trace("starting in validate. " );
         Iterator<Code> codesIter = s.codes.iterator();
         while(codesIter.hasNext()){
             Code cd = codesIter.next();
@@ -108,45 +104,13 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                                 .appliableChange(true);
                      callback.addMessage(mes);
                 }
-                if(!cd.type.equalsIgnoreCase("PRIMARY") || 
-                        (singletonCodeSystems != null && !singletonCodeSystems.values().contains(cd.codeSystem))) {
-                    log.trace( String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
-                    continue;
-                }
-                List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByCodes_CodeAndCodes_CodeSystem(cd.code, cd.codeSystem);
-
-                if (sr != null && !sr.isEmpty()) {
-                    log.trace( "found some possible duplicates..");
-                    //TODO we only check the first hit?
-                    //would be nice to say instead of possible duplicate hit say we got X hits
-                    SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
-
-                    if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
-                        GinasProcessingMessage mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Code '"
-                                                + cd.code
-                                                + "'[" +cd.codeSystem
-                                                + "] collides (possible duplicate) with existing code & codeSystem for substance:")
-//                               TODO katelda Feb 2021 : add link support back!
-                                . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
-                                ;
-                        callback.addMessage(mes);
-                    }
-                }
+                
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public LinkedHashMap<Integer, String> getSingletonCodeSystems() {
-        return singletonCodeSystems;
-    }
-
-    public void setSingletonCodeSystems(LinkedHashMap<Integer, String> singletonCodeSystems) {
-        this.singletonCodeSystems = singletonCodeSystems;
-    }
 
     public static boolean containsLeadingTrailingSpaces(String comment) {
         if( comment==null || comment.length()==0){

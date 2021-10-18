@@ -28,7 +28,9 @@ public class SiteContainer extends GinasCommonSubData{
 	@JsonIgnore
 	@Column(name="sites_json")
 	String sitesJSON;	
+	
 	long siteCount;
+		
 	String siteType;
 
 	public SiteContainer() {};
@@ -56,13 +58,32 @@ public class SiteContainer extends GinasCommonSubData{
 		setSites(parseShorthandRanges(shorthand));
 	}
 	public void setSites(List<Site> sites){
+                String beforeShorthand = sitesShortHand;
 		if(sites!=null){
 			sitesShortHand=generateShorthand(sites);
-			List<Site> nlist=parseShorthandRanges(sitesShortHand);
+			
 			ObjectMapper om = new ObjectMapper();
+			
+			List<Site> nlist = sites;
+			
+			//TODO: this used to be done as a normalizing step
+			// but it caused problems with POJODiff
+//			List<Site> nlist=parseShorthandRanges(sitesShortHand);
+			
+			
 			sitesJSON=om.valueToTree(nlist).toString();
 			siteCount=nlist.size();
 		}
+
+                //if something changed, set it to dirty
+                //TODO: this kind of dirty detection isn't always
+                // ideal, since setters are used by JACKSON,
+                // hibernate, POJODiff, and sometimes explicitly.
+                // Not every time something is set to dirty is there
+                // an intention to update. 
+                if((""+sitesShortHand).equals(beforeShorthand)){
+		        this.forceUpdate();
+                }
 	}
 
 	public static List<Site> parseShorthandRanges(String srsdisulf){
