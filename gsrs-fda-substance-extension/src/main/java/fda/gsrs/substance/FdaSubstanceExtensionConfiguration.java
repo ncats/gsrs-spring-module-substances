@@ -1,14 +1,8 @@
 package fda.gsrs.substance;
 
-import gov.hhs.gsrs.applications.api.*;
-import gov.hhs.gsrs.products.api.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.cv.api.ControlledVocabularyApi;
-import gsrs.cv.api.ControlledVocabularyRestApi;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import gov.hhs.gsrs.applications.api.ApplicationsApi;
+import gov.hhs.gsrs.products.api.ProductsApi;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,21 +12,16 @@ public class FdaSubstanceExtensionConfiguration {
 
     //Put FDA specific API @Bean definitions here
     @Bean
-    public ApplicationsApi applicationsApi(RestTemplateBuilder builder, @Value("${gsrs.microservice.applications.api.baseURL}") String applicationHost){
-        return new ApplicationsApi(builder,applicationHost, mapper);
+    public ApplicationsApi applicationsApi(RestTemplateBuilder builder, ApplicationApiConfiguration applicationApiConfiguration){
+       applicationApiConfiguration.configure(builder);
+        return new ApplicationsApi(builder,applicationApiConfiguration.getBaseURL(), mapper );
     }
 
     @Bean
-    public ProductsApi productsApi(RestTemplateBuilder builder, @Value("${gsrs.microservice.products.api.baseURL}") String productHost){
-        return new ProductsApi(builder,productHost, mapper);
+    public ProductsApi productsApi(RestTemplateBuilder builder, ProductsApiConfiguration productsApiConfiguration){
+        productsApiConfiguration.configure(builder);
+        return new ProductsApi(builder,productsApiConfiguration.getBaseURL(), mapper);
     }
 
     private ObjectMapper mapper = new ObjectMapper();
-    @Bean
-    @Qualifier("testing")
-    @ConditionalOnMissingBean
-    public ControlledVocabularyApi controlledVocabularyApi(RestTemplateBuilder builder, @Value("${application.host}") String applicationHost){
-
-        return new ControlledVocabularyRestApi(builder,applicationHost, mapper );
-    }
 }
