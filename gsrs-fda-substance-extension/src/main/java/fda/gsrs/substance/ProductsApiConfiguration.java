@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties("gsrs.microservice.applications.api")
-public class ApplicationApiConfiguration extends AbstractGsrsRestApiConfiguration{
+public class ProductsApiConfiguration extends AbstractGsrsRestApiConfiguration{
 
 
 }
