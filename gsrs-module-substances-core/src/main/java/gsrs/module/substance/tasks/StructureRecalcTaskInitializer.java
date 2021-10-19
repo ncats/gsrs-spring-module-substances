@@ -5,21 +5,6 @@
  */
 package gsrs.module.substance.tasks;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.services.RecalcStructurePropertiesService;
@@ -28,6 +13,17 @@ import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
 import ix.core.utils.executor.ProcessListener;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  *
@@ -68,7 +64,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
 
         ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
         
-        Authentication adminAuth = adminService.getAdminAuth();
+        Authentication adminAuth = adminService.getAnyAdmin();
         for (UUID id : ids) {
 
             executor.submit(() -> {

@@ -28,6 +28,12 @@
 
         <!-- applications-api DEPENDENCIES FOR Application EXPORT -->
         <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- APPLICATION DEPENDENCIES FOR EXPORT -->
+        <dependency>
             <groupId>gov.hhs.gsrs</groupId>
             <artifactId>applications-api</artifactId>
             <version>0.1.2-SNAPSHOT</version>
