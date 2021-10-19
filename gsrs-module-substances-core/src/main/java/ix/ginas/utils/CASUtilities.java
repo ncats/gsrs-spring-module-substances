@@ -1,11 +1,13 @@
 package ix.ginas.utils;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
  * @author mitch
  */
+@Slf4j
 public class CASUtilities {
 
     public static boolean isValidCas(String candidate) {
@@ -24,11 +26,10 @@ public class CASUtilities {
         AtomicInteger count = new AtomicInteger(0);
         for (int i = chars.length-1; i >0; i--) {
             int position = chars.length-i;
-            System.out.println("going to multiply " + position + " times " + Character.getNumericValue(chars[i-1]));
+            log.trace("going to multiply " + position + " times " + Character.getNumericValue(chars[i-1]));
             count.getAndAdd(position * Character.getNumericValue(chars[i-1]));
         }
         //verify that it matches the actual
-        System.out.println("check digit: " + chars[chars.length-1]);
         return Character.getNumericValue(chars[chars.length-1]) == (count.get() % 10);
     }
 
