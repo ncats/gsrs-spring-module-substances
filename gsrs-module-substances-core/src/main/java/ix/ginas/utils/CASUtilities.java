@@ -1,6 +1,5 @@
 package ix.ginas.utils;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -23,14 +22,14 @@ public class CASUtilities {
             }
         }
         //calculate the expected value of the check digit
-        AtomicInteger count = new AtomicInteger(0);
+        int count = 0;
         for (int i = chars.length-1; i >0; i--) {
             int position = chars.length-i;
             log.trace("going to multiply " + position + " times " + Character.getNumericValue(chars[i-1]));
-            count.getAndAdd(position * Character.getNumericValue(chars[i-1]));
+            count += (position * Character.getNumericValue(chars[i-1]));
         }
         //verify that it matches the actual
-        return Character.getNumericValue(chars[chars.length-1]) == (count.get() % 10);
+        return Character.getNumericValue(chars[chars.length-1]) == (count % 10);
     }
 
 }

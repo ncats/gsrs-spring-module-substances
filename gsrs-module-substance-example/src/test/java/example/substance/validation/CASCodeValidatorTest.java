@@ -49,8 +49,23 @@ public class CASCodeValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void CasValidationTest() throws Exception {
+        //by default, as of 19 October 2021, STN ref checking is off
         ChemicalSubstance chemical = buildChemicalWithCasNoStn();
         ValidationResponse response = substanceEntityService.validateEntity(chemical.toFullJsonNode());
+        Stream<ValidationMessage> s1 = response.getValidationMessages().stream();
+        Assert.assertEquals(0, s1
+                .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING)
+                .map(ValidationMessage::getMessage)
+                .filter(m -> m.contains("Must specify STN reference for CAS"))
+                .count());
+    }
+
+    @Test
+    public void CasValidationTestRefCheckOn() throws Exception {
+        ChemicalSubstance chemical = buildChemicalWithCasNoStn();
+        CASCodeValidator validator = new CASCodeValidator();
+        validator.setPerformStnReferenceCheck(true);
+        ValidationResponse response = validator.validate(chemical, null);
         Stream<ValidationMessage> s1 = response.getValidationMessages().stream();
         Assert.assertEquals(1, s1
                 .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING)
@@ -81,7 +96,23 @@ public class CASCodeValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .map(ValidationMessage::getMessage)
                 .filter(m -> m.contains("does not have the expected format"))
                 .count();
-        long expectedMessageTotal =1;
+        long expectedMessageTotal = 1;
+        Assert.assertEquals(expectedMessageTotal, messageTotal);
+    }
+
+    @Test
+    public void CasValidationTest2FormatCheckOff() throws Exception {
+        ChemicalSubstance chemical = buildChemicalWithLousyCasButStn();
+        CASCodeValidator validator = new CASCodeValidator();
+        validator.setPerformFormatCheck(false);
+        ValidationResponse response = validator.validate(chemical, null);
+        Stream<ValidationMessage> s1 = response.getValidationMessages().stream();
+        long messageTotal = s1
+                .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING)
+                .map(ValidationMessage::getMessage)
+                .filter(m -> m.contains("does not have the expected format"))
+                .count();
+        long expectedMessageTotal = 0;
         Assert.assertEquals(expectedMessageTotal, messageTotal);
     }
 

@@ -31,21 +31,6 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
     @Autowired
     private TestGsrsValidatorFactory factory;
 
-    /*    @BeforeEach
-    public void runSetup() throws IOException {
-        log.trace("runSetup");
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-
-        //prevent validations from occurring multiple times
-        if (!setup) {
-            ValidatorConfig configValidator = new DefaultValidatorConfig();
-            configValidator.setValidatorClass(CodesValidator.class);
-            configValidator.setNewObjClass(Substance.class);
-            factory.addValidator("substances", configValidator);
-        }
-        setup = true;
-    }*/
     @Test
     public void testCodeCommentWithSpaces() {
         Substance substance = createSimpleSubstance();
@@ -63,7 +48,39 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertEquals(expectedComments, commentsAfter);
     }
 
+    @Test
+    public void testCodeWithSpaces() {
+        Substance substance = createSimpleSubstance();
+        String commentsBefore = "This is a real comment ";
+        Code code1 = new Code();
+        code1.code = "DB01190 ";
+        code1.codeSystem = "Drug Bank";
+        code1.comments = commentsBefore;
+        substance.addCode(code1);
+        CodesValidator validator = new CodesValidator();
+        AutowireHelper.getInstance().autowire(validator);
+        validator.validate(substance, null);
+        String expectedComments = commentsBefore.trim();
+        String commentsAfter = substance.codes.get(0).code;
+        Assertions.assertNotEquals(expectedComments, commentsAfter);
+    }
 
+    @Test
+    public void testCodeTextWithSpaces() {
+        Substance substance = createSimpleSubstance();
+        String commentsBefore = "This is a real comment ";
+        Code code1 = new Code();
+        code1.code = "DB01190 ";
+        code1.codeSystem = "Drug Bank";
+        code1.codeText = commentsBefore;
+        substance.addCode(code1);
+        CodesValidator validator = new CodesValidator();
+        AutowireHelper.getInstance().autowire(validator);
+        validator.validate(substance, null);
+        String expectedComments = commentsBefore.trim();
+        String commentsAfter = substance.codes.get(0).codeText;
+        Assertions.assertNotEquals(expectedComments, commentsAfter);
+    }
 
     private Substance createSimpleSubstance() {
         SubstanceBuilder builder = new SubstanceBuilder();

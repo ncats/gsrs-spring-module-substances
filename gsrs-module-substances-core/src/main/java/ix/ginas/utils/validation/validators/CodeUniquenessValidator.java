@@ -10,6 +10,8 @@ import ix.ginas.utils.validation.ValidationUtils;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -20,7 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> {
 
-    private LinkedHashMap<Integer, String> singletonCodeSystems;
+    private Set< String> singletonCodeSystems;
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -34,7 +36,7 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
             Code cd = codesIter.next();
 
             if (!cd.type.equalsIgnoreCase("PRIMARY")
-                    || (singletonCodeSystems != null && !singletonCodeSystems.values().contains(cd.codeSystem))) {
+                    || (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem))) {
                 log.trace(String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
                 continue;
             }
@@ -61,12 +63,8 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
         }
     }
 
-    public LinkedHashMap<Integer, String> getSingletonCodeSystems() {
-        return singletonCodeSystems;
-    }
-
     public void setSingletonCodeSystems(LinkedHashMap<Integer, String> singletonCodeSystems) {
-        this.singletonCodeSystems = singletonCodeSystems;
+        this.singletonCodeSystems = singletonCodeSystems.values().stream().collect(Collectors.toSet());
     }
 
 }

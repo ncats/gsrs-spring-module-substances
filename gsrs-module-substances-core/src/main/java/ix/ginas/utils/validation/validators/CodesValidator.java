@@ -59,8 +59,17 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                     callback.addMessage(mes, ()-> cd.code=(cd.code+"").trim());
 
                 }
+                
+                if (!ValidationUtils.isEffectivelyNull(cd.codeText) && !(cd.codeText+"").trim().equals(cd.codeText+"")) {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .WARNING_MESSAGE(
+                                    "'Code comment' '" + cd.codeText + "' should not have trailing or leading whitespace. Code will be trimmed to '" 
+                                            + cd.codeText.trim() + "'")
+                            .appliableChange(true);
+                    callback.addMessage(mes, ()-> cd.codeText=(cd.codeText+"").trim());
+                }
 
-
+                
             if (ValidationUtils.isEffectivelyNull(cd.codeSystem)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .ERROR_MESSAGE(
@@ -68,6 +77,13 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                             .appliableChange(true);
                     callback.addMessage(mes, ()->cd.codeSystem="<no system>");
 
+                } else if (!(cd.codeSystem+"").trim().equals(cd.codeSystem+"")) {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .WARNING_MESSAGE(
+                                    "'Code system' '" + cd.codeSystem + "' should not have trailing or leading whitespace. Code will be trimmed to '" 
+                                            + cd.codeSystem.trim() + "'")
+                            .appliableChange(true);
+                    callback.addMessage(mes, ()-> cd.codeSystem=(cd.codeSystem+"").trim());
                 }
 
                 if (ValidationUtils.isEffectivelyNull(cd.type)) {
