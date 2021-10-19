@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -42,7 +41,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
     private AdminService adminService;
 
     @Override
-    @Transactional
+
     public void run(SchedulerPlugin.TaskListener l)
     {
         l.message("Initializing rehashing");
@@ -56,8 +55,9 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                 l.message("Rehashed:" + sofar);
             }
         });
-
-        List<UUID> ids = structureRepository.getAllIds();
+        TransactionTemplate outerTx = new TransactionTemplate(platformTransactionManager);
+        outerTx.setReadOnly(true);
+        List<UUID> ids = outerTx.execute( s->structureRepository.getAllIds());
 
         listen.newProcess();
         listen.totalRecordsToProcess(ids.size());
@@ -73,20 +73,23 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                     tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     try {
                         tx.executeWithoutResult(status -> {
-                            structureRepository.findById(id).ifPresent(s -> {
-                                listen.preRecordProcess(s);
-                                try {
+                            try {
+                                structureRepository.findById(id).ifPresent(s -> {
+                                    listen.preRecordProcess(s);
 
-                                    log.debug("recalcing "+  id);
-                                    recalcStructurePropertiesService.recalcStructureProperties(s);
-                                    log.debug("done recalcing "+ id);
-                                    listen.recordProcessed(s);
 
-                                } catch(Throwable t) {
-                                    log.error("error recalcing "+  id, t);
-                                    listen.error(t);
-                                }
-                            });
+                                        log.debug("recalcing "+  id);
+                                        recalcStructurePropertiesService.recalcStructureProperties(s);
+                                        log.debug("done recalcing "+ id);
+                                        listen.recordProcessed(s);
+
+
+                                });
+                            } catch(Throwable t) {
+                                log.error("error recalcing "+  id, t);
+                                listen.error(t);
+                                status.setRollbackOnly();
+                            }
                         });
                     } catch (Throwable ex) {
                         log.error("error recalcing structural properties", ex);
