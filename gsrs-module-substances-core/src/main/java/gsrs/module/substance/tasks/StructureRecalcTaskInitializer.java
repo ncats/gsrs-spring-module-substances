@@ -61,12 +61,15 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
 
         listen.newProcess();
         listen.totalRecordsToProcess(ids.size());
+        l.message("Fetched IDs for :" + ids.size() + " records");
 
         ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
         
         Authentication adminAuth = adminService.getAnyAdmin();
         for (UUID id : ids) {
 
+            //I think the actual hangup might happen in the 
+            //runAs method, but I can't be sure.
             executor.submit(() -> {
                 adminService.runAs(adminAuth, () -> {
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
@@ -89,6 +92,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                                 log.error("error recalcing "+  id, t);
                                 listen.error(t);
                                 status.setRollbackOnly();
+                                throw t;
                             }
                         });
                     } catch (Throwable ex) {
