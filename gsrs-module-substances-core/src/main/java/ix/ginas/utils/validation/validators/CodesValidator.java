@@ -15,26 +15,24 @@ import ix.ginas.utils.validation.ValidationUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Created by katzelda on 5/14/18.
  */
+@Slf4j
 public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
-    private Set<String> singletonCodeSystems;
-
+    
     @Autowired
     private ReferenceRepository referenceRepository;
-
-    @Autowired
-    private SubstanceRepository substanceRepository;
 
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-
+        log.trace("starting in validate. " );
         Iterator<Code> codesIter = s.codes.iterator();
         while(codesIter.hasNext()){
             Code cd = codesIter.next();
@@ -61,8 +59,17 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                     callback.addMessage(mes, ()-> cd.code=(cd.code+"").trim());
 
                 }
+                
+                if (!ValidationUtils.isEffectivelyNull(cd.codeText) && !(cd.codeText+"").trim().equals(cd.codeText+"")) {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .WARNING_MESSAGE(
+                                    "'Code comment' '" + cd.codeText + "' should not have trailing or leading whitespace. Code will be trimmed to '" 
+                                            + cd.codeText.trim() + "'")
+                            .appliableChange(true);
+                    callback.addMessage(mes, ()-> cd.codeText=(cd.codeText+"").trim());
+                }
 
-
+                
             if (ValidationUtils.isEffectivelyNull(cd.codeSystem)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .ERROR_MESSAGE(
@@ -70,6 +77,13 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                             .appliableChange(true);
                     callback.addMessage(mes, ()->cd.codeSystem="<no system>");
 
+                } else if (!(cd.codeSystem+"").trim().equals(cd.codeSystem+"")) {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .WARNING_MESSAGE(
+                                    "'Code system' '" + cd.codeSystem + "' should not have trailing or leading whitespace. Code will be trimmed to '" 
+                                            + cd.codeSystem.trim() + "'")
+                            .appliableChange(true);
+                    callback.addMessage(mes, ()-> cd.codeSystem=(cd.codeSystem+"").trim());
                 }
 
                 if (ValidationUtils.isEffectivelyNull(cd.type)) {
@@ -88,75 +102,45 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
         }
 
-
-        for(Code cd : s.codes){
-
-            if("CAS".equals(cd.codeSystem)){
-                boolean found=false;
-                for(Keyword keywords :cd.getReferences()){
-                    Reference ref =s.getReferenceByUUID(keywords.term);
-                    if("STN (SCIFINDER)".equalsIgnoreCase(ref.docType)){
-                        found=true;
-                        break;
-                    }
-                }
-                if(!found){
-                    GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "Must specify STN reference for CAS")
-                            .appliableChange(true);
-                    callback.addMessage(mes, ()-> {
-                        Reference newRef = new Reference();
-                        newRef.citation ="STN";
-                        newRef.docType="STN (SCIFINDER)";
-                        newRef.publicDomain = true;
-
-                        cd.addReference(newRef, s);
-                    });
-                }
-            }
-
-
-        }
-
         for (Code cd : s.codes) {
+//            String debug = String.format("code system: %s, code: %s; comments: %s; type: %s", 
+//                    cd.codeSystem, cd.code, cd.comments, cd.type);
+//            log.trace(debug);
+            
             try {
-                if( singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem)) {
-                    LogUtil.trace( ()->String.format("skipping code of system %s", cd.codeSystem));
-                    continue;
-                }
-                List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByCodes_CodeAndCodes_CodeSystem(cd.code, cd.codeSystem);
-
-                if (sr != null && !sr.isEmpty()) {
-                    //TODO we only check the first hit?
-                    //would be nice to say instead of possible duplicate hit say we got X hits
-                    SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
-
-                    if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
-                        GinasProcessingMessage mes = GinasProcessingMessage
+                 if( containsLeadingTrailingSpaces(cd.comments) ) {
+                     cd.comments=cd.comments.trim();
+                     GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Code '"
                                                 + cd.code
                                                 + "'[" +cd.codeSystem
-                                                + "] collides (possible duplicate) with existing code & codeSystem for substance:")
-//                               TODO katelda Feb 2021 : add link support back!
-                                . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
-                                ;
-                        callback.addMessage(mes);
-                    }
+                                                + "] "
+                                        + "code text: " +  cd.comments  +" contains one or more leading/trailing blanks that will be removed")
+                                .appliableChange(true);
+                     callback.addMessage(mes);
                 }
+                
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public Set<String> getSingletonCodeSystems() {
-        return singletonCodeSystems;
-    }
 
-    public void setSingletonCodeSystems(Set<String> singletonCodeSystems) {
-        this.singletonCodeSystems = singletonCodeSystems;
+    public static boolean containsLeadingTrailingSpaces(String comment) {
+        if( comment==null || comment.length()==0){
+            return false;
+        }
+        if( !comment.equals(comment.trim())){
+            return true;
+        }
+        String[] lines = comment.split("\\|");;
+        for(String line : lines) {
+            if( line!=null && line.length()>0 && !line.equals(line.trim())) {
+                return true;
+            }
+        }
+        return false;
     }
-
 }
