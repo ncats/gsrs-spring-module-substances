@@ -106,7 +106,7 @@ public class CASCodeValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void testisValidCasLetters() {
-        //check digit is off
+        //non-numeric char -> false
         String casNum = "A103-90-2";
         Assertions.assertFalse(CASUtilities.isValidCas(casNum));
     }

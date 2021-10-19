@@ -602,6 +602,44 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         Map<String, SingleThreadCounter> contribution = getSubunitFormulaInfo(su.sequence, unknownRes);
         assertTrue(contribution.isEmpty());
     }
+    
+     @Test
+    public void proteinMwTestAlanineDimer() {
+        /*
+        Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
+         */
+        System.out.println("starting proteinMwTestMod1");
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence = "AA";
+        
+        /*
+        use nucleic acid validation test
+         */
+        ChemicalSubstance tryptophan= buildTryptophan();
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            System.out.printf("message: %s; ", m.message);
+        });
+        double alanineMw= 160.0;
+        double expectedMw= alanineMw;
+        String expectedFormula ="C6H12N2O3";
+        double actual =contribution.getMw();
+        String actualFormula= contribution.getFormula();
+        System.out.println("calculated MW: " + actual);
+
+        assertEquals(expectedMw, actual, 0.9);
+        assertEquals(expectedFormula, actualFormula);
+    }
+
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 

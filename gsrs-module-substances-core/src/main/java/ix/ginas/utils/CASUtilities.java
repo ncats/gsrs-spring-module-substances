@@ -1,7 +1,6 @@
 package ix.ginas.utils;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.lang3.ArrayUtils;
 
 /**
  *
@@ -22,12 +21,15 @@ public class CASUtilities {
             }
         }
         //calculate the expected value of the check digit
-        ArrayUtils.reverse(chars);
         AtomicInteger count = new AtomicInteger(0);
-        for (int i = 1; i < chars.length; i++) {
-            count.getAndAdd(i * Character.getNumericValue(chars[i]));
+        for (int i = chars.length-1; i >0; i--) {
+            int position = chars.length-i;
+            System.out.println("going to multiply " + position + " times " + Character.getNumericValue(chars[i-1]));
+            count.getAndAdd(position * Character.getNumericValue(chars[i-1]));
         }
         //verify that it matches the actual
-        return Character.getNumericValue(chars[0]) == (count.get() % 10);
+        System.out.println("check digit: " + chars[chars.length-1]);
+        return Character.getNumericValue(chars[chars.length-1]) == (count.get() % 10);
     }
+
 }
