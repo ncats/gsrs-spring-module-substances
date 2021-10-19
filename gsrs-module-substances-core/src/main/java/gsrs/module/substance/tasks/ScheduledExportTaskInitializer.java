@@ -17,6 +17,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.common.util.Unchecked;
 import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.config.FilePathParserUtils;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
@@ -38,7 +39,7 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
 
     private String username;
     private boolean publicOnly =false;
-    private File rootDir =null;
+    private String outputPath =null;
     private String name = "Full Data Export";
     
     
@@ -57,11 +58,18 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     
 
     public void setOutputPath(String path) {
-        if(path!=null) {
-            rootDir = new File(path);   
-        }
+        outputPath=path;
     }
 
+    public File getOutputDir() {
+        if(outputPath==null)return null;
+        return FilePathParserUtils.getFileParserBuilder()
+                           .suppliedFilePath(outputPath)
+                           .build()
+                           .getFile();
+    }
+    
+   
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -79,6 +87,8 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     protected PlatformTransactionManager transactionManager;
 
+    
+    
     @Override
     public String getDescription() {
         return name + " for " + username;
@@ -97,12 +107,12 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     }
 
     public ExportService getExportService() {
-        if(rootDir==null) {
+        if(getOutputDir()==null) {
             return this.exportService;
         }else {
             //This isn't ideal as there's a disconnect between what the config says and what the export
-            //service says.
-            ExportService es = new DefaultExportService(gsrsExportConfiguration, rootDir);
+            //service says, especially in terms of user
+            ExportService es = new DefaultExportService(gsrsExportConfiguration, getOutputDir());
             return es;
         }
     }

@@ -1,5 +1,6 @@
 package gsrs.module.substance.tasks;
 
+import gsrs.config.FilePathParserUtils;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.springUtils.StaticContextAccessor;
 import java.io.BufferedOutputStream;
@@ -43,22 +44,19 @@ public class SQLReportScheduledTaskInitializer
 
     private Lock lock = new ReentrantLock();
 
+    
     /**
      * Returns the File used to output the report
      *
      * @return
      */
-    public File getWriteFile() {
-        if(outputPath ==null) {
-            outputPath= "reports/" + name + "-%DATE%.txt";
-        }
-        String date = formatter.format(TimeUtil.getCurrentLocalDateTime());
-        String time = formatterTime.format(TimeUtil.getCurrentLocalDateTime());
-
-        String fpath = outputPath.replace("%DATE%", date)
-                .replace("%TIME%", time);
-
-        return new File(fpath);
+    public File getOutputFile() {
+        return FilePathParserUtils.getFileParserBuilder()
+                           .suppliedFilePath(outputPath)
+                           .defaultFilePath("reports/" + name + "-%DATE%.txt")
+                           .dateFormatter(formatter)
+                           .build()
+                           .getFile();
     }
 
     private PrintStream makePrintStream(File writeFile) throws IOException {
@@ -72,7 +70,7 @@ public class SQLReportScheduledTaskInitializer
             lock.lock();
             l.message("Initializing SQL");
 
-            File writeFile = getWriteFile();
+            File writeFile = getOutputFile();
             File abfile = writeFile.getAbsoluteFile();
             File pfile = abfile.getParentFile();
             
@@ -144,7 +142,7 @@ public class SQLReportScheduledTaskInitializer
 
     @Override
     public String getDescription() {
-        return "SQL Report:" + name + ". Output to:" + getWriteFile().getPath();
+        return "SQL Report:" + name + ". Output to:" + getOutputFile().getPath();
     }
 
     public Connection getConnection() throws SQLException {
