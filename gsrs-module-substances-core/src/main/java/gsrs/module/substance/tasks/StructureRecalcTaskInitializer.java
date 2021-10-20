@@ -84,6 +84,8 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                     tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     try {
                         tx.executeWithoutResult(status -> {
+
+                            l.message("Running task as admin finding structures:" + show);
                             structureRepository.findById(id).ifPresent(s -> {
                                 listen.preRecordProcess(s);
                                 try {
@@ -99,12 +101,14 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                                     l.message("Error reindexing ... " + t.getMessage());
                                 }
                             });
+
+                            l.message("Running task as admin finished for a structure:" + show);
                         });
                     } catch (Throwable ex) {
                         log.error("error recalcing structural properties", ex);
                          l.message("Error reindexing ... " + ex.getMessage());
                     }
-                    l.message("Running task as admin for:" + show);
+                    l.message("finished running task as admin for:" + show);
                 });
                 }catch(Exception eee) {
                     l.message("Error task for:" + show);
