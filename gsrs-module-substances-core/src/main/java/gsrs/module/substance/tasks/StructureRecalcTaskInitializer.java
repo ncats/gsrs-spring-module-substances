@@ -67,9 +67,14 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
         l.message("Initializing rehashing: acquiring user account");
         Authentication adminAuth = adminService.getAnyAdmin();
         l.message("Initializing rehashing: acquired user account");
+
+        int ti=0;
         try{
         for (UUID id : ids) {
+            l.message("Adding task " + ti + " for " + id);
+            ti++;
             executor.submit(() -> {
+                l.message("Running task for:" + id);
                 adminService.runAs(adminAuth, () -> {
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                     tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
