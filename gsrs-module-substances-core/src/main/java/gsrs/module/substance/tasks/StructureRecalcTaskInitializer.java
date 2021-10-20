@@ -67,7 +67,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
         l.message("Initializing rehashing: acquiring user account");
         Authentication adminAuth = adminService.getAnyAdmin();
         l.message("Initializing rehashing: acquired user account");
-        
+        try{
         for (UUID id : ids) {
             executor.submit(() -> {
                 adminService.runAs(adminAuth, () -> {
@@ -96,6 +96,11 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                     }
                 });
             });
+        }
+        }catch(Exception ee){
+            log.error("error recalcing ", ee);
+            l.message("ERROR:" + ee.getMessage());
+            throw new RuntimeException(ee);
         }
 
         executor.shutdown();
