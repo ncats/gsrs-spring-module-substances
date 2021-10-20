@@ -7,9 +7,12 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 
+import org.springframework.stereotype.Component;
+
 /**
  * Created by katzelda on 3/29/18.
  */
+@Component
 public class OpsinResolver extends AbstractStructureResolver{
 
     private static final NameToStructure nts =  NameToStructure.getInstance();
