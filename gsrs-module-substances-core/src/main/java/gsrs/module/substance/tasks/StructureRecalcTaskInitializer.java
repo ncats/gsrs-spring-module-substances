@@ -57,13 +57,14 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
             }
         });
 
+        l.message("Initializing rehashing: acquiring list");
         List<UUID> ids = structureRepository.getAllIds();
 
         listen.newProcess();
         listen.totalRecordsToProcess(ids.size());
 
         ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
-        
+        l.message("Initializing rehashing: acquiring user account");
         Authentication adminAuth = adminService.getAnyAdmin();
         for (UUID id : ids) {
 
@@ -85,6 +86,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                                 } catch(Throwable t) {
                                     log.error("error recalcing "+  id, t);
                                     listen.error(t);
+                                    l.message("Error reindexing ... " + t.getMessage());
                                 }
                             });
                         });
