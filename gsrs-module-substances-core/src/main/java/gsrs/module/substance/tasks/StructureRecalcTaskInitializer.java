@@ -72,10 +72,14 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
         try{
         for (UUID id : ids) {
             l.message("Adding task " + ti + " for " + id);
+            String show = id + " :" + ti;
             ti++;
+            
             executor.submit(() -> {
-                l.message("Running task for:" + id);
+                l.message("Running task for:" + show);
+                try{
                 adminService.runAs(adminAuth, () -> {
+                    l.message("Running task as admin for:" + show);
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                     tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     try {
@@ -100,7 +104,14 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                         log.error("error recalcing structural properties", ex);
                          l.message("Error reindexing ... " + ex.getMessage());
                     }
+                    l.message("Running task as admin for:" + show);
                 });
+                }catch(Exception eee) {
+                    l.message("Error task for:" + show);
+                    log.error("error task recalcing structural properties", eee);
+                    return;
+                }
+                l.message("Finished task for:" + show);
             });
         }
         }catch(Exception ee){

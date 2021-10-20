@@ -84,10 +84,11 @@ public class ReindexFromBackups implements ReindexService{
                                     .build());
 
         eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
-
+        l.message("Initializing reindexing: acquiring list");
 //        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
-
+            l.message("Initializing reindexing: beginning process");
+            
             stream.forEach(be ->{
                 try {
                     Optional<Object> opt = be.getOptionalInstantiated();
