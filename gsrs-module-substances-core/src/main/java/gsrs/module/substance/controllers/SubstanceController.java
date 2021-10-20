@@ -277,12 +277,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private RendererOptionsConfig rendererOptionsConfig;
 
-//    @Autowired
-//    private SubstanceApprovalIdGenerator approvalIdGenerator;
-//
-//    @Autowired
-//    private PrincipalRepository principalRepository;
-
     @Autowired
     private ApprovalService approvalService;
 

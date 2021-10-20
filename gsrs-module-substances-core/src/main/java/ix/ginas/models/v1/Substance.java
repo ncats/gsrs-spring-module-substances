@@ -408,122 +408,6 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return nlist;
     }
 
-    //TODO katzelda Feb 2021 : all the commented methods following are replaced by the EntityMapperOptions annotation on the fields
-//    @JsonView(BeanViews.Compact.class)
-//    @JsonProperty("_names")
-//    public JsonNode getJsonNames() {
-//        JsonNode node = null;
-//        if (!names.isEmpty()) {
-//            try {
-//                ObjectNode n = mapper.createObjectNode();
-//                n.put("count", names.size());
-//                n.put("href", Global.getRef(getClass(), getUuid()) + "/names");
-//                node = n;
-//            } catch (Exception ex) {
-//                ex.printStackTrace();
-//                // this means that the class doesn't have the NamedResource
-//                // annotation, so we can't resolve the context
-//                node = mapper.valueToTree(names);
-//            }
-//        }
-//        return node;
-//    }
-//
-//    @JsonView(BeanViews.Compact.class)
-//    @JsonProperty("_modifications")
-//    public JsonNode getJsonModifications() {
-//        JsonNode node = null;
-//        if (this.getModifications()!=null) {
-//            try {
-//                ObjectNode n = mapper.createObjectNode();
-//                n.put("count", getModificationCount());
-//                n.put("href", Global.getRef(getClass(), getUuid()) + "/modifications");
-//                node = n;
-//            } catch (Exception ex) {
-//                ex.printStackTrace();
-//                node = mapper.valueToTree(names);
-//            }
-//        }
-//        return node;
-//    }
-//
-//
-//    @JsonView(BeanViews.Compact.class)
-//    @JsonProperty("_references")
-//    public JsonNode getJsonReferences() {
-//        JsonNode node = null;
-//        if (!references.isEmpty()) {
-//            try {
-//                ObjectNode n = mapper.createObjectNode();
-//                n.put("count", references.size());
-//                n.put("href", Global.getRef(getClass(), getUuid()) + "/references");
-//                node = n;
-//            } catch (Exception ex) {
-//                // this means that the class doesn't have the NamedResource
-//                // annotation, so we can't resolve the context
-//                node = mapper.valueToTree(references);
-//            }
-//        }
-//        return node;
-//    }
-//
-//    @JsonView(BeanViews.Compact.class)
-//    @JsonProperty("_codes")
-//    public JsonNode getJsonCodes() {
-//        JsonNode node = null;
-//        if (!codes.isEmpty()) {
-//            try {
-//                ObjectNode n = mapper.createObjectNode();
-//                n.put("count", codes.size());
-//                n.put("href", Global.getRef(getClass(), getUuid()) + "/codes");
-//                node = n;
-//            } catch (Exception ex) {
-//                // this means that the class doesn't have the NamedResource
-//                // annotation, so we can't resolve the context
-//                node = mapper.valueToTree(codes);
-//            }
-//        }
-//        return node;
-//    }
-//
-//    @JsonView(BeanViews.Compact.class)
-//    @JsonProperty("_relationships")
-//    public JsonNode getJsonRelationships() {
-//        JsonNode node = null;
-//        if (!relationships.isEmpty()) {
-//            try {
-//                ObjectNode n = mapper.createObjectNode();
-//                n.put("count", relationships.size());
-//                n.put("href", Global.getRef(getClass(), getUuid())
-//                        + "/relationships");
-//                node = n;
-//            } catch (Exception ex) {
-//                // this means that the class doesn't have the NamedResource
-//                // annotation, so we can't resolve the context
-//                node = mapper.valueToTree(relationships);
-//            }
-//        }
-//        return node;
-//    }
-//
-//    @JsonView(BeanViews.Compact.class)
-//    @JsonProperty("_properties")
-//    public JsonNode getJsonProperties() {
-//        JsonNode node = null;
-//        if (!properties.isEmpty()) {
-//            try {
-//                ObjectNode n = mapper.createObjectNode();
-//                n.put("count", properties.size());
-//                n.put("href", Global.getRef(getClass(), getUuid()) + "/properties");
-//                node = n;
-//            } catch (Exception ex) {
-//                // this means that the class doesn't have the NamedResource
-//                // annotation, so we can't resolve the context
-//                node = mapper.valueToTree(properties);
-//            }
-//        }
-//        return node;
-//    }
 
 
     @JsonIgnore
@@ -535,8 +419,18 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     public Optional<Name> getBestName(Comparator<Name> comp){
         return names.stream().max(comp);
     }
-
+    
     @Indexable(suggest = true, name = "Display Name", sortable=true)
+    @JsonIgnore
+    public String fetchIndexedDisplayName() {
+        Optional<Name> aName = getDisplayName();
+        if(aName.isPresent()){
+            return "B:" + aName.get().name;
+        }else {
+            return null;
+        }
+    }
+
     @JsonProperty("_name")
     public String getName() {
         Optional<Name> aName = getDisplayName();

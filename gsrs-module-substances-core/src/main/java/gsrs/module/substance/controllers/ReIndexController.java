@@ -62,20 +62,4 @@ public class ReIndexController {
 
         return GsrsControllerUtil.enhanceWithView(status, queryParameters);
     }
-    /*
-    @PostGsrsRestApiMapping("/@reindex")
-    @hasAdminRole
-    public Object reindex( @RequestParam Map<String, String> queryParameters) throws IOException {
-        //TODO should we post a BODY with re-index params?
-        ReIndexController.ReindexStatus status = new ReIndexController.ReindexStatus();
-        status.setUuid(UUID.randomUUID());
-        ixCache.setTemp(status.uuid.toString(), status);
-        SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
-        status.setListener(listener);
-        reindexService.executeAsync(status.uuid, listener);
-
-        return GsrsControllerUtil.enhanceWithView(status, queryParameters);
-    }
-
-   */
 }

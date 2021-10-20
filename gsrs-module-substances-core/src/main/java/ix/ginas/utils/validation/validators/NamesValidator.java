@@ -275,7 +275,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                                         + oldDisplayName.get().name
                                         + "' to '"
                                         + n.name
-                                        + "'. It is not customary to change the preferred name! Please confirm that this change is intentional by submitting.");
+                                        + "'. Please confirm that this change is intentional by submitting.");
                 callback.addMessage(mes);
             }
         }
