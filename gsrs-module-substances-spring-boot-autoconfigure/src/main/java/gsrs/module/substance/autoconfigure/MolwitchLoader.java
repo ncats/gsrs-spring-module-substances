@@ -4,12 +4,14 @@ import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.ChemicalBuilder;
 import gov.nih.ncats.molwitch.MolWitch;
 import gov.nih.ncats.molwitch.inchi.Inchi;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class MolwitchLoader implements ApplicationListener<ContextRefreshedEvent> {
 
@@ -23,7 +25,7 @@ public class MolwitchLoader implements ApplicationListener<ContextRefreshedEvent
 
             String inchi = Inchi.asStdInchi(build).getKey();
 
-            System.out.println(MolWitch.getModuleName() + " : " + smiles + " inchi = " + inchi);
+            log.debug(MolWitch.getModuleName() + " : " + smiles + " inchi = " + inchi);
         } catch (IOException e) {
             e.printStackTrace();
         }
