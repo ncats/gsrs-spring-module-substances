@@ -93,6 +93,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                         });
                     } catch (Throwable ex) {
                         log.error("error recalcing structural properties", ex);
+                         l.message("Error reindexing ... " + ex.getMessage());
                     }
                 });
             });
@@ -103,6 +104,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
             throw new RuntimeException(ee);
         }
 
+        l.message("Shutting down executor service");
         executor.shutdown();
         try {
             executor.awaitTermination(1, TimeUnit.DAYS );
@@ -110,6 +112,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
             //should never happen
 
         }
+        l.message("Task finished");
         listen.doneProcess();
 
 
