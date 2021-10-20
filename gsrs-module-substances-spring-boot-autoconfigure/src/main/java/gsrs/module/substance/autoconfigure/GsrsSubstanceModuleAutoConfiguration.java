@@ -10,7 +10,9 @@ import gsrs.module.substance.SubstanceCoreConfiguration;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.controllers.*;
-import gsrs.module.substance.repository.*;
+import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
+import gsrs.module.substance.repository.ProteinSubstanceRepository;
+import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.*;
 import gsrs.service.PayloadService;
 import ix.seqaln.service.SequenceIndexerService;
@@ -20,9 +22,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
-import org.springframework.context.event.ApplicationEventMulticaster;
-import org.springframework.context.event.SimpleApplicationEventMulticaster;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 @Configuration
 @EnableConfigurationProperties
@@ -30,7 +29,8 @@ import org.springframework.core.task.SimpleAsyncTaskExecutor;
 @EnableGsrsAkka
 @EnableGsrsJpaEntities
 @EnableGsrsApi
-@Import({SubstanceCoreConfiguration.class
+@Import({SubstanceCoreConfiguration.class,
+        MolwitchLoader.class
 })
 //@Import({StructureProcessingConfiguration.class, SubstanceEntityService.class,
 //        NucleicAcidSubstanceRepository.class, ComponentRepository.class,
