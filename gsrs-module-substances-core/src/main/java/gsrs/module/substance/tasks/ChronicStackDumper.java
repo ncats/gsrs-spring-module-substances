@@ -14,6 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.config.FilePathParserUtils;
 import gsrs.scheduledTasks.CronExpressionBuilder;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
@@ -28,17 +29,14 @@ import ix.utils.Util;
  */
 public class ChronicStackDumper extends ScheduledTaskInitializer{
 
-    private File logFile = new File("logs/all-running-stacktraces.log");
-
+    private String outputPath = null;
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
     private Lock lock = new ReentrantLock();
 
     @JsonProperty("outputPath")
-    public void setPath(String path) {
-        if(path !=null){
-            logFile = new File(path);
-        }
+    public void setOutputPath(String path) {
+        outputPath=path;
     }
     
     @JsonProperty("dateFormat")
@@ -48,12 +46,21 @@ public class ChronicStackDumper extends ScheduledTaskInitializer{
         }
     }
 
+    public File getOutputFile() {
+        return FilePathParserUtils.getFileParserBuilder()
+                           .suppliedFilePath(outputPath)
+                           .defaultFilePath("logs/all-running-stacktraces.log")
+                           .dateFormatter(formatter)
+                           .build()
+                           .getFile();
+    }
+    
 
 	@Override
 	public void run(TaskListener l) {
 		    lock.lock();
             try {
-                try (PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(logFile, true)))) {
+                try (PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(getOutputFile(), true)))) {
                     out.println(" ==========================================");
                     out.println(formatter.format(TimeUtil.getCurrentLocalDateTime()));
                     out.println(" ==========================================");
@@ -70,6 +77,6 @@ public class ChronicStackDumper extends ScheduledTaskInitializer{
 
 	@Override
 	public String getDescription() {
-		return "Log all Executing Stack Traces to " + logFile.getPath();
+		return "Log all Executing Stack Traces to " + getOutputFile().getPath();
 	}
 }

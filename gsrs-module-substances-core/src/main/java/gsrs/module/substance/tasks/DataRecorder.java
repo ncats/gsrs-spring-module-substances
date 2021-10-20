@@ -18,6 +18,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import gov.nih.ncats.common.util.TimeUtil;
 import ix.core.util.KeepLastList;
 import ix.utils.Util;
+import gsrs.config.FilePathParserUtils;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
 
@@ -25,7 +26,9 @@ public class DataRecorder extends ScheduledTaskInitializer {
 
     private static final int DEFAULT_NUM_RECORDS= 10; // with default cron of very 30 sec this makes last 5 mins snapshots
    
-    private File logFile = new File("logs/dataRecorder.log");
+//    private String logFileString = new File("logs/dataRecorder.log");
+    
+    private String outputPath;
 
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
 
@@ -35,19 +38,18 @@ public class DataRecorder extends ScheduledTaskInitializer {
 
     private KeepLastList<String> data= new KeepLastList<String>(DEFAULT_NUM_RECORDS);
     
-
-    @JsonProperty("outputPath")
-    public void setPath(String path) {
-        if(path !=null){
-            logFile = new File(path);
-        }
-    }
     
     @JsonProperty("dateFormat")
     public void setFormat(String format) {
         if(format !=null){
             formatter = DateTimeFormatter.ofPattern(format);
         }
+    }
+    
+
+    @JsonProperty("outputPath")
+    public void setOutputPath(String path) {
+        this.outputPath=path;
     }
     
     @JsonProperty("keep_record_count")
@@ -59,6 +61,14 @@ public class DataRecorder extends ScheduledTaskInitializer {
     
     
     
+    public File getOutputFile() {
+        return FilePathParserUtils.getFileParserBuilder()
+                           .suppliedFilePath(outputPath)
+                           .defaultFilePath("logs/dataRecorder.log")
+                           .dateFormatter(formatter)
+                           .build()
+                           .getFile();
+    }
     
     
 
@@ -80,6 +90,8 @@ public class DataRecorder extends ScheduledTaskInitializer {
             }catch(IOException e){
 
             }
+            File logFile =getOutputFile();
+            
             File tmpFile = new File(logFile.getParentFile(), logFile.getName()+".tmp");
 
             try (PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(tmpFile)))) {
@@ -104,6 +116,6 @@ public class DataRecorder extends ScheduledTaskInitializer {
 
     @Override
     public String getDescription() {
-        return "Record Last X stack traces like an airplane's Flight Data Recorder" + logFile.getPath();
+        return "Record Last X stack traces like an airplane's Flight Data Recorder to :" + getOutputFile().getPath();
     }
 }
