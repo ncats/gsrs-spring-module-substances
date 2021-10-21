@@ -66,58 +66,42 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
         ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
         l.message("Initializing rehashing: acquiring user account");
         Authentication adminAuth = adminService.getAnyAdmin();
-        l.message("Initializing rehashing: acquired user account");
+        l.message("Initializing rehashing: starting process");
 
-        int ti=0;
         try{
-        for (UUID id : ids) {
-            l.message("Adding task " + ti + " for " + id);
-            String show = id + " :" + ti;
-            ti++;
-            
-            executor.submit(() -> {
-                l.message("Running task for:" + show);
-                try{
-                adminService.runAs(adminAuth, () -> {
-                    l.message("Running task as admin for:" + show);
-                    TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                    tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                    try {
-                        tx.executeWithoutResult(status -> {
-
-                            l.message("Running task as admin finding structures:" + show);
-                            structureRepository.findById(id).ifPresent(s -> {
-                                listen.preRecordProcess(s);
-                                try {
-
-                                    log.debug("recalcing "+  id);
-                                    recalcStructurePropertiesService.recalcStructureProperties(s);
-                                    log.debug("done recalcing "+ id);
-                                    listen.recordProcessed(s);
-
-                                } catch(Throwable t) {
-                                    log.error("error recalcing "+  id, t);
-                                    listen.error(t);
-                                    l.message("Error reindexing ... " + t.getMessage());
-                                }
-                            });
-
-                            l.message("Running task as admin finished for a structure:" + show);
+            for (UUID id : ids) {
+                executor.submit(() -> {
+                    try{
+                        adminService.runAs(adminAuth, () -> {
+                            TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+                            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                            try {
+                                tx.executeWithoutResult(status -> {
+                                    structureRepository.findById(id).ifPresent(s -> {
+                                        listen.preRecordProcess(s);
+                                        try {
+                                            log.debug("recalcing "+  id);
+                                            recalcStructurePropertiesService.recalcStructureProperties(s);
+                                            log.debug("done recalcing "+ id);
+                                            listen.recordProcessed(s);
+                                        } catch(Throwable t) {
+                                            log.error("error recalcing "+  id, t);
+                                            listen.error(t);
+                                            l.message("Error reindexing ... " + id + " error: " + t.getMessage());
+                                        }
+                                    });
+                                });
+                            } catch (Throwable ex) {
+                                log.error("error recalcing structural properties", ex);
+                                l.message("Error reindexing ... " + id + " error: " + ex.getMessage());
+                            }
                         });
-                    } catch (Throwable ex) {
-                        log.error("error recalcing structural properties", ex);
-                         l.message("Error reindexing ... " + ex.getMessage());
+                    }catch(Exception ex) {
+                        l.message("Error reindexing ... " + id + " error: " + ex.getMessage());
+                        return;
                     }
-                    l.message("finished running task as admin for:" + show);
                 });
-                }catch(Exception eee) {
-                    l.message("Error task for:" + show);
-                    log.error("error task recalcing structural properties", eee);
-                    return;
-                }
-                l.message("Finished task for:" + show);
-            });
-        }
+            }
         }catch(Exception ee){
             log.error("error recalcing ", ee);
             l.message("ERROR:" + ee.getMessage());
