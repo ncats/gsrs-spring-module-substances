@@ -40,11 +40,12 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
 
     @Test
     public void testReport1(){
-        String reportFilePath = "d:\\temp\\test1.report.txt";
+        String reportFilePath = System.getProperty("java.io.tmpdir") + "test1.report.txt";
         File report = new File(reportFilePath);
         if( report.exists()) {
             report.delete();
         }
+        log.debug("writing report to file:  " + reportFilePath);
         SQLReportScheduledTaskInitializer sqlReport = new SQLReportScheduledTaskInitializer();
         sqlReport.setSql("select uuid, dtype, current_version, created from ix_ginas_substance ");
         sqlReport.setOutputPath(reportFilePath);
@@ -55,7 +56,7 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
     
     @Test
     public void testReport2(){
-        String reportFilePath = "d:\\temp\\test2.report.txt";
+        String reportFilePath = System.getProperty("java.io.tmpdir") + "test2.report.txt";
         File report = new File(reportFilePath);
         if( report.exists()) {
             report.delete();
