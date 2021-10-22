@@ -358,7 +358,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
     }
 
-    @Transactional
+
     @Override
     protected Optional<Object> handleSpecialFields(EntityUtils.EntityWrapper<Substance> entity, String field) {
         if("@hierarchy".equals(field)){
