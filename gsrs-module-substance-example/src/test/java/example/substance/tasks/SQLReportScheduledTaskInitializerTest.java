@@ -1,22 +1,26 @@
 package example.substance.tasks;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.tasks.SQLReportScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.springUtils.AutowireHelper;
-import java.io.File;
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
 
 
 /**
@@ -26,7 +30,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
 public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaFullStackEntityTest{
-    
+
     private final String fileName = "rep18.gsrs";
 
     @BeforeEach
@@ -39,36 +43,36 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
     }
 
     @Test
-    public void testReport1(){
-        String reportFilePath = System.getProperty("java.io.tmpdir") + "test1.report.txt";
-        File report = new File(reportFilePath);
+    public void testReport1(@TempDir Path tmpDir){
+        String reportFilePath = "test1.report.txt";
+        File report = new File(tmpDir.toFile(), reportFilePath);
         if( report.exists()) {
             report.delete();
         }
         log.debug("writing report to file:  " + reportFilePath);
         SQLReportScheduledTaskInitializer sqlReport = new SQLReportScheduledTaskInitializer();
         sqlReport.setSql("select uuid, dtype, current_version, created from ix_ginas_substance ");
-        sqlReport.setOutputPath(reportFilePath);
+        sqlReport.setOutputPath(report.toString());
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
         sqlReport.run(listener);
         Assertions.assertTrue(report.exists(), "Report file must be created");
     }
-    
+
     @Test
-    public void testReport2(){
-        String reportFilePath = System.getProperty("java.io.tmpdir") + "test2.report.txt";
-        File report = new File(reportFilePath);
+    public void testReport2(@TempDir Path tmpDir){
+        String reportFilePath = "test2.report.txt";
+        File report = new File(tmpDir.toFile(), reportFilePath);
         if( report.exists()) {
             report.delete();
         }
         SQLReportScheduledTaskInitializer sqlReport = new SQLReportScheduledTaskInitializer();
         sqlReport.setSql("select s.uuid, dtype, s.current_version, s.created, n.name from ix_ginas_substance s, ix_ginas_name n where s.uuid =n.owner_uuid and n.display_name = true");
-        sqlReport.setOutputPath(reportFilePath);
+        sqlReport.setOutputPath(report.toString());
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
         sqlReport.run(listener);
         Assertions.assertTrue(report.exists(), "Report file must be created");
     }
-    
+
     @Test
     public void testSqlConnection() throws SQLException {
         SQLReportScheduledTaskInitializer taskInit = new SQLReportScheduledTaskInitializer();
