@@ -645,75 +645,11 @@ public class SubstanceHierarchyFinder {
 		return s.relationships
 				 .stream()
 				 .filter(r->type.equals(r.type))
-				 .map(r->Tuple.of(r.type,substanceRepository.findBySubstanceReference(r.relatedSubstance)))
+				 .map(r->Tuple.of(r.type,substanceRepository.findBySubstanceReference(r.relatedSubstance))) //lazy-load issue
 				 .filter(rs->rs.v()!=null)
 				 .collect(Collectors.toList());
 	}
 
-	//TODO katzelda June 2021 not used?
-//	public static Html htmlHelper(TreeNode<Substance> tn){
-//		return new Html("<pre>" + tn.map(s->s.asSubstanceReference()).stringHierarchy(t->t.value.getName() + "[" + t.type + "]") + "</pre>");
-//	}
-	
-	//TODO katzelda June 2021 : not used?
-//	public static List<JsNodeTree> makeJsonTree(Substance sub, SubstanceApprovalIdGenerator substanceApprovalIdGenerator){
-//
-//		List<TreeNode<Substance>> tnlist = (new SubstanceHierarchyFinder())
-//				.getHierarchies(sub);
-//
-//		Function<TreeNode<Substance>, String> namer = (tn1)->{
-//			return tn1.value.uuid +	tn1.type;
-//		};
-//
-//		Map<String,String> uniqueID = new HashMap<String,String>();
-//
-//		AtomicInteger ai = new AtomicInteger(0);
-//
-//
-//		return
-//				tnlist.stream()
-//				.flatMap(tn->tn.streamPaths()
-//						.map(l->{
-//							TreeNode<Substance> fin=l.get(l.size()-1);
-//
-//							List<String> path1=l.stream()
-//									.map(namer)
-//									.collect(Collectors.toList());
-//
-//							String id=path1.stream().collect(Collectors.joining("!_!"));
-//							String path=path1.stream()
-//									.limit(l.size()-1)
-//									.collect(Collectors.joining("!_!"));
-//							id=uniqueID.computeIfAbsent(id,(k)->ai.getAndIncrement()+"");
-//							path=uniqueID.computeIfAbsent(path,(k)->ai.getAndIncrement()+"");
-//							if(l.size()==1){
-//								path="#";
-//							}
-//
-//							String showID="NO " + substanceApprovalIdGenerator.getName();
-//
-//
-//							String text=("[" + fin.value.getApprovalIDDisplay() + "] "
-//									+ fin.value.getName()
-//									+ (fin.type.equals(ROOT_TYPE)?"": " {" + fin.type + "}")).toUpperCase();
-//
-//
-//
-//							return new JsNodeTree.Builder()
-//									.id(id)
-//									.parent(path)
-//									.text(text)
-//									.value(new TreeNode<SubstanceReference>(fin.type,fin.value.asSubstanceReference()))
-//									.build();
-//
-//						}))
-//				.collect(Collectors.toList());
-//
-//	}
-//
-//	public static String makeRawJsonTree(Substance s){
-//		return EntityWrapper.of(makeJsonTree(s)).toFullJson();
-//	}
 
 	public static class TreeNode2{
 		String text;

@@ -1,73 +1,34 @@
 package gsrs.module.substance.controllers;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
-import gov.nih.ncats.common.util.CachedSupplier;
-import gov.nih.ncats.common.util.TimeUtil;
-import gov.nih.ncats.molwitch.MolwitchException;
-import gov.nih.ncats.molwitch.io.CtTableCleaner;
-import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
-import gov.nih.ncats.molwitch.renderer.RendererOptions;
-import gsrs.legacy.structureIndexer.StructureIndexerService;
-import gsrs.module.substance.RendererOptionsConfig;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
-import gsrs.module.substance.approval.ApprovalService;
-import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
-import gsrs.module.substance.repository.ChemicalSubstanceRepository;
-import gsrs.module.substance.repository.StructuralUnitRepository;
-import gsrs.module.substance.repository.StructureRepository;
-import gov.nih.ncats.common.io.IOUtil;
-import gov.nih.ncats.molwitch.Atom;
-import gov.nih.ncats.molwitch.Bond;
-import gov.nih.ncats.molwitch.Chemical;
-import gov.nih.ncats.molwitch.Bond.Stereo;
-import gsrs.cache.GsrsCache;
-import gsrs.controller.*;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.legacy.LegacyGsrsSearchService;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.repository.SubunitRepository;
-import gsrs.module.substance.services.ReindexService;
-import gsrs.module.substance.services.SubstanceSequenceSearchService;
-import gsrs.module.substance.services.SubstanceStructureSearchService;
-import gsrs.module.substance.services.SubstanceSequenceSearchService.SequenceSearchType;
-import gsrs.repository.EditRepository;
-import gsrs.repository.PrincipalRepository;
-import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.security.GsrsSecurityUtils;
-import gsrs.security.hasAdminRole;
-import gsrs.security.hasApproverRole;
-import gsrs.service.GsrsEntityService;
-import gsrs.service.PayloadService;
-import gsrs.springUtils.GsrsSpringUtils;
-import ix.core.EntityMapperOptions;
-import ix.core.chem.*;
-import ix.core.controllers.EntityFactory;
-import ix.core.models.Payload;
-import ix.core.models.Principal;
-import ix.core.models.Structure;
-import ix.core.models.UserProfile;
-import ix.core.search.SearchOptions;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
-import ix.core.search.SearchResultContext;
-import ix.core.util.EntityUtils;
-import ix.ginas.models.v1.*;
-import ix.ginas.utils.SubstanceApprovalIdGenerator;
-import ix.seqaln.SequenceIndexer;
-import ix.utils.CallableUtil;
-import ix.utils.UUIDUtil;
-import ix.utils.Util;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotBlank;
+
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.EntityLinks;
@@ -76,8 +37,10 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -88,24 +51,70 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import gov.nih.ncats.common.io.IOUtil;
+import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.Bond;
+import gov.nih.ncats.molwitch.Bond.Stereo;
+import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.molwitch.MolwitchException;
+import gov.nih.ncats.molwitch.io.CtTableCleaner;
+import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
+import gov.nih.ncats.molwitch.renderer.RendererOptions;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.EtagLegacySearchEntityController;
+import gsrs.controller.GetGsrsRestApiMapping;
+import gsrs.controller.GsrsControllerUtil;
+import gsrs.controller.GsrsRestApiController;
+import gsrs.controller.IdHelpers;
+import gsrs.controller.PostGsrsRestApiMapping;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.module.substance.RendererOptionsConfig;
+import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.approval.ApprovalService;
+import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
+import gsrs.module.substance.repository.ChemicalSubstanceRepository;
+import gsrs.module.substance.repository.StructuralUnitRepository;
+import gsrs.module.substance.repository.StructureRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.repository.SubunitRepository;
+import gsrs.module.substance.services.SubstanceSequenceSearchService;
+import gsrs.module.substance.services.SubstanceSequenceSearchService.SequenceSearchType;
+import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.repository.EditRepository;
+import gsrs.security.hasApproverRole;
+import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
+import ix.core.chem.Chem;
+import ix.core.chem.ChemAligner;
+import ix.core.chem.ChemCleaner;
+import ix.core.chem.PolymerDecode;
+import ix.core.chem.StructureProcessor;
+import ix.core.controllers.EntityFactory;
+import ix.core.models.Payload;
+import ix.core.models.Structure;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
+import ix.core.util.EntityUtils;
+import ix.ginas.models.v1.Amount;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Moiety;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.Subunit;
+import ix.ginas.models.v1.Unit;
+import ix.seqaln.SequenceIndexer;
+import ix.utils.CallableUtil;
+import ix.utils.UUIDUtil;
+import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * GSRS Rest API controller for the {@link Substance} entity.
@@ -234,6 +243,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private SubstanceSequenceSearchService substanceSequenceSearchService;
     
     @Autowired
+    private PlatformTransactionManager transactionManager;
+    
+    
+    @Autowired
     private StructureRepository structureRepository;
     
 
@@ -345,7 +358,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return Util.sha1(q) + "/"+String.format("%1$d", (int)(1000*t+.5));
     }
 
-
+    @Transactional
     @Override
     protected Optional<Object> handleSpecialFields(EntityUtils.EntityWrapper<Substance> entity, String field) {
         if("@hierarchy".equals(field)){
@@ -356,24 +369,27 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     private List<SubstanceHierarchyFinder.TreeNode2> makeJsonTreeForAPI(Substance sub) {
 
-        List<SubstanceHierarchyFinder.TreeNode<Substance>> tnlist = substanceHierarchyFinder.getHierarchies(sub);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        transactionTemplate.setReadOnly(true);
+        return transactionTemplate.execute(s->{
+            List<SubstanceHierarchyFinder.TreeNode<Substance>> tnlist = substanceHierarchyFinder.getHierarchies(sub);
 
+            SubstanceHierarchyFinder.TreeNode2Builder builder = new SubstanceHierarchyFinder.TreeNode2Builder();
+            for (SubstanceHierarchyFinder.TreeNode<Substance> n : tnlist) {
+                n.traverseDepthFirst(l -> {
+                    SubstanceHierarchyFinder.TreeNode<Substance> fin = l.get(l.size() - 1);
+                    String text = ("[" + fin.getValue().getApprovalIDDisplay() + "] "
+                            + fin.getValue().getName()
+                            + (fin.getType().equals(SubstanceHierarchyFinder.getHierarchyRootType()) ? "" : " {" + fin.getType() + "}")).toUpperCase();
 
-        SubstanceHierarchyFinder.TreeNode2Builder builder = new SubstanceHierarchyFinder.TreeNode2Builder();
-        for (SubstanceHierarchyFinder.TreeNode<Substance> n : tnlist) {
-            n.traverseDepthFirst(l -> {
-                SubstanceHierarchyFinder.TreeNode<Substance> fin = l.get(l.size() - 1);
-                String text = ("[" + fin.getValue().getApprovalIDDisplay() + "] "
-                        + fin.getValue().getName()
-                        + (fin.getType().equals(SubstanceHierarchyFinder.getHierarchyRootType()) ? "" : " {" + fin.getType() + "}")).toUpperCase();
-
-                builder.addNode(text, fin.getType(), l.size() - 1, fin.getValue().asSubstanceReference());
-                return true;
-            });
-        }
-        List<SubstanceHierarchyFinder.TreeNode2> nodes = builder.build();
-
-        return nodes;
+                    builder.addNode(text, fin.getType(), l.size() - 1, fin.getValue().asSubstanceReference());
+                    return true;
+                });
+            }
+            List<SubstanceHierarchyFinder.TreeNode2> nodes = builder.build();
+            return nodes;
+        });
     }
 
     /**
@@ -1137,12 +1153,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             RendererOptions rendererOptons = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             if (newDisplay != null) {
-
                 rendererOptons.changeSettings(newDisplay);
             }
 
-
+            
+            //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
+            
 //		boolean highlight=false;
             if(amap!=null && amap.length>0){
                 Atom[] atoms = chem.atoms().toArray(i -> new Atom[i]);
