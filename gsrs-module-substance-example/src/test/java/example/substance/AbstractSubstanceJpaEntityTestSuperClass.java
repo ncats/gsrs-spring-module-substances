@@ -207,8 +207,8 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected PlatformTransactionManager transactionManager;
 
-    @MockBean
-    protected GsrsCache mockGsrsCache;
+    @Autowired
+    protected GsrsCache gsrsCache;
 
 
     @Autowired
@@ -312,28 +312,28 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
          */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(File gsrsFile, Substance.SubstanceClass... substanceClasses) throws IOException {
 
-            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
-            List<GsrsEntityService.CreationResult<Substance>> list = new ArrayList<>();
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
+        List<GsrsEntityService.CreationResult<Substance>> list = new ArrayList<>();
 
         yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses)
-                .forEach(json->{
-                    list.add(transactionTemplate.execute(status ->{
-                        try {
-                            GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json,true);
-                            //full fetch
-                            if(result.isCreated()){
-                                result.getCreatedEntity().toFullJsonNode();
-                            }
-                            return result;
-                        }catch(IOException e){
-                            return Sneak.sneakyThrow(e);
-                        }
-                    }));
-                });
+        .forEach(json->{
+            list.add(transactionTemplate.execute(status ->{
+                try {
+                    GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json,true);
+                    //full fetch
+                    if(result.isCreated()){
+                        result.getCreatedEntity().toFullJsonNode();
+                    }
+                    return result;
+                }catch(IOException e){
+                    return Sneak.sneakyThrow(e);
+                }
+            }));
+        });
 
 
-            return list;
+        return list;
 
     }
 

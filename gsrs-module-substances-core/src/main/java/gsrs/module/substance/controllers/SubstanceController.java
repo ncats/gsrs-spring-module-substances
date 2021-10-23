@@ -626,7 +626,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             if(struc.id ==null){
                 struc.id = UUID.randomUUID();
             }
-            ixCache.setTemp(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
+            ixCache.setRaw(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
         }
         return Optional.of(struc);
     }
@@ -692,7 +692,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         sub.uuid = UUID.randomUUID();
         sub.sequence = q;
         if(store){
-            ixCache.setTemp(sub.uuid.toString(), EntityUtils.EntityWrapper.of(sub).toInternalJson());
+            ixCache.setRaw(sub.uuid.toString(), EntityUtils.EntityWrapper.of(sub).toInternalJson());
 
         }
         return Optional.of(sub);
@@ -943,7 +943,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if (s.id == null){
             s.id = UUID.randomUUID();
         }
-        ixCache.setTemp(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
+        ixCache.setRaw(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
 
     }
 

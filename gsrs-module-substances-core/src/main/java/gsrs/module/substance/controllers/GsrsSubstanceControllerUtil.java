@@ -9,7 +9,7 @@ import java.util.Optional;
 public class GsrsSubstanceControllerUtil {
 
     public static <T> Optional<T> getTempObject(GsrsCache ixCache, String id, Class<T> objectClass) {
-        String json = (String) ixCache.getTemp(id);
+        String json = (String) ixCache.getRaw(id);
 
         if(json !=null){
             try {
