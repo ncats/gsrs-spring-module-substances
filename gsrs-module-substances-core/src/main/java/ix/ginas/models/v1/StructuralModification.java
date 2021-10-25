@@ -34,6 +34,8 @@ public class StructuralModification extends GinasCommonSubData {
     @JsonIgnore
 	@OneToOne(cascade= CascadeType.ALL)
     SiteContainer siteContainer;
+    
+    
     public List<Site> getSites(){
     	if(siteContainer!=null){
     		return siteContainer.getSites();

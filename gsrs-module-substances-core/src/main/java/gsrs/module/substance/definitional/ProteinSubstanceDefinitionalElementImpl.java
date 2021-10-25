@@ -123,7 +123,6 @@ public class ProteinSubstanceDefinitionalElementImpl implements DefinitionalElem
         if(sites ==null || sites.isEmpty()){
             return;
         }
-
         consumer.accept(DefinitionalElement.of("protein.glycosylation."+letter, SiteContainer.generateShorthand(sites), 2));
 
     }
