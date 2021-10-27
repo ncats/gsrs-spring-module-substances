@@ -38,7 +38,7 @@ public class NameUtilities {
     }
 
     public ReplacementResult removeSerialSpaces(String input) {
-        Pattern multipleWhiteSpace = Pattern.compile("\\s+");
+        Pattern multipleWhiteSpace = Pattern.compile("\\s{2,}");
         List<ReplacementNote> notes = new ArrayList<>();
         ReplacementResult result = new ReplacementResult(input, notes);
         if (input == null || input.length() == 0) {
