@@ -128,7 +128,7 @@ public abstract class AbstractStructureResolver implements Resolver<Structure> {
             //katzelda2021: we aren't going to save this in GSRS 3 but need to put it in temp cache
             UUID uuid = UUID.randomUUID();
             struc.id = uuid;
-            gsrsCache.setTemp(uuid.toString(), EntityUtils.EntityWrapper.of(struc).toFullJson());
+            gsrsCache.setRaw(uuid.toString(), EntityUtils.EntityWrapper.of(struc).toFullJson());
 //            struc.save();
             return struc;
 
