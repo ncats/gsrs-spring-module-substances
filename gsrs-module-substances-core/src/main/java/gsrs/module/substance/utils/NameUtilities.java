@@ -27,6 +27,9 @@ public class NameUtilities {
     private static final String REPLACEMENT_SOURCE_NUMERIC = "\u2192;->;\\xB1;+/-;±;+/-;\u2190;<-;\\xB2;2;\\xB3;3;\\xB9;1;\u2070;0;\u2071;1;\u2072;2;\u2073;3;\u2074;4;\u2075;5;\u2076;6;\u2077;7;\u2078;8;\u2079;9;\u207A;+;\u207B;-;\u2080;0;\u2081;1;\u2082;2;\u2083;3;\u2084;4;\u2085;5;\u2086;6;\u2087;7;\u2088;8;\u2089;9;\u208A;+;\u208B;-";
     private static final String REPLACEMENT_SOURCE_SMALL_CAPS = "ʟ;L;ᴅ;D";
     private final List<Replacer> replacers = new ArrayList<>();
+    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\p{ASCII}]");
+    private static final Pattern UNPRINTABLES_PATTERN = Pattern.compile("\\p{C}");
+    private static final String NON_ASCII_REPLACEMENT = "?";
 
     public ReplacementResult standardizeMinimally(String input) {
         if( input == null || input.length() == 0) {
@@ -190,8 +193,8 @@ public class NameUtilities {
         if (source == null || source.length() == 0) {
             return defaultResult;
         }
-        Pattern unprintables = Pattern.compile("\\p{C}");
-        Matcher matcher = unprintables.matcher(source);
+        
+        Matcher matcher = UNPRINTABLES_PATTERN.matcher(source);
         if( matcher.find()){
             ReplacementNote note1= new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start()+1));
             List<ReplacementNote> notes = new ArrayList<>();
@@ -202,9 +205,9 @@ public class NameUtilities {
     }
 
     private void initReplacers() {
-        String[] GreekReplacementTokens = REPLACEMENT_SOURCE_GREEK.split(";");
-        for (int i = 0; i < GreekReplacementTokens.length; i = i + 2) {
-            replacers.add(new Replacer(GreekReplacementTokens[i], GreekReplacementTokens[i + 1])
+        String[] replacementTokensGreek = REPLACEMENT_SOURCE_GREEK.split(";");
+        for (int i = 0; i < replacementTokensGreek.length; i = i + 2) {
+            replacers.add(new Replacer(replacementTokensGreek[i], replacementTokensGreek[i + 1])
                     .message("Replaced Greek character \"$0\" with standard form"));
         }
 
@@ -303,7 +306,8 @@ public class NameUtilities {
         input = input.replaceAll("\u2026", "...");
         input = input.replaceAll("\u00BC", "1/4");
         input = input.replaceAll("\u00BD", "1/2");
-        input = input.replaceAll("⅔", "2/3");
+        //input = input.replaceAll("⅔", "2/3");
+        //input = input.replaceAll("\u2154", "2/3");
 
         return input;
     }
@@ -364,14 +368,13 @@ public class NameUtilities {
         if (input == null || input.length() == 0) {
             return replacementResult;
         }
-        Pattern nonAscii = Pattern.compile("[^\\p{ASCII}]");
-        String NON_ASCII_REPLACEMENT = "?";
-        Matcher matcher = nonAscii.matcher(input);
+        
+        Matcher matcher = NON_ASCII_PATTERN.matcher(input);
         if (!matcher.find()) {
             return replacementResult;
         }
         StringBuffer sb = new StringBuffer();
-        matcher = nonAscii.matcher(input);
+        matcher = NON_ASCII_PATTERN.matcher(input);
         while (matcher.find()) {
             String charToEval = matcher.group();
             int width = getCharacterWidth(charToEval.charAt(0));

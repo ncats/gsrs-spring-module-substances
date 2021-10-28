@@ -130,6 +130,31 @@ public class NameUtilitiesTest {
     }
 
     @Test
+    public void testUnprintables() {
+        for (int i = 0; i <= 31; i++) {
+            StringBuilder sb = new StringBuilder();
+            sb.append((char) i);
+            String input = sb.toString();
+            ReplacementResult r = NameUtilities.replaceUnprintables(input);
+            Assertions.assertEquals("", r.getResult());
+        }
+        //one more
+        StringBuilder sb = new StringBuilder();
+        sb.append((char) 0x7f);
+        String input = sb.toString();
+        ReplacementResult r = NameUtilities.replaceUnprintables(input);
+        Assertions.assertEquals("", r.getResult());
+    }
+
+    @Test
+    public void testTwoThirds() {
+        String inputName = "⅔";
+        String expected = "2/3";
+        String actual = NameUtilities.symbolsToASCII(inputName);
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
     public void testGreekLetterReplacements1() {
         String input = " Α, Β, Γ, Δ, Ε, Ζ, Η, Θ, Ι, Κ, Λ, Μ, Ν, Ξ, Ο, Π, Ρ, Σ, Τ, Υ, Φ, Χ, Ψ, and Ω";
         String expected = " .ALPHA., .BETA., .GAMMA., .DELTA., .EPSILON., .ZETA., .ETA., .THETA., .IOTA., .KAPPA., .LAMBDA., .MU., .NU., .XI., .OMICRON., .PI., .RHO., .SIGMA., .TAU., .UPSILON., .PHI., .CHI., .PSI., and .OMEGA.";
@@ -174,6 +199,16 @@ public class NameUtilitiesTest {
     }
 
     @Test
+    public void test2SmallCaps() {
+        String input = "ʟᴅ glucose";
+        String expected = "LD glucose";
+        NameUtilities utilities = new NameUtilities();
+        NameUtilities.ReplacementResult result = utilities.makeSpecificReplacements(input);
+        String actual = result.getResult();
+        Assertions.assertEquals(expected, actual); //, "Must replace small caps characters"
+    }
+
+    @Test
     public void testNonAsciiRemoval() {
         String input = "a milligram of glucose©";
         String expected = "a milligram of glucose?";
@@ -198,6 +233,17 @@ public class NameUtilitiesTest {
     public void testNonAsciiRemoval3() {
         String input = "an little\u200Bbit of glucose©";
         String expected = "an littlebit of glucose?";
+        NameUtilities utilities = new NameUtilities();
+        NameUtilities.ReplacementResult result = utilities.replaceNonAscii(input);
+        String actual = result.getResult();
+        Assertions.assertEquals(expected, actual);
+        result.getReplacementNotes().forEach(n -> log.trace(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
+    }
+
+    @Test
+    public void testMoreZeroWidthRemoval() {
+        String input = "an little\u200B\u200C\u200D sugar";
+        String expected = "an little sugar";
         NameUtilities utilities = new NameUtilities();
         NameUtilities.ReplacementResult result = utilities.replaceNonAscii(input);
         String actual = result.getResult();
@@ -303,4 +349,5 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(updatedName, result1.getResult());
         Assertions.assertEquals(note1.getReplacement(), result1.getReplacementNotes().get(0).getReplacement());
     }
+
 }
