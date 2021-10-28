@@ -1,6 +1,5 @@
 package gsrs.module.substance.services;
 
-import gov.nih.ncats.common.Tuple;
 import gsrs.events.BeginReindexEvent;
 import gsrs.events.EndReindexEvent;
 import gsrs.events.IncrementReindexEvent;
@@ -87,12 +86,10 @@ public class ReindexFromBackups implements ReindexService{
 //        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
             l.message("Initializing reindexing: beginning process");
-            stream.map(be-> Tuple.of(be, be.getOptionalInstantiated()))
 
-                    .parallel()
-                    .forEach(tuple ->{
+            stream.forEach(be ->{
                 try {
-                    Optional opt = tuple.v();
+                    Optional<Object> opt = be.getOptionalInstantiated();
                     if(opt.isPresent()) {
 
                         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(opt.get());
@@ -127,7 +124,7 @@ public class ReindexFromBackups implements ReindexService{
                     }
                     eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
                 } catch (Exception e) {
-                    log.warn("indexing error handling:" + tuple.k().fetchGlobalId(), e);
+                    log.warn("indexing error handling:" + be.fetchGlobalId(), e);
                 }
                     });
         }
