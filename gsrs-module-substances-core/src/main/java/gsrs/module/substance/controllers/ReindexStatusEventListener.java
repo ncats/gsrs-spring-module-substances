@@ -15,14 +15,14 @@ public class ReindexStatusEventListener {
 
     @EventListener
     public void setTotal(BeginReindexEvent event){
-        ReIndexController.ReindexStatus  status = (ReIndexController.ReindexStatus ) cache.getTemp(event.getId().toString());
+        ReIndexController.ReindexStatus  status = (ReIndexController.ReindexStatus ) cache.getRaw(event.getId().toString());
         if(status !=null){
             status.setTotal(event.getNumberOfExpectedRecord());
         }
     }
     @EventListener
     public void incrementCount(IncrementReindexEvent event){
-        ReIndexController.ReindexStatus  status = (ReIndexController.ReindexStatus ) cache.getTemp(event.getId().toString());
+        ReIndexController.ReindexStatus  status = (ReIndexController.ReindexStatus ) cache.getRaw(event.getId().toString());
         if(status !=null){
             status.incrementCount();
             status.getListener().message(status.generateMessage());
