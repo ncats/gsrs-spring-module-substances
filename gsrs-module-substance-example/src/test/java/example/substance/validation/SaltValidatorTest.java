@@ -1,6 +1,21 @@
 package example.substance.validation;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.cache.GsrsCache;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
@@ -23,19 +38,6 @@ import ix.ginas.utils.validation.ValidationUtils;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SaltValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test several cases of the SaltValidator
@@ -68,6 +70,10 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     private SubstanceLegacySearchService searchService;
+    
+    @Autowired
+    private GsrsCache cache;
+    
 
     @BeforeEach
     public void runSetup() throws IOException {
@@ -88,9 +94,12 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
             factory.addValidator("substances", configSaltValidator);
         }
         File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
+        cache.clearCache();
         loadGsrsFile(dataFile);
         log.trace("loaded rep18 data file");
+        
         setup = true;
+        
     }
 
 

@@ -55,7 +55,7 @@ public class ReIndexController {
 
     @GetGsrsRestApiMapping({"({ID})","/{ID}"})
     public Object get(@PathVariable("ID") UUID id, @RequestParam Map<String,String> queryParameters){
-        ReIndexController.ReindexStatus status = (ReIndexController.ReindexStatus) ixCache.getTemp(id.toString());
+        ReIndexController.ReindexStatus status = (ReIndexController.ReindexStatus) ixCache.getRaw(id.toString());
         if(status ==null){
             return gsrsControllerConfiguration.handleNotFound(queryParameters);
         }

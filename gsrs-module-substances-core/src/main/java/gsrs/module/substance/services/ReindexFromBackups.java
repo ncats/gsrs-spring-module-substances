@@ -1,17 +1,16 @@
 package gsrs.module.substance.services;
 
-import gsrs.events.*;
-import gsrs.indexer.IndexCreateEntityEvent;
-import gsrs.module.substance.tasks.ProcessExecutionService;
+import gsrs.events.BeginReindexEvent;
+import gsrs.events.EndReindexEvent;
+import gsrs.events.IncrementReindexEvent;
+import gsrs.events.ReindexEntityEvent;
 import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import ix.core.models.BackupEntity;
 import ix.core.util.EntityUtils;
-import ix.core.utils.executor.ProcessListener;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
@@ -23,7 +22,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
 /**
@@ -88,7 +86,7 @@ public class ReindexFromBackups implements ReindexService{
 //        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
             l.message("Initializing reindexing: beginning process");
-            
+
             stream.forEach(be ->{
                 try {
                     Optional<Object> opt = be.getOptionalInstantiated();
