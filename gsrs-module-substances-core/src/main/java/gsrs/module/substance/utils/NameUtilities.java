@@ -74,9 +74,9 @@ public class NameUtilities {
         ReplacementResult resultForSpecifics = initialResult.update(makeSpecificReplacements(initialResult.getResult()));
         String workingString = resultForSpecifics.getResult();
         workingString = symbolsToASCII(workingString);
-        workingString = nkfdNormalizations(workingString);
-        results = removeZeroWidthChars(workingString);
-        results.update(removeSerialSpaces(results.getResult()));
+        results.update(removeZeroWidthChars(workingString));
+        workingString = nkfdNormalizations(results.getResult());
+        results.update(removeSerialSpaces(workingString));
         results.setResult(results.getResult().toUpperCase());
         return results;
     }
