@@ -350,4 +350,13 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(note1.getReplacement(), result1.getReplacementNotes().get(0).getReplacement());
     }
 
+    @Test
+    public void testAccentedLetters() {
+        String inputName ="prêt-à-porter";
+        String expected = "PRET-A-PORTER";
+        NameUtilities utils = new NameUtilities();
+        ReplacementResult result= utils.fullyStandardizeName(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+        
+    }
 }
