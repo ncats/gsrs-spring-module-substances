@@ -44,24 +44,21 @@ public class NameUtilitiesTest {
     public void testMinimalStandardization() {
         String inputName = "Substance name   2 \u0005derivative";
         String expected = "Substance name 2 derivative";
-        NameUtilities utils = new NameUtilities();
-        Assertions.assertEquals(expected, utils.standardizeMinimally(inputName).getResult());
+        Assertions.assertEquals(expected, NameUtilities.getInstance().standardizeMinimally(inputName).getResult());
     }
 
     @Test
     public void testMinimalStandardization2() {
         String inputName = "Chemical \u0005\u0004material";
         String expected = "Chemical material";
-        NameUtilities utils = new NameUtilities();
-        Assertions.assertEquals(expected, utils.standardizeMinimally(inputName).getResult());
+        Assertions.assertEquals(expected, NameUtilities.getInstance().standardizeMinimally(inputName).getResult());
     }
 
     @Test
     public void testMinimalStandardization3() {
         String inputName = "alpha-linolenic acid";
         String expected = "alpha-linolenic acid";
-        NameUtilities utils = new NameUtilities();
-        Assertions.assertEquals(expected, utils.standardizeMinimally(inputName).getResult());
+        Assertions.assertEquals(expected, NameUtilities.getInstance().standardizeMinimally(inputName).getResult());
     }
 
     @Test //replace quote-like char    
@@ -158,8 +155,7 @@ public class NameUtilitiesTest {
     public void testGreekLetterReplacements1() {
         String input = " Α, Β, Γ, Δ, Ε, Ζ, Η, Θ, Ι, Κ, Λ, Μ, Ν, Ξ, Ο, Π, Ρ, Σ, Τ, Υ, Φ, Χ, Ψ, and Ω";
         String expected = " .ALPHA., .BETA., .GAMMA., .DELTA., .EPSILON., .ZETA., .ETA., .THETA., .IOTA., .KAPPA., .LAMBDA., .MU., .NU., .XI., .OMICRON., .PI., .RHO., .SIGMA., .TAU., .UPSILON., .PHI., .CHI., .PSI., and .OMEGA.";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.makeSpecificReplacements(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
         result.getReplacementNotes().forEach(n -> {
             System.out.println(n);
         });
@@ -171,8 +167,7 @@ public class NameUtilitiesTest {
     public void testNumericReplacements1() {
         String input = "¹±³";
         String expected = "1+/-3";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.makeSpecificReplacements(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -181,8 +176,7 @@ public class NameUtilitiesTest {
     public void testNkfdNormalization() {
         String input = "𝐸₃éé👍!";
         String expected = "E3ee?!";
-        NameUtilities utilities = new NameUtilities();
-        String actual = utilities.nkfdNormalizations(input);
+        String actual = NameUtilities.getInstance().nkfdNormalizations(input);
         System.out.println("before: " + input);
         System.out.println("after: " + actual);
         Assertions.assertEquals(expected, actual);
@@ -192,8 +186,7 @@ public class NameUtilitiesTest {
     public void testSmallCaps() {
         String input = "ᴅ glucose";
         String expected = "D glucose";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.makeSpecificReplacements(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual); //, "Must replace small caps characters"
     }
@@ -202,8 +195,7 @@ public class NameUtilitiesTest {
     public void test2SmallCaps() {
         String input = "ʟᴅ glucose";
         String expected = "LD glucose";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.makeSpecificReplacements(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual); //, "Must replace small caps characters"
     }
@@ -212,8 +204,7 @@ public class NameUtilitiesTest {
     public void testNonAsciiRemoval() {
         String input = "a milligram of glucose©";
         String expected = "a milligram of glucose?";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.replaceNonAscii(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
         result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
@@ -223,8 +214,7 @@ public class NameUtilitiesTest {
     public void testNonAsciiRemoval2() {
         String input = "some idea\u200B";
         String expected = "some idea";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.replaceNonAscii(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -233,8 +223,7 @@ public class NameUtilitiesTest {
     public void testNonAsciiRemoval3() {
         String input = "an little\u200Bbit of glucose©";
         String expected = "an littlebit of glucose?";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.replaceNonAscii(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
         result.getReplacementNotes().forEach(n -> log.trace(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
@@ -244,8 +233,7 @@ public class NameUtilitiesTest {
     public void testMoreZeroWidthRemoval() {
         String input = "an little\u200B\u200C\u200D sugar";
         String expected = "an little sugar";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.replaceNonAscii(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
         result.getReplacementNotes().forEach(n -> log.trace(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
@@ -255,8 +243,7 @@ public class NameUtilitiesTest {
     public void testFull() {
         String input = "a little\u200Bbit of glucose©";
         String expected = "A LITTLEBIT OF GLUCOSE?";
-        NameUtilities utilities = new NameUtilities();
-        ReplacementResult result = utilities.fullyStandardizeName(input);
+        ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
         result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
@@ -266,8 +253,7 @@ public class NameUtilitiesTest {
     public void testFull2() {
         String input = " Α, Β, Γ \u200C,an little\u200Cbit of glucose©";
         String expected = ".ALPHA., .BETA., .GAMMA. ,AN LITTLEBIT OF GLUCOSE?";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.fullyStandardizeName(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
         result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
@@ -277,8 +263,7 @@ public class NameUtilitiesTest {
     public void testFull3() {
         String input = " Α, Β, Γ \u200C,  potassium diclofenac";
         String expected = ".ALPHA., .BETA., .GAMMA. , POTASSIUM DICLOFENAC";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.fullyStandardizeName(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
         result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
@@ -289,8 +274,7 @@ public class NameUtilitiesTest {
         //several chars from https://terpconnect.umd.edu/~zben/Web/CharSet/htmlchars.html
         String input = "pay attention\u00A1 There is \u00A4 to be made. No, \u00AB isn't XML. \u03A7 \u2191 ";
         String expected = "PAY ATTENTION? THERE IS ? TO BE MADE. NO, \" ISN'T XML. .CHI. ?";
-        NameUtilities utilities = new NameUtilities();
-        NameUtilities.ReplacementResult result = utilities.fullyStandardizeName(input);
+        NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -299,8 +283,7 @@ public class NameUtilitiesTest {
     public void testReplaceSerialWhitespace1() {
         String input = "sodium  chloride";
         String expected = "sodium chloride";
-        NameUtilities utilities = new NameUtilities();
-        ReplacementResult result = utilities.removeSerialSpaces(input);
+        ReplacementResult result = NameUtilities.getInstance().removeSerialSpaces(input);
         Assertions.assertEquals(expected, result.getResult());
     }
 
@@ -308,8 +291,7 @@ public class NameUtilitiesTest {
     public void testReplaceSerialWhitespace2() {
         String input = "potassium       bromide";
         String expected = "potassium bromide";
-        NameUtilities utilities = new NameUtilities();
-        ReplacementResult result = utilities.removeSerialSpaces(input);
+        ReplacementResult result = NameUtilities.getInstance().removeSerialSpaces(input);
         Assertions.assertEquals(expected, result.getResult());
     }
 
@@ -317,8 +299,7 @@ public class NameUtilitiesTest {
     public void testReplaceSerialWhitespace3() {
         String input = "potassium   bromide";
         String expected = "potassium bromide";
-        NameUtilities utilities = new NameUtilities();
-        ReplacementResult result = utilities.removeSerialSpaces(input);
+        ReplacementResult result = NameUtilities.getInstance().removeSerialSpaces(input);
         Assertions.assertEquals(expected, result.getResult());
     }
 
@@ -326,8 +307,7 @@ public class NameUtilitiesTest {
     public void testReplaceSerialWhitespace4() {
         String input = "sodium chloride";
         String expected = "sodium chloride";
-        NameUtilities utilities = new NameUtilities();
-        ReplacementResult result = utilities.removeSerialSpaces(input);
+        ReplacementResult result = NameUtilities.getInstance().removeSerialSpaces(input);
         Assertions.assertEquals(expected, result.getResult());
     }
 
@@ -342,7 +322,6 @@ public class NameUtilitiesTest {
         ReplacementNote note1 = new ReplacementNote(1, "hello");
         List<ReplacementNote> notes2 = new ArrayList<>();
         notes2.add(note1);
-        NameUtilities utils = new NameUtilities();
         String updatedName = "potassium permanganate";
         result1.update(updatedName, notes2);
 
@@ -354,9 +333,16 @@ public class NameUtilitiesTest {
     public void testAccentedLetters() {
         String inputName ="prêt-à-porter";
         String expected = "PRET-A-PORTER";
-        NameUtilities utils = new NameUtilities();
-        ReplacementResult result= utils.fullyStandardizeName(inputName);
-        Assertions.assertEquals(expected, result.getResult());
         
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+    
+    @Test
+    public void testHyphenoids(){
+        String input = "\u00AD\u2010\u2011\u2012something else\u2013\u2014\u2212\u2015";
+        String expected ="----something else----";
+        String actual = NameUtilities.symbolsToASCII(input);
+        Assertions.assertEquals(expected, actual);
     }
 }

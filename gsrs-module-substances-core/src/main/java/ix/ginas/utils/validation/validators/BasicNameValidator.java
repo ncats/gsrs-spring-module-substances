@@ -14,8 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
-    private final NameUtilities nameUtils = new NameUtilities();
-
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         if (s == null) {
@@ -29,7 +27,7 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
         s.names.forEach(n -> {
 
-            NameUtilities.ReplacementResult minimallyStandardizedName = nameUtils.standardizeMinimally(n.name);
+            NameUtilities.ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
             if (!minimallyStandardizedName.getResult().equals(n.name) || minimallyStandardizedName.getReplacementNotes().size() > 0) {
                 GinasProcessingMessage mes = GinasProcessingMessage.INFO_MESSAGE(String.format("Name %s minimally standardized to %s",
                         n.name, minimallyStandardizedName.getResult()));

@@ -19,8 +19,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
-    private final NameUtilities nameUtils = new NameUtilities();
-
+    
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         //NameStandardizer standardizer = new NameStandardizer();
@@ -80,7 +79,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             String oldRegularName = null;
 
             if (oldName != null) {
-                oldStdNameCalc = nameUtils.fullyStandardizeName(oldName.name).getResult();
+                oldStdNameCalc = NameUtilities.getInstance().fullyStandardizeName(oldName.name).getResult();
                 oldStdNameGiven = oldName.stdName;
                 oldRegularName = oldName.name;
             }
@@ -95,18 +94,18 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             }
 
             if (name.stdName == null) {
-                name.stdName = nameUtils.fullyStandardizeName(name.name).getResult();
+                name.stdName = NameUtilities.getInstance().fullyStandardizeName(name.name).getResult();
                 log.debug("set (previously null) stdName to " + name.stdName);
             }
             else {
                 log.trace("stdName: " + name.stdName);
-                if (nameUtils.nameHasUnacceptableChar(name.stdName)) {
+                if (NameUtilities.getInstance().nameHasUnacceptableChar(name.stdName)) {
                     String message = String.format("Names must contain only uppercase, numbers and other ASCII characters and may not have leading or trailing spaces or braces or brackets.  This name contains one or more non-allowed character: '%s'",
                             name.stdName);
                     callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
                 }
                 log.trace("warningOnMismatch: " + warningOnMismatch);
-                String newlyStandardizedName = nameUtils.fullyStandardizeName(name.name).getResult();
+                String newlyStandardizedName = NameUtilities.getInstance().fullyStandardizeName(name.name).getResult();
 
                 if (!newlyStandardizedName.equals(name.stdName)) {
                     if (name.stdName.equals(oldStdNameGiven)) {
