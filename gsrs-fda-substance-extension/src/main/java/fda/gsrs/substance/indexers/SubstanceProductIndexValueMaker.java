@@ -1,6 +1,8 @@
 package fda.gsrs.substance.indexers;
 
 import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate;
+import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate.SearchRequest;
+import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate.SearchResult;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
@@ -30,8 +32,8 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
 
         try{
-        	AbstractLegacySearchGsrsEntityRestTemplate.SearchRequest searchRequest = AbstractLegacySearchGsrsEntityRestTemplate.SearchRequest.builder().q("entity_link_substances:" + substance.uuid).top(Integer.MAX_VALUE).simpleSearchOnly(true).build();
-			AbstractLegacySearchGsrsEntityRestTemplate.SearchResult<ProductMainAllDTO> searchResult = productsApi.search(searchRequest);
+        	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances: \"" + substance.uuid + "\"").top(Integer.MAX_VALUE).simpleSearchOnly(true).build();
+			SearchResult<ProductMainAllDTO> searchResult = productsApi.search(searchRequest);
 			List<ProductMainAllDTO> prodList = searchResult.getContent();
 
 			//substances may have more than one application and therefore multiple status values
