@@ -32,7 +32,7 @@ public class SubstanceApplicationIndexValueMaker implements IndexValueMaker<Subs
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
 
         try{
-			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(Integer.MAX_VALUE).simpleSearchOnly(true).build();
+			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
 			SearchResult<ApplicationAllDTO> searchResult = applicationsApi.search(searchRequest);
 			List<ApplicationAllDTO> appList = searchResult.getContent();
 
