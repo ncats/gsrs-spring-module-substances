@@ -17,38 +17,21 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
 
-    public StandardNameValidatorTest() {
-    }
-
     @Test
-    public void testValidation() {
-        String basicName = "ethanol";
+    public void testStandardNameValidation1() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
-        ChemicalSubstance chemical = builder.addName(basicName)
-                .setStructureWithDefaultReference("CCO")
-                .build();
-        StandardNameValidator validator = new StandardNameValidator();
-        ValidationResponse<Substance> response = validator.validate(chemical, null);
-        Assertions.assertEquals(0, response.getValidationMessages().stream()
-                .filter(m -> m.getMessage().contains("minimally standardized to")).count());
-        Assertions.assertEquals(1, response.getValidationMessages().stream()
-                .filter(m -> m.getMessage().contains("fully standardized to " + basicName.toUpperCase())).count());
-    }
-
-    @Test
-    public void testValidation2() {
         String basicName = "γ-aminobutyric acid";
         String fullyStdName = ".GAMMA.-AMINOBUTYRIC ACID";
-        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+
         ChemicalSubstance chemical = builder.addName(basicName)
                 .setStructureWithDefaultReference("CCO")
                 .build();
         StandardNameValidator validator = new StandardNameValidator();
         ValidationResponse<Substance> response = validator.validate(chemical, null);
-        Assertions.assertEquals(1, response.getValidationMessages().stream()
-                .filter(m -> m.getMessage().contains("fully standardized to " + fullyStdName)).count());
-        Assertions.assertEquals(0, response.getValidationMessages().stream()
-                .filter(m -> m.getMessage().contains("minimally standardized to")).count());
+        response.getValidationMessages().forEach(vm->{
+            log.trace( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
+        });
+        
+        Assertions.assertEquals(fullyStdName, chemical.names.get(0).stdName);
     }
-
 }

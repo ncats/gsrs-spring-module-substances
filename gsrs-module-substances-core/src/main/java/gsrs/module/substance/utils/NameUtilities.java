@@ -6,6 +6,7 @@ import java.awt.GraphicsEnvironment;
 import java.awt.Toolkit;
 import java.text.Normalizer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
@@ -30,10 +31,11 @@ public class NameUtilities {
     private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\p{ASCII}]");
     private static final Pattern UNPRINTABLES_PATTERN = Pattern.compile("\\p{C}");
     private static final String NON_ASCII_REPLACEMENT = "?";
+    private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
 
     public ReplacementResult standardizeMinimally(String input) {
-        if( input == null || input.length() == 0) {
-            return new ReplacementResult( input, new ArrayList<>());
+        if (input == null || input.length() == 0) {
+            return new ReplacementResult(input, new ArrayList<>());
         }
         ReplacementResult replacementResult = removeSerialSpaces(input);
         replacementResult.update(replaceUnprintables(replacementResult.getResult()));
@@ -41,16 +43,16 @@ public class NameUtilities {
     }
 
     public ReplacementResult removeSerialSpaces(String input) {
-        Pattern multipleWhiteSpace = Pattern.compile("\\s{2,}");
+
         List<ReplacementNote> notes = new ArrayList<>();
         ReplacementResult result = new ReplacementResult(input, notes);
         if (input == null || input.length() == 0) {
             return result;
         }
-        Matcher matcher = multipleWhiteSpace.matcher(input);
+        Matcher matcher = PATTERN_MULTIPLE_WHITE_SPACE.matcher(input);
         if (matcher.find()) {
             notes.add(new ReplacementNote(matcher.start(), " "));
-            String cleaned =matcher.replaceAll(" ");
+            String cleaned = matcher.replaceAll(" ");
             result.setResult(cleaned);
         }
         return result;
@@ -62,9 +64,9 @@ public class NameUtilities {
             return results;
         }
         ReplacementResult initialResult = replaceUnprintables(input.trim());
-        
+
         ReplacementResult resultForSpecifics = initialResult.update(makeSpecificReplacements(initialResult.getResult()));
-        String workingString= resultForSpecifics.getResult();
+        String workingString = resultForSpecifics.getResult();
         workingString = symbolsToASCII(workingString);
         workingString = nkfdNormalizations(workingString);
         results = replaceNonAscii(workingString);
@@ -124,16 +126,16 @@ public class NameUtilities {
         }
 
         public void update(String updatedResult, List<ReplacementNote> additionalNotes) {
-            this.result=updatedResult;
+            this.result = updatedResult;
             this.replacementNotes.addAll(additionalNotes);
         }
 
         public ReplacementResult update(ReplacementResult newResult) {
-            this.result=newResult.getResult();
+            this.result = newResult.getResult();
             this.replacementNotes.addAll(newResult.getReplacementNotes());
             return this;
         }
-        
+
         public List<ReplacementNote> getReplacementNotes() {
             return replacementNotes;
         }
@@ -193,10 +195,10 @@ public class NameUtilities {
         if (source == null || source.length() == 0) {
             return defaultResult;
         }
-        
+
         Matcher matcher = UNPRINTABLES_PATTERN.matcher(source);
-        if( matcher.find()){
-            ReplacementNote note1= new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start()+1));
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
             List<ReplacementNote> notes = new ArrayList<>();
             notes.add(note1);
             return new ReplacementResult(matcher.replaceAll(""), notes);
@@ -368,7 +370,7 @@ public class NameUtilities {
         if (input == null || input.length() == 0) {
             return replacementResult;
         }
-        
+
         Matcher matcher = NON_ASCII_PATTERN.matcher(input);
         if (!matcher.find()) {
             return replacementResult;
@@ -417,6 +419,43 @@ public class NameUtilities {
             log.trace("warning: using first font (" + allFonts[0].getFontName() + ")");
         }
         return width;
+    }
+
+    public boolean nameHasUnacceptableChar(String name) {
+        Pattern asciiPattern = Pattern.compile("\\A\\p{ASCII}*\\z");
+        Matcher asciiMatcher = asciiPattern.matcher(name);
+        Pattern lowerCasePattern = Pattern.compile("[a-z]+");
+        Matcher lowerCaseMatcher = lowerCasePattern.matcher(name);
+        List<Character> dirtyChars = Arrays.asList('\t', '\r', '\n', '`', '{', '}');
+
+        if (name == null || name.length() == 0) {
+            return false;
+        }
+
+        if (lowerCaseMatcher.find()) {
+            return true;
+        }
+
+        if ((!name.trim().equals(name))) {
+            return true;
+        }
+
+        if (!asciiMatcher.find()) {
+            return true;
+        }
+        for (char testChar : name.toCharArray()) {
+            if (dirtyChars.contains(testChar)) {
+                return true;
+            }
+        }
+
+        //square brackets are OK when they provide a name qualification, as int 'NAME [ORGANIZATION]'
+        // but not OK otherwise, as in '[1,4]DICHLOROBENZENE' or 'NAME[SOMETHING]' (without a space before '[')
+        int initBracketPos = name.indexOf("[");
+        int closeBracketPos = name.indexOf("]");
+        return initBracketPos > -1
+                && ((name.charAt(initBracketPos - 1) != ' ')
+                || (closeBracketPos < (name.length() - 1)));
     }
 
 }
