@@ -21,12 +21,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public interface SubstanceSequenceSearchService {
-
-    enum SequenceSearchType{
-        GLOBAL,
-        LOCAL,
-        CONTAINS
-    }
+//
+//    enum SequenceSearchType{
+//        GLOBAL,
+//        LOCAL,
+//        CONTAINS
+//    }
     @Data
     @Builder
     @NoArgsConstructor
@@ -40,8 +40,8 @@ public interface SubstanceSequenceSearchService {
         private Integer fdim = 10;
         private String field;
         private String seqType = "Protein";
-        private double identity = 0.5D;
-        private SequenceSearchType searchType = SequenceSearchType.GLOBAL;
+//        private double identity = 0.5D;
+//        private SequenceSearchType searchType = SequenceSearchType.GLOBAL;
         private String order;
        
 
@@ -60,9 +60,9 @@ public interface SubstanceSequenceSearchService {
         private Integer fdim;
         private String field;
         private String seqType;
-        private double identity;
+//        private double identity;
         private String order;
-        private SequenceSearchType searchType;
+//        private SequenceSearchType searchType;
 
         public SanitizedSequenceSearchRequest(SequenceSearchRequest unsanitized) throws IOException {
 
@@ -73,9 +73,9 @@ public interface SubstanceSequenceSearchService {
             this.fdim = sanitizeNumber(unsanitized.top, 10);
             this.field = unsanitized.field;
             this.seqType = unsanitized.seqType ==null? "Protein" : unsanitized.seqType;
-            this.identity = Math.min(1, Math.max(identity, 0.5D));
+//            this.identity = Math.min(1, Math.max(identity, 0.5D));
             this.order = unsanitized.order;
-            this.searchType = unsanitized.searchType ==null? SequenceSearchType.GLOBAL: unsanitized.searchType;
+//            this.searchType = unsanitized.searchType ==null? SequenceSearchType.GLOBAL: unsanitized.searchType;
 
             this.q = sanitizeSequence(unsanitized.q);
         }
@@ -147,7 +147,7 @@ public interface SubstanceSequenceSearchService {
 
         public String computeKey(){
 
-            return Util.sha1("sequence/"+getKey (getQ() +this.searchType.name() + this.getOrder(), this.identity));
+            return Util.sha1("sequence/"+getKey (getQ() +this.type.name() + this.getOrder(), this.cutoff));
 
         }
 
@@ -165,15 +165,16 @@ public interface SubstanceSequenceSearchService {
 
             Map<String,String> map = new HashMap<>();
             putIfNotNull("q", q, map);
-            putIfNotNull("type", cutoff, map);
+            putIfNotNull("cutoff", cutoff, map);
             putIfNotNull("top", top, map);
             putIfNotNull("skip", skip, map);
             putIfNotNull("field", "".equals(field)?null :field, map);
             putIfNotNull("fdim", fdim, map);
             putIfNotNull("seqType", seqType, map);
             putIfNotNull("order", order, map);
-            putIfNotNull("searchType", searchType, map);
-            map.put("cutoff", Double.toString(identity));
+//            putIfNotNull("searchType", searchType, map);
+            putIfNotNull("type", type, map);
+//            map.put("identity", Double.toString(identity));
             return map;
         }
     }
