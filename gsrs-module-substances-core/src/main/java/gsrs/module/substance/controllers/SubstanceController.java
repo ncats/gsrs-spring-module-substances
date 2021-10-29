@@ -84,7 +84,7 @@ import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
-import gsrs.module.substance.services.SubstanceSequenceSearchService.SequenceSearchType;
+import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
@@ -659,7 +659,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 .q(subunit.get().sequence)
                 .type(SequenceIndexer.CutoffType.valueOfOrDefault(type))
                 .seqType(seqType)
-                .searchType(SequenceSearchType.valueOf(searchType))
+//                .searchType(SequenceSearchType.valueOf(searchType))
                 .cutoff(cutoff)
                 .top(top)
                 .skip(skip)
@@ -713,13 +713,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("fdim")).map(s->Integer.parseInt(s)).ifPresent(c->rb.fdim(c));
         Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
         Optional.ofNullable(body.getFirst("seqType")).ifPresent(c->rb.seqType(c));
-        Optional.ofNullable(body.getFirst("searchType")).map(s->SequenceSearchType.valueOf(s)).ifPresent(c->rb.searchType(c));
+//        Optional.ofNullable(body.getFirst("searchType")).map(s->SequenceSearchType.valueOf(s)).ifPresent(c->rb.searchType(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
         
         
 
         //TODO: TP: I'm not sure these are actually used, may want to remove all mentions entirely
-        Optional.ofNullable(body.getFirst("identity")).map(s->Double.parseDouble(s)).ifPresent(c->rb.identity(c));
+//        Optional.ofNullable(body.getFirst("identity")).map(s->Double.parseDouble(s)).ifPresent(c->rb.identity(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SequenceIndexer.CutoffType.valueOfOrDefault(s)).ifPresent(c->rb.type(c));
         
         
@@ -734,8 +734,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
-        
-        attributes.mergeAttributes(request.sanitize().toMap());
+        SanitizedSequenceSearchRequest rr=request.sanitize(); 
+        attributes.mergeAttributes(rr.toMap());
         attributes.addAttribute("q", querySequence.get().uuid.toString());
         if(sync) {
             attributes.addAttribute("sync", true);
