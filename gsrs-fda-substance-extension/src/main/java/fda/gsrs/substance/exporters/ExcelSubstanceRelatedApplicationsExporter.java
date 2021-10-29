@@ -60,7 +60,7 @@ public class ExcelSubstanceRelatedApplicationsExporter implements Exporter<Subst
 
 	public SearchResult<ApplicationAllDTO> getAllApplicationsRelatedToSubstance(Substance s) {
 		try {
-			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:" + s.uuid).top(Integer.MAX_VALUE).simpleSearchOnly(true).build();
+			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + s.uuid + "\"").top(Integer.MAX_VALUE).simpleSearchOnly(true).build();
 			return applicationsApi.search(searchRequest);
 		} catch (Exception ex) {
 			ex.printStackTrace();
