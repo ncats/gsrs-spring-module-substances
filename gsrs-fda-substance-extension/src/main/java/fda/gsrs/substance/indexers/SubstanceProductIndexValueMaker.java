@@ -36,10 +36,10 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
 			SearchResult<ProductMainAllDTO> searchResult = productsApi.search(searchRequest);
 			List<ProductMainAllDTO> prodList = searchResult.getContent();
 
-			//substances may have more than one application and therefore multiple status values
+			//substances may have more than one product and therefore multiple status values
 			prodList.forEach(product -> {
 				if(product.getProductType() !=null){
-					consumer.accept(IndexableValue.simpleFacetStringValue("Product Name Type", product.getProductType()));
+					consumer.accept(IndexableValue.simpleFacetStringValue("Product Type", product.getProductType()));
 				}
 
 				// Get Ingredient List
