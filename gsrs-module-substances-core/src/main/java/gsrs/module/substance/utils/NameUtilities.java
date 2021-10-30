@@ -1,9 +1,5 @@
 package gsrs.module.substance.utils;
 
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.GraphicsEnvironment;
-import java.awt.Toolkit;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,7 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 public class NameUtilities {
 
     private static final NameUtilities INSTANCE = new NameUtilities();
-    
+
     private NameUtilities() {
         initReplacers();
     }
@@ -29,15 +25,16 @@ public class NameUtilities {
     public static NameUtilities getInstance() {
         return INSTANCE;
     }
-    
+
     private static final String REPLACEMENT_SOURCE_GREEK = "\u03B1;.ALPHA.;\u03B2;.BETA.;\u03B3;.GAMMA.;\u03B4;.DELTA.;\u03B5;.EPSILON.;\u03B6;.ZETA.;\u03B7;.ETA.;\u03B8;.THETA.;\u03B9;.IOTA.;\u03BA;.KAPPA.;\u03BB;.LAMBDA.;\u03BC;.MU.;\u03BD;.NU.;\u03BE;.XI.;\u03BF;.OMICRON.;\u03C0;.PI.;\u03C1;.RHO.;\u03C2;.SIGMA.;\u03C3;.SIGMA.;\u03C4;.TAU.;\u03C5;.UPSILON.;\u03C6;.PHI.;\u03C7;.CHI.;\u03C8;.PSI.;\u03C9;.OMEGA.;\u0391;.ALPHA.;\u0392;.BETA.;\u0393;.GAMMA.;\u0394;.DELTA.;\u0395;.EPSILON.;\u0396;.ZETA.;\u0397;.ETA.;\u0398;.THETA.;\u0399;.IOTA.;\u039A;.KAPPA.;\u039B;.LAMBDA.;\u039C;.MU.;\u039D;.NU.;\u039E;.XI.;\u039F;.OMICRON.;\u03A0;.PI.;\u03A1;.RHO.;\u03A3;.SIGMA.;\u03A4;.TAU.;\u03A5;.UPSILON.;\u03A6;.PHI.;\u03A7;.CHI.;\u03A8;.PSI.;\u03A9;.OMEGA.";
     private static final String REPLACEMENT_SOURCE_NUMERIC = "\u2192;->;\\xB1;+/-;±;+/-;\u2190;<-;\\xB2;2;\\xB3;3;\\xB9;1;\u2070;0;\u2071;1;\u2072;2;\u2073;3;\u2074;4;\u2075;5;\u2076;6;\u2077;7;\u2078;8;\u2079;9;\u207A;+;\u207B;-;\u2080;0;\u2081;1;\u2082;2;\u2083;3;\u2084;4;\u2085;5;\u2086;6;\u2087;7;\u2088;8;\u2089;9;\u208A;+;\u208B;-";
     private static final String REPLACEMENT_SOURCE_SMALL_CAPS = "ʟ;L;ᴅ;D";
     private final List<Replacer> replacers = new ArrayList<>();
-    private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\p{ASCII}]");
+    //private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\p{ASCII}]");
     private static final Pattern UNPRINTABLES_PATTERN = Pattern.compile("\\p{C}");
-    private static final String NON_ASCII_REPLACEMENT = "?";
+    //private static final String NON_ASCII_REPLACEMENT = "?";
     private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
+    private static final Pattern PATTERN_ZERO_WIDTH = Pattern.compile("[\u200B\u200C\u200D\u2060\uFEFF]");
 
     public ReplacementResult standardizeMinimally(String input) {
         if (input == null || input.length() == 0) {
@@ -64,6 +61,13 @@ public class NameUtilities {
         return result;
     }
 
+    /**
+     * modify a text string so that it contains only standard ASCII characters.
+     * This method is designed for chemical names.
+     *
+     * @param input text data
+     * @return text data + messages about some of the replacements
+     */
     public ReplacementResult fullyStandardizeName(String input) {
         ReplacementResult results = new ReplacementResult(input, new ArrayList<>());
         if (input == null || input.length() == 0) {
@@ -74,7 +78,8 @@ public class NameUtilities {
         ReplacementResult resultForSpecifics = initialResult.update(makeSpecificReplacements(initialResult.getResult()));
         String workingString = resultForSpecifics.getResult();
         workingString = symbolsToASCII(workingString);
-        results.update(removeZeroWidthChars(workingString));
+        ReplacementResult zeroWidthRemovalResult = removeZeroWidthChars(workingString);
+        results.update(zeroWidthRemovalResult);
         workingString = nkfdNormalizations(results.getResult());
         results.update(removeSerialSpaces(workingString));
         results.setResult(results.getResult().toUpperCase());
@@ -121,6 +126,11 @@ public class NameUtilities {
         }
     }
 
+    /**
+     * Represents the output of a text transformation. The result field contains
+     * the transformed text. The ReplacementNotes contain information about the
+     * specific replacements performed.
+     */
     public static class ReplacementResult {
 
         private List<ReplacementNote> replacementNotes = new ArrayList<>();
@@ -164,6 +174,12 @@ public class NameUtilities {
         }
     }
 
+    /**
+     * *
+     * A message about a text modification. position is the starting point in
+     * the original string where a character to be removed occurred replacement
+     * is the character that was replaced
+     */
     public static class ReplacementNote {
 
         private int position;
@@ -196,6 +212,12 @@ public class NameUtilities {
         }
     }
 
+    /**
+     * Replace a series of specific characters that cannot be rendered in print
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
     public static ReplacementResult replaceUnprintables(String source) {
         ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
         if (source == null || source.length() == 0) {
@@ -237,6 +259,13 @@ public class NameUtilities {
         return Character.toString((char) t);
     }
 
+    /**
+     * replaces a series of non-ASCII characters with ASCII characters that are
+     * functionally equivalent
+     *
+     * @param input text that may contain non-ASCII characters
+     * @return text without non-ASCII characters
+     */
     public static String symbolsToASCII(String input) {
         input = input.replaceAll("[\u00B4\u02B9\u02BC\u02C8\u0301\u2018\u2019\u201B\u2032\u2034\u2037]", chr(39));
         /* apostrophe (') */
@@ -297,7 +326,7 @@ public class NameUtilities {
         input = input.replaceAll("[\u2265\u2267]", "#chr(62)##chr(61)#");
         /* greater-than equal-to sign (>=) */
 
-        input = input.replaceAll("[\u200B\u2060\uFEFF]", chr(32));
+        input = input.replaceAll("[\uFEFF]", chr(32)); //removed \u200B\u2060
         /* space ( ) */
         input = input.replaceAll("\u2153", "1/3");
         input = input.replaceAll("\u2154", "2/3");
@@ -320,6 +349,14 @@ public class NameUtilities {
         return input;
     }
 
+    /**
+     * Remove a series of specific characters, inserting different characters in
+     * their place
+     *
+     * @param inputString starting text
+     * @return 'clean' text + a set of messages about the specific characters
+     * removed
+     */
     public ReplacementResult makeSpecificReplacements(String inputString) {
         List<ReplacementNote> messages = new ArrayList<>();
         String value = inputString;
@@ -334,6 +371,12 @@ public class NameUtilities {
         return result;
     }
 
+    /**
+     * Remove a series of glyph characters
+     *
+     * @param inputString starting text
+     * @return 'clean' text
+     */
     public String nkfdNormalizations(String inputString) {
         //String entered = "𝐸₃éé👍!";
         String entered = inputString;
@@ -368,6 +411,12 @@ public class NameUtilities {
         return removeAllOtherUnknowns;
     }
 
+    /**
+     * Delete characters that have no screen width
+     *
+     * @param input starting text
+     * @return 'clean' text
+     */
     //todo: add notes about characters replaced
     public ReplacementResult removeZeroWidthChars(String input) {
 
@@ -377,54 +426,10 @@ public class NameUtilities {
             return replacementResult;
         }
 
-        Matcher matcher = NON_ASCII_PATTERN.matcher(input);
-        if (!matcher.find()) {
-            return replacementResult;
-        }
-        StringBuffer sb = new StringBuffer();
-        matcher = NON_ASCII_PATTERN.matcher(input);
-        while (matcher.find()) {
-            String charToEval = matcher.group();
-            int width = getCharacterWidth(charToEval.charAt(0));
-            String replacement = "";
-            if (width > 0) {
-                notes.add(new ReplacementNote(matcher.start(), input.substring(matcher.start(), matcher.start() + 1)));
-                replacement = NON_ASCII_REPLACEMENT;
-            }
-            matcher.appendReplacement(sb, replacement);
-        }
-        log.trace("before appendTail: '" + sb.toString() + "'");
-        matcher.appendTail(sb);
-        replacementResult.setResult(sb.toString());
+        Matcher matcher = PATTERN_ZERO_WIDTH.matcher(input);
+        String clean = matcher.replaceAll("");
+        replacementResult.setResult(clean);
         return replacementResult;
-    }
-
-    private final String commonFontName = "Arial";
-
-    private int getCharacterWidth(char c) {
-        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-        Font[] allFonts = ge.getAllFonts();
-
-        Toolkit toolkit = Toolkit.getDefaultToolkit();
-
-        int width = 0;
-        boolean foundFont = false;
-        for (Font font : allFonts) {
-            FontMetrics fontMetrics = toolkit.getFontMetrics(font);
-            //log.trace(font.getFontName());
-            //log.trace(fontMetrics.charWidth(c));
-            width = fontMetrics.charWidth(c);
-            if (font.getFontName().startsWith(commonFontName)) {
-                foundFont = true;
-                break;
-            }
-        }
-        if (!foundFont) {
-            FontMetrics fontMetrics = toolkit.getFontMetrics(allFonts[0]);
-            width = fontMetrics.charWidth(c);
-            log.trace("warning: using first font (" + allFonts[0].getFontName() + ")");
-        }
-        return width;
     }
 
     public boolean nameHasUnacceptableChar(String name) {

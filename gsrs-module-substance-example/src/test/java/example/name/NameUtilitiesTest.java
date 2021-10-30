@@ -204,10 +204,8 @@ public class NameUtilitiesTest {
     public void testNonAsciiRemoval() {
         String input = "a milligram of glucose©";
         String expected = "a milligram of glucose?";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
-        String actual = result.getResult();
+        String actual = NameUtilities.getInstance().nkfdNormalizations(input);
         Assertions.assertEquals(expected, actual);
-        result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
     }
 
     @Test
@@ -224,9 +222,8 @@ public class NameUtilitiesTest {
         String input = "an little\u200Bbit of glucose©";
         String expected = "an littlebit of glucose?";
         NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
-        String actual = result.getResult();
+        String actual = NameUtilities.getInstance().nkfdNormalizations(result.getResult());
         Assertions.assertEquals(expected, actual);
-        result.getReplacementNotes().forEach(n -> log.trace(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
     }
 
     @Test
@@ -275,7 +272,7 @@ public class NameUtilitiesTest {
         String input = "pay attention\u00A1 There is \u00A4 to be made. No, \u00AB isn't XML. \u03A7 \u2191 ";
         String expected = "PAY ATTENTION? THERE IS ? TO BE MADE. NO, \" ISN'T XML. .CHI. ?";
         NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
-        String actual = result.getResult();
+        String actual = NameUtilities.getInstance().nkfdNormalizations( result.getResult());
         Assertions.assertEquals(expected, actual);
     }
 
@@ -343,6 +340,14 @@ public class NameUtilitiesTest {
         String input = "\u00AD\u2010\u2011\u2012something else\u2013\u2014\u2212\u2015";
         String expected ="----something else----";
         String actual = NameUtilities.symbolsToASCII(input);
+        Assertions.assertEquals(expected, actual);
+    }
+    
+    @Test
+    public void testSerialSpaceRemovalForCommas() {
+        String input = ".ALPHA., .BETA., .GAMMA.";
+        String expected = ".ALPHA., .BETA., .GAMMA.";
+        String actual = NameUtilities.getInstance().removeZeroWidthChars(input).getResult();
         Assertions.assertEquals(expected, actual);
     }
 }
