@@ -1,6 +1,31 @@
 package example.substance.datasearch;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
@@ -21,25 +46,6 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
-import org.springframework.transaction.support.TransactionTemplate;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.security.test.context.support.WithMockUser;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -140,24 +146,84 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Test
     public void testSortMwt() {
-        SearchRequest sreq = new SearchRequest.Builder()
-                .addFacet("Substance Class", "chemical")
-                .addOrder("^root_structure_mwt")
-                .kind(Substance.class)
-                .build();
+        testSortOrder("^root_structure_mwt",
+                sr->sr.addFacet("Substance Class", "chemical"),
+                s ->((ChemicalSubstance)s).getStructure().getMwt(),
+                "Expected chemicals sorted by molecular weight, but were returned in the wrong order");
+        
+        testSortOrder("$root_structure_mwt",
+                sr->sr.addFacet("Substance Class", "chemical"),
+                s ->-((ChemicalSubstance)s).getStructure().getMwt(),
+                "Expected chemicals sorted by reverse molecular weight, but were returned in the wrong order");
+        
+    }
+    
 
+    @Test
+    public void testSortLastEdited() {
+        testSortOrder("^root_lastEdited",
+                null,
+                s ->s.lastEdited,
+                "Expected substances sorted by lastEdited date, but were returned in the wrong order");
+        
+        testSortOrder("$root_lastEdited",
+                null,
+                s ->-s.lastEdited.getTime(),
+                "Expected substances sorted by lastEdited date, but were returned in the wrong order");
+        
+    }
+    
+
+    @Test
+    public void testSortDisplayName() {
+        testSortOrder("^Display Name",
+                sr->sr.addFacet("Definition Type", "PRIMARY"),
+                s ->s.getName(),
+                "Expected substances sorted by display name, but were returned in the wrong order",
+                false);
+        
+        testSortOrder("$Display Name",
+                sr->sr.addFacet("Definition Type", "PRIMARY"),
+                s -> s.getName(),
+                "Expected substances sorted by reverse display name, but were returned in the wrong order",
+                true);
+    }
+    
+    
+    private void testSortOrder(String orderTerm, Consumer<SearchRequest.Builder> requestMod, Function<Substance,Comparable> sortBy, String message) {
+        testSortOrder(orderTerm,requestMod,sortBy,message,false);
+    }
+    private void testSortOrder(String orderTerm, Consumer<SearchRequest.Builder> requestMod, Function<Substance,Comparable> sortBy, String message, boolean rev) {
+        SearchRequest.Builder sreqB = new SearchRequest.Builder()
+                .addOrder(orderTerm)
+                .kind(Substance.class);
+                
+        if(requestMod!=null){
+            requestMod.accept(sreqB);
+        }
+        SearchRequest sreq= sreqB.build();
+
+        Comparator<Substance> csub = Comparator.comparing(sortBy);
+        if(rev) {
+            csub=csub.reversed();
+        }
         List<Substance> matches = getSearchList(sreq);
-        List<Substance> sorted = matches.stream()
-                .map(s -> (ChemicalSubstance) s)
-                .sorted(Comparator.comparing(cs -> cs.getStructure().mwt))
+        assertTrue(!matches.isEmpty(),"Search results in sort routine should not be empty");
+        List<Substance> sorted = (List<Substance>) matches.stream()
+                .map(o->(Substance)o)
+                .sorted(csub)
                 .collect(Collectors.toList());
 
         for (int i = 0; i < matches.size(); i++) {
             Substance r1 = matches.get(i);
             Substance e1 = sorted.get(i);
-            assertEquals(e1.uuid, r1.uuid, "Expected chemicals sorted by molecular weight, but were returned in the wrong order");
+            assertEquals(e1.uuid, r1.uuid, message);
         }
     }
+    
+
+    
+
 
     @Test
     public void testSearchByApprovalID() {
