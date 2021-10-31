@@ -39,7 +39,7 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
 			//substances may have more than one application and therefore multiple status values
 			prodList.forEach(product -> {
 				if(product.getProductType() !=null){
-					consumer.accept(IndexableValue.simpleFacetStringValue("Product Name Type", product.getProductType()));
+					consumer.accept(IndexableValue.simpleFacetStringValue("Product Type", product.getProductType()));
 				}
 
 				// Get Ingredient List
