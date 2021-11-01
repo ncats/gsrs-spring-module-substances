@@ -40,6 +40,11 @@
             <version>1.0.8-SNAPSHOT</version>
         </dependency>
         <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-module-substances-dto</artifactId>
+            <version>${gsrs.substance.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>

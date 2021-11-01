@@ -1,10 +1,16 @@
 package gsrs.api.substances;
 
+import gsrs.substances.dto.CodeDTO;
+import gsrs.substances.dto.NameDTO;
+import gsrs.substances.dto.ReferenceDTO;
+import gsrs.substances.dto.SubstanceDTO;
+import gsrs.substances.util.SubstanceKeyResolver;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
-public interface SubstanceApi {
+public interface SubstanceApi extends SubstanceKeyResolver {
 
 
     long count() throws IOException;
