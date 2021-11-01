@@ -8,7 +8,9 @@ import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * apply a minimal standardization (remove serial white space and non-printable characters) to the main name
+ * apply a minimal standardization (remove serial white space and non-printable
+ * characters) to the main name
+ *
  * @author mitch
  */
 @Slf4j
@@ -29,16 +31,18 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
         s.names.forEach(n -> {
 
             NameUtilities.ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
-            String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name, 
+            String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
                     minimallyStandardizedName.getResult());
             log.trace(debugMessage);
-            
+
             if (!minimallyStandardizedName.getResult().equals(n.name) || minimallyStandardizedName.getReplacementNotes().size() > 0) {
                 GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format("Name %s minimally standardized to %s",
                         n.name, minimallyStandardizedName.getResult()));
-                callback.addMessage(mes, ()->n.name=minimallyStandardizedName.getResult());
+                mes.appliableChange(true);
+                callback.addMessage(mes, () -> {
+                    n.name = minimallyStandardizedName.getResult();
+                });
             }
-
         });
     }
 }
