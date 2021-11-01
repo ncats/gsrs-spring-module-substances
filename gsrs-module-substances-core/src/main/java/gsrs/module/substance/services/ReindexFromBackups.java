@@ -8,6 +8,7 @@ import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import ix.core.models.BackupEntity;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.EntityWrapper;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 
 /**
@@ -96,59 +98,75 @@ public class ReindexFromBackups implements ReindexService{
         try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
             l.message("Initializing reindexing: beginning process");
 
-            stream
-            .map(be->{
-                try {
-                    Optional<Object> opt = be.getOptionalInstantiated();
-                    return opt;
-                }catch(Exception e) {
-                    log.warn("indexing error handling:" + be.fetchGlobalId(), e);
-                    eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
-                    return Optional.empty();
-                }
-            })
-            .filter(op->op.isPresent())
-//            .parallel()
-            .map(oo->EntityUtils.EntityWrapper.of(oo.get()))
-            .forEach(wrapper ->{
-                try {
-                    wrapper.traverse().execute((p, child) -> {
-                        EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
-                        //this should speed up indexing so that we only index
-                        //things that are roots.  the actual indexing process of the root should handle any
-                        //child objects of that root.
-                        boolean isEntity = wrapped.isEntity();
-                        boolean isRootIndexed = wrapped.isRootIndex();
-                        
-                        if (isEntity && isRootIndexed) {
-                            try {
-                                EntityUtils.Key key = wrapped.getKey();
-                                String keyString = key.toString();
+            ForkJoinPool customThreadPool = new ForkJoinPool(4);
+            try {
+            customThreadPool.submit(
+              () -> {
 
-                                // TODO add only index if it has a controller?
-                                // TP: actually, for subunits you need to index them even though there is no controller
-                                // however, you could argue there SHOULD be a controller for them
-                                if (seen.add(keyString)) {
-                                    //is this a good idea ?
-                                    ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped));
+                  Stream<EntityWrapper> ewStream=stream
+                  .map(be->{
+                      try {
+                          Optional<Object> opt = be.getOptionalInstantiated();
+                          return opt;
+                      }catch(Exception e) {
+                          log.warn("indexing error handling:" + be.fetchGlobalId(), e);
+                          eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
+                          return Optional.empty();
+                      }
+                  })
+                  .filter(op->op.isPresent())
+//                  .parallel()
+                  .map(oo->EntityUtils.EntityWrapper.of(oo.get()));
+                  
+                  ewStream
+                  .parallel()
+                  .forEach(wrapper ->{
+                      try {
+                          wrapper.traverse().execute((p, child) -> {
+                              EntityUtils.EntityWrapper<EntityUtils.EntityWrapper> wrapped = EntityUtils.EntityWrapper.of(child);
+                              //this should speed up indexing so that we only index
+                              //things that are roots.  the actual indexing process of the root should handle any
+                              //child objects of that root.
+                              boolean isEntity = wrapped.isEntity();
+                              boolean isRootIndexed = wrapped.isRootIndex();
+                              
+                              if (isEntity && isRootIndexed) {
+                                  try {
+                                      EntityUtils.Key key = wrapped.getKey();
+                                      String keyString = key.toString();
 
-                                    //                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
+                                      // TODO add only index if it has a controller?
+                                      // TP: actually, for subunits you need to index them even though there is no controller
+                                      // however, you could argue there SHOULD be a controller for them
+                                      if (seen.add(keyString)) {
+                                          //is this a good idea ?
+                                          ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped));
 
-                                    eventPublisher.publishEvent(event);
-                                }
-                            } catch (Throwable t) {
-                                log.warn("indexing error handling:" + wrapped, t);
-                            }
-                        }
+                                          //                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
 
-                    });
-                    
-                }catch(Throwable ee) {
-                    log.warn("indexing error handling:" + wrapper, ee);
-                }finally {
-                    eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
-                }
-            });
+                                          eventPublisher.publishEvent(event);
+                                      }
+                                  } catch (Throwable t) {
+                                      log.warn("indexing error handling:" + wrapped, t);
+                                  }
+                              }
+
+                          });
+                          
+                      }catch(Throwable ee) {
+                          log.warn("indexing error handling:" + wrapper, ee);
+                      }finally {
+                          eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
+                      }
+                  });
+                  return true;
+              }).get();
+            }catch(Exception e) {
+                log.warn("indexing error", e);
+                latch.countDown();
+            }
+            
+            
         }
         //other index listeners now figure out when indexing end is so don't need to that publish anymore (here)
         //but we will block until we get that end event
