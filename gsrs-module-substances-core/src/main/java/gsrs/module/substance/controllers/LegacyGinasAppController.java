@@ -103,6 +103,8 @@ public class LegacyGinasAppController {
                                   @RequestParam Map<String, String> queryParameters){
         if("mol".equalsIgnoreCase(format) || "sdf".equalsIgnoreCase(format) ||
                 "smi".equalsIgnoreCase(format) ||  "smiles".equalsIgnoreCase(format) ) {
+            //TODO: use cache where possible here
+            
             //this is a copy and paste of SubstanceController#render but without caring about the
             //parent substance since we don't need to set context ?
             if (UUIDUtil.isUUID(id)) {
@@ -128,11 +130,7 @@ public class LegacyGinasAppController {
                         if (substance.isPresent()) {
                             actualSubstance = substance.get();
                             structure = actualSubstance.getStructureToRender();
-
-
                         }
-
-
                     }
                 }
                 if (!structure.isPresent()) {

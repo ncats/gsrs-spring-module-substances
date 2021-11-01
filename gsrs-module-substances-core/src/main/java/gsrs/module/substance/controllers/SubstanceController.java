@@ -75,6 +75,7 @@ import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
+import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
@@ -103,6 +104,7 @@ import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -114,6 +116,8 @@ import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
 import ix.utils.Util;
+import lombok.Builder;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -981,7 +985,59 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(savedVersion.getUpdatedEntity(), queryParameters), HttpStatus.OK);
     }
+    
+    @Builder
+    @Data
+    public static class StructureToRender{
+        private Key substanceKey;
+        private String input;
+        
+    }
 
+    private StructureToRender getSubstanceAndStructure(String idOrSmiles){
+        Substance actualSubstance=null;
+        String input=null;
+        
+        //check cache?
+        Optional<Structure> opStructure = GsrsSubstanceControllerUtil.getTempObject(ixCache, idOrSmiles,Structure.class);
+        if(!opStructure.isPresent()) {
+            UUID uuid = UUID.fromString(idOrSmiles);
+            Optional<Substance> substance = substanceRepository.findById(uuid);
+            
+            if (!substance.isPresent()) {
+                opStructure = structureRepository.findById(uuid);
+                if(opStructure.isPresent()) {
+                    if (opStructure.get() instanceof GinasChemicalStructure) {
+                        ChemicalSubstance cs = chemicalSubstanceRepository.findByStructure_Id(opStructure.get().id);
+                        if (cs != null) {
+                            actualSubstance = cs;
+                        }
+                    }
+                }else {
+                    Optional<Unit> unit = structuralUnitRepository.findById(uuid);
+                    if(unit.isPresent()) {
+                        Unit u = unit.get();
+                        try {
+                            input = CtTableCleaner.clean(u.structure);
+                        } catch (Exception e) {
+                            input=u.structure;
+                        }
+                    }
+                }
+            } else {
+              
+                    actualSubstance = substance.get();
+                    opStructure = actualSubstance.getStructureToRender();
+            }
+        }
+        if (opStructure.isPresent()) {
+            input = fixMolIfNeeded(opStructure.get());
+        }
+        Key k = (actualSubstance!=null)?actualSubstance.fetchKey():null;
+        
+
+        return StructureToRender.builder().substanceKey(k).input(input).build();
+    }
 
     @GetGsrsRestApiMapping({"/render({ID})", "/render/{ID}"})
     public Object render(@PathVariable("ID") String idOrSmiles,
@@ -993,71 +1049,34 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
         int[] amaps = null;
+        StructureToRender s2r=null;
+        
         String input=null;
-        Substance actualSubstance = null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
-            //check cache?
-            Optional<Structure> structure = GsrsSubstanceControllerUtil.getTempObject(ixCache, idOrSmiles,Structure.class);
-            if(!structure.isPresent()) {
-                UUID uuid = UUID.fromString(idOrSmiles);
-                structure = structureRepository.findById(uuid);
-                if (structure.isPresent()) {
-                    if (structure.get() instanceof GinasChemicalStructure) {
-                        ChemicalSubstance cs = chemicalSubstanceRepository.findByStructure_Id(structure.get().id);
-                        if (cs != null) {
-                            actualSubstance = cs;
-                        }
-                    }
-                } else {
-                    Optional<Substance> substance = substanceRepository.findById(uuid);
-                    if (substance.isPresent()) {
-                        actualSubstance = substance.get();
-                        structure = actualSubstance.getStructureToRender();
-                    }else {
-                        Optional<Unit> unit = structuralUnitRepository.findById(uuid);
-                        if(unit.isPresent()) {
-                            Unit u = unit.get();
-                            input = u.structure;
-                        }
-//                        unit.
-                    }
-                }
-            }
-
-            if (!structure.isPresent() && input==null) {
-                if(actualSubstance ==null) {
+//            input, null)
+            s2r= ixCache.getOrElseRawIfDirty("structForRender/" + idOrSmiles, ()->{
+                return getSubstanceAndStructure(idOrSmiles);   
+            });
+            
+            if (s2r.getInput()==null) {
+                if(s2r.getSubstanceKey() ==null) {
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
                 //if we're here, we have a substance but nothing to render return default for substance type
-                return getDefaultImageFor(actualSubstance);
-            }
-            //context id is either a hash or a comma sep list of offsets
-            if (contextId != null) {
-                if (contextId.contains(",")) {
-                    try {
-                        amaps = Arrays.stream(contextId.split(","))
-                                .mapToInt(Integer::parseInt)
-                                .toArray();
-                    } catch (Exception e) {
-                        //ignore
-                    }
-
-
-                } else if (actualSubstance != null) {
-                    actualSubstance.setMatchContextProperty(ixCache.getMatchingContextByContextID(contextId, EntityUtils.EntityWrapper.of(actualSubstance).getKey()));
-                    amaps = actualSubstance.getMatchContextPropertyOr("atomMaps", null);
-
-                }
-
-            }
-            if (structure.isPresent()) {
-                input = fixMolIfNeeded(structure.get());
-            }
+                return getDefaultImageForKey(s2r.getSubstanceKey());
+            }            
+            input = s2r.getInput();
         }else {
             //string must be a smiles (or mol ?)
             input = idOrSmiles;
-            if (contextId != null && contextId.contains(",")) {
+        }
+        
+       
+        
+        //context id is either a hash or a comma sep list of offsets
+        if (contextId != null) {
+            if (contextId.contains(",")) {
                 try {
                     amaps = Arrays.stream(contextId.split(","))
                             .mapToInt(Integer::parseInt)
@@ -1065,10 +1084,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 } catch (Exception e) {
                     //ignore
                 }
+            } else if (s2r.getSubstanceKey() != null) {
+                Key k = s2r.getSubstanceKey();
+                Map<String,Object> props = ixCache.getMatchingContextByContextID(contextId, k);
+                amaps = (int[]) props.getOrDefault("atomMaps", null);
             }
         }
-
-        byte[] data = renderChemical(parseAndComputeCoordsIfNeeded(input), format, size, amaps, null, stereo, standardize);
+      
+        
+        
+        String dinput = input;
+        int[] damaps = amaps;
+        byte[] data = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId ,()->{
+            return renderChemical(parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);   
+        });
+        
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", parseContentType(format));
@@ -1078,36 +1108,42 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
 
+    @Deprecated
     private Object getDefaultImageFor(Substance s) throws IOException {
+        return getDefaultImageForKey(s.fetchKey());
+    }
+    
+    private Object getDefaultImageForKey(Key skey) throws IOException {
         String placeholderFile = "polymer.svg";
-        if (s != null) {
-            switch (s.substanceClass) {
-                case chemical:
+        
+        if (skey != null) {
+            switch (skey.getKind()) {
+                case "ix.ginas.models.v1.ChemicalSubstance":
                     placeholderFile = "chemical.svg";
                     break;
-                case protein:
+                case "ix.ginas.models.v1.ProteinSubstance":
                     placeholderFile = "protein.svg";
                     break;
-                case mixture:
+                case "ix.ginas.models.v1.MixtureSubstance":
                     placeholderFile = "mixture.svg";
                     break;
-                case polymer:
+                case "ix.ginas.models.v1.PolymerSubstance":
                     placeholderFile = "polymer.svg";
                     break;
-                case structurallyDiverse:
+                case "ix.ginas.models.v1.StructurallyDiverseSubstance":
                     placeholderFile = "structurally-diverse.svg";
                     break;
-                case concept:
+                case "ix.ginas.models.v1.Substance":
                     placeholderFile = "concept.svg";
                     break;
-                case nucleicAcid:
+                case "ix.ginas.models.v1.NucleicAcidSubstance":
                     placeholderFile = "nucleic-acid.svg";
                     break;
-                case specifiedSubstanceG1:
+                case "ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance":
                     placeholderFile = "g1ss.svg";
                     break;
                 default:
-                    placeholderFile = "polymer.svg";
+                    placeholderFile = "concept.svg";
             }
         } else {
             placeholderFile = "noimage.svg";
@@ -1150,11 +1186,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             throws Exception {
 
         try {
-            RendererOptions rendererOptons = rendererOptionsConfig.getDefaultRendererOptions().copy();
+            FullRenderOptions fullRendererOptions = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
+            RendererOptions rendererOptions = fullRendererOptions.getOptions();
+            
             if (newDisplay != null) {
-                rendererOptons.changeSettings(newDisplay);
+                rendererOptions.changeSettings(newDisplay);
             }
+            
 
             
             //TODO: This would be nice to get back eventually, for standardization:
@@ -1166,27 +1205,27 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 for (int i = 0; i < Math.min(atoms.length, amap.length); ++i) {
                     atoms[i].setAtomToAtomMap(amap[i]);
                     if(amap[i]!=0){
-                        rendererOptons.withSubstructureHighlight();
+                        rendererOptions.withSubstructureHighlight();
                     }
                 }
             }else{
                 if (chem.atoms().filter(Atom::hasAtomToAtomMap)
                         .findAny().isPresent()) {
-                    rendererOptons.withSubstructureHighlight();
+                    rendererOptions.withSubstructureHighlight();
                 }
 
             }
-            preProcessChemical(chem, rendererOptons);
+            preProcessChemical(chem, rendererOptions);
 
             if(Chem.isProblem(chem)){
-                rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, false);
+                rendererOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, false);
 
             }else{
                 if (size > 250 /*&& !highlight*/) {
                     //katzelda March 21 2019
                     //after talking to Tyler we should just always
                     //turn on stereo labels because the renderer will determine if there's stereo
-                    rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, true);
+                    rendererOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, true);
 
 
 //				try{
@@ -1200,7 +1239,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
             }
             if (drawStereo != null) {
-                rendererOptons.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, drawStereo);
+                rendererOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, drawStereo);
 
             }
 //		if("true".equals(r.getQueryString("stereo"))){
@@ -1211,8 +1250,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 //
 //		}
 
-            rendererOptons.captionTop(c -> c.getProperty("TOP_TEXT"));
-            rendererOptons.captionBottom(c -> c.getProperty("BOTTOM_TEXT"));
+            rendererOptions.captionTop(c -> c.getProperty("TOP_TEXT"));
+            rendererOptions.captionBottom(c -> c.getProperty("BOTTOM_TEXT"));
 
 
 
@@ -1222,7 +1261,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 chem.kekulize();
                 chem.makeHydrogensImplicit();
             }
-            ChemicalRenderer renderer = new ChemicalRenderer(rendererOptons);
+            ChemicalRenderer renderer = new ChemicalRenderer(rendererOptions);
+            
+            if(!fullRendererOptions.isShowShadow()) {
+                renderer.setShadowVisible(false);
+            }
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream ();
 
