@@ -190,6 +190,14 @@ public class NameUtilitiesTest {
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual); //, "Must replace small caps characters"
     }
+    
+    @Test
+    public void testDoublePipeReplace() {
+        String input = "\u2016";
+        String expected = "||";
+        String actual = NameUtilities.getInstance().symbolsToASCII(input);
+        Assertions.assertEquals(expected, actual); //, "Must replace double pipe char"
+    }
 
     @Test
     public void test2SmallCaps() {

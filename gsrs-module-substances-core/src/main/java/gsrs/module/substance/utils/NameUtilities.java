@@ -35,7 +35,50 @@ public class NameUtilities {
     //private static final String NON_ASCII_REPLACEMENT = "?";
     private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
     private static final Pattern PATTERN_ZERO_WIDTH = Pattern.compile("[\u200B\u200C\u200D\u2060\uFEFF]");
-
+    
+    private static final Pattern PATTERN_CASE0 = Pattern.compile("[\u00B4\u02B9\u02BC\u02C8\u0301\u2018\u2019\u201B\u2032\u2034\u2037]");
+    private static final Pattern PATTERN_CASE1 = Pattern.compile("[\u00AB\u00BB\u02BA\u030B\u030E\u201C\u201D\u201E\u201F\u2033\u2036\u3003\u301D\u301E]");
+    private static final Pattern PATTERN_CASE2 = Pattern.compile("[\u00AD\u2010\u2011\u2012\u2013\u2014\u2212\u2015]");
+    private static final Pattern PATTERN_CASE3 = Pattern.compile("[\u01C3\u2762]");
+    private static final Pattern PATTERN_CASE4 = Pattern.compile("[\u266F]");
+    private static final Pattern PATTERN_CASE5 = Pattern.compile("[\u066A\u2052]");
+    private static final Pattern PATTERN_CASE6 = Pattern.compile("[\u066D\u204E\u2217\u2731\u00D7]");
+    private static final Pattern PATTERN_CASE7 = Pattern.compile("[\u201A\uFE51\uFF64\u3001]");
+    private static final Pattern PATTERN_CASE8 = Pattern.compile("[\u00F7\u0338\u2044\u2215]");
+    private static final Pattern PATTERN_CASE9 = Pattern.compile("[\u0589\u05C3\u2236]");
+    private static final Pattern PATTERN_CASE10 = Pattern.compile("[\u203D]");
+    private static final Pattern PATTERN_CASE11 = Pattern.compile("[\u27E6]");
+    private static final Pattern PATTERN_CASE12 = Pattern.compile("[\u20E5\u2216]");
+    private static final Pattern PATTERN_CASE13 = Pattern.compile("[\u301B]");
+    private static final Pattern PATTERN_CASE14 = Pattern.compile("[\u02C4\u02C6\u0302\u2038\u2303]");
+    private static final Pattern PATTERN_CASE15 = Pattern.compile("[\u02CD\u0331\u0332\u2017]");
+    private static final Pattern PATTERN_CASE16 = Pattern.compile("[\u02CB\u0300\u2035]");
+    private static final Pattern PATTERN_CASE17 = Pattern.compile("[\u2983]");
+    private static final Pattern PATTERN_CASE18 = Pattern.compile("[\u01C0\u05C0\u2223\u2758]");
+    private static final Pattern PATTERN_CASE19 = Pattern.compile("[\u2016]");
+    private static final Pattern PATTERN_CASE20 = Pattern.compile("[\u02DC\u0303\u2053\u223C\u301C]");
+    private static final Pattern PATTERN_CASE21 = Pattern.compile("[\u2039\u2329\u27E8\u3008]");
+    private static final Pattern PATTERN_CASE22 = Pattern.compile("[\u2264\u2266]");
+    private static final Pattern PATTERN_CASE23 = Pattern.compile("[\u203A\u232A\u27E9\u3009]");
+    private static final Pattern PATTERN_CASE24 = Pattern.compile("[\u2265\u2267]");
+    private static final Pattern PATTERN_CASE25 = Pattern.compile("[\uFEFF]");
+    private static final Pattern PATTERN_CASE26 = Pattern.compile("\u2153");
+    private static final Pattern PATTERN_CASE27 = Pattern.compile("\u2154");
+    private static final Pattern PATTERN_CASE28 = Pattern.compile("\u2155");
+    private static final Pattern PATTERN_CASE29 = Pattern.compile("\u2156");
+    private static final Pattern PATTERN_CASE30 = Pattern.compile("\u2157");
+    private static final Pattern PATTERN_CASE31 = Pattern.compile("\u2158");
+    private static final Pattern PATTERN_CASE32 = Pattern.compile("\u2159");
+    private static final Pattern PATTERN_CASE33 = Pattern.compile("\u215A");
+    private static final Pattern PATTERN_CASE34 = Pattern.compile("\u215B");
+    private static final Pattern PATTERN_CASE35 = Pattern.compile("\u215C");
+    private static final Pattern PATTERN_CASE36 = Pattern.compile("\u215D");
+    private static final Pattern PATTERN_CASE37 = Pattern.compile("\u215E");
+    private static final Pattern PATTERN_CASE38 = Pattern.compile("\u2026");
+    private static final Pattern PATTERN_CASE39 = Pattern.compile("\u00BC");
+    private static final Pattern PATTERN_CASE40 = Pattern.compile("\u00BD");
+    
+    
     public ReplacementResult standardizeMinimally(String input) {
         if (input == null || input.length() == 0) {
             return new ReplacementResult(input, new ArrayList<>());
@@ -52,6 +95,7 @@ public class NameUtilities {
         if (input == null || input.length() == 0) {
             return result;
         }
+        
         Matcher matcher = PATTERN_MULTIPLE_WHITE_SPACE.matcher(input);
         if (matcher.find()) {
             notes.add(new ReplacementNote(matcher.start(), " "));
@@ -255,7 +299,7 @@ public class NameUtilities {
 
     }
 
-    public static String chr(int t) {
+    private static String chr(int t) {
         return Character.toString((char) t);
     }
 
@@ -267,82 +311,86 @@ public class NameUtilities {
      * @return text without non-ASCII characters
      */
     public static String symbolsToASCII(String input) {
-        input = input.replaceAll("[\u00B4\u02B9\u02BC\u02C8\u0301\u2018\u2019\u201B\u2032\u2034\u2037]", chr(39));
+
+        input = PATTERN_CASE0.matcher(input).replaceAll(chr(39));
         /* apostrophe (') */
-        input = input.replaceAll("[\u00AB\u00BB\u02BA\u030B\u030E\u201C\u201D\u201E\u201F\u2033\u2036\u3003\u301D\u301E]", chr(34));
+        input = PATTERN_CASE1.matcher(input).replaceAll(chr(34));
         /* quotation mark (") */
-        input = input.replaceAll("[\u00AD\u2010\u2011\u2012\u2013\u2014\u2212\u2015]", chr(45));
+        input = PATTERN_CASE2.matcher(input).replaceAll(chr(45));
         /* hyphen (-) */
-        input = input.replaceAll("[\u01C3\u2762]", chr(33));
+        input = PATTERN_CASE3.matcher(input).replaceAll(chr(33));
         /* exclamation mark (!) */
-        input = input.replaceAll("[\u266F]", chr(35));
+        input = PATTERN_CASE4.matcher(input).replaceAll(chr(35));
         /* music sharp sign (#) */
-        input = input.replaceAll("[\u066A\u2052]", chr(37));
+        input = PATTERN_CASE5.matcher(input).replaceAll(chr(37));
         /* percent sign (%) */
-        input = input.replaceAll("[\u066D\u204E\u2217\u2731\u00D7]", chr(42));
+        input = PATTERN_CASE6.matcher(input).replaceAll(chr(42));
         /* asterisk (*) */
-        input = input.replaceAll("[\u201A\uFE51\uFF64\u3001]", chr(44));
+        input = PATTERN_CASE7.matcher(input).replaceAll(chr(44));
         /* comma (,) */
-        input = input.replaceAll("[\u00F7\u0338\u2044\u2215]", chr(47));
+        input = PATTERN_CASE8.matcher(input).replaceAll(chr(47));
         /* slash (/) */
-        input = input.replaceAll("[\u0589\u05C3\u2236]", chr(58));
+        input = PATTERN_CASE9.matcher(input).replaceAll(chr(58));
         /* colon (:) */
-        input = input.replaceAll("[\u203D]", chr(63));
+        input = PATTERN_CASE10.matcher(input).replaceAll(chr(63));
         /* question mark (?) */
-        input = input.replaceAll("[\u27E6]", chr(91));
+        input = PATTERN_CASE11.matcher(input).replaceAll(chr(91));
         /* opening square bracket ([) */
-        input = input.replaceAll("[\u20E5\u2216]", chr(92));
+        input = PATTERN_CASE12.matcher(input).replaceAll(chr(92));
         /* backslash (\) */
-        input = input.replaceAll("[\u301B]", chr(93));
+        input = PATTERN_CASE13.matcher(input).replaceAll(chr(93));
         /* closing square bracket ([) */
-        input = input.replaceAll("[\u02C4\u02C6\u0302\u2038\u2303]", chr(94));
+        input = PATTERN_CASE14.matcher(input).replaceAll(chr(94));
         /* caret (^) */
-        input = input.replaceAll("[\u02CD\u0331\u0332\u2017]", chr(95));
+        input = PATTERN_CASE15.matcher(input).replaceAll(chr(95));
         /* underscore (_) */
-        input = input.replaceAll("[\u02CB\u0300\u2035]", chr(96));
+        input = PATTERN_CASE16.matcher(input).replaceAll(chr(96));
         /* grave accent (`) */
 
-        input = input.replaceAll("[\u2983]", chr(123));
+        input = PATTERN_CASE17.matcher(input).replaceAll(chr(123));
         /* opening curly bracket ({) */
 
-        input = input.replaceAll("[\u01C0\u05C0\u2223\u2758]", chr(124));
+        input = PATTERN_CASE18.matcher(input).replaceAll(chr(124));
         /* vertical bar / pipe (|) */
 
-        input = input.replaceAll("[\u2016]", "#chr(124)##chr(124)#");
+        input = PATTERN_CASE19.matcher(input).replaceAll(chr(124) + chr(124));
         /* double vertical bar / double pipe (||) */
 
-        input = input.replaceAll("[\u02DC\u0303\u2053\u223C\u301C]", chr(126));
+        input = PATTERN_CASE20.matcher(input).replaceAll(chr(126));
         /* tilde (~) */
 
-        input = input.replaceAll("[\u2039\u2329\u27E8\u3008]", chr(60));
+        input = PATTERN_CASE21.matcher(input).replaceAll(chr(60));
         /* less-than sign (<) */
 
-        input = input.replaceAll("[\u2264\u2266]", "#chr(60)##chr(61)#");
+        input = PATTERN_CASE22.matcher(input).replaceAll("<=");
         /* less-than equal-to sign (<=) */
 
-        input = input.replaceAll("[\u203A\u232A\u27E9\u3009]", chr(62));
+        input = PATTERN_CASE23.matcher(input).replaceAll(chr(62));
         /* greater-than sign (>) */
 
-        input = input.replaceAll("[\u2265\u2267]", "#chr(62)##chr(61)#");
+        input = PATTERN_CASE24.matcher(input).replaceAll(">=");
+
         /* greater-than equal-to sign (>=) */
 
-        input = input.replaceAll("[\uFEFF]", chr(32)); //removed \u200B\u2060
+        input = PATTERN_CASE25.matcher(input).replaceAll(chr(32)); //removed \u200B\u2060
         /* space ( ) */
-        input = input.replaceAll("\u2153", "1/3");
-        input = input.replaceAll("\u2154", "2/3");
-        input = input.replaceAll("\u2155", "1/5");
-        input = input.replaceAll("\u2156", "2/5");
-        input = input.replaceAll("\u2157", "3/5");
-        input = input.replaceAll("\u2158", "4/5");
-        input = input.replaceAll("\u2159", "1/6");
-        input = input.replaceAll("\u215A", "5/6");
-        input = input.replaceAll("\u215B", "1/8");
-        input = input.replaceAll("\u215C", "3/8");
-        input = input.replaceAll("\u215D", "5/8");
-        input = input.replaceAll("\u215E", "7/8");
-        input = input.replaceAll("\u2026", "...");
-        input = input.replaceAll("\u00BC", "1/4");
-        input = input.replaceAll("\u00BD", "1/2");
+        input = PATTERN_CASE26.matcher(input).replaceAll("1/3");
+        input = PATTERN_CASE27.matcher(input).replaceAll("2/3");
+        input = PATTERN_CASE28.matcher(input).replaceAll("1/5");
+        input = PATTERN_CASE29.matcher(input).replaceAll("2/5");
+        input = PATTERN_CASE30.matcher(input).replaceAll("3/5");
+        input = PATTERN_CASE31.matcher(input).replaceAll("4/5");
+        input = PATTERN_CASE32.matcher(input).replaceAll("1/6");
+        input = PATTERN_CASE33.matcher(input).replaceAll("5/6");
+        input = PATTERN_CASE34.matcher(input).replaceAll("1/8");
+        input = PATTERN_CASE35.matcher(input).replaceAll("3/8");
+        input = PATTERN_CASE36.matcher(input).replaceAll("5/8");
+        input = PATTERN_CASE37.matcher(input).replaceAll("7/8");
+        input = PATTERN_CASE38.matcher(input).replaceAll("...");
+        input = PATTERN_CASE39.matcher(input).replaceAll("1/4");
+        input = PATTERN_CASE40.matcher(input).replaceAll("1/2");
+
+
         //input = input.replaceAll("⅔", "2/3");
         //input = input.replaceAll("\u2154", "2/3");
 
