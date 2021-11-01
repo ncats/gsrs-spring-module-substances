@@ -46,4 +46,18 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .filter(m -> m.getMessage().contains("minimally standardized to")).count());
     }
 
+    @Test
+    public void testValidation3() {
+        String basicName = "any\u200Bthing";
+        String expectedName = "anything";
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemical = builder.addName(basicName)
+                .setStructureWithDefaultReference("CCO")
+                .build();
+        BasicNameValidator validator = new BasicNameValidator();
+        ValidationResponse<Substance> response = validator.validate(chemical, null);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains("minimally standardized to")).count());
+        Assertions.assertEquals(expectedName, chemical.names.get(0).name);
+    }
 }

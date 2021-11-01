@@ -16,6 +16,7 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
+        log.trace("starting in validate");
         if (s == null) {
             log.warn("Substance is null");
             return;
@@ -28,10 +29,14 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
         s.names.forEach(n -> {
 
             NameUtilities.ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
+            String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name, 
+                    minimallyStandardizedName.getResult());
+            log.trace(debugMessage);
+            
             if (!minimallyStandardizedName.getResult().equals(n.name) || minimallyStandardizedName.getReplacementNotes().size() > 0) {
-                GinasProcessingMessage mes = GinasProcessingMessage.INFO_MESSAGE(String.format("Name %s minimally standardized to %s",
+                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format("Name %s minimally standardized to %s",
                         n.name, minimallyStandardizedName.getResult()));
-                callback.addMessage(mes);
+                callback.addMessage(mes, ()->n.name=minimallyStandardizedName.getResult());
             }
 
         });

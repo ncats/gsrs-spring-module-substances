@@ -22,7 +22,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
-        //NameStandardizer standardizer = new NameStandardizer();
+        log.trace("starting in validate");
         Map<String, Name> oldNames = new HashMap<>();
 
         //
