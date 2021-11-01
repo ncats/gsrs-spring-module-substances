@@ -1,14 +1,12 @@
 package gsrs.module.substance;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -26,23 +24,19 @@ import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.repository.GroupRepository;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.springUtils.StaticContextAccessor;
+import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
+import ix.core.EntityFetcher;
 import ix.core.models.Role;
-import ix.core.models.UserProfile;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
-import ix.core.validator.ValidatorCategory;
-import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.JsonSubstanceFactory;
-import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.utils.Util;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
@@ -245,7 +239,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     private Optional<Substance> fullFetch(Optional<Substance> opt){
         if(opt.isPresent()){
-            opt.get().toFullJsonNode();
+            return EntityFetcher.of(opt.get().fetchKey()).getIfPossible().map(o->(Substance)o);
+//            opt.get().toFullJsonNode();
         }
         return opt;
     }

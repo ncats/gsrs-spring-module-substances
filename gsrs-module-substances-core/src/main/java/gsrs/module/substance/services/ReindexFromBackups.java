@@ -108,7 +108,7 @@ public class ReindexFromBackups implements ReindexService{
                 }
             })
             .filter(op->op.isPresent())
-            .parallel()
+//            .parallel()
             .map(oo->EntityUtils.EntityWrapper.of(oo.get()))
             .forEach(wrapper ->{
                 try {
