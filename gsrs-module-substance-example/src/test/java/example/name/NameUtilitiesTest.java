@@ -24,6 +24,15 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, actual);
     }
 
+    @Test
+    public void testDashes() {
+        String input ="‒1‐2‑3–4—5﹘6﹣7－8-9";
+        String expected = "-1-2-3-4-5-6-7-8-9";
+        ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual = result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+    
     @Test //Remove a newline
     public void testStandardize17() {
         String inputName = "A '\n' name";

@@ -77,6 +77,7 @@ public class NameUtilities {
     private static final Pattern PATTERN_CASE38 = Pattern.compile("\u2026");
     private static final Pattern PATTERN_CASE39 = Pattern.compile("\u00BC");
     private static final Pattern PATTERN_CASE40 = Pattern.compile("\u00BD");
+    private static final Pattern PATTERN_CASE41 = Pattern.compile("﹘");
     
     
     public ReplacementResult standardizeMinimally(String input) {
@@ -389,6 +390,8 @@ public class NameUtilities {
         input = PATTERN_CASE38.matcher(input).replaceAll("...");
         input = PATTERN_CASE39.matcher(input).replaceAll("1/4");
         input = PATTERN_CASE40.matcher(input).replaceAll("1/2");
+        input = PATTERN_CASE41.matcher(input).replaceAll("-");
+        
 
 
         //input = input.replaceAll("⅔", "2/3");
