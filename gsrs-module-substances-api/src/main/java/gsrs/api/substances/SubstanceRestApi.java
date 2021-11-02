@@ -86,14 +86,14 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
         }
         //root_codes_<CODE_SYSTEM>:"^<CODE>$"
         SearchResult<? extends SubstanceDTO> result = this.search(SearchRequest.builder()
-                .q("root_codes_"+substanceKeyType+":\"^"+substanceKey+"$\"&view=full")
+                .q(handleSpaces("root_codes_"+substanceKeyType+":\"^"+substanceKey+"$\"&view=full"))
 
                 .simpleSearchOnly(true));
         //look for primary?
         SubstanceDTO substanceToReturn=null;
         for(SubstanceDTO substanceDTO : result.getContent()){
             boolean found = substanceDTO.getCodes().stream()
-                            .filter(c-> c.getCodeSystem().equals(substanceKeyType) && c.getCode().equals(substanceKey) && "PRIMARY".equalsIgnoreCase(c.getType()))
+                            .filter(c-> substanceKeyType.equalsIgnoreCase(c.getCodeSystem()) && substanceKey.equalsIgnoreCase(c.getCode()) && "PRIMARY".equalsIgnoreCase(c.getType()))
                     .findAny()
                     .isPresent();
             if(found){
@@ -106,5 +106,14 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
         }
         return Optional.ofNullable(substanceToReturn);
 
+    }
+
+    private static String handleSpaces(String input){
+        if(input ==null){
+            return input;
+        }
+        //should we use a complex regex with negative lookback?
+//        return input.replaceAll("(?<!\\\\) ", "\\ ");
+        return input.replace(" ", "\\ ");
     }
 }
