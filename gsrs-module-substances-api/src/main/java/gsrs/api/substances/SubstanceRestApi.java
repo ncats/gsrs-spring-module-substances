@@ -8,6 +8,7 @@ import gsrs.substances.dto.CodeDTO;
 import gsrs.substances.dto.NameDTO;
 import gsrs.substances.dto.ReferenceDTO;
 import gsrs.substances.dto.SubstanceDTO;
+import gsrs.substances.util.SubstanceKey;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.ResponseEntity;
 
@@ -99,7 +100,7 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
             if(found){
                 if(substanceToReturn !=null){
                     //found more than one!!
-                    throw new IOException("found more than 1 result for " + substanceKeyType + ": " + substanceKey + " ["+ substanceToReturn.getUuid() + " and " + substanceDTO.getUuid() + "]");
+                    throw new NotUniqueKeyException(new SubstanceKey(substanceKeyType ,substanceKey ),substanceToReturn.getUuid().toString(), substanceDTO.getUuid().toString());
                 }
                 substanceToReturn = substanceDTO;
             }
@@ -116,4 +117,6 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
 //        return input.replaceAll("(?<!\\\\) ", "\\ ");
         return input.replace(" ", "\\ ");
     }
+
+
 }
