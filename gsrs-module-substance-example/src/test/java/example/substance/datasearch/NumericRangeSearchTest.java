@@ -1,5 +1,6 @@
 package example.substance.datasearch;
 
+import example.TestUtil;
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assertions;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -87,17 +89,19 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
                 .top(Integer.MAX_VALUE)
                 .build();
 
-        log.trace("query: " +request.getQuery());
+        log.trace("query: " + request.getQuery());
         List<Substance> substances = getSearchList(request);
 
         log.trace("substances size: " + substances.size());
-        String actualId = substances.stream()
-                .map(s -> s.uuid.toString())
-                .findFirst().get();
-        log.trace("actualId: " + actualId);
-
+        log.trace("matches: ");
+        substances.forEach(s-> log.debug("substance " + s.uuid + "; created: " + s.created.getTime()));
+        List<String> substanceIds= substances.stream()
+                .map(s -> s.getUuid().toString())
+                .peek(id -> log.trace(id))
+                .collect(Collectors.toList());
+        
         String expectedId = "ac776f92-b90f-48a0-a54e-7461a60c84b3";
-        assertEquals(expectedId, actualId);
+        Assertions.assertTrue(substanceIds.contains(expectedId));
     }
 
     @Test
@@ -110,21 +114,20 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
-                .query("root_structure_mwt:[" + start + " TO " + end + "]")
+                .query("root_structure_mwt:%5B" + start + " TO " + end + "%5D")
                 .top(Integer.MAX_VALUE)
                 .build();
 
-        log.trace("query: " +request.getQuery());
+        log.trace("query: " + request.getQuery());
         List<Substance> substances = getSearchList(request);
 
         log.trace("substances size: " + substances.size());
-        String actualId = substances.stream()
-                .map(s -> s.uuid.toString())
-                .findFirst().get();
-        log.trace("actualId: " + actualId);
-
+        List<String> substanceIds = substances.stream()
+                .map(s -> s.getUuid().toString())
+                .peek(id -> log.trace(id))
+                .collect(Collectors.toList());
         String expectedId = "ac776f92-b90f-48a0-a54e-7461a60c84b3";
-        assertEquals(expectedId, actualId);
+        Assertions.assertTrue(substanceIds.contains(expectedId));
     }
 
     /**
