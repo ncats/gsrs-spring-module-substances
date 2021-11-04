@@ -211,8 +211,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
-    protected JsonNode toJson(Substance controlledVocabulary) throws IOException {
-        return objectMapper.valueToTree(controlledVocabulary);
+    protected JsonNode toJson(Substance substance) throws IOException {
+        return objectMapper.valueToTree(substance);
     }
 
     @Override
