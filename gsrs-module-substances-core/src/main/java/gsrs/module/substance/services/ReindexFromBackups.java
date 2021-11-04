@@ -2,6 +2,7 @@ package gsrs.module.substance.services;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -9,6 +10,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +30,6 @@ import gsrs.events.IncrementReindexEvent;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.security.GsrsUserProfileDetails;
 import ix.core.models.BackupEntity;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -47,6 +49,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ReindexFromBackups implements ReindexService{
 
+    private static final boolean FORCE_SINGLE_THREADED_EVENT_HANDLING=false;
+    
     @Autowired
     PlatformTransactionManager transactionManager;
 
@@ -95,21 +99,40 @@ public class ReindexFromBackups implements ReindexService{
         int count = (int) backupRepository.count();
         Set<String> seen = Collections.newSetFromMap(new ConcurrentHashMap<>(count));
         log.debug("found count of " + count);
-        //single thread for now...
+        
         UUID reindexId = (UUID) id;
-        CountDownLatch latch = new CountDownLatch(1);
-        latchMap.put(reindexId, latch);
+
+        CountDownLatch endLatch = new CountDownLatch(1);
+        latchMap.put(reindexId, endLatch);
         listenerMap.put(reindexId, TaskProgress.builder()
                 .id(reindexId)
                 .totalCount(count)
                 .listener(l)
                 .build());
 
-        eventPublisher.publishEvent(new BeginReindexEvent(reindexId, count));
+        
         l.message("Initializing reindexing: acquiring list");
-        //        try(Stream<BackupEntity> stream = backupRepository.streamAll()){
+        
+        
+        
+        LinkedBlockingDeque<Object> qevents = new LinkedBlockingDeque<>(1_000);
 
-        ForkJoinPool customThreadPool = new ForkJoinPool(2);
+        Consumer<Object> eventConsumer;
+        
+        if(FORCE_SINGLE_THREADED_EVENT_HANDLING) {
+            eventConsumer= (ev)->{
+                qevents.add(ev);
+            };
+        }else {
+            eventConsumer= (ev)->{
+                eventPublisher.publishEvent(ev);
+            };
+        }
+        
+        //This is hard-coded to 4 for now. It may be able to use the 
+        //common forkjoin pool, but there are reasons to suspect that
+        //can overwhelm the application.
+        ForkJoinPool customThreadPool = new ForkJoinPool(4);
         try {
             customThreadPool.submit(
                     () -> {
@@ -117,8 +140,9 @@ public class ReindexFromBackups implements ReindexService{
                         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                         tx.setReadOnly(true);
                         tx.executeWithoutResult(stat->{
-
-                            try(Stream<BackupEntity> stream = backupRepository.findAll().stream()){
+                            List<BackupEntity> blist=backupRepository.findAll();
+                            eventConsumer.accept(new BeginReindexEvent(reindexId, blist.size()));
+                            try(Stream<BackupEntity> stream = blist.stream()){
                                 l.message("Initializing reindexing: beginning process");
 
                                 Stream<EntityWrapper> ewStream=stream
@@ -128,12 +152,11 @@ public class ReindexFromBackups implements ReindexService{
                                                 return opt;
                                             }catch(Exception e) {
                                                 log.warn("indexing error handling:" + be.fetchGlobalId(), e);
-                                                eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
+                                                eventConsumer.accept(new IncrementReindexEvent(reindexId));
                                                 return Optional.empty();
                                             }
                                         })
                                         .filter(op->op.isPresent())
-                                        //                      .parallel()
                                         .map(oo->EntityUtils.EntityWrapper.of(oo.get()));
 
                                 ewStream
@@ -159,10 +182,7 @@ public class ReindexFromBackups implements ReindexService{
                                                     if (seen.add(keyString)) {
                                                         //is this a good idea ?
                                                         ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped));
-
-                                                        //                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key);
-
-                                                        eventPublisher.publishEvent(event);
+                                                        eventConsumer.accept(event);
                                                     }
                                                 } catch (Throwable t) {
                                                     log.warn("indexing error handling:" + wrapped, t);
@@ -174,27 +194,34 @@ public class ReindexFromBackups implements ReindexService{
                                     }catch(Throwable ee) {
                                         log.warn("indexing error handling:" + wrapper, ee);
                                     }finally {
-                                        eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
+                                        eventConsumer.accept(new IncrementReindexEvent(reindexId));
                                     }
                                 });
 
                             }
                         });
-
                         return true;
-                    }).get();
+                    });
+            
+            if(FORCE_SINGLE_THREADED_EVENT_HANDLING) {
+                while(true) {
+                    Object ot=qevents.take();
+                    eventPublisher.publishEvent(ot);
+                    if(endLatch.getCount()==0)break;
+                }
+            }
         }catch(Exception e) {
             log.warn("indexing error", e);
-            latch.countDown();
+            endLatch.countDown();
         }
 
 
         //other index listeners now figure out when indexing end is so don't need to that publish anymore (here)
         //but we will block until we get that end event
         try {
-            latch.await();
+            endLatch.await();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.warn("Reindexing inturrupted", e);
         }
 
     }

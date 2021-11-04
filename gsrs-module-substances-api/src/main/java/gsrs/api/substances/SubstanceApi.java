@@ -9,17 +9,17 @@ import gsrs.substances.util.SubstanceKeyResolver;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface SubstanceApi extends SubstanceKeyResolver {
-
 
     long count() throws IOException;
 
     <T extends SubstanceDTO> Optional<T> findByResolvedId(String anyKindOfId) throws IOException;
 
-    <T extends SubstanceDTO> Optional<T> findById(Long id) throws IOException;
+    <T extends SubstanceDTO> Optional<T> findById(UUID id) throws IOException;
 
-    boolean existsById(Long id) throws IOException;
+    boolean existsById(UUID id) throws IOException;
 
     <T extends SubstanceDTO> T create(T dto) throws IOException;
 
