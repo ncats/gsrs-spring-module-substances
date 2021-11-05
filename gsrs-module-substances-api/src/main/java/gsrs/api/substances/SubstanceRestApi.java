@@ -38,16 +38,6 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
     }
 
     @Override
-    public Optional<SubstanceDTO> findById(Long id) throws IOException {
-        return Optional.empty();
-    }
-
-    @Override
-    public boolean existsById(Long id) throws IOException {
-        return false;
-    }
-
-    @Override
     public Optional<List<NameDTO>> getNamesOfSubstance(String anyKindOfSubstanceId)  throws IOException{
         ResponseEntity<String> response = doGet("("+anyKindOfSubstanceId+")/names", String.class);
         if(!response.getStatusCode().is2xxSuccessful()) {

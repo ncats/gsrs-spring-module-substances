@@ -91,6 +91,7 @@ import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
+import ix.core.EntityFetcher;
 import ix.core.chem.Chem;
 import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
@@ -112,6 +113,7 @@ import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Subunit;
 import ix.ginas.models.v1.Unit;
+import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
@@ -994,16 +996,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         
     }
 
-    private StructureToRender getSubstanceAndStructure(String idOrSmiles){
+    private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version){
         Substance actualSubstance=null;
         String input=null;
+        boolean history = (version!=null);
         
         //check cache?
-        Optional<Structure> opStructure = GsrsSubstanceControllerUtil.getTempObject(ixCache, idOrSmiles,Structure.class);
+        Optional<Structure> opStructure = (history)?Optional.empty():GsrsSubstanceControllerUtil.getTempObject(ixCache, idOrSmiles, Structure.class);
         if(!opStructure.isPresent()) {
             UUID uuid = UUID.fromString(idOrSmiles);
-            Optional<Substance> substance = substanceRepository.findById(uuid);
+            Key skey = Key.of(Substance.class, uuid);
             
+            Optional<Substance> substance = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);
+            
+           
             if (!substance.isPresent()) {
                 opStructure = structureRepository.findById(uuid);
                 if(opStructure.isPresent()) {
@@ -1014,6 +1020,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         }
                     }
                 }else {
+                    //TODO: needs to support history, which requires finding the 
+                    // parent record
                     Optional<Unit> unit = structuralUnitRepository.findById(uuid);
                     if(unit.isPresent()) {
                         Unit u = unit.get();
@@ -1025,11 +1033,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     }
                 }
             } else {
-              
                     actualSubstance = substance.get();
                     opStructure = actualSubstance.getStructureToRender();
             }
         }
+        if(actualSubstance!=null && history) {
+            if(!version.equals(actualSubstance.version)) {
+                actualSubstance = editRepository.findByKeyAndVersion(actualSubstance.fetchKey(), version)
+                .map(e->e.getOldValueReference().rawJson())
+                .map(js->JsonSubstanceFactory.makeSubstance(js))
+                .get();
+                opStructure = actualSubstance.getStructureToRender();
+            }
+        }
+        
         if (opStructure.isPresent()) {
             input = fixMolIfNeeded(opStructure.get());
         }
@@ -1043,6 +1060,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public Object render(@PathVariable("ID") String idOrSmiles,
                          @RequestParam(value = "format", required = false, defaultValue = "svg") String format,
                          //default stereo to empty string which spring returns as null Boolean object
+                         @RequestParam(value = "version", required = false) String version,
                          @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                          @RequestParam(value = "context", required = false) String contextId,
                          @RequestParam(value = "size", required = false, defaultValue = "150") int size,
@@ -1054,8 +1072,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String input=null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
 //            input, null)
-            s2r= ixCache.getOrElseRawIfDirty("structForRender/" + idOrSmiles, ()->{
-                return getSubstanceAndStructure(idOrSmiles);   
+            s2r= ixCache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
+                return getSubstanceAndStructure(idOrSmiles,version);   
             });
             
             if (s2r.getInput()==null) {
@@ -1095,7 +1113,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         
         String dinput = input;
         int[] damaps = amaps;
-        byte[] data = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId ,()->{
+        byte[] data = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,()->{
             return renderChemical(parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);   
         });
         

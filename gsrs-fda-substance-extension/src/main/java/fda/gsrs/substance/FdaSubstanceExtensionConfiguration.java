@@ -3,7 +3,6 @@ package fda.gsrs.substance;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.hhs.gsrs.applications.api.ApplicationsApi;
 import gov.hhs.gsrs.products.api.ProductsApi;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,15 +11,14 @@ public class FdaSubstanceExtensionConfiguration {
 
     //Put FDA specific API @Bean definitions here
     @Bean
-    public ApplicationsApi applicationsApi(RestTemplateBuilder builder, ApplicationApiConfiguration applicationApiConfiguration){
-       applicationApiConfiguration.configure(builder);
-        return new ApplicationsApi(builder,applicationApiConfiguration.getBaseURL(), mapper );
+    public ApplicationsApi applicationsApi(ApplicationApiConfiguration applicationApiConfiguration){
+
+        return new ApplicationsApi(applicationApiConfiguration.createNewRestTemplateBuilder(),applicationApiConfiguration.getBaseURL(), mapper );
     }
 
     @Bean
-    public ProductsApi productsApi(RestTemplateBuilder builder, ProductsApiConfiguration productsApiConfiguration){
-        productsApiConfiguration.configure(builder);
-        return new ProductsApi(builder,productsApiConfiguration.getBaseURL(), mapper);
+    public ProductsApi productsApi( ProductsApiConfiguration productsApiConfiguration){
+        return new ProductsApi(productsApiConfiguration.createNewRestTemplateBuilder(),productsApiConfiguration.getBaseURL(), mapper);
     }
 
     private ObjectMapper mapper = new ObjectMapper();
