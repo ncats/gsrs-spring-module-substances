@@ -152,11 +152,16 @@ public class ReindexFromBackups implements ReindexService{
                                                 return opt;
                                             }catch(Exception e) {
                                                 log.warn("indexing error handling:" + be.fetchGlobalId(), e);
-                                                eventConsumer.accept(new IncrementReindexEvent(reindexId));
                                                 return Optional.empty();
                                             }
                                         })
-                                        .filter(op->op.isPresent())
+                                        .filter(op->{
+                                            if(!op.isPresent()) {
+                                                eventConsumer.accept(new IncrementReindexEvent(reindexId));
+                                                return false;
+                                            }
+                                            return true;
+                                        })
                                         .map(oo->EntityUtils.EntityWrapper.of(oo.get()));
 
                                 ewStream
