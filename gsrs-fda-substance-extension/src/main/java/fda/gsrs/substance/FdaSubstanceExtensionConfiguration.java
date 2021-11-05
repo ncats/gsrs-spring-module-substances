@@ -12,13 +12,15 @@ public class FdaSubstanceExtensionConfiguration {
 
     //Put FDA specific API @Bean definitions here
     @Bean
-    public ApplicationsApi applicationsApi(RestTemplateBuilder builder, ApplicationApiConfiguration applicationApiConfiguration){
+    public ApplicationsApi applicationsApi(ApplicationApiConfiguration applicationApiConfiguration){
+        RestTemplateBuilder builder = new RestTemplateBuilder();
        applicationApiConfiguration.configure(builder);
         return new ApplicationsApi(builder,applicationApiConfiguration.getBaseURL(), mapper );
     }
 
     @Bean
-    public ProductsApi productsApi(RestTemplateBuilder builder, ProductsApiConfiguration productsApiConfiguration){
+    public ProductsApi productsApi( ProductsApiConfiguration productsApiConfiguration){
+        RestTemplateBuilder builder = new RestTemplateBuilder();
         productsApiConfiguration.configure(builder);
         return new ProductsApi(builder,productsApiConfiguration.getBaseURL(), mapper);
     }
