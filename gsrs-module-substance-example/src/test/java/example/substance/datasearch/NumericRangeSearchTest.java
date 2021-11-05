@@ -78,14 +78,12 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
     public void testSearchByDateRange() {
         
         log.trace("starting in testSearchByDateRange");
-        String start = "1620121913352";
-        String end = "1620121913354";
         Date now = new Date();
         long nowMillis = now.getTime();
         long startRange = nowMillis - 1000;
         long endRange = nowMillis + 1000;
-        start = "" + (startRange);
-        end = "" + (endRange);
+        String start = "" + (startRange);
+        String end = "" + (endRange);
         
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -107,21 +105,48 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
 
     @Test
     public void testSearchBy2DateRanges() {
-        
+        //AND logic
         log.trace("starting in testSearchByDateRange");
-        String start = "1620121913352";
-        String end = "1620121913354";
         Date now = new Date();
         long nowMillis = now.getTime();
         long startRange = nowMillis - 1000;
         long endRange = nowMillis + 1000;
-        start = "" + (startRange);
-        end = "" + (endRange);
+        String start = "" + (startRange);
+        String end = "" + (endRange);
         
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
-                .query("root_created:[" + start + " TO " + end + "] OR root_modified:[" + start + " TO " + end + "]")
+                .query("root_created:[" + start + " TO " + end + "] OR root_lastEdited:[" + start + " TO " + end + "]")
+                .top(Integer.MAX_VALUE)
+                .build();
+        
+        log.trace("query: " + request.getQuery());
+        List<Substance> substances = getSearchList(request);
+        
+        log.trace("substances size: " + substances.size());
+        substances.forEach(s -> {
+            String msg = String.format("ID: %s; created: %d", s.uuid, s.created.getTime());            
+            log.trace(msg);
+        });
+        Assertions.assertTrue( substances.size() >0 && substances.stream().allMatch(s -> (s.created.getTime() > startRange) && (s.created.getTime() < endRange)));
+    }
+    
+    @Test
+    public void testSearchBy2DateRanges2() {
+        
+        log.trace("starting in testSearchBy2DateRanges2");
+        Date now = new Date();
+        long nowMillis = now.getTime();
+        long startRange = nowMillis - 1000;
+        long endRange = nowMillis + 1000;
+        String start = "" + (startRange);
+        String end = "" + (endRange);
+        
+        SearchRequest request = new SearchRequest.Builder()
+                .kind(Substance.class)
+                .fdim(0)
+                .query("root_created:[" + start + " TO " + end + "] AND root_lastEdited:[" + start + " TO " + end + "]")
                 .top(Integer.MAX_VALUE)
                 .build();
         
