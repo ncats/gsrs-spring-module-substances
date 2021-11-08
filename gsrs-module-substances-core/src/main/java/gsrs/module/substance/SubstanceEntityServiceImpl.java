@@ -1,14 +1,12 @@
 package gsrs.module.substance;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -26,23 +24,19 @@ import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.repository.GroupRepository;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.springUtils.StaticContextAccessor;
+import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
+import ix.core.EntityFetcher;
 import ix.core.models.Role;
-import ix.core.models.UserProfile;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
-import ix.core.validator.ValidatorCategory;
-import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.JsonSubstanceFactory;
-import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.utils.Util;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
@@ -217,8 +211,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
-    protected JsonNode toJson(Substance controlledVocabulary) throws IOException {
-        return objectMapper.valueToTree(controlledVocabulary);
+    protected JsonNode toJson(Substance substance) throws IOException {
+        return objectMapper.valueToTree(substance);
     }
 
     @Override
@@ -240,12 +234,16 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Override
     @Transactional
     public Optional<Substance> get(UUID id) {
-        return fullFetch(repository.findById(id));
+        return fullFetch(repository.findById(id),false);
     }
 
-    private Optional<Substance> fullFetch(Optional<Substance> opt){
+    private Optional<Substance> fullFetch(Optional<Substance> opt, boolean useEF){
         if(opt.isPresent()){
-            opt.get().toFullJsonNode();
+            if(useEF) {
+                return EntityFetcher.of(opt.get().fetchKey()).getIfPossible().map(o->(Substance)o);
+            }else {
+                opt.get().toFullJsonNode();
+            }
         }
         return opt;
     }
@@ -263,25 +261,25 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         if (someKindOfId.length() == 8) { // might be uuid
             List<Substance> list = repository.findByUuidStartingWith(someKindOfId);
             if(!list.isEmpty()){
-                return fullFetch(Optional.of(list.get(0)));
+                return fullFetch(Optional.of(list.get(0)),true);
             }
         }
 
         Substance result = repository.findByApprovalID(someKindOfId);
         if(result !=null){
-            return fullFetch(Optional.of(result));
+            return fullFetch(Optional.of(result),true);
         }
         List<SubstanceRepository.SubstanceSummary> summaries = repository.findByNames_NameIgnoreCase(someKindOfId);
         if(summaries !=null && !summaries.isEmpty()){
 
             //get the first?
-            return fullFetch(repository.findById(summaries.get(0).getUuid()));
+            return fullFetch(repository.findById(summaries.get(0).getUuid()),true);
         }
         summaries = repository.findByCodes_CodeIgnoreCase(someKindOfId);
         if(summaries !=null && !summaries.isEmpty()){
 
             //get the first?
-            return fullFetch(repository.findById(summaries.get(0).getUuid()));
+            return fullFetch(repository.findById(summaries.get(0).getUuid()),true);
         }
         return Optional.empty();
     }

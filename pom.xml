@@ -10,6 +10,7 @@
         <module>gsrs-fda-substance-extension</module>
         <module>gsrs-module-substance-example</module>
         <module>gsrs-module-substances-api</module>
+        <module>gsrs-module-substances-dto</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
