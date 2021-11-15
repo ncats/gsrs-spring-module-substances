@@ -178,7 +178,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
             mwProperty.setName(propertyName);
             mwProperty.setPropertyType(PROPERTY_TYPE);
             chem.properties.add(mwProperty);
-            log.trace("created property");
+            log.trace("created property named " + propertyName);
         }
         Amount propertyAmount = new Amount();
         propertyAmount.average = decimalDigits > 0 ? roundToDecimals(mw, decimalDigits) : mw;
