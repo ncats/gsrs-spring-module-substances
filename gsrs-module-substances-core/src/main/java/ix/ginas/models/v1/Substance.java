@@ -1499,4 +1499,14 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
         return hexString.toString();
     }
+    
+    /*
+    add a new property to the collection and make sure it persists
+    */
+    public void addProperty(Property newProperty) {
+        if( newProperty==null) return;
+        this.properties.add(newProperty);
+        newProperty.setOwner(this);
+        setIsDirty("properties");        
+    }
 }

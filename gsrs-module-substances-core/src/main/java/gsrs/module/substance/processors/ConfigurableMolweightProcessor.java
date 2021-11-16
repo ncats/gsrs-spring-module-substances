@@ -164,7 +164,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
     }
 
     private void setMwProperty(ChemicalSubstance chem, Double mw) {
-        log.trace("setMwProperty");
+        log.trace("setMwProperty. total properties: " + chem.properties.size());
         Property mwProperty = null;
         for (Property p : chem.properties) {
             if (p.getName().equalsIgnoreCase(propertyName)) {
@@ -177,7 +177,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
             mwProperty = new Property();
             mwProperty.setName(propertyName);
             mwProperty.setPropertyType(PROPERTY_TYPE);
-            chem.properties.add(mwProperty);
+            chem.addProperty(mwProperty);
             log.trace("created property named " + propertyName);
         }
         Amount propertyAmount = new Amount();
@@ -204,7 +204,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
                 propertyToRemove.deprecate(true);
             }
         }
-
+        log.trace("end of setMwProperty. total properties: " + chem.properties.size());
     }
 
     private Double computeMolWt(ChemicalSubstance chemical) {
