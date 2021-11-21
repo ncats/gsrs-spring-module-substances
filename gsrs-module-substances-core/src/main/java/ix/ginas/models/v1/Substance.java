@@ -425,7 +425,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     public String fetchIndexedDisplayName() {
         Optional<Name> aName = getDisplayName();
         if(aName.isPresent()){
-            return "B:" + aName.get().name;
+            return aName.get().name;
         }else {
             return null;
         }
