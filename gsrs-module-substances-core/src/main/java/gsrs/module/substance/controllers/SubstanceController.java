@@ -556,11 +556,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam(value = "sync", required = false, defaultValue = "false") boolean sync,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest,
-            HttpServletRequest httpRequest,
             RedirectAttributes attributes) throws Exception {
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
 
+        
+        
         Optional<Structure> structureOp = parseStructureQuery(q, true);
         if(!structureOp.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
@@ -585,11 +586,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         
         //If it's a flex or exact search, it may not have been standardized
         //yet, which means a lot for the hashing algorithm, so standardize
-        //and regen the hashes for the query.
+        //and regenerate the hashes for the query.
         
         //TODO: There should be a way to flag, on the structure, whether this
         //is the case or not. As-is there's some inconsistency on the use of
-        //stadardizing and generating hashes. We should not generate hashes
+        //standardizing and generating hashes. We should not generate hashes
         //on non-standardized cases, but it appears we sometimes do.
         
         if(sanitizedRequest.isHashSearch()) {
@@ -601,17 +602,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            
-            
-            hash = "root_structure_properties_term:" + structure.getExactHash();
-            
+            hash = "root_structure_properties_term:" + structure.getExactHash();            
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
             hash= structure.getStereoInsensitiveHash();
         }
 
         if(hash !=null){
-            httpRequest.setAttribute(
+            httpServletRequest.setAttribute(
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
