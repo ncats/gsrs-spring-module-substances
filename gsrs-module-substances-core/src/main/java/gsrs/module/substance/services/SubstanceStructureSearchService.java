@@ -152,6 +152,11 @@ public class SubstanceStructureSearchService {
             this.order = request.order;
             this.field = request.field ==null? DEFAULT_FIELD: request.field;
         }
+        
+        public boolean isHashSearch() {
+            if(type==null)return false;
+            return this.type.equals(StructureSearchType.EXACT) || this.type.equals(StructureSearchType.FLEX);
+        }
 
         public static String getDefaultField() {
             return DEFAULT_FIELD;
