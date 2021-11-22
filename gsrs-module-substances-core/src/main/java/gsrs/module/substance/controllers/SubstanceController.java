@@ -97,6 +97,7 @@ import ix.core.chem.ChemAligner;
 import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
 import ix.core.chem.StructureProcessor;
+import ix.core.chem.StructureProcessorTask;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
 import ix.core.models.Structure;
@@ -555,11 +556,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam(value = "sync", required = false, defaultValue = "false") boolean sync,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest,
-            HttpServletRequest httpRequest,
             RedirectAttributes attributes) throws Exception {
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
 
+        
+        
         Optional<Structure> structureOp = parseStructureQuery(q, true);
         if(!structureOp.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
@@ -582,15 +584,32 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String hash=null;
         
+        //If it's a flex or exact search, it may not have been standardized
+        //yet, which means a lot for the hashing algorithm, so standardize
+        //and regenerate the hashes for the query.
+        
+        //TODO: There should be a way to flag, on the structure, whether this
+        //is the case or not. As-is there's some inconsistency on the use of
+        //standardizing and generating hashes. We should not generate hashes
+        //on non-standardized cases, but it appears we sometimes do.
+        
+        if(sanitizedRequest.isHashSearch()) {
+            structure = structureProcessor.taskFor(structure.molfile)
+                    .standardize(true)
+                    .build()
+                    .instrument()
+                    .getStructure();
+        }
+        
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            hash = "root_structure_properties_term:" + structure.getExactHash();
+            hash = "root_structure_properties_term:" + structure.getExactHash();            
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
             hash= structure.getStereoInsensitiveHash();
         }
 
         if(hash !=null){
-            httpRequest.setAttribute(
+            httpServletRequest.setAttribute(
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
