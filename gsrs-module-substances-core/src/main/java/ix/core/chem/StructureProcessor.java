@@ -255,13 +255,15 @@ public class StructureProcessor {
 
         // used to not duplicate moieties
         Map<String, Structure> moietiesMap = new HashMap<>();
-        //System.err.println("+++++++++ "+frags.length+" components!");
         if (frags.size() >= 1 && components!=null) {
             for (Chemical frag : frags) {
                 Structure moiety = new Structure();
-                //System.err.println("+++++++++++++ component "+i+"!");
 
-                instrument(moiety, null, Chem.fixMetals(frag), false);
+                //TODO : This used to say not to standardize,
+                // but it did anyways. Now it does whatever it would
+                // have done at the root level.
+                
+                instrument(moiety, null, Chem.fixMetals(frag), settings.isStandardize());
 
                 for(Value v:moiety.properties){
                     if(v instanceof Keyword){
@@ -285,6 +287,9 @@ public class StructureProcessor {
 
         try{
             Chemical cc=polymerSimplify(stdMol);
+            // TODO: this only makes sense on standardization.
+            // Need to evaluate that this call is intended as-is.
+            
             hasher.hash(cc, cc.toMol(), new BiConsumer<String, String>() {
                 @Override
                 public void accept(String key, String value){
@@ -363,6 +368,7 @@ public class StructureProcessor {
                             boolean standardize) {
         StructureProcessorTask settings = new StructureProcessorTask.Builder()
                 .structure(struc)
+                .standardize(standardize)
                 .query(false)
                 .mol(mol)
                 .components(components)

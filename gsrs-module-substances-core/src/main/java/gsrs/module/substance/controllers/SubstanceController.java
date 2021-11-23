@@ -1,9 +1,61 @@
 package gsrs.module.substance.controllers;
 
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotBlank;
+
+import org.freehep.graphicsio.svg.SVGGraphics2D;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Bond;
@@ -32,6 +84,7 @@ import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import ix.core.EntityFetcher;
 import ix.core.chem.*;
+import ix.core.chem.StructureProcessorTask;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
 import ix.core.models.Structure;
@@ -41,7 +94,13 @@ import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
-import ix.ginas.models.v1.*;
+import ix.ginas.models.v1.Amount;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Moiety;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.Subunit;
+import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
@@ -50,45 +109,6 @@ import ix.utils.Util;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.freehep.graphicsio.svg.SVGGraphics2D;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
 
 /**
  * GSRS Rest API controller for the {@link Substance} entity.
@@ -106,7 +126,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         so.addDateRangeFacet("root_lastEdited");
         so.addDateRangeFacet("root_approved");
         so.addDateRangeFacet("root_created");
-        
+
         return so;
     }
     private static interface SimpleStandardizer{
@@ -122,10 +142,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 // TODO:
                 // In CDK, this doesn't generate coordinates for the Hs, meaning you have to have an additional
                 // clean call. Also, this method doesn't do anything for query molecules in CDK.
-                // 
+                //
                 // Both of the above problems will need to be fixed for this to work well.
                 //
-                
+
                 c.makeHydrogensExplicit();
                 return c;
             };
@@ -156,7 +176,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     return Chemical.parseMol(cc.toMol());
                 } catch (IOException e) {
                     return cc;
-                } 
+                }
             };
         }
         public static SimpleStandardizer CLEAN() {
@@ -170,38 +190,38 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 return c;
             };
         }
-        
+
         public default SimpleStandardizer and(SimpleStandardizer std2) {
             SimpleStandardizer _this=this;
             return (c)->{
                 return std2.standardize(_this.standardize(c));
-            };            
+            };
         }
-        
+
         public default String standardize(String mol) {
-            
+
             try {
                 Chemical c=Chemical.parseMol(mol);
                 c=this.standardize(c);
                 return c.toMol();
             } catch (Exception e) {
-                log.warn("issue standardizing mol", e);                
+                log.warn("issue standardizing mol", e);
                 return mol;
             }
-        
+
         }
-        
+
     }
     //TODO: could be its own microservice?
     private enum StructureStandardizerPresets{
         REMOVE_HYDROGENS(SimpleStandardizer.REMOVE_HYDROGENS()),
         ADD_HYDROGENS(SimpleStandardizer.ADD_HYDROGENS()),
         STEREO_FLATTEN(SimpleStandardizer.STEREO_FLATTEN()),
-        CLEAN(SimpleStandardizer.CLEAN());        
-        public SimpleStandardizer std;        
+        CLEAN(SimpleStandardizer.CLEAN());
+        public SimpleStandardizer std;
         StructureStandardizerPresets(SimpleStandardizer s){
             this.std=s;
-        }        
+        }
         public SimpleStandardizer getStandardizer() {
             return this.std;
         }
@@ -215,14 +235,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
     @Autowired
     private SubstanceSequenceSearchService substanceSequenceSearchService;
-    
+
     @Autowired
     private PlatformTransactionManager transactionManager;
-    
-    
+
+
     @Autowired
     private StructureRepository structureRepository;
-    
+
 
     @Autowired
     private StructuralUnitRepository structuralUnitRepository;
@@ -378,7 +398,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
      * <li>the similarity cutoff: for structure similarity and sequence searches</li>
      * <li>the order: sorting order given</li>
      * </ul>
-     * 
+     *
      * Note that the sequence searches no longer use this method for their hash keys. Only
      * the structure searches do.
      * @param request
@@ -387,7 +407,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public Optional<String> getKeyForCurrentRequest(HttpServletRequest request){
         String query = request.getParameter("q") + request.getParameter("order");
         String type = request.getParameter("type");
-        
+
         log.debug("checkStatus: q=" + query + " type=" + type);
         if (type != null && request.getParameter("q") != null) {
             try {
@@ -466,19 +486,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String dep = query.getOrDefault("showDeprecated", new String[]{"false"})[0];
         args.add("dep" + dep);
-        
+
         Collections.sort(args);
         return Util.sha1(args.toArray(new String[0]));
     }
 
     @PostGsrsRestApiMapping(path = "/structureSearch", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public Object structureSearchPost(
-            @RequestParam MultiValueMap<String,String> body, 
-                                                     HttpServletRequest httpRequest,
-                                                     RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
+            @RequestParam MultiValueMap<String,String> body,
+            HttpServletRequest httpRequest,
+            RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
 
         SubstanceStructureSearchService.SearchRequest.SearchRequestBuilder rb = SubstanceStructureSearchService.SearchRequest.builder();
-        
+
         Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
         Optional.ofNullable(body.getFirst("q")).ifPresent(c->rb.q(c));
         Optional.ofNullable(body.getFirst("top")).map(s->Integer.parseInt(s)).ifPresent(c->rb.top(c));
@@ -487,10 +507,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SubstanceStructureSearchService.StructureSearchType.parseType(s)).ifPresent(c->rb.type(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
-      
-        
+
+
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
-        
+
         boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT ||
                 sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX ;
         Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), !isHashQuery);
@@ -501,8 +521,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
-        
-        
+
+
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
         attributes.addAttribute("q", structure.get().id.toString());
         if(sync) {
@@ -510,46 +530,64 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         return new ModelAndView("redirect:/api/v1/substances/structureSearch");
     }
-    
+
     @GetGsrsRestApiMapping("/structureSearch")
     public Object structureSearchGet(
-            @RequestParam(required = false) String q, 
-            @RequestParam(required = false) String type, 
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String type,
             @RequestParam(required = false, defaultValue = "0.9") Double cutoff,
-            @RequestParam(required = false) Integer top, 
-            @RequestParam(required = false) Integer skip, 
-            @RequestParam(required = false) Integer fdim, 
+            @RequestParam(required = false) Integer top,
+            @RequestParam(required = false) Integer skip,
+            @RequestParam(required = false) Integer fdim,
             @RequestParam(required = false) String field,
             @RequestParam(value = "sync", required = false, defaultValue = "false") boolean sync,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest,
-            HttpServletRequest httpRequest,
             RedirectAttributes attributes) throws Exception {
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
+
+
 
         Optional<Structure> structureOp = parseStructureQuery(q, true);
         if(!structureOp.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query structure not found : " + q);
         }
         Structure structure = structureOp.get();
-        
+
         String cleaned = CtTableCleaner.clean(structure.molfile);
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
-                        .q(cleaned)
-                        .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))
-                        .cutoff(cutoff)
-                        .fdim(fdim)
-                        .top(top)
-                        .skip(skip)
-                        .field(field)
-                        .build()
-                        .sanitize();
+                .q(cleaned)
+                .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))
+                .cutoff(cutoff)
+                .fdim(fdim)
+                .top(top)
+                .skip(skip)
+                .field(field)
+                .build()
+                .sanitize();
 
 
         String hash=null;
-        
+
+        //If it's a flex or exact search, it may not have been standardized
+        //yet, which means a lot for the hashing algorithm, so standardize
+        //and regenerate the hashes for the query.
+
+        //TODO: There should be a way to flag, on the structure, whether this
+        //is the case or not. As-is there's some inconsistency on the use of
+        //standardizing and generating hashes. We should not generate hashes
+        //on non-standardized cases, but it appears we sometimes do.
+
+        if(sanitizedRequest.isHashSearch()) {
+            structure = structureProcessor.taskFor(structure.molfile)
+                    .standardize(true)
+                    .build()
+                    .instrument()
+                    .getStructure();
+        }
+
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
             hash = "root_structure_properties_term:" + structure.getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
@@ -558,7 +596,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
         if(hash !=null){
-            httpRequest.setAttribute(
+            httpServletRequest.setAttribute(
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
@@ -571,13 +609,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
-        || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SIMILARITY) {
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SIMILARITY) {
             resultContext = substanceStructureSearchService.search(sanitizedRequest, hashKey.get());
         }
 
 
         updateSearchContextGenerator(resultContext, queryParameters);
-        
+
         //TODO move to service
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
@@ -608,12 +646,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     //context: String, q: String ?= null, type: String ?= "GLOBAL", cutoff: Double ?= .9, top: Int ?= 10, skip: Int ?= 0, fdim: Int ?= 10, field: String ?= "", seqType: String ?="Protein")
     @GetGsrsRestApiMapping("/sequenceSearch")
     public ResponseEntity<Object> sequenceSearchGet(
-            @RequestParam(required= false) String q,  
-            @RequestParam(required= false) String type, 
+            @RequestParam(required= false) String q,
+            @RequestParam(required= false) String type,
             @RequestParam(required= false,  defaultValue = "0.9") Double cutoff,
-            @RequestParam(required= false) Integer top, 
-            @RequestParam(required= false) Integer skip, 
-            @RequestParam(required= false) Integer fdim, 
+            @RequestParam(required= false) Integer top,
+            @RequestParam(required= false) Integer skip,
+            @RequestParam(required= false) Integer fdim,
             @RequestParam(required= false) String field,
             @RequestParam(required= false, defaultValue = "GLOBAL") String searchType,
             @RequestParam(required= false, defaultValue = "Protein") String seqType,
@@ -623,7 +661,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 //        Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
 //        //TODO use hashKey to store in ixcache
-        
+
         Optional<Subunit> subunit = convertQueryStringToSequence(q, false);
         if(!subunit.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query sequence not found : " + q);
@@ -643,9 +681,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         SubstanceSequenceSearchService.SanitizedSequenceSearchRequest sanitizedRequest = request.sanitize();
         SearchResultContext resultContext = substanceSequenceSearchService.search(sanitizedRequest);
-        
+
         updateSearchContextGenerator(resultContext, queryParameters);
-        
+
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
     }
@@ -674,12 +712,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @PostGsrsRestApiMapping(path = "/sequenceSearch", consumes = {MediaType.APPLICATION_FORM_URLENCODED_VALUE})
     public Object sequenceSearchPost(
-            @RequestParam MultiValueMap<String,String> body, 
-                                                     HttpServletRequest httpRequest,
-                                                     RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
+            @RequestParam MultiValueMap<String,String> body,
+            HttpServletRequest httpRequest,
+            RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
 
         SubstanceSequenceSearchService.SequenceSearchRequest.SequenceSearchRequestBuilder rb = SubstanceSequenceSearchService.SequenceSearchRequest.builder();
-        
+
         Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
         Optional.ofNullable(body.getFirst("q")).ifPresent(c->rb.q(c));
         Optional.ofNullable(body.getFirst("top")).map(s->Integer.parseInt(s)).ifPresent(c->rb.top(c));
@@ -689,16 +727,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("seqType")).ifPresent(c->rb.seqType(c));
 //        Optional.ofNullable(body.getFirst("searchType")).map(s->SequenceSearchType.valueOf(s)).ifPresent(c->rb.searchType(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
-        
-        
+
+
 
         //TODO: TP: I'm not sure these are actually used, may want to remove all mentions entirely
 //        Optional.ofNullable(body.getFirst("identity")).map(s->Double.parseDouble(s)).ifPresent(c->rb.identity(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SequenceIndexer.CutoffType.valueOfOrDefault(s)).ifPresent(c->rb.type(c));
-        
-        
+
+
         SubstanceSequenceSearchService.SequenceSearchRequest request = rb.build();
-        
+
         Optional<Subunit> querySequence= convertQueryStringToSequence(request.getQ(), true);
         if(!querySequence.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), request.getQ());
@@ -708,7 +746,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
-        SanitizedSequenceSearchRequest rr=request.sanitize(); 
+        SanitizedSequenceSearchRequest rr=request.sanitize();
         attributes.mergeAttributes(rr.toMap());
         attributes.addAttribute("q", querySequence.get().uuid.toString());
         if(sync) {
@@ -742,7 +780,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             resultContext.setGeneratingUrl(oldURL + queryParamBuilder);
         }
     }
-    
+
     public ResponseEntity<Object> substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
         context.setAdapter((srequest, ctx) -> {
             try {
@@ -772,7 +810,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             try {
                 context.getDeterminedFuture().get(1, TimeUnit.MINUTES);
                 HttpHeaders headers = new HttpHeaders();
-                
+
                 //TODO this should actually forward to "status(<key>)/results", but it's currently status/<key>/results
                 headers.add("Location", GsrsLinkUtil.adapt(context.getKey(),entityLinks.linkFor(SearchResultContext.class).slash(context.getKey()).slash("results").withSelfRel())
                         .toUri().toString() );
@@ -833,23 +871,23 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @PostGsrsRestApiMapping("/interpretStructure")
     public ResponseEntity<Object> interpretStructure(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
         String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
-                                     .orElse("NONE")
-                                     .split(",");
+                .orElse("NONE")
+                .split(",");
         SimpleStandardizer simpStd=Arrays.stream(standardize)
                 .filter(s->!s.equals("NONE"))
-           .map(val->val.toUpperCase())
-           .map(val->StructureStandardizerPresets.value(val))
-           .filter(v->v.isPresent())
-           .map(v->v.get())
-           .map(std->std.getStandardizer())
-           .reduce(SimpleStandardizer::and).orElse(null);
-        
+                .map(val->val.toUpperCase())
+                .map(val->StructureStandardizerPresets.value(val))
+                .filter(v->v.isPresent())
+                .map(v->v.get())
+                .map(std->std.getStandardizer())
+                .reduce(SimpleStandardizer::and).orElse(null);
+
         String mode = Optional.ofNullable(queryParameters.get("mode"))
                 .orElse("default");
-        
+
         boolean isQuery="query".equalsIgnoreCase(mode);
-        
-        
+
+
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
@@ -857,12 +895,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             ObjectNode node = mapper.createObjectNode();
             try {
                 Structure struc = structureProcessor.taskFor(payload)
-                                                    .components(moieties)
-                                                    .standardize(false)
-                                                    .query(isQuery)
-                                                    .build()
-                                                    .instrument()
-                                                    .getStructure(); 
+                        .components(moieties)
+                        .standardize(false)
+                        .query(isQuery)
+                        .build()
+                        .instrument()
+                        .getStructure();
                 // don't standardize!
                 // we should be really use the PersistenceQueue to do this
                 // so that it doesn't block
@@ -870,12 +908,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 if (payload.contains("\n") && payload.contains("M  END")) {
                     struc.molfile = payload;
                 }
-                
+
                 if(simpStd!=null) {
                     struc.molfile=simpStd.standardize(struc.molfile);
                 }
-                
-                
+
+
                 ArrayNode an = mapper.createArrayNode();
                 for (Structure m : moieties) {
                     saveTempStructure(m);
@@ -926,26 +964,26 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @hasApproverRole
     public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
 
-       Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
+        Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
 
-       if(!substance.isPresent()){
-           return getGsrsControllerConfiguration().handleNotFound(queryParameters);
-       }
-       String[] error = new String[1];
-       GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {
-                   //The approval will throw an exception which we can propagate up
-                   //the result has other fields but we don't need to use them right now since we return the whole substance
-                   // but if we change the API to just have the approval specific update we have all that's needed in this result obj
+        if(!substance.isPresent()){
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+        String[] error = new String[1];
+        GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {
+            //The approval will throw an exception which we can propagate up
+            //the result has other fields but we don't need to use them right now since we return the whole substance
+            // but if we change the API to just have the approval specific update we have all that's needed in this result obj
 
-                   try {
-                       ApprovalService.ApprovalResult result = approvalService.approve(s);
+            try {
+                ApprovalService.ApprovalResult result = approvalService.approve(s);
 
-                       return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
-                   } catch (ApprovalService.ApprovalException e) {
-                       error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
-                       return Optional.empty();
-                   }
-               });
+                return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
+            } catch (ApprovalService.ApprovalException e) {
+                error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
+                return Optional.empty();
+            }
+        });
 
         if(error[0] !=null){
             return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
@@ -955,7 +993,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(savedVersion.getUpdatedEntity(), queryParameters), HttpStatus.OK);
     }
-    
+
     @Builder
     @Data
     public static class StructureToRender{
@@ -968,16 +1006,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Substance actualSubstance=null;
         String input=null;
         boolean history = (version!=null);
-        
+
         //check cache?
         Optional<Structure> opStructure = (history)?Optional.empty():GsrsSubstanceControllerUtil.getTempObject(ixCache, idOrSmiles, Structure.class);
         if(!opStructure.isPresent()) {
             UUID uuid = UUID.fromString(idOrSmiles);
             Key skey = Key.of(Substance.class, uuid);
-            
+
             Optional<Substance> substance = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);
-            
-           
+
+
             if (!substance.isPresent()) {
                 opStructure = structureRepository.findById(uuid);
                 if(opStructure.isPresent()) {
@@ -1001,20 +1039,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     }
                 }
             } else {
-                    actualSubstance = substance.get();
-                    opStructure = actualSubstance.getStructureToRender();
+                actualSubstance = substance.get();
+                opStructure = actualSubstance.getStructureToRender();
             }
         }
         if(actualSubstance!=null && history) {
             if(!version.equals(actualSubstance.version)) {
                 actualSubstance = editRepository.findByKeyAndVersion(actualSubstance.fetchKey(), version)
-                .map(e->e.getOldValueReference().rawJson())
-                .map(js->JsonSubstanceFactory.makeSubstance(js))
-                .get();
+                        .map(e->e.getOldValueReference().rawJson())
+                        .map(js->JsonSubstanceFactory.makeSubstance(js))
+                        .get();
                 opStructure = actualSubstance.getStructureToRender();
             }
         }
-        
+
         if (opStructure.isPresent()) {
             input = fixMolIfNeeded(opStructure.get());
         }
@@ -1040,14 +1078,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam Map<String, String> queryParameters) throws Exception {
         int[] amaps = null;
         StructureToRender s2r=null;
-        
+
         String input=null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
 //            input, null)
             s2r= ixCache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
-                return getSubstanceAndStructure(idOrSmiles,version);   
+                return getSubstanceAndStructure(idOrSmiles,version);
             });
-            
+
             if (s2r.getInput()==null) {
                 if(s2r.getSubstanceKey() ==null) {
                     //couldn't find a substance
@@ -1055,15 +1093,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
                 //if we're here, we have a substance but nothing to render return default for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey());
-            }            
+            }
             input = s2r.getInput();
         }else {
             //string must be a smiles (or mol ?)
             input = idOrSmiles;
         }
-        
-       
-        
+
+
+
         //context id is either a hash or a comma sep list of offsets
         if (contextId != null) {
             if (contextId.contains(",")) {
@@ -1080,16 +1118,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 amaps = (int[]) props.getOrDefault("atomMaps", null);
             }
         }
-      
-        
-        
+
+
+
         String dinput = input;
         int[] damaps = amaps;
         StructureToRender effectivelyFinalS2r = s2r;
         byte[] data = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,()->{
             return renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);
         });
-        
+
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", parseContentType(format));
@@ -1103,10 +1141,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private Object getDefaultImageFor(Substance s) throws IOException {
         return getDefaultImageForKey(s.fetchKey());
     }
-    
+
     private Object getDefaultImageForKey(Key skey) throws IOException {
         String placeholderFile = "polymer.svg";
-        
+
         if (skey != null) {
             switch (skey.getKind()) {
                 case "ix.ginas.models.v1.ChemicalSubstance":
@@ -1173,7 +1211,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     public byte[] renderChemical (Structure struc, Chemical chem, String format,
-                           int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize)
+                                  int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize)
             throws Exception {
 
         try {
@@ -1187,12 +1225,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             if (newDisplay != null) {
                 rendererOptions.changeSettings(newDisplay);
             }
-            
 
-            
+
+
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
-            
+
 //		boolean highlight=false;
             if(amap!=null && amap.length>0){
                 Atom[] atoms = chem.atoms().toArray(i -> new Atom[i]);
@@ -1256,7 +1294,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 chem.makeHydrogensImplicit();
             }
             ChemicalRenderer renderer = new ChemicalRenderer(rendererOptions);
-            
+
             if(!fullRendererOptions.isShowShadow()) {
                 renderer.setShadowVisible(false);
             }

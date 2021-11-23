@@ -98,4 +98,33 @@ public class SanitizeStructureRequestTest {
 
         assertEquals(StructureSearchType.SIMILARITY, sanitizedSearchRequest.getType());
     }
+    
+    @Test
+    public void onlyFlexAndExactAreHashTypes(){
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequestSim = SubstanceStructureSearchService.SearchRequest.builder()
+                .type(StructureSearchType.SIMILARITY)
+                .build()
+                .sanitize();
+        assertFalse(sanitizedSearchRequestSim.isHashSearch());
+        
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequestSub = SubstanceStructureSearchService.SearchRequest.builder()
+                .type(StructureSearchType.SUBSTRUCTURE)
+                .build()
+                .sanitize();
+        assertFalse(sanitizedSearchRequestSub.isHashSearch());
+        
+        
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequestExa = SubstanceStructureSearchService.SearchRequest.builder()
+                .type(StructureSearchType.EXACT)
+                .build()
+                .sanitize();
+        assertTrue(sanitizedSearchRequestExa.isHashSearch());
+        
+        SubstanceStructureSearchService.SanitizedSearchRequest sanitizedSearchRequestFle = SubstanceStructureSearchService.SearchRequest.builder()
+                .type(StructureSearchType.FLEX)
+                .build()
+                .sanitize();
+        assertTrue(sanitizedSearchRequestFle.isHashSearch());
+        
+    }
 }
