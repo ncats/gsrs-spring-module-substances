@@ -282,7 +282,7 @@ public class LegacyGinasAppController {
         Chemical c = parseAndComputeCoordsIfNeeded(structure);
 
 
-        byte [] data = substanceController.renderChemical(c,"svg", size, null, null, stereo, standardize);
+        byte [] data = substanceController.renderChemical(null, c,"svg", size, null, null, stereo, standardize);
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", "image/svg+xml");

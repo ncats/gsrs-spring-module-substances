@@ -1,32 +1,55 @@
 package gsrs.module.substance.controllers;
 
-import java.awt.Dimension;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
-
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import gov.nih.ncats.common.io.IOUtil;
+import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.Bond;
+import gov.nih.ncats.molwitch.Bond.Stereo;
+import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.molwitch.MolwitchException;
+import gov.nih.ncats.molwitch.io.CtTableCleaner;
+import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
+import gov.nih.ncats.molwitch.renderer.RendererOptions;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.*;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.module.substance.RendererOptionsConfig;
+import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
+import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.approval.ApprovalService;
+import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
+import gsrs.module.substance.repository.*;
+import gsrs.module.substance.services.SubstanceSequenceSearchService;
+import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
+import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.repository.EditRepository;
+import gsrs.security.hasApproverRole;
+import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
+import ix.core.EntityFetcher;
+import ix.core.chem.*;
+import ix.core.controllers.EntityFactory;
+import ix.core.models.Payload;
+import ix.core.models.Structure;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
+import ix.ginas.models.v1.*;
+import ix.ginas.utils.JsonSubstanceFactory;
+import ix.seqaln.SequenceIndexer;
+import ix.utils.CallableUtil;
+import ix.utils.UUIDUtil;
+import ix.utils.Util;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -51,76 +74,21 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import gov.nih.ncats.common.io.IOUtil;
-import gov.nih.ncats.molwitch.Atom;
-import gov.nih.ncats.molwitch.Bond;
-import gov.nih.ncats.molwitch.Bond.Stereo;
-import gov.nih.ncats.molwitch.Chemical;
-import gov.nih.ncats.molwitch.MolwitchException;
-import gov.nih.ncats.molwitch.io.CtTableCleaner;
-import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
-import gov.nih.ncats.molwitch.renderer.RendererOptions;
-import gsrs.cache.GsrsCache;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsControllerUtil;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.legacy.LegacyGsrsSearchService;
-import gsrs.module.substance.RendererOptionsConfig;
-import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
-import gsrs.module.substance.approval.ApprovalService;
-import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
-import gsrs.module.substance.repository.ChemicalSubstanceRepository;
-import gsrs.module.substance.repository.StructuralUnitRepository;
-import gsrs.module.substance.repository.StructureRepository;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.repository.SubunitRepository;
-import gsrs.module.substance.services.SubstanceSequenceSearchService;
-import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
-import gsrs.module.substance.services.SubstanceStructureSearchService;
-import gsrs.repository.EditRepository;
-import gsrs.security.hasApproverRole;
-import gsrs.service.GsrsEntityService;
-import gsrs.service.PayloadService;
-import ix.core.EntityFetcher;
-import ix.core.chem.Chem;
-import ix.core.chem.ChemAligner;
-import ix.core.chem.ChemCleaner;
-import ix.core.chem.PolymerDecode;
-import ix.core.chem.StructureProcessor;
-import ix.core.controllers.EntityFactory;
-import ix.core.models.Payload;
-import ix.core.models.Structure;
-import ix.core.search.SearchOptions;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
-import ix.core.search.SearchResultContext;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.Key;
-import ix.ginas.models.v1.Amount;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Moiety;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Subunit;
-import ix.ginas.models.v1.Unit;
-import ix.ginas.utils.JsonSubstanceFactory;
-import ix.seqaln.SequenceIndexer;
-import ix.utils.CallableUtil;
-import ix.utils.UUIDUtil;
-import ix.utils.Util;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotBlank;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * GSRS Rest API controller for the {@link Substance} entity.
@@ -993,7 +961,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public static class StructureToRender{
         private Key substanceKey;
         private String input;
-        
+        private Structure structure;
     }
 
     private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version){
@@ -1051,9 +1019,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             input = fixMolIfNeeded(opStructure.get());
         }
         Key k = (actualSubstance!=null)?actualSubstance.fetchKey():null;
-        
 
-        return StructureToRender.builder().substanceKey(k).input(input).build();
+
+        StructureToRender.StructureToRenderBuilder builder = StructureToRender.builder().substanceKey(k).input(input);
+        if(opStructure.isPresent()){
+            builder.structure(opStructure.get());
+        }
+        return builder.build();
     }
 
     @GetGsrsRestApiMapping({"/render({ID})", "/render/{ID}"})
@@ -1113,8 +1085,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         
         String dinput = input;
         int[] damaps = amaps;
+        StructureToRender effectivelyFinalS2r = s2r;
         byte[] data = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,()->{
-            return renderChemical(parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);   
+            return renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);
         });
         
         HttpHeaders headers = new HttpHeaders();
@@ -1199,7 +1172,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
     }
 
-    public byte[] renderChemical (Chemical chem, String format,
+    public byte[] renderChemical (Structure struc, Chemical chem, String format,
                            int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize)
             throws Exception {
 
@@ -1207,7 +1180,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             FullRenderOptions fullRendererOptions = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             RendererOptions rendererOptions = fullRendererOptions.getOptions();
-            
+
+            if(struc !=null && newDisplay ==null){
+               newDisplay = computeDisplayMap(struc, size, chem);
+            }
             if (newDisplay != null) {
                 rendererOptions.changeSettings(newDisplay);
             }
@@ -1492,10 +1468,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
     private byte[] render (Structure struc, String format, int size, int[] amap, Boolean stereo, Boolean structure)
             throws Exception {
+        Chemical c= parseAndComputeCoordsIfNeeded(fixMolIfNeeded(struc));
+
+        Map<String, Boolean> newDisplay = computeDisplayMap(struc, size, c);
+
+
+        return renderChemical (struc, c, format, size, amap,newDisplay,stereo, structure);
+    }
+
+    private Map<String, Boolean> computeDisplayMap(Structure struc, int size, Chemical c) {
         Map<String, Boolean> newDisplay = new HashMap<>();
         newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS_AS_RELATIVE.name(),
                 Structure.Stereo.RACEMIC.equals(struc.stereoChemistry));
-        Chemical c= parseAndComputeCoordsIfNeeded(fixMolIfNeeded(struc));
+
 
         if(!Structure.Optical.UNSPECIFIED.equals(struc.opticalActivity)
                 && struc.opticalActivity!=null){
@@ -1521,14 +1506,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }
         }
 
-        if(size>250){
+        if(size >250){
             if(!Structure.Stereo.ACHIRAL.equals(struc.stereoChemistry))
                 newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS.name(), true);
         }
         if(newDisplay.size()==0)newDisplay=null;
-
-
-        return renderChemical (c, format, size, amap,newDisplay,stereo, structure);
+        return newDisplay;
     }
 
 }
