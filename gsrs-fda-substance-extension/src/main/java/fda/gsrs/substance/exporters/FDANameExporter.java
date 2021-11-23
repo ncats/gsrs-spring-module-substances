@@ -6,6 +6,7 @@ import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.io.OutputStreamWriter;
  */
 public class FDANameExporter implements Exporter<Substance> {
 
-    BufferedWriter bw;
+    private final BufferedWriter bw;
 
     private final boolean showPrivates;
 
@@ -77,6 +78,7 @@ public class FDANameExporter implements Exporter<Substance> {
     }
     
     @Override
+    @Transactional(readOnly = true)
     public void export(Substance ing) throws IOException {
         if(!showPrivates && !ing.getAccess().isEmpty()){
             //GSRS-699 skip substances that aren't public unless we have show private data too
