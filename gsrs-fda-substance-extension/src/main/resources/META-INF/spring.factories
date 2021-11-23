@@ -1,3 +1,4 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=fda.gsrs.substance.FdaSubstanceExtensionConfiguration,\
   fda.gsrs.substance.ApplicationApiConfiguration,\
-  fda.gsrs.substance.ProductsApiConfiguration
+  fda.gsrs.substance.ProductsApiConfiguration,\
+fda.gsrs.substance.SubstanceApiConfiguration

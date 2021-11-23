@@ -40,7 +40,8 @@ public class SubstanceApiTest {
 
     @Autowired
     private RestTemplateBuilder restTemplateBuilder;
-    @Autowired
+
+   @Autowired
     private SubstanceRestApi api;
 
 
