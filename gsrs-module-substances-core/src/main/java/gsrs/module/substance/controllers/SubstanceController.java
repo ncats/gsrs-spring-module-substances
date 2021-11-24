@@ -1,61 +1,9 @@
 package gsrs.module.substance.controllers;
 
-import java.awt.Dimension;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
-
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
-
-import org.freehep.graphicsio.svg.SVGGraphics2D;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.hateoas.server.ExposesResourceFor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Bond;
@@ -84,7 +32,6 @@ import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import ix.core.EntityFetcher;
 import ix.core.chem.*;
-import ix.core.chem.StructureProcessorTask;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
 import ix.core.models.Structure;
@@ -94,13 +41,7 @@ import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
-import ix.ginas.models.v1.Amount;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Moiety;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Subunit;
-import ix.ginas.models.v1.Unit;
+import ix.ginas.models.v1.*;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
@@ -109,6 +50,45 @@ import ix.utils.Util;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.freehep.graphicsio.svg.SVGGraphics2D;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.servlet.ModelAndView;
+import org.springframework.web.servlet.View;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotBlank;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 /**
  * GSRS Rest API controller for the {@link Substance} entity.
@@ -991,7 +971,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
             return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
         }
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(savedVersion.getUpdatedEntity(), queryParameters), HttpStatus.OK);
+        //katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
+        return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
     }
 
     @Builder
