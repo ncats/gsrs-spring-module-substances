@@ -25,13 +25,14 @@
             <version>${gsrs.version}</version>
             <scope>compile</scope>
         </dependency>
-
+<!--
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-api</artifactId>
             <version>${gsrs.substance.version}</version>
             <scope>compile</scope>
         </dependency>
+-->
         <!-- applications-api DEPENDENCIES FOR Application EXPORT -->
         <dependency>
             <groupId>org.projectlombok</groupId>
