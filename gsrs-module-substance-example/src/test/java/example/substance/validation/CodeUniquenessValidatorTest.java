@@ -155,7 +155,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         return substance1;
     }
 
-        @Test
+    @Test
     public void testCodeDuplicate() {
         Substance substance = createSimpleSubstance();
         Code code1 = new Code();
@@ -178,6 +178,43 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         long totalDuplicates = response.getValidationMessages()
                 .stream()
                 .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING && m.getMessage().contains("collides (possible duplicate) with existing code "))
+                .count();
+        long expectedDuplicates = 1;
+        Assertions.assertEquals(expectedDuplicates, totalDuplicates);
+    }
+
+
+    @Test
+    public void testCodeDuplicateCheckError() {
+        Substance substance = createSimpleSubstance();
+        Code code1 = new Code();
+        code1.code = "DB01190";
+        code1.codeSystem = "Drug Bank";
+        code1.type = "PRIMARY";
+        substance.addCode(code1);
+        substanceRepository.saveAndFlush(substance);
+
+        Substance substance2 = createSimpleSubstance();
+        Code code2 = new Code();
+        code2.code = "DB01190";
+        code2.codeSystem = "Drug Bank";
+        code2.type = "PRIMARY";
+        substance2.addCode(code2);
+
+        CodeUniquenessValidator validator = new CodeUniquenessValidator();
+        LinkedHashMap<Integer, String> singletons = new LinkedHashMap<>();
+        singletons.put(1, "CAS");
+        validator.setSingletonCodeSystems(singletons);
+        LinkedHashMap<Integer, String> uniqueOnes = new LinkedHashMap<>();
+        uniqueOnes.put(1, code1.codeSystem);
+        validator.setStrictlyUniqueCodeSystems(uniqueOnes);
+        AutowireHelper.getInstance().autowire(validator);
+        ValidationResponse<Substance> response = validator.validate(substance2, null);
+        System.out.println("messages:");
+        response.getValidationMessages().forEach(m -> System.out.println(String.format("type: %s; text: %s", m.getMessageType(), m.getMessage())));
+        long totalDuplicates = response.getValidationMessages()
+                .stream()
+                .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR && m.getMessage().contains("is a duplicate of existing code & codeSystem for substance"))
                 .count();
         long expectedDuplicates = 1;
         Assertions.assertEquals(expectedDuplicates, totalDuplicates);

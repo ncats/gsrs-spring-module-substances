@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> {
 
     private Set< String> singletonCodeSystems;
+    private Set<String> strictlyUniqueCodeSystems;
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -35,8 +36,9 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
         while (codesIter.hasNext()) {
             Code cd = codesIter.next();
 
-            if (!cd.type.equalsIgnoreCase("PRIMARY")
-                    || (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem))) {
+            if ((!cd.type.equalsIgnoreCase("PRIMARY")
+                    || (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem)))
+                    && (strictlyUniqueCodeSystems == null || !strictlyUniqueCodeSystems.contains(cd.codeSystem))) {
                 log.trace(String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
                 continue;
             }
@@ -49,14 +51,25 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
                 SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
 
                 if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
-                    GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "Code '"
-                                    + cd.code
-                                    + "'[" + cd.codeSystem
-                                    + "] collides (possible duplicate) with existing code & codeSystem for substance:")
-                            //                               TODO katelda Feb 2021 : add link support back!
-                            .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                    GinasProcessingMessage mes;
+                    if(strictlyUniqueCodeSystems != null && strictlyUniqueCodeSystems.contains(cd.codeSystem)) {
+                        mes = GinasProcessingMessage
+                                .ERROR_MESSAGE(
+                                        "Code '"
+                                                + cd.code
+                                                + "'[" + cd.codeSystem
+                                                + "] is a duplicate of existing code & codeSystem for substance:")
+                                .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                    } else {
+                        mes = GinasProcessingMessage
+                                .WARNING_MESSAGE(
+                                        "Code '"
+                                                + cd.code
+                                                + "'[" + cd.codeSystem
+                                                + "] collides (possible duplicate) with existing code & codeSystem for substance:")
+                                //                               TODO katelda Feb 2021 : add link support back!
+                                .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                    }
                     callback.addMessage(mes);
                 }
             }
@@ -67,4 +80,7 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
         this.singletonCodeSystems = singletonCodeSystems.values().stream().collect(Collectors.toSet());
     }
 
+    public void setStrictlyUniqueCodeSystems(LinkedHashMap<Integer, String> strictlyUniqueCodeSystems) {
+        this.strictlyUniqueCodeSystems = strictlyUniqueCodeSystems.values().stream().collect(Collectors.toSet());
+    }
 }
