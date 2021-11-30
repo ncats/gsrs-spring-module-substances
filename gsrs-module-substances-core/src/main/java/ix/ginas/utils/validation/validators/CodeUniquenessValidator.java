@@ -36,8 +36,12 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
         while (codesIter.hasNext()) {
             Code cd = codesIter.next();
 
-            if ((!cd.type.equalsIgnoreCase("PRIMARY")
-                    || (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem)))
+            if (!cd.type.equalsIgnoreCase("PRIMARY")) {
+                log.trace(String.format("skipping code of system %s and type: %s because it's not PRIMARY", 
+                        cd.codeSystem, cd.type));
+                continue;
+            }
+            if (( (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem)))
                     && (strictlyUniqueCodeSystems == null || !strictlyUniqueCodeSystems.contains(cd.codeSystem))) {
                 log.trace(String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
                 continue;
