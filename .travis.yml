@@ -4,7 +4,8 @@ language: java
 cache:
   directories:
     - $HOME/.m2
-
+#this overrides the default maven install which is run as part of the install phase we will run our mvn in script
+install: true
 script:
   - ./installExtraJars.sh
   - ./mvnw clean install -DskipTests
