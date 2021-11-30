@@ -1,6 +1,7 @@
 package ix.ginas.utils.validation.validators;
 
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.repository.SubstanceRepository.SubstanceSummary;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Code;
@@ -30,7 +31,8 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        log.trace("starting in validate. singletonCodeSystems: " + singletonCodeSystems);
+        log.trace("starting in validate. singletonCodeSystems: " + singletonCodeSystems + "; strictlyUniqueCodeSystems: " 
+            + strictlyUniqueCodeSystems);
         Iterator<Code> codesIter = s.codes.iterator();
 
         while (codesIter.hasNext()) {
@@ -52,29 +54,34 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
                 log.trace("found some possible duplicates..");
                 //TODO we only check the first hit?
                 //would be nice to say instead of possible duplicate hit say we got X hits
-                SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
-
-                if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
-                    GinasProcessingMessage mes;
-                    if(strictlyUniqueCodeSystems != null && strictlyUniqueCodeSystems.contains(cd.codeSystem)) {
-                        mes = GinasProcessingMessage
-                                .ERROR_MESSAGE(
-                                        "Code '"
+                Iterator<SubstanceSummary> substanceIterator=sr.iterator();
+                
+                while( substanceIterator.hasNext())
+                {
+                    SubstanceRepository.SubstanceSummary s2= substanceIterator.next();
+                    log.trace("s2.getUuid(): " + s2.getUuid());
+                    if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
+                        GinasProcessingMessage mes;
+                        if(strictlyUniqueCodeSystems != null && strictlyUniqueCodeSystems.contains(cd.codeSystem)) {
+                            mes = GinasProcessingMessage
+                                    .ERROR_MESSAGE(
+                                            "Code '"
                                                 + cd.code
                                                 + "'[" + cd.codeSystem
                                                 + "] is a duplicate of existing code & codeSystem for substance:")
-                                .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
-                    } else {
-                        mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Code '"
-                                                + cd.code
-                                                + "'[" + cd.codeSystem
-                                                + "] collides (possible duplicate) with existing code & codeSystem for substance:")
+                                    .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                        } else {
+                            mes = GinasProcessingMessage
+                                    .WARNING_MESSAGE(
+                                            "Code '"
+                                                    + cd.code
+                                                    + "'[" + cd.codeSystem
+                                                    + "] collides (possible duplicate) with existing code & codeSystem for substance:")
                                 //                               TODO katelda Feb 2021 : add link support back!
-                                .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                                    .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                        }
+                        callback.addMessage(mes);
                     }
-                    callback.addMessage(mes);
                 }
             }
         }
