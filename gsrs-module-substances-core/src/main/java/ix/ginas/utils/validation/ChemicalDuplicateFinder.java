@@ -120,13 +120,28 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
 
                 }
                 if (max >0 && dupMap.size() < max) {
+                    if(keywords.size() <= chunkSize) {
+                        dupMap.putAll(
+                                chemicalSubstanceRepository.findByMoieties_Structure_PropertiesIn(keywords)
+                                        .stream()
+                                        .filter(skipOurselvesFilter)
+                                        .limit(max - dupMap.size())
+                                        .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new)));
+                    }else{
+                        //split it up
+                        int current=0;
+                        List<Keyword> subList;
+                        do{
+                            subList = keywords.subList(current, Math.min(keywords.size(), current+chunkSize));
+                            current+=chunkSize;
+                            dupMap.putAll(chemicalSubstanceRepository.findByMoieties_Structure_PropertiesIn(subList)
+                                            .stream()
+                                            .filter(skipOurselvesFilter)
+                                            .limit(max- dupMap.size())
+                                            .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new)));
 
-                    dupMap.putAll(
-                            chemicalSubstanceRepository.findByMoieties_Structure_PropertiesIn(keywords)
-                                    .stream()
-                                    .filter(skipOurselvesFilter)
-                                    .limit(max - dupMap.size())
-                                    .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new)));
+                        }while((max ==0 || dupMap.size()< max) && keywords.size()> current);
+                    }
 
                 }
             }
