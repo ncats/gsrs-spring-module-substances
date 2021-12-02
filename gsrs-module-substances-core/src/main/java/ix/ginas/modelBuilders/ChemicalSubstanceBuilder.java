@@ -4,8 +4,6 @@ import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.ginas.models.v1.*;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.function.Supplier;
 
 public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalSubstance, ChemicalSubstanceBuilder> {
@@ -45,6 +43,26 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
 		});
 	}
 
+	public ChemicalSubstanceBuilder addMoietyWithStructureAndDefaultReference(String moietySmiles){
+        return andThen(cs->{
+            Moiety m = new Moiety();
+            m.structure =new GinasChemicalStructure();
+            try {
+                Chemical chem = Chemical.parse(moietySmiles);
+                chem.generateCoordinates();
+                m.structure.molfile= chem.toMol();
+                m.structure.smiles = moietySmiles;
+            } catch (Exception e) {
+                Sneak.sneakyThrow(e);
+            }
+//            =smiles;//not really right, but we know it works
+            Reference orAddFirstReference = getOrAddFirstReference(cs);
+            m.structure.addReference( orAddFirstReference,cs);
+
+            cs.addMoiety(m);
+        });
+    }
+
     public ChemicalSubstanceBuilder() {
     }
 
@@ -58,7 +76,7 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
         }
     }
     public ChemicalSubstanceBuilder addMoiety(Moiety m){
-        return andThen( s-> { s.moieties.add(m);});
+        return andThen( s-> { s.addMoiety(m);});
     }
     public ChemicalSubstanceBuilder setStructure(GinasChemicalStructure structure){
         return andThen(s-> { s.setStructure(structure);});
