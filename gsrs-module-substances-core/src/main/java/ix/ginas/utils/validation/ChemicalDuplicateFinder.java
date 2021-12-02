@@ -4,9 +4,7 @@ import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.repository.ValueRepository;
 import ix.core.models.Keyword;
-import ix.core.models.Value;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
@@ -16,8 +14,10 @@ import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -49,8 +49,21 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
      */
     @Override
     public List<SubstanceReference> findPossibleDuplicatesFor(SubstanceReference subRef) {
-        int max=10;
+        return findPossibleDuplicatesFor(subRef, 10);
+    }
 
+    /**
+     * Find Possible Duplicates but only return the given max number of results.
+     * @param subRef
+     * @param max if set to 0 then there is no max number of results, if set to a positive number
+     *            then limit the number of results to that number.
+     * @return the list of results as SubstanceReferences.
+     * @throws IllegalArgumentException if max &lt; 0.
+     */
+    public List<SubstanceReference> findPossibleDuplicatesFor(SubstanceReference subRef, int max) {
+        if(max <0){
+            throw new IllegalArgumentException("max must be >=0");
+        }
         Map<UUID, SubstanceReference> dupMap = new LinkedHashMap<>();
         Substance sub = subRef.wrappedSubstance;
         if(sub ==null){
@@ -75,16 +88,38 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
 
             if (!keywords.isEmpty()) {
                 Substance ourSubstance = sub;
+                int chunkSize=100;
                 Predicate<ChemicalSubstance> skipOurselvesFilter = s-> !(ourSubstance.getUuid().equals(s.getUuid()));
-                dupMap =
-                        chemicalSubstanceRepository.findByStructure_PropertiesIn(keywords)
-                                .stream()
-                                .filter(skipOurselvesFilter)
-                                .limit(max)
 
-                                .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new));
+                //for something like a common salt we might have thousands of keywords because the moieties
+                //will all have the same hash
+                //some DBs have a limit for the max number of items in an IN query list
+                if(keywords.size() <= chunkSize) {
+                    dupMap =
+                            chemicalSubstanceRepository.findByStructure_PropertiesIn(keywords)
+                                    .stream()
+                                    .filter(skipOurselvesFilter)
+                                    .limit(max)
 
-                if (dupMap.size() < max) {
+                                    .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new));
+                }else{
+                    //split it up
+                    int current=0;
+                    List<Keyword> subList;
+                    do{
+                        subList = keywords.subList(current, Math.min(keywords.size(), current+chunkSize));
+                        current+=chunkSize;
+                        dupMap.putAll(chemicalSubstanceRepository.findByStructure_PropertiesIn(subList)
+                                        .stream()
+                                        .filter(skipOurselvesFilter)
+                                        .limit(max)
+
+                                        .collect(Collectors.toMap(Substance::getUuid, Substance::asSubstanceReference, (x, y) -> y, LinkedHashMap::new)));
+
+                    }while((max ==0 || dupMap.size()< max) && keywords.size()> current);
+
+                }
+                if (max >0 && dupMap.size() < max) {
 
                     dupMap.putAll(
                             chemicalSubstanceRepository.findByMoieties_Structure_PropertiesIn(keywords)
