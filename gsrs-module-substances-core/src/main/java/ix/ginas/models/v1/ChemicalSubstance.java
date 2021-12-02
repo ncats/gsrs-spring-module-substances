@@ -57,7 +57,6 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
         this.moieties = new ArrayList<>(Objects.requireNonNull(moieties));
         moieties.forEach(m-> Objects.requireNonNull(m).setOwner(this));
 
-        this.setIsDirty("moieties");
     }
 
     public void addMoiety(Moiety m){
