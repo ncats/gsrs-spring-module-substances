@@ -8,9 +8,7 @@ import ix.core.models.BeanViews;
 import ix.core.models.Indexable;
 import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
-import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import ix.ginas.models.utils.JSONEntity;
@@ -18,8 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.persistence.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @SuppressWarnings("serial")
@@ -49,11 +47,26 @@ public class ChemicalSubstance extends Substance implements GinasSubstanceDefini
     public List<Moiety> getMoieties() {
         return moieties;
     }
-
+    /**
+     * Sets the moieties to the given List and updates their owners.
+     * @param moieties the list of moieties.
+     * @throws NullPointerException if moieties or any element in the list are null.
+     */
     public void setMoieties(List<Moiety> moieties) {
-        this.moieties = moieties;
+
+        this.moieties = new ArrayList<>(Objects.requireNonNull(moieties));
+        moieties.forEach(m-> Objects.requireNonNull(m).setOwner(this));
+
+        this.setIsDirty("moieties");
     }
 
+    public void addMoiety(Moiety m){
+        Objects.requireNonNull(m);
+        this.moieties.add(m);
+        m.setOwner(this);
+        this.setIsDirty("moieties");
+
+    }
     @JSONEntity(title = "Chemical Moieties", isRequired = true, minItems = 1)
     //FIXME katzelda Sept 2019 changed mapped by from "owner" to the class that is the owner
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
