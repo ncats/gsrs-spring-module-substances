@@ -23,16 +23,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> {
 
-    private Set< String> singletonCodeSystems;
-    private Set<String> strictlyUniqueCodeSystems;
+    private Set< String> codeSystemsForWarning;
+    private Set<String> codeSystemsforError;
 
     @Autowired
     private SubstanceRepository substanceRepository;
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        log.trace("starting in validate. singletonCodeSystems: " + singletonCodeSystems + "; strictlyUniqueCodeSystems: " 
-            + strictlyUniqueCodeSystems);
+        log.trace("starting in validate. singletonCodeSystems: " + codeSystemsForWarning + "; strictlyUniqueCodeSystems: " 
+            + codeSystemsforError);
         Iterator<Code> codesIter = s.codes.iterator();
 
         while (codesIter.hasNext()) {
@@ -43,8 +43,8 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
                         cd.codeSystem, cd.type));
                 continue;
             }
-            if (( (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem)))
-                    && (strictlyUniqueCodeSystems == null || !strictlyUniqueCodeSystems.contains(cd.codeSystem))) {
+            if (( (codeSystemsForWarning != null && !codeSystemsForWarning.contains(cd.codeSystem)))
+                    && (codeSystemsforError == null || !codeSystemsforError.contains(cd.codeSystem))) {
                 log.trace(String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
                 continue;
             }
@@ -62,7 +62,7 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
                     log.trace("s2.getUuid(): " + s2.getUuid());
                     if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
                         GinasProcessingMessage mes;
-                        if(strictlyUniqueCodeSystems != null && strictlyUniqueCodeSystems.contains(cd.codeSystem)) {
+                        if(codeSystemsforError != null && codeSystemsforError.contains(cd.codeSystem)) {
                             mes = GinasProcessingMessage
                                     .ERROR_MESSAGE(
                                             "Code '"
@@ -87,11 +87,11 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
         }
     }
 
-    public void setSingletonCodeSystems(LinkedHashMap<Integer, String> singletonCodeSystems) {
-        this.singletonCodeSystems = singletonCodeSystems.values().stream().collect(Collectors.toSet());
+    public void setCodeSystemsForWarning(LinkedHashMap<Integer, String> singletonCodeSystems) {
+        this.codeSystemsForWarning = singletonCodeSystems.values().stream().collect(Collectors.toSet());
     }
 
-    public void setStrictlyUniqueCodeSystems(LinkedHashMap<Integer, String> strictlyUniqueCodeSystems) {
-        this.strictlyUniqueCodeSystems = strictlyUniqueCodeSystems.values().stream().collect(Collectors.toSet());
+    public void setCodeSystemsForError(LinkedHashMap<Integer, String> strictlyUniqueCodeSystems) {
+        this.codeSystemsforError = strictlyUniqueCodeSystems.values().stream().collect(Collectors.toSet());
     }
 }
