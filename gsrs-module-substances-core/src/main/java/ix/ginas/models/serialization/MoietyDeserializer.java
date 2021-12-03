@@ -37,7 +37,7 @@ public class MoietyDeserializer extends JsonDeserializer<Moiety> {
         		Amount amnt= EntityMapper.FULL_ENTITY_MAPPER().treeToValue(namnt, Amount.class);
         		moiety.setCountAmount(amnt);
         	}catch(Exception e){
-        		System.out.println(e.getMessage());
+        		System.err.println(e.getMessage());
         	}
         }
         moiety.enforce();

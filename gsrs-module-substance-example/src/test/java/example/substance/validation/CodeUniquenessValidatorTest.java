@@ -12,11 +12,12 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.CodeUniquenessValidator;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 
 /**
  *
@@ -50,6 +51,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         ValidationResponse<Substance> response = validator.validate(substance2, null);
         log.trace("messages:");
         response.getValidationMessages().forEach(m -> log.trace(String.format("type: %s; text: %s", m.getMessageType(), m.getMessage())));
+
         long totalDuplicates = response.getValidationMessages()
                 .stream()
                 .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING && m.getMessage().contains("collides (possible duplicate) with existing code "))

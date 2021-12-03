@@ -11,24 +11,19 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.MolecularWeightAndFormulaContribution;
 import ix.ginas.utils.ProteinUtils;
-import java.io.File;
-import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.junit.jupiter.api.Assertions;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.ClassPathResource;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
@@ -47,7 +42,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     
     @Test
     public void mwIndoleTest() {
-        System.out.println("starting mwIndoleTest");
         String indoleMolfile = "\n" +
                 "  ACCLDraw04162117372D\n" +
                 "\n" +
@@ -82,7 +76,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
             e.printStackTrace();
         }
         assertEquals(expected, actual, 0.001);
-        System.out.println("finished mwIndoleTest");
     }
 
     @Test
@@ -90,7 +83,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         /*
         Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
          */
-        System.out.println("starting proteinMwTestUnmod");
+
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -119,7 +112,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
                 proteinSubstance, unknownResidues);
         double expectedMw = 113269.0;
         double actual =contribution.getMw();
-        System.out.println("calculated MW: " + actual);
 
         assertEquals(expectedMw, actual, 0.9);
     }
@@ -129,7 +121,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         /*
         Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
          */
-        System.out.println("starting proteinMwTestUnmod");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -164,7 +155,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
                 proteinSubstance, unknownResidues);
         double expectedMw = 113269.0 -2;
         double actual =contribution.getMw();
-        System.out.println("calculated MW: " + actual);
 
         assertEquals(expectedMw, actual, 0.9);
     }
@@ -175,7 +165,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         /*
         Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
          */
-        System.out.println("starting proteinMwTestMod1");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -235,14 +224,12 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         double methionineMw =149.2;
         double expectedMw = 113269.0 - methionineMw + trypophanMw;
         double actual =contribution.getMw();
-        System.out.println("calculated MW: " + actual);
 
         assertEquals(expectedMw, actual, 0.9);
     }
 
     @Test
     public void proteinMwTestMod2() {
-        System.out.println("starting proteinMwTestMod2");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -300,14 +287,12 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         double methionineMw =149.2;
         double expectedMw = 113269.0 - methionineMw -lycineMw + 2*trypophanMw;
         double actual =contribution.getMw();
-        System.out.println("calculated MW: " + actual);
 
         assertEquals(expectedMw, actual, 0.9);
     }
 
     @Test
     public void proteinMwTestMod3() {
-        System.out.println("starting proteinMwTestMod3");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -352,20 +337,16 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            System.out.printf("message: %s; ", m.message);
-        });
+
         double asparagineMw = 132.119; //wikipedia
         double expectedMw = 113269.0 - asparagineMw + CELLULOSE_SULFATE_MW;
         double actual =contribution.getMw();
-        System.out.println("calculated MW: " + actual);
         assertEquals(expectedMw, actual, 0.9);
     }
 
 
     @Test
     public void proteinMwTestModOnX() {
-        System.out.println("starting proteinMwTestModOnX");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -393,19 +374,16 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            System.out.printf("message: %s; ", m.message);
-        });
+
         double xMw = 0.0; //x is not recognized and contributes 0
         double expectedMw = 625.801 - xMw + PROLINE_MW-WATER_MW;
         double actual =contribution.getMw();
-        System.out.println("calculated MW: " + actual);
         assertEquals(expectedMw, actual, 0.9);
     }
 
     @Test
     public void proteinMwTestModWithHighAndLow() {
-        System.out.println("starting proteinMwTestModWithHighAndLow");
+//        System.out.println("starting proteinMwTestModWithHighAndLow");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -414,7 +392,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         subunit1.sequence =readSequenceFromFile();
                 //"MEEITQIKKRLSQTVRLEGKEDLLSKKDSITNLKTEEHVSVKKMVISEPKPEKKEDIQLKKKEVVAVAKKEEVLKKEVVVPSKKDEEILPLKKEVPRPPKKEEDVMPQKKEVPRPPKKEEDIVPQMRDVSLPPKEEEKIVPKKKEVPRPPKKVEEILPPKKEVHRPPKKEEDIVPQIREVSLPPKKDEEIVCEKKEVAPAKEEPSKKPKVPSLPATQREDVIEEIIHKKPTAALSKFEDVKEHEEKETFVVLKKEIIDAPTKKEMVTAKHVIVPQKEEIIPSPTQEEVVSFKRKQTVRTSKKDAVPQKKEITYTQQTLEDKEEKILKRLEVTSTPDEEEIAHIQKKLYHTVRLVEKDVFPEKEDITMLETEEFVSQEIKLVSEPKPEKEKEIQGKKKVPPVSKKEEPLHHPKMDEKIVLKQKDVTLSHRKDEETVPQKKDPILALRKDEEIVTQKKDVTPPLIKEEESVPQNKDVTRPLRKEEESVPQKKDVTRPLRKDEETIPQKKDVTLPHGKDEETVPQKKDVTRPLRKDEEIIPQKKDVTRPLRKDGETVPQKKDVTLPHRKDEEIIPQKKDVTRPLRKDGETVPQKKDVTLPHRKEEESVPQKKDVTLPPRKDEESVPQKKDTTGPLIKDEETVPQKKDVTLPHRKDEETVPQKKDVTLRKDEETVPQKKDVTLPHRKDEEIIPQKKDVILRKDEETVPQKKDVTLPHRKDEETVPQKKDVTLPLRKDKLSELTYKKKEDIIPIKEEVVAVDEKEEAILPRKKEIFLHSKKDEDIKPKKKQVAPTKVEKKPSVEPSVVPKETTVFPLEVKEHDKKAEDKDIPKPKEEKRIPTKVQSPKEAEKPRPGPKEEPVPLVQPVEAADKEPVSAPGQVKKGKVLRVKKEEEKVEMPVLKKTSRVSKDKEEDKEMIKLKKVLKTQSAEHEESQKVYVEAKTQAIITESYEAEMHLESYETIKRVEKMPSEVGKKKPIEPAQEPKQEKPESEADEKPKKEIATKVPKEDIPEEPSLALKKVKKLQLETKDEECVKLKPFEKPVKPSPEAEKAPPNDEKERKPISFEKRKEPSTSQDIEWPEKVDKTKGLDDKMVLPKKITPVKTDVTPKEDEKKPIVPQKGILPKETEEKEEITLKPIEHAKKDLKPKNIPSPRVEKTKPIETVSVEKKLSKDLAKKPKTVSPKVSLEAVTLKKVPKKVSPKEDKAKETRTISEAEKVPVMKELSPGAVELTKVPTQPEEEVFEEEAEAEAEFEAQDEDEAWGWEVASRDSYGSEGSEYLEEGALETPGMPGGRREGKPKEEVGKARQTPSPGDGGRGRGLRPGAGGDKPPGDAPIGFQLKPVPLKFVKELKDIMLQEAESVGSSVVFECQISPSTAITTWMKDGSNLRESPKHKFTSDGKDRKLAIIDVQLSDSGEYTCVGKLGNKEKTSTAKLIVEELPVKFTKDLEEEMSVIKGQPMYLSCELSKDREVVWKKDGKELKPAPGKVAINVIGLQRTVTIHDSNDDDAGVYTCECENLKTQVNVKIIEIIRDWLTKPLRDQHVKPKATATFKGDLFKDTPNWKWFKGNDEIPMEPSDKFEVKKDGKEVTLTIKNAQPGDVGEYGIEIEGRRYAAKLTLGEREAEILKPLASIEVVEKEEASFETEISEEDVVGEWKLRGQVLTRSPTCDIRMEGKKRYLTLKNVELDQAGEVSYQALNGVTSAMLTVKEIEMDFTVPLTDVTVHEKKQAKFECTITKDVPKVMWLRGSDIITSDQKYDIIDDGKKHILVINQCEFDDEGEYTIEVLGKTSPAKLTVEGMRLKVISAISDQTVKEEGDAYFTVKLQDYTAVEKDEVTLDCELSKDVPVKWFHNEAEIKASKMVSMKVDGKRRMLCIKKVEDKDKGQYACDCGTDKTAATVTIEARDIKVVRPMYGVELFDGETARFEVEISEDDVHGQWKLNGEVLSPSPDVEIIEDGAKHILTLYNCKVLQTGEISFQGANAKCSANLKVKELPITFVTPLTDVHVYEKDEARFECEVSRQPKTLRWLKGPVDITTDDKFELLQEGKRHTLVVKSAAYEDEAKYMFEAEDKKTSAKLVIQGIRLEFVRPIKDVTVKERETAEFRIELSHEKVQVSWYKNDVRLHPSKVVHLSEDGKIHTLSFKEVSLDDTSLIKVEALGKTCEAMLTVLEGEPYFTTKLQDYTAVEKDEVVLMCEVSKSAAEVKWFKDGKEIIPSKNILIKAEGKKRILTVRKAEKANIGEYLCDCGSDKTAAKLNTEERDIKIVRPLYSVEVTETETARFETEISEEDVHGNWKLKEETLHHSPDCEKKEEGTKHILILYNVRMDMAGSVDFSAANAKSRAQLRVKEPPVEFTKPLEDQTVEEEATAELECEVSRENAEVRWFKDGQEIHKTKKFDMVVDGRKRKLIIHESTIDDSKTYTCDAQKFKTSAFLNVEPPHVEFTKPLHDVEVKEKESARFECKVSRETAKVRWFKDGSEIRKGKKYEIISEGVKRILIISKSVFDDEAEYECDARTSKTSGMLTVVEEEARFTKNLANVEGTETDSVKLICEVSKPDAEVTWYKGDQELPEVGRYEHIADGKKRILIIKDLQMEDAGEYHCKLSSSQSTGSLRINELAAEFISRPQNQEVVEGEKAEFVCSVSKDTYEVKWVKGDNQLQSDDKYDIISDGKKRVLVIKSCELKDEGGFVAVIGTTRAPADLIVIEKLRIITPLKDLIANEGQETVLNCEVNTEGAKAKWLKNDETLFESSKFIMVQKDNVFSLRIKDTQKPNEGNYTIMLTNQRGEQAKSAASITVQEEDLRIIVPPEDVDTQEKRTISFSCKVNRPNVTVQWMKAGQEITFGKRILYRVDKDKHTLTIKDCTLADEGEYTVVGGADKASAELIISEAPTDFTAQLQDQTITEFEDAEFTCELSKEKAEIKWYRDGREIREGPRYQFERDGKTCRLRIKECRPDDECEYACGVDDKKTRARLFVEETPVEIIRPPADVFEPPGSDVVYEVELNKDRVEVKWLRNNMTVVQGDKYQMMSEGKIHRLQVCEIRPRDQGEYRVIAKDKDARAKLELAAVPTIKTLDQDLVTDAGKPFVMTIPYNAYPHAEAEWFFDSISLPKDNIHSSTDRTEYRLKDPKKSEEGRYKIIIQNKHGKGEAFINLKVVDVPGSVKNLQVVDTADGEVSIAWEEPDSDGGSKILAYVVERRNIKRKTWTLATDSADSTEYCVTGLQKDSKYLFRVCARNRVGSGPSIETDKAVQAKNKFDVPDPPQNVIVGNVNKFGATVSWEPPLSDGGSEITSYIIELRDRTSVNWAPVMVTKPHERTAIINDVIENKEYIFRVKAENRAGIGKPSAATNPVKIMDPIERPSPPLNLTHSEQTKDSCLLTWETPLKNGGTPITGYIIERCEEGSEKWLRCNARLSQDLVYRMSGLKFGTKYSYRVIAENAAGQSDSSNIVGPVLVDDPHFAPTLDLSAFKDGLEVIVPHPLAIRVPITGYPVPTAKWTFGETELAAGDRVSMVTKATFTELVITPSVRPDRGTYSLTLENDVTSVSGDIDVNVIASPSAPKDLKVAEVTRRHVHLMWEAPDHDGGSSITGYQVEKREVSRKTWVKVMAGLQDQEYTITDVVEGKEYLFRVIACNKCGPGEPAYIDEPVNVSSPATVPDPPENLKWRDKSASKIFLSWEPPKWDGGTVIKGYIIDKCQRGTDKWKPCGEPVPELKFEVTGLIEGQWYAYRVRALNRLGASRPCKATDEILAVDPKEPPEIQLDAKLLAGLTAKAGTKIELPADITGKPEPKVKWTKADLVLKPDDRITIDAKPGHSTLSIAKTKRDDTATYIIEAVNSSGRATATVDVNILDKPGPPAAFDISEITSESCLLSWNPPRDDGGSKVTNYIVERRALDSEIWYKLSSTVKQTTYKATKLVAFKEYVFRVYAENQFGVGAQAEHAPIIARYPFDTPGPPYKLETSDIAKDSVTLNWYEPDDDGGSPITGYWVERYEPDHDKWIRCNKLPIRDTNFRVKGLPTRKKYKFRVLAENLAGPGKPSKETDQILIKDPIDPPWAPGKPTVKDVAKTSAFLHWTKPEHDGGAKIESYIVELLKSGTDEWVRVADGIPTLEHFLRGLMEKQEYSFRVRAVNAAGESEPSEPSDPVLCKERLNPPSPPRWLLVVTSTRNSAELKWTAPERDGGSPVTNYIIEKRDVKRKGWQVVDTTVKELKYTASPLNEGSLYVFRVAAENAVGPSEYCELADSVLAKDTFGTPGPPYNLTVTEVSKSHVDLKWDAPQKDGGRPVLRYVIEKKEKLGTRWVKSGKTSGPDCHYRVTDVIEGTEVQFKVSAENEAGIGHPSEPTDIIVIEDPTGPPSPPQDLHITEAARDHISISWKAPDKNGGSPVIGYNIELCEAGTEKWMRVNSRPVKELKFRAGEEEGILPEKQYTFRVRAVNSVGASEPSEISESVYAKDSDCNPTLDFQTKDLVVVEGEKMHLPIPFRAVPAPKITWHKDGSELKADDRIFFRTEYTSCHLEIPSCLHADGGQYKVTLENGLGAASGTINVKVIGLPGPCKEIVDSEITKNSCKVSWDPPDYDGGSPVLHFVLQRREAGRRTYINVMSGENKLVWQVKDLIQNGEYYFRVRAVNKIGGGEFIELRNPVIAEDQKQRPDPPIEVETHNPTSESVTLTWKPPMYDGGSKIMGYILEKMMKGEDNFVRCNDFLVPVLSYTVKGLKEGNQYQFRVYAENAAGVSDPSRSTPLIKAIDAIDRPKVFLSGSLQSGLIVKRGEEMRLDAYISGFPYPQITWTRNNSSIWPEALKKRPEKPIRKKKEEKKEEKKEEDKEPKKEEDKKEEDKEKKEEIKEKKEEEKEQEVEQPEEPEEAYHPSLNERLTIDSKRKGESYIIVKDTIRADHGVFTIKVENDHGVASASCEVNILDTPGPPVNFSFEEVRKNSIICKWDPPLDDGGSEIFNYTLERKDNSKIELGWITVTSTLRGCRYPVTKLIEGKQYIFRVTAENKYGPGIPCISKPIIAKNPFDPPEAPEKPEIVYVTSNSMVVTWNEPNDNGSPIQGYWVEKREINSTHWARVNRIIVPDLEITVLGLLEGMTYIFRVCAENVAGPGKFSPPSEPKTAQAAIMPPGPPIPRVVETTDYSIDVEWDPPADNGGADIFGYHVDKVVAGTKDWSRATERPQKSRTFTVYGVREGAKYIVRVVAVNCAGEGAPGLTDAVIVRNPAEGPVIELDISVRNGVVVRAGEMLRIPAHVTGKPFPFLKWTKDDGDLEKDCMEVEEAGNDSTVVIKCTKRSDHGKYHIQAANPSGIKSASTRVEVMDVPGPVLDLKPVVVTRKLMMLNWSDPDDDGGSDVTGFIIERREPKMHTWRQPIETPSSKCEIVGIIEGQEYIFRVVAKNKFGCGPPVDLGPIRAVDPQGPPTSPEKFHYTERTKSSVTIEWRPPRNDGGSPIMGYIIEKKRQDQPAFQRINEELCTAQIMTIENLDELHLYEFRAKAVNAIGESEPSITMTVVIQDDEVAPSLHMLKHFKGDLIRARKNEPIEMPAEVTGLPMPKIEWLKDDVVIDMPTEKLLIETKEIDRVTSHTKLSIPGVVRLDKGTYTVNASNRLGSVSHHITVEVLDRPTPPRNIAFSNIKAESCQLTWDAPLDTGGSELTNYIVEMKDLNGEDPEKAEWVNVTNTIIERRYGVWNLETGGNYKFRVKAENKYGISEACETEEIQIRDPLALPGPPEKVTIAEYSKAHILLTWEPPMDSGGSMITGYWIEKREKGTSYWSRVNKVMVSKRGVKGWDYMVTRLIEETEYEFRVMACNAAGIGPPSATSESAIAVDPLTPPSMPAAPEIADKTRHSVTLSWTPPGKDGGRPIKGYIIEIQDEGTSEWARINDAENLHPSTLFTIPNLPELKKYRFRIIAVNEIGESEPSPRTTEVRIEDIQTAPKIFMDISAHDLLCIRAGTPFKIPATITGRSVPKVTWEFDGKAKTEKKDRLHVLPVDSQVESNDTNSTVIVPVSLRSHSGRYTITAKNKSGQKHVNVRVNVLDVPGAPKELKVTDVTRTTMRLIWKLPDNDGGERIKSYFIEKKAVNGKAWTTVSPACASMALVVPNLLEGQDYLFRIRAENRLGFGPFTETSEPVRARDPIYPPDPPTKVNINLVTKNTVTLTWVPPKNDGGAPVKHYIIERLSWDTSGPQKETWKQCNKRDVEETTFIVEDLKEGGEYEFRVKAVNDAGASRPSVTAGPVIIKDQTCPPNIDLREALEGAEGFDITIVSRIQGCPFPSLVWQKSPLDNPDDKTSVQYDKHVNKLVSDDKCTLLIQQSKRDDSAVYTLTATNSLGTASKSIKLNILGRPGVPVGPIKFEEVFAERIGLSWKPPTDDGGSKITNYVVEKREENRKTWVHVSSDPKECQYVVQRLTEGHEYEFRVMAQNKYGVGPPLYSEPEKARNLFTVPGQCDKPTVTDVALESMTVNWEEPEYDGGSPLTGYWLERKETTAKRWARVNRDPIRIRPMGVSHVVTGLMEGAIYQFRVIAMNAAGCGLPSLPSDPVVCRDPIAPPGPPTPKVTDCTKSTVDLEWIPPLVDGGSKITGYFVEYKEEGQEEWEKVKDKEIRGCKFVVPGLKELGHYRFRVRAVNAAGVGEPGEVAEVIEVKDRTIPPEVDLDASVKEKIIVHAGGVIRLLAYVSGKPAPEIIWNRDDADLPKEAVVETTSISSALVIKNCRRQHQGIYTLTAKNAGGERRKAIIVEVLDVPGPVGQPFSGENLTTDSCKLTWYSPEDDGGSAITNYIIEKREADRRGWTSVTYTVTRHNAVVQGLIDGKGYYFRIAAENIIGMGPFTETSAPVVIKDPLSVPERPEDLQVTAVTNDSISVSWRPPKYDGGSEITSYVLEVRLIGKDNFERIVADNKLMDRKFTHGGLKEGSSYEFRVSAVNQIGQGKPSFSTKPVTCKKEFEPPALDFGFRDKIVVRVGETCTLQSRYTGKPQPTIKWFKTDEELQANEEIALTSTNNILCLAIEKAKREHSGKYTVVLENSIGSRKGICNIIVVDRPQHPEGPVIFDEICRNYMVISWKPPLDDGGAAISNYIIEKRDTNRDLWMPVIESCTRTSCRVPKLIEGREYIVRICAQNIHGISDPLLSAETKARDVFRVPDAPQAPVAKEIYKDTALISWIQPADGGKPITNYIVEKKETMANTWTRAGKDRIFPNSEYWVPDILRGCEYEFRVMAENMIGVGDPSPPSKPVFAKDPIVIPSPPVLPVAIDTTKESVTLSWQPPKDSGRGKIFGYLIEYQKDDSDEWLQVNQTPDSCQETRFKVISLEDGALYRFRVKAANAAGESEPTYVPEPIRAEDRLEPPELLLDMGMPREVKAMAGTHINIIAGIKGIPFPNIIWKKNDADVPPKAEIETSGTASKLEIRYCTRADCGDYTIYVENPAGSKTATCTVLVFDKPGPVQNFRVSDVRCDSAQLSWKDPEDNGGTRITNFVVEKKDGAATQWVPVCSSSKKRSMMAKYLIEGMSYMFRVAAENQFGRSEYVETPKSIKAMNPLFPPGPPKDLHHVDVDKTEVWLQWNWPDRTGGSDITG";
                 //readSequenceFromFile();
-        System.out.println("processing seq: " + subunit1.sequence);
+//        System.out.println("processing seq: " + subunit1.sequence);
         
         StructuralModification modification = new StructuralModification();
         modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
@@ -435,9 +413,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            System.out.printf("message: %s; ", m.message);
-        });
+
         double isoleucineMw = 131.175; //wikipedia
         double expectedAverageMw = 5047292.71 - isoleucineMw + CELLULOSE_SULFATE_MW;
         double expectedLowMw = MW_LOW_OFFSET;
@@ -445,7 +421,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         double actualAverage =contribution.getMw();
         double actualLow = contribution.getMwLow();
         double actualHigh = contribution.getMwHigh();
-        System.out.println("calculated MW: " + actualAverage);
         double allowedProteinMWTolerance =12;
         assertEquals(expectedAverageMw, actualAverage, allowedProteinMWTolerance);
         assertEquals(expectedLowMw, actualLow, 0.9);
@@ -455,14 +430,12 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void proteinMwTestModWithHighAndLowAndLims() {
-        System.out.println("starting proteinMwTestModWithHighAndLow");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
         protein.subunits = new ArrayList<>();
         protein.subunits.add(subunit1);
         subunit1.sequence =readSequenceFromFile();
-        System.out.println("processing seq: " + subunit1.sequence);
         
         StructuralModification modification = new StructuralModification();
         modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
@@ -493,7 +466,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         double actualHigh = contribution.getMwHigh();
         double actualHighLimit =contribution.getMwHighLimit();
         double actualLowLimit =contribution.getMwLowLimit();
-        System.out.println("calculated MW: " + actualAverage);
+
         assertEquals(expectedAverageMw, actualAverage, LARGE_PROTEIN_MW_TOLERANCE);
         assertEquals(Math.abs(MW_LOW_OFFSET), actualLow, 0.9);
         assertEquals(Math.abs(MW_HIGH_OFFSET), actualHigh, 0.9);
@@ -504,7 +477,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void proteinMwTestModExtent() {
-        System.out.println("starting proteinMwTestModExtent");
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -536,12 +508,9 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            System.out.printf("message: %s; ", m.message);
-        });
+
         double expectedMw = 47142.0;
         double actual =contribution.getMw();
-        System.out.println("calculated MW: " + actual);
         assertEquals(expectedMw, actual, 0.9);
         
         Assertions.assertTrue(contribution.getMessages().size() >0);
@@ -616,13 +585,13 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         
         String expected = "C51H86N14O15";
         String actual = ProteinUtils.makeFormulaFromMap(counts);
-        System.out.println("newly made formula: " + actual);
+
         assertEquals(expected, actual);
     }
     
     @Test
     public void getSubunitFormulaInfoTinyTest(){
-        System.out.println("starting in getSubunitFormulaInfoTinyTest");
+
         Subunit unit1 = new Subunit();
         unit1.sequence ="GK";
         Map<String, SingleThreadCounter> expectedCounts = new HashMap<>();
@@ -667,7 +636,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
                 .build();
         substanceRepository.saveAndFlush(tryptophan);
 
-        System.out.println("mw: " + tryptophan.getMolecularWeight());
 
         return tryptophan;
     }

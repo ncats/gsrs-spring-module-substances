@@ -323,7 +323,11 @@ public class RelationshipService {
                     ,
                     s -> {
                         Substance newSub = (Substance) s;
-                        Relationship obj = relationshipRepository.findById(event.getRelationshipIdToInvert()).get();
+                        Optional<Relationship> byId = relationshipRepository.findById(event.getRelationshipIdToInvert());
+                        if(!byId.isPresent()){
+                            return Optional.empty();
+                        }
+                        Relationship obj = byId.get();
                         if(!obj.isAutomaticInvertible()){
                             return Optional.empty();
                         }                    

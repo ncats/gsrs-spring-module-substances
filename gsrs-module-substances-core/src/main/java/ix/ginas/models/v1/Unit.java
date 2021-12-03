@@ -105,7 +105,6 @@ public class Unit extends GinasCommonSubData {
 		if(mymap!=null){
 			for(String k:mymap.keySet()){
 				conset.add(k);
-				System.out.println("Found mentioned:" + k);
 			}
 		}
 		return conset;

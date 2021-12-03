@@ -24,7 +24,6 @@ import ix.ginas.models.serialization.*;
 import ix.ginas.models.utils.JSONEntity;
 import lombok.extern.slf4j.Slf4j;
 
-
 import javax.persistence.*;
 import java.util.*;
 import java.util.function.Consumer;
@@ -760,8 +759,6 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         if(primaryRel.isPresent()){
             r.setAccess(new HashSet<>(primaryRel.get().getAccess()));
 
-        }else{
-            System.out.println("primary def not found!!!!");
         }
         addRelationship(r);
 //        this.relationships.add(r);

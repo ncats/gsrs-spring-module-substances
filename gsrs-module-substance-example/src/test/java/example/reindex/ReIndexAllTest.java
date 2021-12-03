@@ -1,15 +1,13 @@
 package example.reindex;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.util.LinkedHashSet;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
+import example.substance.AbstractSubstanceJpaEntityTest;
+import gsrs.events.*;
+import gsrs.module.substance.services.ReindexFromBackups;
+import gsrs.repository.BackupRepository;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import ix.core.models.BackupEntity;
+import ix.core.models.BaseModel;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -26,19 +24,15 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
-import gsrs.events.BackupEvent;
-import gsrs.events.BeginReindexEvent;
-import gsrs.events.EndReindexEvent;
-import gsrs.events.MaintenanceModeEvent;
-import gsrs.events.ReindexEntityEvent;
-import gsrs.events.ReindexOperationEvent;
-import gsrs.module.substance.services.ReindexFromBackups;
-import gsrs.repository.BackupRepository;
-import gsrs.scheduledTasks.SchedulerPlugin;
-import ix.core.models.BackupEntity;
-import ix.core.models.BaseModel;
-import ix.ginas.modelBuilders.SubstanceBuilder;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 
 @RecordApplicationEvents()
@@ -119,7 +113,7 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
 
         assertCreated(s1.buildJson());
         assertCreated(s2.buildJson());
-        System.out.println("=====");
+
         applicationEvents.stream(BackupEvent.class).forEach(System.out::println);
         //        System.out.println("Just backup events:");
         assertThat( applicationEvents.stream(BackupEvent.class).map(e->e.getSource().getRefid()).collect(Collectors.toSet()))

@@ -5,14 +5,14 @@ import ix.core.EntityProcessor;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Set;
 
 /**
  * Created by katzelda on 12/2/18.
  */
+@Slf4j
 public class ReferenceProcessor implements EntityProcessor<Reference> {
 
     @Autowired
@@ -79,7 +79,7 @@ public class ReferenceProcessor implements EntityProcessor<Reference> {
         //without also removing all the UUIDs in the corresponding GinasAccessReferenceControlled objects
         //so maybe we don't need this either...
         for(GinasAccessReferenceControlled referred : obj.getElementsReferencing()){
-            System.out.println("still referred by " + referred);
+            log.debug("still referred by " + referred);
 
         }
     }

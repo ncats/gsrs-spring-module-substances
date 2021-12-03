@@ -277,9 +277,7 @@ public class FormulaInfo implements Comparable<FormulaInfo>{
 				
 				String cstr= FormulaInfo.toCanonicalString(f);
 				
-				if(!f.equals(cstr)){
-					System.out.println(f + "\t" + cstr);
-				}else{
+				if(f.equals(cstr)){
 					agree++;
 				}
 			}

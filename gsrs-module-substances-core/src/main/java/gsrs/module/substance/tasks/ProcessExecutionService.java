@@ -5,23 +5,15 @@ import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.functions.ThrowableFunction;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.stream.StreamUtil;
-
-import ix.core.util.*;
-import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.utils.executor.ProcessListener;
 
-
-import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Objects;
 import java.util.OptionalLong;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -349,7 +341,6 @@ public class ProcessExecutionService {
 
     	public void execute() throws IOException{
 
-    	    System.out.println("Going to execute");
     		process(supplier,consumer,listener);
     	}
 

@@ -11,14 +11,14 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.SubstanceApprovalIdGenerator;
 import ix.ginas.utils.validation.ValidatorPlugin;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.AuditorAware;
-
-import java.util.Optional;
 
 /**
  * Created by katzelda on 5/16/18.
  */
+@Slf4j
 public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<Substance> {
 
     @Autowired
@@ -41,7 +41,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
             callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Substance class should not typically be changed"));
         }
 
-        System.out.println("old version = " +objold.version +  " new version = " + objnew.version);
+        log.debug("old version = " +objold.version +  " new version = " + objnew.version);
         if(!objold.version.equals(objnew.version)){
             callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Substance version '" + objnew.version +  "', does not match the stored version '" +  objold.version +"', record may have been changed while being updated"));
         }

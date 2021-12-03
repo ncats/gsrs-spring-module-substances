@@ -1,13 +1,14 @@
 package example.name;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions;
 import gsrs.module.substance.utils.NameUtilities;
 import gsrs.module.substance.utils.NameUtilities.ReplacementNote;
 import gsrs.module.substance.utils.NameUtilities.ReplacementResult;
+import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import java.util.ArrayList;
 import java.util.List;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -165,9 +166,9 @@ public class NameUtilitiesTest {
         String input = " Α, Β, Γ, Δ, Ε, Ζ, Η, Θ, Ι, Κ, Λ, Μ, Ν, Ξ, Ο, Π, Ρ, Σ, Τ, Υ, Φ, Χ, Ψ, and Ω";
         String expected = " .ALPHA., .BETA., .GAMMA., .DELTA., .EPSILON., .ZETA., .ETA., .THETA., .IOTA., .KAPPA., .LAMBDA., .MU., .NU., .XI., .OMICRON., .PI., .RHO., .SIGMA., .TAU., .UPSILON., .PHI., .CHI., .PSI., and .OMEGA.";
         NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
-        result.getReplacementNotes().forEach(n -> {
-            System.out.println(n);
-        });
+//        result.getReplacementNotes().forEach(n -> {
+//            System.out.println(n);
+//        });
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -186,8 +187,7 @@ public class NameUtilitiesTest {
         String input = "𝐸₃éé👍!";
         String expected = "E3ee?!";
         String actual = NameUtilities.getInstance().nkfdNormalizations(input);
-        System.out.println("before: " + input);
-        System.out.println("after: " + actual);
+
         Assertions.assertEquals(expected, actual);
     }
 
@@ -260,7 +260,6 @@ public class NameUtilitiesTest {
         ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
-        result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
     }
 
     @Test
@@ -270,7 +269,6 @@ public class NameUtilitiesTest {
         NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
-        result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
     }
 
     @Test
@@ -280,7 +278,6 @@ public class NameUtilitiesTest {
         NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
-        result.getReplacementNotes().forEach(n -> System.out.println(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
     }
 
     @Test

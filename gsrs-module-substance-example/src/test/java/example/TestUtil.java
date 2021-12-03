@@ -94,7 +94,7 @@ public class TestUtil {
                         //System.out.println("Deleting:" + file);
                         Files.delete(file);
                     }catch(IOException e){
-                        System.out.println(e.getMessage());
+//                        System.out.println(e.getMessage());
                     }
                 }
                 else{
