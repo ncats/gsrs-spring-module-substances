@@ -255,7 +255,11 @@ public class SubstanceHierarchyFinder {
 				soFar=temp;
 			}
 		}
-		
+
+		/**
+		 * Should only be used for testing/debugging/logging.
+		 * @param toString
+		 */
 		public void printHierarchy(Function<TreeNode<T>, String> toString){
 			System.out.println(toString);
 		}

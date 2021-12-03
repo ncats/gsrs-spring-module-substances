@@ -1,22 +1,19 @@
 package example.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
 import gsrs.junit.json.Changes;
 import gsrs.junit.json.ChangesBuilder;
 import gsrs.junit.json.JsonUtil;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
-
 
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class EditHistoryTest extends AbstractSubstanceJpaEntityTest {
 
@@ -30,7 +27,7 @@ public class EditHistoryTest extends AbstractSubstanceJpaEntityTest {
     				.addName("Concept Name")
     				.setUUID(uuid)
     				.buildJsonAnd(this::assertCreated);
-    			System.out.println("fetching uuid " + uuid);
+
     			Optional<Substance> old= substanceEntityService.get(uuid);
 
 		JsonNode oldJson = EntityUtils.EntityWrapper.of(old.get()).toJsonDiffJsonNode();

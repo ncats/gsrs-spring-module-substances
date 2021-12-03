@@ -1,7 +1,6 @@
 package example.substance.processor;
 
 import example.substance.AbstractSubstanceJpaEntityTest;
-
 import gsrs.repository.EditRepository;
 import gsrs.startertests.TestEntityProcessorFactory;
 import ix.core.EntityProcessor;
@@ -15,11 +14,12 @@ import org.springframework.boot.test.context.TestComponent;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Created by katzelda on 12/19/17.
@@ -73,7 +73,6 @@ public class PersistedSubstanceProcessorTest extends AbstractSubstanceJpaEntityT
                     .setUUID(uuid)
                     .buildJsonAnd(this::assertCreated);
 
-            System.out.println("=======================================");
 
 
             substanceEntityService.get(uuid).get().toBuilder()
@@ -129,7 +128,6 @@ public class PersistedSubstanceProcessorTest extends AbstractSubstanceJpaEntityT
         @Override
         public void postUpdate(Substance obj) throws FailProcessingException {
             timesUpdatedCalled++;
-            System.out.println("post UPDATE substance id " + obj);
         }
 
         @Override
@@ -139,7 +137,7 @@ public class PersistedSubstanceProcessorTest extends AbstractSubstanceJpaEntityT
 
         @Override
         public void postPersist(Substance obj) throws FailProcessingException {
-            System.out.println("post persist substance id " + obj);
+
             timesNewCalled++;
 
         }

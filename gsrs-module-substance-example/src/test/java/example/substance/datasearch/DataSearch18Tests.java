@@ -1,31 +1,6 @@
 package example.substance.datasearch;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import com.fasterxml.jackson.databind.JsonNode;
-
 import example.substance.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
@@ -46,6 +21,24 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -112,8 +105,11 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
             List<String> ids = transactionSearch.execute.....
                 with a lambda that returns a List<String>
         but there's a runtime class cast exception.
+
+        DK: answer is Java 8 type inference probably can't tell the type without extra hints or
+                breaking it into multiple statements.
          */
-        System.out.println("substances size: " + substances.size());
+
         String actualId = substances.stream()
                 .map(s -> s.uuid.toString())
                 .findFirst().get();
@@ -238,7 +234,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .build();
         List<Substance> substances = getSearchList(request);
 
-        System.out.println("substances size: " + substances.size());
         String actualId = substances.stream()
                 .map(s -> s.uuid.toString())
                 .findFirst().get();
@@ -262,7 +257,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .build();
         List<Substance> substances = getSearchList(request);
 
-        System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
                 .sorted() //use default sort order
@@ -286,7 +280,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .build();
         List<Substance> substances = getSearchList(request);
 
-        System.out.println("substances size: " + substances.size());
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
                 .sorted() //use default sort order
@@ -304,7 +297,6 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                 .build();
         List<Substance> substances = getSearchList(request);
 
-        substances.forEach(s -> System.out.println("substance with ID " + s.uuid));
         assertEquals(expectedNumber, substances.size());
     }
 
@@ -325,7 +317,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "handling layer: " + (layer + 1));
             String searchItem = "root_definitional_hash_layer_" + (layer + 1) + ":"
                     + newDefinitionalElements.getDefinitionalHashLayers().get(layer);
-            System.out.println("in findFullDefinitionalDuplicateCandidates, searchItem: " + searchItem);
+
             Logger.getLogger(this.getClass().getName()).log(Level.FINE, "layer query: " + searchItem);
             SearchRequest request = new SearchRequest.Builder()
                     .kind(Substance.class)
@@ -333,10 +325,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                     .build();
             candidates = getSearchList(request);
 
-            candidates.stream()
-                    .flatMap(ss -> ss.names.stream())
-                    .map(n -> n.name)
-                    .forEach(n -> System.out.println(n));
+
         } catch (Exception ex) {
             Logger.getLogger(this.getClass().getName()).log(Level.SEVERE, "Error running query", ex);
         }

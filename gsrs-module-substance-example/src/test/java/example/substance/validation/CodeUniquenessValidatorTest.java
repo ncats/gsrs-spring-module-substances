@@ -12,10 +12,11 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.CodeUniquenessValidator;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 
 /**
  *
@@ -46,8 +47,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
-        System.out.println("messages:");
-        response.getValidationMessages().forEach(m -> System.out.println(String.format("type: %s; text: %s", m.getMessageType(), m.getMessage())));
+
         long totalDuplicates = response.getValidationMessages()
                 .stream()
                 .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING && m.getMessage().contains("collides (possible duplicate) with existing code "))
@@ -79,8 +79,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
-        System.out.println("messages:");
-        response.getValidationMessages().forEach(m -> System.out.println(String.format("type: %s; text: %s", m.getMessageType(), m.getMessage())));
+
         long totalDuplicates = response.getValidationMessages()
                 .stream()
                 .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING && m.getMessage().contains("collides (possible duplicate) with existing code "))
@@ -112,8 +111,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
-        System.out.println("messages:");
-        response.getValidationMessages().forEach(m -> System.out.println(String.format("type: %s; text: %s", m.getMessageType(), m.getMessage())));
+
         long totalDuplicates = response.getValidationMessages()
                 .stream()
                 .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING && m.getMessage().contains("collides (possible duplicate) with existing code "))
@@ -173,8 +171,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         CodeUniquenessValidator validator = new CodeUniquenessValidator();
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
-        System.out.println("messages:");
-        response.getValidationMessages().forEach(m -> System.out.println(String.format("type: %s; text: %s", m.getMessageType(), m.getMessage())));
+
         long totalDuplicates = response.getValidationMessages()
                 .stream()
                 .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING && m.getMessage().contains("collides (possible duplicate) with existing code "))

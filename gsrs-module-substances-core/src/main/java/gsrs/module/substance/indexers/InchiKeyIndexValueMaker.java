@@ -39,8 +39,6 @@ public class InchiKeyIndexValueMaker implements IndexValueMaker<Substance>{
         GinasChemicalStructure structure = s.getStructure();
         if(structure !=null) {
             consumer.accept(IndexableValue.simpleStringValue("root_structure_inchikey", structure.getInChIKey()));
-        }else{
-            System.out.println("structure is null");
         }
         if(s.moieties !=null) {
             s.moieties.stream().forEach(m -> {

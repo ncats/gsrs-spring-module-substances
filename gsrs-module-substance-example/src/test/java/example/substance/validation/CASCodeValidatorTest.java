@@ -7,19 +7,16 @@ import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Reference;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.*;
 import ix.ginas.utils.CASUtilities;
 import ix.ginas.utils.validation.validators.CASCodeValidator;
-import java.util.stream.Stream;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.stream.Stream;
 
 /**
  *
@@ -43,7 +40,6 @@ public class CASCodeValidatorTest extends AbstractSubstanceJpaEntityTest {
             config.setNewObjClass(Substance.class);
             factory.addValidator("substances", config);
             configured = true;
-            System.out.println("configured!");
         }
     }
 
