@@ -1,6 +1,5 @@
 package gsrs.module.substance.tasks;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.module.substance.processors.ConfigurableMolweightProcessor;
 import gsrs.module.substance.repository.StructureRepository;
@@ -12,6 +11,7 @@ import gsrs.security.AdminService;
 import ix.core.utils.executor.ProcessListener;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -27,6 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
+@Data
 public class MolWeightRecalcTaskInitializer extends ScheduledTaskInitializer {
 
     @Autowired
@@ -141,7 +142,7 @@ public class MolWeightRecalcTaskInitializer extends ScheduledTaskInitializer {
         return "Generate or update a molecular weight (property) for every chemical substance in the database using configured atomic weights";
     }
 
-    public String getAtomWeightFilePath() {
+    /*public String getAtomWeightFilePath() {
         return atomWeightFilePath;
     }
 
@@ -182,5 +183,5 @@ public class MolWeightRecalcTaskInitializer extends ScheduledTaskInitializer {
 
     public void setOldPropertyName(String oldPropertyName) {
         this.oldPropertyName = oldPropertyName;
-    }
+    }*/
 }
