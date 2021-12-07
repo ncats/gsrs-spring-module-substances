@@ -12,6 +12,10 @@ public class QualifiedAtom{
 		this.massIndication = massIndication;
 	}
 
+	public QualifiedAtom(String symbol, int massIndication, double exactMass) {
+		this(symbol, massIndication);
+		atomicMass = exactMass;
+	}
 	@Override
 	public int hashCode() {
 		int hash = 3;
@@ -35,14 +39,12 @@ public class QualifiedAtom{
 		if (this.massIndication != other.massIndication) {
 			return false;
 		}
-		if (!Objects.equals(this.symbol, other.symbol)) {
-			return false;
-		}
-		return true;
+		return Objects.equals(this.symbol, other.symbol);
 	}
 
 	private String symbol;
 	private int massIndication;
+	private double atomicMass;
 
 	public String getSymbol() {
 		return symbol;
@@ -61,5 +63,12 @@ public class QualifiedAtom{
 		this.massIndication = massIndication;
 	}
 	
+	public double getAtomicMass() {
+		return atomicMass;
+	}
+
+	public void setAtomicMass(double atomicMass) {
+		this.atomicMass = atomicMass;
+	}
 	
 }

@@ -188,7 +188,12 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
 
 
     public T addProperty(Property p) {
-        return andThen(s -> {s.properties.add(p);});
+        return andThen(s -> {
+            if(p!=null) {
+                s.properties.add(p);
+                p.setOwner(s);
+            }
+        });
     }
     public T addName(Name name) {
         return andThen(s -> {
