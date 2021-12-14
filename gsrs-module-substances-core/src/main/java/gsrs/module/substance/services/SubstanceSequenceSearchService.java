@@ -147,7 +147,7 @@ public interface SubstanceSequenceSearchService {
 
         public String computeKey(){
 
-            return Util.sha1("sequence/"+getKey (getQ() +this.type.name() + this.getOrder(), this.cutoff));
+            return Util.sha1("sequence/"+getKey (getQ() +this.type.name() + this.getOrder() + "/" + seqType.toString().toLowerCase(), this.cutoff));
 
         }
 
