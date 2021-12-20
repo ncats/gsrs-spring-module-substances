@@ -47,6 +47,7 @@ import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
 import ix.utils.UUIDUtil;
 import ix.utils.Util;
+import ix.utils.CallableUtil.TypedCallable;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -1105,15 +1106,26 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String dinput = input;
         int[] damaps = amaps;
         StructureToRender effectivelyFinalS2r = s2r;
-        byte[] data = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,()->{
-            return renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);
-        });
+        ByteWrapper bdat = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,TypedCallable.of(()->{
+            byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);
+            return ByteWrapper.of(b);
+        }, ByteWrapper.class));
 
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", parseContentType(format));
-        return new ResponseEntity<>(data, headers, HttpStatus.OK);
+        return new ResponseEntity<>(bdat.dat, headers, HttpStatus.OK);
 
+    }
+    
+    private static class ByteWrapper{
+        byte[] dat;
+        public static ByteWrapper of(byte[] dat) {
+            ByteWrapper bw= new ByteWrapper();
+            bw.dat=dat;
+            return bw;
+        }
+        
     }
 
 

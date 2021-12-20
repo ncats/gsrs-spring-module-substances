@@ -33,6 +33,7 @@
         <gsrs.version>0.8.3-SNAPSHOT</gsrs.version>
         <gsrs.substance.version>0.7.3-SNAPSHOT</gsrs.substance.version>
         <spring-boot.version>2.4.5</spring-boot.version>
+        <log4j2.version>2.15.0</log4j2.version>
     </properties>
 
     <repositories>

@@ -6,8 +6,10 @@ import gsrs.module.substance.repository.SubstanceRepository;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
+import ix.core.EntityFetcher;
 import ix.core.models.Group;
 import ix.core.models.Structure;
+import ix.core.util.EntityUtils.Key;
 import ix.ginas.exporters.*;
 import ix.ginas.models.v1.*;
 import ix.utils.Util;
@@ -176,6 +178,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
              DEFAULT_RECIPE_MAP.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS"));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.EC, new CodeSystemRecipe(DefaultColumns.EC, "ECHA (EC/EINECS)"));
+             
              DEFAULT_RECIPE_MAP.put(DefaultColumns.ITIS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.ITIS, "ITIS")));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.NCBI, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.NCBI, "NCBI TAXONOMY")));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")));
@@ -269,10 +272,20 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                 StructurallyDiverseSubstance sdiv = (StructurallyDiverseSubstance)s;
                 SubstanceReference sr=sdiv.structurallyDiverse.parentSubstance;
                 if(sr!=null){
-                    Substance full = substanceRepository.findBySubstanceReference(sr);
-                    if(full!=null){
-                        return full;
-                    }
+                    
+                    Key key = Key.of(Substance.class, UUID.fromString(sr.refuuid));
+                    
+//                    if(full!=null){
+                        try {
+                            return (Substance)EntityFetcher.of(key).call();
+                        } catch (Exception e) {
+
+                            Substance full = substanceRepository.findBySubstanceReference(sr);
+                            if(full!=null) {
+                                return full;
+                            }
+                        }
+//                    }
                 }
             }
             return s;
@@ -385,6 +398,8 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
         @Override
         public void writeValue(Substance s, SpreadsheetCell cell) {
 
+            
+            
             s.codes
                     .stream()
                     .filter(cd->!(publicOnly && !cd.isPublic()))
