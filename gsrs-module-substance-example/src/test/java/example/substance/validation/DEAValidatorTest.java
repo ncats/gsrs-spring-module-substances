@@ -16,7 +16,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
@@ -28,12 +33,22 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
     @Autowired
     private TestGsrsValidatorFactory factory;
 
+    String currentPath = Paths.get(".").toAbsolutePath().normalize().toString();
+    private String DeaScheduleFileName = currentPath + "/src/main/resources/DEA_SCHED_LIST.txt";
+    private String DeaNumberFileName= currentPath+ "/src/main/resources/DEA_LIST.txt";
+
     @BeforeEach
     public void setup() {
         if (!configured) {
+            File f = new File(DeaNumberFileName);
+            log.trace("DeaNumberFileName: " + DeaNumberFileName + "; exists: " + f.exists());
             ValidatorConfig config = new DefaultValidatorConfig();
             config.setValidatorClass(DEAValidator.class);
             config.setNewObjClass(Substance.class);
+            Map<String, Object> parms = new HashMap<>();
+            parms.put("deaScheduleFileName", DeaScheduleFileName);
+            parms.put("deaNumberFileName", DeaNumberFileName);
+            config.setParameters(parms);
             factory.addValidator("substances", config);
             configured = true;
             System.out.println("configured!");
@@ -43,10 +58,10 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
     @Test
     public void testInit() throws IOException {
         DEAValidator validator = new DEAValidator();
-        validator.init();
-
+        validator.setDeaNumberFileName(DeaNumberFileName);
+        validator.setDeaScheduleFileName(DeaScheduleFileName);
+        validator.initialize();
         Map<String, String> inchiKeyToDeaNumber= validator.getInchiKeyToDeaNumber();
-
         Assertions.assertTrue(inchiKeyToDeaNumber.size()>0);
     }
 

@@ -9,7 +9,6 @@ import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -18,12 +17,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DEAValidator extends AbstractValidatorPlugin<Substance> {
 
     public DEAValidator() {
-        try {
-            init();
-        }
-        catch (IOException ex) {
-            ex.printStackTrace();
-        }
     }
     public final static String DEA_NUMBER_CODE_SYSTEM = "DEA Number";
 
@@ -38,14 +31,11 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
     private Map<String, String> inchiKeyToDeaSchedule=null;
     private Map<String, String> inchiKeyToDeaNumber=null;
 
-    private String DeaScheduleFileName = "/src/main/resources/DEA_SCHED_LIST.txt";
-    private String DeaNumberFileName= "/src/main/resources/DEA_LIST.txt";
+    private String deaScheduleFileName;
+    private String deaNumberFileName;
 
-    public void init() throws IOException {
-        String currentPath = Paths.get(".").toAbsolutePath().normalize().toString();
-        log.debug("currentPath: " + currentPath);
-        String deaScheduleFileName = currentPath + DeaScheduleFileName;
-        String deaNumberFileName= currentPath + DeaNumberFileName;
+    public void initialize()  {
+        log.trace(String.format("init DeaScheduleFileName: %s; DeaNumberFileName: %s", deaScheduleFileName, deaNumberFileName));
         inchiKeyToDeaNumber = new ConcurrentHashMap<>();
         inchiKeyToDeaSchedule= new ConcurrentHashMap<>();
 
@@ -139,19 +129,19 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
     public String getDeaScheduleFileName() {
-        return DeaScheduleFileName;
+        return deaScheduleFileName;
     }
 
     public void setDeaScheduleFileName(String deaScheduleFileName) {
-        DeaScheduleFileName = deaScheduleFileName;
+        this.deaScheduleFileName = deaScheduleFileName;
     }
 
     public String getDeaNumberFileName() {
-        return DeaNumberFileName;
+        return deaNumberFileName;
     }
 
     public void setDeaNumberFileName(String deaNumberFileName) {
-        DeaNumberFileName = deaNumberFileName;
+        this.deaNumberFileName = deaNumberFileName;
     }
 
 }
