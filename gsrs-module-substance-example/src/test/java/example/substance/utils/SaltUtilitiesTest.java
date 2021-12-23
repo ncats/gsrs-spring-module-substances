@@ -136,6 +136,7 @@ public class SaltUtilitiesTest {
         utilities.initialize();
         Chemical molWitchChemical= utilities.removeSalts(chem);
         log.debug("output mol: " +molWitchChemical.toMol());
+        Assertions.assertEquals(11, molWitchChemical.getAtomCount());
     }
 
 }
