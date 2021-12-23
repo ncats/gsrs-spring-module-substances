@@ -72,6 +72,46 @@ public class MetalTableTest {
     }
 
     @Test
+    public void testRemoveMetalsPosMultiple() {
+        String molfile = "\n" +
+                "  ACCLDraw12232115472D\n" +
+                "\n" +
+                "  8  7  0  0  0  0  0  0  0  0999 V2000\n" +
+                "    7.2603   -5.7200    0.0000 Na  0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    8.3732   -6.1154    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    9.2722   -5.3492    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   10.3853   -5.7447    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   10.5994   -6.9065    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    9.7006   -7.6727    0.0000 K   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   11.2845   -4.9783    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    9.0581   -4.1875    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "  1  2  1  0  0  0  0\n" +
+                "  2  3  1  0  0  0  0\n" +
+                "  4  3  1  0  0  0  0\n" +
+                "  5  4  1  0  0  0  0\n" +
+                "  6  5  1  0  0  0  0\n" +
+                "  4  7  2  0  0  0  0\n" +
+                "  3  8  2  0  0  0  0\n" +
+                "M  END\n";
+        ChemicalSubstanceBuilder substanceBuilder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemicalSubstance =
+                substanceBuilder.setStructureWithDefaultReference(molfile)
+                        .addName("Misc")
+                        .build();
+        Chemical chemical =chemicalSubstance.toChemical();
+        int bondCountBefore = chemical.getBondCount();
+        int atomsCountBefore = chemical.getAtomCount();
+        boolean actual = MetalTable.stripMetals(chemical, true);
+        int bondCountAfter = chemical.getBondCount();
+        int atomCountAfter = chemical.getAtomCount();
+        Assertions.assertTrue(actual);
+        Assertions.assertEquals(bondCountAfter+2, bondCountBefore);
+        Assertions.assertEquals(atomCountAfter+2, atomsCountBefore);
+        long totalMetals = chemical.atoms().filter(a->a.isMetal()).count();
+        Assertions.assertEquals(0, totalMetals);
+    }
+
+    @Test
     public void testRemoveMetalsPosNoDel() {
         String molfile = "\n" +
                 "  ACCLDraw12232114472D\n" +
