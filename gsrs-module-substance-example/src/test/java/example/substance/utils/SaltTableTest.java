@@ -1,7 +1,7 @@
 package example.substance.utils;
 
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.module.substance.utils.SaltUtilities;
+import gsrs.module.substance.utils.SaltTable;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import lombok.extern.slf4j.Slf4j;
@@ -14,17 +14,16 @@ import java.util.List;
 import java.util.Map;
 
 @Slf4j
-public class SaltUtilitiesTest {
+public class SaltTableTest {
 
     String currentPath = Paths.get(".").toAbsolutePath().normalize().toString();
     private String saltsFileName = currentPath + "/src/main/resources/salts.txt";
 
     @Test
     public void testInit() {
-        SaltUtilities saltUtilities = new SaltUtilities();
-        saltUtilities.setSaltFilePath(saltsFileName);
-        saltUtilities.initialize();
-        Map<String, String> saltData =saltUtilities.getSaltInChiKeyToName();
+        SaltTable saltTable = new SaltTable(saltsFileName);
+        saltTable.initialize();
+        Map<String, String> saltData = saltTable.getSaltInChiKeyToName();
         Assertions.assertFalse(saltData.isEmpty());
     }
 
@@ -64,8 +63,7 @@ public class SaltUtilitiesTest {
         substanceBuilder.setStructureWithDefaultReference(molfile)
                 .addName("Misc")
                 .build();
-        SaltUtilities utilities = new SaltUtilities();
-        utilities.setSaltFilePath(saltsFileName);
+        SaltTable utilities = new SaltTable(saltsFileName);
         utilities.initialize();
         List<String> salts= utilities.getSalts(chem);
         salts.forEach(s-> System.out.println(s));
@@ -131,12 +129,61 @@ public class SaltUtilitiesTest {
                 substanceBuilder.setStructureWithDefaultReference(molfile)
                         .addName("Misc")
                         .build();
-        SaltUtilities utilities = new SaltUtilities();
-        utilities.setSaltFilePath(saltsFileName);
+        SaltTable utilities = new SaltTable(saltsFileName);
         utilities.initialize();
         Chemical molWitchChemical= utilities.removeSalts(chem);
         log.debug("output mol: " +molWitchChemical.toMol());
         Assertions.assertEquals(11, molWitchChemical.getAtomCount());
     }
+
+    @Test
+    public void testSaltRemovalNeg() throws IOException {
+        String molfile = "\n" +
+                "  ACCLDraw12232113252D\n" +
+                "\n" +
+                " 13 14  0  0  0  0  0  0  0  0999 V2000\n" +
+                "    9.7197   -7.2123    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    8.7015   -7.7948    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    6.6684   -7.7988    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    7.6834   -7.2109    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    7.6834   -6.0311    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    8.7015   -5.4353    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    9.7197   -6.0311    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   10.8432   -5.6662    0.0000 N   0  0  3  0  0  0  0  0  0  0  0  0\n" +
+                "   11.5376   -6.6217    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   10.8432   -7.5775    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   11.2055   -8.6931    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   12.3529   -8.9370    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   12.7152  -10.0526    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "  2  1  1  0  0  0  0\n" +
+                "  4  2  2  0  0  0  0\n" +
+                "  4  3  1  0  0  0  0\n" +
+                "  5  4  1  0  0  0  0\n" +
+                "  6  5  2  0  0  0  0\n" +
+                "  7  6  1  0  0  0  0\n" +
+                "  7  1  2  0  0  0  0\n" +
+                "  8  7  1  0  0  0  0\n" +
+                "  9  8  1  0  0  0  0\n" +
+                " 10  9  2  0  0  0  0\n" +
+                " 10  1  1  0  0  0  0\n" +
+                " 11 10  1  0  0  0  0\n" +
+                " 12 11  1  0  0  0  0\n" +
+                " 13 12  1  0  0  0  0\n" +
+                "M  END\n";
+
+        ChemicalSubstanceBuilder substanceBuilder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chem =
+                substanceBuilder.setStructureWithDefaultReference(molfile)
+                        .addName("Misc")
+                        .build();
+        SaltTable utilities = new SaltTable(saltsFileName);
+        utilities.initialize();
+        int atomsBefore = chem.toChemical().getAtomCount();
+        Chemical chemicalWithoutSalts= utilities.removeSalts(chem);
+        log.debug("output mol: " +chemicalWithoutSalts.toMol());
+        int atomAfter = chemicalWithoutSalts.getAtomCount();
+        Assertions.assertEquals(atomAfter, atomsBefore);
+    }
+
 
 }
