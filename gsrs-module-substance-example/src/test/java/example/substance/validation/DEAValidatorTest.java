@@ -16,10 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,19 +31,15 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
     private TestGsrsValidatorFactory factory;
 
     String currentPath = Paths.get(".").toAbsolutePath().normalize().toString();
-    private String DeaScheduleFileName = currentPath + "/src/main/resources/DEA_SCHED_LIST.txt";
-    private String DeaNumberFileName= currentPath+ "/src/main/resources/DEA_LIST.txt";
+    private String DeaNumberFileName = currentPath + "/src/main/resources/DEA_LIST.txt";
 
     @BeforeEach
     public void setup() {
         if (!configured) {
-            File f = new File(DeaNumberFileName);
-            log.trace("DeaNumberFileName: " + DeaNumberFileName + "; exists: " + f.exists());
             ValidatorConfig config = new DefaultValidatorConfig();
             config.setValidatorClass(DEAValidator.class);
             config.setNewObjClass(Substance.class);
             Map<String, Object> parms = new HashMap<>();
-            parms.put("deaScheduleFileName", DeaScheduleFileName);
             parms.put("deaNumberFileName", DeaNumberFileName);
             config.setParameters(parms);
             factory.addValidator("substances", config);
@@ -59,7 +52,6 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
     public void testInit() throws IOException {
         DEAValidator validator = new DEAValidator();
         validator.setDeaNumberFileName(DeaNumberFileName);
-        validator.setDeaScheduleFileName(DeaScheduleFileName);
         validator.initialize();
         Map<String, String> inchiKeyToDeaNumber= validator.getInchiKeyToDeaNumber();
         Assertions.assertTrue(inchiKeyToDeaNumber.size()>0);
@@ -92,6 +84,67 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
         String expectedValue = "DEA-7048";
         Assertions.assertTrue( sub.codes.stream().anyMatch(c->c.codeSystem.equals(DEAValidator.DEA_NUMBER_CODE_SYSTEM) &&
                 c.code.equals(expectedValue)));
+    }
+
+    @Test
+    public void testGetDeaScheduleForChemical() throws Exception {
+        //create a substance that's on the list
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=CC=C5")
+                .addName("APINACA and AKB48 N-(1-Adamantyl)-1-pentyl-1Hindazole-3-carboxamide")
+                .addCode("UNII", "MHR0400Y84")
+                .build();
+        DEAValidator deaValidator = new DEAValidator();
+        deaValidator.setDeaNumberFileName(DeaNumberFileName);
+        deaValidator.initialize();
+        String expectedValue = "DEA SCHEDULE I";
+        String actualValue =deaValidator.getDeaScheduleForChemical(chemical);
+        Assertions.assertEquals(actualValue, expectedValue);
+    }
+
+    @Test
+    public void testGetDeaNumberForChemical() throws Exception {
+        //create a substance that's on the list
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=CC=C5")
+                .addName("APINACA and AKB48 N-(1-Adamantyl)-1-pentyl-1Hindazole-3-carboxamide")
+                .addCode("UNII", "MHR0400Y84")
+                .build();
+        DEAValidator deaValidator = new DEAValidator();
+        deaValidator.setDeaNumberFileName(DeaNumberFileName);
+        deaValidator.initialize();
+        String expectedValue = "DEA-7048";
+        String actualValue =deaValidator.getDeaNumberForChemical(chemical);
+        Assertions.assertEquals(actualValue, expectedValue);
+    }
+
+    @Test
+    public void testGetDeaNumberForUnlistedChemical() throws Exception {
+        //create a substance that's on the list
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=[Si]C=[As]5")
+                .addName("Unknown chemical")
+                .build();
+        DEAValidator deaValidator = new DEAValidator();
+        deaValidator.setDeaNumberFileName(DeaNumberFileName);
+        deaValidator.initialize();
+        String actualValue =deaValidator.getDeaNumberForChemical(chemical);
+        Assertions.assertEquals(actualValue, null);
+    }
+
+
+    @Test
+    public void testGetDeaScheduleForUnlistedChemical() throws Exception {
+        //create a substance that's on the list
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=CC=C5CCCC[Si]")
+                .addName("Unknown chemical")
+                .build();
+        DEAValidator deaValidator = new DEAValidator();
+        deaValidator.setDeaNumberFileName(DeaNumberFileName);
+        deaValidator.initialize();
+        String actualValue =deaValidator.getDeaScheduleForChemical(chemical);
+        Assertions.assertNull(actualValue);
     }
 
 }

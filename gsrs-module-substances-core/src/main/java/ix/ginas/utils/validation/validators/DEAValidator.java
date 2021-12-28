@@ -16,94 +16,12 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class DEAValidator extends AbstractValidatorPlugin<Substance> {
 
-    public DEAValidator() {
-    }
     public final static String DEA_NUMBER_CODE_SYSTEM = "DEA Number";
-
-    public Map<String, String> getInchiKeyToDeaSchedule() {
-        return inchiKeyToDeaSchedule;
-    }
-
-    public Map<String, String> getInchiKeyToDeaNumber() {
-        return inchiKeyToDeaNumber;
-    }
-
     private Map<String, String> inchiKeyToDeaSchedule=null;
     private Map<String, String> inchiKeyToDeaNumber=null;
-
-    private String deaScheduleFileName;
+    //private String deaScheduleFileName;
     private String deaNumberFileName;
 
-    public void initialize()  {
-        log.trace(String.format("init DeaScheduleFileName: %s; DeaNumberFileName: %s", deaScheduleFileName, deaNumberFileName));
-        inchiKeyToDeaNumber = new ConcurrentHashMap<>();
-        inchiKeyToDeaSchedule= new ConcurrentHashMap<>();
-
-        //File deaNumberFile = new ClassPathResource(DeaNumberFileName).getFile();
-        readFromFile(deaNumberFileName, new LineProcessor() {
-            @Override
-            public boolean process(final String line) {
-                String[] tokens =line.split("\t");
-                inchiKeyToDeaNumber.put(tokens[2].replace("InChIKey=", ""), tokens[0]);
-                return true;
-            }
-        });
-
-        //File deaScheduleFile = new ClassPathResource(DeaScheduleFileName).getFile();
-        readFromFile(deaScheduleFileName, new LineProcessor() {
-            @Override
-            public boolean process(final String line) {
-                String[] tokens =line.split("\t");
-                inchiKeyToDeaSchedule.put(tokens[2].replace("InChIKey=", ""), tokens[0]);
-                return true;
-            }
-        });
-    }
-
-    @Override
-    public void validate(Substance substanceNew, Substance substanceOld, ValidatorCallback callback) {
-        if( !(substanceNew instanceof ChemicalSubstance)) {
-            return;
-        }
-        ChemicalSubstance chemical = (ChemicalSubstance) substanceNew;
-        String inchiKey = chemical.getStructure().getInChIKey();
-        if( inchiKeyToDeaSchedule.containsKey(inchiKey)) {
-            String deaSchedule = inchiKeyToDeaSchedule.get(inchiKey);
-            GinasProcessingMessage mesWarn = GinasProcessingMessage
-                    .WARNING_MESSAGE(
-                            String.format("This substance has DEA schedule: %s", deaSchedule));
-
-            String deaNumber = inchiKeyToDeaNumber.get(inchiKey);
-            if( deaNumber!=null ) {
-                AtomicReference<Code> deaNumberCodeRef = findFirstCode(substanceNew,  DEA_NUMBER_CODE_SYSTEM);
-                if( deaNumberCodeRef.get() != null) {
-                    deaNumberCodeRef.get().code=deaNumber;
-                    log.trace("assigned value to existing code");
-                }
-                else {
-                    Code deaNumberCode = new Code();
-                    deaNumberCode.code=deaNumber;
-                    deaNumberCode.codeSystem= DEA_NUMBER_CODE_SYSTEM;
-                    deaNumberCode.type="PRIMARY";
-                    chemical.addCode(deaNumberCode);
-                    log.trace("created new code");
-                }
-                mesWarn.appliableChange(true);
-            }
-
-            callback.addMessage(mesWarn);
-        }
-    }
-
-    public AtomicReference<Code> findFirstCode(Substance substance, String codeSystem) {
-        AtomicReference<Code> matchingCode =new AtomicReference<>();
-        substance.codes.forEach(cd->{
-            if( cd.codeSystem.equals(codeSystem)) {
-                matchingCode.set(cd);
-            }
-        });
-        return matchingCode;
-    }
     public static void readFromFile(String filePath, LineProcessor eachLine) {
         log.trace("readFromFile using filePath " + filePath);
         FileInputStream fstream =null;
@@ -128,12 +46,102 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
             e.printStackTrace();
         }
     }
-    public String getDeaScheduleFileName() {
-        return deaScheduleFileName;
+
+    public Map<String, String> getInchiKeyToDeaSchedule() {
+        return inchiKeyToDeaSchedule;
     }
 
-    public void setDeaScheduleFileName(String deaScheduleFileName) {
-        this.deaScheduleFileName = deaScheduleFileName;
+    public Map<String, String> getInchiKeyToDeaNumber() {
+        return inchiKeyToDeaNumber;
+    }
+
+    public void initialize()  {
+        log.trace(String.format("init DeaNumberFileName: %s", deaNumberFileName));
+        inchiKeyToDeaNumber = new ConcurrentHashMap<>();
+        inchiKeyToDeaSchedule= new ConcurrentHashMap<>();
+
+        readFromFile(deaNumberFileName, new LineProcessor() {
+            @Override
+            public boolean process(final String line) {
+                String[] tokens =line.split("\t");
+                inchiKeyToDeaNumber.put(tokens[2].replace("InChIKey=", ""), tokens[0]);
+                return true;
+            }
+        });
+
+        readFromFile(deaNumberFileName, new LineProcessor() {
+            @Override
+            public boolean process(final String line) {
+                String[] tokens =line.split("\t");
+                inchiKeyToDeaSchedule.put(tokens[2].replace("InChIKey=", ""), tokens[12]);
+                return true;
+            }
+        });
+    }
+
+    @Override
+    public void validate(Substance substanceNew, Substance substanceOld, ValidatorCallback callback) {
+        if( !(substanceNew instanceof ChemicalSubstance)) {
+            return;
+        }
+        ChemicalSubstance chemical = (ChemicalSubstance) substanceNew;
+        String deaNumber=getDeaNumberForChemical(chemical);
+        String deaSchedule = getDeaScheduleForChemical(chemical);
+        if( deaNumber !=null) {
+            GinasProcessingMessage mesWarn = GinasProcessingMessage
+                    .WARNING_MESSAGE(
+                            String.format("This substance has DEA schedule: %s", deaSchedule));
+            if( assignCodeForDea(substanceNew, deaNumber)){
+                mesWarn.appliableChange(true);
+            }
+            callback.addMessage(mesWarn);
+        }
+    }
+
+    public AtomicReference<Code> findFirstCode(Substance substance, String codeSystem) {
+        AtomicReference<Code> matchingCode =new AtomicReference<>();
+        substance.codes.forEach(cd->{
+            if( cd.codeSystem.equals(codeSystem)) {
+                matchingCode.set(cd);
+            }
+        });
+        return matchingCode;
+    }
+
+    public String getDeaScheduleForChemical( ChemicalSubstance chemicalSubstance) {
+        String inchiKey = chemicalSubstance.getStructure().getInChIKey();
+        if( inchiKey== null || inchiKey.length()<=0) {
+            log.warn("No InChIKey for structure!");
+            return null;
+        }
+        String deaSchedule = inchiKeyToDeaSchedule.get(inchiKey);
+        return deaSchedule;
+    }
+
+    public String getDeaNumberForChemical( ChemicalSubstance chemicalSubstance) {
+        String inchiKey = chemicalSubstance.getStructure().getInChIKey();
+        if( inchiKey== null || inchiKey.length()<=0) {
+            log.warn("No InChIKey for structure!");
+            return null;
+        }
+        String deaSchedule = inchiKeyToDeaNumber.get(inchiKey);
+        return deaSchedule;
+    }
+
+    public boolean assignCodeForDea(Substance substance, String deaNumber) {
+        AtomicReference<Code> deaNumberCodeRef = findFirstCode(substance,  DEA_NUMBER_CODE_SYSTEM);
+        if( deaNumberCodeRef.get() != null) {
+            deaNumberCodeRef.get().code=deaNumber;
+            log.trace("assigned value to existing code");
+            return false;
+        }
+        Code deaNumberCode = new Code();
+        deaNumberCode.code=deaNumber;
+        deaNumberCode.codeSystem= DEA_NUMBER_CODE_SYSTEM;
+        deaNumberCode.type="PRIMARY";
+        substance.addCode(deaNumberCode);
+        log.trace("created new code");
+        return true;
     }
 
     public String getDeaNumberFileName() {
