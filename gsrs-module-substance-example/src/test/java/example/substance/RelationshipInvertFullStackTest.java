@@ -1,15 +1,29 @@
 package example.substance;
 
-import static org.junit.Assert.assertEquals;
-
-import java.io.IOException;
-import java.util.List;
-import java.util.UUID;
-
+import example.GsrsModuleSubstanceApplication;
+import gsrs.module.substance.SubstanceValidatorConfig;
+import gsrs.module.substance.processors.*;
+import gsrs.module.substance.services.RelationshipService;
+import gsrs.repository.EditRepository;
+import gsrs.startertests.TestEntityProcessorFactory;
+import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.core.models.Edit;
+import ix.core.models.Group;
+import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Note;
+import ix.ginas.models.v1.Relationship;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.Substance.SubstanceClass;
+import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
+import ix.ginas.utils.validation.validators.AlternateDefinitionValidator;
+import ix.ginas.utils.validation.validators.PrimaryDefinitionValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
@@ -18,32 +32,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
-import gsrs.module.substance.SubstanceValidatorConfig;
-import gsrs.module.substance.processors.ReferenceProcessor;
-import gsrs.module.substance.processors.RelationEventListener;
-import gsrs.module.substance.processors.RelationshipProcessor;
-import gsrs.module.substance.processors.SubstanceProcessor;
-import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
-import gsrs.module.substance.services.RelationshipService;
-import gsrs.repository.EditRepository;
-import gsrs.startertests.TestEntityProcessorFactory;
-import gsrs.startertests.TestGsrsValidatorFactory;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
-import ix.core.models.Edit;
-import ix.core.models.Group;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Note;
-import ix.ginas.models.v1.ProteinSubstance;
-import ix.ginas.models.v1.Relationship;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Substance.SubstanceClass;
-import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
-import ix.ginas.utils.validation.validators.AlternateDefinitionValidator;
-import ix.ginas.utils.validation.validators.PrimaryDefinitionValidator;
-import ix.ginas.utils.validation.validators.ProteinValidator;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 
+import static org.junit.Assert.assertEquals;
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @Import({RelationshipInvertFullStackTest.Configuration.class, RelationEventListener.class})

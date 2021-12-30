@@ -1,4 +1,4 @@
-package example;
+package gsrs.substances.tests;
 
 
 import gov.nih.ncats.common.util.CachedSupplier;

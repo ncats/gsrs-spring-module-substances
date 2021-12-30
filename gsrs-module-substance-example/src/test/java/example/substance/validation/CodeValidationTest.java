@@ -1,11 +1,9 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Keyword;
-import ix.core.validator.ValidationMessage;
-import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.v1.Code;
@@ -13,11 +11,12 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.CodesValidator;
-import java.util.HashSet;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.HashSet;
 
 /**
  *

@@ -1,28 +1,7 @@
 package example.substance;
 
-import static org.junit.Assert.assertEquals;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
-import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
-
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.SpyBean;
-import org.springframework.context.annotation.Import;
-import org.springframework.scheduling.annotation.AsyncConfigurer;
-import org.springframework.scheduling.annotation.EnableAsync;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import com.fasterxml.jackson.databind.JsonNode;
-
+import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gsrs.module.substance.processors.ReferenceProcessor;
 import gsrs.module.substance.processors.RelationEventListener;
@@ -32,6 +11,7 @@ import gsrs.module.substance.services.RelationshipService;
 import gsrs.repository.EditRepository;
 import gsrs.startertests.TestEntityProcessorFactory;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.ProteinSubstance;
@@ -40,7 +20,27 @@ import ix.seqaln.SequenceIndexer.CutoffType;
 import ix.seqaln.SequenceIndexer.Result;
 import ix.seqaln.SequenceIndexer.ResultEnumeration;
 import ix.seqaln.service.SequenceIndexerService;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.annotation.AsyncConfigurer;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @Import({SequenceSearchFullStackTest.Configuration.class, RelationEventListener.class})

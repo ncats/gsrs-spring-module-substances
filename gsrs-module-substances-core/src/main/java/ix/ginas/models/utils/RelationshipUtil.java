@@ -89,7 +89,16 @@ Exception Details:
         return r.type;
     }
 
+    /**
+     * Adjust whitespace on the given Relationship's type.
+     * Note: the input Relationship is not changed.
+     * @param r the relationship to adjust; can not be null.
+     * @return a String of the adjusted type; or null if the input relationship's type field is null.
+     */
     public static  String standardizeType(Relationship r){
+        if(r.type ==null){
+            return null;
+        }
         if(r.type.contains(RELATIONSHIP_INV_CONST)){
             String[] split = r.type.split(RELATIONSHIP_INV_CONST);
             return split[0].trim() + "->" +split[1].trim();

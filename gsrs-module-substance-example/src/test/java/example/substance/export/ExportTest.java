@@ -1,10 +1,10 @@
 package example.substance.export;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.exporters.ExportDir;
 import ix.ginas.exporters.ExportMetaData;
 import ix.ginas.exporters.ExportProcess;
@@ -12,6 +12,7 @@ import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -24,8 +25,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 public class ExportTest extends AbstractSubstanceJpaFullStackEntityTest {
 

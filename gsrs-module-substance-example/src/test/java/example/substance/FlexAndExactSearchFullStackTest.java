@@ -1,23 +1,20 @@
 package example.substance;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import javax.servlet.http.HttpServletRequest;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import example.GsrsModuleSubstanceApplication;
+import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.controllers.SubstanceController;
+import gsrs.module.substance.processors.RelationEventListener;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.core.chem.InchiStandardizer;
+import ix.core.chem.StructureStandardizer;
+import ix.core.models.Structure;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
@@ -28,17 +25,16 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
-import gov.nih.ncats.molwitch.Chemical;
-import gsrs.module.substance.controllers.SubstanceController;
-import gsrs.module.substance.processors.RelationEventListener;
-import ix.core.chem.InchiStandardizer;
-import ix.core.chem.StructureStandardizer;
-import ix.core.models.Structure;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @Import({FlexAndExactSearchFullStackTest.Configuration.class, RelationEventListener.class})
@@ -220,7 +216,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
         
         assertEquals(2,lstd.getStdCallCount());
-        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_SECBINFHSA_N",mockAtt.getAttributes().get("q"));
+        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_UHFFFAOYSA_N",mockAtt.getAttributes().get("q"));
     }
     
     
@@ -255,7 +251,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
 
         assertTrue(lstd.getStdCallCount()>=2, "Standardization should be called at least twice, but could be called more in some cases");
-        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_SECBINFHSA_N",mockAtt.getAttributes().get("q"));
+        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_UHFFFAOYSA_N",mockAtt.getAttributes().get("q"));
     }
 
 

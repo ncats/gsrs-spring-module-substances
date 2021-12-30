@@ -15,11 +15,11 @@
     </properties>
 
     <groupId>gov.nih.ncats</groupId>
-    <artifactId>gsrs-module-substances-dto</artifactId>
+    <artifactId>gsrs-module-substances-tests</artifactId>
 
 
-    <name>gsrs-module-substances-dto</name>
-    <description>Demo project for Spring Boot</description>
+    <name>gsrs-module-substances-tests</name>
+    <description>Test Harness for Substances</description>
 
     <dependencies>
 
@@ -49,6 +49,16 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
             <version>0.6.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-module-substances-spring-boot-starter</artifactId>
+            <version>${gsrs.substance.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-starter-tests</artifactId>
+            <version>${gsrs.version}</version>
         </dependency>
     </dependencies>
 

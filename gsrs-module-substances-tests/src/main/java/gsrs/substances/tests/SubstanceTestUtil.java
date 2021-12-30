@@ -1,4 +1,4 @@
-package example;
+package gsrs.substances.tests;
 
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
