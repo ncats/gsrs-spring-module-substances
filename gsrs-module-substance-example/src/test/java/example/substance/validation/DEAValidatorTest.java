@@ -1,6 +1,7 @@
 package example.substance.validation;
 
 import example.substance.AbstractSubstanceJpaEntityTest;
+import gsrs.module.substance.utils.DEADataTable;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
@@ -8,6 +9,7 @@ import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.DEAValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -50,10 +52,8 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void testInit() throws IOException {
-        DEAValidator validator = new DEAValidator();
-        validator.setDeaNumberFileName(DeaNumberFileName);
-        validator.initialize();
-        Map<String, String> inchiKeyToDeaNumber= validator.getInchiKeyToDeaNumber();
+        DEADataTable deaDataTable = new DEADataTable(DeaNumberFileName);
+        Map<String, String> inchiKeyToDeaNumber= deaDataTable.getInchiKeyToDeaNumber();
         Assertions.assertTrue(inchiKeyToDeaNumber.size()>0);
     }
 
@@ -94,11 +94,10 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .addName("APINACA and AKB48 N-(1-Adamantyl)-1-pentyl-1Hindazole-3-carboxamide")
                 .addCode("UNII", "MHR0400Y84")
                 .build();
-        DEAValidator deaValidator = new DEAValidator();
-        deaValidator.setDeaNumberFileName(DeaNumberFileName);
-        deaValidator.initialize();
+
+        DEADataTable deaDataTable = new DEADataTable(DeaNumberFileName);
         String expectedValue = "DEA SCHEDULE I";
-        String actualValue =deaValidator.getDeaScheduleForChemical(chemical);
+        String actualValue =deaDataTable.getDeaScheduleForChemical(chemical);
         Assertions.assertEquals(actualValue, expectedValue);
     }
 
@@ -110,11 +109,9 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .addName("APINACA and AKB48 N-(1-Adamantyl)-1-pentyl-1Hindazole-3-carboxamide")
                 .addCode("UNII", "MHR0400Y84")
                 .build();
-        DEAValidator deaValidator = new DEAValidator();
-        deaValidator.setDeaNumberFileName(DeaNumberFileName);
-        deaValidator.initialize();
+        DEADataTable deaDataTable = new DEADataTable(DeaNumberFileName);
         String expectedValue = "DEA-7048";
-        String actualValue =deaValidator.getDeaNumberForChemical(chemical);
+        String actualValue =deaDataTable.getDeaNumberForChemical(chemical);
         Assertions.assertEquals(actualValue, expectedValue);
     }
 
@@ -125,10 +122,8 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
         ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=[Si]C=[As]5")
                 .addName("Unknown chemical")
                 .build();
-        DEAValidator deaValidator = new DEAValidator();
-        deaValidator.setDeaNumberFileName(DeaNumberFileName);
-        deaValidator.initialize();
-        String actualValue =deaValidator.getDeaNumberForChemical(chemical);
+        DEADataTable deaDataTable = new DEADataTable(DeaNumberFileName);
+        String actualValue =deaDataTable.getDeaNumberForChemical(chemical);
         Assertions.assertEquals(actualValue, null);
     }
 
@@ -140,11 +135,36 @@ public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
         ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=CC=C5CCCC[Si]")
                 .addName("Unknown chemical")
                 .build();
-        DEAValidator deaValidator = new DEAValidator();
-        deaValidator.setDeaNumberFileName(DeaNumberFileName);
-        deaValidator.initialize();
-        String actualValue =deaValidator.getDeaScheduleForChemical(chemical);
+        DEADataTable deaDataTable = new DEADataTable(DeaNumberFileName);
+        String actualValue =deaDataTable.getDeaScheduleForChemical(chemical);
         Assertions.assertNull(actualValue);
+    }
+
+    @Test
+    public void testAssignNoteForDeaPos(){
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=CC=C5CCCC[Si]")
+                .addName("Unknown chemical")
+                .build();
+        DEADataTable deaDataTable = new DEADataTable(DeaNumberFileName);
+        String deaSchedule = deaDataTable.getDeaScheduleForChemical(chemical);
+        boolean added = deaDataTable.assignNoteForDea(chemical, deaSchedule);
+        Assertions.assertTrue(added);
+    }
+
+    @Test
+    public void testAssignNoteForDeaNeg(){
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        Note deaScheduleNote = new Note();
+        deaScheduleNote.note="WARNING:This substance has DEA schedule: DEA SCHEDULE I";
+        ChemicalSubstance chemical= builder.setStructureWithDefaultReference("CCCCCN1N=C(C(=O)NC23CC4CC(CC(C4)C2)C3)C5=C1C=CC=C5")
+                .addName("Unknown chemical")
+                .addNote(deaScheduleNote)
+                .build();
+        DEADataTable deaDataTable = new DEADataTable(DeaNumberFileName);
+        String deaSchedule = deaDataTable.getDeaScheduleForChemical(chemical);
+        boolean added = deaDataTable.assignNoteForDea(chemical, deaSchedule);
+        Assertions.assertFalse(added);
     }
 
 }

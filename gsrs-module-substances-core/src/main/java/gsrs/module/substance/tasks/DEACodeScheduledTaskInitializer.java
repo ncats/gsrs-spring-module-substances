@@ -4,10 +4,13 @@ import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.config.FilePathParserUtils;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.utils.DEADataTable;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
 import ix.core.utils.executor.ProcessListener;
+import ix.ginas.models.GinasCommonData;
+import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
 
-    private String outputPath;
-    private String deaScheduleFilePath;
-    private String deaListFilePath;
+    private String outputFilePath;
 
     private String name = "deaNumberReport";
 
@@ -44,22 +45,42 @@ public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private SubstanceRepository substanceRepository;
 
+    private String deaNumberFileName;
+
+    public String getDeaNumberFileName() {
+        return deaNumberFileName;
+    }
+
+    public void setDeaNumberFileName(String deaNumberFileName) {
+        this.deaNumberFileName = deaNumberFileName;
+    }
+
+    public String getOutputFilePath() {
+        return outputFilePath;
+    }
+
+    public void setOutputFilePath(String outputFilePath) {
+        this.outputFilePath = outputFilePath;
+    }
+
     @Override
     public void run(SchedulerPlugin.TaskListener l) {
-        l.message("Initializing rehashing");
+        l.message("Initializing DEA ID Calculation");
         ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->
         {
             if (total != null)
             {
-                l.message("Rehashed:" + sofar + " of " + total);
+                l.message("Processed: " + sofar + " of " + total);
             } else
             {
-                l.message("Rehashed:" + sofar);
+                l.message("Processed: " + sofar);
             }
         });
 
-        l.message("Initializing rehashing: acquiring list");
-        List<UUID> ids = substanceRepository.findAll().stream().map(s->s.getUuid()).collect(Collectors.toList());
+        DEADataTable deaDataTable = new DEADataTable(deaNumberFileName);
+
+        l.message("Initializing DEA ID Calculation: acquiring list");
+        List<UUID> ids = substanceRepository.findAll().stream().map(GinasCommonData::getUuid).collect(Collectors.toList());
 
         listen.newProcess();
         listen.totalRecordsToProcess(ids.size());
@@ -68,11 +89,11 @@ public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
         l.message("Initializing DEA ID recalculation: acquiring user account");
         Authentication adminAuth = adminService.getAnyAdmin();
         l.message("Initializing DEA ID recalculation: starting process");
-
-        try{
+        File reportFile=getOutputFile();
+        try (PrintStream out = makePrintStream(reportFile)){
             for (UUID id : ids) {
                 executor.submit(() -> {
-                    try{
+                    try {
                         adminService.runAs(adminAuth, () -> {
                             TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -81,21 +102,37 @@ public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
                                     substanceRepository.findById(id).ifPresent(s -> {
                                         listen.preRecordProcess(s);
                                         try {
-                                            log.debug("examining "+  id);
                                             if(s.substanceClass.equals(Substance.SubstanceClass.chemical)) {
-                                                log.debug("processing chemical");
-
+                                                boolean addedCode=false;
+                                                boolean addedNote=false;
+                                                log.debug("processing chemical with id " + id);
+                                                String deaNumber =deaDataTable.getDeaNumberForChemical((ChemicalSubstance) s);
+                                                log.trace("deaNumber: " + deaNumber);
+                                                if( deaNumber!=null) {
+                                                    addedCode=deaDataTable.assignCodeForDea(s, deaNumber);
+                                                    out.format("assigned DEA number %s to substance %s\r\n", deaNumber, s.uuid);
+                                                }
+                                                String deaSchedule = deaDataTable.getDeaScheduleForChemical((ChemicalSubstance) s);
+                                                log.trace("deaSchedule: " + deaSchedule);
+                                                if( deaSchedule !=null ) {
+                                                    addedNote=deaDataTable.assignNoteForDea(s, deaSchedule);
+                                                    out.format("assigned DEA schedule %s to substance %s\n", deaSchedule, s.uuid);
+                                                }
+                                                if(addedCode || addedNote) {
+                                                    log.trace("will save");
+                                                    substanceRepository.saveAndFlush(s);
+                                                } else {
+                                                    log.trace("omitting save");
+                                                }
                                             }
-                                            else {
-                                                log.debug("skipping non-chemical");
-                                            }
 
+                                            out.println();
                                             log.debug("done processing "+ id);
                                             listen.recordProcessed(s);
                                         } catch(Throwable t) {
                                             log.error("error processing "+  id, t);
                                             listen.error(t);
-                                            l.message("Error reindexing ... " + id + " error: " + t.getMessage());
+                                            l.message("Error processing ... " + id + " error: " + t.getMessage());
                                         }
                                     });
                                 });
@@ -106,7 +143,7 @@ public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
                             }
                         });
                     }catch(Exception ex) {
-                        l.message("Error reindexing ... " + id + " error: " + ex.getMessage());
+                        l.message("Error processing ... " + id + " error: " + ex.getMessage());
                         return;
                     }
                 });
@@ -132,7 +169,7 @@ public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
 
     @Override
     public String getDescription() {
-        return "Assign DEA Schedules as notes to each record and codes with the DEA Number";
+        return "Assign DEA Schedules as notes and DEA Numbers as codes to each relevant record";
     }
 
     /**
@@ -142,7 +179,7 @@ public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
      */
     public File getOutputFile() {
         return FilePathParserUtils.getFileParserBuilder()
-                .suppliedFilePath(outputPath)
+                .suppliedFilePath(outputFilePath)
                 .defaultFilePath("reports/" + name + "-%DATE%.txt")
                 .build()
                 .getFile();
@@ -153,5 +190,4 @@ public class DEACodeScheduledTaskInitializer extends ScheduledTaskInitializer {
                 new BufferedOutputStream(new FileOutputStream(writeFile)),
                 false, "UTF-8");
     }
-
 }
