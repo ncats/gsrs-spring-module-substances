@@ -17,7 +17,6 @@ public class PeptideInterpreterTest{
 
     private static Stream<Arguments> peptideData() {
         return Stream.of(
-
                 Arguments.of("CC[C@H](C)[C@@H]1NC(=O)[C@H](CC2=CC=C(O)C=C2)NC(=O)[C@@H](N)CSSC[C@H](NC(=O)[C@H](CC(N)=O)NC(=O)[C@H](CCC(N)=O)NC1=O)C(=O)N3CCCC3C(=O)N[C@@H](CC(C)C)C(=O)NCC(N)=O"
                 ,"CYIQNCPLG"),
 
