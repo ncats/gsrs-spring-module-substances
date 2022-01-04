@@ -486,36 +486,37 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
             .buildJsonAnd(this::assertCreatedAPI);
        
        
+        newTransactionTemplate().executeWithoutResult(ignored-> {
+            Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+            assertEquals("1", sub1Fetched.version);
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
-        assertEquals("1", sub1Fetched.version);
-        
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
-        assertEquals("1", sub2Fetched.version);
-        
-        
-        sub1Fetched.toBuilder()
+            Substance sub2Fetched = substanceEntityService.get(uuid2).get();
+            assertEquals("1", sub2Fetched.version);
+
+
+            sub1Fetched.toBuilder()
                     .addRelationshipTo(sub2Fetched, foo_bar)
                     .buildJsonAnd(this::assertUpdatedAPI);
-        
-        
-        sub1Fetched = substanceEntityService.get(uuid1).get();
-        assertEquals("2", sub1Fetched.version);
-        
-        sub2Fetched = substanceEntityService.get(uuid2).get();
-        assertEquals("2", sub2Fetched.version);
-        
-        assertEquals(1, sub1Fetched.relationships.size());
-        assertEquals(1, sub2Fetched.relationships.size());
-        
-        assertEquals(uuid2.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid);
-        assertEquals(foo_bar, sub1Fetched.relationships.get(0).type);
-        
-        String oid1=sub1Fetched.relationships.get(0).originatorUuid;
-        String oid2=sub2Fetched.relationships.get(0).originatorUuid;
-        assertEquals(uuid1.toString(), sub2Fetched.relationships.get(0).relatedSubstance.refuuid);
-        assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
-        assertEquals(oid1, oid2);
+
+
+            sub1Fetched = substanceEntityService.get(uuid1).get();
+            assertEquals("2", sub1Fetched.version);
+
+            sub2Fetched = substanceEntityService.get(uuid2).get();
+            assertEquals("2", sub2Fetched.version);
+
+            assertEquals(1, sub1Fetched.relationships.size());
+            assertEquals(1, sub2Fetched.relationships.size());
+
+            assertEquals(uuid2.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid);
+            assertEquals(foo_bar, sub1Fetched.relationships.get(0).type);
+
+            String oid1 = sub1Fetched.relationships.get(0).originatorUuid;
+            String oid2 = sub2Fetched.relationships.get(0).originatorUuid;
+            assertEquals(uuid1.toString(), sub2Fetched.relationships.get(0).relatedSubstance.refuuid);
+            assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
+            assertEquals(oid1, oid2);
+        });
         
     }
     

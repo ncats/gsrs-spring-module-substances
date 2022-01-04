@@ -216,7 +216,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
         
         assertEquals(2,lstd.getStdCallCount());
-        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_UHFFFAOYSA_N",mockAtt.getAttributes().get("q"));
+        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_SECBINFHSA_N",mockAtt.getAttributes().get("q"));
     }
     
     
@@ -251,7 +251,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
 
         assertTrue(lstd.getStdCallCount()>=2, "Standardization should be called at least twice, but could be called more in some cases");
-        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_UHFFFAOYSA_N",mockAtt.getAttributes().get("q"));
+        assertEquals("root_structure_properties_term:MFFMDFFZMYYVKS_SECBINFHSA_N",mockAtt.getAttributes().get("q"));
     }
 
 
