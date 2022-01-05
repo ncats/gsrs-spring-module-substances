@@ -2,25 +2,52 @@ package gsrs.module.substance.exporters;
 
 
 
-import gsrs.module.substance.repository.SubstanceRepository;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Stream;
+
+import org.springframework.beans.factory.annotation.Autowired;
+
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
+import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.EntityFetcher;
 import ix.core.models.Group;
 import ix.core.models.Structure;
 import ix.core.util.EntityUtils.Key;
-import ix.ginas.exporters.*;
-import ix.ginas.models.v1.*;
+import ix.ginas.exporters.Column;
+import ix.ginas.exporters.ColumnValueRecipe;
+import ix.ginas.exporters.ExporterFactory;
+import ix.ginas.exporters.OutputFormat;
+import ix.ginas.exporters.SingleColumnValueRecipe;
+import ix.ginas.exporters.Spreadsheet;
+import ix.ginas.exporters.Spreadsheet.SpreadsheetRow;
+import ix.ginas.exporters.SpreadsheetCell;
+import ix.ginas.exporters.SpreadsheetFormat;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.NucleicAcidSubstance;
+import ix.ginas.models.v1.PolymerSubstance;
+import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.StructurallyDiverseSubstance;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.SubstanceReference;
+import ix.ginas.models.v1.Subunit;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * {@link ExporterFactory} that supports writing spreadsheet data
@@ -135,19 +162,51 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
              DEFAULT_RECIPE_MAP.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
              //TODO preferred TERM ?
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NAME, SingleColumnValueRecipe.create(DefaultColumns.NAME, (s, cell) -> cell.writeString(s.getName())));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.NAME, createRestrictableRecipe(DefaultColumns.NAME, (s, pubOnly,cell) -> {
+                 if(pubOnly) {
+                     Optional<Name> opName = s.getDisplayName();
+                     boolean wroteName = false;
+                     if(opName.isPresent()) {
+                         if(opName.get().getAccess().isEmpty()) {
+                             cell.writeString(opName.get().getName());
+                             wroteName=true;
+                         }
+                     }
+                     if(!wroteName) {
+                         //TODO: Something based on what comes back
+                     }
+                     
+                 }else {
+                     cell.writeString(s.getName());
+                 }
+             }));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.SMILES, SingleColumnValueRecipe.create(DefaultColumns.SMILES, (s, cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.SMILES, createRestrictableRecipe(DefaultColumns.SMILES, (s,pubOnly, cell) -> {
                  if (s instanceof ChemicalSubstance) {
+                     if(pubOnly) {
+                         if(!((ChemicalSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
                      cell.writeString(((ChemicalSubstance) s).getStructure().smiles);
                  }
              }));
 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, SingleColumnValueRecipe.create(DefaultColumns.FORMULA, (s, cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
                  if (s instanceof ChemicalSubstance) {
+                     if(pubOnly) {
+                         if(!((ChemicalSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
                      cell.writeString(((ChemicalSubstance) s).getStructure().formula);
                  } else if (s instanceof PolymerSubstance) {
+                     if(pubOnly) {
+                         if(!((PolymerSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
                      cell.writeString("Polymer substance not supported");
                  }
              }));
@@ -157,8 +216,13 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
 //            boolean includeInChiKeysAnyway = ConfigHelper.getBoolean("ix.gsrs.delimitedreports.inchikeysforambiguousstereo", false);
              log.debug("includeInChiKeysAnyway: " + substanceExporterConfiguration.isIncludeInChiKeysAnyway());
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, SingleColumnValueRecipe.create(DefaultColumns.STD_INCHIKEY_FORMATTED, (s, cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
                  if (s instanceof ChemicalSubstance) {
+                     if(pubOnly) {
+                         if(!((ChemicalSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
                      Structure.Stereo ster = ((ChemicalSubstance) s).getStereochemistry();
                      if (!ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
                          return;
@@ -197,11 +261,19 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
 
              //Lazy place to put new default columns
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.PROTEIN_SEQUENCE, SingleColumnValueRecipe.create(DefaultColumns.PROTEIN_SEQUENCE, (s, cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.PROTEIN_SEQUENCE, createRestrictableRecipe(DefaultColumns.PROTEIN_SEQUENCE, (s,pubOnly, cell) -> {
                  if (s instanceof ProteinSubstance) {
+                     if(pubOnly) {
+                         if(!((ProteinSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
                      List<Subunit> subunits = ((ProteinSubstance) s).protein.getSubunits();
                      StringBuilder sb = new StringBuilder();
                      for (Subunit su : subunits) {
+                         if(pubOnly && !su.getAccess().isEmpty()) {
+                             continue;
+                         }
                          if (sb.length() != 0) {
                              sb.append("|");
                          }
@@ -211,13 +283,21 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                  }
              }));
 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NUCLEIC_ACID_SEQUENCE, SingleColumnValueRecipe.create(DefaultColumns.NUCLEIC_ACID_SEQUENCE, (s, cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.NUCLEIC_ACID_SEQUENCE, createRestrictableRecipe(DefaultColumns.NUCLEIC_ACID_SEQUENCE, (s, pubOnly, cell) -> {
                  if (s instanceof NucleicAcidSubstance) {
+                     if(pubOnly) {
+                         if(!((NucleicAcidSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
                      List<Subunit> subunits = ((NucleicAcidSubstance) s).nucleicAcid.getSubunits();
 
                      StringBuilder sb = new StringBuilder();
 
                      for (Subunit su : subunits) {
+                         if(pubOnly && !su.getAccess().isEmpty()) {
+                             continue;
+                         }
                          if (sb.length() != 0) {
                              sb.append("|");
                          }
@@ -253,6 +333,63 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
         }
     }
+    
+    public static interface PublicRestrictable<T extends ColumnValueRecipe<U>, U>{
+        public T asPublicOnly();
+    }
+    
+    public static interface PublicRestrictableColumnRecipe<T extends ColumnValueRecipe<U>, U> extends PublicRestrictable<T,U>, ColumnValueRecipe<U>{
+        
+    }
+    
+    public static interface PublicRestrictionAwareWriteFunction<T>{
+
+        void writeValue(T object,boolean pubOnly, SpreadsheetCell cell);
+    }
+    
+    public static <T extends ColumnValueRecipe<U>,U> PublicRestrictableColumnRecipe<T, U> createRestrictableRecipe(Enum<?> name,PublicRestrictionAwareWriteFunction<U> writerFunction){
+        ColumnValueRecipe<U> defaultRecipe = SingleColumnValueRecipe.create(name.name(), (t,cell)->{
+            writerFunction.writeValue(t, false, cell);
+        });
+        ColumnValueRecipe<U> publicOnlyDefaultRecipe = SingleColumnValueRecipe.create(name.name(), (t,cell)->{
+            writerFunction.writeValue(t, true, cell);
+        });
+        
+        return new PublicRestrictableColumnRecipe<T, U>(){
+
+            @Override
+            public T asPublicOnly() {
+                return (T) publicOnlyDefaultRecipe;
+            }
+
+            @Override
+            public boolean containsColumnName(String name) {
+                return defaultRecipe.containsColumnName(name);
+            }
+
+            @Override
+            public ColumnValueRecipe<U> replaceColumnName(String oldName,
+                    String newName) {
+                return defaultRecipe.replaceColumnName(oldName, newName);
+            }
+
+            @Override
+            public int writeHeaderValues(SpreadsheetRow row,
+                    int currentOffset) {
+                return defaultRecipe.writeHeaderValues(row,currentOffset);
+            }
+
+            @Override
+            public int writeValuesFor(SpreadsheetRow row, int currentOffset,
+                    U obj) {
+                return defaultRecipe.writeValuesFor(row,currentOffset,obj);
+            }
+            
+        };
+    }
+
+    
+    
 
 
 
@@ -348,7 +485,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
 
 
-    static class CodeSystemRecipe implements SingleColumnValueRecipe<Substance>{
+    static class CodeSystemRecipe implements SingleColumnValueRecipe<Substance>, PublicRestrictable<CodeSystemRecipe, Substance>{
 
         private final String columnName;
 
