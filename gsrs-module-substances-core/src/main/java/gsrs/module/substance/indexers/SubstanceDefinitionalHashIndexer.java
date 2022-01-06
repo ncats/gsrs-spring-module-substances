@@ -42,7 +42,7 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 		{
 			DefinitionalElements elements =  definitionalElementFactory.computeDefinitionalElementsFor(substance);
 
-			LogUtil.trace(()->String.format(" received %d elements", elements.getElements().size()));
+			LogUtil.trace(()->String.format("%s: received %d elements", substance.uuid, elements.getElements().size()));
 			if( elements==null)
 			{
 				log.trace("elements null");

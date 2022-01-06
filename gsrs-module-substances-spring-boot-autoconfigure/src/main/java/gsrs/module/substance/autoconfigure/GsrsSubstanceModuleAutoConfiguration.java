@@ -102,7 +102,8 @@ public class GsrsSubstanceModuleAutoConfiguration {
     }
     //let's try creating the beans for our controllers and services
 
-    @Bean@ConditionalOnMissingBean
+    @Bean
+    @ConditionalOnMissingBean(RecalcStructurePropertiesService.class)
     public RecalcStructurePropertiesService recalcStructurePropertiesService(){
         return new RecalcStructurePropertiesService();
     }
