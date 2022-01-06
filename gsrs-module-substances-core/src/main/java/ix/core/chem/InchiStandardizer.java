@@ -7,7 +7,6 @@ import ix.core.models.Structure;
 import ix.core.models.Text;
 import ix.core.models.Value;
 
-
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -60,9 +59,15 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
         try {
             String inchi = orig.toInchi().getInchi();
             Chemical chem= Inchi.toChemical(inchi);
+            //some inchi->chemical flavors have very bad clean functions and don't compute stereo or coords correctly
+            //which can lead to wrong molecules so do a double check that we get the right inchi back
+            if(!chem.toInchi().getInchi().equals(inchi)){
+                return orig;
+            }
             valueConsumer.accept(
                     (new Text(Structure.F_SMILES,chem.toSmiles(CANONICAL_SMILES_SPEC)
                            )));
+
             return chem;
         }catch(Exception e){
             e.printStackTrace();
