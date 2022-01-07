@@ -141,9 +141,11 @@ Exception Details:
             groups.add(g);
         }
         r.setAccess(groups);
-
-        r.comments = other.comments;
-
+        if(r.comments !=null) {
+            //new String so ebean sees it's a new object
+            //just in case...
+            r.comments = new String(other.comments);
+        }
         if(other.amount !=null) {
             try {
                 r.amount = EntityUtils.EntityWrapper.of(other.amount).getClone();
