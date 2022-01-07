@@ -485,8 +485,7 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
             .setUUID(uuid2)
             .buildJsonAnd(this::assertCreatedAPI);
        
-       
-        newTransactionTemplate().executeWithoutResult(ignored-> {
+
             Substance sub1Fetched = substanceEntityService.get(uuid1).get();
             assertEquals("1", sub1Fetched.version);
 
@@ -516,7 +515,6 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
             assertEquals(uuid1.toString(), sub2Fetched.relationships.get(0).relatedSubstance.refuuid);
             assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
             assertEquals(oid1, oid2);
-        });
         
     }
     
