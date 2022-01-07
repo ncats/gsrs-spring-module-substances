@@ -30,7 +30,7 @@
     <properties>
         <java.version>1.8</java.version>
         <spring-cloud.version>Hoxton.SR1</spring-cloud.version>
-        <gsrs.version>0.8.3-SNAPSHOT</gsrs.version>
+        <gsrs.version>3.0-SNAPSHOT</gsrs.version>
         <gsrs.substance.version>0.7.3-SNAPSHOT</gsrs.substance.version>
         <spring-boot.version>2.4.5</spring-boot.version>
         <log4j2.version>2.17.1</log4j2.version>
