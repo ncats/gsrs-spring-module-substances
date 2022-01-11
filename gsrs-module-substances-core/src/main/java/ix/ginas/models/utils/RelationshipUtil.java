@@ -141,7 +141,7 @@ Exception Details:
             groups.add(g);
         }
         r.setAccess(groups);
-        if(r.comments !=null) {
+        if(other.comments !=null) {
             //new String so ebean sees it's a new object
             //just in case...
             r.comments = new String(other.comments);
