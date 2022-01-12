@@ -33,7 +33,7 @@ public class SubstanceCategoryGenerator implements SingleColumnValueRecipe<Subst
 
 	@Override
 	public ColumnValueRecipe<Substance> replaceColumnName(String oldName, String newName) {
-		return null;
+		return this;
 	}
 
 	/**

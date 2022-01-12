@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
+import ix.core.models.ParentReference;
 import ix.core.models.SequenceEntity;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
@@ -36,6 +37,7 @@ public class Subunit extends GinasCommonSubData implements SequenceEntity {
      */
     @Transient
     @JsonIgnore
+    @ParentReference
     private GinasCommonSubData parent;
 
     public Subunit () {}
