@@ -142,4 +142,21 @@ public class DEADataTable {
         return deaNumberFileName;
     }
 
+    public boolean assignIds(ChemicalSubstance chemicalSubstance, PrintStream out) {
+        boolean addedCode =false;
+        boolean addedNote = false;
+        String deaNumber =getDeaNumberForChemical(chemicalSubstance);
+        log.trace("deaNumber: " + deaNumber);
+        if( deaNumber!=null) {
+            addedCode=assignCodeForDea(chemicalSubstance, deaNumber);
+            out.format("assigned DEA number %s to substance %s\r\n", deaNumber, chemicalSubstance.uuid);
+        }
+        String deaSchedule = getDeaScheduleForChemical( chemicalSubstance);
+        log.trace("deaSchedule: " + deaSchedule);
+        if( deaSchedule !=null ) {
+            addedNote=assignNoteForDea(chemicalSubstance, deaSchedule);
+            out.format("assigned DEA schedule %s to substance %s\n", deaSchedule, chemicalSubstance.uuid);
+        }
+        return(addedCode || addedNote);
+    }
 }
