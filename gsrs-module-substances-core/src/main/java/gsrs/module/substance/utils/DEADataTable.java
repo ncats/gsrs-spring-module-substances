@@ -25,13 +25,13 @@ public class DEADataTable {
     //private String deaScheduleFileName;
     private String deaNumberFileName;
 
-    public static void readFromFile(String filePath, LineProcessor eachLine) {
+    public void readFromFile(String filePath, LineProcessor eachLine) {
         log.trace("readFromFile using filePath " + filePath);
         FileInputStream fstream =null;
         try {
             fstream = new FileInputStream(filePath);
         } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block
+            log.error("file not found: " + filePath);
             e.printStackTrace();
         }
         try {
@@ -45,14 +45,15 @@ public class DEADataTable {
                 }
                 br.close();
             }
+            log.trace("inchiKeyToDeaSchedule size: " + inchiKeyToDeaSchedule.size());
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    public Map<String, String> getInchiKeyToDeaSchedule() {
+    /*public Map<String, String> getInchiKeyToDeaSchedule() {
         return inchiKeyToDeaSchedule;
-    }
+    }*/
 
     public Map<String, String> getInchiKeyToDeaNumber() {
         return inchiKeyToDeaNumber;
@@ -150,12 +151,14 @@ public class DEADataTable {
         if( deaNumber!=null) {
             addedCode=assignCodeForDea(chemicalSubstance, deaNumber);
             out.format("assigned DEA number %s to substance %s\r\n", deaNumber, chemicalSubstance.uuid);
+            log.trace("added DEA number to output: " + deaNumber);
         }
         String deaSchedule = getDeaScheduleForChemical( chemicalSubstance);
         log.trace("deaSchedule: " + deaSchedule);
         if( deaSchedule !=null ) {
             addedNote=assignNoteForDea(chemicalSubstance, deaSchedule);
             out.format("assigned DEA schedule %s to substance %s\n", deaSchedule, chemicalSubstance.uuid);
+            log.trace("added DEA schedule to output: " + deaSchedule);
         }
         return(addedCode || addedNote);
     }

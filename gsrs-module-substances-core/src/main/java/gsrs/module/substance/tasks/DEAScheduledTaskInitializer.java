@@ -2,7 +2,6 @@ package gsrs.module.substance.tasks;
 
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.config.FilePathParserUtils;
-import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.RecalcStructurePropertiesService;
 import gsrs.module.substance.utils.DEADataTable;
@@ -10,6 +9,7 @@ import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
 import ix.core.utils.executor.ProcessListener;
+import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.v1.ChemicalSubstance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,19 +63,16 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
     public void setOutputFilePath(String outputFilePath) {
         this.outputFilePath = outputFilePath;
     }
-    
+
     @Override
     @Transactional
-    public void run(SchedulerPlugin.TaskListener l)
-    {
+    public void run(SchedulerPlugin.TaskListener l) {
         l.message("Initializing rehashing");
         ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->
         {
-            if (total != null)
-            {
+            if (total != null) {
                 l.message("Rehashed:" + sofar + " of " + total);
-            } else
-            {
+            } else {
                 l.message("Rehashed:" + sofar);
             }
         });
@@ -83,8 +80,8 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
         l.message("Initializing rehashing: acquiring list");
         DEADataTable deaDataTable = new DEADataTable(deaNumberFileName);
 
-        List<UUID> ids =substanceRepository.findAll().stream().map(s->s.getUuid()).collect(Collectors.toList());
-                //structureRepository.getAllIds();
+        List<UUID> ids = substanceRepository.findAll().stream().map(GinasCommonData::getUuid).collect(Collectors.toList());
+        //structureRepository.getAllIds();
 
         listen.newProcess();
         listen.totalRecordsToProcess(ids.size());
@@ -94,11 +91,11 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
         Authentication adminAuth = adminService.getAnyAdmin();
         l.message("Initializing calculation: starting process");
 
-        try{
+        try {
             for (UUID id : ids) {
                 executor.submit(() -> {
-                    File reportFile=getOutputFile();
-                    try (PrintStream out = makePrintStream(reportFile)){
+                    File reportFile = getOutputFile();
+                    try (PrintStream out = makePrintStream(reportFile)) {
                         adminService.runAs(adminAuth, () -> {
                             TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -107,32 +104,34 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
                                     substanceRepository.findById(id).ifPresent(s -> {
                                         listen.preRecordProcess(s);
                                         try {
-                                            log.debug("computing DEA data for  "+  id);
-                                            //recalcStructurePropertiesService.recalcStructureProperties(s);
-                                            if(deaDataTable.assignIds(((ChemicalSubstance)s), out )){
-                                                substanceRepository.saveAndFlush(s);
-                                                log.debug("saved");
+                                            if ((s instanceof ChemicalSubstance)) {
+                                                log.debug("computing DEA data for  " + id);
+                                                //recalcStructurePropertiesService.recalcStructureProperties(s);
+                                                if (deaDataTable.assignIds(((ChemicalSubstance) s), out)) {
+                                                    substanceRepository.saveAndFlush(s);
+                                                    log.debug("saved");
+                                                }
+                                                log.debug("done computing DEA data for  " + id);
+                                                listen.recordProcessed(s);
                                             }
-                                            log.debug("done computing DEA data for  "+ id);
-                                            listen.recordProcessed(s);
-                                        } catch(Throwable t) {
-                                            log.error("error computing DEA data for  "+  id, t);
+                                        } catch (Throwable t) {
+                                            log.error("error computing DEA data for  " + id, t);
                                             listen.error(t);
                                             l.message("Error computing DEA data for ... " + id + " error: " + t.getMessage());
                                         }
                                     });
                                 });
                             } catch (Throwable ex) {
-                                log.error("error computing DEA data for  structural properties", ex);
+                                log.error("error computing DEA data for record", ex);
                                 l.message("Error computing DEA data for ... " + id + " error: " + ex.getMessage());
                             }
                         });
-                    }catch(Exception ex) {
+                    } catch (Exception ex) {
                         l.message("Error computing DEA data for ... " + id + " error: " + ex.getMessage());
                     }
                 });
             }
-        }catch(Exception ee){
+        } catch (Exception ee) {
             log.error("error computing DEA data for  ", ee);
             l.message("ERROR:" + ee.getMessage());
             throw new RuntimeException(ee);
@@ -141,7 +140,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
         l.message("Shutting down executor service");
         executor.shutdown();
         try {
-            executor.awaitTermination(1, TimeUnit.DAYS );
+            executor.awaitTermination(1, TimeUnit.DAYS);
         } catch (InterruptedException e) {
             //should never happen
 
@@ -153,15 +152,14 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return "Computer DEA code and schedule for all chemicals in the database";
     }
 
     /**
      * Returns the File used to output the report
      *
-     * @return
+     * @return a File object that can be used for a report
      */
     public File getOutputFile() {
         return FilePathParserUtils.getFileParserBuilder()
@@ -170,6 +168,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
                 .build()
                 .getFile();
     }
+
     private PrintStream makePrintStream(File writeFile) throws IOException {
         return new PrintStream(
                 new BufferedOutputStream(new FileOutputStream(writeFile)),
