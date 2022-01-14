@@ -86,16 +86,16 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
         listen.newProcess();
         listen.totalRecordsToProcess(ids.size());
 
-        ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
+        ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(1, 10);
         l.message("Initializing calculation: acquiring user account");
         Authentication adminAuth = adminService.getAnyAdmin();
         l.message("Initializing calculation: starting process");
 
-        try {
+        File reportFile = getOutputFile();
+        try (PrintStream out = makePrintStream(reportFile)){
             for (UUID id : ids) {
                 executor.submit(() -> {
-                    File reportFile = getOutputFile();
-                    try (PrintStream out = makePrintStream(reportFile)) {
+                    try {
                         adminService.runAs(adminAuth, () -> {
                             TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -108,7 +108,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
                                                 log.debug("computing DEA data for  " + id);
                                                 //recalcStructurePropertiesService.recalcStructureProperties(s);
                                                 if (deaDataTable.assignIds(((ChemicalSubstance) s), out)) {
-                                                    substanceRepository.saveAndFlush(s);
+                                                    substanceRepository.save(s);
                                                     log.debug("saved");
                                                 }
                                                 log.debug("done computing DEA data for  " + id);
@@ -126,6 +126,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
                                 l.message("Error computing DEA data for ... " + id + " error: " + ex.getMessage());
                             }
                         });
+                        //out.flush();
                     } catch (Exception ex) {
                         l.message("Error computing DEA data for ... " + id + " error: " + ex.getMessage());
                     }
@@ -153,7 +154,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
 
     @Override
     public String getDescription() {
-        return "Computer DEA code and schedule for all chemicals in the database";
+        return "Compute DEA code and schedule for all chemicals in the database";
     }
 
     /**
