@@ -48,7 +48,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.1-SNAPSHOT</version>
+            <version>0.6.2</version>
         </dependency>
     </dependencies>
 
