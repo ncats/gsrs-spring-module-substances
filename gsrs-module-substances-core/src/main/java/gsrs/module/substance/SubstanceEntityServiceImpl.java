@@ -253,11 +253,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 if(fetched.isPresent()){
                     return fetched;
                 }
-                //if entity fetcher didn't find it fallback to full jsonnode but note
-                //this might require an open transaction
-                opt.get().toFullJsonNode();
+
             }
+            //if entity fetcher didn't find it fallback to full jsonnode but note
+            //this might require an open transaction
+            opt.get().toFullJsonNode();
         }
+
         return opt;
     }
 
