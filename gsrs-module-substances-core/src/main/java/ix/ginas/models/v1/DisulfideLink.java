@@ -64,4 +64,11 @@ public class DisulfideLink extends GinasCommonSimplifiedSubData {
 	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
 		return new ArrayList<>();
 	}
+    
+
+    @Override
+    public void forceUpdate() {
+        super.forceUpdate();
+        siteContainer.forceUpdate();
+    }
 }
