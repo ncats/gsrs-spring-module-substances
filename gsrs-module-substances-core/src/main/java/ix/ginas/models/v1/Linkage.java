@@ -93,4 +93,14 @@ public class Linkage extends GinasCommonSubData {
 			}
 			return temp;
 		}
+		
+
+	    @Override
+	    public void forceUpdate() {
+	        super.forceUpdate();
+	        
+	        if(siteContainer!=null) {
+	            siteContainer.forceUpdate();
+	        }
+	    }
 }
