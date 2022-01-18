@@ -48,27 +48,26 @@ public class Protein extends GinasCommonSubData {
 	@Column(name="disulf_json")
 	public String disulfJSON = null;
 
+    @Transient
+    List<DisulfideLink> tmpDisulfides = null;
+
 	@OneToOne(mappedBy = "protein")
 	private ProteinSubstance proteinSubstance;
 
-	@Transient
-	protected transient ObjectMapper mapper = new ObjectMapper();
 
-	@Transient
-	List<DisulfideLink> tmpDisulfides = null;
 
 	@JsonView(BeanViews.Full.class)
 	public List<DisulfideLink> getDisulfideLinks() {
 		if (tmpDisulfides != null)
 			return tmpDisulfides;
-		List<DisulfideLink> rolekinds = new ArrayList<DisulfideLink>();
+		List<DisulfideLink> disulfs = new ArrayList<DisulfideLink>();
 		if (this.disulfJSON != null) {
 			try {
 				ObjectMapper om = new ObjectMapper();
 				List l = om.readValue(disulfJSON, List.class);
 				for (Object o : l) {
 					try {
-						rolekinds.add(om.treeToValue(om.valueToTree(o), DisulfideLink.class));
+					    disulfs.add(om.treeToValue(om.valueToTree(o), DisulfideLink.class));
 					} catch (Exception e) {
 						System.err.println(e.getMessage());
 						log.trace("Error parsing disulfides", e);
@@ -79,7 +78,7 @@ public class Protein extends GinasCommonSubData {
 			}
 
 		}
-		tmpDisulfides = rolekinds;
+		tmpDisulfides = disulfs;
 		return tmpDisulfides;
 	}
 
@@ -121,32 +120,6 @@ public class Protein extends GinasCommonSubData {
 	@JsonView(BeanViews.Compact.class)
 	@JsonProperty("_glycosylation")
 	public GlycosylationSummary getJsonGlycosylation() {
-//		JsonNode node = null;
-//		Glycosylation glyc = this.glycosylation;
-//		if (glyc != null) {
-//			try {
-//				ObjectNode n = mapper.createObjectNode();
-//				if (glyc.glycosylationType != null) {
-//					n.put("type", glyc.glycosylationType);
-//				}
-//				if(glyc._NGlycosylationSiteContainer !=null) {
-//					n.put("nsites", glyc._NGlycosylationSiteContainer.siteCount);
-//				}
-//				if(glyc._OGlycosylationSiteContainer !=null) {
-//					n.put("osites", glyc._OGlycosylationSiteContainer.siteCount);
-//				}
-//				if(glyc._CGlycosylationSiteContainer !=null) {
-//					n.put("csites", glyc._CGlycosylationSiteContainer.siteCount);
-//				}
-//				n.put("href", Global.getRef(getProteinSubstance().getClass(), getProteinSubstance().getUuid())
-//						+ "/protein/glycosylation");
-//				node = n;
-//			} catch (Exception ex) {
-//				ex.printStackTrace();
-//				node = mapper.valueToTree(glyc);
-//			}
-//		}
-//		return node;
 		if( this.glycosylation ==null){
 			return null;
 		}
@@ -204,10 +177,6 @@ public class Protein extends GinasCommonSubData {
 	@JsonView(BeanViews.Full.class)
 	@OneToOne(cascade = CascadeType.ALL)
 	public Glycosylation glycosylation;
-
-	//@JsonIgnore
-	//@OneToOne(cascade = CascadeType.ALL)
-	//public Modifications modifications;
 
 	@ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(name="ix_ginas_protein_subunit", inverseJoinColumns = {
@@ -271,11 +240,19 @@ public class Protein extends GinasCommonSubData {
 		}
 	}
 
+	//**************************
+	//START MODs
+	//**************************
+	//This section may need to be removed or re-imagined
+	//It's here to support an old style for modifications that's
+	//not produced by the forms anymore but may exist elsewhere
+	//We may need to port some of the logic to NAs as well, which
+	//appear inconsistent.
+	//**************************
+	
 	@JsonIgnore
 	@Transient
 	private List<Runnable> onParentSet = new ArrayList<>();
-	
-	
 	public void setModifications(Modifications mod) {
 		if (mod == null) {
 			return;
@@ -295,62 +272,11 @@ public class Protein extends GinasCommonSubData {
 		}else{
 			r.run();
 		}
-		
-		//this.modifications = mod;
 	}
+	//**************************
+    //END MODs
+    //**************************
 
-	@JsonIgnore
-	@Transient
-	private Map<String, String> _modifiedCache = null;
-
-	@JsonIgnore
-	public Map<String, String> getModifiedSites() {
-		if (_modifiedCache != null) {
-			return _modifiedCache;
-		}
-
-		_modifiedCache = new HashMap<String, String>();
-		//disulfides
-		for (DisulfideLink dsl : this.getDisulfideLinks()) {
-			for (Site s : dsl.getSites()) {
-				_modifiedCache.put(s.toString(), "disulfide");
-			}
-		}
-		//glycosylation
-		if (this.glycosylation != null) {
-			for (Site s : this.glycosylation.getNGlycosylationSites()) {
-				_modifiedCache.put(s.toString(), "nglycosylation");
-			}
-			for (Site s : this.glycosylation.getOGlycosylationSites()) {
-				_modifiedCache.put(s.toString(), "oglycosylation");
-			}
-			for (Site s : this.glycosylation.getCGlycosylationSites()) {
-				_modifiedCache.put(s.toString(), "cglycosylation");
-			}
-		}
-		Modifications m=getProteinSubstance().getModifications();
-		if (m != null) {
-			//modifications
-			for (StructuralModification sm : m.structuralModifications) {
-				if (sm.getSites() != null) {
-					for (Site s : sm.getSites()) {
-						_modifiedCache.put(s.toString(), "structuralModification");
-					}
-				}
-			}
-		}
-		if (this.otherLinks != null) {
-			//modifications
-			for (OtherLinks sm : this.otherLinks) {
-				if (sm.getSites() != null) {
-					for (Site s : sm.getSites()) {
-						_modifiedCache.put(s.toString(), "otherLinkage");
-					}
-				}
-			}
-		}
-		return _modifiedCache;
-	}
 
 	@Indexable
 	public List<Subunit> getSubunits() {
@@ -378,19 +304,6 @@ public class Protein extends GinasCommonSubData {
 	}
 	
 	
-
-
-
-	/**
-	 * Returns a string to describe any modification that happens at the specified 
-	 * site. Returns null if there is no modification.
-	 * @param subunitIndex
-	 * @param residueIndex
-	 * @return
-	 */
-	public String getSiteModificationIfExists(int subunitIndex, int residueIndex) {
-		return getModifiedSites().get(subunitIndex + "_" + residueIndex);
-	}
 
 	/**
 	 * Get the residue string at the specified site. Returns null if it does not exist.
@@ -430,25 +343,24 @@ public class Protein extends GinasCommonSubData {
 		return this.proteinSubstance;
 	}
 
-	 @Override
-	   	@JsonIgnore
-	   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
-	   		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
+	@Override
+	@JsonIgnore
+	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
+	    List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
 
-	   		if(this.glycosylation!=null){
-	   				temp.addAll(glycosylation.getAllChildrenAndSelfCapableOfHavingReferences());
-	   		}
-	   		if(this.subunits!=null){
-	   			for(Subunit s : this.subunits){
-	   				temp.addAll(s.getAllChildrenAndSelfCapableOfHavingReferences());
-	   			}
-	   		}
-	   		if(this.otherLinks!=null){
-	   			for(OtherLinks ol : this.otherLinks){
-	   				temp.addAll(ol.getAllChildrenAndSelfCapableOfHavingReferences());
-	   			}
-	   		}
-
-	   		return temp;
-	   	}
+	    if(this.glycosylation!=null){
+	        temp.addAll(glycosylation.getAllChildrenAndSelfCapableOfHavingReferences());
+	    }
+	    if(this.subunits!=null){
+	        for(Subunit s : this.subunits){
+	            temp.addAll(s.getAllChildrenAndSelfCapableOfHavingReferences());
+	        }
+	    }
+	    if(this.otherLinks!=null){
+	        for(OtherLinks ol : this.otherLinks){
+	            temp.addAll(ol.getAllChildrenAndSelfCapableOfHavingReferences());
+	        }
+	    }
+	    return temp;
+	}
 }

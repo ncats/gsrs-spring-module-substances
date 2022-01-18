@@ -20,7 +20,6 @@ import java.util.function.Supplier;
 @DiscriminatorValue("PRO")
 @Slf4j
 public class ProteinSubstance extends Substance implements GinasSubstanceDefinitionAccess {
-
 	@OneToOne(cascade= CascadeType.ALL)
     public Protein protein;
 
@@ -37,17 +36,6 @@ public class ProteinSubstance extends Substance implements GinasSubstanceDefinit
     	}
 		return false;
     }
-    @Override
-    public int getModificationCount(){
-    	int ret=0;
-    	if(this.modifications!=null){
-    		ret+=this.modifications.agentModifications.size();
-    		ret+=this.modifications.physicalModifications.size();
-    		ret+=this.modifications.structuralModifications.size();
-    	}
-    	return ret;
-    }
-    
     
     @Override
     public Modifications getModifications(){
@@ -80,17 +68,7 @@ public class ProteinSubstance extends Substance implements GinasSubstanceDefinit
 				_dirtyModifications=false;
 			}
 		}
-
     }
-    //TODO katzelda FEb 2021: delete handled by controller
-//    @Override
-//    public void delete(){
-//    	super.delete();
-//    	for(Subunit su:this.protein.subunits){
-//    		su.delete();
-//    	}
-//    	//protein.delete();
-//    }
 
 	@JsonIgnore
 	public GinasAccessReferenceControlled getDefinitionElement(){
@@ -107,80 +85,6 @@ public class ProteinSubstance extends Substance implements GinasSubstanceDefinit
 		return temp;
 	}
 
-
-//	@Override
-//	protected void additionalDefinitionalElements(Consumer<DefinitionalElement> consumer) {
-//		if(protein ==null || protein.subunits ==null){
-//			return;
-//		}
-//		log.trace("Starting in additionalDefinitionalElements for protein" );
-//		try	{
-//			this.copy()
-//						.canonicalize()
-//						.addDefinitionalElements(consumer);
-//		}
-//		catch(JsonProcessingException ex){
-//			log.error("error during definitional hash processing: " + ex.getMessage());
-//			ex.printStackTrace();
-//		}
-//	}
-//
-//	private void addDefinitionalElements(Consumer<DefinitionalElement> consumer) {
-//		log.trace("starting in ProteinSubstance.addDefinitionalElements");
-//		for(Subunit s : this.protein.subunits){
-//			if(s !=null && s.sequence !=null){
-//				ProteinSequence seq = ProteinSequence.of(AminoAcid.cleanSequence(s.sequence));
-//				UUID uuid = s.getOrGenerateUUID();
-//				consumer.accept(DefinitionalElement.of("subunitIndex.", s.subunitIndex==null? null: Integer.toString(s.subunitIndex), 1));
-//				consumer.accept(DefinitionalElement.of("subunitSeq.", seq.toString(), 1));
-//				consumer.accept(DefinitionalElement.of("subunitSeqLength.", Long.toString(seq.getLength()), 1));
-//
-//			}
-//		}
-//
-//		Glycosylation glycosylation = this.protein.glycosylation;
-//		if(glycosylation !=null){
-//			handleGlycosylationSites(glycosylation.getNGlycosylationSites(), "N", consumer);
-//			handleGlycosylationSites(glycosylation.getOGlycosylationSites(), "O", consumer);
-//			handleGlycosylationSites(glycosylation.getCGlycosylationSites(), "C", consumer);
-//			if(glycosylation.glycosylationType !=null){
-//				consumer.accept(DefinitionalElement.of("protein.glycosylation.type", glycosylation.glycosylationType, 2));
-//			}
-//		}
-//		List<DisulfideLink> disulfideLinks = this.protein.getDisulfideLinks();
-//		if(disulfideLinks !=null){
-//			for(DisulfideLink disulfideLink : disulfideLinks){
-//				if(disulfideLink !=null) {
-//					consumer.accept(DefinitionalElement.of("protein.disulfide", disulfideLink.getSitesShorthand(), 2));
-//				}
-//			}
-//		}
-//
-//		List<OtherLinks> otherLinks = this.protein.otherLinks;
-//		if(otherLinks !=null){
-//			for(OtherLinks otherLink : otherLinks){
-//				if(otherLink ==null){
-//					continue;
-//				}
-//				List<Site> sites = otherLink.getSites();
-//				if(sites !=null) {
-//					String shortHand = SiteContainer.generateShorthand(sites);
-//					consumer.accept(DefinitionalElement.of("protein."+shortHand, shortHand, 2));
-//					String type = otherLink.linkageType;
-//					if(type !=null){
-//						consumer.accept(DefinitionalElement.of("protein."+shortHand +".linkageType", type, 2));
-//					}
-//				}
-//			}
-//		}
-//
-//		if (this.modifications != null) {
-//			for(DefinitionalElement element : this.modifications.getDefinitionalElements().getElements()) {
-//				consumer.accept(element);
-//			}
-//		}
-//	}
-//
 	public ProteinSubstance copy() throws JsonProcessingException {
 		log.trace("in ProteinSubstance.copy method");
 			return EntityUtils.EntityWrapper.of(this).getClone();
@@ -284,15 +188,6 @@ public class ProteinSubstance extends Substance implements GinasSubstanceDefinit
 			}
 		}
 		return this;
-	}
-
-	private void handleGlycosylationSites(List<Site> sites, String letter, Consumer<DefinitionalElement> consumer){
-		if(sites ==null || sites.isEmpty()){
-			return;
-		}
-
-		consumer.accept(DefinitionalElement.of("protein.glycosylation."+letter, SiteContainer.generateShorthand(sites), 2));
-
 	}
 
 	private List<Site> translateSites(List<Site> startingSites, Map<Integer, Integer> subunitChanges) {

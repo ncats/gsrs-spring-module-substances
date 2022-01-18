@@ -53,7 +53,6 @@ public class Linkage extends GinasCommonSubData {
 		this.linkage = linkage;
 	}
 	
-    //@JsonView(BeanViews.Internal.class)
 	public String getSitesShorthand(){
 		if(siteContainer!=null){
     		return siteContainer.getShorthand();
@@ -61,36 +60,13 @@ public class Linkage extends GinasCommonSubData {
     	return "";
 	}
 
-/*
-	public void setFromMap(Map m) {
-		super.setFromMap(m);
-		linkage = (java.lang.String) (m.get("linkage"));
-		sites = toDataHolderList(
-				(List<Map>) m.get("sites"),
-				new DataHolderFactory<gov.nih.ncats.informatics.ginas.shared.model.v1.NASite>() {
-					@Override
-					public gov.nih.ncats.informatics.ginas.shared.model.v1.NASite make() {
-						return new gov.nih.ncats.informatics.ginas.shared.model.v1.NASite();
-					}
-				});
-	}
-
 	@Override
-	public Map addAttributes(Map m) {
-		super.addAttributes(m);
-
-		m.put("linkage", linkage);
-		m.put("sites", toMapList(sites));
-		return m;
-	}*/
-
-		@Override
-		@JsonIgnore
-		public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
-			List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
-			if(siteContainer!=null){
-				temp.addAll(siteContainer.getAllChildrenAndSelfCapableOfHavingReferences());
-			}
-			return temp;
-		}
+	@JsonIgnore
+	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
+	    List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
+	    if(siteContainer!=null){
+	        temp.addAll(siteContainer.getAllChildrenAndSelfCapableOfHavingReferences());
+	    }
+	    return temp;
+	}
 }

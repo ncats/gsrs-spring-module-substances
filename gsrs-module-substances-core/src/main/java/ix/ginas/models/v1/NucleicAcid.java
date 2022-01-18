@@ -3,6 +3,9 @@ package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonView;
+
+import ix.core.models.BeanViews;
 import ix.core.models.Indexable;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
@@ -20,12 +23,15 @@ public class NucleicAcid extends GinasCommonSubData {
 	
 	@JSONEntity(title = "Linkages")
 	@OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+	@JsonView(BeanViews.Full.class)
 	List<Linkage> linkages;
 	
+
+    @JSONEntity(title = "Sugars", isRequired = true)
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+    @JsonView(BeanViews.Full.class)
+    List<Sugar> sugars = new ArrayList<>();
 	
-	@JsonIgnore
-	@OneToOne(cascade= CascadeType.ALL)
-	Modifications modifications = new Modifications();
 	
 	@JSONEntity(title = "Nucleic Acid Type", format = JSONConstants.CV_NUCLEIC_ACID_TYPE)
 	String nucleicAcidType;
@@ -49,10 +55,6 @@ public class NucleicAcid extends GinasCommonSubData {
     })
 	public List<Subunit> subunits = new ArrayList<>();
 	
-	@JSONEntity(title = "Sugars", isRequired = true)
-	@OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
-    //@JoinTable(name="ix_ginas_nucleicacid_sugar")
-	List<Sugar> sugars = new ArrayList<>();
 
 	@Indexable
 	public List<Linkage> getLinkages() {
@@ -63,15 +65,6 @@ public class NucleicAcid extends GinasCommonSubData {
 		this.linkages = linkages;
 	}
 
-	
-	@JsonIgnore
-	public Modifications getModifications() {
-		return modifications;
-	}
-
-	public void setModifications(Modifications modifications) {
-		this.modifications = modifications;
-	}
 	@Indexable
 	public String getNucleicAcidType() {
 		return nucleicAcidType;
@@ -82,7 +75,7 @@ public class NucleicAcid extends GinasCommonSubData {
 	}
 
 
-        @JsonProperty("nucleicAcidSubType")
+	@JsonProperty("nucleicAcidSubType")
 	@Indexable(facet=true,name="Nucleic Acid Subtype")
 	public List<String> getNucleicAcidSubType() {
 		if( this.nucleicAcidSubType != null && this.nucleicAcidSubType.length() > 0){
@@ -93,7 +86,7 @@ public class NucleicAcid extends GinasCommonSubData {
 		}
 	}
 
-        @JsonProperty("nucleicAcidSubType")
+	@JsonProperty("nucleicAcidSubType")
 	public void setNucleicAcidSubType(List<String> nucleicAcidSubType) {
 		StringBuilder sb = new StringBuilder();
 		if(nucleicAcidSubType!=null){
@@ -132,7 +125,6 @@ public class NucleicAcid extends GinasCommonSubData {
 			@Override
 			public int compare(Subunit o1, Subunit o2) {
 				if(o1.subunitIndex ==null){
-//					System.out.println("null subunit index");
 					if(o2.subunitIndex ==null){
 						return Integer.compare(o2.getLength(), o1.getLength());
 					}else{
@@ -160,64 +152,7 @@ public class NucleicAcid extends GinasCommonSubData {
 	public void setSugars(List<Sugar> sugars) {
 		this.sugars = sugars;
 	}
-	@JsonIgnore
-    @Transient
-    private Map<String, String> _modifiedCache=null;
-
-    @JsonIgnore
-    public Map<String, String> getModifiedSites(){
-    	if(_modifiedCache!=null){
-    		return _modifiedCache;
-    	}
-    	
-    	_modifiedCache =  new HashMap<String,String>();
-    	
-    	if(modifications!=null){
-    		//modifications
-	    	for(StructuralModification sm : this.modifications.structuralModifications){
-	    		if(sm.getSites()!=null){
-	    			for(Site s: sm.getSites()){
-	    				_modifiedCache.put(s.toString(),"structuralModification");
-	    	    	}
-	    		}
-	    	}
-    	}
-    	if(this.sugars!=null){
-    		int sugIndex=1;
-	    	for(Sugar sug : this.sugars){
-	    		if(sug.getSites()!=null){
-	    			for(Site s: sug.getSites()){
-	    				_modifiedCache.put(s.toString(),"sugar-" + sugIndex);
-	    	    	}
-	    		}
-	    		sugIndex++;
-	    	}
-    	}
-    	if(this.linkages!=null){
-    		int linkIndex=1;
-	    	for(Linkage sug : this.linkages){
-	    		if(sug.getSites()!=null){
-	    			for(Site s: sug.getSites()){
-	    				_modifiedCache.put(s.toString(),"linkage-" + linkIndex);
-	    	    	}
-	    		}
-	    		linkIndex++;
-	    	}
-    	}
-    	return _modifiedCache;
-    }
     
-    /**
-     * Returns a string to describe any modification that happens at the specified 
-     * site. Returns null if there is no modification.
-     * @param subunitIndex
-     * @param residueIndex
-     * @return
-     */
-    public String getSiteModificationIfExists(int subunitIndex, int residueIndex){
-    	return getModifiedSites().get(subunitIndex + "_" + residueIndex);    	
-    }
-
 	/**
 	 * mark our child subunits as ours.
 	 * Mostly used so we know what kind of type
@@ -251,9 +186,6 @@ public class NucleicAcid extends GinasCommonSubData {
 			for(Subunit s : this.subunits){
 				temp.addAll(s.getAllChildrenAndSelfCapableOfHavingReferences());
 			}
-		}
-		if(this.modifications!=null){
-			temp.addAll(modifications.getAllChildrenAndSelfCapableOfHavingReferences());
 		}
 
 		return temp;

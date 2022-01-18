@@ -39,17 +39,18 @@ public class Sugar extends GinasCommonSubData {
     }
     
     
- 	public String getSitesShorthand(){
- 		if(siteContainer!=null){
-     		return siteContainer.getShorthand();
-     	}
-     	return "";
- 	}
     public void setSitesShorthand(String sites){
     	if(siteContainer==null){
     		siteContainer=new SiteContainer(this.getClass().getName());
     	}
     	siteContainer.setShorthand(sites);
+    }
+
+    public String getSitesShorthand(){
+        if(siteContainer!=null){
+            return siteContainer.getShorthand();
+        }
+        return "";
     }
 
     @Indexable
@@ -60,41 +61,18 @@ public class Sugar extends GinasCommonSubData {
 	public void setSugar(String sugar) {
 		this.sugar = sugar;
 	}
-	
-	
 
-	/*public void setFromMap(Map m) {
-		super.setFromMap(m);
-		sites = toDataHolderList(
-				(List<Map>) m.get("sites"),
-				new DataHolderFactory<gov.nih.ncats.informatics.ginas.shared.model.v1.NASite>() {
-					@Override
-					public gov.nih.ncats.informatics.ginas.shared.model.v1.NASite make() {
-						return new gov.nih.ncats.informatics.ginas.shared.model.v1.NASite();
-					}
-				});
-		sugar = (java.lang.String) (m.get("sugar"));
-	}
+
 
 	@Override
-	public Map addAttributes(Map m) {
-		super.addAttributes(m);
+	@JsonIgnore
+	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
+	    List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
 
-		m.put("sites", toMapList(sites));
-		m.put("sugar", sugar);
-		return m;
-	}*/
-
-
-	  @Override
-	   	@JsonIgnore
-	   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
-	   		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
-
-	   		if(this.siteContainer!=null){
-	   			temp.addAll(siteContainer.getAllChildrenAndSelfCapableOfHavingReferences());
-	   		}
-	   		return temp;
-	   	}
+	    if(this.siteContainer!=null){
+	        temp.addAll(siteContainer.getAllChildrenAndSelfCapableOfHavingReferences());
+	    }
+	    return temp;
+	}
 
 }
