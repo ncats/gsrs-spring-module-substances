@@ -54,7 +54,7 @@ public class NucleicAcidValidationTest extends AbstractSubstanceJpaEntityTest {
             assertFalse(response.isValid());
 
             assertTrue(response.getValidationMessages().stream()
-                    .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR &&  m.getMessage().contains("must have at least 1 subunit"))
+                    .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR &&  m.getMessage().contains("Warning - Nucleic Acid substances usually have at least 1 subunit, but zero subunits were found here."))
                     .findAny().isPresent());
 
 
@@ -70,7 +70,8 @@ public class NucleicAcidValidationTest extends AbstractSubstanceJpaEntityTest {
             JsonNode sub =substance.toFullJsonNode();
 
             ValidationResponse<Substance> response = substanceEntityService.validateEntity(sub);
-            assertFalse(response.isValid());
+            //flipping this assertion because we changed errors to warning in case of incomplete def level
+            assertTrue(response.isValid());
 
             Assertions.assertEquals(1, response.getValidationMessages().stream()
                     .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING &&  m.getMessage().contains("Warning - Nucleic Acid substances usually have at least 1 subunit, but zero subunits were found here.  This is discouraged and is only allowed for records labelled as incomplete"))
