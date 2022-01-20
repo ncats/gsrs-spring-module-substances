@@ -11,6 +11,7 @@
         <module>gsrs-module-substance-example</module>
         <module>gsrs-module-substances-api</module>
         <module>gsrs-module-substances-dto</module>
+        <module>gsrs-module-substances-tests</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
@@ -20,7 +21,7 @@
     </parent>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-module-substances</artifactId>
-    <version>0.7.3-SNAPSHOT</version>
+    <version>3.0-SNAPSHOT</version>
     <name>GSRS Substance Module</name>
     <description>Substance Module for GSRS Spring Boot</description>
 
@@ -31,7 +32,7 @@
         <java.version>1.8</java.version>
         <spring-cloud.version>Hoxton.SR1</spring-cloud.version>
         <gsrs.version>3.0-SNAPSHOT</gsrs.version>
-        <gsrs.substance.version>0.7.3-SNAPSHOT</gsrs.substance.version>
+        <gsrs.substance.version>3.0-SNAPSHOT</gsrs.substance.version>
         <spring-boot.version>2.4.5</spring-boot.version>
         <log4j2.version>2.17.1</log4j2.version>
     </properties>

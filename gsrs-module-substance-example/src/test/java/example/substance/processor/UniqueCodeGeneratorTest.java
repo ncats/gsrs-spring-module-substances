@@ -1,6 +1,5 @@
 package example.substance.processor;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.cv.ControlledVocabularyEntityService;
 import gsrs.cv.ControlledVocabularyEntityServiceImpl;
@@ -10,6 +9,7 @@ import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
 import gsrs.module.substance.processors.UniqueCodeGenerator;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.EntityProcessor;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;

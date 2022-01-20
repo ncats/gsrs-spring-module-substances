@@ -1,10 +1,10 @@
 package example.substance.validation;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Structure;

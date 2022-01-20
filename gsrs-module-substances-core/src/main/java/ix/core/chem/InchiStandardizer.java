@@ -52,7 +52,9 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
     @Override
     public Chemical standardize(Chemical orig, Supplier<String> molSupplier, Consumer<Value> valueConsumer) throws IOException {
 
-
+//        if(true){
+//            return orig;
+//        }
         if(orig.getAtomCount() > maxNumberOfAtoms || orig.hasPseudoAtoms()){
             return orig;
         }

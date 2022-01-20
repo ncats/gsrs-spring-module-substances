@@ -1,4 +1,4 @@
-package example.substance;
+package gsrs.substances.tests;
 
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.startertests.GsrsJpaTest;

@@ -4,12 +4,12 @@ package example.unii;
 import ix.ginas.utils.UNIIGenerator;
 import org.junit.jupiter.api.Test;
 
-
 import java.util.Arrays;
 
-import static example.TestUtil.addUniiCheckDigit;
-import static example.TestUtil.isUnii;
-import static org.junit.jupiter.api.Assertions.*;
+import static gsrs.substances.tests.TestUtil.addUniiCheckDigit;
+import static gsrs.substances.tests.TestUtil.isUnii;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Created by katzelda on 5/30/17.
  */

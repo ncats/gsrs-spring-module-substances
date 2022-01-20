@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.junit.json.Changes;
 import gsrs.junit.json.ChangesBuilder;
 import gsrs.junit.json.JsonUtil;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;

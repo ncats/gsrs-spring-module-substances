@@ -1,31 +1,28 @@
 package example.structureSearch;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.sneak.Sneak;
-import gov.nih.ncats.molwitch.Chemical;
-import gov.nih.ncats.molwitch.search.MolSearcherFactory;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
-import gsrs.legacy.structureIndexer.StructureIndexerEventListener;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.services.SubstanceStructureSearchService;
-import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTest {
 

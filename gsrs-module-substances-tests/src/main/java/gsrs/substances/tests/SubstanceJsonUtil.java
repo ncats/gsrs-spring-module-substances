@@ -1,4 +1,4 @@
-package example;
+package gsrs.substances.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;

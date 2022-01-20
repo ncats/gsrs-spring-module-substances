@@ -1,7 +1,7 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.services.GroupService;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;

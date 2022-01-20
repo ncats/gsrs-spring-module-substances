@@ -1,6 +1,6 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;

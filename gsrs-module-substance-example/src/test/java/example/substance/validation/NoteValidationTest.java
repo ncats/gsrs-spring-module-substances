@@ -1,8 +1,8 @@
 package example.substance.validation;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationMessage;
@@ -10,7 +10,6 @@ import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
-
 import ix.ginas.utils.validation.validators.NotesValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
