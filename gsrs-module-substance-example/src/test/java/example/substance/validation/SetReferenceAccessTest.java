@@ -1,7 +1,7 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.Group;
@@ -11,16 +11,13 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.SetReferenceAccess;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  *

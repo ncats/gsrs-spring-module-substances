@@ -1,17 +1,14 @@
 package example.substance.processor;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.module.substance.processors.PublicTagFlagger;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestEntityProcessorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.controllers.EntityFactory;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Reference;
-
 import org.junit.jupiter.api.BeforeEach;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -20,7 +17,7 @@ import java.io.IOException;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PublicTagAddITTest extends AbstractSubstanceJpaEntityTest {
 

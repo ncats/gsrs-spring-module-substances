@@ -1,15 +1,17 @@
 package example.substance.tasks;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.tasks.SQLReportScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -26,6 +28,7 @@ import java.sql.Statement;
  *
  * @author mitch
  */
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
 public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaFullStackEntityTest{

@@ -1,10 +1,11 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.chem.StructureProcessor;
@@ -17,24 +18,35 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
-import java.io.File;
-import java.io.IOException;
-import java.util.UUID;
-
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
 
 /**
  *
  * @author mitch
  */
+@ActiveProfiles("test")
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
+@TestPropertySource(properties = {
+        "logging.level.gsrs.module.substance.definitional=trace",
+        "logging.level.ix.core.util=trace",
+        "logging.level.ix.ginas.utils.validation=trace",
+        "logging.level.gsrs.module.substance.indexers=trace"
+})
 public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     public SubstanceUniquenessValidatorTest() {

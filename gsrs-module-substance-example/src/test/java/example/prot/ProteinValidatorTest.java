@@ -1,40 +1,36 @@
 package example.prot;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.Amount;
-import ix.ginas.models.v1.DisulfideLink;
-import ix.ginas.models.v1.Property;
-import ix.ginas.models.v1.Protein;
-import ix.ginas.models.v1.ProteinSubstance;
-import ix.ginas.models.v1.Site;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Subunit;
+import ix.ginas.models.v1.*;
 import ix.ginas.utils.ProteinUtils;
 import ix.ginas.utils.validation.validators.ProteinValidator;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.jupiter.api.Test;
-import static org.junit.Assert.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  *

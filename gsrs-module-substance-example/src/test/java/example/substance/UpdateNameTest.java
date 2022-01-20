@@ -1,7 +1,6 @@
 package example.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import ix.core.util.EntityUtils;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.NameOrg;
@@ -14,9 +13,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 

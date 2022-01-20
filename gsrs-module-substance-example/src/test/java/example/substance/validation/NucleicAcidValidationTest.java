@@ -1,18 +1,17 @@
 package example.substance.validation;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.NucleicAcidSubstanceBuilder;
 import ix.ginas.models.v1.NucleicAcidSubstance;
-
 import ix.ginas.models.v1.Substance;
-
 import ix.ginas.utils.validation.validators.NucleicAcidValidator;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +21,6 @@ import java.util.Collections;
 import java.util.stream.Stream;
 
 import static org.junit.Assert.*;
-import org.junit.jupiter.api.Assertions;
 
 /**
  * Created by katzelda on 8/9/18.

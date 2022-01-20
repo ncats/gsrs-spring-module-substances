@@ -1,26 +1,21 @@
 package example.repository;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.module.substance.repository.RelationshipRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.processors.RelationshipProcessor;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.GsrsJpaTest;
-import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 //@GsrsJpaTest
 //@ActiveProfiles("test")

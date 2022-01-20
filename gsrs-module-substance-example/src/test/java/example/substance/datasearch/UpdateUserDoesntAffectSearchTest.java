@@ -1,10 +1,11 @@
 package example.substance.datasearch;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.repository.PrincipalRepository;
 import gsrs.services.PrincipalService;
 import gsrs.startertests.GsrsFullStackTest;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.util.EntityUtils;
@@ -12,6 +13,7 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
@@ -26,7 +28,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
-
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)

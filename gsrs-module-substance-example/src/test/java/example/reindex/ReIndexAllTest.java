@@ -1,10 +1,10 @@
 package example.reindex;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.events.*;
 import gsrs.module.substance.services.ReindexFromBackups;
 import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.BackupEntity;
 import ix.core.models.BaseModel;
 import ix.ginas.modelBuilders.SubstanceBuilder;

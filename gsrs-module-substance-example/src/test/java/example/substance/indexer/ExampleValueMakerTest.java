@@ -1,15 +1,13 @@
 package example.substance.indexer;
 
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.startertests.TestIndexValueMakerFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
-
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +17,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test for ExampleValueMaker. The purpose of this test is to ensure
