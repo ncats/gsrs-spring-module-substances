@@ -4,12 +4,8 @@ import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.core.search.text.IndexableValueFromRaw;
 import ix.ginas.models.v1.Substance;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 /**
  * Facet (categorization for query results) based on top-level fields in a
@@ -32,6 +28,8 @@ public class SubstanceBasicsIndexValueMaker implements IndexValueMaker<Substance
 	}
 
 	private void makeRecordBasicsValues(Substance s, Consumer<IndexableValue> consumer) {
-		consumer.accept(new IndexableValueFromRaw(SUBSTANCE_CREATED_BY_FACET, s.createdBy.username).dynamic());
+		if(s.createdBy !=null) {
+			consumer.accept(new IndexableValueFromRaw(SUBSTANCE_CREATED_BY_FACET, s.createdBy.username).dynamic());
+		}
 	}
 }
