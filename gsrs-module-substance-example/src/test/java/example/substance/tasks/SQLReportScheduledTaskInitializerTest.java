@@ -1,13 +1,11 @@
 package example.substance.tasks;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
+import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
+import gsrs.module.substance.tasks.SQLReportScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.springUtils.AutowireHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,12 +13,13 @@ import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
-import gsrs.module.substance.tasks.SQLReportScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.springUtils.AutowireHelper;
-import lombok.extern.slf4j.Slf4j;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 
 
 /**
@@ -54,7 +53,7 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
         sqlReport.setSql("select uuid, dtype, current_version, created from ix_ginas_substance ");
         sqlReport.setOutputPath(report.toString());
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
-        sqlReport.run(listener);
+        sqlReport.run(null, listener);
         Assertions.assertTrue(report.exists(), "Report file must be created");
     }
 
@@ -69,7 +68,7 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
         sqlReport.setSql("select s.uuid, dtype, s.current_version, s.created, n.name from ix_ginas_substance s, ix_ginas_name n where s.uuid =n.owner_uuid and n.display_name = true");
         sqlReport.setOutputPath(report.toString());
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
-        sqlReport.run(listener);
+        sqlReport.run(null, listener);
         Assertions.assertTrue(report.exists(), "Report file must be created");
     }
 

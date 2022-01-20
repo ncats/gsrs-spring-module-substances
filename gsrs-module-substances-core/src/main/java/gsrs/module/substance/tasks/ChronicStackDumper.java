@@ -1,24 +1,17 @@
 package gsrs.module.substance.tasks;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.config.FilePathParserUtils;
-import gsrs.scheduledTasks.CronExpressionBuilder;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
 import ix.utils.Util;
+
+import java.io.*;
+import java.time.format.DateTimeFormatter;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Prints all currently running stacktraces to a log file
@@ -57,7 +50,7 @@ public class ChronicStackDumper extends ScheduledTaskInitializer{
     
 
 	@Override
-	public void run(TaskListener l) {
+	public void run(SchedulerPlugin.JobStats stats, TaskListener l) {
 		    lock.lock();
             try {
                 try (PrintStream out = new PrintStream(new BufferedOutputStream(new FileOutputStream(getOutputFile(), true)))) {

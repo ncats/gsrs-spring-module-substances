@@ -1,5 +1,24 @@
 package gsrs.module.substance.tasks;
 
+import gov.nih.ncats.common.util.TimeUtil;
+import gov.nih.ncats.common.util.Unchecked;
+import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.config.FilePathParserUtils;
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
+import gsrs.service.DefaultExportService;
+import gsrs.service.ExportService;
+import ix.core.models.Principal;
+import ix.ginas.exporters.*;
+import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -9,30 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Stream;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import gov.nih.ncats.common.util.TimeUtil;
-import gov.nih.ncats.common.util.Unchecked;
-import gsrs.autoconfigure.GsrsExportConfiguration;
-import gsrs.config.FilePathParserUtils;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
-import gsrs.service.DefaultExportService;
-import gsrs.service.ExportService;
-import ix.core.models.Principal;
-import ix.ginas.exporters.DefaultParameters;
-import ix.ginas.exporters.ExportMetaData;
-import ix.ginas.exporters.ExportProcess;
-import ix.ginas.exporters.Exporter;
-import ix.ginas.exporters.ExporterFactory;
-import ix.ginas.exporters.OutputFormat;
-import ix.ginas.models.v1.Substance;
-import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
@@ -118,7 +113,7 @@ public class ScheduledExportTaskInitializer extends ScheduledTaskInitializer {
     }
 
     @Override
-    public void run(TaskListener l) {
+    public void run(SchedulerPlugin.JobStats stats, TaskListener l) {
         log.debug("About to call runAsAdmin with transaction");
         
         TransactionTemplate transactionRunReport = new TransactionTemplate(transactionManager);
