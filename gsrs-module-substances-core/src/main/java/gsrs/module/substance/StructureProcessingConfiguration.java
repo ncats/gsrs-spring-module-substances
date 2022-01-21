@@ -13,8 +13,6 @@ public class StructureProcessingConfiguration {
 
     @Value("${ix.structure-hasher}")
     private String structureHasherName;
-    @Value("${ix.structure-standardizer}")
-    private String structureStandardizerName;
 
 
     @Bean

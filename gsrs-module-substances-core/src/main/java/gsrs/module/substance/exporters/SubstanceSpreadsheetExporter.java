@@ -109,8 +109,9 @@ public class SubstanceSpreadsheetExporter implements Exporter<Substance> {
                 while(iter.hasNext()){
 
                     ColumnValueRecipe<Substance> value = iter.next();
-                    if(value instanceof DefaultSubstanceSpreadsheetExporterFactory.CodeSystemRecipe){
-                        iter.set(((DefaultSubstanceSpreadsheetExporterFactory.CodeSystemRecipe) value).asPublicOnly());
+                    
+                    if(value instanceof DefaultSubstanceSpreadsheetExporterFactory.PublicRestrictable){
+                        iter.set(((DefaultSubstanceSpreadsheetExporterFactory.PublicRestrictable) value).asPublicOnly());
                     }
 
                 }

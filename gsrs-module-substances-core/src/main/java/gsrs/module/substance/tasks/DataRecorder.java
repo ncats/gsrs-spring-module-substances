@@ -1,26 +1,21 @@
 package gsrs.module.substance.tasks;
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.config.FilePathParserUtils;
+import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
+import ix.core.util.KeepLastList;
+import ix.utils.Util;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import gov.nih.ncats.common.util.TimeUtil;
-import ix.core.util.KeepLastList;
-import ix.utils.Util;
-import gsrs.config.FilePathParserUtils;
-import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
 
 public class DataRecorder extends ScheduledTaskInitializer {
 
@@ -73,7 +68,7 @@ public class DataRecorder extends ScheduledTaskInitializer {
     
 
     @Override
-    public void run(TaskListener l) {
+    public void run(SchedulerPlugin.JobStats stats, TaskListener l) {
         lock.lock();
 
         try {

@@ -5,13 +5,13 @@ import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-//@ActiveProfiles("test")
-//@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+@ActiveProfiles("test")
 public class HotFixIssue871Test extends AbstractSubstanceJpaEntityTest {
 	 	@Test
 		@WithMockUser(username = "admin", roles = "Admin")

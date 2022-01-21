@@ -1,23 +1,7 @@
 package gsrs.module.substance;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Scope;
-import org.springframework.context.annotation.ScopedProxyMode;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
@@ -30,6 +14,7 @@ import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.models.Role;
+import ix.core.util.EntityUtils;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
@@ -38,6 +23,20 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.utils.Util;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
+import org.springframework.context.annotation.ScopedProxyMode;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
@@ -237,14 +236,30 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return fullFetch(repository.findById(id),false);
     }
 
+    /**
+     * Fully fetch the given Substance this might be a computationally intense operation
+     * and the passed in Substance is not guaranteed to be the same
+     * reference of the Substance returned.
+     * @param opt the Optional wrapped Substance to fully fetch.
+     * @param useEF use entity fetcher to try to more efficiently fetch the Substance data.
+     * @return an Optional wrapped fully fetched substance which may be empty if it could not be fetched.
+     * An empty Optional passed in will always return an empty Optional.
+     */
     private Optional<Substance> fullFetch(Optional<Substance> opt, boolean useEF){
         if(opt.isPresent()){
             if(useEF) {
-                return EntityFetcher.of(opt.get().fetchKey()).getIfPossible().map(o->(Substance)o);
-            }else {
-                opt.get().toFullJsonNode();
+                EntityUtils.Key k = opt.get().fetchKey();
+                Optional<Substance> fetched= EntityFetcher.of(k).getIfPossible().map(o->(Substance)o);
+                if(fetched.isPresent()){
+                    return fetched;
+                }
+
             }
+            //if entity fetcher didn't find it fallback to full jsonnode but note
+            //this might require an open transaction
+            opt.get().toFullJsonNode();
         }
+
         return opt;
     }
 
