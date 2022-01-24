@@ -74,7 +74,7 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
                         .WARNING_MESSAGE("The substance has these tags " + inTagsMissingFromNames.toString() + " that are not present in substance names. These tags will be kept.");
                     callback.addMessage(mes);
                 } else if(removeTagWhenInTagsMissingFromNames == true)  {
-                    log.info("WILL auto remove tags when present in names.");
+                    log.info("WILL auto remove tags when not present in names.");
                     GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE("Tags will be removed! The substance has these tags " + inTagsMissingFromNames.toString() + " that are not present in substance names.")
                         .appliableChange(true);
