@@ -18,6 +18,8 @@ import org.apache.commons.lang3.ObjectUtils;
 
 import javax.persistence.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @JSONEntity(title = "Name", isFinal = true)
 @Entity
@@ -82,16 +84,16 @@ public class Name extends CommonDataElementOfCollection {
 			}
 		},
 		BY_CREATION_DATE{
-            @Override
-            public int compare(Name o1, Name o2) {
-                return o1.getCreated().compareTo(o2.getCreated());
-            }
-        }
+			@Override
+			public int compare(Name o1, Name o2) {
+				return o1.getCreated().compareTo(o2.getCreated());
+			}
+		}
 	}
 
 
 
-    private static final String SRS_LOCATOR = "SRS_LOCATOR";
+	private static final String SRS_LOCATOR = "SRS_LOCATOR";
 
 	@ManyToOne(cascade = CascadeType.PERSIST)
 	@JsonIgnore
@@ -113,74 +115,74 @@ public class Name extends CommonDataElementOfCollection {
 		this.owner=own;
 	}
 
-    @JSONEntity(title = "Name", isRequired = true)
-    @Column(nullable=false)
-    @Indexable(name="Name", suggest=true)
-    public String name;
+	@JSONEntity(title = "Name", isRequired = true)
+	@Column(nullable=false)
+	@Indexable(name="Name", suggest=true)
+	public String name;
 
-    @Lob
-    @Basic(fetch= FetchType.EAGER)
-    @JsonIgnore
-    public String fullName;
-    
-    @Lob
-    @Basic(fetch= FetchType.EAGER)
-    @JsonView(BeanViews.JsonDiff.class)
-    public String stdName;
-    
-    
-    @JSONEntity(title = "Name Type", format = JSONConstants.CV_NAME_TYPE, values = "JSONConstants.ENUM_NAMETYPE")
-    @Column(length=32)
-    public String type="cn";
-    
-    @JSONEntity(title = "Domains", format = "table", itemsTitle = "Domain", itemsFormat = JSONConstants.CV_NAME_DOMAIN)
-    @JsonSerialize(using= KeywordListSerializer.class)
-    @JsonDeserialize(contentUsing= KeywordDeserializer.DomainDeserializer.class)
-    @Basic(fetch= FetchType.LAZY)
-    public EmbeddedKeywordList domains = new EmbeddedKeywordList();
-    
-    @JSONEntity(title = "Languages", format = "table", itemsTitle = "Language", itemsFormat = JSONConstants.CV_LANGUAGE)
-    @JsonSerialize(using= KeywordListSerializer.class)
-    @JsonDeserialize(contentUsing= KeywordDeserializer.LanguageDeserializer.class)
-    @Basic(fetch= FetchType.LAZY)
-    public EmbeddedKeywordList languages = new EmbeddedKeywordList();
-    
-    @JSONEntity(title = "Naming Jurisdictions", format = "table", itemsTitle = "Jurisdiction", itemsFormat = JSONConstants.CV_JURISDICTION)
-    @JsonSerialize(using= KeywordListSerializer.class)
-    @JsonDeserialize(contentUsing= KeywordDeserializer.JurisdictionDeserializer.class)
-    @Basic(fetch= FetchType.LAZY)
-    public EmbeddedKeywordList nameJurisdiction = new EmbeddedKeywordList();
-    
-    @JSONEntity(title = "Naming Organizations", format = "table")
+	@Lob
+	@Basic(fetch= FetchType.EAGER)
+	@JsonIgnore
+	public String fullName;
 
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
-    public List<NameOrg> nameOrgs = new ArrayList<NameOrg>();
-    
-    
-    @JSONEntity(title = "Preferred Term")
-    /**
-     * There can be many preferred terms per substance
-     */
-    public boolean preferred;
-    
-    /**
-     * There can only be 1 display name per substance
-     */
-    public boolean displayName;
+	@Lob
+	@Basic(fetch= FetchType.EAGER)
+	@JsonView(BeanViews.JsonDiff.class)
+	public String stdName;
 
-    public Name () {}
-    
-    public Name (String name) {
-    	this.name=name;
-    }
 
-    public String getName () {
-        return fullName != null ? fullName : name;
-    }
+	@JSONEntity(title = "Name Type", format = JSONConstants.CV_NAME_TYPE, values = "JSONConstants.ENUM_NAMETYPE")
+	@Column(length=32)
+	public String type="cn";
 
-    @PreUpdate
+	@JSONEntity(title = "Domains", format = "table", itemsTitle = "Domain", itemsFormat = JSONConstants.CV_NAME_DOMAIN)
+	@JsonSerialize(using= KeywordListSerializer.class)
+	@JsonDeserialize(contentUsing= KeywordDeserializer.DomainDeserializer.class)
+	@Basic(fetch= FetchType.LAZY)
+	public EmbeddedKeywordList domains = new EmbeddedKeywordList();
+
+	@JSONEntity(title = "Languages", format = "table", itemsTitle = "Language", itemsFormat = JSONConstants.CV_LANGUAGE)
+	@JsonSerialize(using= KeywordListSerializer.class)
+	@JsonDeserialize(contentUsing= KeywordDeserializer.LanguageDeserializer.class)
+	@Basic(fetch= FetchType.LAZY)
+	public EmbeddedKeywordList languages = new EmbeddedKeywordList();
+
+	@JSONEntity(title = "Naming Jurisdictions", format = "table", itemsTitle = "Jurisdiction", itemsFormat = JSONConstants.CV_JURISDICTION)
+	@JsonSerialize(using= KeywordListSerializer.class)
+	@JsonDeserialize(contentUsing= KeywordDeserializer.JurisdictionDeserializer.class)
+	@Basic(fetch= FetchType.LAZY)
+	public EmbeddedKeywordList nameJurisdiction = new EmbeddedKeywordList();
+
+	@JSONEntity(title = "Naming Organizations", format = "table")
+
+	@OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
+	public List<NameOrg> nameOrgs = new ArrayList<NameOrg>();
+
+
+	@JSONEntity(title = "Preferred Term")
+	/**
+	 * There can be many preferred terms per substance
+	 */
+	public boolean preferred;
+
+	/**
+	 * There can only be 1 display name per substance
+	 */
+	public boolean displayName;
+
+	public Name () {}
+
+	public Name (String name) {
+		this.name=name;
+	}
+
+	public String getName () {
+		return fullName != null ? fullName : name;
+	}
+
+	@PreUpdate
 	private void preUpdate(){
-    	tidyName();
+		tidyName();
 		updateImmutables();
 	}
 
@@ -189,112 +191,139 @@ public class Name extends CommonDataElementOfCollection {
 		tidyName();
 	}
 
-    private void tidyName () {
-        if (name.getBytes().length > 255) {
-            fullName = name;
-            name = truncateString(name,254);
-            
-        }
-    }
-    
-    private static String truncateString(String s, int maxBytes){
-    	byte[] b = (s+"   ").getBytes();
-    	if(maxBytes>=b.length){
-    		return s;
-    	}
-    	boolean lastComplete=false;
-    	for(int i=maxBytes;i>=0;i--){
-    		if(lastComplete)
-    			return new String(Arrays.copyOf(b, i));
-    		if((b[i] & 0x80) ==0){
-    			return new String(Arrays.copyOf(b, i));
-    		}
-    		if(b[i]==-79){
-    			lastComplete=true;
-    		}
-    	}
-    	
-    	return "";
-    }
-    
-    public void addLocator(Substance sub, String loc){
-    	Reference r = new Reference();
-    	r.docType=Name.SRS_LOCATOR;
-    	r.citation=this.name + " [" + loc + "]";
-    	r.publicDomain=true;
-    	this.addReference(r,sub);
-    	sub.addTagString(loc);
-    }
-    
-    /**
-     * Returns the locators that have been added to this name record.
-     * 
-     * These are tags that are used for searching and display.
-     * 
-     * Currently, this requires the parent substance in order to 
-     * make it work.
-     * 
-     * @param sub the parent substance of this name
-     * @return
-     */
-    public List<String> getLocators(Substance sub){
-    	List<String> locators = new ArrayList<String>();
-    	//locators.add("TEST");
-    	if(sub!=null){
-    		//System.out.println("Real sub");
-	    	for(Keyword ref: this.getReferences()){
-	    		//System.out.println(ref.getValue());
-	    		Reference r=sub.getReferenceByUUID(ref.getValue().toString());
-	    		
-	    		if(r!=null && r.docType!=null){
-	    			//System.out.println(r.citation);
-	    			
-	    			if(r.docType.equals(Name.SRS_LOCATOR)){
-	    				try{
-	    					String tag=r.citation.split("\\[")[1].split("\\]")[0];
-	    					locators.add(tag);
-	    				}catch(Exception e){
-	    					
-	    				}
-	    			}
-	    		}
-	    	}
-    	}
-    	return new ArrayList<String>(new TreeSet<String>(locators));
-    }
-    
-    
-    public static List<Name> sortNames(List<Name> nameList){
-    	Collections.sort(nameList, Sorter.DISPlAY_NAME_FIRST_ENGLISH_FIRST);
-    	return nameList;
-    }
-    
-    
-    public boolean isDisplayName() {
-    	return displayName;
+	private void tidyName () {
+		if (name.getBytes().length > 255) {
+			fullName = name;
+			name = truncateString(name,254);
+
+		}
 	}
-    
-    
-    public void addLanguage(String lang){
-    	if(!isLanguage(lang)){
-    		this.languages.add(new Keyword(GinasCommonData.LANGUAGE,lang));
-    	}
-    }
-    
-    @JsonIgnore
+
+	private static String truncateString(String s, int maxBytes){
+		byte[] b = (s+"   ").getBytes();
+		if(maxBytes>=b.length){
+			return s;
+		}
+		boolean lastComplete=false;
+		for(int i=maxBytes;i>=0;i--){
+			if(lastComplete)
+				return new String(Arrays.copyOf(b, i));
+			if((b[i] & 0x80) ==0){
+				return new String(Arrays.copyOf(b, i));
+			}
+			if(b[i]==-79){
+				lastComplete=true;
+			}
+		}
+
+		return "";
+	}
+
+	public void addLocator(Substance sub, String loc){
+		Reference r = new Reference();
+		r.docType=Name.SRS_LOCATOR;
+		r.citation=this.name + " [" + loc + "]";
+		r.publicDomain=true;
+		this.addReference(r,sub);
+		sub.addTagString(loc);
+	}
+
+	/**
+	 * Returns the locators that have been added to this name record.
+	 *
+	 * These are tags that are used for searching and display.
+	 *
+	 * Currently, this requires the parent substance in order to
+	 * make it work.
+	 *
+	 * @param sub the parent substance of this name
+	 * @return
+	 */
+	public List<String> getLocators(Substance sub){
+		List<String> locators = new ArrayList<String>();
+		//locators.add("TEST");
+		if(sub!=null){
+			//System.out.println("Real sub");
+			for(Keyword ref: this.getReferences()){
+				//System.out.println(ref.getValue());
+				Reference r=sub.getReferenceByUUID(ref.getValue().toString());
+
+				if(r!=null && r.docType!=null){
+					//System.out.println(r.citation);
+
+					if(r.docType.equals(Name.SRS_LOCATOR)){
+						try{
+							String tag=r.citation.split("\\[")[1].split("\\]")[0];
+							locators.add(tag);
+						}catch(Exception e){
+
+						}
+					}
+				}
+			}
+		}
+		return new ArrayList<String>(new TreeSet<String>(locators));
+	}
+
+	// alex tags begin
+
+	// This was used in NamesValidator in method, extractLocators. Does this mean
+    // only proceed with match if space and closing bracket found?
+	// Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
+	// It gives NPE in tests and there is a question mark in the extractLocators
+	// code. So ask for clarification about which is better.
+	// extractLocators way:
+	// public final static Pattern extractTagFromNameRegex = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
+
+    //  Way found from stackoverflow
+	public final static Pattern extractTagFromNameRegex = Pattern.compile("\\[([A-Z0-9]*?)\\]\\s*$");
+
+	public String extractTagTermFromName() {
+		return extractTagTermFromName(this.name);
+	}
+
+	public static String extractTagTermFromName(String name) {
+		// What is the best way to handle null name?
+		if (name == null) { return null; }
+		String tagTerm = null;
+		Matcher regexMatcher = extractTagFromNameRegex.matcher(name);
+		while (regexMatcher.find()) {
+			tagTerm = regexMatcher.group(1);
+		}
+		return tagTerm;
+	}
+
+	// alex tags end
+
+	public static List<Name> sortNames(List<Name> nameList){
+		Collections.sort(nameList, Sorter.DISPlAY_NAME_FIRST_ENGLISH_FIRST);
+		return nameList;
+	}
+
+
+	public boolean isDisplayName() {
+		return displayName;
+	}
+
+
+	public void addLanguage(String lang){
+		if(!isLanguage(lang)){
+			this.languages.add(new Keyword(GinasCommonData.LANGUAGE,lang));
+		}
+	}
+
+	@JsonIgnore
 	public boolean isOfficial() {
 		if(this.type.equals("of"))return true;
 		return false;
 	}
-    
+
 	public boolean isLanguage(String lang){
 		for(Keyword k:this.languages){
 			if(k.getValue().equals(lang))return true;
 		}
 		return false;
 	}
-	
-	
 
 	public void updateImmutables(){
 		super.updateImmutables();
@@ -302,7 +331,7 @@ public class Name extends CommonDataElementOfCollection {
 		this.domains= new EmbeddedKeywordList(this.domains);
 		this.nameJurisdiction= new EmbeddedKeywordList(this.nameJurisdiction);
 	}
-	
+
 	@Override
 	public String toString(){
 		return "Name{" +
@@ -320,10 +349,10 @@ public class Name extends CommonDataElementOfCollection {
 	}
 
 	public void setName(String name) {
-                this.fullName=null;
+		this.fullName=null;
 		this.name=name;
 	}
-	
+
 	@Override
 	@JsonIgnore
 	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
