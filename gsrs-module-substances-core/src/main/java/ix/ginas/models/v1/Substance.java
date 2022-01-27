@@ -320,6 +320,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JoinTable(name="ix_ginas_substance_tags", inverseJoinColumns = {
             @JoinColumn(name="ix_core_value_id")
     })
+
+    // tags begin
+
     public List<Keyword> tags = new ArrayList<Keyword>();
 
     public void addTag(Keyword tag){
@@ -342,8 +345,6 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return false;
     }
 
-    // tags begin
-
     public List<String> grabTagTerms() {
         // This was named "getTagTerms," but I got strange PojoDiff error.
         // It was a 500 error complaining about equal index and size values
@@ -355,8 +356,38 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return tagTerms;
     }
 
+    public Set<String> extractTagTermsFromNamesAsSet() {
+        List<Name> names = this.getAllNames();
+        if (names == null) { return null; }
+        Set<String> tagTerms = new HashSet<String>();
+        for (Name name: names) {
+            String e = name.extractTagTermFromName();
+            if (e != null) {
+                tagTerms.add(e);
+            }
+        }
+        return tagTerms;
+    }
+
+    public List<String> extractDistinctTagTermsFromNames() {
+        List<Name> names = this.getAllNames();
+        Set set = new HashSet<String>();
+        if (names == null) { return null; }
+        List tagTerms = new ArrayList<String>();
+        for (Name name: names) {
+            String e = name.extractTagTermFromName();
+            if (e != null) {
+                if (!set.contains(e)) {
+                    tagTerms.add(e);
+                    set.add(e);
+                }
+            }
+        }
+        return tagTerms;
+    }
+
     public List<String> extractTagTermsFromNames() {
-        // is this the best way to handle null values?
+        // Possibly returns non-distinct list.
         List<Name> names = this.getAllNames();
         if (names == null) { return null; }
         List tagTerms = new ArrayList<String>();

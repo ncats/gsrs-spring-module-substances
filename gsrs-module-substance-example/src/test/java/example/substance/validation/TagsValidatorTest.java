@@ -6,21 +6,22 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.TagsValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Arrays;
 
 @Slf4j
-
-// @TestPropertySource(properties = {"gsrs.substance.removetagwhenintagsmissingfromnames=true"})
+// can't set property with annotation?
+// how to assert applyChanges(true) changes?
+@TestPropertySource(properties = {
+    "logging.level.example.substance.validation=info"
+})
+// ,
+// "gsrs.substance.removetagwhenintagsmissingfromnames=true"
 public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
 
-    @AfterAll
-    public static void afterAll() {
-//        System.clearProperty("gsrs.substance.removetagwhenintagsmissingfromnames");
-    }
 
     Substance createOldSubstance() {
         Substance oldSubstance = new Substance();
@@ -67,9 +68,10 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void testTagsValidator1() {
+
         TagsValidator validator = new TagsValidator();
 
-        validator.setRemovetagwhenintagsmissingfromnames(false);
+        validator.setRemoveTagWhenInTagsMissingFromNames(false);
 
         Substance newSubstance = createNewSubstance();
 
@@ -88,20 +90,44 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
     public void testTagsValidator2() {
         TagsValidator validator = new TagsValidator();
 
-        validator.setRemovetagwhenintagsmissingfromnames(true);
+        validator.setRemoveTagWhenInTagsMissingFromNames(true);
 
         Substance newSubstance = createNewSubstance();
 
         ValidationResponse<Substance> response = validator.validate(newSubstance, null);
-        response.getValidationMessages().forEach(vm->{
-            log.info( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
-        });
+        // response.getValidationMessages().forEach(vm->{
+        //    log.info( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
+        // });
 
         Assertions.assertEquals(1, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains("Tags will be removed")).count());
 
-        // Can't get this test to pass; does it take applicableChanges(true) into account?
+        // Can't get this assertion to pass; does it take applicableChanges(true) into account?
+        // Still case after Danny's suggested fix.
         // Assertions.assertEquals(newSubstance.grabTagTerms(), Arrays.asList("VANDF"));
     }
+
+    @Test
+    public void testTagsValidator3() {
+        TagsValidator validator = new TagsValidator();
+
+        validator.setAddTagWhenInTagsPresentInNames(true);
+        validator.setRemoveTagWhenInTagsMissingFromNames(false);
+
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.addTagString("ABC");
+
+        ValidationResponse<Substance> response = validator.validate(substance, null);
+
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains("Tags WILL be added.")).count());
+
+        // Can't get this assertion to pass; does it take applicableChanges(true) into account?
+        // Still case after Danny's suggested fix.
+        // Assertions.assertEquals(newSubstance.grabTagTerms(), Arrays.asList("VANDF"));
+    }
+
 
 }

@@ -265,25 +265,28 @@ public class Name extends CommonDataElementOfCollection {
 		return new ArrayList<String>(new TreeSet<String>(locators));
 	}
 
-	// alex tags begin
+	// tags begin
 
-	// This was used in NamesValidator in method, extractLocators. Does this mean
-    // only proceed with match if space and closing bracket found?
+	// This regex is used in NamesValidator in method, extractLocators. Does this mean
+	// only proceed with match if space and closing bracket found?
 	// Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
 	// It gives NPE in tests and there is a question mark in the extractLocators
 	// code. So ask for clarification about which is better.
 	// extractLocators way:
 	// public final static Pattern extractTagFromNameRegex = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
 
-    //  Way found from stackoverflow
-	public final static Pattern extractTagFromNameRegex = Pattern.compile("\\[([A-Z0-9]*?)\\]\\s*$");
+	public final static Pattern extractTagFromNameRegex = Pattern.compile("\\[([^\\[\\]]*)\\]\\s*$");
+//	public final static Pattern extractTagFromNameRegex = Pattern.compile("\\[(\\w+( +\\w+)*)\\]\\s*$");
 
 	public String extractTagTermFromName() {
 		return extractTagTermFromName(this.name);
 	}
 
 	public static String extractTagTermFromName(String name) {
-		// What is the best way to handle null name?
+		// Assumes there is at most one tag term per name, and it's at the end of the name.
+		// Are these assumptions valid?
+		// The way locators are validated allows more than one locator per name. So this may need
+		// to be reconciled OR tag addition should be completely separated from locator addition.
 		if (name == null) { return null; }
 		String tagTerm = null;
 		Matcher regexMatcher = extractTagFromNameRegex.matcher(name);
@@ -293,7 +296,7 @@ public class Name extends CommonDataElementOfCollection {
 		return tagTerm;
 	}
 
-	// alex tags end
+	// tags end
 
 	public static List<Name> sortNames(List<Name> nameList){
 		Collections.sort(nameList, Sorter.DISPlAY_NAME_FIRST_ENGLISH_FIRST);
@@ -324,6 +327,8 @@ public class Name extends CommonDataElementOfCollection {
 		}
 		return false;
 	}
+
+
 
 	public void updateImmutables(){
 		super.updateImmutables();

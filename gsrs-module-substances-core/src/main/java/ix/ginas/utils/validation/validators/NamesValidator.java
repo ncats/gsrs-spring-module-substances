@@ -90,7 +90,11 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
     }
     @Override
-    public void validate(Substance s, Substance objold, ValidatorCallback callback) {
+    public void validate(Substance s, Substance objold, ValidatorCallback callback)
+
+    {
+
+        System.out.println("\n\n============== XXXXXXXXXXXXXXXXX ====================\n\n");
         boolean preferred = false;
         int display = 0;
         Iterator<Name> nameIterator = s.names.iterator();
@@ -284,6 +288,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
 
     static private Set<String> extractLocators(Name n) {
+        System.out.println("Name " + n.name);
         Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
         Matcher m = p.matcher(n.name);
         Set<String> locators = new LinkedHashSet<String>();
@@ -292,7 +297,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             do {
                 String loc = m.group(1);
 
-                // System.out.println("LOCATOR:" + loc);
+                System.out.println("LOCATOR:" + loc);
                 locators.add(loc);
             } while (m.find(m.start(1)));
         }

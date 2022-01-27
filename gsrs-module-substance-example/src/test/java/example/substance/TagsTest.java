@@ -11,12 +11,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import static org.junit.Assert.assertEquals;
 
 @SpringBootTest
 @Slf4j
 public class TagsTest {
-    final static boolean logBeforeAfterClass = true;
+    final static boolean logBeforeAfterClass = false;
 
     @BeforeAll
     static void beforeUnits() throws Exception {
@@ -105,12 +108,101 @@ public class TagsTest {
     void testExtractTagTermFromName() throws Exception {
         log.info("Testing testExtractTagTermFromName");
         assert (Name.extractTagTermFromName("ABC [USP]").equals("USP"));
-        assert (Name.extractTagTermFromName("ABC [USP    ]").equals("USP    "));
         assert (Name.extractTagTermFromName("ABC [USP]    ").equals("USP"));
+        assert (Name.extractTagTermFromName("ABC [USP    ]").equals("USP    "));
         Assertions.assertNull(Name.extractTagTermFromName("ABC"));
         Assertions.assertNull(Name.extractTagTermFromName("ABC USP]"));
         Assertions.assertNull(Name.extractTagTermFromName("[USP] ABC"));
     }
+
+    @Test
+    void extractDistinctTagTermsFromNames() throws Exception {
+        log.info("extractDistinctTagTermsFromNames");
+        Substance s = new Substance();
+        s.names = new ArrayList<>();
+        s.tags.add(new Keyword("USP"));
+        s.tags.add(new Keyword("INN"));
+        s.tags.add(new Keyword("GREEN BOOK"));
+        s.names.add(new Name("ABC [USP]"));
+        s.names.add(new Name("CED [USP]"));
+        s.names.add(new Name("PED [INN]"));
+        s.names.add(new Name("QAK [INN]"));
+        s.names.add(new Name("VAD [VANDF]"));
+        assert(s.extractDistinctTagTermsFromNames().equals(Arrays.asList("USP","INN","VANDF")));
+        List tfn = s.extractDistinctTagTermsFromNames();
+        List tft = s.grabTagTerms();
+        assert(s.compareTagTermsInTagsMissingFromNames(tft, tfn)).equals(Arrays.asList("GREEN BOOK"));
+    }
+
+
+    @Test
+    void testExtractTagTermsFromNameAsSet() throws Exception {
+        log.info("Testing testExtractTagTermsFromNameAsSet");
+        Substance s = new Substance();
+        s.names = new ArrayList<>();
+        s.tags.add(new Keyword("USP"));
+        s.tags.add(new Keyword("INN"));
+        s.tags.add(new Keyword("GREEN BOOK"));
+        s.names.add(new Name("ABC [USP]"));
+        s.names.add(new Name("CED [USP]"));
+        s.names.add(new Name("PED [INN]"));
+        s.names.add(new Name("QAK [INN]"));
+        s.names.add(new Name("VAD [VANDF]"));
+        assert(s.extractTagTermsFromNamesAsSet().equals(new HashSet<>(Arrays.asList("USP","INN","VANDF"))));
+        List tfn = new ArrayList(s.extractTagTermsFromNamesAsSet());
+        List tft = s.grabTagTerms();
+        assert(
+          s.compareTagTermsInTagsMissingFromNames(tft, tfn)).equals(Arrays.asList("GREEN BOOK"));
+    }
+
+
+
+
+    @Test
+    void testExtractLocatorTermsFromName() throws Exception {
+        // This is just to understand how regex in NamesValidator works.
+        log.info("Testing testExtractLocatorTermsFromName");
+        assert (Name.extractTagTermFromName("ABC [USP]").equals("USP"));
+        assert (Name.extractTagTermFromName("ABC [USP]    ").equals("USP"));
+        assert (Name.extractTagTermFromName("ABC [USP    ]").equals("USP    "));
+        Assertions.assertNull(Name.extractTagTermFromName("ABC"));
+        Assertions.assertNull(Name.extractTagTermFromName("ABC USP]"));
+        Assertions.assertNull(Name.extractTagTermFromName("[USP] ABC"));
+    }
+
+    @Test
+    void testExtractLocatorsFromName() throws Exception {
+        // This is just to understand how regex in NamesValidator works.
+        // Note the locator regex as of 01/21/2021 did not allow spaces.
+        // However, there are tags such as GREEN BOOK that have spaces. Not sure how they were added.
+        log.info("Testing testExtractLocatorsFromName.");
+        // Why does this only extract USP?
+        assert (this.extractLocatorsFromName("ABC [BBB] [USP]").equals(new HashSet<>(Arrays.asList("USP"))));
+        assert (this.extractLocatorsFromName("ABC [BBB]").equals(new HashSet<>(Arrays.asList("BBB"))));
+        assert (this.extractLocatorsFromName("ABC [BBB] ").equals(new HashSet<>(Arrays.asList("BBB"))));
+        assert (this.extractLocatorsFromName("ABC [GREEN BOOK]").equals(new HashSet<>(Arrays.asList("GREEN BOOK"))));
+        assert (this.extractLocatorsFromName("ABC").equals(new HashSet<String>(Arrays.asList())));
+    }
+
+
+    Set<String> extractLocatorsFromName(String name) {
+        // This is adapted from names validator, trying to understand regex strategy there.
+        // The (?: ) means match but don't remember match.  Seems to check first whether it finds a closing "]" first.
+        Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9 ]*)\\]\\s*$");
+        Matcher m = p.matcher(name);
+        Set<String> locators =  new HashSet<String>();
+        String locator = null;
+        //TODO isn't while(m.find() ) sufficient?
+        if (m.find()) {
+            do {
+                locator = m.group(1);
+                locators.add(locator);
+                System.out.println(locator);
+            } while (m.find(m.start(1)));
+        }
+        return locators;
+    }
+
 
     @Test
     void testCompareTagTermsToNamesTagTermsOldSubstance() throws Exception {
@@ -147,7 +239,7 @@ public class TagsTest {
         assertEquals(
                 newSubstance.compareTagTermsInTagsMissingFromNames(
                         newSubstance.grabTagTerms(),
-                        newSubstance.extractTagTermsFromNames()
+                        newSubstance.extractDistinctTagTermsFromNames()
                 ),
                 Arrays.asList("INN")
         );
@@ -169,7 +261,7 @@ public class TagsTest {
 
         assertEquals(
                 oldSubstance.compareTagTermsInNamesMissingFromTags(
-                        oldSubstance.extractTagTermsFromNames(),
+                        oldSubstance.extractDistinctTagTermsFromNames(),
                         oldSubstance.grabTagTerms()
                 ),
                 Arrays.asList()
@@ -177,7 +269,7 @@ public class TagsTest {
         assertEquals(
                 oldSubstance.compareTagTermsInTagsMissingFromNames(
                         oldSubstance.grabTagTerms(),
-                        oldSubstance.extractTagTermsFromNames()
+                        oldSubstance.extractDistinctTagTermsFromNames()
                 ),
                 Arrays.asList("USP", "VANDF")
         );
@@ -186,7 +278,7 @@ public class TagsTest {
 
     @Test
     void testCompareTagTermsToNamesTagTermsOldSubstanceIfTagsEmpty() throws Exception {
-        log.info("Testing testCompareTagTermsToNamesTagTermsOldSubstanceIfNamesNull");
+        log.info("Testing testCompareTagTermsToNamesTagTermsOldSubstanceIfTagsEmpty");
         Substance oldSubstance = this.createOldSubstance();
         oldSubstance.tags = new ArrayList<Keyword>();
         oldSubstance.names = new ArrayList<Name>();
@@ -203,7 +295,7 @@ public class TagsTest {
 
         assertEquals(
                 oldSubstance.compareTagTermsInNamesMissingFromTags(
-                        oldSubstance.extractTagTermsFromNames(),
+                        oldSubstance.extractDistinctTagTermsFromNames(),
                         oldSubstance.grabTagTerms()
                 ),
                 Arrays.asList("USP", "VANDF")
@@ -211,7 +303,7 @@ public class TagsTest {
         assertEquals(
                 oldSubstance.compareTagTermsInTagsMissingFromNames(
                         oldSubstance.grabTagTerms(),
-                        oldSubstance.extractTagTermsFromNames()
+                        oldSubstance.extractDistinctTagTermsFromNames()
                 ),
                 Arrays.asList()
         );
