@@ -11,6 +11,42 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.util.*;
 @Slf4j
+
+/*
+
+=== Tags Validator Documentation ===
+
+The idea of substance tags appears in two ways in the GSRS. 1) in the list of names. 2) in the list of tags.
+
+A tag is included in a substance name by putting a bracketed term at the end of the name.
+For example:
+  ASPIRIN [INN]
+When this name is added, the GSRS will extract "INN" and index this value for faceting.
+The facet category called "Source Tag" works with this indexed value.
+There is ALSO a substance->tags list of Keyword objects.
+In the GSRS Frontend, tag values can be added manually to this list.
+Thus, there are two sources of truth for substance tags.
+This validator may be used to keep the lists consistent.
+
+This should be configured in your gsrs-ci gsrs-ci/substances/src/main/resources/application.conf.
+
+  # Without this setting, the validator will not be run on submission of a substance.
+  gsrs.validators.substances += {
+                "validatorClass" = "ix.ginas.utils.validation.validators.TagsValidator",
+                "newObjClass" = "ix.ginas.models.v1.Substance"
+        }
+
+  # These may be added, though defaults are set in the code.
+  gsrs.substance.addtagwhenintagspresentinnames=false
+  gsrs.substance.removetagwhenintagsmissingfromnames=false
+
+*** Note also that there is an idea of the locator.  This is used in conjunction with references.
+Currently this is OFF in GSRS (controlled by a boolean value extractLocators). If that were on,
+a method in NamesValidator.java (addLocator) would add tags found in names to the tags list. We should
+probably remove this piggybacking in case locators is ever turned back on.
+*/
+
+
 public class TagsValidator extends AbstractValidatorPlugin<Substance> {
 
     @Value("#{new Boolean('${gsrs.substance.addtagwhenintagspresentinnames:false}')}")
