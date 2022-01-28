@@ -1,7 +1,7 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Keyword;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;

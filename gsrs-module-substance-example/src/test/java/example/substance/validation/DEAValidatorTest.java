@@ -1,8 +1,8 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.module.substance.utils.DEADataTable;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationMessage;

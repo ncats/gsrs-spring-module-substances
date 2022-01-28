@@ -43,7 +43,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
 
     @Override
     @Transactional
-    public void run(SchedulerPlugin.TaskListener l)
+    public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l)
     {
         l.message("Initializing rehashing");
         ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->

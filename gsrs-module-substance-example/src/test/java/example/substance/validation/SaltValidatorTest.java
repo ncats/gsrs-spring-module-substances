@@ -1,6 +1,6 @@
 package example.substance.validation;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.GsrsModuleSubstanceApplication;
 import gsrs.cache.GsrsCache;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
@@ -9,6 +9,7 @@ import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.chem.StructureProcessor;
@@ -27,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -43,6 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author mitch miller
  */
 //@RecordApplicationEvents
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
 public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {

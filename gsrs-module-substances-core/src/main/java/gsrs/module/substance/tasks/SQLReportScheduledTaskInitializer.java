@@ -2,26 +2,21 @@ package gsrs.module.substance.tasks;
 
 import gsrs.config.FilePathParserUtils;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
 import gsrs.springUtils.StaticContextAccessor;
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.sql.DataSource;
+import java.io.*;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
-
-import java.sql.SQLException;
-import javax.sql.DataSource;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Used to schedule output of certain reports, using defined SQL queries in the
@@ -65,7 +60,7 @@ public class SQLReportScheduledTaskInitializer
                 false, "UTF-8");
     }
 
-    public void run(TaskListener l) {
+    public void run(SchedulerPlugin.JobStats stats, TaskListener l) {
         try {
             lock.lock();
             l.message("Initializing SQL");

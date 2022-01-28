@@ -1,25 +1,22 @@
 package example.pojodiff;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
-import gsrs.repository.PrincipalRepository;
-import gsrs.services.PrincipalService;
 import gsrs.services.PrincipalServiceImpl;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Principal;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.EntityInfo;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.utils.pojopatch.PojoDiff;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.when;
 //@DataJpaTest
 public class NameRemoveTest extends AbstractSubstanceJpaEntityTest {
 	@MockBean

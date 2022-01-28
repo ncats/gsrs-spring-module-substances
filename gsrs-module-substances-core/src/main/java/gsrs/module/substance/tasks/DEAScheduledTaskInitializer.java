@@ -66,7 +66,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
 
     @Override
     @Transactional
-    public void run(SchedulerPlugin.TaskListener l) {
+    public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
         l.message("Initializing rehashing");
         ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->
         {
@@ -108,7 +108,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
                                                 log.debug("computing DEA data for  " + id);
                                                 //recalcStructurePropertiesService.recalcStructureProperties(s);
                                                 if (deaDataTable.assignIds(((ChemicalSubstance) s), out)) {
-                                                    substanceRepository.save(s);
+                                                    substanceRepository.saveAndFlush(s);
                                                     log.debug("saved");
                                                 }
                                                 log.debug("done computing DEA data for  " + id);

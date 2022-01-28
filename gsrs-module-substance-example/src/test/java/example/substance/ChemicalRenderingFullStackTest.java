@@ -1,14 +1,14 @@
 package example.substance;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-
-import java.util.Arrays;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
+import example.GsrsModuleSubstanceApplication;
+import gsrs.module.substance.controllers.SubstanceController;
+import gsrs.module.substance.processors.RelationEventListener;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.ChemicalSubstance;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.ResponseEntity;
@@ -16,11 +16,13 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
-import gsrs.module.substance.controllers.SubstanceController;
-import gsrs.module.substance.processors.RelationEventListener;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @Import({ChemicalRenderingFullStackTest.Configuration.class, RelationEventListener.class})

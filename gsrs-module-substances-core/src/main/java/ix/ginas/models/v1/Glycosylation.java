@@ -147,4 +147,18 @@ public class Glycosylation extends GinasCommonSubData {
 		return temp;
 	}
 
+    @Override
+    public void forceUpdate() {
+        super.forceUpdate();
+        
+        if(_CGlycosylationSiteContainer!=null) {
+            _CGlycosylationSiteContainer.forceUpdate();
+        }
+        if(_NGlycosylationSiteContainer!=null) {
+            _NGlycosylationSiteContainer.forceUpdate();
+        }
+        if(_OGlycosylationSiteContainer!=null) {
+            _OGlycosylationSiteContainer.forceUpdate();
+        }
+    }
 }

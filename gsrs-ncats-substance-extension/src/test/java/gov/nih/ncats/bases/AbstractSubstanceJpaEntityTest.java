@@ -1,4 +1,4 @@
-package example.substance;
+package gov.nih.ncats.bases;
 
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.startertests.GsrsJpaTest;
