@@ -118,6 +118,7 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE("Tags WILL be added. The following tag terms were found in substance names" + inNamesMissingFromTags.toString() + " but are not present in the tags list.");
                     callback.addMessage(mes, () -> {
+                        // This is not executing !!!!
                         System.out.println("====>  before for loop");
                         for(String tagTerm: inNamesMissingFromTags) {
                             System.out.println("====>  inside for loop " + tagTerm);
