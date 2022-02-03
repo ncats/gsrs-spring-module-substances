@@ -32,11 +32,12 @@ public class FDACodeExporter implements Exporter<Substance> {
         if(!showPrivates && !obj.getAccess().isEmpty()){
             return;
         }
+        
         String bdnum = obj.codes.stream().filter(cd->cd.codeSystem.equals("BDNUM")).map(cd->cd.code).findFirst().orElse(null);
         for ( Code c :obj.getCodes()){
-            if(c.codeSystem.equals("BDNUM")){
-                continue;
-            }
+//            if(c.codeSystem.equals("BDNUM")){
+//                continue;
+//            }
             boolean isPublic = c.getAccess().isEmpty();
             if(!showPrivates && !isPublic){
                 continue;
