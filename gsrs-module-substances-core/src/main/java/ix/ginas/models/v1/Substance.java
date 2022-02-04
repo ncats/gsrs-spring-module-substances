@@ -23,14 +23,14 @@ import ix.ginas.models.ValidationMessageHolder;
 import ix.ginas.models.serialization.*;
 import ix.ginas.models.utils.JSONEntity;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 
 import javax.persistence.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.CollectionUtils;
+import java.util.regex.Pattern;
 
 @Backup
 @JSONEntity(name = "substance", title = "Substance")
@@ -232,7 +232,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<Name> names = new ArrayList<Name>();
 
-    // TOOD original schema has superfluous
+    // TOOD original schema has superfluous 
     // name = codes in the schema here and
     // in all of Code's properties
     @JSONEntity(title = "Codes")
@@ -320,9 +320,6 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JoinTable(name="ix_ginas_substance_tags", inverseJoinColumns = {
             @JoinColumn(name="ix_core_value_id")
     })
-
-    // tags begin
-
     public List<Keyword> tags = new ArrayList<Keyword>();
 
     public void addTag(Keyword tag){
@@ -345,73 +342,6 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return false;
     }
 
-    public List<String> grabTagTerms() {
-        // This was named "getTagTerms," but I got strange PojoDiff error.
-        // It was a 500 error complaining about equal index and size values
-        // in the list. It occurred when trying to delete a tag *and* persisting.
-        List tagTerms = new ArrayList<String>();
-        for(Keyword k: this.tags){
-            tagTerms.add(k.getValue());
-        }
-        return tagTerms;
-    }
-
-    public Set<String> extractTagTermsFromNamesAsSet() {
-        List<Name> names = this.getAllNames();
-        if (names == null) { return null; }
-        Set<String> tagTerms = new HashSet<String>();
-        for (Name name: names) {
-            String e = name.extractTagTermFromName();
-            if (e != null) {
-                tagTerms.add(e);
-            }
-        }
-        return tagTerms;
-    }
-
-    public List<String> extractDistinctTagTermsFromNames() {
-        List<Name> names = this.getAllNames();
-        Set set = new HashSet<String>();
-        if (names == null) { return null; }
-        List tagTerms = new ArrayList<String>();
-        for (Name name: names) {
-            String e = name.extractTagTermFromName();
-            if (e != null) {
-                if (!set.contains(e)) {
-                    tagTerms.add(e);
-                    set.add(e);
-                }
-            }
-        }
-        return tagTerms;
-    }
-
-    public List<String> extractTagTermsFromNames() {
-        // Possibly returns non-distinct list.
-        List<Name> names = this.getAllNames();
-        if (names == null) { return null; }
-        List tagTerms = new ArrayList<String>();
-        for (Name name: names) {
-            String e = name.extractTagTermFromName();
-            if (e != null) {
-                tagTerms.add(e);
-            }
-        }
-        return tagTerms;
-    }
-
-    public List<String> compareTagTermsInNamesMissingFromTags(List<String> inNames, List<String> inTags) {
-        // Given two lists
-        //      inNames: a b c d e
-        //      inTags:        d e f g
-        // tagTermsInNamesButNotInTags = a b c | remove (from) inNames, inTags
-        // tagTermsInTagsButNotInNames = f g   | remove (from) inTags, inNames
-        return new ArrayList<>(CollectionUtils.removeAll(inNames, inTags));
-    }
-    public List<String> compareTagTermsInTagsMissingFromNames(List<String> inTags, List<String> inNames) {
-        return new ArrayList<>(CollectionUtils.removeAll(inTags, inNames));
-    }
-    // tags end
 
     @Transient
     protected transient ObjectMapper mapper = new ObjectMapper();
@@ -490,7 +420,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     public Optional<Name> getBestName(Comparator<Name> comp){
         return names.stream().max(comp);
     }
-
+    
     @Indexable(suggest = true, name = "Display Name", sortable=true)
     @JsonIgnore
     public String fetchIndexedDisplayName() {
@@ -1195,16 +1125,16 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JsonIgnore
     @Indexable(facet = true, name = "Reference Count", sortable=true)
     public int getReferenceCount(){
-        return (int) references.stream()
-                .filter(new Predicate<Reference>(){
-                    public boolean test(Reference r){
-                        if(r.docType==null || r.docType.equals("SYSTEM") || r.docType.equals("VALIDATION_MESSAGE")){
-                            return false;
-                        }
-                        return true;
-                    }
-                })
-                .count();
+	return (int) references.stream()
+		         .filter(new Predicate<Reference>(){
+				public boolean test(Reference r){
+					if(r.docType==null || r.docType.equals("SYSTEM") || r.docType.equals("VALIDATION_MESSAGE")){
+						return false;	
+					}
+					return true;
+				}
+			 })
+		.count();
     }
 
     @JsonIgnore
@@ -1568,4 +1498,77 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
         return hexString.toString();
     }
+    
+    
+    // tags begin
+
+    public List<String> grabTagTerms() {
+        // This was named "getTagTerms," but I got strange PojoDiff error.
+        // It was a 500 error complaining about equal index and size values
+        // in the list. It occurred when trying to delete a tag *and* persisting.
+        List tagTerms = new ArrayList<String>();
+        for(Keyword k: this.tags){
+            tagTerms.add(k.getValue());
+        }
+        return tagTerms;
+    }
+
+    public Set<String> extractTagTermsFromNamesAsSet() {
+        List<Name> names = this.getAllNames();
+        if (names == null) { return null; }
+        Set<String> tagTerms = new HashSet<String>();
+        for (Name name: names) {
+            String e = name.extractTagTermFromName();
+            if (e != null) {
+                tagTerms.add(e);
+            }
+        }
+        return tagTerms;
+    }
+
+    public List<String> extractDistinctTagTermsFromNames() {
+        List<Name> names = this.getAllNames();
+        Set set = new HashSet<String>();
+        if (names == null) { return null; }
+        List tagTerms = new ArrayList<String>();
+        for (Name name: names) {
+            String e = name.extractTagTermFromName();
+            if (e != null) {
+                if (!set.contains(e)) {
+                    tagTerms.add(e);
+                    set.add(e);
+                }
+            }
+        }
+        return tagTerms;
+    }
+
+    public List<String> extractTagTermsFromNames() {
+        // Possibly returns non-distinct list.
+        List<Name> names = this.getAllNames();
+        if (names == null) { return null; }
+        List tagTerms = new ArrayList<String>();
+        for (Name name: names) {
+            String e = name.extractTagTermFromName();
+            if (e != null) {
+                tagTerms.add(e);
+            }
+        }
+        return tagTerms;
+    }
+
+    public List<String> compareTagTermsInNamesMissingFromTags(List<String> inNames, List<String> inTags) {
+        // Given two lists
+        //      inNames: a b c d e
+        //      inTags:        d e f g
+        // tagTermsInNamesButNotInTags = a b c | remove (from) inNames, inTags
+        // tagTermsInTagsButNotInNames = f g   | remove (from) inTags, inNames
+        return new ArrayList<>(CollectionUtils.removeAll(inNames, inTags));
+    }
+    public List<String> compareTagTermsInTagsMissingFromNames(List<String> inTags, List<String> inNames) {
+        return new ArrayList<>(CollectionUtils.removeAll(inTags, inNames));
+    }
+ 
+    // tags end    
+       
 }
