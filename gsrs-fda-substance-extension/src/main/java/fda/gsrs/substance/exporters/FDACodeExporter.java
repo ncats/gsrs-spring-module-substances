@@ -14,6 +14,7 @@ import java.io.OutputStreamWriter;
  */
 public class FDACodeExporter implements Exporter<Substance> {
 
+    private String primaryCodeSystem= "BDNUM";
     BufferedWriter bw;
 
     private final boolean showPrivates;
@@ -22,7 +23,7 @@ public class FDACodeExporter implements Exporter<Substance> {
         this.showPrivates =showPrivates;
 
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("UNII\tBDNUM\tCode\tCode System\tCode Type\tCode Text\tComments\tisPublic");
+        bw.write("UNII\t" + primaryCodeSystem + "\tCode\tCode System\tCode Type\tCode Text\tComments\tisPublic");
         bw.newLine();
     }
 
@@ -32,18 +33,19 @@ public class FDACodeExporter implements Exporter<Substance> {
         if(!showPrivates && !obj.getAccess().isEmpty()){
             return;
         }
-        String bdnum = obj.codes.stream().filter(cd->cd.codeSystem.equals("BDNUM")).map(cd->cd.code).findFirst().orElse(null);
+        
+        String priCode = obj.codes.stream().filter(cd->cd.codeSystem.equals(primaryCodeSystem)).map(cd->cd.code).findFirst().orElse(null);
         for ( Code c :obj.getCodes()){
-            if(c.codeSystem.equals("BDNUM")){
-                continue;
-            }
+//            if(c.codeSystem.equals(primaryCodeSystem)){
+//                continue;
+//            }
             boolean isPublic = c.getAccess().isEmpty();
             if(!showPrivates && !isPublic){
                 continue;
             }
             String str = obj.approvalID 
-                         + "\t"+ bdnum 
-                         + "\t"+ c.code 
+                         + "\t" + priCode 
+                         + "\t" + c.code 
                          + "\t" + c.codeSystem 
                          + "\t" + c.type
                          + "\t" + ((c.comments!=null)?c.comments:"") 
