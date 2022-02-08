@@ -1,29 +1,34 @@
 package example.loadertests;
 
-import example.substance.AbstractSubstanceJpaFullStackEntityTest;
+import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.services.PrincipalServiceImpl;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
-
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  *
  * @author mitch todo: get facets for searches check on structure mapping
  */
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
 {

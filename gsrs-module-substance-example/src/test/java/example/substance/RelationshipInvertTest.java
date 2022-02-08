@@ -1,20 +1,21 @@
 package example.substance;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import javax.persistence.EntityManager;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import gsrs.events.CreateEditEvent;
+import gsrs.junit.json.ChangeFilter;
+import gsrs.junit.json.Changes;
+import gsrs.junit.json.JsonUtil;
+import gsrs.module.substance.processors.*;
+import gsrs.module.substance.services.RelationshipService;
+import gsrs.repository.EditRepository;
+import gsrs.services.EditEventService;
+import gsrs.startertests.TestEntityProcessorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import gsrs.substances.tests.SubstanceJsonUtil;
+import ix.core.models.Edit;
+import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.Relationship;
+import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,34 +27,20 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import javax.persistence.EntityManager;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
-import example.SubstanceJsonUtil;
-import gsrs.events.CreateEditEvent;
-import gsrs.junit.json.ChangeFilter;
-import gsrs.junit.json.Changes;
-import gsrs.junit.json.JsonUtil;
-import gsrs.module.substance.processors.ReferenceProcessor;
-import gsrs.module.substance.processors.RelationEventListener;
-import gsrs.module.substance.processors.RelationshipProcessor;
-import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
-import gsrs.module.substance.processors.SubstanceProcessor;
-import gsrs.module.substance.processors.TryToCreateInverseRelationshipEvent;
-import gsrs.module.substance.services.RelationshipService;
-import gsrs.repository.EditRepository;
-import gsrs.services.EditEventService;
-import gsrs.startertests.TestEntityProcessorFactory;
-import ix.core.models.Edit;
-import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Protein;
-import ix.ginas.models.v1.Relationship;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Substance.SubstanceClass;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.junit.Assert.*;
+
 //@GsrsJpaTest
 @ActiveProfiles("test")
 @RecordApplicationEvents

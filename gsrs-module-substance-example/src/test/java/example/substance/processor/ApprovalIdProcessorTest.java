@@ -1,14 +1,17 @@
 package example.substance.processor;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import java.io.File;
-import java.io.IOException;
-
 import gsrs.cv.ControlledVocabularyEntityService;
 import gsrs.cv.ControlledVocabularyEntityServiceImpl;
 import gsrs.cv.CvApiAdapter;
 import gsrs.cv.api.ControlledVocabularyApi;
+import gsrs.module.substance.processors.ApprovalIdProcessor;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,15 +19,11 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
-import example.substance.AbstractSubstanceJpaEntityTest;
-import gsrs.module.substance.processors.ApprovalIdProcessor;
-import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ProteinSubstance;
-import ix.ginas.models.v1.Substance;
-import lombok.extern.slf4j.Slf4j;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+
+import java.io.File;
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  *

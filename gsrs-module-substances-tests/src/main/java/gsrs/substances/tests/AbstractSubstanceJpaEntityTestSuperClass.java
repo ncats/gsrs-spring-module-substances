@@ -1,4 +1,4 @@
-package example.substance;
+package gsrs.substances.tests;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +19,10 @@ import gsrs.repository.GroupRepository;
 import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
 import gsrs.services.BackupService;
-import gsrs.startertests.*;
+import gsrs.startertests.GsrsEntityTestConfiguration;
+import gsrs.startertests.TestEntityProcessorFactory;
+import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import gsrs.startertests.jupiter.ResetAllEntityServicesBeforeEachExtension;
 import ix.core.models.Group;
@@ -54,7 +57,10 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,7 +69,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 /**
  * Parent Super-class of that should be used to
  * test Substances interacting with a test database.

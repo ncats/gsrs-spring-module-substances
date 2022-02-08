@@ -1,8 +1,8 @@
 package example.substance.processor;
 
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gsrs.repository.EditRepository;
 import gsrs.startertests.TestEntityProcessorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.EntityProcessor;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;

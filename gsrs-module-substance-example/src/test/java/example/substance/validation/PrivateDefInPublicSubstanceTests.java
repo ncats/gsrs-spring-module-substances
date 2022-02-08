@@ -1,40 +1,34 @@
 package example.substance.validation;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import gsrs.validator.DefaultValidatorConfig;
+import gsrs.validator.ValidatorConfig;
 import ix.core.models.Group;
+import ix.core.validator.ValidationMessage;
+import ix.core.validator.ValidationMessage.MESSAGE_TYPE;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Reference;
-import ix.ginas.models.v1.Substance;
-import java.util.Collections;
-import java.util.List;
-
+import ix.ginas.models.v1.*;
+import ix.ginas.utils.validation.validators.DefinitionalReferenceValidator;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.jupiter.api.Test;
-import static org.junit.Assert.*;
-import com.fasterxml.jackson.databind.JsonNode;
-import example.substance.AbstractSubstanceJpaEntityTest;
-import gsrs.startertests.TestGsrsValidatorFactory;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import ix.core.validator.ValidationMessage;
-import ix.core.validator.ValidationMessage.MESSAGE_TYPE;
-import ix.ginas.models.v1.Protein;
-import ix.ginas.models.v1.ProteinSubstance;
-import ix.ginas.models.v1.Subunit;
-import ix.ginas.models.v1.StructurallyDiverse;
-import ix.ginas.models.v1.StructurallyDiverseSubstance;
-import ix.ginas.utils.validation.validators.DefinitionalReferenceValidator;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  *

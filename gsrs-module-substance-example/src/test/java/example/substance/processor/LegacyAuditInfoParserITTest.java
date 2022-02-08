@@ -1,19 +1,16 @@
 package example.substance.processor;
 
 import com.fasterxml.jackson.databind.JsonNode;
-
-import example.substance.AbstractSubstanceJpaEntityTest;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.junit.TimeTraveller;
 import gsrs.module.substance.processors.LegacyAuditInfoProcessor;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestEntityProcessorFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Role;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
-
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -25,7 +22,8 @@ import java.util.Date;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 //TODO some tests from Play 2.x have been commented out because they change the created and modified dates which currently won't work in Hibernate
 //so these tests just check the approval id and time
 public class LegacyAuditInfoParserITTest extends AbstractSubstanceJpaEntityTest {
