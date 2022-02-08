@@ -55,10 +55,12 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
     @Autowired
     private ReferenceRepository referenceRepository;
 
+    private final String NO_SUBUNIT_MESSAGE = "Warning - Nucleic Acid substances usually have at least 1 subunit, but zero subunits were found here.  This is discouraged and is only allowed for records labelled as incomplete";
+    private final String NO_SUGAR_MESSAGE = "Nucleic Acid substance must have at least 1 specified sugar";
+    private final String NO_LINKAGE_MESSAGE ="Nucleic Acid substance must have at least 1 specified linkage";
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        String errorMessage = "Warning - Nucleic Acid substances usually have at least 1 subunit, but zero subunits were found here.  This is discouraged and is only allowed for records labelled as incomplete";
 
         NucleicAcidSubstance cs = (NucleicAcidSubstance)s;
         if (cs.nucleicAcid == null) {
@@ -73,23 +75,33 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
                 callback.addMessage(GinasProcessingMessage
                         //warning text changed 13 Oct 2021 https://cnigsllc.atlassian.net/browse/GSRS-1884
-                        .WARNING_MESSAGE(errorMessage));
+                        .WARNING_MESSAGE(NO_SUBUNIT_MESSAGE));
             }else {
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE(errorMessage));
+                        .ERROR_MESSAGE(NO_SUBUNIT_MESSAGE));
             }
             //to make it easier for validation below set the subunits to an empty list to avoid other errors
             subunits = Collections.emptyList();
         }
         if (cs.nucleicAcid.getSugars() == null
                 || cs.nucleicAcid.getSugars().isEmpty()) {
-            callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Nucleic Acid substance must have at least 1 specified sugar"));
+            if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
+                callback.addMessage(GinasProcessingMessage
+                        .WARNING_MESSAGE(NO_SUGAR_MESSAGE));
+            } else {
+                callback.addMessage(GinasProcessingMessage
+                        .ERROR_MESSAGE(NO_SUGAR_MESSAGE));
+            }
         }
         if (cs.nucleicAcid.getLinkages() == null
                 || cs.nucleicAcid.getLinkages().isEmpty()) {
-            callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Nucleic Acid substance must have at least 1 specified linkage"));
+            if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
+                callback.addMessage(GinasProcessingMessage
+                        .WARNING_MESSAGE(NO_LINKAGE_MESSAGE));
+            } else {
+                callback.addMessage(GinasProcessingMessage
+                        .ERROR_MESSAGE(NO_LINKAGE_MESSAGE));
+            }
         }
         for (int i=0; i< subunits.size(); i++) {
             Subunit su = subunits.get(i);
