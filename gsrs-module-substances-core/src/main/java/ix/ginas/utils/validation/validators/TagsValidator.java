@@ -21,6 +21,7 @@ The idea of substance tags appears in two ways in the GSRS. 1) in the list of na
 A tag is included in a substance name by putting a bracketed term at the end of the name.
 For example:
   ASPIRIN [INN]
+
 When this name is added, the GSRS will extract "INN" and index this value for faceting.
 The facet category called "Source Tag" works with this indexed value.
 There is ALSO a substance->tags list of Keyword objects.
@@ -39,6 +40,10 @@ This should be configured in your src/main/resources/application.conf.
         "removeExplicitTagsMissingFromNames":false
     }
 
+Tag consistency also comes into play when substances are copied. "Copying" takes the old
+JSON and puts it in a new record, with some clean up modifications.  Copying keeps tags from
+the old record. So if you wipe all the names it won't also wipe all the tags. But, if the
+validation rules is configured appropriately, it should deal with that case too.
 
 *** Note also that there is an idea of the locator.  This is used in conjunction with references.
 Currently, this is OFF in GSRS (controlled by a boolean value extractLocators). If that were on,
