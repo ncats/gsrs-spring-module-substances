@@ -73,7 +73,8 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
 
         TagsValidator validator = new TagsValidator();
 
-        validator.setRemoveExplicitTagsMissingFromNames(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
 
         Substance newSubstance = createNewSubstance();
 
@@ -91,7 +92,8 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
     public void testTagsValidator2() {
         TagsValidator validator = new TagsValidator();
 
-        validator.setRemoveExplicitTagsMissingFromNames(true);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(true);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(true);
 
         Substance newSubstance = createNewSubstance();
 
@@ -113,8 +115,10 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
     public void testTagsValidator3() {
         TagsValidator validator = new TagsValidator();
 
-        validator.setAddExplicitTagsExtractedFromNames(true);
-        validator.setRemoveExplicitTagsMissingFromNames(false);
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(true);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(true);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
 
         Substance substance = new Substance();
         substance.names.add(new Name("Name 1 [ABC]" ));
@@ -131,6 +135,193 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         // Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("VANDF")));
 
     }
+
+    // ==== addExplicitTagsExtractedFromNames begin ====
+
+    @Test
+    public void testTagsValidator4() {
+        // check create vs update logic
+        // action is create|setAddExplicitTagsExtractedFromNamesOnCreate: false
+        String testString = "They will not be automatically added";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(false);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, null);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+
+    @Test
+    public void testTagsValidator5() {
+        // check create vs update logic
+        // action is create|setAddExplicitTagsExtractedFromNamesOnCreate: true
+        String testString = "Tags WILL be added.";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(true);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, null);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+    @Test
+    public void testTagsValidator6() {
+        // check create vs update logic
+        // action is update|setAddExplicitTagsExtractedFromNamesOnUpdate: false
+        String testString = "They will not be automatically added";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(false);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.addTagString("ABC");
+
+        Substance oldSubstance = new Substance();
+        oldSubstance.names.add(new Name("Name 1 [ABC]" ));
+        oldSubstance.names.add(new Name("Name 2 [CED]" ));
+        oldSubstance.names.add(new Name("Name 2 [KGF]" ));
+        oldSubstance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, oldSubstance);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+    @Test
+    public void testTagsValidator7() {
+        // check create vs update logic
+        // action is update|setAddExplicitTagsExtractedFromNamesOnUpdate: true
+        String testString = "Tags WILL be added.";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(false);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(true);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]"));
+        substance.names.add(new Name("Name 2 [CED]"));
+        substance.addTagString("ABC");
+
+        Substance oldSubstance = new Substance();
+        oldSubstance.names.add(new Name("Name 1 [ABC]"));
+        oldSubstance.names.add(new Name("Name 2 [CED]"));
+        oldSubstance.names.add(new Name("Name 2 [KGF]"));
+        oldSubstance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, oldSubstance);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+    // ==== addExplicitTagsExtractedFromNames end ====
+
+    // ==== removeExplicitTagsMissingFromNames begin ====
+
+    @Test
+    public void testTagsValidator8() {
+        // check create vs update logic
+        // action is create|setRemoveExplicitTagsMissingFromNamesOnCreate: false
+        String testString = "They will not be automatically added";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(false);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, null);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+
+    @Test
+    public void testTagsValidator9() {
+        // check create vs update logic
+        // action is create|setRemoveExplicitTagsMissingFromNamesOnCreate: true
+        String testString = "Tags WILL be added.";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(true);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, null);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+    @Test
+    public void testTagsValidator10() {
+        // check create vs update logic
+        // action is update|setRemoveExplicitTagsMissingFromNamesOnUpdate: false
+        String testString = "They will not be automatically added";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(false);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.addTagString("ABC");
+
+        Substance oldSubstance = new Substance();
+        oldSubstance.names.add(new Name("Name 1 [ABC]" ));
+        oldSubstance.names.add(new Name("Name 2 [CED]" ));
+        oldSubstance.names.add(new Name("Name 2 [KGF]" ));
+        oldSubstance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, oldSubstance);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+    @Test
+    public void testTagsValidator11() {
+        // check create vs update logic
+        // action is update|setRemoveExplicitTagsMissingFromNamesOnUpdate: true
+        String testString = "Tags WILL be added.";
+        TagsValidator validator = new TagsValidator();
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(false);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(true);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC]"));
+        substance.names.add(new Name("Name 2 [CED]"));
+        substance.addTagString("ABC");
+
+        Substance oldSubstance = new Substance();
+        oldSubstance.names.add(new Name("Name 1 [ABC]"));
+        oldSubstance.names.add(new Name("Name 2 [CED]"));
+        oldSubstance.names.add(new Name("Name 2 [KGF]"));
+        oldSubstance.addTagString("ABC");
+        ValidationResponse<Substance> response = validator.validate(substance, oldSubstance);
+        Assertions.assertEquals(1, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains(testString)).count());
+    }
+
+    // ==== removeExplicitTagsMissingFromNames end ====
+
 
 
 }
