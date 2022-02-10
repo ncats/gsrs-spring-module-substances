@@ -20,7 +20,6 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
-import org.springframework.test.web.client.response.MockRestResponseCreators;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -30,9 +29,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 @RestClientTest(SubstanceRestApi.class)
@@ -44,7 +43,7 @@ public class SubstanceApiTest {
     @Autowired
     private RestTemplateBuilder restTemplateBuilder;
 
-    @Autowired
+   @Autowired
     private SubstanceRestApi api;
 
 
@@ -234,8 +233,6 @@ public class SubstanceApiTest {
 
     }
 
-
-
     // alex begin
 
     @Test
@@ -330,38 +327,6 @@ public class SubstanceApiTest {
         assertNull(exists);
     }
 
-    @Test
-    public void testMultipleEntityExistsError() throws IOException {
-        String json = "{\n" +
-                "    \"found\": {\n" +
-                "        \"BENZOIC ACID, 2-(ACETYLSELENO)-\": {\n" +
-                "            \"id\": \"8798e4b8-223c-4d24-aeeb-1f3ca2914328\",\n" +
-                "            \"query\": \"BENZOIC ACID, 2-(ACETYLSELENO)-\",\n" +
-                "            \"url\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n" +
-                "        },\n" +
-                "        \"7X1DH96Q9D\": {\n" +
-                "            \"id\": \"8798e4b8-223c-4d24-aeeb-1f3ca2914328\",\n" +
-                "            \"query\": \"7X1DH96Q9D\",\n" +
-                "            \"url\": \"http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full\"\n"+
-                "        }\n" +
-                "    },\n" +
-                "    \"notFound\": [\n" +
-                "        \"ASPIRIN\"\n" +
-                "    ]\n" +
-                "}";
-        String[] strings = new String[]{"BENZOIC ACID, 2-(ACETYLSELENO)-", "7X1DH96Q9D", "ASPIRIN"};
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances/@exists"))
-                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
-
-        GsrsEntityRestTemplate.ExistsCheckResult existsCheckResult = api.exists(strings);
-
-        assertEquals(2, existsCheckResult.getFound().size());
-        assertEquals(1, existsCheckResult.getNotFound().size());
-
-        assertEquals("http://localhost:8080/api/v1/substances(8798e4b8-223c-4d24-aeeb-1f3ca2914328)?view=full", existsCheckResult.getFound().get("7X1DH96Q9D").getUrl());
-
-    }
 
     // alex end
 
