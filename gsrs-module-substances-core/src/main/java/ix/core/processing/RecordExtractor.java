@@ -1,9 +1,5 @@
 package ix.core.processing;
 
-import ix.core.controllers.PayloadFactory;
-import ix.core.models.Payload;
-import ix.core.stats.Estimate;
-import ix.core.util.IOUtil;
 
 import java.io.Closeable;
 import java.io.InputStream;
@@ -24,6 +20,16 @@ public abstract class RecordExtractor<K> implements Closeable {
 		 */
 		abstract public K getNextRecord() throws Exception;
 		abstract public void close();
+
+	/**
+	 * Get the Name for this Extractor.
+	 * By default, the name is the instance's class name.
+	 * @return the name as a String can not be null.
+	 *
+	 */
+		public String getExtractorName(){
+			return getClass().getName();
+		}
 		
 		public Iterator<K> getRecordIterator(){
 			return new Iterator<K>(){
@@ -78,42 +84,13 @@ public abstract class RecordExtractor<K> implements Closeable {
 			};
 		}		
 		
-		public abstract RecordExtractor<K> makeNewExtractor(InputStream is);
+
+
 		
-		public RecordExtractor<K> makeNewExtractor(Payload p){
-			InputStream pis=PayloadFactory.getStream(p);
-			return makeNewExtractor(pis);
-		}
-		
-		/**
-		 * Count records extracted from payload.
-		 * 
-		 * By default, this is implemented naively by iteration.
-		 * 
-		 * Should be overridden to take advantage of better assumptions.
-		 * @param p
-		 * @return
-		 */
-		public Estimate estimateRecordCount(Payload p){
-			long count=0;
-			RecordExtractor extract = makeNewExtractor(p);
-			for (Object m; ;) {
-				try{
-					m=extract.getNextRecord();
-					if(m==null){
-						break;
-					}
-				}catch(Exception e){
-					
-				}
-				count++;
-            }
-			extract.close();
-			return new Estimate(count, Estimate.TYPE.EXACT);
-		}
+
 		public static RecordExtractor getInstanceOfExtractor(String className){
 			try{
-				Class<?> clazz = IOUtil.getGinasClassLoader().loadClass(className);
+				Class<?> clazz = Class.forName(className);
 				Constructor<?> ctor = clazz.getConstructor(InputStream.class);
 				RecordExtractor object = (RecordExtractor) ctor.newInstance(new Object[] { null });
 				return object;
@@ -121,10 +98,6 @@ public abstract class RecordExtractor<K> implements Closeable {
 				return null;
 			}
 		}
-		public abstract RecordTransformer getTransformer();
-		
-		public RecordTransformer getTransformer(Payload p){
-			return getTransformer();
-		}
+
 		
 	}

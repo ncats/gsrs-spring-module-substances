@@ -5,15 +5,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ix.core.controllers.v1.routes;
-import ix.core.plugins.GinasRecordProcessorPlugin;
+import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.model.GsrsApiAction;
+import gsrs.module.substance.services.SubstanceBulkLoadService;
+import gsrs.springUtils.StaticContextAccessor;
+import ix.core.EntityMapperOptions;
+import ix.core.FieldResourceReference;
 import ix.core.processing.RecordExtractor;
+import ix.core.processing.RecordExtractorFactory;
 import ix.core.processing.RecordPersister;
-import ix.core.processing.RecordTransformer;
+import ix.core.processing.RecordPersisterFactory;
 import ix.core.stats.Statistics;
-import ix.core.util.RestUrlLink;
-import ix.core.util.TimeUtil;
-import ix.utils.Global;
+import org.springframework.data.annotation.CreatedBy;
 
 import javax.persistence.*;
 import java.io.IOException;
@@ -22,7 +25,10 @@ import java.util.*;
 @Entity
 @Table(name="ix_core_procjob")
 @Backup
+@EntityMapperOptions(selfRelViews = BeanViews.Compact.class, idProviderRef = "loaderLabel")
 public class ProcessingJob extends LongBaseModel {
+
+    private static String LEGACY_PLUGIN_LABEL_KEY ="ix.core.plugins.GinasRecordProcessorPlugin";
 	private static final String EXTRACTOR_KEYWORD = "EXTRACTOR";
 	private static final String TRANSFORM_KEYWORD = "TRANSFORM";
 	private static final String PERSISTER_KEYWORD = "PERSISTER";
@@ -75,6 +81,7 @@ public class ProcessingJob extends LongBaseModel {
 
     @OneToOne(cascade=CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
+    @CreatedBy
     public Principal owner;
     
     @OneToOne(cascade=CascadeType.ALL)
@@ -92,30 +99,51 @@ public class ProcessingJob extends LongBaseModel {
 
     public ProcessingJob () {
     }
-    @JsonView(BeanViews.Compact.class)
-    @JsonProperty("_self")
-    public RestUrlLink selfUrl () {
+
+    /**
+     * This is the id we use for the rest api.
+     * @return
+     */
+    public String loaderLabel(){
         for(Keyword key : keys){
 
-            if(GinasRecordProcessorPlugin.class.getName().equals(key.label)){
-                return RestUrlLink.from(routes.LoadController.monitor(key.term));
+            if(LEGACY_PLUGIN_LABEL_KEY.equals(key.label)){
+                return key.term;
             }
         }
         return null;
     }
-    @JsonView(BeanViews.Compact.class)
-    @JsonProperty("_payload")
-    public String getJsonPayload () {
-        return payload != null
-            ? Global.getRef(getClass (), id)+"/payload" : null;
+
+
+    /*
+    @JsonIgnore
+    @GsrsApiAction(value= "oldValue", serializeUrlOnly = true, isRaw = true)
+    public FieldResourceReference<JsonNode> getOldValueReference() {
+        if(oldValue ==null){
+            return null;
+        }
+        return FieldResourceReference.forRawFieldAsJson("oldValue", oldValue);
+    }
+     */
+    @JsonIgnore
+    @GsrsApiAction(value= "_payload", serializeUrlOnly = true, view = BeanViews.Compact.class)
+    public FieldResourceReference<String> getJsonPayload () {
+        if(payload ==null){
+            return null;
+        }
+        return FieldResourceReference.forField("/payload", ()->"ignored");
+
+    }
+    @JsonIgnore
+    @GsrsApiAction(value= "_owner", serializeUrlOnly = true, view = BeanViews.Compact.class)
+    public FieldResourceReference<String> getJsonOwner () {
+        if(owner ==null){
+            return null;
+        }
+        return FieldResourceReference.forField("/owner", ()->"ignored");
+
     }
 
-    @JsonView(BeanViews.Compact.class)
-    @JsonProperty("_owner")
-    public String getJsonOwner () {
-        return owner != null
-            ? Global.getRef(getClass (), id)+"/owner" : null;
-    }
     
     @JsonView(BeanViews.Compact.class)
     @JsonProperty("statistics")
@@ -174,7 +202,9 @@ public class ProcessingJob extends LongBaseModel {
 				e.printStackTrace();
 			}
     	}
-    	return GinasRecordProcessorPlugin.getStatisticsForJob(this);
+    	//TODO move this to controller
+        SubstanceBulkLoadService loadService = StaticContextAccessor.getBean(SubstanceBulkLoadService.class);
+    	return loadService.getStatisticsForJob(this);
     }
     
     @JsonIgnore
@@ -220,22 +250,15 @@ public class ProcessingJob extends LongBaseModel {
 		return rec;
 	}
 
-    @JsonIgnore
-	public RecordTransformer getTransformer() {
-		RecordTransformer rt=RecordExtractor.getInstanceOfExtractor(
-				this.getKeyMatching(EXTRACTOR_KEYWORD))
-				.getTransformer(this.payload);
-		return rt;
-	}
 
     @JsonIgnore
-	public void setExtractor(Class extractor) {
-		this.addKeyword(new Keyword(EXTRACTOR_KEYWORD, extractor.getName()));
+	public void setExtractor(RecordExtractorFactory extractor) {
+		this.addKeyword(new Keyword(EXTRACTOR_KEYWORD, extractor.getExtractorName()));
 	}
     
     @JsonIgnore
-	public void setPersister(Class persister) {
-		this.addKeyword(new Keyword(PERSISTER_KEYWORD, persister.getName()));
+	public void setPersister(RecordPersisterFactory persister) {
+		this.addKeyword(new Keyword(PERSISTER_KEYWORD, persister.getPersisterName()));
 	}
     
     @PreUpdate

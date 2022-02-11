@@ -1,5 +1,6 @@
 package example.substance.validation;
 
+import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.*;
 import java.util.stream.Stream;
@@ -23,12 +25,22 @@ import java.util.stream.Stream;
  *
  * @author mitch
  */
+@TestPropertySource(properties = {
+        "logging.level.gsrs.module.substance.definitional=trace",
+        "logging.level.ix.core.util=trace",
+        "logging.level.ix.ginas.utils.validation=trace",
+        "logging.level.gsrs.module.substance.indexers=trace"
+})
 public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
 
     private static boolean setup = false;
 
     @Autowired
     private TestGsrsValidatorFactory factory;
+
+    private SetReferenceAccess setReferenceAccess;
+
+
 
     @BeforeEach
     public void setup() {
@@ -53,6 +65,8 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
             factory.addValidator("substances", config);
             setup=true;
         }
+
+        setReferenceAccess = AutowireHelper.getInstance().autowireAndProxy(new SetReferenceAccess());
     }
 
     @Test
@@ -104,7 +118,7 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         access.add(restricted);
         r.setAccess(access);
         s1.addReference(r);
-        SetReferenceAccess setReferenceAccess = new SetReferenceAccess();
+
         LinkedHashMap<Integer, String> privateAlways = new LinkedHashMap<>();
         privateAlways.put(1, "ANDA");
         privateAlways.put(2, "BLA");
@@ -165,7 +179,7 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         r.docType = "IND";
         r.publicDomain = true;
         s1.addReference(r);
-        SetReferenceAccess setReferenceAccess = new SetReferenceAccess();
+
         LinkedHashMap<Integer, String> privateAlways = new LinkedHashMap<>();
         privateAlways.put(1, "ANDA");
         privateAlways.put(2, "BLA");
@@ -177,9 +191,13 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         generallyPublic.put(2, "CLINICAL_TRIALS.GOV");
         generallyPublic.put(3, "WIKI");
         setReferenceAccess.setSuggestedPublic(generallyPublic);
-
-        ValidationResponse response = setReferenceAccess.validate(s1, null);
-
+        ValidationResponse response;
+        try {
+            response = setReferenceAccess.validate(s1, null);
+        }catch(Throwable t){
+            t.printStackTrace();
+            throw t;
+        }
         //this is split up and stored as a variable for java 8 type inference to work...
         Stream<ValidationMessage> messageStream = response.getValidationMessages().stream();
 
@@ -240,7 +258,7 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         r2.docType = "ChemID";
         r2.publicDomain = true;
         s1.addReference(r2);
-        SetReferenceAccess setReferenceAccess = new SetReferenceAccess();
+
         LinkedHashMap<Integer, String> privateAlways = new LinkedHashMap<>();
         privateAlways.put(1, "ANDA");
         privateAlways.put(2, "BLA");
@@ -310,7 +328,7 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         r2.docType = "ANDA";
         r2.publicDomain = true;
         s1.addReference(r2);
-        SetReferenceAccess setReferenceAccess = new SetReferenceAccess();
+
         LinkedHashMap<Integer, String> privateAlways = new LinkedHashMap<>();
         privateAlways.put(1, "ANDA");
         privateAlways.put(2, "BLA");

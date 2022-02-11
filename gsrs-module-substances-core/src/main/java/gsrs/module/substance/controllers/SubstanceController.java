@@ -45,9 +45,9 @@ import ix.ginas.models.v1.*;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil;
+import ix.utils.CallableUtil.TypedCallable;
 import ix.utils.UUIDUtil;
 import ix.utils.Util;
-import ix.utils.CallableUtil.TypedCallable;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -1545,4 +1545,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return newDisplay;
     }
 
-}
+
+
+    }
