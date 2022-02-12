@@ -3,7 +3,7 @@ package gsrs.module.substance.services;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
-import org.springframework.context.event.ContextStartedEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.ContextStoppedEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class ConsoleFilterService{
 
     private FilteredPrintStream stdOutFilter, stdErrFilter;
 
-    @EventListener(ContextStartedEvent.class)
+    @EventListener(ContextRefreshedEvent.class)
     public void onStart() {
        oldStdErr = System.err;
         oldStdOut = System.out;

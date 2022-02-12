@@ -25,6 +25,7 @@ import java.util.*;
 @Entity
 @Table(name="ix_core_procjob")
 @Backup
+@Indexable(indexed = false)
 @EntityMapperOptions(selfRelViews = BeanViews.Compact.class, idProviderRef = "loaderLabel")
 public class ProcessingJob extends LongBaseModel {
 

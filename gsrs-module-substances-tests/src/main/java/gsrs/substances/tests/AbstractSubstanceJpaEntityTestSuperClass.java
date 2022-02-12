@@ -12,12 +12,13 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.payload.LegacyPayloadConfiguration;
+import gsrs.payload.LegacyPayloadService;
 import gsrs.payload.PayloadController;
-import gsrs.repository.ETagRepository;
-import gsrs.repository.EditRepository;
-import gsrs.repository.GroupRepository;
+import gsrs.repository.*;
 import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
 import gsrs.services.BackupService;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.TestEntityProcessorFactory;
@@ -87,6 +88,12 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @TestConfiguration
 //    @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
     public static class TestConfig{
+
+        @Bean
+        @Primary
+        PayloadService payloadService(PayloadRepository payloadRepository, LegacyPayloadConfiguration configuration, FileDataRepository fileDataRepository) throws IOException {
+            return new LegacyPayloadService(payloadRepository, configuration, fileDataRepository);
+        } 
         @Bean
         @Primary
         TestGsrsValidatorFactory gsrsValidatorFactory(){

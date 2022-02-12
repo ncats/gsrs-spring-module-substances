@@ -1,8 +1,8 @@
 package ix.core.plugins;
 
 import gsrs.AuditConfig;
-import gsrs.module.substance.services.GinasSubstanceTransformerFactory;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
+import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import ix.core.processing.GinasRecordProcessorPlugin;
 import ix.core.processing.TransformedRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,10 +25,10 @@ public class SingleThreadedPersistRecordWorkerFactory implements GinasRecordProc
 
     @Override
     public GinasRecordProcessorPlugin.PersistRecordWorker newWorkerFor(GinasRecordProcessorPlugin.PayloadExtractedRecord prg,
-                                                                       GinasSubstanceTransformerFactory transformerFactory,
+                                                                       SubstanceBulkLoadServiceConfiguration bulkLoadServiceConfiguration,
                                                                        SubstanceBulkLoadService.SubstanceBulkLoadParameters parameters,
                                                                        SubstanceBulkLoadService.BulkLoadServiceCallback callback) {
-        return new SingleThreadedPersistRecordWorker(prg, transformerFactory, callback, parameters.isPreserveOldEditInfo());
+        return new SingleThreadedPersistRecordWorker(prg, bulkLoadServiceConfiguration, callback, parameters.isPreserveOldEditInfo());
     }
 
     public class SingleThreadedPersistRecordWorker extends GinasRecordProcessorPlugin.PersistRecordWorker {
@@ -37,10 +37,10 @@ public class SingleThreadedPersistRecordWorkerFactory implements GinasRecordProc
         private boolean preserveOldAudit;
 
         public SingleThreadedPersistRecordWorker(GinasRecordProcessorPlugin.PayloadExtractedRecord prg,
-                                                 GinasSubstanceTransformerFactory transformerFactory,
+                                                 SubstanceBulkLoadServiceConfiguration bulkLoadServiceConfiguration,
                                                  SubstanceBulkLoadService.BulkLoadServiceCallback callback,
                                                  boolean preserveOldAudit) {
-            super(prg, transformerFactory, callback);
+            super(prg, bulkLoadServiceConfiguration, callback);
             this.preserveOldAudit = preserveOldAudit;
         }
 

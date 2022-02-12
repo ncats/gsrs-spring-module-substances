@@ -3,6 +3,7 @@ package ix.core.processing;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.services.GinasSubstanceTransformerFactory;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
+import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.models.Payload;
 import ix.core.models.ProcessingJob;
@@ -57,14 +58,14 @@ public class GinasRecordProcessorPlugin{
     }
 
     public static class PayloadProcessor implements Serializable {
-        public final Payload payload;
+        public final UUID payloadId;
         public final String id;
         public final String key;
         public Long jobId;
                 
         public PayloadProcessor(Payload payload) {
             Objects.requireNonNull(payload);
-            this.payload = payload;
+            this.payloadId = payload.id;
             this.key = randomKey(10);
             this.id = payload.id + ":" + this.key;
                         
@@ -269,13 +270,15 @@ public class GinasRecordProcessorPlugin{
         private final SubstanceBulkLoadService.BulkLoadServiceCallback callback;
         private final GinasSubstanceTransformerFactory transformerFactory;
 
+        private final SubstanceBulkLoadServiceConfiguration bulkLoadServiceConfiguration;
+
         public PersistRecordWorker(PayloadExtractedRecord prg,
-                                   GinasSubstanceTransformerFactory transformerFactory,
+                                   SubstanceBulkLoadServiceConfiguration bulkLoadServiceConfiguration,
                                    SubstanceBulkLoadService.BulkLoadServiceCallback callback){
 
             this.prg = Objects.requireNonNull(prg);
-            this.transformerFactory = Objects.requireNonNull(transformerFactory);
-
+            this.transformerFactory = Objects.requireNonNull(bulkLoadServiceConfiguration.getRecordTransformFactory());
+            this.bulkLoadServiceConfiguration = Objects.requireNonNull(bulkLoadServiceConfiguration);
             this.callback = Objects.requireNonNull(callback);
         }
         @Override
@@ -291,8 +294,8 @@ public class GinasRecordProcessorPlugin{
 	                throw new IllegalStateException("Transform error");
 	            }
                 callback.processedSuccess();
-	            tr= AutowireHelper.getInstance().autowireAndProxy(new TransformedRecord(trans, prg.theRecord, rec, callback));
-	           
+	            tr= AutowireHelper.getInstance().autowireAndProxy(new TransformedRecord(trans, prg.theRecord,rec, callback));
+	           tr.setConfig(bulkLoadServiceConfiguration);
         	}catch(Throwable t){
                 callback.processedFailure();
         		//t.printStackTrace();
@@ -312,7 +315,7 @@ public class GinasRecordProcessorPlugin{
     
     public interface PersistRecordWorkerFactory{
         PersistRecordWorker newWorkerFor(PayloadExtractedRecord prg,
-                                         GinasSubstanceTransformerFactory transformerFactory,
+                                         SubstanceBulkLoadServiceConfiguration configuration,
                                          SubstanceBulkLoadService.SubstanceBulkLoadParameters parameters,
                                          SubstanceBulkLoadService.BulkLoadServiceCallback callback);
     }

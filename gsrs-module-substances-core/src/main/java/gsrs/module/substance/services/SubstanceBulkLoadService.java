@@ -9,6 +9,7 @@ import gsrs.module.substance.repository.ProcessingJobRepository;
 import gsrs.module.substance.repository.ProcessingRecordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.XRefRepository;
+import gsrs.repository.PayloadRepository;
 import gsrs.security.AdminService;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
@@ -43,6 +44,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PreDestroy;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -52,6 +55,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+
 @Slf4j
 @Service
 public class SubstanceBulkLoadService {
@@ -106,6 +111,7 @@ public class SubstanceBulkLoadService {
 
     private AuditConfig auditConfig;
 
+    private PayloadRepository payloadRepository;
 
     private GsrsValidatorFactory validatorFactoryService;
 
@@ -118,7 +124,9 @@ public class SubstanceBulkLoadService {
             PayloadService payloadService,
             AdminService adminService,
             AuditConfig auditConfig,
-            GsrsValidatorFactory validatorFactoryService
+            GsrsValidatorFactory validatorFactoryService,
+            PayloadRepository payloadRepository,
+            TaskExecutor taskExecutor
             ) {
         this.configuration = configuration;
         this.processingJobRepository = processingJobRepository;
@@ -128,6 +136,8 @@ public class SubstanceBulkLoadService {
         this.adminService = adminService;
         this.auditConfig = auditConfig;
         this.validatorFactoryService = validatorFactoryService;
+        this.payloadRepository = payloadRepository;
+        this.taskExecutor = taskExecutor;
     }
 
     private void saveJobInSeparateTransaction(ProcessingJob job){
@@ -193,8 +203,14 @@ public class SubstanceBulkLoadService {
         job.addKeyword(new Keyword(GinasRecordProcessorPlugin.class.getName(), pp.key));
 
         job.status = ProcessingJob.Status.PENDING;
-        job.payload = pp.payload;
+
         job.message="Preparing payload for processing";
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx.executeWithoutResult(status->{
+            job.payload = payloadRepository.findById(pp.payloadId).get();
+            processingJobRepository.save(job);
+        });
         //owner now set automatically in created by?
 //        job.owner= ((UserProfile) GsrsSecurityUtils.getCurrentUser()).user.;
         saveJobInSeparateTransaction(job);
@@ -230,10 +246,11 @@ public class SubstanceBulkLoadService {
                         storeStatisticsForJob(pp.key, stat);
                         log.debug(stat.toString());
                     }catch(IOException e){
+                        e.printStackTrace();
                         //error figuring out estimate?
                     }
                     job.status = ProcessingJob.Status.RUNNING;
-                    job.payload = pp.payload;
+
                     job.message = "Loading data";
                     saveJobInSeparateTransaction(job);
 
@@ -243,16 +260,17 @@ public class SubstanceBulkLoadService {
                         try (InputStream in = payloadService.getPayloadAsInputStream(job.payload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)){
                             record = extractorInstance.getNextRecord();
+                            System.out.println("record = " + record);
                             final GinasRecordProcessorPlugin.PayloadExtractedRecord prg = new GinasRecordProcessorPlugin.PayloadExtractedRecord(job, record);
 
                             if (record != null) {
                                 //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
                                 Runnable r;
                                 if(parameters.isPreserveOldEditInfo()){
-                                    r = ()->auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration.getRecordTransformFactory(), parameters, callback));
+                                    r = ()->auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
 
                                 }else {
-                                    r = factory.newWorkerFor(prg, configuration.getRecordTransformFactory(), parameters, callback);
+                                    r = factory.newWorkerFor(prg, configuration, parameters, callback);
                                 }
                                 executorService.submit(()->adminService.runAs(auth, r));
 
@@ -283,7 +301,7 @@ public class SubstanceBulkLoadService {
             }
         };
 
-       taskExecutor.execute(r);
+       new Thread(r).start();
 
 
         return pp;
@@ -403,6 +421,7 @@ public class SubstanceBulkLoadService {
      */
     @Slf4j
     public static class GinasSubstancePersister extends RecordPersister<Substance, Substance> {
+        private static ObjectMapper MAPPER = new ObjectMapper();
         @Autowired
         private XRefRepository xRefRepository;
 
@@ -411,6 +430,10 @@ public class SubstanceBulkLoadService {
 
         @Autowired
         private SubstanceRepository substanceRepository;
+
+        @PersistenceContext
+        private EntityManager entityManager;
+
         @Transactional(propagation = Propagation.REQUIRES_NEW)
         public void persist(TransformedRecord<Substance, Substance> prec) throws Exception {
             //System.out.println("Persisting:" + prec.recordToPersist.uuid + "\t" + prec.recordToPersist.getName());
@@ -423,6 +446,7 @@ public class SubstanceBulkLoadService {
                         substanceRepository.saveAndFlush(prec.recordToPersist);
                         worked= true;
                     }catch(Throwable t){
+                        t.printStackTrace();
                         errors.add(t.getMessage());
                     }
                     if (worked) {
@@ -436,7 +460,9 @@ public class SubstanceBulkLoadService {
                     }
                     prec.rec.stop = System.currentTimeMillis();
                 }
-                processingRecordRepository.save(prec.rec);
+                //copy of rec to get the stats in a detached
+
+                processingRecordRepository.save(entityManager.contains(prec.rec)? prec.rec : entityManager.merge(prec.rec));
 
 
                 if (!worked){
@@ -509,7 +535,7 @@ public class SubstanceBulkLoadService {
 
             super(is);
             try {
-                buff = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
+                buff = new BufferedReader(new InputStreamReader(new GZIPInputStream(is), StandardCharsets.UTF_8));
             } catch (Exception e) {
 
             }
@@ -528,6 +554,7 @@ public class SubstanceBulkLoadService {
                     if (line == null) {
                         return null;
                     }
+                    System.out.println(line);
                     //use static pattern so we don't recompile on every split call
                     //which is what String.split() does
                     String[] toks = TOKEN_SPLIT_PATTERN.split(line);

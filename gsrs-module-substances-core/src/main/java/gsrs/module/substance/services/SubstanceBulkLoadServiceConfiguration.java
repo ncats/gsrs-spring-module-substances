@@ -6,9 +6,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.validator.GsrsValidatorFactory;
-import ix.core.processing.GinasDumpRecordExtractorFactory;
-import ix.core.processing.GinasRecordProcessorPlugin;
-import ix.core.processing.RecordExtractorFactory;
+import ix.core.processing.*;
 import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +28,7 @@ public class SubstanceBulkLoadServiceConfiguration {
     @Value("${ix.ginas.PersistRecordWorkerFactoryImpl:ix.core.plugins.SingleThreadedPersistRecordWorkerFactory}")
     private String persistRecordWorkerFactoryImpl;
 
+    private GinasSubstancePersisterFactory persister=  new GinasSubstancePersisterFactory();
     @Autowired
     private GsrsValidatorFactory validatorFactory;
 
@@ -44,6 +43,9 @@ public class SubstanceBulkLoadServiceConfiguration {
          return Sneak.sneakyThrow(persistRecordWorkerFactoryCachedSupplier.thrown);
      }
 
+     public RecordPersisterFactory getRecordPersisterFactory(){
+        return persister;
+     }
      public RecordExtractorFactory getRecordExtractorFactory(){
          return new GinasDumpRecordExtractorFactory();
      }

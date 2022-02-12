@@ -42,7 +42,7 @@ public class TransformedRecord<K, V> implements Serializable {
 
         try {
             if (config.isActuallyPersist()) {
-                rec.job.getPersister().persist(this);
+                config.getRecordPersisterFactory().createPersisterFor(rec.job).persist(this);
             }
             bulkLoadServiceCallBack.persistedSuccess();
         } catch (Exception e) {
