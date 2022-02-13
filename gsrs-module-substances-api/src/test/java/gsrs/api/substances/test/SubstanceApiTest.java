@@ -1,5 +1,4 @@
 package gsrs.api.substances.test;
-
 import com.fasterxml.jackson.core.ObjectCodec;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -237,12 +236,32 @@ public class SubstanceApiTest {
     // alex begin
 
     @Test
-    public void testfindByResolvedIdError() throws IOException {
-        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
+    public void testFindByResolvedIdError() throws IOException {
         this.mockRestServiceServer
                 .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
-        Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        boolean exThrown = false;
+        try {
+            Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertTrue(exThrown);
+    }
+
+    @Test
+    public void testFindByResolvedIdNotFound() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        Optional<SubstanceDTO> opt = null;
+        boolean exThrown = false;
+        try {
+            opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertFalse(exThrown);
         assertFalse(opt.isPresent());
     }
 
@@ -253,52 +272,59 @@ public class SubstanceApiTest {
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
         long top = 0;
         long skip = 10;
+        Optional<GsrsEntityRestTemplate.PagedResult<SubstanceDTO>> opt = null;
+        boolean exThrown = false;
+        try {
+            opt = api.page(top, skip);
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertTrue(exThrown);
+    }
+
+    @Test
+    public void testPageNotFound() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances/?top=0&skip=10"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        long top = 0;
+        long skip = 10;
+        Optional<GsrsEntityRestTemplate.PagedResult<SubstanceDTO>> opt = null;
+        boolean exThrown = false;
+        try {
+            opt = api.page(top, skip);
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertFalse(opt.isPresent());
+    }
+    @Test
+
+    public void testPageFound() throws IOException {
+        String json ="{\"content\":[{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"substanceClass\":\"concept\"},{\"uuid\":\"31113571-8a34-49de-a980-267d6394cfa3\", \"substanceClass\":\"concept\"}]}";
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances/?top=0&skip=10"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+        long top = 0;
+        long skip = 10;
         Optional<GsrsEntityRestTemplate.PagedResult<SubstanceDTO>> opt = api.page(top, skip);
-        assertFalse(opt.isPresent());
+        assertTrue(opt.isPresent());
     }
 
+
+
     @Test
-    public void testFindByResolvedIdError() throws IOException {
-        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
+    public void testEntityExistsError() throws IOException {
         this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
-        Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
-        assertFalse(opt.isPresent());
-    }
-
-    @Test
-    public void testEntityExistsFound() throws IOException {
-        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
-        boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
-        assertEquals(true, (boolean) exists);
-    }
-
-    // Temporary; not sure this would unless there were mishaps in upstream code.
-    @Test
-    public void testEntityExistsFoundButResponseNotJson() throws IOException {
-        String json = "I am Jason, not json!!";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withSuccess(json, MediaType.TEXT_PLAIN));
-        boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
-        // This is problematic
-        assertEquals(true, (boolean) exists);
-    }
-
-    // Temporary; not sure this would unless there were mishaps in upstream code.
-    @Test
-    public void testEntityExistsFoundButIrrelevantJson() throws IOException {
-        String json = "{\"string\": \"I am some irrelevant json\"}";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
-        boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
-        // This is problematic; test passes
-        assertEquals(true, (boolean) exists);
+        boolean exThrown = false;
+        try {
+            boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertTrue(exThrown);
     }
 
     @Test
@@ -311,66 +337,15 @@ public class SubstanceApiTest {
     }
 
     @Test
-    public void testEntityExistsError() throws IOException {
+    public void testEntityExistsFound() throws IOException {
+        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
         this.mockRestServiceServer
                 .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
         boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
-        assertEquals(false, exists);
+        assertEquals(true, (boolean) exists);
     }
 
-    // This function in starter is like entityExists but checks to see if ID in json matches the id passed.
-    // I feel like this is good practice, but it might be that I don't understand the upstream code
-    // well enough. For example, exceptions might always be raised that prevent the need for this.
-    @Test
-    public void testCautiousEntityExistsFound() throws IOException {
-        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
-        Boolean exists = api.cautiousExistsById("11113571-8a34-49de-a980-267d6394cfa3", "uuid");
-        assertEquals(true, (Boolean) exists);
-    }
-
-    @Test
-    public void testCautiousEntityExistsNotFound() throws IOException {
-        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withStatus(HttpStatus.NOT_FOUND));
-        Boolean exists = api.cautiousExistsById("11113571-8a34-49de-a980-267d6394cfa3", "uuid");
-        assertEquals(false, exists);
-    }
-
-    @Test
-    public void testCautiousEntityExistsIrrelevantJson() throws IOException {
-        String json = "{\"string\": \"I am some irrelevant json\"}";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
-        Boolean exists = api.cautiousExistsById("11113571-8a34-49de-a980-267d6394cfa3", "uuid");
-        assertNull(exists);
-    }
-
-    @Test
-    public void testCautiousEntityExistsButEmptyResponseBody() throws IOException {
-        String json = "";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
-        Boolean exists = api.cautiousExistsById("11113571-8a34-49de-a980-267d6394cfa3", "uuid");
-        assertNull(exists);
-    }
-
-    @Test
-    public void testCautiousEntityExistsError() throws IOException {
-        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
-        this.mockRestServiceServer
-                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
-                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
-        Boolean exists = api.cautiousExistsById("11113571-8a34-49de-a980-267d6394cfa3", "uuid");
-        assertNull(exists);
-    }
 
     // alex end
 }
