@@ -10,13 +10,12 @@ import java.util.List;
 @Entity
 @Table(name="ix_core_procrec")
 @Indexable(indexed = false)
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_procrec_seq", allocationSize = 1)
 public class ProcessingRecord extends LongBaseModel {
     public enum Status {
         OK, FAILED, PENDING, UNKNOWN, ADAPTED
     }
 
-    @Id
-    public Long id;
     @Column(name="rec_start")
     public Long start;
     @Column(name="rec_stop")

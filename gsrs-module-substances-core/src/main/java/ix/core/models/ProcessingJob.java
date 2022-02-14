@@ -27,6 +27,7 @@ import java.util.*;
 @Backup
 @Indexable(indexed = false)
 @EntityMapperOptions(selfRelViews = BeanViews.Compact.class, idProviderRef = "loaderLabel")
+@SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_procjob_seq", allocationSize = 1)
 public class ProcessingJob extends LongBaseModel {
 
     private static String LEGACY_PLUGIN_LABEL_KEY ="ix.core.plugins.GinasRecordProcessorPlugin";
@@ -45,9 +46,7 @@ public class ProcessingJob extends LongBaseModel {
             return this == COMPLETE || this == FAILED || this == STOPPED;
         }
     }
-    
-    @Id
-    public Long id;
+
 
 
     @ManyToMany(cascade=CascadeType.ALL)

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.AuditConfig;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.repository.ProcessingJobRepository;
 import gsrs.module.substance.repository.ProcessingRecordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -19,6 +20,7 @@ import ix.core.models.*;
 import ix.core.processing.*;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
+import ix.core.util.EntityUtils;
 import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
 import ix.core.validator.ValidationResponse;
@@ -113,6 +115,9 @@ public class SubstanceBulkLoadService {
 
     private GsrsValidatorFactory validatorFactoryService;
 
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
+    private EntityManager entityManager;
+
     @Autowired
     public SubstanceBulkLoadService(
             SubstanceBulkLoadServiceConfiguration configuration,
@@ -141,12 +146,23 @@ public class SubstanceBulkLoadService {
     public Statistics getStatisticsFor(String jobId){
         return getStatisticsForJob(jobId);
     }
-    private ProcessingJob saveJobInSeparateTransaction(ProcessingJob job, Statistics stats){
+    private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        job.statistics = om.valueToTree(stats).toString();
-        job.setIsAllDirty();
-        return tx.execute(status-> processingJobRepository.saveAndFlush(job));
+        return tx.execute(status->{
+            ProcessingJob job = processingJobRepository.findById(jobId).get();
+            if(!stats._isDone()){
+                job.status = ProcessingJob.Status.RUNNING;
+
+                job.message = "Loading data";
+                job.status = ProcessingJob.Status.RUNNING;
+            }else{
+                job.status = ProcessingJob.Status.COMPLETE;
+            }
+            job.statistics = om.valueToTree(stats).toString();
+            job.setIsAllDirty();
+            return  processingJobRepository.saveAndFlush(job);
+        });
     }
 
     @PreDestroy
@@ -158,29 +174,8 @@ public class SubstanceBulkLoadService {
         executorServices.clear();
     }
 
-    private void updateJobIfNecessary(ProcessingJob job2) {
-        ProcessingJob job;
-        try{
-            job = processingJobRepository.getOne(job2.id);
-        }catch(Exception e){
-            log.debug("Error refreshing job from database, using local copy");
-            job = job2;
-        }
 
-        Statistics stat = getStatisticsForJob(job);
-        if (stat != null && stat._isDone()) {
-            updateJob(job,stat);
-        }
-    }
-    public ProcessingJob updateJob(ProcessingJob job,Statistics stat) {
 
-        job.stop = TimeUtil.getCurrentTimeMillis();
-        job.status = ProcessingJob.Status.COMPLETE;
-        job.statistics = om.valueToTree(stat).toString();
-        job.message="Job complete";
-
-        return saveJobInSeparateTransaction(job, stat);
-    }
 
     @Data
     @Builder
@@ -191,6 +186,18 @@ public class SubstanceBulkLoadService {
 
     }
 
+    private void ensureAllAttached(Object o){
+        EntityUtils.EntityWrapper.of(o).traverse().execute( (p,v)->{
+            if(v !=null) {
+                Object actual = v.getRawValue();
+                if(actual !=null) {
+                    if (!entityManager.contains(actual)) {
+                        entityManager.merge(actual);
+                    }
+                }
+            }
+        });
+    }
     @hasAdminRole
     public GinasRecordProcessorPlugin.PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
         // first see if this payload has already processed..
@@ -199,24 +206,27 @@ public class SubstanceBulkLoadService {
         final GinasRecordProcessorPlugin.PayloadProcessor pp = new GinasRecordProcessorPlugin.PayloadProcessor(parameters.getPayload());
 
 
-        ProcessingJob job = new ProcessingJob();
-        job.start = TimeUtil.getCurrentTimeMillis();
-        job.addKeyword(new Keyword(GinasRecordProcessorPlugin.class.getName(), pp.key));
 
-        job.status = ProcessingJob.Status.PENDING;
-
-        job.message="Preparing payload for processing";
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx.executeWithoutResult(status->{
+        pp.jobId = tx.execute(status->{
+            ProcessingJob job = new ProcessingJob();
+            job.start = TimeUtil.getCurrentTimeMillis();
+            job.addKeyword(new Keyword(GinasRecordProcessorPlugin.class.getName(), pp.key));
+
+            job.status = ProcessingJob.Status.PENDING;
+
+            job.message="Preparing payload for processing";
             job.payload = payloadRepository.findById(pp.payloadId).get();
+            ensureAllAttached(job);
             processingJobRepository.saveAndFlush(job);
+            return job.id;
         });
         //owner now set automatically in created by?
 //        job.owner= ((UserProfile) GsrsSecurityUtils.getCurrentUser()).user.;
 //        saveJobInSeparateTransaction(job);
         storeStatisticsForJob(pp.key, new Statistics());
-        pp.jobId=job.id;
+
 
         final ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(3, MAX_EXTRACTION_QUEUE);
 
@@ -225,8 +235,13 @@ public class SubstanceBulkLoadService {
         executorServices.put( pp.key, executorService);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Runnable r= new Runnable() {
+
             @Override
             public void run() {
+                TransactionTemplate tx = new TransactionTemplate(transactionManager);
+                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                tx.executeWithoutResult(ignore->{
+                ProcessingJob job = processingJobRepository.findById(pp.jobId).get();
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
                 //katzelda 6/2019: IDE says we don't ever use the FilterSessions but we do it's just a sideeffect that gets used when we
@@ -235,7 +250,8 @@ public class SubstanceBulkLoadService {
                 try (FilteredPrintStream.FilterSession ignoreChemAxonSTDOUT = consoleFilterService.getStdOutOutputFilter().newFilter(filterOutJChem);
                      FilteredPrintStream.FilterSession ignoreChemAxonSTDERR = consoleFilterService.getStdErrOutputFilter().newFilter(filterOutJChem);
                 ){
-                    try (InputStream in = payloadService.getPayloadAsInputStream(job.payload).get()){
+                    Payload tmpPayload = payloadRepository.findById(pp.payloadId).get();
+                    try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get()){
                         Estimate es  = configuration.getRecordExtractorFactory().estimateRecordCount(in);
                         log.debug("Counted records");
                         Statistics stat = getStatisticsForJob(pp.key);
@@ -250,15 +266,13 @@ public class SubstanceBulkLoadService {
                         e.printStackTrace();
                         //error figuring out estimate?
                     }
-                    job.status = ProcessingJob.Status.RUNNING;
 
-                    job.message = "Loading data";
-                    saveJobInSeparateTransaction(job, getStatisticsForJob(pp.key));
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
 
                     BulkLoadServiceCallback callback = new BulkLoadServiceCallBackImpl(job);
                    
 
-                        try (InputStream in = payloadService.getPayloadAsInputStream(job.payload).get();
+                        try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
                             Object record;
                             int count = 0;
@@ -296,7 +310,7 @@ public class SubstanceBulkLoadService {
                             e.printStackTrace();
                             job.status =ProcessingJob.Status.FAILED;
                             job.message = e.getMessage();
-                            saveJobInSeparateTransaction(job, getStatisticsForJob(pp.key));
+                            saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
                             }
                 }
                 try {
@@ -305,15 +319,15 @@ public class SubstanceBulkLoadService {
                     stat.applyChange(Statistics.CHANGE.MARK_EXTRACTION_DONE);
                     job.status =ProcessingJob.Status.COMPLETE;
                     job.message="";
-                    saveJobInSeparateTransaction(job, stat);
+                    saveJobInSeparateTransaction(pp.jobId, stat);
                     executorServices.remove(pp.key);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
-                    saveJobInSeparateTransaction(job, getStatisticsForJob(pp.key));
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
                     e.printStackTrace();
                 }
-
+                });
 
             }
         };
@@ -662,20 +676,6 @@ public class SubstanceBulkLoadService {
         public GinasAbstractSubstanceTransformer(ValidatorFactory validatorFactory) {
             this.validatorFactory = validatorFactory;
         }
-//        public GinasAbstractSubstanceTransformer(){
-//            useDefaultValidator();
-//        }
-//        public GinasAbstractSubstanceTransformer(DefaultSubstanceValidator validator){
-//            this.setValidator(validator);
-//        }
-//
-//        public void setValidator(DefaultSubstanceValidator validator){
-//            this.validator=validator;
-//        }
-//
-//        public void useDefaultValidator(){
-//            setValidator(DefaultSubstanceValidator.BATCH_SUBSTANCE_VALIDATOR(DEFAULT_BATCH_STRATEGY.get()));
-//        }
 
         /**
          * This method copied from GSRS 2.x Substance class that didn't belong in substance

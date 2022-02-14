@@ -23,6 +23,7 @@ public class TestPayloadService implements PayloadService {
         nameMap.clear();
         uuidMap.clear();
     }
+
     @Override
     public synchronized Payload createPayload(String name, String mime, InputStream content, PayloadPersistType persistType) throws IOException {
 
@@ -55,7 +56,14 @@ public class TestPayloadService implements PayloadService {
         }
         return Optional.of(new FileInputStream(f));
     }
-
+    @Override
+    public synchronized Optional<InputStream> getPayloadAsInputStream(UUID payloadID) throws IOException {
+        File f = uuidMap.get(payloadID);
+        if(f ==null) {
+            return Optional.empty();
+        }
+        return Optional.of(new FileInputStream(f));
+    }
     @Override
     public Optional<File> getPayloadAsFile(Payload payload) throws IOException {
         return Optional.ofNullable(nameMap.get(payload.name));
