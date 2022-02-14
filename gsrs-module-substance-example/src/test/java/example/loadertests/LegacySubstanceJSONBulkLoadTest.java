@@ -1,8 +1,7 @@
 package example.loadertests;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
-import gsrs.module.substance.services.ProcessingJobEntityService;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.service.PayloadService;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -27,6 +26,8 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullStackEntityTest {
@@ -38,7 +39,7 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
     private PayloadService payloadService;
 
     @Autowired
-    private ProcessingJobEntityService processingJobService;
+    private SubstanceEntityService substanceEntityService;
 
     public LegacySubstanceJSONBulkLoadTest(){
         super(false);
@@ -72,8 +73,6 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
 
         String statKey = pp.key;
         boolean done =false;
-        ObjectMapper mapper = new ObjectMapper();
-//        Thread.sleep(60_000);
         while(!done){
             Statistics statistics = bulkLoadService.getStatisticsFor(statKey);
 
@@ -82,6 +81,11 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
             }
             Thread.sleep(1000);
         }
+        TransactionTemplate tx3 = new TransactionTemplate(transactionManager);
+        tx3.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx3.executeWithoutResult( ignored ->{
+            assertEquals(90, substanceEntityService.count());
+        });
 
 
     }

@@ -470,7 +470,7 @@ public class SubstanceBulkLoadService {
                         prec.rec.status = ProcessingRecord.Status.OK;
                         prec.rec.xref = new XRef(prec.recordToPersist);
                         //NOTE: the JPA mappings aren't set for cascade correctly? have to manually save both
-                        xRefRepository.save(prec.rec.xref);
+                        xRefRepository.saveAndFlush(prec.rec.xref);
                     } else {
                         prec.rec.message = errors.get(0);
                         prec.rec.status = ProcessingRecord.Status.FAILED;
@@ -479,7 +479,7 @@ public class SubstanceBulkLoadService {
                 }
                 //copy of rec to get the stats in a detached
 
-                processingRecordRepository.save(entityManager.contains(prec.rec)? prec.rec : entityManager.merge(prec.rec));
+                processingRecordRepository.saveAndFlush(entityManager.contains(prec.rec)? prec.rec : entityManager.merge(prec.rec));
 
 
                 if (!worked){

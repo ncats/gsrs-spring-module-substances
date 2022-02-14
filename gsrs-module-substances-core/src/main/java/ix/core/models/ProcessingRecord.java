@@ -9,6 +9,7 @@ import java.util.List;
 
 @Entity
 @Table(name="ix_core_procrec")
+@Indexable(indexed = false)
 public class ProcessingRecord extends LongBaseModel {
     public enum Status {
         OK, FAILED, PENDING, UNKNOWN, ADAPTED

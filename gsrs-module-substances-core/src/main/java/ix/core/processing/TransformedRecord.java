@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import ix.core.models.ProcessingRecord;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.Serializable;
@@ -35,7 +36,7 @@ public class TransformedRecord<K, V> implements Serializable {
         this.bulkLoadServiceCallBack = bulkLoadServiceCallBack;
     }
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void persists() {
 
 
