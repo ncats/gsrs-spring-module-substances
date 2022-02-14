@@ -33,9 +33,7 @@ public class SubstanceLegacyBulkLoadController {
     @Autowired
     private ProcessingJobEntityService processingJobService;
 
-    public SubstanceLegacyBulkLoadController(){
-        System.out.println("IN CONSTRUCTOR!!!");
-    }
+
 
     @hasAdminRole
     @GetMapping("/api/v1/admin/{id}")

@@ -39,8 +39,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.annotation.PreDestroy;
@@ -140,12 +138,15 @@ public class SubstanceBulkLoadService {
         this.taskExecutor = taskExecutor;
     }
 
-    private void saveJobInSeparateTransaction(ProcessingJob job){
+    public Statistics getStatisticsFor(String jobId){
+        return getStatisticsForJob(jobId);
+    }
+    private ProcessingJob saveJobInSeparateTransaction(ProcessingJob job, Statistics stats){
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx.executeWithoutResult(status->{
-            processingJobRepository.save(job);
-        });
+        job.statistics = om.valueToTree(stats).toString();
+        job.setIsAllDirty();
+        return tx.execute(status-> processingJobRepository.saveAndFlush(job));
     }
 
     @PreDestroy
@@ -171,14 +172,14 @@ public class SubstanceBulkLoadService {
             updateJob(job,stat);
         }
     }
-    public void updateJob(ProcessingJob job,Statistics stat) {
+    public ProcessingJob updateJob(ProcessingJob job,Statistics stat) {
 
         job.stop = TimeUtil.getCurrentTimeMillis();
         job.status = ProcessingJob.Status.COMPLETE;
         job.statistics = om.valueToTree(stat).toString();
         job.message="Job complete";
 
-        saveJobInSeparateTransaction(job);
+        return saveJobInSeparateTransaction(job, stat);
     }
 
     @Data
@@ -198,7 +199,7 @@ public class SubstanceBulkLoadService {
         final GinasRecordProcessorPlugin.PayloadProcessor pp = new GinasRecordProcessorPlugin.PayloadProcessor(parameters.getPayload());
 
 
-        final ProcessingJob job = new ProcessingJob();
+        ProcessingJob job = new ProcessingJob();
         job.start = TimeUtil.getCurrentTimeMillis();
         job.addKeyword(new Keyword(GinasRecordProcessorPlugin.class.getName(), pp.key));
 
@@ -209,11 +210,11 @@ public class SubstanceBulkLoadService {
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx.executeWithoutResult(status->{
             job.payload = payloadRepository.findById(pp.payloadId).get();
-            processingJobRepository.save(job);
+            processingJobRepository.saveAndFlush(job);
         });
         //owner now set automatically in created by?
 //        job.owner= ((UserProfile) GsrsSecurityUtils.getCurrentUser()).user.;
-        saveJobInSeparateTransaction(job);
+//        saveJobInSeparateTransaction(job);
         storeStatisticsForJob(pp.key, new Statistics());
         pp.jobId=job.id;
 
@@ -252,48 +253,64 @@ public class SubstanceBulkLoadService {
                     job.status = ProcessingJob.Status.RUNNING;
 
                     job.message = "Loading data";
-                    saveJobInSeparateTransaction(job);
+                    saveJobInSeparateTransaction(job, getStatisticsForJob(pp.key));
 
                     BulkLoadServiceCallback callback = new BulkLoadServiceCallBackImpl(job);
-                    Object record;
-                    do {
+                   
+
                         try (InputStream in = payloadService.getPayloadAsInputStream(job.payload).get();
-                             RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)){
-                            record = extractorInstance.getNextRecord();
-                            System.out.println("record = " + record);
-                            final GinasRecordProcessorPlugin.PayloadExtractedRecord prg = new GinasRecordProcessorPlugin.PayloadExtractedRecord(job, record);
+                             RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
+                            Object record;
+                            int count = 0;
+                            do {
+                                try {
+                                    record = extractorInstance.getNextRecord();
 
-                            if (record != null) {
-                                //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
-                                Runnable r;
-                                if(parameters.isPreserveOldEditInfo()){
-                                    r = ()->auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
+                                    final GinasRecordProcessorPlugin.PayloadExtractedRecord prg = new GinasRecordProcessorPlugin.PayloadExtractedRecord(job, record);
 
-                                }else {
-                                    r = factory.newWorkerFor(prg, configuration, parameters, callback);
+                                    if (record != null) {
+                                        //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
+                                        Runnable r;
+                                        count++;
+                                        if (parameters.isPreserveOldEditInfo()) {
+                                            r = () -> auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
+
+                                        } else {
+                                            r = factory.newWorkerFor(prg, configuration, parameters, callback);
+                                        }
+                                        executorService.submit(() -> adminService.runAs(auth, r));
+
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    Statistics stat = getStatisticsForJob(pp.key);
+                                    stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
+                                    storeStatisticsForJob(pp.key, stat);
+                                    ExtractFailLogger.info("failed to extract record", e);
+                                    // hack to keep iterator going...
+                                    record = new Object();
                                 }
-                                executorService.submit(()->adminService.runAs(auth, r));
-
-                            }
-                        } catch (Exception e) {
+                            } while (record != null);
+                            executorService.shutdown();
+                        }catch (IOException e) {
                             e.printStackTrace();
-                            Statistics stat = getStatisticsForJob(pp.key);
-                            stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
-                            storeStatisticsForJob(pp.key, stat);
-                            ExtractFailLogger.info("failed to extract record", e);
-                            // hack to keep iterator going...
-                            record = new Object();
-                        }
-                    } while (record != null);
-                    executorService.shutdown();
-
+                            job.status =ProcessingJob.Status.FAILED;
+                            job.message = e.getMessage();
+                            saveJobInSeparateTransaction(job, getStatisticsForJob(pp.key));
+                            }
                 }
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
                     Statistics stat = getStatisticsForJob(pp.key);
                     stat.applyChange(Statistics.CHANGE.MARK_EXTRACTION_DONE);
+                    job.status =ProcessingJob.Status.COMPLETE;
+                    job.message="";
+                    saveJobInSeparateTransaction(job, stat);
                     executorServices.remove(pp.key);
                 } catch (InterruptedException e) {
+                    job.status =ProcessingJob.Status.STOPPED;
+                    job.message="Interrupted";
+                    saveJobInSeparateTransaction(job, getStatisticsForJob(pp.key));
                     e.printStackTrace();
                 }
 
@@ -434,7 +451,7 @@ public class SubstanceBulkLoadService {
         @PersistenceContext
         private EntityManager entityManager;
 
-        @Transactional(propagation = Propagation.REQUIRES_NEW)
+//        @Transactional(propagation = Propagation.REQUIRES_NEW)
         public void persist(TransformedRecord<Substance, Substance> prec) throws Exception {
             //System.out.println("Persisting:" + prec.recordToPersist.uuid + "\t" + prec.recordToPersist.getName());
 
@@ -554,7 +571,11 @@ public class SubstanceBulkLoadService {
                     if (line == null) {
                         return null;
                     }
-                    System.out.println(line);
+                    //trimmed line is separate in case trimming messes up the columns if there are blank cols
+                    String trimmedLine = line.trim();
+                    if(trimmedLine.isEmpty() || trimmedLine.startsWith("#")){
+                        continue;
+                    }
                     //use static pattern so we don't recompile on every split call
                     //which is what String.split() does
                     String[] toks = TOKEN_SPLIT_PATTERN.split(line);

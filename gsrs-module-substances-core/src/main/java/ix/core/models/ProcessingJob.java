@@ -96,7 +96,7 @@ public class ProcessingJob extends LongBaseModel {
     public Date lastUpdate; // here
     @Transient
     @JsonIgnore
-    private static ObjectMapper om = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
+    private static ObjectMapper om = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     public ProcessingJob () {
     }

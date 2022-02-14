@@ -215,7 +215,6 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected GroupRepository groupRepository;
 
-    protected Principal admin;
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
@@ -246,18 +245,30 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     protected abstract EntityManagerFacade getEntityManagerFacade();
 
     private EntityManagerFacade entityManagerFacade;
+
+    private final boolean createAdminUserOnInit;
+    public AbstractSubstanceJpaEntityTestSuperClass(){
+        this(true);
+    }
+    public AbstractSubstanceJpaEntityTestSuperClass(boolean createAdminUserOnInit){
+        this.createAdminUserOnInit = createAdminUserOnInit;
+    }
+
     @BeforeEach
     public void init(){
         entityManagerFacade = getEntityManagerFacade();
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(s-> {
-            admin = createUser("admin", Role.values());
+        if(createAdminUserOnInit) {
+            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+//        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transactionTemplate.executeWithoutResult(s -> {
 
-            //some  integration tests will make validation messages which will get assigned an "admin" access group
-            Group g = groupRepository.saveAndFlush(new Group("admin"));
+                createUser("admin", Role.values());
 
-        });
+                //some  integration tests will make validation messages which will get assigned an "admin" access group
+                groupRepository.saveAndFlush(new Group("admin"));
 
+            });
+        }
     }
 
     protected Principal createUser(String username, Role... roles){

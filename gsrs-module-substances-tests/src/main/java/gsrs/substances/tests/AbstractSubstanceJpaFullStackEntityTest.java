@@ -19,4 +19,11 @@ public abstract class AbstractSubstanceJpaFullStackEntityTest extends AbstractSu
     protected EntityManagerFacade getEntityManagerFacade() {
         return EntityManagerFacade.wrap(entityManager);
     }
+
+    public AbstractSubstanceJpaFullStackEntityTest(){
+        super();
+    }
+    public AbstractSubstanceJpaFullStackEntityTest(boolean createAdminUserOnInit){
+        super(createAdminUserOnInit);
+    }
 }
