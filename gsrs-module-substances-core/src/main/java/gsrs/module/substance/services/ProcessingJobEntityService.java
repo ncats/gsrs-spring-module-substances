@@ -36,7 +36,7 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
     private ObjectMapper objectMapper;
 
     public ProcessingJobEntityService() {
-        super(CONTEXT,  IdHelpers.UUID, "gsrs_exchange", "jobs.created", "jobs.updated");
+        super(CONTEXT,  IdHelpers.NUMBER, "gsrs_exchange", "jobs.created", "jobs.updated");
 
     }
 
