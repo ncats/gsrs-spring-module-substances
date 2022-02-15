@@ -8,6 +8,7 @@ import gsrs.api.GsrsEntityRestTemplate;
 import gsrs.api.substances.SubstanceRestApi;
 import gsrs.assertions.GsrsMatchers;
 import gsrs.substances.dto.*;
+import org.apache.commons.io.FileExistsException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -236,6 +237,20 @@ public class SubstanceApiTest {
     // alex begin
 
     @Test
+    public void countErrorBodyIsNotNumber() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances/@count"))
+                .andRespond(withSuccess("I am not a number", MediaType.APPLICATION_JSON));
+        boolean somethingThrown = false;
+        try {
+            Long count = api.count();
+        } catch(Throwable t) {
+            somethingThrown = true;
+        }
+        assertTrue(somethingThrown);
+    }
+
+    @Test
     public void testFindByResolvedIdError() throws IOException {
         this.mockRestServiceServer
                 .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
@@ -247,6 +262,37 @@ public class SubstanceApiTest {
             exThrown = true;
         }
         assertTrue(exThrown);
+    }
+
+    @Test
+    public void testFindByResolvedIdBadJson() throws IOException {
+        String badJson = "{\"content\": \"I am missing a closing curly brace!\"";
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .andRespond(withSuccess(badJson, MediaType.APPLICATION_JSON));
+        boolean somethingThrown = false;
+        try {
+            Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Throwable t) {
+            System.out.println(t.getMessage());
+            somethingThrown = true;
+        }
+        assertTrue(somethingThrown);
+    }
+
+    @Test
+    public void testFindByResolvedIdBadJsonForDTO() throws IOException {
+        String json = "{\"content\": \"I am good json, but Substance DTO doesn't like me because, for one, I lack a subClass.\"}";
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+        boolean somethingThrown = false;
+        try {
+            Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Throwable t) {
+            somethingThrown = true;
+        }
+        assertTrue(somethingThrown);
     }
 
     @Test
