@@ -218,7 +218,7 @@ public class SubstanceBulkLoadService {
 
             job.message="Preparing payload for processing";
             job.payload = payloadRepository.findById(pp.payloadId).get();
-            ensureAllAttached(job);
+
             processingJobRepository.saveAndFlush(job);
             return job.id;
         });

@@ -13,6 +13,7 @@ import ix.core.processing.GinasRecordProcessorPlugin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -57,14 +58,14 @@ public class SubstanceLegacyBulkLoadController {
     }
 
     ///admin/load
-//    @Transactional
+    @Transactional
     @hasAdminRole
     @PostMapping("/api/v1/admin/load")
     public Object handleFileUpload(@RequestParam("file-name") MultipartFile file,
                                                    @RequestParam("file-type") String type,
                                                    @RequestParam Map<String, String> queryParameters) throws IOException {
-
-        System.out.println("in handle file upload!!!");
+        try {
+            System.out.println("in handle file upload!!!");
 /*
 if (!GinasLoad.config.get().ALLOW_LOAD) {
 			return badRequest("Invalid request!");
@@ -83,39 +84,45 @@ if (!GinasLoad.config.get().ALLOW_LOAD) {
 					Logger.info("JOS =" + type);
  */
 
-        //legacy GSRS 2.x only supported JSON we turned of sd support in this method at some point
-        //between 2.0 and 2.7 instead waiting for the new importer in 3.x to be written in a more robust way.
-        if(!"JSON".equals(type)){
-            return controllerConfiguration.handleBadRequest("invalid file type:" + type, queryParameters);
-        }
-        //the payload needsto be created in a separate transaction so we can reference it
-        //in other transactions in a multithreaded way
-
-
-        TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
-        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        UUID payloadId = transactionTemplate.execute(status-> {
-            try {
-                return payloadService.createPayload(file.getOriginalFilename(), PayloadController.predictMimeTypeFromFile(file),
-                        file.getBytes(), PayloadService.PayloadPersistType.TEMP).id;
-            }catch(IOException e){
-                throw new UncheckedIOException(e);
+            //legacy GSRS 2.x only supported JSON we turned of sd support in this method at some point
+            //between 2.0 and 2.7 instead waiting for the new importer in 3.x to be written in a more robust way.
+            if (!"JSON".equals(type)) {
+                return controllerConfiguration.handleBadRequest("invalid file type:" + type, queryParameters);
             }
-        });
-        TransactionTemplate transactionTemplate2 = new TransactionTemplate(platformTransactionManager);
-        transactionTemplate2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        return transactionTemplate2.execute( ignored -> {
-            Payload payload = payloadRepository.getOne(payloadId);
-            //GSRS 2 preserve audit if the parameter is present, don't care what it's set to!!
-            GinasRecordProcessorPlugin.PayloadProcessor processor = substanceBulkLoadService.submit(
-                    SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
-                            .payload(payload)
-                            .preserveOldEditInfo(queryParameters.containsKey("preserve-audit"))
+            //the payload needsto be created in a separate transaction so we can reference it
+            //in other transactions in a multithreaded way
 
-                            .build());
+
+            TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            UUID payloadId = transactionTemplate.execute(status -> {
+                try {
+                    return payloadService.createPayload(file.getOriginalFilename(), PayloadController.predictMimeTypeFromFile(file),
+                            file.getBytes(), PayloadService.PayloadPersistType.TEMP).id;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
+//            TransactionTemplate transactionTemplate2 = new TransactionTemplate(platformTransactionManager);
+//            transactionTemplate2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+//            Long processorId = transactionTemplate2.execute(ignored -> {
+                Payload payload = payloadRepository.findById(payloadId).get();
+
+                //GSRS 2 preserve audit if the parameter is present, don't care what it's set to!!
+                GinasRecordProcessorPlugin.PayloadProcessor processor = substanceBulkLoadService.submit(
+                        SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
+                                .payload(payload)
+                                .preserveOldEditInfo(queryParameters.containsKey("preserve-audit"))
+
+                                .build());
+//                return processor.jobId;
+//
+//            });
             return processingJobService.get(processor.jobId).get();
-        });
-
-
+        }catch(Throwable t){
+            t.printStackTrace();
+            System.out.println("here");
+            throw t;
+        }
     }
 }
