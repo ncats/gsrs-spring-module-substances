@@ -1,17 +1,15 @@
 package example.substance.validation;
 
-import com.hp.hpl.jena.rdf.arp.lang.LanguageTagSyntaxException;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.validators.TagUtilities;
-import ix.ginas.utils.validation.validators.TagsValidator;
+import ix.ginas.utils.validation.validators.tags.TagUtilities;
+import ix.ginas.utils.validation.validators.tags.TagsValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.web.util.TagUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -23,7 +21,6 @@ import java.util.HashSet;
     "logging.level.example.substance.validation=info"
 })
 public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
-
 
     Substance createOldSubstance() {
         Substance oldSubstance = new Substance();
@@ -108,7 +105,6 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         // Can't get this assertion to pass; does it take applicableChanges(true) into account?
         // Still case after Danny's suggested fix.
         // Assertions.assertEquals(TagUtilities.extractExplicitTags(newSubstance), new HashSet<>(Arrays.asList("USP","INN","VANDF")));
-
     }
 
     @Test
@@ -133,10 +129,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         // Can't get this assertion to pass; does it take applicableChanges(true) into account?
         // Still case after Danny's suggested fix.
         // Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("VANDF")));
-
     }
-
-    // ==== addExplicitTagsExtractedFromNames begin ====
 
     @Test
     public void testTagsValidator4() {
@@ -156,7 +149,6 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertEquals(1, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains(testString)).count());
     }
-
 
     @Test
     public void testTagsValidator5() {
@@ -227,10 +219,6 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .filter(m -> m.getMessage().contains(testString)).count());
     }
 
-    // ==== addExplicitTagsExtractedFromNames end ====
-
-    // ==== removeExplicitTagsMissingFromNames begin ====
-
     @Test
     public void testTagsValidator8() {
         // check create vs update logic
@@ -249,7 +237,6 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertEquals(1, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains(testString)).count());
     }
-
 
     @Test
     public void testTagsValidator9() {
@@ -319,9 +306,4 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertEquals(1, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains(testString)).count());
     }
-
-    // ==== removeExplicitTagsMissingFromNames end ====
-
-
-
 }

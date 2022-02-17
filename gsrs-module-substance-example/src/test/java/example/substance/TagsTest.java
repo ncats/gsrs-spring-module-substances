@@ -4,23 +4,18 @@ import ix.core.models.Keyword;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import ix.ginas.utils.validation.validators.TagUtilities;
-import static org.junit.Assert.assertEquals;
 
+import ix.ginas.utils.validation.validators.tags.TagUtilities;
+import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @Slf4j
 public class TagsTest {
-    final static boolean logBeforeAfterClass = false;
 
     Substance createOldSubstance() {
         Substance oldSubstance = new Substance();
@@ -29,7 +24,6 @@ public class TagsTest {
         Name oldName3 = new Name();
         Name oldName4 = new Name();
         Name oldName5 = new Name();
-        Name oldName6 = new Name();
         oldName1.setName("A");
         oldName2.setName("B");
         oldName3.setName("C [USP]");
@@ -40,7 +34,6 @@ public class TagsTest {
         oldSubstance.names.add(oldName3);
         oldSubstance.names.add(oldName4);
         oldSubstance.names.add(oldName5);
-        oldSubstance.names.add(oldName6);
         oldSubstance.addTagString("USP");
         oldSubstance.addTagString("VANDF");
         return oldSubstance;
@@ -65,23 +58,14 @@ public class TagsTest {
         return newSubstance;
     }
 
-
     @Test
     void testCanDeleteTag() throws Exception {
-        log.info("Testing testCanDeleteTag");
         Substance oldSubstance = this.createOldSubstance();
         oldSubstance.removeTagString("VANDF");
     }
 
     @Test
-    void testMiscTags() throws Exception {
-        log.info("Testing testMiscTags");
-
-    }
-
-    @Test
     void testExtractTagTermFromName() throws Exception {
-        log.info("Testing testExtractTagTermFromName");
         assert (TagUtilities.getBracketTerm("ABC [USP]").equals(Optional.of("USP")));
         assert (TagUtilities.getBracketTerm("ABC [USP]    ").equals(Optional.of("USP")));
         assert (TagUtilities.getBracketTerm("ABC [USP    ]").equals(Optional.of("USP    ")));
@@ -92,7 +76,6 @@ public class TagsTest {
 
     @Test
     void extractDistinctTagTermsFromNames() throws Exception {
-        log.info("extractDistinctTagTermsFromNames");
         Substance s = new Substance();
         s.names = new ArrayList<>();
         s.tags.add(new Keyword("USP"));
@@ -110,12 +93,10 @@ public class TagsTest {
         assert(bracketNameTags.equals(new HashSet<>(Arrays.asList("USP","INN","VANDF"))));
     }
 
-
     @Test
     void testCompareTagTermsToNamesTagTermsOldSubstance() throws Exception {
+            Substance oldSubstance = createOldSubstance();
 
-        log.info("Testing testCompareTagTermsToNamesTagTermsOldSubstance");
-        Substance oldSubstance = this.createOldSubstance();
         assertEquals(
                 TagUtilities.getSetAExcludesB(
                         TagUtilities.extractBracketNameTags(oldSubstance),
@@ -133,9 +114,22 @@ public class TagsTest {
     }
 
     @Test
-    void testCompareTagTermsToNamesTagTermsNewSubstance() throws Exception {
+    void testGetBracketTermWhereNameStringNull() throws Exception {
+        Substance substance = new Substance();
+        Name oldName1 = new Name();
+        substance.names.add(oldName1);
+        substance.addTagString("USP");
+        boolean npeThrown = false;
+        try {
+            Optional<String> s = TagUtilities.getBracketTerm((String) null);
+        }catch (NullPointerException npe){
+            npeThrown = true;
+        }
+        assertTrue(npeThrown);
+    }
 
-        log.info("Testing testCompareTagTermsToNamesTagTermsNewSubstance");
+    @Test
+    void testCompareTagTermsToNamesTagTermsNewSubstance() throws Exception {
         Substance newSubstance = this.createNewSubstance();
         assertEquals(
                 TagUtilities.getSetAExcludesB(
@@ -155,7 +149,6 @@ public class TagsTest {
 
     @Test
     void testCompareTagTermsToNamesTagTermsOldSubstanceIfNamesEmpty() throws Exception {
-        log.info("Testing testCompareTagTermsToNamesTagTermsOldSubstanceIfNamesNull");
         Substance oldSubstance = this.createOldSubstance();
         oldSubstance.names = new ArrayList<Name>();
         oldSubstance.tags = new ArrayList<Keyword>();
@@ -183,7 +176,6 @@ public class TagsTest {
 
     @Test
     void testCompareTagTermsToNamesTagTermsOldSubstanceIfTagsEmpty() throws Exception {
-        log.info("Testing testCompareTagTermsToNamesTagTermsOldSubstanceIfTagsEmpty");
         Substance oldSubstance = this.createOldSubstance();
         oldSubstance.tags = new ArrayList<Keyword>();
         oldSubstance.names = new ArrayList<Name>();
@@ -212,8 +204,5 @@ public class TagsTest {
                 ),
                 new HashSet<>(Arrays.asList())
         );
-
     }
-
-
 }
