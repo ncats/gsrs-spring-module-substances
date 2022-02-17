@@ -10,7 +10,7 @@ import gsrs.module.substance.repository.ProcessingJobRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import ix.core.models.Keyword;
 import ix.core.models.ProcessingJob;
-import ix.core.processing.GinasRecordProcessorPlugin;
+import ix.core.models.ProcessingJobUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -93,7 +93,7 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
     @Override
     public Optional<ProcessingJob> flexLookup(String someKindOfId) {
         //check for job keyword?
-        List<Keyword> matches = keywordRepository.findAll(Example.of(new Keyword(GinasRecordProcessorPlugin.class.getName(), someKindOfId)));
+        List<Keyword> matches = keywordRepository.findAll(Example.of(new Keyword(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY, someKindOfId)));
         if(!matches.isEmpty()){
 
             List<ProcessingJob> jobs = processingJobRepository.findByKeysIn(matches.size() ==1? matches : Collections.singletonList(matches.get(0)));

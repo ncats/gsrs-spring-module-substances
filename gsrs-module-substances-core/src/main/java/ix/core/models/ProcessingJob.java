@@ -30,7 +30,7 @@ import java.util.*;
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_procjob_seq", allocationSize = 1)
 public class ProcessingJob extends LongBaseModel {
 
-    private static String LEGACY_PLUGIN_LABEL_KEY ="ix.core.plugins.GinasRecordProcessorPlugin";
+
 	private static final String EXTRACTOR_KEYWORD = "EXTRACTOR";
 	private static final String TRANSFORM_KEYWORD = "TRANSFORM";
 	private static final String PERSISTER_KEYWORD = "PERSISTER";
@@ -107,7 +107,7 @@ public class ProcessingJob extends LongBaseModel {
     public String loaderLabel(){
         for(Keyword key : keys){
 
-            if(LEGACY_PLUGIN_LABEL_KEY.equals(key.label)){
+            if(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY.equals(key.label)){
                 return key.term;
             }
         }

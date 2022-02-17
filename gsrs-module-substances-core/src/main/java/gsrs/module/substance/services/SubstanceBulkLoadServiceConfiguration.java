@@ -32,11 +32,11 @@ public class SubstanceBulkLoadServiceConfiguration {
     @Autowired
     private GsrsValidatorFactory validatorFactory;
 
-    private CachedSupplier.CachedThrowingSupplier<GinasRecordProcessorPlugin.PersistRecordWorkerFactory> persistRecordWorkerFactoryCachedSupplier = CachedSupplier.ofThrowing(()->{
-        return AutowireHelper.getInstance().autowireAndProxy((GinasRecordProcessorPlugin.PersistRecordWorkerFactory) Class.forName(persistRecordWorkerFactoryImpl).newInstance());
+    private CachedSupplier.CachedThrowingSupplier<PersistRecordWorkerFactory> persistRecordWorkerFactoryCachedSupplier = CachedSupplier.ofThrowing(()->{
+        return AutowireHelper.getInstance().autowireAndProxy((PersistRecordWorkerFactory) Class.forName(persistRecordWorkerFactoryImpl).newInstance());
     });
-     public GinasRecordProcessorPlugin.PersistRecordWorkerFactory getPersistRecordWorkerFactory(SubstanceBulkLoadService.SubstanceBulkLoadParameters parameters){
-         Optional<GinasRecordProcessorPlugin.PersistRecordWorkerFactory> opt= persistRecordWorkerFactoryCachedSupplier.get();
+     public PersistRecordWorkerFactory getPersistRecordWorkerFactory(SubstanceBulkLoadService.SubstanceBulkLoadParameters parameters){
+         Optional<PersistRecordWorkerFactory> opt= persistRecordWorkerFactoryCachedSupplier.get();
          if(opt.isPresent()){
              return opt.get();
          }

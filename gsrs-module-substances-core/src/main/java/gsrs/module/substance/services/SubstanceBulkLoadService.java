@@ -122,7 +122,6 @@ public class SubstanceBulkLoadService {
             PayloadService payloadService,
             AdminService adminService,
             AuditConfig auditConfig,
-            GsrsValidatorFactory validatorFactoryService,
             PayloadRepository payloadRepository,
             TaskExecutor taskExecutor
             ) {
@@ -133,7 +132,6 @@ public class SubstanceBulkLoadService {
         this.payloadService = payloadService;
         this.adminService = adminService;
         this.auditConfig = auditConfig;
-        this.validatorFactoryService = validatorFactoryService;
         this.payloadRepository = payloadRepository;
         this.taskExecutor = taskExecutor;
     }
@@ -198,11 +196,11 @@ public class SubstanceBulkLoadService {
         });
     }
     @hasAdminRole
-    public GinasRecordProcessorPlugin.PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
+    public PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
         // first see if this payload has already processed..
 
 
-        final GinasRecordProcessorPlugin.PayloadProcessor pp = new GinasRecordProcessorPlugin.PayloadProcessor(parameters.getPayload());
+        final PayloadProcessor pp = new PayloadProcessor(parameters.getPayload());
 
 
 
@@ -211,7 +209,7 @@ public class SubstanceBulkLoadService {
         pp.jobId = tx.execute(status->{
             ProcessingJob job = new ProcessingJob();
             job.start = TimeUtil.getCurrentTimeMillis();
-            job.addKeyword(new Keyword(GinasRecordProcessorPlugin.class.getName(), pp.key));
+            job.addKeyword(new Keyword(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY, pp.key));
 
             job.status = ProcessingJob.Status.PENDING;
 
@@ -229,7 +227,7 @@ public class SubstanceBulkLoadService {
 
         final ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(3, MAX_EXTRACTION_QUEUE);
 
-        final GinasRecordProcessorPlugin.PersistRecordWorkerFactory factory = configuration.getPersistRecordWorkerFactory(parameters);
+        final PersistRecordWorkerFactory factory = configuration.getPersistRecordWorkerFactory(parameters);
 
         executorServices.put( pp.key, executorService);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -279,7 +277,7 @@ public class SubstanceBulkLoadService {
                                 try {
                                     record = extractorInstance.getNextRecord();
 
-                                    final GinasRecordProcessorPlugin.PayloadExtractedRecord prg = new GinasRecordProcessorPlugin.PayloadExtractedRecord(job, record);
+                                    final PayloadExtractedRecord prg = new PayloadExtractedRecord(job, record);
 
                                     if (record != null) {
                                         //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
@@ -419,9 +417,9 @@ public class SubstanceBulkLoadService {
         return jobCacheStatistics.get(jobTerm);
     }
     public Statistics getStatisticsForJob(ProcessingJob pj){
-        String k=pj.getKeyMatching(GinasRecordProcessorPlugin.class.getName());
+        String k=pj.getKeyMatching(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY);
         //the Map interface says we should be able to call get(null)
-        //but Concurrenthashmap will throw a null pointer when
+        //but Concurrent hashmap will throw a null pointer when
         //computing the hash value, at least in Java 7...
         if(k ==null){
             return null;
@@ -690,7 +688,10 @@ public class SubstanceBulkLoadService {
     }
     @Slf4j
     public abstract static class GinasAbstractSubstanceTransformer<K> extends RecordTransformer<K, Substance> {
-
+        /**
+         * This is the key for the old GSRS 2.x processor we keep it for backwards compatibility.
+         */
+        private static final String PROCESSING_PLUGIN_KEY = "ix.utils.Util.GinasRecordProcessorPlugin";
         private static final String DOC_TYPE_BATCH_IMPORT = "BATCH_IMPORT";
         private final ValidatorFactory validatorFactory;
 
@@ -707,12 +708,12 @@ public class SubstanceBulkLoadService {
             r.docType = DOC_TYPE_BATCH_IMPORT;
             r.citation = p.payload.name;
             r.documentDate = TimeUtil.getCurrentDate();
-            String processingKey=p.getKeyMatching(GinasRecordProcessorPlugin.class.getName());
+            String processingKey=p.getKeyMatching(PROCESSING_PLUGIN_KEY);
             r.id=processingKey;
             s.addReference(r);
         }
         @Override
-        public Substance transform(GinasRecordProcessorPlugin.PayloadExtractedRecord<K> pr, ProcessingRecord rec) {
+        public Substance transform(PayloadExtractedRecord<K> pr, ProcessingRecord rec) {
 
             try {
                 rec.name = getName(pr.theRecord);

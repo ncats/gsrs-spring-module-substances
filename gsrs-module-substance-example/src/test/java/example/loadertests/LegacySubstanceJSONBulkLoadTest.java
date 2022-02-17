@@ -8,7 +8,7 @@ import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Payload;
 import ix.core.models.Role;
-import ix.core.processing.GinasRecordProcessorPlugin;
+import ix.core.processing.PayloadProcessor;
 import ix.core.stats.Statistics;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -70,7 +70,7 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
                         throw new UncheckedIOException(e);
                     }
                 });
-        GinasRecordProcessorPlugin.PayloadProcessor pp = bulkLoadService.submit(SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
+        PayloadProcessor pp = bulkLoadService.submit(SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
                 .payload(payload)
 
                 .build());

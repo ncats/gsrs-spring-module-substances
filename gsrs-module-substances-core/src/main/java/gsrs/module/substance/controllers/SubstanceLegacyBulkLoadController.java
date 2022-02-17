@@ -9,7 +9,7 @@ import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
 import ix.core.models.Payload;
 import ix.core.models.ProcessingJob;
-import ix.core.processing.GinasRecordProcessorPlugin;
+import ix.core.processing.PayloadProcessor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -109,7 +109,7 @@ if (!GinasLoad.config.get().ALLOW_LOAD) {
                 Payload payload = payloadRepository.findById(payloadId).get();
 
                 //GSRS 2 preserve audit if the parameter is present, don't care what it's set to!!
-                GinasRecordProcessorPlugin.PayloadProcessor processor = substanceBulkLoadService.submit(
+                PayloadProcessor processor = substanceBulkLoadService.submit(
                         SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
                                 .payload(payload)
                                 .preserveOldEditInfo(queryParameters.containsKey("preserve-audit"))
