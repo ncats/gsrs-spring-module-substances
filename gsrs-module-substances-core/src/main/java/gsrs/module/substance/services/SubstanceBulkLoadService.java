@@ -76,12 +76,8 @@ public class SubstanceBulkLoadService {
     public static Logger getTransformFailureLogger(){
         return TransformFailLogger;
     }
-    /**
-     * Lock object to synchronize persistance calls
-     * so only 1 object is persisted at a time.
-     * Not using this causes problems with MySQL.
-     */
-    private final Object persistanceLock = new Object();
+
+    private final Object jobLock = new Object();
 
     private static final String KEY_PROCESS_QUEUE_SIZE = "PROCESS_QUEUE_SIZE";
     //Hack variable for resisting buildup
@@ -113,7 +109,6 @@ public class SubstanceBulkLoadService {
 
     private PayloadRepository payloadRepository;
 
-    private GsrsValidatorFactory validatorFactoryService;
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
@@ -147,22 +142,26 @@ public class SubstanceBulkLoadService {
         return getStatisticsForJob(jobId);
     }
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
-        TransactionTemplate tx = new TransactionTemplate(transactionManager);
-        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        return tx.execute(status->{
-            ProcessingJob job = processingJobRepository.findById(jobId).get();
-            if(!stats._isDone()){
-                job.status = ProcessingJob.Status.RUNNING;
+        synchronized (jobLock) {
+            TransactionTemplate tx = new TransactionTemplate(transactionManager);
+            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
+        }
+    }
 
-                job.message = "Loading data";
-                job.status = ProcessingJob.Status.RUNNING;
-            }else{
-                job.status = ProcessingJob.Status.COMPLETE;
-            }
-            job.statistics = om.valueToTree(stats).toString();
-            job.setIsAllDirty();
-            return  processingJobRepository.saveAndFlush(job);
-        });
+    private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats) {
+        ProcessingJob job = processingJobRepository.findById(jobId).get();
+        if (!stats._isDone()) {
+
+            job.message = "Loading data";
+            job.status = ProcessingJob.Status.RUNNING;
+        } else {
+            job.status = ProcessingJob.Status.COMPLETE;
+        }
+        job.statistics = om.valueToTree(stats).toString();
+
+        job.setIsAllDirty();
+        return processingJobRepository.saveAndFlush(job);
     }
 
     @PreDestroy
@@ -287,10 +286,22 @@ public class SubstanceBulkLoadService {
                                         Runnable r;
                                         count++;
                                         if (parameters.isPreserveOldEditInfo()) {
-                                            r = () -> auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
+                                            r = () -> {
+                                                try {
+                                                    auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
+                                                }finally{
+                                                    saveJobInSeparateTransaction(pp.jobId, pp.key);
+                                                }
+                                            };
 
                                         } else {
-                                            r = factory.newWorkerFor(prg, configuration, parameters, callback);
+                                            r = ()->{
+                                                try{
+                                                    factory.newWorkerFor(prg, configuration, parameters, callback).run();
+                                                }finally{
+                                                    saveJobInSeparateTransaction(pp.jobId, pp.key);
+                                                }
+                                            };
                                         }
                                         executorService.submit(() -> adminService.runAs(auth, r));
 
@@ -315,11 +326,14 @@ public class SubstanceBulkLoadService {
                 }
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
-                    Statistics stat = getStatisticsForJob(pp.key);
-                    stat.applyChange(Statistics.CHANGE.MARK_EXTRACTION_DONE);
-                    job.status =ProcessingJob.Status.COMPLETE;
-                    job.message="";
-                    saveJobInSeparateTransaction(pp.jobId, stat);
+//                    Statistics stat = getStatisticsForJob(pp.key);
+                    //don't mark extraction done that changes the stats and changes
+                    //the initial estimate we can just use that
+
+//                    stat.applyChange(Statistics.CHANGE.MARK_EXTRACTION_DONE);
+//                    job.status =ProcessingJob.Status.COMPLETE;
+//                    job.message="";
+//                    saveJobInSeparateTransaction(pp.jobId, stat);
                     executorServices.remove(pp.key);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
@@ -426,12 +440,19 @@ public class SubstanceBulkLoadService {
         });
 
     }
-    public Statistics applyStatisticsChangeForJob(ProcessingJob job, Statistics.CHANGE change){
+    private void saveJobInSeparateTransaction(long jobId, String statKey){
+        Statistics stat = getStatisticsForJob(statKey);
+        if(stat !=null){
+            saveJobInSeparateTransaction(jobId, stat);
+        }
+    }
+    public void applyStatisticsChangeForJob(ProcessingJob job, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(job);
         if(stat !=null){
             stat.applyChange(change);
         }
-        return stat;
+        saveJobInCurrentTransaction(job.id, stat);
+//        saveJobInSeparateTransaction(job.id, stat);
     }
     public Statistics applyStatisticsChangeForJob(String jobTerm, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(jobTerm);
@@ -452,7 +473,7 @@ public class SubstanceBulkLoadService {
      */
     @Slf4j
     public static class GinasSubstancePersister extends RecordPersister<Substance, Substance> {
-        private static ObjectMapper MAPPER = new ObjectMapper();
+
         @Autowired
         private XRefRepository xRefRepository;
 

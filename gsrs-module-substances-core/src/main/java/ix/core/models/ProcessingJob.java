@@ -195,16 +195,21 @@ public class ProcessingJob extends LongBaseModel {
     //    @JsonView(BeanViews.Compact.class)
 //    @JsonProperty("_statistics")
     public Statistics getStatistics(){
-    	if(this.statistics!=null){
-    		try {
-				return om.readValue(statistics, Statistics.class);
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-    	}
+        //we persist only at the end so lets  check the in memory map first and only fetch from db if it's not in memory.
     	//TODO move this to controller
         SubstanceBulkLoadService loadService = StaticContextAccessor.getBean(SubstanceBulkLoadService.class);
-    	return loadService.getStatisticsForJob(this);
+    	Statistics stats= loadService.getStatisticsForJob(this);
+    	if(stats !=null){
+    	    return stats;
+        }
+        if(this.statistics!=null){
+            try {
+                return om.readValue(statistics, Statistics.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
     }
     
     @JsonIgnore

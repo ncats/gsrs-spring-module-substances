@@ -5,6 +5,7 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.service.PayloadService;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Payload;
 import ix.core.models.Role;
 import ix.core.processing.GinasRecordProcessorPlugin;
@@ -41,13 +42,16 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
     @Autowired
     private SubstanceEntityService substanceEntityService;
 
+    @Autowired
+    private GsrsValidatorFactory validatorFactory;
+
     public LegacySubstanceJSONBulkLoadTest(){
         super(false);
     }
     @Transactional
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
-    @Timeout(value = 1, unit = TimeUnit.MINUTES) //this will fail and kill the test if it takes more than 1 min
+    @Timeout(value = 10, unit = TimeUnit.MINUTES) //this will fail and kill the test if it takes more than 1 min
     public void loadGsrsFile() throws IOException, InterruptedException {
 
         Resource dataFile = new ClassPathResource("testdumps/rep90.ginas");
@@ -73,18 +77,24 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
 
         String statKey = pp.key;
         boolean done =false;
+        Statistics statistics=null;
         while(!done){
-            Statistics statistics = bulkLoadService.getStatisticsFor(statKey);
+            statistics = bulkLoadService.getStatisticsFor(statKey);
 
             if(statistics._isDone()){
+                System.out.println(statistics);
                 break;
             }
             Thread.sleep(1000);
         }
+        //depending on the order the bulk load might fail if the substance currently requires a related substance to be present
+        //(for example alt def?)
+        assertEquals(statistics.totalFailedAndPersisted(), 90);
+        Statistics effectivelyFinalStatistics = statistics;
         TransactionTemplate tx3 = new TransactionTemplate(transactionManager);
         tx3.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx3.executeWithoutResult( ignored ->{
-            assertEquals(90, substanceEntityService.count());
+            assertEquals(effectivelyFinalStatistics.recordsPersistedSuccess.get(), substanceEntityService.count());
         });
 
 
