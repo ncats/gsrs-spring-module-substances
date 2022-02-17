@@ -163,5 +163,16 @@
             <version>0.6.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-module-substances-dto</artifactId>
+            <version>3.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-data-exchange</artifactId>
+            <version>3.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
