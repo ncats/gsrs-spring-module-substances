@@ -72,7 +72,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
             for (UUID id : ids) {
                 executor.submit(() -> {
                     try{
-                        adminService.runAs(adminAuth, () -> {
+                        adminService.runAs(adminAuth, (Runnable)() -> {
                             TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                             try {
