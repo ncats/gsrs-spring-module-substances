@@ -27,11 +27,25 @@ public class Statistics implements Serializable{
 							ADD_PR_GOOD,
 							ADD_PR_BAD,
 							ADD_PE_GOOD,
-							ADD_PE_BAD, MARK_EXTRACTION_DONE, EXPLICIT_CHANGE
+							ADD_PE_BAD,
+			/**
+			 * Take the current counts and consider the job done with the current numbers.
+			 */
+			MARK_EXTRACTION_DONE,
+			EXPLICIT_CHANGE,
+			/**
+			 * Cancel the current job, this is similar to {@link #MARK_EXTRACTION_DONE}
+			 * except the final counts also consider the original estimate of records remaining
+			 * and presumed never to complete.
+			 * @since 3.0
+			 */
+			CANCEL
 			};
 		
 		public Estimate totalRecords=null;
-		
+
+		public volatile boolean cancelled= false;
+
 		private CHANGE lastChangeAction=null;
 		private AtomicLong lastChangeVersion = new AtomicLong();
 		
@@ -50,11 +64,25 @@ public class Statistics implements Serializable{
 			return recordsExtractedFailed.get()+recordsProcessedFailed.get()+recordsPersistedFailed.get()+recordsPersistedSuccess.get();
 		}
 		
-		public void markExtractionDone(){
+		private void markExtractionDone(){
 			totalRecords= new Estimate(recordsExtractedSuccess.get()+recordsExtractedFailed.get(), Estimate.TYPE.EXACT);
+		}
+
+		private void markAsCancelled() {
+			cancelled=true;
+			if(totalRecords ==null){
+				markExtractionDone();
+				return;
+			}
+			//consider the rest as
+//			int x = totalFailedAndPersisted();
+//			recordsExtractedFailed.set((int)(totalRecords.getCount() -x));
 		}
 		
 		public boolean _isDone(){
+			if(cancelled){
+				return true;
+			}
 			if(totalRecords==null)return false;
 			if(totalFailedAndPersisted()>=totalRecords.getCount() && totalRecords.getType()==Estimate.TYPE.EXACT){
 				return true;
@@ -126,6 +154,9 @@ public class Statistics implements Serializable{
 					case MARK_EXTRACTION_DONE:
 						this.markExtractionDone();
 						break;
+					case CANCEL:
+						this.markAsCancelled();
+						break;
 					default:
 						break;
 				}
@@ -134,7 +165,9 @@ public class Statistics implements Serializable{
 		}
 
 
-		public void applyChange(Statistics s) {
+
+
+	public void applyChange(Statistics s) {
 			this.applyChange(s.lastChangeAction);
 		}
 

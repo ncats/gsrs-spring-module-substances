@@ -14,13 +14,11 @@ import gsrs.repository.PayloadRepository;
 import gsrs.security.AdminService;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
-import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.*;
 import ix.core.processing.*;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
-import ix.core.util.EntityUtils;
 import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
 import ix.core.validator.ValidationResponse;
@@ -183,18 +181,24 @@ public class SubstanceBulkLoadService {
 
     }
 
-    private void ensureAllAttached(Object o){
-        EntityUtils.EntityWrapper.of(o).traverse().execute( (p,v)->{
-            if(v !=null) {
-                Object actual = v.getRawValue();
-                if(actual !=null) {
-                    if (!entityManager.contains(actual)) {
-                        entityManager.merge(actual);
-                    }
-                }
-            }
-        });
-    }
+    /**
+     * Cancel currently running job.
+     * @param processorJobKey
+     * @return {@code true} if job cancelled; {@code false} if not cancelled
+     * probably because it either didn't exist or isn't currently running.
+     * @since 3.0
+     */
+    @hasAdminRole
+   public boolean cancel(String processorJobKey){
+        ExecutorService service = executorServices.remove(processorJobKey);
+        if(service ==null){
+            //cant cancel what's not running
+             return false;
+        }
+        service.shutdownNow();
+        applyStatisticsChangeForJob(processorJobKey, Statistics.CHANGE.CANCEL);
+        return true;
+   }
     @hasAdminRole
     public PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
         // first see if this payload has already processed..
@@ -305,7 +309,6 @@ public class SubstanceBulkLoadService {
 
                                     }
                                 } catch (Exception e) {
-                                    e.printStackTrace();
                                     Statistics stat = getStatisticsForJob(pp.key);
                                     stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
                                     storeStatisticsForJob(pp.key, stat);
