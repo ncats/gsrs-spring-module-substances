@@ -20,8 +20,7 @@ import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 
-//Case-sensitive comparison; test data has ADMIN as created by
-@WithMockUser(username = "ADMIN", roles="Admin")
+@WithMockUser(username = "admin", roles = "Admin")
 @Transactional
 @Slf4j
 public class DefaultApprovalServiceTest extends AbstractSubstanceJpaEntityTest {
@@ -41,18 +40,20 @@ public class DefaultApprovalServiceTest extends AbstractSubstanceJpaEntityTest {
         DefaultApprovalService approvalService = new DefaultApprovalService(substanceApprovalIdGenerator, this.substanceRepository,
                 this.principalRepository);
         AutowireHelper.getInstance().autowire(approvalService);
-        ApprovalService.ApprovalResult result= null;
+        ApprovalService.ApprovalResult result = null;
         ApprovalService.ApprovalException exception = null;
         try {
-            result =approvalService.approve(preApprovedSubstance);
-        }
-        catch (ApprovalService.ApprovalException ex) {
-            exception=ex;
+            result = approvalService.approve(preApprovedSubstance);
+        } catch (ApprovalService.ApprovalException ex) {
+            exception = ex;
             log.error("error during approval: " + ex.getMessage());
         }
         Assertions.assertNull(exception);
     }
 
+    /*
+    Current user is the last editor but not the creator -> no error
+     */
     @Test
     public void testApproval2() {
         Substance preApprovedSubstance = getSubstanceFromFile("PJY633525U_createdBySmith");
@@ -61,17 +62,64 @@ public class DefaultApprovalServiceTest extends AbstractSubstanceJpaEntityTest {
         DefaultApprovalService approvalService = new DefaultApprovalService(substanceApprovalIdGenerator, this.substanceRepository,
                 this.principalRepository);
         AutowireHelper.getInstance().autowire(approvalService);
-        ApprovalService.ApprovalResult result= null;
+        ApprovalService.ApprovalResult result = null;
         ApprovalService.ApprovalException exception = null;
         try {
-            result =approvalService.approve(preApprovedSubstance);
+            result = approvalService.approve(preApprovedSubstance);
             log.trace("substance approved without exception by " + result.getApprovedBy());
-        }
-        catch (ApprovalService.ApprovalException ex) {
-            exception=ex;
+        } catch (ApprovalService.ApprovalException ex) {
+            exception = ex;
             log.error("error during approval: " + ex.getMessage());
         }
         Assertions.assertNull(exception);
+    }
+
+    /*
+   substance is alreayd approved
+    */
+    @Test
+    public void testApproval3() {
+        Substance preApprovedSubstance = getSubstanceFromFile("PJY633525U");
+        String expectedMessage = "Cannot approve an approved substance";
+        AutowireHelper.getInstance().autowire(this.substanceRepository);
+        AutowireHelper.getInstance().autowire(this.principalRepository);
+        DefaultApprovalService approvalService = new DefaultApprovalService(substanceApprovalIdGenerator, this.substanceRepository,
+                this.principalRepository);
+        AutowireHelper.getInstance().autowire(approvalService);
+        ApprovalService.ApprovalResult result = null;
+        ApprovalService.ApprovalException exception = null;
+        try {
+            result = approvalService.approve(preApprovedSubstance);
+            log.trace("substance approved without exception by " + result.getApprovedBy());
+        } catch (ApprovalService.ApprovalException ex) {
+            exception = ex;
+            log.error("error during approval: " + ex.getMessage());
+        }
+        Assertions.assertTrue(exception.getMessage().contains(expectedMessage));
+    }
+
+ /*
+Current user is the last editor and the creator -> expect an error
+*/
+    @Test
+    public void testApproval4() {
+        Substance preApprovedSubstance = getSubstanceFromFile("PJY633525U_complete");
+        String expectedMessage = "You cannot approve a substance if you are the creator of the substance";
+        AutowireHelper.getInstance().autowire(this.substanceRepository);
+        AutowireHelper.getInstance().autowire(this.principalRepository);
+        DefaultApprovalService approvalService = new DefaultApprovalService(substanceApprovalIdGenerator, this.substanceRepository,
+                this.principalRepository);
+        AutowireHelper.getInstance().autowire(approvalService);
+        ApprovalService.ApprovalResult result = null;
+        ApprovalService.ApprovalException exception = null;
+        try {
+            result = approvalService.approve(preApprovedSubstance);
+            log.trace("substance approved without exception by " + result.getApprovedBy());
+        } catch (ApprovalService.ApprovalException ex) {
+            exception = ex;
+            log.error("error during approval: " + ex.getMessage());
+        }
+        Assertions.assertTrue(exception.getMessage().contains(expectedMessage));
     }
 
     private Substance getSubstanceFromFile(String name) {
