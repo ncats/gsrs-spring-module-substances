@@ -1,20 +1,5 @@
 package gsrs.module.substance.services;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import org.jcvi.jillion.core.Range;
-import org.jcvi.jillion.core.Ranges;
-
 import gov.nih.ncats.common.Tuple;
 import gsrs.cache.GsrsCache;
 import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
@@ -26,8 +11,6 @@ import ix.core.search.ResultProcessor;
 import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
 import ix.core.util.EntityUtils;
-import ix.ginas.models.v1.NucleicAcidSubstance;
-import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Subunit;
 import ix.seqaln.SequenceIndexer;
@@ -35,9 +18,22 @@ import ix.seqaln.service.SequenceIndexerService;
 import ix.utils.CallableUtil;
 import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
+import org.jcvi.jillion.core.Range;
+import org.jcvi.jillion.core.Ranges;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 @Slf4j
 public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSearchService{
-    private static Pattern FASTA_FILE_PATTERN = Pattern.compile(">(.+)\\|.+");
+    /**
+     * Fasta files will have a pattern of ">$SubstanceUUID | sequence id
+     * In order to link the match context back to the substance so the alignment
+     * is displayed in search results we need this regex to pull out the substance uuid.
+     */
+    private static Pattern FASTA_FILE_PATTERN = Pattern.compile(">(.+)\\|(.+)");
 
     private SequenceIndexerService indexerService;
 
@@ -235,7 +231,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 
         @Override
         protected Substance instrument(SequenceIndexer.Result r) throws Exception {
-            
+
 
             //I don't understand the logic here ...
             //I don't think this does what it's supposed to.
@@ -245,7 +241,13 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                 Matcher m = FASTA_FILE_PATTERN.matcher(r.id);
                 if(m.find()){
                     String parentId = m.group(1);
-                    return subunitRepoWrapper.getSubstanceByID(UUID.fromString(parentId)).orElse(null);
+                    String recordId = m.group(2);
+                    Substance s= subunitRepoWrapper.getSubstanceByID(UUID.fromString(parentId)).orElse(null);
+
+                    addAlignmentToSubstanceMatchContext(r, s, (begin, end, coordinateSystem)->{
+                        return recordId+"_"+begin + "-" +recordId+"_"+end;
+                    });
+                    return s;
                 }
                 return null; //? maybe should do something else
             }
@@ -257,14 +259,6 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                 Substance sub = t.k();
                 Subunit subunit = t.v();
 
-                EntityUtils.Key key= EntityUtils.EntityWrapper.of(sub).getKey();
-                Map<String,Object> added = ixCache.getMatchingContextByContextID(this.getContext().getId(), key);
-                if(added==null){
-                    added=new HashMap<String,Object>();
-                }
-                List<SequenceIndexer.Result> alignments = (List<SequenceIndexer.Result>)
-                        added.computeIfAbsent("alignments", f->new ArrayList<SequenceIndexer.Result>());
-                alignments.add(r);
 
                 //GSRS 1512 add target site info
                 // this is the only place in the alignment code we have the aligned sequence
@@ -272,18 +266,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                 int index = subunit.subunitIndex==null? 0: subunit.subunitIndex;
 
                 Range.RangeAndCoordinateSystemToStringFunction function = (begin,end, ignored)-> index+"_"+begin + "-" +index+"_"+end;
-                r.alignments.stream().forEach(a->{
-                    String shorthand = Ranges.asRanges(a.targetSites())
-                            .stream()
-                            .map(range-> range.toString(function, Range.CoordinateSystem.RESIDUE_BASED))
-                            .collect(Collectors.joining(";","Target Sites: ","\n\n"));
-                    //this check is because sometimes we get here twice?
-                    if(a.alignment!=null && !a.alignment.startsWith("Target")) {
-                        a.alignment = shorthand + a.alignment;
-                    }
-                });
-
-                ixCache.setMatchingContext(this.getContext().getId(), key, added);
+                addAlignmentToSubstanceMatchContext(r, sub, function);
                 return sub;
             }).orElse(null);
             
@@ -292,6 +275,31 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
             }
             
             return matched;
+        }
+
+        private void addAlignmentToSubstanceMatchContext(SequenceIndexer.Result r, Substance sub, Range.RangeAndCoordinateSystemToStringFunction function) {
+            EntityUtils.Key key= EntityUtils.EntityWrapper.of(sub).getKey();
+
+            Map<String,Object> added = ixCache.getMatchingContextByContextID(this.getContext().getId(), key);
+            if(added==null){
+                added=new HashMap<>();
+            }
+            List<SequenceIndexer.Result> alignments = (List<SequenceIndexer.Result>)
+                    added.computeIfAbsent("alignments", f->new ArrayList<SequenceIndexer.Result>());
+            alignments.add(r);
+
+            r.alignments.stream().forEach(a->{
+                 String shorthand = Ranges.asRanges(a.targetSites())
+                         .stream()
+                         .map(range-> range.toString(function, Range.CoordinateSystem.RESIDUE_BASED))
+                         .collect(Collectors.joining(";","Target Sites: ","\n\n"));
+                 //this check is because sometimes we get here twice?
+                 if(a.alignment!=null && !a.alignment.startsWith("Target")) {
+                     a.alignment = shorthand + a.alignment;
+                 }
+             });
+
+            ixCache.setMatchingContext(this.getContext().getId(), key, added);
         }
     }
 
