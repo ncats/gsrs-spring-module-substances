@@ -20,6 +20,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+/**
+ * Helper Service that knows how to pull out
+ * sequence files that are attached to Substances as References
+ * so we can attach sequence files for long sequences.
+ */
 @Service
 public class SubstanceSequenceFileSupportService {
 

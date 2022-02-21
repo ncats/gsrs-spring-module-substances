@@ -86,7 +86,7 @@ public class GsrsSubstanceModuleAutoConfiguration {
     @Bean("SubstanceSequenceSearchService")
     @ConditionalOnMissingBean(SubstanceSequenceSearchService.class)
     public SubstanceSequenceSearchService getSequenceSearchService(){
-        return new LegacySubstanceSequenceSearchService(sequenceIndexerService, ixCache,payloadService,
+        return new LegacySubstanceSequenceSearchService(sequenceIndexerService, ixCache,
                 proteinSubstanceRepository, nucleicAcidSubstanceRepository, subunitRepository);
     }
 
