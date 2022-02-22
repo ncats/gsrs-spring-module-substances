@@ -16,6 +16,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import java.util.HashSet;
 
 /**
@@ -78,7 +81,7 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         validator.validate(substance, null);
         String expectedComments = commentsBefore.trim();
         String commentsAfter = substance.codes.get(0).codeText;
-        Assertions.assertNotEquals(expectedComments, commentsAfter);
+        Assertions.assertEquals(expectedComments, commentsAfter);
     }
 
     private Substance createSimpleSubstance() {
