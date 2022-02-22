@@ -95,6 +95,7 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
     protected void makeReferenceProtected(Reference r) {
         r.publicDomain = false;
 
+        
         Group g = groupRepository.findByName("protected");
         if (g ==null) {
             g =  new Group("protected");
