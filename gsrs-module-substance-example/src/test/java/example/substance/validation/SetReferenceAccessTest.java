@@ -1,5 +1,7 @@
 package example.substance.validation;
 
+import gsrs.repository.GroupRepository;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
@@ -29,7 +31,8 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
     private TestGsrsValidatorFactory factory;
-
+    @Autowired
+    private GroupRepository groupRepository;
     @BeforeEach
     public void setup() {
         if (!setup) {
@@ -165,7 +168,7 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         r.docType = "IND";
         r.publicDomain = true;
         s1.addReference(r);
-        SetReferenceAccess setReferenceAccess = new SetReferenceAccess();
+        SetReferenceAccess setReferenceAccess = AutowireHelper.getInstance().autowireAndProxy(new SetReferenceAccess());
         LinkedHashMap<Integer, String> privateAlways = new LinkedHashMap<>();
         privateAlways.put(1, "ANDA");
         privateAlways.put(2, "BLA");
@@ -240,7 +243,7 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         r2.docType = "ChemID";
         r2.publicDomain = true;
         s1.addReference(r2);
-        SetReferenceAccess setReferenceAccess = new SetReferenceAccess();
+        SetReferenceAccess setReferenceAccess = AutowireHelper.getInstance().autowireAndProxy(new SetReferenceAccess());
         LinkedHashMap<Integer, String> privateAlways = new LinkedHashMap<>();
         privateAlways.put(1, "ANDA");
         privateAlways.put(2, "BLA");
@@ -310,7 +313,7 @@ public class SetReferenceAccessTest extends AbstractSubstanceJpaEntityTest {
         r2.docType = "ANDA";
         r2.publicDomain = true;
         s1.addReference(r2);
-        SetReferenceAccess setReferenceAccess = new SetReferenceAccess();
+        SetReferenceAccess setReferenceAccess = AutowireHelper.getInstance().autowireAndProxy(new SetReferenceAccess());
         LinkedHashMap<Integer, String> privateAlways = new LinkedHashMap<>();
         privateAlways.put(1, "ANDA");
         privateAlways.put(2, "BLA");
