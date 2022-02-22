@@ -31,6 +31,12 @@ import org.springframework.context.annotation.Import;
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
         ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class,
+            //legacy bulk load 
+        SubstanceBulkLoadService.class, SubstanceBulkLoadServiceConfiguration.class, SubstanceLegacyBulkLoadController.class,
+        ProcessingJobController.class, ProcessingJobEntityService.class,
+        //used by bulk loader
+        ConsoleFilterService.class,
+
 
         SubstanceSequenceFileSupportService.class
 })

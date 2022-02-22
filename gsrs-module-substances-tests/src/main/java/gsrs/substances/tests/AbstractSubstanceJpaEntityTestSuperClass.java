@@ -12,12 +12,13 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.payload.LegacyPayloadConfiguration;
+import gsrs.payload.LegacyPayloadService;
 import gsrs.payload.PayloadController;
-import gsrs.repository.ETagRepository;
-import gsrs.repository.EditRepository;
-import gsrs.repository.GroupRepository;
+import gsrs.repository.*;
 import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
 import gsrs.services.BackupService;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.TestEntityProcessorFactory;
@@ -87,6 +88,12 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @TestConfiguration
 //    @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
     public static class TestConfig{
+
+        @Bean
+        @Primary
+        PayloadService payloadService(PayloadRepository payloadRepository, LegacyPayloadConfiguration configuration, FileDataRepository fileDataRepository) throws IOException {
+            return new LegacyPayloadService(payloadRepository, configuration, fileDataRepository);
+        } 
         @Bean
         @Primary
         TestGsrsValidatorFactory gsrsValidatorFactory(){
@@ -208,7 +215,6 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected GroupRepository groupRepository;
 
-    protected Principal admin;
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
@@ -239,18 +245,30 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     protected abstract EntityManagerFacade getEntityManagerFacade();
 
     private EntityManagerFacade entityManagerFacade;
+
+    private final boolean createAdminUserOnInit;
+    public AbstractSubstanceJpaEntityTestSuperClass(){
+        this(true);
+    }
+    public AbstractSubstanceJpaEntityTestSuperClass(boolean createAdminUserOnInit){
+        this.createAdminUserOnInit = createAdminUserOnInit;
+    }
+
     @BeforeEach
     public void init(){
         entityManagerFacade = getEntityManagerFacade();
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(s-> {
-            admin = createUser("admin", Role.values());
+        if(createAdminUserOnInit) {
+            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+//        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transactionTemplate.executeWithoutResult(s -> {
 
-            //some  integration tests will make validation messages which will get assigned an "admin" access group
-            Group g = groupRepository.saveAndFlush(new Group("admin"));
+                createUser("admin", Role.values());
 
-        });
+                //some  integration tests will make validation messages which will get assigned an "admin" access group
+                groupRepository.saveAndFlush(new Group("admin"));
 
+            });
+        }
     }
 
     protected Principal createUser(String username, Role... roles){

@@ -59,8 +59,7 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         code1.codeSystem = "Drug Bank";
         code1.comments = commentsBefore;
         substance.addCode(code1);
-        CodesValidator validator = new CodesValidator();
-        AutowireHelper.getInstance().autowire(validator);
+        CodesValidator validator = AutowireHelper.getInstance().autowireAndProxy(new CodesValidator());
         validator.validate(substance, null);
         String expectedComments = commentsBefore.trim();
         String commentsAfter = substance.codes.get(0).code;
@@ -76,8 +75,7 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         code1.codeSystem = "Drug Bank";
         code1.codeText = commentsBefore;
         substance.addCode(code1);
-        CodesValidator validator = new CodesValidator();
-        AutowireHelper.getInstance().autowire(validator);
+        CodesValidator validator = AutowireHelper.getInstance().autowireAndProxy(new CodesValidator());
         validator.validate(substance, null);
         String expectedComments = commentsBefore.trim();
         String commentsAfter = substance.codes.get(0).codeText;
