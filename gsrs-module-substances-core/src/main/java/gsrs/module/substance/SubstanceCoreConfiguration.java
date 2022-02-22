@@ -37,6 +37,8 @@ import org.springframework.context.annotation.Import;
         //used by bulk loader
         ConsoleFilterService.class,
 
+
+        SubstanceSequenceFileSupportService.class
 })
 public class SubstanceCoreConfiguration {
 
