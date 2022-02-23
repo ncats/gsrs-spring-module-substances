@@ -6,15 +6,17 @@ import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.AuditConfig;
 import gsrs.DefaultDataSourceConfig;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.ProcessingJobRepository;
 import gsrs.module.substance.repository.ProcessingRecordRepository;
-import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.XRefRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.AdminService;
 import gsrs.security.hasAdminRole;
+import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.validator.ValidatorConfig;
+import ix.core.controllers.EntityFactory;
 import ix.core.models.*;
 import ix.core.processing.*;
 import ix.core.stats.Estimate;
@@ -482,7 +484,7 @@ public class SubstanceBulkLoadService {
         private ProcessingRecordRepository processingRecordRepository;
 
         @Autowired
-        private SubstanceRepository substanceRepository;
+        private SubstanceEntityService substanceEntityService;
 
         @PersistenceContext
         private EntityManager entityManager;
@@ -493,11 +495,16 @@ public class SubstanceBulkLoadService {
 
             try{
                 boolean worked = false;
-                List<String> errors = new ArrayList<String>();
+                List<String> errors = new ArrayList<>();
                 if (prec.recordToPersist != null) {
                     try{
-                        substanceRepository.saveAndFlush(prec.recordToPersist);
-                        worked= true;
+                        GsrsEntityService.CreationResult result = substanceEntityService.createEntity(EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().valueToTree(prec.recordToPersist),true);
+                        worked= result.isCreated();
+                        Throwable t = result.getThrowable();
+                        if(t !=null){
+                            t.printStackTrace();
+                            errors.add(t.getMessage());
+                        }
                     }catch(Throwable t){
                         t.printStackTrace();
                         errors.add(t.getMessage());
