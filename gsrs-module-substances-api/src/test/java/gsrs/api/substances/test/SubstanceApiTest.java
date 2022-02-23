@@ -1,11 +1,14 @@
 package gsrs.api.substances.test;
-
+import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate;
+import gsrs.api.GsrsEntityRestTemplate;
 import gsrs.api.substances.SubstanceRestApi;
 import gsrs.assertions.GsrsMatchers;
 import gsrs.substances.dto.*;
+import org.apache.commons.io.FileExistsException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,7 @@ import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 
@@ -27,9 +31,9 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 @RestClientTest(SubstanceRestApi.class)
@@ -228,6 +232,166 @@ public class SubstanceApiTest {
 
         assertTrue(proteinSubstanceDTO.get().getProtein().getSubunits().get(0).getSequence()
                 .startsWith("MERAPPDGPLNASGALAGEAAAAGGARGFSAAWTAVLAALMALLIVATVL"));
-
     }
+
+    // alex begin
+
+    @Test
+    public void countErrorBodyIsNotNumber() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances/@count"))
+                .andRespond(withSuccess("I am not a number", MediaType.APPLICATION_JSON));
+        boolean somethingThrown = false;
+        try {
+            Long count = api.count();
+        } catch(Throwable t) {
+            somethingThrown = true;
+        }
+        assertTrue(somethingThrown);
+    }
+
+    @Test
+    public void testFindByResolvedIdError() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+        boolean exThrown = false;
+        try {
+            Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertTrue(exThrown);
+    }
+
+    @Test
+    public void testFindByResolvedIdBadJson() throws IOException {
+        String badJson = "{\"content\": \"I am missing a closing curly brace!\"";
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .andRespond(withSuccess(badJson, MediaType.APPLICATION_JSON));
+        boolean somethingThrown = false;
+        try {
+            Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Throwable t) {
+            System.out.println(t.getMessage());
+            somethingThrown = true;
+        }
+        assertTrue(somethingThrown);
+    }
+
+    @Test
+    public void testFindByResolvedIdBadJsonForDTO() throws IOException {
+        String json = "{\"content\": \"I am good json, but Substance DTO doesn't like me because, for one, I lack a subClass.\"}";
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+        boolean somethingThrown = false;
+        try {
+            Optional<SubstanceDTO> opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Throwable t) {
+            somethingThrown = true;
+        }
+        assertTrue(somethingThrown);
+    }
+
+    @Test
+    public void testFindByResolvedIdNotFound() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        Optional<SubstanceDTO> opt = null;
+        boolean exThrown = false;
+        try {
+            opt = api.findByResolvedId("11113571-8a34-49de-a980-267d6394cfa3");
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertFalse(exThrown);
+        assertFalse(opt.isPresent());
+    }
+
+    @Test
+    public void testPageError() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances/?top=0&skip=10"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+        long top = 0;
+        long skip = 10;
+        Optional<GsrsEntityRestTemplate.PagedResult<SubstanceDTO>> opt = null;
+        boolean exThrown = false;
+        try {
+            opt = api.page(top, skip);
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertTrue(exThrown);
+    }
+
+    @Test
+    public void testPageNotFound() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances/?top=0&skip=10"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        long top = 0;
+        long skip = 10;
+        Optional<GsrsEntityRestTemplate.PagedResult<SubstanceDTO>> opt = null;
+        boolean exThrown = false;
+        try {
+            opt = api.page(top, skip);
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertFalse(opt.isPresent());
+    }
+    @Test
+
+    public void testPageFound() throws IOException {
+        String json ="{\"content\":[{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"substanceClass\":\"concept\"},{\"uuid\":\"31113571-8a34-49de-a980-267d6394cfa3\", \"substanceClass\":\"concept\"}]}";
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances/?top=0&skip=10"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+        long top = 0;
+        long skip = 10;
+        Optional<GsrsEntityRestTemplate.PagedResult<SubstanceDTO>> opt = api.page(top, skip);
+        assertTrue(opt.isPresent());
+    }
+
+
+
+    @Test
+    public void testEntityExistsError() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
+                .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR));
+        boolean exThrown = false;
+        try {
+            boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
+        } catch (Exception e) {
+            exThrown = true;
+        }
+        assertTrue(exThrown);
+    }
+
+    @Test
+    public void testEntityExistsNotFound() throws IOException {
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
+                .andRespond(withStatus(HttpStatus.NOT_FOUND));
+        boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
+        assertEquals(false, exists);
+    }
+
+    @Test
+    public void testEntityExistsFound() throws IOException {
+        String json = "{\"uuid\":\"11113571-8a34-49de-a980-267d6394cfa3\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"definitionType\":\"PRIMARY\",\"definitionLevel\":\"COMPLETE\",\"substanceClass\":\"structurallyDiverse\",\"status\":\"approved\",\"version\":\"1\",\"approvedBy\":\"FDA_SRS\",\"approvalID\":\"B71UA545DE\",\"structurallyDiverse\":{\"uuid\":\"672a9e8e-f5a9-4aec-ac12-79e1e4d24e6b\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"sourceMaterialClass\":\"ORGANISM\",\"sourceMaterialType\":\"PLANT\",\"part\":[\"LEAF\"],\"parentSubstance\":{\"uuid\":\"10d60422-223a-4ca5-88f1-c541ac1461e1\",\"created\":1628185287000,\"createdBy\":\"admin\",\"lastEdited\":1628185287000,\"lastEditedBy\":\"admin\",\"deprecated\":false,\"refPname\":\"CYNARA SCOLYMUS WHOLE\",\"refuuid\":\"20a5f29a-088d-4b16-93e1-2e1f536c50b7\",\"substanceClass\":\"reference\",\"approvalID\":\"9N3437ZUU0\",\"linkingID\":\"9N3437ZUU0\",\"name\":\"CYNARA SCOLYMUS WHOLE\",\"_nameHTML\":\"CYNARA SCOLYMUS WHOLE\",\"references\":[],\"access\":[]},\"references\":[\"792882b4-0c0f-4284-a8c5-95b891b276d4\",\"c03a4470-3f2c-4742-b1ce-b412df65b84c\"],\"access\":[]},\"_names\":{\"count\":11,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names\"},\"_modifications\":{\"count\":0,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/modifications\"},\"_references\":{\"count\":38,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references\"},\"_codes\":{\"count\":4,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes\"},\"_relationships\":{\"count\":12,\"url\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/relationships\"},\"_nameHTML\":\"CYNARA SCOLYMUS LEAF\",\"_approvalIDDisplay\":\"B71UA545DE\",\"_name\":\"CYNARA SCOLYMUS LEAF\",\"access\":[],\"_self\":\"https://ginas.ncats.nih.gov/app/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=full\"}";
+        this.mockRestServiceServer
+                .expect(requestTo("/api/v1/substances(11113571-8a34-49de-a980-267d6394cfa3)?view=key"))
+                .andRespond(withSuccess(json, MediaType.APPLICATION_JSON));
+        boolean exists = api.existsById(UUID.fromString("11113571-8a34-49de-a980-267d6394cfa3"));
+        assertEquals(true, (boolean) exists);
+    }
+
+
+    // alex end
 }
