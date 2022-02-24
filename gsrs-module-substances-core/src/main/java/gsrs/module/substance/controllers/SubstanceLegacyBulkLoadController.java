@@ -65,24 +65,7 @@ public class SubstanceLegacyBulkLoadController {
                                                    @RequestParam("file-type") String type,
                                                    @RequestParam Map<String, String> queryParameters) throws IOException {
         try {
-            System.out.println("in handle file upload!!!");
-/*
-if (!GinasLoad.config.get().ALLOW_LOAD) {
-			return badRequest("Invalid request!");
-		}
 
-		DynamicForm requestData = Form.form().bindFromRequest();
-		String type = requestData.get("file-type");
-		String preserveAudit = requestData.get("preserve-audit");
-		Logger.info("type =" + type);
-		try {
-		//...
-		Payload payload = payloadPlugin.get().parseMultiPart("file-name",
-					request(), PayloadPersistType.TEMP);
-			switch (type) {
-				case "JSON":
-					Logger.info("JOS =" + type);
- */
 
             //legacy GSRS 2.x only supported JSON we turned of sd support in this method at some point
             //between 2.0 and 2.7 instead waiting for the new importer in 3.x to be written in a more robust way.
@@ -103,25 +86,20 @@ if (!GinasLoad.config.get().ALLOW_LOAD) {
                     throw new UncheckedIOException(e);
                 }
             });
-//            TransactionTemplate transactionTemplate2 = new TransactionTemplate(platformTransactionManager);
-//            transactionTemplate2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-//            Long processorId = transactionTemplate2.execute(ignored -> {
-                Payload payload = payloadRepository.findById(payloadId).get();
 
-                //GSRS 2 preserve audit if the parameter is present, don't care what it's set to!!
+                Payload payload = payloadRepository.findById(payloadId).get();
+                //Beta UI sets this to true only if checked otherwise it's passed in as false
+                boolean preserveAuditInfo = Boolean.parseBoolean(queryParameters.getOrDefault("preserve-audit", "false"));
+
                 PayloadProcessor processor = substanceBulkLoadService.submit(
                         SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
                                 .payload(payload)
-                                .preserveOldEditInfo(queryParameters.containsKey("preserve-audit"))
-
+                                .preserveOldEditInfo(preserveAuditInfo)
                                 .build());
-//                return processor.jobId;
-//
-//            });
+
             return processingJobService.get(processor.jobId).get();
         }catch(Throwable t){
             t.printStackTrace();
-            System.out.println("here");
             throw t;
         }
     }
