@@ -1,9 +1,11 @@
 package ix.ginas.utils;
 
-import gsrs.repository.GroupRepository;
 import gsrs.services.GroupService;
 import ix.core.validator.GinasProcessingMessage;
+import ix.core.validator.ValidationResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.List;
 
 public class AcceptAndApplyAllWarningsProcessingStrategy extends GinasProcessingStrategy{
     @Autowired
@@ -20,6 +22,23 @@ public class AcceptAndApplyAllWarningsProcessingStrategy extends GinasProcessing
                 gpm.actionType = GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
             }else{
                 gpm.actionType = GinasProcessingMessage.ACTION_TYPE.IGNORE;
+            }
+        }
+    }
+
+    //copy from AcceptApplyAllProcessingStrategy
+
+    @Override
+    public void setIfValid(ValidationResponse resp, List<GinasProcessingMessage> messages) {
+        if (GinasProcessingMessage.ALL_VALID(messages)) {
+            resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
+            resp.setValid(true);
+        }else{
+            if(resp.hasError()){
+                resp.setValid(false);
+            }else {
+                //might be warnings
+                resp.setValid(true);
             }
         }
     }

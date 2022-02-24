@@ -2,13 +2,12 @@ package gsrs.module.substance.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.module.substance.events.NameCreatedEvent;
-import gsrs.module.substance.events.NameUpdatedEvent;
-import gsrs.module.substance.repository.NameRepository;
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
-import gsrs.repository.GroupRepository;
+import gsrs.module.substance.events.NameCreatedEvent;
+import gsrs.module.substance.events.NameUpdatedEvent;
+import gsrs.module.substance.repository.NameRepository;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
@@ -18,6 +17,7 @@ import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.AcceptApplyAllProcessingStrategy;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.utils.Util;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,20 +69,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     }
 
     private  GinasProcessingStrategy createAcceptApplyAllStrategy() {
-        return new GinasProcessingStrategy(groupRepository) {
-            @Override
-            public void processMessage(GinasProcessingMessage gpm) {
-                if (gpm.suggestedChange) {
-                    gpm.actionType = GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
-                } else {
-                    if (gpm.isError()) {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.FAIL;
-                    } else {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.IGNORE;
-                    }
-                }
-            }
-        };
+        return new AcceptApplyAllProcessingStrategy(groupRepository);
     }
 
     @Override

@@ -3,6 +3,7 @@ package ix.ginas.utils;
 import gsrs.services.GroupService;
 import ix.core.models.Group;
 import ix.core.validator.GinasProcessingMessage;
+import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
 
 import java.util.*;
@@ -34,6 +35,8 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 			destination.add(gpm);
 		}
 	}
+
+	public abstract void setIfValid(ValidationResponse validationResponse,  List<GinasProcessingMessage> messages);
 
 	public static enum HANDLING_TYPE {
 		MARK, FAIL, FORCE_IGNORE, NOTE
@@ -151,9 +154,8 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 			if (gpm.actionType == GinasProcessingMessage.ACTION_TYPE.FAIL || gpm.isError()) {
 
 				if (failType == HANDLING_TYPE.FAIL) {
-//					throw new IllegalStateException(gpm.message);
-					//we don't want to return here because we want to process other messages?
-					allow= false; // ?
+					throw new IllegalStateException(gpm.message);
+
 				} else if (failType == HANDLING_TYPE.MARK) {
 					cs.status = GinasProcessingStrategy.FAILED;
 					cs.addRestrictGroup(getGroupByName(Substance.GROUP_ADMIN, cache));
