@@ -20,6 +20,8 @@ import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.AcceptApplyAllProcessingStrategy;
+import ix.ginas.utils.BatchProcessingStrategy;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.utils.Util;
@@ -71,27 +73,18 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return UUID.fromString(idAsString);
     }
 
-    private  GinasProcessingStrategy createAcceptApplyAllStrategy() {
-        return new GinasProcessingStrategy(groupRepository) {
-            @Override
-            public void processMessage(GinasProcessingMessage gpm) {
-                if (gpm.suggestedChange) {
-                    gpm.actionType = GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
-                } else {
-                    if (gpm.isError()) {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.FAIL;
-                    } else {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.IGNORE;
-                    }
-                }
-            }
-        };
-    }
 
+
+    protected GinasProcessingStrategy createProcessingStrategyFor(ValidatorConfig.METHOD_TYPE type){
+        if(type == ValidatorConfig.METHOD_TYPE.BATCH){
+            return new BatchProcessingStrategy(groupRepository);
+        }
+        return new AcceptApplyAllProcessingStrategy(groupRepository);
+    }
     @Override
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
         
-        GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
+        GinasProcessingStrategy strategy = createProcessingStrategyFor(type);
         ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
             public void complete() {
@@ -116,14 +109,15 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     if (GinasProcessingMessage.ALL_VALID(messages)) {
                         resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
                         resp.setValid(true);
-                    }else{
-                        if(resp.hasError()){
-                            resp.setValid(false);
-                        }else {
-                            //might be warnings
-                            resp.setValid(true);
-                        }
                     }
+//                    else{
+//                        if(resp.hasError()){
+//                            resp.setValid(false);
+//                        }else {
+//                            //might be warnings
+//                            resp.setValid(true);
+//                        }
+//                    }
                 }
             }
         };
