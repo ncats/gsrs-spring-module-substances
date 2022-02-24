@@ -96,7 +96,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
             for (UUID id : ids) {
                 executor.submit(() -> {
                     try {
-                        adminService.runAs(adminAuth, () -> {
+                        adminService.runAs(adminAuth, (Runnable)() -> {
                             TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                             try {
@@ -127,7 +127,7 @@ public class DEAScheduledTaskInitializer extends ScheduledTaskInitializer {
                             }
                         });
                         //out.flush();
-                    } catch (Exception ex) {
+                    } catch (Throwable ex) {
                         l.message("Error computing DEA data for ... " + id + " error: " + ex.getMessage());
                     }
                 });

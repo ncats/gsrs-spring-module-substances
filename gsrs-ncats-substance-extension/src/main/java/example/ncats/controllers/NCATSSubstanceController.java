@@ -1,14 +1,20 @@
 package example.ncats.controllers;
 
+import gsrs.EnableGsrsApi;
+import gsrs.EnableGsrsLegacyCache;
+import gsrs.EnableGsrsLegacySequenceSearch;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
 import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.utils.NCATSFileUtils;
+import gsrs.module.substance.utils.NCATSGSRSUtils;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.hateoas.server.ExposesResourceFor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,14 +25,20 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
+@SpringBootApplication
+@EnableGsrsApi(indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CONF
+)
+@EnableGsrsLegacyCache
+@EnableGsrsLegacySequenceSearch
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT)
 public class NCATSSubstanceController {
 
     @PostGsrsRestApiMapping(path="/getFieldsForSDFile")
-    public Object fieldsForSDF(@NotNull @RequestBody MultipartFile file,
+    public ResponseEntity<Object> fieldsForSDF(@NotNull @RequestBody MultipartFile file,
                                           @RequestParam Map<String, String> processingParameters) throws IOException {
         log.trace("starting in fieldsForSDF");
         String fileName = file.getName();
@@ -34,9 +46,19 @@ public class NCATSSubstanceController {
         File tempSdFile= multipartToFile( file, fileName);
         Set<String> fields =NCATSFileUtils.getSdFileFields(tempSdFile.getPath());
         log.trace("total fields: " + fields.size());
-        return fields;
+        return ResponseEntity.ok(fields);
     }
 
+    @PostGsrsRestApiMapping("/savesdfile")
+    public ResponseEntity<String> saveSdFile(@NotNull @RequestBody MultipartFile file,
+                                             @RequestParam Map<String, String> processingParameters) throws IOException {
+        String fileName = file.getName();
+        File sdFile = multipartToFile(file, fileName);
+        NCATSGSRSUtils utils = new NCATSGSRSUtils();
+        UUID savedFileId =utils.saveSdFile(sdFile);
+        String  message = String.format("Result of saving your file: %s", savedFileId.toString());
+        return ResponseEntity.ok(message);
+    }
     /*
     Adding a simple GET as a test
      */
@@ -58,5 +80,9 @@ public class NCATSSubstanceController {
             writer.write(data);
         }
         return convFile;
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(NCATSSubstanceController.class, args);
     }
 }

@@ -16,6 +16,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 import java.util.HashSet;
 
 /**
@@ -56,8 +59,7 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         code1.codeSystem = "Drug Bank";
         code1.comments = commentsBefore;
         substance.addCode(code1);
-        CodesValidator validator = new CodesValidator();
-        AutowireHelper.getInstance().autowire(validator);
+        CodesValidator validator = AutowireHelper.getInstance().autowireAndProxy(new CodesValidator());
         validator.validate(substance, null);
         String expectedComments = commentsBefore.trim();
         String commentsAfter = substance.codes.get(0).code;
@@ -73,12 +75,11 @@ public class CodeValidationTest extends AbstractSubstanceJpaEntityTest {
         code1.codeSystem = "Drug Bank";
         code1.codeText = commentsBefore;
         substance.addCode(code1);
-        CodesValidator validator = new CodesValidator();
-        AutowireHelper.getInstance().autowire(validator);
+        CodesValidator validator = AutowireHelper.getInstance().autowireAndProxy(new CodesValidator());
         validator.validate(substance, null);
         String expectedComments = commentsBefore.trim();
         String commentsAfter = substance.codes.get(0).codeText;
-        Assertions.assertNotEquals(expectedComments, commentsAfter);
+        Assertions.assertEquals(expectedComments, commentsAfter);
     }
 
     private Substance createSimpleSubstance() {

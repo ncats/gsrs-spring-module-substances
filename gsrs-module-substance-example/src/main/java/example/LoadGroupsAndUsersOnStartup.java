@@ -2,23 +2,16 @@ package example;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import gov.nih.ncats.common.sneak.Sneak;
+import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.UserProfileRepository;
-import gsrs.validator.GsrsValidatorFactory;
-import ix.core.controllers.EntityFactory;
 import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -29,14 +22,12 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.io.*;
 import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
@@ -58,7 +49,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    @Autowired
+    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
 
     @Autowired
@@ -77,7 +68,6 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 groupRepository.save(new Group("protected"));
                 groupRepository.save(new Group("admin"));
 
-                System.out.println("RUNNING");
 
                 UserProfile up = new UserProfile();
                 up.user = new Principal("admin", "admin@example.com");
@@ -106,6 +96,25 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 guest.setRoles(Arrays.asList(Role.Query));
 
                 userProfileRepository.saveAndFlush(guest);
+
+                //users in gsrs dump files
+                UserProfile tyler = new UserProfile();
+                tyler.user = new Principal("TYLER", null);
+                tyler.setPassword("TYLER");
+                tyler.active = false;
+                tyler.deprecated = false;
+                tyler.setRoles(Arrays.asList(Role.values()));
+
+                userProfileRepository.saveAndFlush(tyler);
+
+                UserProfile fdaSrs = new UserProfile();
+                fdaSrs.user = new Principal("FDA_SRS", null);
+                fdaSrs.setPassword("FDA_SRS");
+                fdaSrs.active = false;
+                fdaSrs.deprecated = false;
+                fdaSrs.setRoles(Arrays.asList(Role.values()));
+
+                userProfileRepository.saveAndFlush(fdaSrs);
             }
         });
 
