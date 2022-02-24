@@ -132,8 +132,113 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
          if (DEFAULT_RECIPE_MAP == null) {
              DEFAULT_RECIPE_MAP = new LinkedHashMap<>();
 
+
+             //UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM ITIS NCBI PLANTS GRIN MPNS INN_ID MF INCHIKEY SMILES INGREDIENT_TYPE 
+
              DEFAULT_RECIPE_MAP.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
-             //TODO preferred TERM ?
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
+             
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_NAME, createRestrictableRecipe(DefaultColumns.STD_NAME, (s, pubOnly,cell) -> {
+                     Optional<Name> opName = s.getDisplayName();
+                     boolean wroteName = false;
+                     if(opName.isPresent()) {
+                         if(pubOnly && opName.get().getAccess().isEmpty()) {
+                             cell.writeString(opName.get().stdName);
+                             wroteName=true;
+                         }else if(!pubOnly){
+                             cell.writeString(opName.get().stdName);
+                             wroteName=true;
+                         }else{
+                             //no public display name, do nothing
+                         }
+                     }
+                     if(!wroteName) {
+                         //TODO: Something based on what comes back
+                     }
+             }).replaceColumnName(DefaultColumns.STD_NAME, "PT"));
+             
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS").replaceColumnName(DefaultColumns.CAS,"RN"));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.EC, new CodeSystemRecipe(DefaultColumns.EC, "ECHA (EC/EINECS)"));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCI_THESAURUS, new CodeSystemRecipe(DefaultColumns.NCI_THESAURUS, "NCI_THESAURUS").replaceColumnName(DefaultColumns.NCI_THESAURUS,"NCIT"));
+             
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
+             
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.ITIS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.ITIS, "ITIS")));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCBI, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.NCBI, "NCBI TAXONOMY")));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")
+                                                                                                      .replaceColumnName(DefaultColumns.USDA_PLANTS,"PLANTS")
+                                                                                                      ));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN")));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.MPNS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.MPNS, "MPNS")));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN").replaceColumnName(DefaultColumns.INN,"INN_ID"));
+         
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
+                 if (s instanceof ChemicalSubstance) {
+                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
+                     if(pubOnly) {
+                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
+                     cell.writeString(chemicalSubstance.getStructure().formula);
+                 } else if (s instanceof PolymerSubstance) {
+                     if(pubOnly) {
+                         if(!((PolymerSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
+                     //TODO: there's a property that should be the fallback for this  
+                     // for proteins, polymers, etc
+                     cell.writeString("");
+                 } 
+             }).replaceColumnName(DefaultColumns.FORMULA,"MF"));
+             
+             
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
+                 if (s instanceof ChemicalSubstance) {
+                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
+                     if(pubOnly) {
+                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
+                     Structure.Stereo ster = chemicalSubstance.getStereochemistry();
+                     if (!ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
+                         return;
+                     }
+
+                     try {
+                         Chemical chem = s.toChemical();
+                         cell.writeString(Inchi.asStdInchi(chem)
+                                          .getKey()
+                                          .replace("InChIKey=", ""));
+                     } catch (Exception e) {
+
+                     }
+                 }
+             }).replaceColumnName(DefaultColumns.STD_INCHIKEY_FORMATTED,"INCHIKEY"));
+             
+             
+             
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.SMILES, createRestrictableRecipe(DefaultColumns.SMILES, (s,pubOnly, cell) -> {
+                 if (s instanceof ChemicalSubstance) {
+                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
+                     if(pubOnly) {
+                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
+                             return;
+                         }
+                     }
+                     cell.writeString(chemicalSubstance.getStructure().smiles);
+                 }
+             }));
+          
+
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.INGREDIENT_TYPE, SingleColumnValueRecipe.create(DefaultColumns.INGREDIENT_TYPE, (s, cell) -> {
+                 cell.writeString(getIngredientType(s));
+             }));
+
+                
              DEFAULT_RECIPE_MAP.put(DefaultColumns.NAME, createRestrictableRecipe(DefaultColumns.NAME, (s, pubOnly,cell) -> {
                  if(pubOnly) {
                      Optional<Name> opName = s.getDisplayName();
@@ -151,86 +256,12 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                  }else {
                      cell.writeString(s.getName());
                  }
-             }));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
-
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.SMILES, createRestrictableRecipe(DefaultColumns.SMILES, (s,pubOnly, cell) -> {
-                 if (s instanceof ChemicalSubstance) {
-                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     if(pubOnly) {
-                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
-                     cell.writeString(chemicalSubstance.getStructure().smiles);
-                 }
-             }));
-
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
-                 if (s instanceof ChemicalSubstance) {
-                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     if(pubOnly) {
-                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
-                     cell.writeString(chemicalSubstance.getStructure().formula);
-                 } else if (s instanceof PolymerSubstance) {
-                     if(pubOnly) {
-                         if(!((PolymerSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
-                     cell.writeString("Polymer substance not supported");
-                 }
-             }));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.SUBSTANCE_TYPE, SingleColumnValueRecipe.create(DefaultColumns.SUBSTANCE_TYPE, (s, cell) -> cell.writeString(s.substanceClass.name())));
-
-             log.debug("includeInChiKeysAnyway: " + substanceExporterConfiguration.isIncludeInChiKeysAnyway());
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
-                 if (s instanceof ChemicalSubstance) {
-                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     if(pubOnly) {
-                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
-                     Structure.Stereo ster = chemicalSubstance.getStereochemistry();
-                     if (!ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
-                         return;
-                     }
-
-                     try {
-                         Chemical chem = s.toChemical();
-                         cell.writeString(Inchi.asStdInchi(chem).getKey().replace("InChIKey=", ""));
-                     } catch (Exception e) {
-
-                     }
-                 }
-             }));
-
-             // DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHI, new  ChemicalExportRecipe(Chemical.FORMAT_STDINCHI));
-
-
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.EC, new CodeSystemRecipe(DefaultColumns.EC, "ECHA (EC/EINECS)"));
+             }).replaceColumnName(DefaultColumns.NAME, "UTF8_PT"));
+                         
              
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.ITIS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.ITIS, "ITIS")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCBI, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.NCBI, "NCBI TAXONOMY")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCI_THESAURUS, new CodeSystemRecipe(DefaultColumns.NCI_THESAURUS, "NCI_THESAURUS"));
 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.MPNS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.MPNS, "MPNS")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN")));
-
-
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.INGREDIENT_TYPE, SingleColumnValueRecipe.create(DefaultColumns.INGREDIENT_TYPE, (s, cell) -> {
-                 cell.writeString(getIngredientType(s));
-             }));
-
+         
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.SUBSTANCE_TYPE, SingleColumnValueRecipe.create(DefaultColumns.SUBSTANCE_TYPE, (s, cell) -> cell.writeString(s.substanceClass.name())));
 
              //Lazy place to put new default columns
              DEFAULT_RECIPE_MAP.put(DefaultColumns.PROTEIN_SEQUENCE, createRestrictableRecipe(DefaultColumns.PROTEIN_SEQUENCE, (s,pubOnly, cell) -> {
@@ -257,7 +288,8 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              }));
 
              DEFAULT_RECIPE_MAP.put(DefaultColumns.NUCLEIC_ACID_SEQUENCE, createRestrictableRecipe(DefaultColumns.NUCLEIC_ACID_SEQUENCE, (s, pubOnly, cell) -> {
-                 if (s instanceof NucleicAcidSubstance) {
+                 //TODO: perhaps put a limit on this? 4000 chars?
+                  if (s instanceof NucleicAcidSubstance) {
                      NucleicAcidSubstance nucleicAcidSubstance = (NucleicAcidSubstance) s;
                      if(pubOnly) {
                          if(!nucleicAcidSubstance.getDefinitionElement().getAccess().isEmpty()) {
@@ -291,6 +323,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                  cell.writeString(sb.toString());
              }));
 
+             
 
          }
      }
@@ -506,7 +539,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
         @Override
         public ColumnValueRecipe<Substance> replaceColumnName(String oldName, String newName) {
             if(containsColumnName(oldName)){
-                return new CodeSystemRecipe(newName, codeSystemToFind, true);
+                return new CodeSystemRecipe(newName, codeSystemToFind, publicOnly);
             }
             return this;
         }
