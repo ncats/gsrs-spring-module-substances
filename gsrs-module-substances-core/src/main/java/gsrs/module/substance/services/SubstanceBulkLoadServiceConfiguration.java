@@ -22,6 +22,9 @@ public class SubstanceBulkLoadServiceConfiguration {
     private boolean actuallyPersist=true;
     @Value("#{new Boolean('${ix.ginas.batch.validation:true}')}")
     private boolean validate=true;
+    @Value("${ix.ginas.batch.validationStrategy:ACCEPT_APPLY_ALL_MARK_FAILED}")
+    private String batchProcessingStrategy;
+
     @Value("${ix.ginas.PersistRecordWorkerFactoryImpl:ix.core.plugins.SingleThreadedPersistRecordWorkerFactory}")
     private String persistRecordWorkerFactoryImpl;
 
@@ -37,6 +40,7 @@ public class SubstanceBulkLoadServiceConfiguration {
          }
          return Sneak.sneakyThrow(persistRecordWorkerFactoryCachedSupplier.thrown);
      }
+
 
      public RecordPersisterFactory getRecordPersisterFactory(){
         return persister;

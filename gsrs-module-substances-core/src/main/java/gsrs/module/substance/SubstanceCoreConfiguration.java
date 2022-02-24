@@ -12,6 +12,7 @@ import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -37,8 +38,9 @@ import org.springframework.context.annotation.Import;
         //used by bulk loader
         ConsoleFilterService.class,
 
-
-        SubstanceSequenceFileSupportService.class
+        SubstanceSequenceFileSupportService.class,
+        //used for validation of Substances both single and bulk load
+        GsrsProcessingStrategyFactory.class
 })
 public class SubstanceCoreConfiguration {
 
