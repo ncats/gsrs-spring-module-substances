@@ -9,6 +9,7 @@ public enum DefaultColumns implements Column {
 
     UUID,
     NAME,
+    STD_NAME,
     APPROVAL_ID,
     SMILES,
     FORMULA,
