@@ -2,13 +2,13 @@ package example.substance.validation;
 
 import gsrs.services.GroupService;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
-import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.validation.strategy.AcceptApplyAllProcessingStrategy;
 import ix.ginas.utils.validation.validators.BasicNameValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -116,22 +116,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     //copied from NameEntityService
     private GinasProcessingStrategy createAcceptApplyAllStrategy() {
-        return new GinasProcessingStrategy(groupService) {
-            @Override
-            public void processMessage(GinasProcessingMessage gpm) {
-                if (gpm.suggestedChange) {
-                    gpm.actionType = GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
-                }
-                else {
-                    if (gpm.isError()) {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.FAIL;
-                    }
-                    else {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.IGNORE;
-                    }
-                }
-            }
-        };
+        return new AcceptApplyAllProcessingStrategy(groupService);
     }
 
 }

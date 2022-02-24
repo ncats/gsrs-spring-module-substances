@@ -2,7 +2,6 @@ package example;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
@@ -24,8 +23,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import java.io.*;
 import java.util.Arrays;
 import java.util.regex.Pattern;
@@ -49,8 +46,6 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
-    private EntityManager entityManager;
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
@@ -96,25 +91,6 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 guest.setRoles(Arrays.asList(Role.Query));
 
                 userProfileRepository.saveAndFlush(guest);
-
-                //users in gsrs dump files
-                UserProfile tyler = new UserProfile();
-                tyler.user = new Principal("TYLER", null);
-                tyler.setPassword("TYLER");
-                tyler.active = false;
-                tyler.deprecated = false;
-                tyler.setRoles(Arrays.asList(Role.values()));
-
-                userProfileRepository.saveAndFlush(tyler);
-
-                UserProfile fdaSrs = new UserProfile();
-                fdaSrs.user = new Principal("FDA_SRS", null);
-                fdaSrs.setPassword("FDA_SRS");
-                fdaSrs.active = false;
-                fdaSrs.deprecated = false;
-                fdaSrs.setRoles(Arrays.asList(Role.values()));
-
-                userProfileRepository.saveAndFlush(fdaSrs);
             }
         });
 

@@ -3,13 +3,10 @@ package gsrs.module.substance.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.validator.GsrsValidatorFactory;
 import ix.core.processing.*;
 import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.Data;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -25,12 +22,13 @@ public class SubstanceBulkLoadServiceConfiguration {
     private boolean actuallyPersist=true;
     @Value("#{new Boolean('${ix.ginas.batch.validation:true}')}")
     private boolean validate=true;
+    @Value("${ix.ginas.batch.validationStrategy:ACCEPT_APPLY_ALL_MARK_FAILED}")
+    private String batchProcessingStrategy;
+
     @Value("${ix.ginas.PersistRecordWorkerFactoryImpl:ix.core.plugins.SingleThreadedPersistRecordWorkerFactory}")
     private String persistRecordWorkerFactoryImpl;
 
     private GinasSubstancePersisterFactory persister=  new GinasSubstancePersisterFactory();
-    @Autowired
-    private GsrsValidatorFactory validatorFactory;
 
     private CachedSupplier.CachedThrowingSupplier<PersistRecordWorkerFactory> persistRecordWorkerFactoryCachedSupplier = CachedSupplier.ofThrowing(()->{
         return AutowireHelper.getInstance().autowireAndProxy((PersistRecordWorkerFactory) Class.forName(persistRecordWorkerFactoryImpl).newInstance());
@@ -43,6 +41,7 @@ public class SubstanceBulkLoadServiceConfiguration {
          return Sneak.sneakyThrow(persistRecordWorkerFactoryCachedSupplier.thrown);
      }
 
+
      public RecordPersisterFactory getRecordPersisterFactory(){
         return persister;
      }
@@ -51,11 +50,13 @@ public class SubstanceBulkLoadServiceConfiguration {
      }
 
      public GinasSubstanceTransformerFactory getRecordTransformFactory(){
-         if(validate){
-             return new GinasSubstanceTransformerFactory(validatorFactory.newFactory(SubstanceEntityServiceImpl.CONTEXT));
-         }
-         //no validation make a fake one
-         return new GinasSubstanceTransformerFactory(FakeValidatorFactory.INSTANCE);
+         //TODO move this validate check to entity service ?
+         return GinasSubstanceTransformerFactory.INSTANCE;
+//         if(validate){
+//             return new GinasSubstanceTransformerFactory(validatorFactory.newFactory(SubstanceEntityServiceImpl.CONTEXT));
+//         }
+//         //no validation make a fake one
+//         return new GinasSubstanceTransformerFactory(FakeValidatorFactory.INSTANCE);
      }
 
      private static class FakeValidatorFactory extends ValidatorFactory{
