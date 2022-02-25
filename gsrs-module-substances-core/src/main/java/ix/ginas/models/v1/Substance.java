@@ -543,7 +543,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
 
     private void fixstatus(){
-        if(!"FAILED".equals(this.status) && this.isAlternativeDefinition()){
+        if(this.isAlternativeDefinition()){
             this.status=Substance.STATUS_ALTERNATIVE;
         }
     }
