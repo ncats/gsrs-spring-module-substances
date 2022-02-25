@@ -8,6 +8,32 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Slf4j
+/*
+
+@alx652 can you rewrite tagutils to have a method called List<String> getBracketTerms
+And use that instead of the one that returns optional
+And use essentially the same regex as #3?
+If there's a better regex tho, that's fine
+
+public static class BracketExtraction{
+    private String namePart;
+    private List<String> tagTerms;
+}
+       And return BracketExtraction
+        The reason is that we also need to detect these terms as part of name standardization to avoid changing the [ that are part of a tag to (
+        So the name standardizer could standardize only the namePart part, and then re-add any tagTerms
+        You can also have another version of the method that calls this base method and just returns the content of tagTerms
+
+Input	Expected 1	Expected 2
+ibuprofen [INN]	INN
+ibuprofen[INN]	<nothing>
+ibuprofen [INN][USAN]	INN	USAN
+ibuprofen[INN][USAN]	<nothing>
+1,2-dimethyl[something-or-other]	<nothing>
+ibuprofen [WHO-DD]	WHO-DD
+1,2-dimethyl[something-or-other] [INN]	INN
+
+*/
 
 public class TagUtilities{
 
