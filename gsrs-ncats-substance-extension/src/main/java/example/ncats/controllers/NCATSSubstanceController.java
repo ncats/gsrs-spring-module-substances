@@ -7,8 +7,8 @@ import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.utils.GSRSSpecialtyFileUtils;
 import gsrs.module.substance.utils.NCATSFileUtils;
-import gsrs.module.substance.utils.NCATSGSRSUtils;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
@@ -54,7 +54,7 @@ public class NCATSSubstanceController {
                                              @RequestParam Map<String, String> processingParameters) throws IOException {
         String fileName = file.getName();
         File sdFile = multipartToFile(file, fileName);
-        NCATSGSRSUtils utils = new NCATSGSRSUtils();
+        GSRSSpecialtyFileUtils utils = new GSRSSpecialtyFileUtils();
         UUID savedFileId =utils.saveSdFile(sdFile);
         String  message = String.format("Result of saving your file: %s", savedFileId.toString());
         return ResponseEntity.ok(message);

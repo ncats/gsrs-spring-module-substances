@@ -1,17 +1,16 @@
 package ix.ginas.utils;
 
-import gsrs.repository.GroupRepository;
 import gsrs.services.GroupService;
 import ix.core.models.Group;
 import ix.core.validator.GinasProcessingMessage;
-import ix.ginas.models.ValidationMessageHolder;
+import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-public abstract class GinasProcessingStrategy implements Predicate<GinasProcessingMessage>{
+public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy {
 	public static final String FAILED = "FAILED";
 	public static final String WARNING = "WARNING";
 	public static final String FAIL_REASON = "FAIL_REASON";
@@ -23,19 +22,22 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 	}
 	//TODO: add messages directly here
 	public List<GinasProcessingMessage> _localMessages = new ArrayList<GinasProcessingMessage>();
-	
+	@Override
 	public abstract void processMessage(GinasProcessingMessage gpm);
-	
+	@Override
 	public boolean test(GinasProcessingMessage gpm){
 		processMessage(gpm);
 		return gpm.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
 	}
+	@Override
 	public void addAndProcess(List<GinasProcessingMessage> source, List<GinasProcessingMessage> destination){
 		for(GinasProcessingMessage gpm: source){
 			this.processMessage(gpm);
 			destination.add(gpm);
 		}
 	}
+	@Override
+	public abstract void setIfValid(ValidationResponse validationResponse,  List<GinasProcessingMessage> messages);
 
 	public static enum HANDLING_TYPE {
 		MARK, FAIL, FORCE_IGNORE, NOTE
@@ -118,7 +120,7 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 //		return ACCEPT_APPLY_ALL().noteFailed();
 //	}
 //
-	
+
 	public GinasProcessingStrategy markFailed() {
 		this.failType = HANDLING_TYPE.MARK;
 		return this;
@@ -138,8 +140,8 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 		this.failType = HANDLING_TYPE.FORCE_IGNORE;
 		return this;
 	}
-	
-	
+
+	@Override
 	public boolean handleMessages(Substance cs, List<GinasProcessingMessage> list) {
 		boolean allow=true;
 		final String noteFailed="Imported record has some validation issues and should not be considered authoratiative at this time";
@@ -151,12 +153,14 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 //			}
 			
 			if (gpm.actionType == GinasProcessingMessage.ACTION_TYPE.FAIL || gpm.isError()) {
-				allow=false;
+
 				if (failType == HANDLING_TYPE.FAIL) {
 					throw new IllegalStateException(gpm.message);
+
 				} else if (failType == HANDLING_TYPE.MARK) {
 					cs.status = GinasProcessingStrategy.FAILED;
-					cs.addRestrictGroup(getGroupByName(Substance.GROUP_ADMIN, cache));
+					cs.addRestrictGroup(getGroupByName(Substance.GROUP_ADMIN));
+
 				} else if (failType == HANDLING_TYPE.NOTE) {
 					
 					
@@ -173,10 +177,10 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 		return allow;
 	}
 
-	public Group getGroupByName(String groupName, Map<String, Group> cache){
+	private Group getGroupByName(String groupName){
 		return groupRepository.registerIfAbsent(groupName);
 	}
-
+	@Override
 	public void addProblems(Substance cs, List<GinasProcessingMessage> list) {
 		if (warningHandle == HANDLING_TYPE.MARK) {
 			List<GinasProcessingMessage> problems = list.stream()
@@ -184,7 +188,7 @@ public abstract class GinasProcessingStrategy implements Predicate<GinasProcessi
 				.collect(Collectors.toList());
 			if(!problems.isEmpty()){
 				Map<String, Group> cache = new HashMap<>();
-				cs.setValidationMessages(problems, n-> getGroupByName(n, cache));
+				cs.setValidationMessages(problems, n-> getGroupByName(n));
 			}			
 		}
 	}

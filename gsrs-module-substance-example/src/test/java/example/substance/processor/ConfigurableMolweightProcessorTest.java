@@ -21,9 +21,8 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
     @Test
     public void testSimpleMwCalc() throws IOException {
         //use an atomic weight data file with idiosyncratic values so we can confirm that the file values were used
-        // rather than the default atomic weights
-        String atomicWeightFilePath = new ClassPathResource("atomicweightdata.csv").getFile().getAbsolutePath();
-        System.out.println("atomicWeightFilePath: " + atomicWeightFilePath);
+        // rather than the defauult atomic weights
+        String atomicWeightFilePath = new ClassPathResource("atomicweightdataodd.csv").getFile().getAbsolutePath();
 
         Map configValues = new HashMap();
         configValues.put("atomWeightFilePath", atomicWeightFilePath);
@@ -37,7 +36,7 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
         ChemicalSubstance chemical = builder.build();
         processor.prePersist(chemical);
 
-        double expectedMw = 6 * 12.011 + 6 * 1.008;
+        double expectedMw = 6 * 12.511 + 6 * 1.008;
         Assertions.assertEquals(expectedMw, chemical.getStructure().mwt, 0.001, "Molecular weight calculation must be accurate");
     }
 
@@ -66,8 +65,8 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
     @Test
     public void testSimpleMwCalcProperty() throws IOException {
         //use an atomic weight data file with idiosyncratic values so we can confirm that the file values were used
-        // rather than the default atomic weights
-        String atomicWeightFilePath = new ClassPathResource("atomicweightdata.csv").getFile().getAbsolutePath();
+        // rather than the defauult atomic weights
+        String atomicWeightFilePath = new ClassPathResource("atomicweightdataodd.csv").getFile().getAbsolutePath();
         String propertyName = "customMw";
 
         Map configValues = new HashMap();
@@ -86,15 +85,15 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
                 .filter(p -> p.getName().equals(propertyName))
                 .findFirst().get();
 
-        double expectedMw = 6 * 12.011 + 6 * 1.008;
+        double expectedMw = 6 * 12.511 + 6 * 1.008;
         Assertions.assertEquals(expectedMw, mwProp.getValue().average, 0.001, "Molecular weight calculation must be accurate");
     }
 
     @Test
     public void testComplexMwCalcProperty() throws IOException {
         //use an atomic weight data file with idiosyncratic values so we can confirm that the file values were used
-        // rather than the default atomic weights
-        String atomicWeightFilePath = new ClassPathResource("atomicweightdata.csv").getFile().getAbsolutePath();
+        // rather than the defauult atomic weights
+        String atomicWeightFilePath = new ClassPathResource("atomicweightdataodd.csv").getFile().getAbsolutePath();
         String propertyName = "OrganizationalMolecularWeight";
 
         Map configValues = new HashMap();
@@ -114,7 +113,7 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
                 .findFirst().get();
 
         //C10H6NO2.C4H12N
-        double expectedMw = (10+4) * 12.011 + (6+12) * 1.008 + 2*14.007 + 2*15.999;
+        double expectedMw = (10+4) * 12.511 + (6+12) * 1.008 + 2*14.007 + 2*15.999;
         Assertions.assertEquals(expectedMw, mwProp.getValue().average, 0.001, "Molecular weight calculation must be accurate");
     }
 }

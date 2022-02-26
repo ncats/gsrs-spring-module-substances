@@ -76,7 +76,7 @@ public class ChemicalUtilsTest {
     @Test
     public void testBreakBondsToMetals() throws IOException {
         String smiles ="[Cs][F]";
-        String smilesExpected ="[Cs+].[F-]";
+        String smilesExpected ="[F-].[Cs+]";
         Chemical cesiumFluoride=Chemical.parse(smiles);
         int atomsBefore =cesiumFluoride.getAtomCount();
         System.out.println("initial molecule total atoms: " + atomsBefore);
@@ -102,7 +102,7 @@ public class ChemicalUtilsTest {
     @Test
     public void testRemoveMetals2() throws IOException {
         String smiles ="[Na]OS(=O)O[K]";
-        String smilesExpected ="[O-]S(=O)[O-]";
+        String smilesExpected ="[O-]S([O-])=O";
         Chemical sodiumPotassiumSulfate=Chemical.parse(smiles);
         int atomsBefore =sodiumPotassiumSulfate.getAtomCount();
         System.out.println("initial molecule total atoms: " + atomsBefore);
