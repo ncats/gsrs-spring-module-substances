@@ -63,6 +63,14 @@ public class TagsTest {
         Substance oldSubstance = this.createOldSubstance();
         oldSubstance.removeTagString("VANDF");
     }
+// xxxx
+    @Test
+    void testGetBracketTerm() throws Exception {
+        assert (TagUtilities.getBracketTerms("ABC [USP]").equals(new ArrayList<>(Arrays.asList("USP"))));
+    }
+
+
+
 
     @Test
     void testExtractTagTermFromName() throws Exception {

@@ -10,57 +10,58 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
+/**
+ * <h1>Tags Validator</h1>
+ * @since   2022-02-07
+ *
+ * Keep tags in substance names consistent with explicit substance tags.
+ **
+ * The idea of substance tags appears in two ways in the GSRS.
+ *   1) in the list of names.
+ *   2) in a list of explicit Substance->Tag<Keyword> objects.
+ * A tag is included in a substance name by putting a bracketed term at the end of the name.
+ * For example:
+ *   ASPIRIN [INN]
+ * When this name is added, the GSRS will extract "INN" and index this value for faceting.
+ * The facet category called "Source Tag" works with this indexed value.
+ *
+ * In the GSRS Frontend, explicit tag values can be added manually to this list.
+ *
+ * Thus, there are two sources of truth for substance tags.
+ *
+ * This validator may be used to keep the lists consistent.
+ *
+ * This should be configured in your src/main/resources/application.conf.
+ *
+ * Without this setting, the validator will not be run on submission of a substance.
+ *
+ *     gsrs.validators.substances += {
+ *         "validatorClass" = "ix.ginas.utils.validation.validators.tags.TagsValidator",
+ *         "newObjClass" = "ix.ginas.models.v1.Substance",
+ *         parameters: {
+ *             "checkExplicitTagsExtractedFromNames": false
+ *             "checkExplicitTagsMissingFromNames": false,
+ *             "addExplicitTagsExtractedFromNamesOnCreate": false,
+ *             "addExplicitTagsExtractedFromNamesOnUpdate": false,
+ *             "removeExplicitTagsMissingFromNamesOnCreate": false,
+ *             "removeExplicitTagsMissingFromNamesOnUpdate": false
+ *         }
+ *     }
+ *
+ * Tag consistency also comes into play when substances are copied in the frontend . "Copying"
+ * takes the old JSON and puts it in a new record, with some clean up modifications.  Copying
+ * keeps tags from the old record. So if you wipe all the names it won't also wipe all the tags.
+ * But, if THIS validation rule is configured appropriately, it should deal with that case too.
+ *
+ * *** Note also that there is an idea of the locator.  This is used in conjunction with references.
+ * Currently, this is OFF in GSRS (controlled by a boolean value extractLocators). If that were on,
+ * a method in NamesValidator.java (addLocator) would add tags found in names to the tags list. We should
+ * probably remove this piggybacking in case locators is ever turned back on.
+ */
+
 @Slf4j
 @Data
 public class TagsValidator extends AbstractValidatorPlugin<Substance> {
-    /**
-     * <h1>Tags Validator</h1>
-     * @since   2022-02-07
-     *
-     * Keep tags in substance names consistent with explicit substance tags.
-     **
-     * The idea of substance tags appears in two ways in the GSRS.
-     *   1) in the list of names.
-     *   2) in a list of explicit Substance->Tag<Keyword> objects.
-     * A tag is included in a substance name by putting a bracketed term at the end of the name.
-     * For example:
-     *   ASPIRIN [INN]
-     * When this name is added, the GSRS will extract "INN" and index this value for faceting.
-     * The facet category called "Source Tag" works with this indexed value.
-     *
-     * In the GSRS Frontend, explicit tag values can be added manually to this list.
-     *
-     * Thus, there are two sources of truth for substance tags.
-     *
-     * This validator may be used to keep the lists consistent.
-     *
-     * This should be configured in your src/main/resources/application.conf.
-     *
-     * Without this setting, the validator will not be run on submission of a substance.
-     *
-     *     gsrs.validators.substances += {
-     *         "validatorClass" = "ix.ginas.utils.validation.validators.tags.TagsValidator",
-     *         "newObjClass" = "ix.ginas.models.v1.Substance",
-     *         parameters: {
-     *             "checkExplicitTagsExtractedFromNames": false
-     *             "checkExplicitTagsMissingFromNames": false,
-     *             "addExplicitTagsExtractedFromNamesOnCreate": false,
-     *             "addExplicitTagsExtractedFromNamesOnUpdate": false,
-     *             "removeExplicitTagsMissingFromNamesOnCreate": false,
-     *             "removeExplicitTagsMissingFromNamesOnUpdate": false
-     *         }
-     *     }
-     *
-     * Tag consistency also comes into play when substances are copied in the frontend . "Copying"
-     * takes the old JSON and puts it in a new record, with some clean up modifications.  Copying
-     * keeps tags from the old record. So if you wipe all the names it won't also wipe all the tags.
-     * But, if THIS validation rule is configured appropriately, it should deal with that case too.
-     *
-     * *** Note also that there is an idea of the locator.  This is used in conjunction with references.
-     * Currently, this is OFF in GSRS (controlled by a boolean value extractLocators). If that were on,
-     * a method in NamesValidator.java (addLocator) would add tags found in names to the tags list. We should
-     * probably remove this piggybacking in case locators is ever turned back on.
-     */
 
     // WARNING!!!! changing these messages may have an impact on tests.
     private static final String NAME_TAGS_WILL_BE_ADDED = "Tags WILL be added. The following tag terms were found in substance names %s but are not present in the tags list.";

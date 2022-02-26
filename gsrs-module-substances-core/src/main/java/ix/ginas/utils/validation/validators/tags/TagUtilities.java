@@ -20,9 +20,11 @@ public static class BracketExtraction{
     private List<String> tagTerms;
 }
        And return BracketExtraction
-        The reason is that we also need to detect these terms as part of name standardization to avoid changing the [ that are part of a tag to (
-        So the name standardizer could standardize only the namePart part, and then re-add any tagTerms
-        You can also have another version of the method that calls this base method and just returns the content of tagTerms
+
+The reason is that we also need to detect these terms as part of name standardization to avoid changing the [ that are part of a tag to (
+So the name standardizer could standardize only the namePart part, and then re-add any tagTerms
+
+You can also have another version of the method that calls this base method and just returns the content of tagTerms
 
 Input	Expected 1	Expected 2
 ibuprofen [INN]	INN
@@ -33,12 +35,70 @@ ibuprofen[INN][USAN]	<nothing>
 ibuprofen [WHO-DD]	WHO-DD
 1,2-dimethyl[something-or-other] [INN]	INN
 
+BracketTermIVM    |
+4. NameStandardizer  | "\\[([ \\-A-Za-z0-9]+)\\]$";
+
 */
+
+
 
 public class TagUtilities{
 
-    // Assumes there is at most one tag term per name, and it's at the end of the name.
-    public final static Pattern bracketTermRegex = Pattern.compile("\\[([^\\[\\]]*)\\]\\s*$");
+    public static class BracketExtraction{
+        private String namePart;
+        private List<String> tagTerms = new ArrayList<>();
+        public BracketExtraction(){}
+        public BracketExtraction(String namePart, List<String> tagTerms){
+            this.namePart = namePart;
+            this.tagTerms = tagTerms;
+        }
+        public void addTagTerm(String tagTerm){
+            this.tagTerms.add(tagTerm);
+        }
+    }
+
+    // OLD version, Assumes there is at most one tag term per name, and it's at the end of the name.
+    // public final static Pattern bracketTermRegex = Pattern.compile("\\[([^\\[\\]]*)\\]\\s*$");
+
+    // Assumes: there can be more than one tag.
+    // Usually these will be at the end. However, this regex will find ones not at the end.
+    // Can be problematic because chemical names can have brackets.
+    // The regex should be used in a loop to create a list of tags.
+    // The (?: group ) means find the group but don't remember it.
+    // Here we look for a [TAG] preceded by a space or a closing bracket
+    // But forget the preceding group (space or closing bracket).
+    public final static Pattern bracketTermRegex = Pattern.compile("(?:[ \\]])\\[([ \\-A-Za-z0-9]+)\\]");
+
+
+    public static BracketExtraction getBracketExtraction(String name) {
+        Objects.requireNonNull(name, "The name parameter in method getBracketTerms must not be null.");
+        BracketExtraction bracketExtraction = new BracketExtraction();
+        // ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN]
+        Matcher m = bracketTermRegex.matcher(name);
+        boolean first = false;
+        while(m.find()){
+            bracketExtraction.addTagTerm(m.group(1));
+            if(!first){
+                int start = m.start();
+                bracketExtraction.namePart = name.substring(0, start);
+                first = true;
+            }
+        }
+        return bracketExtraction;
+    }
+
+    public static List<String> getBracketTerms(String name) {
+        Objects.requireNonNull(name, "The name parameter in method getBracketTerms must not be null.");
+        List<String> list = new ArrayList<>();
+        // ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN]
+        Matcher m = bracketTermRegex.matcher(name);
+        while(m.find()){
+            list.add(m.group(1));
+        }
+        return list;
+    }
+
+
 
     public static Optional<String> getBracketTerm(String name){
         // Return empty if no match, otherwise return the bracket term
