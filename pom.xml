@@ -21,7 +21,7 @@
     </parent>
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-module-substances</artifactId>
-    <version>3.0</version>
+    <version>3.0-SNAPSHOT</version>
     <name>GSRS Substance Module</name>
     <description>Substance Module for GSRS Spring Boot</description>
 
@@ -31,8 +31,8 @@
     <properties>
         <java.version>1.8</java.version>
         <spring-cloud.version>Hoxton.SR1</spring-cloud.version>
-        <gsrs.version>3.0</gsrs.version>
-        <gsrs.substance.version>3.0</gsrs.substance.version>
+        <gsrs.version>3.0-SNAPSHOT</gsrs.version>
+        <gsrs.substance.version>3.0-SNAPSHOT</gsrs.substance.version>
         <spring-boot.version>2.4.5</spring-boot.version>
         <log4j2.version>2.17.1</log4j2.version>
     </properties>
