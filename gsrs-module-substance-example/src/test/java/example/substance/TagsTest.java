@@ -63,14 +63,6 @@ public class TagsTest {
         Substance oldSubstance = this.createOldSubstance();
         oldSubstance.removeTagString("VANDF");
     }
-// xxxx
-    @Test
-    void testGetBracketTerm() throws Exception {
-        assert (TagUtilities.getBracketTerms("ABC [USP]").equals(new ArrayList<>(Arrays.asList("USP"))));
-    }
-
-
-
 
     @Test
     void testExtractTagTermFromName() throws Exception {
@@ -213,4 +205,46 @@ public class TagsTest {
                 new HashSet<>(Arrays.asList())
         );
     }
+
+
+    // new tests
+    @Test
+    void testGetBracketTerms() throws Exception {
+        System.out.println(TagUtilities.getBracketTerms("ibuprofen [INN][USAN]").toString());
+        assert(TagUtilities.getBracketTerms("ibuprofen [INN][USAN]").equals(new ArrayList<>(Arrays.asList("INN","USAN"))));
+        assert(TagUtilities.getBracketTerms("ABC [USP]").equals(new ArrayList<>(Arrays.asList("USP"))));
+        assert(TagUtilities.getBracketTerms("ABC [USP    ]").equals(new ArrayList<>(Arrays.asList("USP    "))));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC"), new ArrayList<>(Arrays.asList()));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("XYZ [USP] ABC"), new ArrayList<>(Arrays.asList("USP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("[USP] ABC"), new ArrayList<>(Arrays.asList()));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen [INN]"), new ArrayList<>(Arrays.asList("INN")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("1,2-dimethyl[something-or-other]"), new ArrayList<>(Arrays.asList()));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen [WHO-DD]"), new ArrayList<>(Arrays.asList("WHO-DD")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("1,2-dimethyl[something-or-other] [INN]"), new ArrayList<>(Arrays.asList("INN")));
+
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen[INN][USAN]"), new ArrayList<>(Arrays.asList("USAN")));
+*/
+    }
+
+
+
+
+
+
+
+
+    // new tests
+    @Test
+    void testGetBracketExtraction() throws Exception {
+         TagUtilities.BracketExtraction be1 = TagUtilities.getBracketExtraction("ABC [USP]");
+        assert(be1.getNamePart().equals("ABC"));
+        assert(be1.getTagTerms().equals(Arrays.asList("USP")));
+        TagUtilities.BracketExtraction be2 = TagUtilities.getBracketExtraction("NAME BOY [BEEP] [GREEN BOOK]");
+        assert(be2.getNamePart().equals("NAME BOY"));
+        assert(be2.getTagTerms().equals(Arrays.asList("BEEP", "GREEN BOOK")));
+
+    }
+
+
+
 }

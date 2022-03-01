@@ -1,6 +1,7 @@
 package ix.ginas.utils.validation.validators.tags;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -44,14 +45,10 @@ BracketTermIVM    |
 
 public class TagUtilities{
 
+    @Data
     public static class BracketExtraction{
         private String namePart;
         private List<String> tagTerms = new ArrayList<>();
-        public BracketExtraction(){}
-        public BracketExtraction(String namePart, List<String> tagTerms){
-            this.namePart = namePart;
-            this.tagTerms = tagTerms;
-        }
         public void addTagTerm(String tagTerm){
             this.tagTerms.add(tagTerm);
         }
@@ -69,9 +66,8 @@ public class TagUtilities{
     // But forget the preceding group (space or closing bracket).
     public final static Pattern bracketTermRegex = Pattern.compile("(?:[ \\]])\\[([ \\-A-Za-z0-9]+)\\]");
 
-
     public static BracketExtraction getBracketExtraction(String name) {
-        Objects.requireNonNull(name, "The name parameter in method getBracketTerms must not be null.");
+        Objects.requireNonNull(name, "The name parameter in method getBracketExtraction must not be null.");
         BracketExtraction bracketExtraction = new BracketExtraction();
         // ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN]
         Matcher m = bracketTermRegex.matcher(name);
