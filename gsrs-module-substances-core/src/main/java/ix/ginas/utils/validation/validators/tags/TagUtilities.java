@@ -3,10 +3,14 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.Test;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
 
 @Slf4j
 /*
@@ -64,6 +68,7 @@ public class TagUtilities{
     // The (?: group ) means find the group but don't remember it.
     // Here we look for a [TAG] preceded by a space or a closing bracket
     // But forget the preceding group (space or closing bracket).
+
     public final static Pattern bracketTermRegex = Pattern.compile("(?:[ \\]])\\[([ \\-A-Za-z0-9]+)\\]");
 
     public static BracketExtraction getBracketExtraction(String name) {
@@ -83,6 +88,8 @@ public class TagUtilities{
         return bracketExtraction;
     }
 
+
+
     public static List<String> getBracketTerms(String name) {
         Objects.requireNonNull(name, "The name parameter in method getBracketTerms must not be null.");
         List<String> list = new ArrayList<>();
@@ -93,8 +100,6 @@ public class TagUtilities{
         }
         return list;
     }
-
-
 
     public static Optional<String> getBracketTerm(String name){
         // Return empty if no match, otherwise return the bracket term
@@ -110,6 +115,52 @@ public class TagUtilities{
     public static Optional<String> getBracketTerm(Name name){
         return getBracketTerm(name.getName());
     }
+
+    // namePart = (.+) followed by space, followed by repeating pattern of bracketed terms, followed by 0 or more spaces
+    // results in namePart in group 1 and raw string of concatenated bracketed terms in group 2
+    // allows : as a potential tag term splitter.
+    public static final Pattern  bracketTermRegex2 = Pattern.compile("(.+)[ ]+((\\[[ \\-A-Za-z0-9:]+\\])+)[ ]*$");
+
+    // used loop over and extract bracketed terms from tagsPartRaw
+    public static final Pattern bracketTermRegex3 = Pattern.compile("\\[([ \\-A-Za-z0-9:]+)\\]");
+
+    public static List<String> getBracketTermsNew(String name) {
+        List<String> list = new ArrayList<>();
+        Matcher m2 = bracketTermRegex2.matcher(name);
+        if(m2.find()) {
+            String namePart = m2.group(1);
+            String tagsPartRaw = m2.group(2);
+            Matcher m3 = bracketTermRegex3.matcher(tagsPartRaw);
+            while (m3.find()) {
+                Arrays.asList(m3.group(1).split(":")).forEach((s)->{
+                    // should I do trim? if so must be consistent.
+                    list.add(s);
+                });
+            }
+        }
+        return list;
+    }
+
+    public static BracketExtraction getBracketExtractionNew(String name) {
+        Objects.requireNonNull(name, "The name parameter in method getBracketExtractionNew must not be null.");
+        BracketExtraction bracketExtraction = new BracketExtraction();
+        Matcher m2 = bracketTermRegex2.matcher(name);
+        if(m2.find()) {
+            bracketExtraction.setNamePart(m2.group(1));
+            String tagsPartRaw = m2.group(2);
+            Matcher m3 = bracketTermRegex3.matcher(tagsPartRaw);
+            while (m3.find()) {
+                Arrays.asList(m3.group(1).split(":")).forEach((s) -> {
+                    // should I do trim? if so must be consistent.
+                    bracketExtraction.addTagTerm(s);
+                });
+            }
+        }
+        return bracketExtraction;
+    }
+
+
+
 
     public static Set<String> extractExplicitTags(Substance s){
         return s.tags
