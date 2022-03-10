@@ -32,10 +32,10 @@ public class TagUtilities{
     // namePart = (.+), that is followed by space, followed by repeating pattern of bracketed terms, followed by 0 or more spaces
     // results in namePart in group 1 and raw string of concatenated bracketed terms in group 2
     // allows : as a potential tag term splitter.
-    public static final Pattern  bracketTermRegex2 = Pattern.compile("(.+)[ ]+((\\[[ \\-A-Za-z0-9:]+\\])+)[ ]*$");
+    public static final Pattern  bracketTermRegex1 = Pattern.compile("(.+)[ ]+((\\[[ \\-A-Za-z0-9:]+\\])+)[ ]*$");
 
     // used loop over and extract bracketed terms from tagsPartRaw
-    public static final Pattern bracketTermRegex3 = Pattern.compile("\\[([ \\-A-Za-z0-9:]+)\\]");
+    public static final Pattern bracketTermRegex2 = Pattern.compile("\\[([ \\-A-Za-z0-9:]+)\\]");
 
     // Set to true to clean up name part during bracket extraction.
     // Maybe make this configurable. Possible that other tools would be used for cleanup.
@@ -44,14 +44,17 @@ public class TagUtilities{
     public static List<String> getBracketTerms(String name) {
         Objects.requireNonNull(name, "The name parameter in method getBracketTerms must not be null.");
         List<String> list = new ArrayList<>();
-        Matcher m2 = bracketTermRegex2.matcher(name);
-        if(m2.find()) {
-            String namePart = m2.group(1);
-            String tagsPartRaw = m2.group(2);
-            Matcher m3 = bracketTermRegex3.matcher(tagsPartRaw);
-            while (m3.find()) {
-                Arrays.asList(splitCombinedTagRegex.split(m3.group(1))).forEach((s)->{
-                    list.add(cleanTagTerm(s));
+        Matcher m1 = bracketTermRegex1.matcher(name);
+        if(m1.find()) {
+            String namePart = m1.group(1);
+            String tagsPartRaw = m1.group(2);
+            Matcher m2 = bracketTermRegex2.matcher(tagsPartRaw);
+            while (m2.find()) {
+                Arrays.asList(splitCombinedTagRegex.split(m2.group(1))).forEach((s)->{
+                    String s2 = cleanTagTerm(s);
+                    if (!s2.isEmpty()) {
+                        list.add(s2);
+                    }
                 });
             }
         }
@@ -76,14 +79,20 @@ public class TagUtilities{
     public static BracketExtraction getBracketExtraction(String name) {
         Objects.requireNonNull(name, "The name parameter in method getBracketExtraction must not be null.");
         BracketExtraction bracketExtraction = new BracketExtraction();
-        Matcher m2 = bracketTermRegex2.matcher(name);
-        if(m2.find()) {
-            bracketExtraction.setNamePart(cleanNamePart(m2.group(1)));
-            String tagsPartRaw = m2.group(2);
-            Matcher m3 = bracketTermRegex3.matcher(tagsPartRaw);
-            while (m3.find()) {
-                Arrays.asList(splitCombinedTagRegex.split(m3.group(1))).forEach((s)->{
-                    bracketExtraction.addTagTerm(cleanTagTerm(s));
+        // The following needs to be the same as the getBracketTerms process.
+        // It may make sense to call getBracketTerms in the m2 section, though it would
+        // be less efficient to do so.
+        Matcher m1 = bracketTermRegex1.matcher(name);
+        if(m1.find()) {
+            bracketExtraction.setNamePart(cleanNamePart(m1.group(1)));
+            String tagsPartRaw = m1.group(2);
+            Matcher m2 = bracketTermRegex2.matcher(tagsPartRaw);
+            while (m2.find()) {
+                Arrays.asList(splitCombinedTagRegex.split(m2.group(1))).forEach((s)-> {
+                    String s2 = cleanTagTerm(s);
+                    if (!s2.isEmpty()) {
+                        bracketExtraction.addTagTerm(cleanTagTerm(s2));
+                    }
                 });
             }
         }

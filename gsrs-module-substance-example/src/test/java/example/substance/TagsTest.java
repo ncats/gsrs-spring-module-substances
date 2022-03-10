@@ -196,6 +196,7 @@ public class TagsTest {
 
     @Test
     void testGetBracketTerms() {
+
         // Fixes problematic issue seen above
         Assertions.assertEquals(TagUtilities.getBracketTerms("XYZ [USP] ABC"), new ArrayList<>(Arrays.asList()));
         // Handles colon delimited tags.
@@ -213,7 +214,14 @@ public class TagsTest {
         // Make sure tag cleaning works
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP    ]"), new ArrayList<>(Arrays.asList("USP")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [    USP    ]"), new ArrayList<>(Arrays.asList("USP")));
-        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP :  UK  :  ST EP  ]"), new ArrayList<>(Arrays.asList("USP", "UK", "ST EP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP :  UK  :  ST    EP  ]"), new ArrayList<>(Arrays.asList("USP", "UK", "ST EP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP :::]"), new ArrayList<>(Arrays.asList("USP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP:]"), new ArrayList<>(Arrays.asList("USP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC []"), new ArrayList<>(Arrays.asList()));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [:]"), new ArrayList<>(Arrays.asList()));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [    ]"), new ArrayList<>(Arrays.asList()));
+
+
         // Make sure namePart cleaning works
         if (TagUtilities.cleanNamePart) {
             TagUtilities.BracketExtraction be1 = TagUtilities.getBracketExtraction("   ABC I am   Messy [USP    ]");
@@ -243,5 +251,11 @@ public class TagsTest {
         TagUtilities.BracketExtraction be2 = TagUtilities.getBracketExtraction("NAME BOY [BEEP][GREEN BOOK]");
         assert(be2.getNamePart().equals("NAME BOY"));
         assert(be2.getTagTerms().equals(Arrays.asList("BEEP", "GREEN BOOK")));
+        TagUtilities.BracketExtraction be3 = TagUtilities.getBracketExtraction("NAME BOY [     ]");
+        assert(be3.getNamePart().equals("NAME BOY"));
+        assert(be3.getTagTerms().equals(Arrays.asList()));
+        TagUtilities.BracketExtraction be4 = TagUtilities.getBracketExtraction("NAME     BOY     [USP   : : : : ]");
+        assert(be4.getNamePart().equals("NAME BOY"));
+        assert(be4.getTagTerms().equals(Arrays.asList("USP")));
     }
 }
