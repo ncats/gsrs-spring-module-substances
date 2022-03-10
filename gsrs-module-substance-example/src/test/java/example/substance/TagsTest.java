@@ -221,7 +221,6 @@ public class TagsTest {
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [:]"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [    ]"), new ArrayList<>(Arrays.asList()));
 
-
         // Make sure namePart cleaning works
         if (TagUtilities.cleanNamePart) {
             TagUtilities.BracketExtraction be1 = TagUtilities.getBracketExtraction("   ABC I am   Messy [USP    ]");
