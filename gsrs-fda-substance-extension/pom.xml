@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.0</version>
+        <version>3.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -33,22 +33,22 @@
             <scope>compile</scope>
         </dependency>
 -->
-        <!-- applications-api DEPENDENCIES FOR Application EXPORT -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-        <!-- APPLICATION DEPENDENCIES FOR EXPORT -->
+
+        <!-- applications-api APPLICATION DEPENDENCIES FOR EXPORT -->
         <dependency>
-            <groupId>gov.hhs.gsrs</groupId>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>applications-api</artifactId>
             <version>0.1.2-SNAPSHOT</version>
         </dependency>
 
-        <!-- products-api DEPENDENCIES FOR Product EXPORT -->
+        <!-- products-api PRODUCT DEPENDENCIES FOR EXPORT -->
         <dependency>
-            <groupId>gov.hhs.gsrs</groupId>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>products-api</artifactId>
             <version>0.1.2-SNAPSHOT</version>
         </dependency>
