@@ -77,8 +77,8 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
-        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
+        substance.names.add(new Name("Name 2 [CED]"));
         substance.addTagString("ABC");
         ValidationResponse<Substance> response = validator.validate(substance, null);
         Assertions.assertEquals(1, response.getValidationMessages().stream()
@@ -99,8 +99,8 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
-        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
+        substance.names.add(new Name("Name 2 [CED]"));
         substance.addTagString("ABC");
         ValidationResponse<Substance> response = validator.validate(substance, null);
         Assertions.assertEquals(1, response.getValidationMessages().stream()
@@ -119,8 +119,8 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
-        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
+        substance.names.add(new Name("Name 2 [CED]"));
         substance.addTagString("ABC");
         ValidationResponse<Substance> response = validator.validate(substance, null);
         Assertions.assertEquals(1, response.getValidationMessages().stream()
@@ -140,14 +140,14 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
-        substance.names.add(new Name("Name 2 [CED]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
+        substance.names.add(new Name("Name 2 [CED]"));
         substance.addTagString("ABC");
 
         Substance oldSubstance = new Substance();
-        oldSubstance.names.add(new Name("Name 1 [ABC]" ));
-        oldSubstance.names.add(new Name("Name 2 [CED]" ));
-        oldSubstance.names.add(new Name("Name 2 [KGF]" ));
+        oldSubstance.names.add(new Name("Name 1 [ABC]"));
+        oldSubstance.names.add(new Name("Name 2 [CED]"));
+        oldSubstance.names.add(new Name("Name 2 [KGF]"));
         oldSubstance.addTagString("ABC");
         ValidationResponse<Substance> response = validator.validate(substance, oldSubstance);
         Assertions.assertEquals(1, response.getValidationMessages().stream()
@@ -217,7 +217,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(true); // extra tags; create; test when true
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
         substance.addTagString("ABC");
         substance.addTagString("ZEF");
         ValidationResponse<Substance> response = validator.validate(substance, null);
@@ -237,19 +237,19 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false); // extra tags; update; test when false
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
         substance.addTagString("ABC");
         substance.addTagString("ZEF");
 
         Substance oldSubstance = new Substance();
-        oldSubstance.names.add(new Name("Name 1 [ABC]" ));
-        oldSubstance.names.add(new Name("Name 2 [CED]" ));
-        oldSubstance.names.add(new Name("Name 2 [KGF]" ));
+        oldSubstance.names.add(new Name("Name 1 [ABC]"));
+        oldSubstance.names.add(new Name("Name 2 [CED]"));
+        oldSubstance.names.add(new Name("Name 2 [KGF]"));
         oldSubstance.addTagString("ABC");
         ValidationResponse<Substance> response = validator.validate(substance, oldSubstance);
         Assertions.assertEquals(1, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains(testString)).count());
-        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC","ZEF")));
+        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC", "ZEF")));
     }
 
     @Test
@@ -263,7 +263,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(true); // extra tags; update; test when true
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
         substance.addTagString("ABC");
         substance.addTagString("ZEF");
 
@@ -291,7 +291,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(false);
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
         substance.addTagString("ABC");
         substance.addTagString("ZEF");
 
@@ -304,7 +304,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         // Should get 0 validation messages
         Assertions.assertEquals(0, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains(" ")).count());
-        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC","ZEF")));
+        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC", "ZEF")));
     }
 
     @Test
@@ -318,7 +318,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(false);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(true); // extra tags; update; test when true
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC]" ));
+        substance.names.add(new Name("Name 1 [ABC]"));
         substance.addTagString("ABC");
         substance.addTagString("ZEF");
 
@@ -331,7 +331,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         // Should get 0 validation messages
         Assertions.assertEquals(0, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains("")).count());
-        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC","ZEF")));
+        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC", "ZEF")));
     }
 
     @Test
@@ -345,7 +345,7 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         validator.setRemoveExplicitTagsMissingFromNamesOnCreate(true);
         validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(true);
         Substance substance = new Substance();
-        substance.names.add(new Name("Name 1 [ABC][TANGO][B-611][EDU:ALL]" ));
+        substance.names.add(new Name("Name 1 [ABC][TANGO][B-611][EDU:ALL]"));
         substance.addTagString("ABC");
         substance.addTagString("ZEF");
 
@@ -355,8 +355,6 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
 
         Assertions.assertEquals(2, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains("")).count());
-        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC","TANGO","B-611","EDU","ALL")));
+        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC", "TANGO", "B-611", "EDU", "ALL")));
     }
-
-
 }

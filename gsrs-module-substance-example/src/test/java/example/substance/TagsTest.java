@@ -8,12 +8,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -198,8 +194,6 @@ public class TagsTest {
         );
     }
 
-
-    // new tests
     @Test
     void testGetBracketTerms() {
         // Fixes problematic issue seen above
@@ -208,7 +202,6 @@ public class TagsTest {
         Assertions.assertEquals(TagUtilities.getBracketTerms("ASPIRIN1,23[asguyasgda]asgduytqwqd [INN:USAN][ABC]"), new ArrayList<>(Arrays.asList("INN", "USAN", "ABC")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN][ABC]"), new ArrayList<>(Arrays.asList("INN", "USAN", "ABC")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP]"), new ArrayList<>(Arrays.asList("USP")));
-        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP    ]"), new ArrayList<>(Arrays.asList("USP    ")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("[USP] ABC"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen [INN]"), new ArrayList<>(Arrays.asList("INN")));
@@ -217,6 +210,16 @@ public class TagsTest {
         Assertions.assertEquals(TagUtilities.getBracketTerms("1,2-dimethyl[something-or-other] [INN]"), new ArrayList<>(Arrays.asList("INN")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen[INN][USAN]"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("Hello [GREEN BOOK]"), new ArrayList<>(Arrays.asList("GREEN BOOK")));
+        // Make sure tag cleaning works
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP    ]"), new ArrayList<>(Arrays.asList("USP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [    USP    ]"), new ArrayList<>(Arrays.asList("USP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP :  UK  :  ST EP  ]"), new ArrayList<>(Arrays.asList("USP", "UK", "ST EP")));
+        // Make sure namePart cleaning works
+        if (TagUtilities.cleanNamePart) {
+            TagUtilities.BracketExtraction be1 = TagUtilities.getBracketExtraction("   ABC I am   Messy [USP    ]");
+            Assertions.assertEquals(be1.getNamePart(), "ABC I am Messy");
+            Assertions.assertEquals(be1.getTagTerms(), new ArrayList<>(Arrays.asList("USP")));
+        }
     }
 
     @Test

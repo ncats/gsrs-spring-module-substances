@@ -10,8 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
-
-
 @Slf4j
 @Data
 public class TagsValidator extends AbstractValidatorPlugin<Substance> {

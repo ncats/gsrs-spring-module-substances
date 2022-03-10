@@ -24,19 +24,10 @@ public class TagUtilities{
         }
     }
 
-    // OLD version 1, Assumes there is at most one tag term per name, and it's at the end of the name.
-    // public final static Pattern bracketTermRegex = Pattern.compile("\\[([^\\[\\]]*)\\]\\s*$");
+    public static final Pattern splitCombinedTagRegex = Pattern.compile(":");
 
-    // Assumes: there can be more than one tag.
-    // Usually these will be at the end. However, this regex will find ones not at the end.
-    // Can be problematic because chemical names can have brackets.
-    // The regex should be used in a loop to create a list of tags.
-    // The (?: group ) means find the group but don't remember it.
-    // Here we look for a [TAG] preceded by a space or a closing bracket
-    // But forget the preceding group (space or closing bracket).
-
-    // Old version 2
-    // public final static Pattern bracketTermRegex = Pattern.compile("(?:[ \\]])\\[([ \\-A-Za-z0-9]+)\\]");
+    public static final Pattern cleanTagTermRegex = Pattern.compile("\\s{2,}");
+    public static final Pattern cleanNamePartTermRegex = Pattern.compile("\\s{2,}");
 
     // namePart = (.+), that is followed by space, followed by repeating pattern of bracketed terms, followed by 0 or more spaces
     // results in namePart in group 1 and raw string of concatenated bracketed terms in group 2
@@ -45,6 +36,10 @@ public class TagUtilities{
 
     // used loop over and extract bracketed terms from tagsPartRaw
     public static final Pattern bracketTermRegex3 = Pattern.compile("\\[([ \\-A-Za-z0-9:]+)\\]");
+
+    // Set to true to clean up name part during bracket extraction.
+    // Maybe make this configurable. Possible that other tools would be used for cleanup.
+    public static boolean cleanNamePart = true;
 
     public static List<String> getBracketTerms(String name) {
         Objects.requireNonNull(name, "The name parameter in method getBracketTerms must not be null.");
@@ -55,9 +50,8 @@ public class TagUtilities{
             String tagsPartRaw = m2.group(2);
             Matcher m3 = bracketTermRegex3.matcher(tagsPartRaw);
             while (m3.find()) {
-                Arrays.asList(m3.group(1).split(":")).forEach((s)->{
-                    // should I do trim? if so must be consistent.
-                    list.add(s);
+                Arrays.asList(splitCombinedTagRegex.split(m3.group(1))).forEach((s)->{
+                    list.add(cleanTagTerm(s));
                 });
             }
         }
@@ -68,18 +62,28 @@ public class TagUtilities{
         return getBracketTerms(name.getName());
     }
 
+    public static String cleanTagTerm(String tag) {
+        return cleanTagTermRegex.matcher(tag).replaceAll(" ").trim();
+    }
+
+    public static String cleanNamePart(String namePart) {
+        if (cleanNamePart) {
+            return cleanNamePartTermRegex.matcher(namePart).replaceAll(" ").trim();
+        }
+        return namePart;
+    }
+
     public static BracketExtraction getBracketExtraction(String name) {
         Objects.requireNonNull(name, "The name parameter in method getBracketExtraction must not be null.");
         BracketExtraction bracketExtraction = new BracketExtraction();
         Matcher m2 = bracketTermRegex2.matcher(name);
         if(m2.find()) {
-            bracketExtraction.setNamePart(m2.group(1));
+            bracketExtraction.setNamePart(cleanNamePart(m2.group(1)));
             String tagsPartRaw = m2.group(2);
             Matcher m3 = bracketTermRegex3.matcher(tagsPartRaw);
             while (m3.find()) {
-                Arrays.asList(m3.group(1).split(":")).forEach((s) -> {
-                    // should I do trim? if so must be consistent.
-                    bracketExtraction.addTagTerm(s);
+                Arrays.asList(splitCombinedTagRegex.split(m3.group(1))).forEach((s)->{
+                    bracketExtraction.addTagTerm(cleanTagTerm(s));
                 });
             }
         }
@@ -113,6 +117,20 @@ public class TagUtilities{
         return sorted;
     }
 }
+
+// OLD version 1, Assumes there is at most one tag term per name, and it's at the end of the name.
+// public final static Pattern bracketTermRegex = Pattern.compile("\\[([^\\[\\]]*)\\]\\s*$");
+// Assumes: there can be more than one tag.
+// Usually these will be at the end. However, this regex will find ones not at the end.
+// Can be problematic because chemical names can have brackets.
+// The regex should be used in a loop to create a list of tags.
+// The (?: group ) means find the group but don't remember it.
+// Here we look for a [TAG] preceded by a space or a closing bracket
+// But forget the preceding group (space or closing bracket).
+
+// Old version 2
+// public final static Pattern bracketTermRegex = Pattern.compile("(?:[ \\]])\\[([ \\-A-Za-z0-9]+)\\]");
+
 
 /*
 The reason is that we also need to detect these terms as part of name standardization to avoid changing the [ that are part of a tag to (
