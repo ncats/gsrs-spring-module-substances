@@ -26,6 +26,7 @@ import gsrs.module.substance.repository.*;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.module.substance.utils.NCATSFileUtils;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
@@ -71,6 +72,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
@@ -78,9 +80,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
@@ -1545,6 +1549,31 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return newDisplay;
     }
 
+    @PostGsrsRestApiMapping(path="/import")
+    public ResponseEntity<Object> fieldsForSDF(@NotNull @RequestBody MultipartFile file,
+                                               @RequestParam Map<String, String> processingParameters) throws IOException {
+        log.trace("starting in fieldsForSDF");
+        String fileName = file.getName();
+        log.debug("using fileName: " + fileName);
+        File tempSdFile= multipartToFile( file, fileName);
+        Set<String> fields = NCATSFileUtils.getSdFileFields(tempSdFile.getPath());
+        log.trace("total fields: " + fields.size());
+        return ResponseEntity.ok(fields);
+    }
+
+    @GetGsrsRestApiMapping("/import")
+    public ResponseEntity<String> fieldsForSDF() throws IOException {
+        log.trace("starting in fieldsForSDF (get)");
+        String message ="please use the POST method";
+        return ResponseEntity.ok(message);
+    }
+
+
+    public static File multipartToFile(MultipartFile multipart, String fileName) throws IllegalStateException, IOException {
+        File convFile = new File(System.getProperty("java.io.tmpdir")+"/"+fileName);
+        multipart.transferTo(convFile);
+        return convFile;
+    }
 
 
     }
