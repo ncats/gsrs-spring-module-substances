@@ -1,20 +1,24 @@
 package example.ncats.controllers;
 
-import gsrs.EnableGsrsApi;
-import gsrs.EnableGsrsLegacyCache;
-import gsrs.EnableGsrsLegacySequenceSearch;
+import gsrs.*;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.repository.StructureRepository;
+import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.utils.GSRSSpecialtyFileUtils;
 import gsrs.module.substance.utils.NCATSFileUtils;
+import gsrs.service.PayloadService;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,13 +33,27 @@ import java.util.UUID;
 
 @Slf4j
 @SpringBootApplication
-@EnableGsrsApi(indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CONF
-)
+@EnableGsrsApi(indexValueMakerDetector = EnableGsrsApi.IndexValueMakerDetector.CONF)
 @EnableGsrsLegacyCache
 @EnableGsrsLegacySequenceSearch
 @ExposesResourceFor(Substance.class)
+@EnableGsrsLegacyStructureSearch
+@EnableGsrsLegacyPayload
+@DependsOn("SubstanceSequenceSearchService")
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT)
 public class NCATSSubstanceController {
+
+    @Autowired
+    private SubstanceSequenceSearchService substanceSequenceSearchService;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
+
+    @Autowired
+    private StructureRepository structureRepository;
+
+    @Autowired
+    private PayloadService payloadService;
 
     @PostGsrsRestApiMapping(path="/getFieldsForSDFile")
     public ResponseEntity<Object> fieldsForSDF(@NotNull @RequestBody MultipartFile file,
