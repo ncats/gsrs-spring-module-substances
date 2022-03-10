@@ -334,4 +334,29 @@ public class TagsValidatorTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC","ZEF")));
     }
 
+    @Test
+    public void testTagsValidator14() {
+        // update, testing more the one bracket term in name.
+        TagsValidator validator = new TagsValidator();
+        validator.setCheckExplicitTagsExtractedFromNames(true);
+        validator.setCheckExplicitTagsMissingFromNames(true);
+        validator.setAddExplicitTagsExtractedFromNamesOnCreate(true);
+        validator.setAddExplicitTagsExtractedFromNamesOnUpdate(true);
+        validator.setRemoveExplicitTagsMissingFromNamesOnCreate(true);
+        validator.setRemoveExplicitTagsMissingFromNamesOnUpdate(true);
+        Substance substance = new Substance();
+        substance.names.add(new Name("Name 1 [ABC][TANGO][B-611][EDU:ALL]" ));
+        substance.addTagString("ABC");
+        substance.addTagString("ZEF");
+
+        Substance oldSubstance = new Substance();
+        oldSubstance.names.add(new Name("Name 1"));
+        ValidationResponse<Substance> response = validator.validate(substance, oldSubstance);
+
+        Assertions.assertEquals(2, response.getValidationMessages().stream()
+                .filter(m -> m.getMessage().contains("")).count());
+        Assertions.assertEquals(TagUtilities.extractExplicitTags(substance), new HashSet<>(Arrays.asList("ABC","TANGO","B-611","EDU","ALL")));
+    }
+
+
 }

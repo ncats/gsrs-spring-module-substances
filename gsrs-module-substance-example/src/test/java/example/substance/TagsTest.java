@@ -13,6 +13,7 @@ import java.util.regex.Pattern;
 
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -65,20 +66,9 @@ public class TagsTest {
         Substance oldSubstance = this.createOldSubstance();
         oldSubstance.removeTagString("VANDF");
     }
-/*
-    @Test
-    void testExtractTagTermFromName() throws Exception {
-        assert (TagUtilities.getBracketTerm("ABC [USP]").equals(Optional.of("USP")));
-        assert (TagUtilities.getBracketTerm("ABC [USP]    ").equals(Optional.of("USP")));
-        assert (TagUtilities.getBracketTerm("ABC [USP    ]").equals(Optional.of("USP    ")));
-        Assertions.assertEquals(TagUtilities.getBracketTerm("ABC"),Optional.empty());
-        Assertions.assertEquals(TagUtilities.getBracketTerm("ABC USP]"),Optional.empty());
-        Assertions.assertEquals(TagUtilities.getBracketTerm("[USP] ABC"),Optional.empty());
-    }
-*/
 
     @Test
-    void extractDistinctTagTermsFromNames() throws Exception {
+    void testExtractBracketNameTags() throws Exception {
         Substance s = new Substance();
         s.names = new ArrayList<>();
         s.tags.add(new Keyword("USP"));
@@ -89,11 +79,10 @@ public class TagsTest {
         s.names.add(new Name("PED [INN]"));
         s.names.add(new Name("QAK [INN]"));
         s.names.add(new Name("VAD [VANDF]"));
+        s.names.add(new Name("RAGDOLL [NOT][FOOT]"));
+        s.names.add(new Name("SPEAK [ZEEL][SPELT]"));
         Set<String> bracketNameTags = TagUtilities.extractBracketNameTags(s);
-        assert(bracketNameTags.equals(new HashSet<>(Arrays.asList("USP","INN","VANDF"))));
-        // Should be excluded from set
-        s.names.add(new Name(null));
-        assert(bracketNameTags.equals(new HashSet<>(Arrays.asList("USP","INN","VANDF"))));
+        assert(bracketNameTags.equals(new HashSet<>(Arrays.asList("USP","INN","VANDF", "ZEEL", "SPELT", "NOT", "FOOT"))));
     }
 
     @Test
@@ -124,7 +113,7 @@ public class TagsTest {
         substance.addTagString("USP");
         boolean npeThrown = false;
         try {
-            Optional<String> s = TagUtilities.getBracketTerm((String) null);
+            List<String> s = TagUtilities.getBracketTerms((String) null);
         }catch (NullPointerException npe){
             npeThrown = true;
         }
@@ -211,73 +200,45 @@ public class TagsTest {
 
 
     // new tests
-
     @Test
-    void testGetBracketTerms() throws Exception {
-        // This whole test uses the #3 regex discussed in slack
-
-        // Passes but problematic
-        assert(TagUtilities.getBracketTerms("ibuprofen [INN][USAN]").equals(new ArrayList<>(Arrays.asList("INN"))));
-
-        // Passes but problematic
-        Assertions.assertEquals(TagUtilities.getBracketTerms("XYZ [USP] ABC"), new ArrayList<>(Arrays.asList("USP")));
-
-        assert(TagUtilities.getBracketTerms("ABC [USP]").equals(new ArrayList<>(Arrays.asList("USP"))));
-        assert(TagUtilities.getBracketTerms("ABC [USP    ]").equals(new ArrayList<>(Arrays.asList("USP    "))));
+    void testGetBracketTerms() {
+        // Fixes problematic issue seen above
+        Assertions.assertEquals(TagUtilities.getBracketTerms("XYZ [USP] ABC"), new ArrayList<>(Arrays.asList()));
+        // Handles colon delimited tags.
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ASPIRIN1,23[asguyasgda]asgduytqwqd [INN:USAN][ABC]"), new ArrayList<>(Arrays.asList("INN", "USAN", "ABC")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN][ABC]"), new ArrayList<>(Arrays.asList("INN", "USAN", "ABC")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP]"), new ArrayList<>(Arrays.asList("USP")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP    ]"), new ArrayList<>(Arrays.asList("USP    ")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("[USP] ABC"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen [INN]"), new ArrayList<>(Arrays.asList("INN")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("1,2-dimethyl[something-or-other]"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen [WHO-DD]"), new ArrayList<>(Arrays.asList("WHO-DD")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("1,2-dimethyl[something-or-other] [INN]"), new ArrayList<>(Arrays.asList("INN")));
-        Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen[INN][USAN]"), new ArrayList<>(Arrays.asList("USAN")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen[INN][USAN]"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("Hello [GREEN BOOK]"), new ArrayList<>(Arrays.asList("GREEN BOOK")));
+    }
+
+    @Test
+    void testGetBracketTermsWhenNameStringNull(){
+        List<String> list;
+        boolean npeThrown = false;
+        try {
+            list = TagUtilities.getBracketTerms((String) null);
+        } catch(NullPointerException npe) {
+            npeThrown = true;
+        }
+        assertTrue(true);
     }
 
     @Test
     void testGetBracketExtraction() throws Exception {
-        // This whole test uses the #3 regex discussed in slack
+        // This uses the 2-step regex
         TagUtilities.BracketExtraction be1 = TagUtilities.getBracketExtraction("ABC [USP]");
         assert(be1.getNamePart().equals("ABC"));
         assert(be1.getTagTerms().equals(Arrays.asList("USP")));
-        TagUtilities.BracketExtraction be2 = TagUtilities.getBracketExtraction("NAME BOY [BEEP] [GREEN BOOK]");
+        TagUtilities.BracketExtraction be2 = TagUtilities.getBracketExtraction("NAME BOY [BEEP][GREEN BOOK]");
         assert(be2.getNamePart().equals("NAME BOY"));
         assert(be2.getTagTerms().equals(Arrays.asList("BEEP", "GREEN BOOK")));
     }
-
-    @Test
-    void testGetBracketTermsNew() {
-        // This whole test uses the 2-step regex
-
-        // Fixes problematic issue seen above
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("XYZ [USP] ABC"), new ArrayList<>(Arrays.asList()));
-
-        // Handles colon delimited tags.
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN][ABC]"), new ArrayList<>(Arrays.asList("INN", "USAN", "ABC")));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ASPIRIN1,23[asguyasgda]asgduytqwqd [INN:USAN][ABC]"), new ArrayList<>(Arrays.asList("INN", "USAN", "ABC")));
-
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ABC [USP]"), new ArrayList<>(Arrays.asList("USP")));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ABC [USP    ]"), new ArrayList<>(Arrays.asList("USP    ")));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ABC"), new ArrayList<>(Arrays.asList()));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("[USP] ABC"), new ArrayList<>(Arrays.asList()));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ibuprofen [INN]"), new ArrayList<>(Arrays.asList("INN")));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("1,2-dimethyl[something-or-other]"), new ArrayList<>(Arrays.asList()));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ibuprofen [WHO-DD]"), new ArrayList<>(Arrays.asList("WHO-DD")));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("1,2-dimethyl[something-or-other] [INN]"), new ArrayList<>(Arrays.asList("INN")));
-        Assertions.assertEquals(TagUtilities.getBracketTermsNew("ibuprofen[INN][USAN]"), new ArrayList<>(Arrays.asList()));
-        Assertions.assertEquals(TagUtilities.getBracketTerms("Hello [GREEN BOOK]"), new ArrayList<>(Arrays.asList("GREEN BOOK")));
-    }
-
-    @Test
-    void testGetBracketExtractionNew() throws Exception {
-        // This uses the 2-step regex
-        TagUtilities.BracketExtraction be1 = TagUtilities.getBracketExtractionNew("ABC [USP]");
-        assert(be1.getNamePart().equals("ABC"));
-        assert(be1.getTagTerms().equals(Arrays.asList("USP")));
-        TagUtilities.BracketExtraction be2 = TagUtilities.getBracketExtractionNew("NAME BOY [BEEP][GREEN BOOK]");
-        assert(be2.getNamePart().equals("NAME BOY"));
-        assert(be2.getTagTerms().equals(Arrays.asList("BEEP", "GREEN BOOK")));
-    }
-
-
 }
