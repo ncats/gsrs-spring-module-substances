@@ -24,7 +24,13 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
      *   2) in a list of explicit Substance->Tag<Keyword> objects.
      * A tag is included in a substance name by putting a bracketed term at the end of the name.
      * For example:
-     *   ASPIRIN [INN]
+     *   SODIUM GLUCONATE [INN]  -- set of tag(s) must occur at end. The set must be preceded by space.
+     *   ASPIRIN [INN][USP][EPA]  -- multiple tags are allowed
+     *   ASPIRIN [INN:USP:EPA]  -- multiple tags in chemid's notation
+     *   ASPIRIN [INN:USP:EPA][OK]  -- also acceptable
+     *   ComplicatedName[canhavebracketinit] [INN:USP:EPA]
+     *   ComplicatedName[canhavebracketsingle [INN:USP:EPA]
+     *
      * When this name is added, the GSRS will extract "INN" and index this value for faceting.
      * The facet category called "Source Tag" works with this indexed value.
      *
