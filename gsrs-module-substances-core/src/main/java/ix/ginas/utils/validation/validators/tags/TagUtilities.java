@@ -39,7 +39,7 @@ public class TagUtilities{
 
     // Set to true to clean up name part during bracket extraction.
     // Maybe make this configurable? Did this so it could be turned off in the case that other procedures are used to clean up the name part.
-    public static boolean cleanNamePart = true;
+    public static final boolean CLEAN_NAME_PART = true;
 
     public static List<String> getBracketTerms(String name) {
         Objects.requireNonNull(name, "The name parameter in method getBracketTerms must not be null.");
@@ -70,7 +70,7 @@ public class TagUtilities{
     }
 
     public static String cleanNamePart(String namePart) {
-        if (cleanNamePart) {
+        if (CLEAN_NAME_PART) {
             return cleanNamePartTermRegex.matcher(namePart).replaceAll(" ").trim();
         }
         return namePart;
