@@ -25,20 +25,20 @@ public class TagUtilities{
     }
 
     public static final Pattern splitCombinedTagRegex = Pattern.compile(":");
-
     public static final Pattern cleanTagTermRegex = Pattern.compile("\\s{2,}");
     public static final Pattern cleanNamePartTermRegex = Pattern.compile("\\s{2,}");
 
-    // namePart = (.+), that is followed by space, followed by repeating pattern of bracketed terms, followed by 0 or more spaces
-    // results in namePart in group 1 and raw string of concatenated bracketed terms in group 2
-    // allows : as a potential tag term splitter.
-    public static final Pattern  bracketTermRegex1 = Pattern.compile("(.+)[ ]+((\\[[ \\-A-Za-z0-9:]+\\])+)[ ]*$");
+    // Non-greedy namePart = (.+?), followed by spaces, followed by repeating pattern of bracketed terms, followed by 0 or more spaces
+    // Results in namePart in group 1 and raw string of concatenated bracketed terms in group 2
+    // Until I made it non-greedy, matching "Hello [GREEN BOOK]    [BASKET  ]" included the first bracketed term in namePart
+    // Allows : as a potential tag term splitter per Chemid's format.
+    public static final Pattern  bracketTermRegex1 = Pattern.compile("(.+?)[ ]+((\\[[ \\-A-Za-z0-9:]+\\][ ]*)+)$");
 
-    // used loop over and extract bracketed terms from tagsPartRaw
+    // Used to loop over, and extract bracketed terms from tagsPartRaw
     public static final Pattern bracketTermRegex2 = Pattern.compile("\\[([ \\-A-Za-z0-9:]+)\\]");
 
     // Set to true to clean up name part during bracket extraction.
-    // Maybe make this configurable. Possible that other tools would be used for cleanup.
+    // Maybe make this configurable? Did this so it could be turned off in the case that other procedures are used to clean up the name part.
     public static boolean cleanNamePart = true;
 
     public static List<String> getBracketTerms(String name) {

@@ -193,6 +193,13 @@ public class TagsTest {
                 new HashSet<>(Arrays.asList())
         );
     }
+    @Test
+    void testGetBracketTermsTemp() {
+        Assertions.assertEquals(TagUtilities.getBracketTerms("Hello [GREEN BOOK]    [BASKET  ]"), new ArrayList<>(Arrays.asList("GREEN BOOK", "BASKET")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("Halo Baby     [GREEN BOOK]    [BASKET  ]"), new ArrayList<>(Arrays.asList("GREEN BOOK", "BASKET")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("Halo [Baby     [GREEN BOOK]    [BASKET  ]"), new ArrayList<>(Arrays.asList("GREEN BOOK", "BASKET")));
+        Assertions.assertEquals(TagUtilities.getBracketTerms("Halo[Baby]     [GREEN BOOK]    [BASKET  ]"), new ArrayList<>(Arrays.asList("GREEN BOOK", "BASKET")));
+    }
 
     @Test
     void testGetBracketTerms() {
@@ -211,6 +218,7 @@ public class TagsTest {
         Assertions.assertEquals(TagUtilities.getBracketTerms("1,2-dimethyl[something-or-other] [INN]"), new ArrayList<>(Arrays.asList("INN")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ibuprofen[INN][USAN]"), new ArrayList<>(Arrays.asList()));
         Assertions.assertEquals(TagUtilities.getBracketTerms("Hello [GREEN BOOK]"), new ArrayList<>(Arrays.asList("GREEN BOOK")));
+
         // Make sure tag cleaning works
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [USP    ]"), new ArrayList<>(Arrays.asList("USP")));
         Assertions.assertEquals(TagUtilities.getBracketTerms("ABC [    USP    ]"), new ArrayList<>(Arrays.asList("USP")));
@@ -257,4 +265,5 @@ public class TagsTest {
         assert(be4.getNamePart().equals("NAME BOY"));
         assert(be4.getTagTerms().equals(Arrays.asList("USP")));
     }
+
 }
