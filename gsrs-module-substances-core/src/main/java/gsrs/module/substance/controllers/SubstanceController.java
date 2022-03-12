@@ -1547,7 +1547,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Override
     public List<ImportAdapterFactory<Substance>> getImportAdapters(){
-        ImportAdapterFactory factory = new ImportAdapterFactory() {
+        ImportAdapterFactory<Substance> factory = new ImportAdapterFactory() {
             @Override
             public String getAdapterName() {
                 return "simple adapter factory";
@@ -1555,7 +1555,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             @Override
             public List<String> getSupportedFileExtensions() {
-                return null;
+                return Arrays.asList(new String[]{"sdf"});
             }
 
             @Override
@@ -1568,7 +1568,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 return null;
             }
         };
-        return new ArrayList<>();
+        List<ImportAdapterFactory<Substance>> factories = new ArrayList<>();
+        factories.add(factory);
+        return factories;
     }
 /*
     @PostGsrsRestApiMapping(path="/import")
