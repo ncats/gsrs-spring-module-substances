@@ -2,24 +2,12 @@ package gsrs.module.substance.indexers;
 
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
-import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
-import java.util.List;
+import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import ix.core.search.text.IndexValueMaker;
-import ix.core.search.text.IndexableValue;
-import ix.ginas.models.v1.Substance;
-
-import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class BracketTermIndexValueMaker implements IndexValueMaker<Substance> {
+    private final String TAG_FACET_NAME = "GInAS Tag";
 
     @Override
     public Class<Substance> getIndexedEntityClass() {
@@ -28,7 +16,12 @@ public class BracketTermIndexValueMaker implements IndexValueMaker<Substance> {
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
-        
+        if (substance.names!= null) {
+            for (String tagTerm : TagUtilities.extractBracketNameTags(substance)) {
+                consumer.accept(IndexableValue.simpleFacetStringValue(TAG_FACET_NAME, tagTerm));
+            }
+        }
+        /*
         Pattern p = Pattern.compile("(?:[ \\]])\\[([ \\-A-Za-z0-9]+)\\]");
         if (substance.names != null) {
             substance.names.stream()
@@ -42,5 +35,7 @@ public class BracketTermIndexValueMaker implements IndexValueMaker<Substance> {
                         }
                     });
         }
+
+         */
     }
 }
