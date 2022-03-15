@@ -25,7 +25,7 @@ public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityContr
     	  .map(sd->{
                //TODO: perhaps a builder instead?
                Substance s = new ChemicalSubstance();
-               for(MappingActionFactory<Substance,SDRecordContext> act: actions){
+               for(MappingActionFactory<Substance,SDRecordContext> action: actions){
                     s=action.act(s, sd);  
                }
               return s;
