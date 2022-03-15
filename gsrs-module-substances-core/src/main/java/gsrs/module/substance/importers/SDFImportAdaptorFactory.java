@@ -51,8 +51,10 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             ObjectNode actionNode= JsonNodeFactory.instance.objectNode();
             if(f.toUpperCase(Locale.ROOT).endsWith("NAME")) {
                 actionNode.put(ACTION_NAME, "common_name");
-                actionNode.set(ACTION_PARAMETERS, createDefaultReferenceReferenceNode());
-                result.add(actionNode);
+                ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
+                parameters.add(String.format("{{%s}}", f));
+                parameters.add(createDefaultReferenceReferenceNode());
+                actionNode.set(ACTION_PARAMETERS, parameters);
             } else {
                 actionNode.put(ACTION_NAME, "code_import");
                 ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
