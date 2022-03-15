@@ -5,6 +5,7 @@ import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
+import jdk.internal.jline.internal.Log;
 import lombok.SneakyThrows;
 
 import java.io.InputStream;
@@ -32,7 +33,11 @@ public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityContr
                //TODO: perhaps a builder instead?
                Substance s = new ChemicalSubstance();
                for(SDFImportAdaptorFactory.MappingAction<Substance, SDFImportAdaptorFactory.SDRecordContext> action: actions){
-                    //s=action.act(s, sd);
+                   try {
+                       s=action.act(s, sd);
+                   } catch (Exception e) {
+                       Log.error(e);
+                  }
                }
               return s;
           });

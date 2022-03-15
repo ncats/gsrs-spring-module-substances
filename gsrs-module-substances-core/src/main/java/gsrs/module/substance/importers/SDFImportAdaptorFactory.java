@@ -282,10 +282,8 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                 actionNode.set(ACTION_PARAMETERS, parameters);
             } else {
                 actionNode.put(ACTION_NAME, "code_import");
-                ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
-                parameters.add(String.format("{{%s}}", f));
-                parameters.add(f);
-                actionNode.set(ACTION_PARAMETERS, parameters);
+                ObjectNode mapNode= createCodeMap(f, "PRIMARY");
+                actionNode.set(ACTION_PARAMETERS, mapNode);
             }
             result.add(actionNode);
         });
@@ -328,6 +326,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
         mapNode.put("codeSystem", codeSystem);
         mapNode.put("code", String.format("{{%s}}", codeSystem));
+        mapNode.put("codeType", codeType);
         return mapNode;
     }
 }
