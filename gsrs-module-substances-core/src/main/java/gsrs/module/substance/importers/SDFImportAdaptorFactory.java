@@ -126,9 +126,9 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     
     
     public static class NameExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
-        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
+        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> abstractParams){
                 return (sub, sdRec)->{
-                          Map<String,Object> params =  resolveParametersMap(params);
+                          Map<String,Object> params =  resolveParametersMap(abstractParams);
                           Name n = new Name();
                           n.setName(params.get("name"));
                           n.setReferences(params.getOrDefault("referenceUUIDs", Arrays.asList()));
@@ -143,9 +143,9 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
     public static class CodeExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
-        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
+        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> abstractParams){
                 return (sub, sdRec)->{
-                          Map<String,Object> params =  resolveParametersMap(params);
+                          Map<String,Object> params =  resolveParametersMap(abstractParams);
                           Code c = new Code();
                           c.setCode(params.get("code")); 
                           c.setCodeSystem(params.get("codeSystem"));
@@ -161,9 +161,9 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
     public static class ReferenceExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
-        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
+        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> abstractParams){
                 return (sub, sdRec)->{
-                          Map<String,Object> params = resolveParametersMap(params);
+                          Map<String,Object> params = resolveParametersMap(abstractParams);
                           Reference r = new Reference();
                           r.setCitation(params.get("citation")); 
                           r.setDocType(params.get("docType")); 
@@ -179,9 +179,9 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
     public static class StructureExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
-        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
+        public MappingAction<Substance,SDRecordContext> create(Map<String, Object> abstractParams){
                 return (sub, sdRec)->{
-                         Map<String,Object> params = resolveParametersMap(params);
+                          Map<String,Object> params = resolveParametersMap(abstractParams);
                           Structure s = new GinasChemicalStructure();
                           s.setMolfile(params.get("molfile")); 
                           s.setReferenceID(params.get("referenceID")); 
@@ -205,6 +205,20 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
     
+
+    public static List<MappingAction<Substance,SDRecordContext>> getMappingActions(JsonNode adapterSettings){
+	List<MappingActionFactory<Substance,SDRecordContext>> actions = new ArrayList<>();
+	adapterSettings.get("actions").forEach(js->{
+		String actionName = js.get("actionName").asText();
+		JsonNode actionParameters = js.get("actionParameters");
+		ObjectMapper mapper = new ObjectMapper();
+		Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>(){});
+		MappingActionFactory<Substance,SDRecordContext> action= registry.get(actionName).create(params);
+		actions.add(action);
+	});
+	return actions;
+    }
+
     //** TYLER ADDING SPECIAL END
 
     @Override
@@ -219,7 +233,8 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
 
     @Override
     public AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
-        AbstractImportSupportingGsrsEntityController.ImportAdapter sDFImportAdapter = new SDFImportAdapter();
+	List<MappingActionFactory<Substance,SDRecordContext>> actions = getMappingActions(adapterSettings);
+	AbstractImportSupportingGsrsEntityController.ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }
 
