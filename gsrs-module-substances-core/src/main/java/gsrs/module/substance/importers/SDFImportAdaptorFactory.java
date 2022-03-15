@@ -128,7 +128,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     public static class NameExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
         public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
                 return (sub, sdRec)->{
-                          List<String> inputs = resolveParametersMap(params);
+                          Map<String,Object> params =  resolveParametersMap(params);
                           Name n = new Name();
                           n.setName(params.get("name"));
                           n.setReferences(params.getOrDefault("referenceUUIDs", Arrays.asList()));
@@ -145,7 +145,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     public static class CodeExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
         public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
                 return (sub, sdRec)->{
-                          List<String> inputs = resolveParametersMap(params);
+                          Map<String,Object> params =  resolveParametersMap(params);
                           Code c = new Code();
                           c.setCode(params.get("code")); 
                           c.setCodeSystem(params.get("codeSystem"));
@@ -163,7 +163,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     public static class ReferenceExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
         public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
                 return (sub, sdRec)->{
-                          List<String> inputs = resolveParametersMap(params);
+                          Map<String,Object> params = resolveParametersMap(params);
                           Reference r = new Reference();
                           r.setCitation(params.get("citation")); 
                           r.setDocType(params.get("docType")); 
@@ -181,7 +181,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     public static class StructureExtractorActionFactory implements MappingActionFactory<Substance,SDRecordContext>{
         public MappingAction<Substance,SDRecordContext> create(Map<String, Object> params){
                 return (sub, sdRec)->{
-                          List<String> inputs = resolveParametersMap(params);
+                         Map<String,Object> params = resolveParametersMap(params);
                           Structure s = new GinasChemicalStructure();
                           s.setMolfile(params.get("molfile")); 
                           s.setReferenceID(params.get("referenceID")); 
