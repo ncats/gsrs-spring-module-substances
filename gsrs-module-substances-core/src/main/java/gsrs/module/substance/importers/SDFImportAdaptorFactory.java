@@ -280,6 +280,40 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             };
         }
     }
+	
+    public static class PropertyExtractorActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
+        public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
+            return (sub, sdRec) -> {
+                Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
+		Property p = new Property();
+		p.name = (String) params.get("name");
+                doBasicsImports(p,params);
+		Amount amt=new Amount();
+		p.setValue(amt);
+		Optional.ofNullable(params.get("valueAverage")).ifPresent(aa->{
+                    amt.average = (Double.parse(aa));
+                });
+		Optional.ofNullable(params.get("valueLow")).ifPresent(aa->{
+                    amt.low = (Double.parse(aa));
+                });
+		Optional.ofNullable(params.get("valueHigh")).ifPresent(aa->{
+                    amt.high = (Double.parse(aa));
+                });
+		Optional.ofNullable(params.get("valueNonNumeric")).ifPresent(aa->{
+                    amt.nonNumericValue = aa;
+                });
+		Optional.ofNullable(params.get("valueUnits")).ifPresent(aa->{
+                    amt.units = aa;
+                });
+		Optional.ofNullable(params.get("defining")).ifPresent(aa->{
+                    amt.defining = Boolean.parseBoolean(params.getOrDefault("defining", "false").toString());
+                });		    
+                //TODO: more params
+                sub.notes.add(n);
+                return sub;
+            };
+        }
+    }
 
     private static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
 
@@ -288,6 +322,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         registry.put("code_import", new CodeExtractorActionFactory());
         registry.put("structure_and_moieties", new StructureExtractorActionFactory());
 	registry.put("note_import", new NotesExtractorActionFactory());
+	registry.put("property_import", new PropertyExtractorActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
 
