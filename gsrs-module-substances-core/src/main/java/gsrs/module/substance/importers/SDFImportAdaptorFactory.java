@@ -29,6 +29,8 @@ import gov.nih.ncats.molwitch.Chemical;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.models.CommonDataElementOfCollection;
+import ix.ginas.models.GinasAccessReferenceControlled;
+import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.GinasChemicalStructure;
