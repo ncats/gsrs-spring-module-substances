@@ -138,8 +138,8 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              DEFAULT_RECIPE_MAP.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
              
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_NAME, createRestrictableRecipe(DefaultColumns.STD_NAME, (s, pubOnly,cell) -> {
-                     Optional<Name> opName = s.getDisplayName();
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_NAME, createRestrictableRecipe(Substance.class,DefaultColumns.STD_NAME, (s, pubOnly,cell) -> {
+                     Optional<Name> opName = ((Substance)s).getDisplayName();
                      boolean wroteName = false;
                      if(opName.isPresent()) {
                          if(pubOnly && opName.get().getAccess().isEmpty()) {
@@ -155,11 +155,12 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                      if(!wroteName) {
                          //TODO: Something based on what comes back
                      }
-             }).replaceColumnName(DefaultColumns.STD_NAME, "PT"));
+             }).replaceColumnName(DefaultColumns.STD_NAME.name(), "PT"));
              
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS").replaceColumnName(DefaultColumns.CAS,"RN"));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS").replaceColumnName(DefaultColumns.CAS.name(),"RN"));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.EC, new CodeSystemRecipe(DefaultColumns.EC, "ECHA (EC/EINECS)"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCI_THESAURUS, new CodeSystemRecipe(DefaultColumns.NCI_THESAURUS, "NCI_THESAURUS").replaceColumnName(DefaultColumns.NCI_THESAURUS,"NCIT"));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCI_THESAURUS, new CodeSystemRecipe(DefaultColumns.NCI_THESAURUS, "NCI_THESAURUS").replaceColumnName(DefaultColumns.NCI_THESAURUS
+                     .name(),"NCIT"));
              
              DEFAULT_RECIPE_MAP.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
@@ -167,13 +168,13 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              DEFAULT_RECIPE_MAP.put(DefaultColumns.ITIS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.ITIS, "ITIS")));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.NCBI, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.NCBI, "NCBI TAXONOMY")));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")
-                                                                                                      .replaceColumnName(DefaultColumns.USDA_PLANTS,"PLANTS")
+                                                                                                      .replaceColumnName(DefaultColumns.USDA_PLANTS.name(),"PLANTS")
                                                                                                       ));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN")));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.MPNS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.MPNS, "MPNS")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN").replaceColumnName(DefaultColumns.INN,"INN_ID"));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN").replaceColumnName(DefaultColumns.INN.name(),"INN_ID"));
          
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(Substance.class,DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
                  if (s instanceof ChemicalSubstance) {
                      ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
                      if(pubOnly) {
@@ -192,10 +193,10 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                      // for proteins, polymers, etc
                      cell.writeString("");
                  } 
-             }).replaceColumnName(DefaultColumns.FORMULA,"MF"));
+             }).replaceColumnName(DefaultColumns.FORMULA.name(),"MF"));
              
              
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(Substance.class,DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
                  if (s instanceof ChemicalSubstance) {
                      ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
                      if(pubOnly) {
@@ -217,7 +218,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
                      }
                  }
-             }).replaceColumnName(DefaultColumns.STD_INCHIKEY_FORMATTED,"INCHIKEY"));
+             }).replaceColumnName(DefaultColumns.STD_INCHIKEY_FORMATTED.name(),"INCHIKEY"));
              
              
              
@@ -239,7 +240,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              }));
 
                 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NAME, createRestrictableRecipe(DefaultColumns.NAME, (s, pubOnly,cell) -> {
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.NAME, createRestrictableRecipe(Substance.class,DefaultColumns.NAME, (s, pubOnly,cell) -> {
                  if(pubOnly) {
                      Optional<Name> opName = s.getDisplayName();
                      boolean wroteName = false;
@@ -256,7 +257,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                  }else {
                      cell.writeString(s.getName());
                  }
-             }).replaceColumnName(DefaultColumns.NAME, "UTF8_PT"));
+             }).replaceColumnName(DefaultColumns.NAME.name(), "UTF8_PT"));
                          
              
 
@@ -338,12 +339,10 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
         
     }
     
-    public  interface PublicRestrictionAwareWriteFunction<T>{
-
+    public interface PublicRestrictionAwareWriteFunction<T>{
         void writeValue(T object,boolean pubOnly, SpreadsheetCell cell);
-
-
     }
+   
 
     private static class PublicRestrictableColumnRecipeImpl<T extends ColumnValueRecipe<U>, U> implements PublicRestrictableColumnRecipe<T,U>{
 
@@ -399,7 +398,16 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
         
         return new PublicRestrictableColumnRecipeImpl<>(defaultRecipe, publicOnlyDefaultRecipe);
     }
-
+    public static <T extends ColumnValueRecipe<U>,U> PublicRestrictableColumnRecipe<T, U> createRestrictableRecipe(Class<U>  cl,Enum<?> name,PublicRestrictionAwareWriteFunction<U> writerFunction){
+        ColumnValueRecipe<U> defaultRecipe = SingleColumnValueRecipe.create(name.name(), (t,cell)->{
+            writerFunction.writeValue(t, false, cell);
+        });
+        ColumnValueRecipe<U> publicOnlyDefaultRecipe = SingleColumnValueRecipe.create(name.name(), (t,cell)->{
+            writerFunction.writeValue(t, true, cell);
+        });
+        
+        return new PublicRestrictableColumnRecipeImpl<>(defaultRecipe, publicOnlyDefaultRecipe);
+    }
     
     
 
