@@ -96,7 +96,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
     }
 
-    private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
+       private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
         Matcher m = p.matcher(inp);
         StringBuilder nstr = new StringBuilder();
         int start = 0;
@@ -107,21 +107,16 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             String prop = m.group(1);
             nstr.append(resolver.apply(prop).get());
         }
+        nstr.append(inp.substring(start));
         return nstr.toString();
     }
 
-    public static String resolveParameter(SDRecordContext rec, String inp) {
-        inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
-            log.trace("p: " + p);
-            if (p.equals("molfile")) {
-                log.trace("looking for molfile");
-                return Optional.ofNullable(rec.getStructure());
-            }
-            return rec.getProperty(p);
-        });
-        if( SPECIAL_RESOLVE.matcher(inp).matches()) {
-            inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p));
-        }
+    public static String resolveParameter(SDRecordContext rec, String inp){
+		inp = replacePattern(inp,SDF_RESOLVE, (p)->{
+			if(p.equals("molfile"))return Optional.ofNullable(rec.getStructure());
+			return rec.getProperty(p);
+		});
+		inp = replacePattern(inp,SPECIAL_RESOLVE, (p)->rec.resolveSpecial(p));
         return inp;
     }
 
@@ -133,34 +128,11 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         ObjectMapper om = new ObjectMapper();
         Map<String, Object> newMap;
         JsonNode jsn = om.valueToTree(inputMap);
-        String lookupValue = findLookupValue(jsn);
-        log.trace("lookupValue: " + lookupValue);
-        if( lookupValue== null|| lookupValue.length()==0) {
-            log.warn("no lookup value found!");
-            return new ConcurrentHashMap<String, Object>();
-        }
-        String json = resolveParameter(rec, lookupValue);//was jsn.toString()
-        if( json == null || json.length()==0) {
-            log.warn("no values found for " + lookupValue);
-            return new ConcurrentHashMap<String, Object>();
-        }
+        String json = resolveParameter(rec, jsn.toString());
         newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
         return newMap;
     }
 
-    public static String findLookupValue(JsonNode node) {
-        if(node.isObject()) {
-            ObjectNode on = (ObjectNode) node;
-            Iterator<Map.Entry<String, JsonNode>> iter = on.fields();
-            while(iter.hasNext()){
-                Map.Entry<String, JsonNode> entry = iter.next();
-                if(entry.getValue().textValue().matches("\\{\\{.*\\}\\}")) {
-                    return entry.getValue().textValue();
-                }
-            }
-        }
-        return "";
-    }
 
     public static class NameExtractorActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
         public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
