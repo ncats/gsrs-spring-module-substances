@@ -1,4 +1,12 @@
+<<<<<<< HEAD
 package gsrs.substances.tests;
+=======
+<<<<<<< HEAD:gsrs-ncats-substance-extension/src/test/java/gov/nih/ncats/bases/AbstractSubstanceJpaEntityTestSuperClass.java
+package gov.nih.ncats.bases;
+=======
+package gsrs.substances.tests;
+>>>>>>> master:gsrs-module-substances-tests/src/main/java/gsrs/substances/tests/AbstractSubstanceJpaEntityTestSuperClass.java
+>>>>>>> master
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -71,6 +79,13 @@ import java.util.regex.Pattern;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD:gsrs-ncats-substance-extension/src/test/java/gov/nih/ncats/bases/AbstractSubstanceJpaEntityTestSuperClass.java
+
+=======
+>>>>>>> master:gsrs-module-substances-tests/src/main/java/gsrs/substances/tests/AbstractSubstanceJpaEntityTestSuperClass.java
+>>>>>>> master
 /**
  * Parent Super-class of that should be used to
  * test Substances interacting with a test database.
@@ -292,7 +307,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
      * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
      * with additional metadata.
      * @param gsrsFile the GSRS file to load.
+<<<<<<< HEAD
      * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+=======
+     * @return a List of {@link GsrsEntityService.CreationResult}s one per record in the GSRS file.
+>>>>>>> master
      * @throws IOException if there is a problem parsing the file.
      */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(Resource gsrsFile, Substance.SubstanceClass... substanceClasses) throws IOException {
@@ -304,7 +323,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
      * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
      * with additional metadata.
      * @param gsrsFile the GSRS file to load.
+<<<<<<< HEAD
      * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+=======
+     * @return a List of {@link GsrsEntityService.CreationResult}s one per record in the GSRS file.
+>>>>>>> master
      * @throws IOException if there is a problem parsing the file.
      */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(Resource gsrsFile) throws IOException {
@@ -316,7 +339,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
      * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
      * with additional metadata.
      * @param gsrsFile the GSRS file to load.
+<<<<<<< HEAD
      * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+=======
+     * @return a List of {@link GsrsEntityService.CreationResult}s one per record in the GSRS file.
+>>>>>>> master
      * @throws IOException if there is a problem parsing the file.
      */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(File gsrsFile) throws IOException {
@@ -328,10 +355,17 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
          * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
          * with additional metadata.
          * @param gsrsFile the GSRS file to load.
+<<<<<<< HEAD
          * @param substanceClasses a list of {@link ix.ginas.models.v1.Substance.SubstanceClass}es to include.
          *                         only the records in the given file of these kinds will be loaded.
          *                         If this var args is empty or null then all records in the file will be loaded.
          * @return a List of {@link gsrs.service.GsrsEntityService.CreationResult}s one per record in the GSRS file.
+=======
+         * @param substanceClasses a list of {@link Substance.SubstanceClass}es to include.
+         *                         only the records in the given file of these kinds will be loaded.
+         *                         If this var args is empty or null then all records in the file will be loaded.
+         * @return a List of {@link GsrsEntityService.CreationResult}s one per record in the GSRS file.
+>>>>>>> master
          * @throws IOException if there is a problem parsing the file.
          */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(File gsrsFile, Substance.SubstanceClass... substanceClasses) throws IOException {
@@ -366,7 +400,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
      * Parse a Gsrs encoded Spring Resource object and return a {@link Yield}
      * for each JsonNode parsed object.
      * @param gsrsFile the file to parse.
+<<<<<<< HEAD
      * @param substanceClasses a list of {@link ix.ginas.models.v1.Substance.SubstanceClass}es to include.
+=======
+     * @param substanceClasses a list of {@link Substance.SubstanceClass}es to include.
+>>>>>>> master
      *          only the records in the given file of these kinds will be included in the Yield.
      *          If this var args is empty or null then all records in the file will be included.
      * @return a {@link Yield}
