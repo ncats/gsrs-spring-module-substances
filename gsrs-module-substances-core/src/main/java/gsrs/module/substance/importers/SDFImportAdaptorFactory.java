@@ -293,25 +293,25 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
 		Amount amt=new Amount();
 		p.setValue(amt);
 		Optional.ofNullable(params.get("valueAverage")).ifPresent(aa->{
-                    amt.average = (Double.parseDouble(aa));
+                    amt.average = (Double.parseDouble(aa.toString()));
                 });
 		Optional.ofNullable(params.get("valueLow")).ifPresent(aa->{
-                    amt.low = (Double.parseDouble(aa));
+                    amt.low = (Double.parseDouble(aa.toString()));
                 });
 		Optional.ofNullable(params.get("valueHigh")).ifPresent(aa->{
-                    amt.high = (Double.parseDouble(aa));
+                    amt.high = (Double.parseDouble(aa.toString()));
                 });
 		Optional.ofNullable(params.get("valueNonNumeric")).ifPresent(aa->{
-                    amt.nonNumericValue = aa;
+                    amt.nonNumericValue = aa.toString();
                 });
 		Optional.ofNullable(params.get("valueUnits")).ifPresent(aa->{
-                    amt.units = aa;
+                    amt.units = aa.toString();
                 });
 		Optional.ofNullable(params.get("defining")).ifPresent(aa->{
                     amt.defining = Boolean.parseBoolean(params.getOrDefault("defining", "false").toString());
                 });		    
                 //TODO: more params
-                sub.notes.add(n);
+                sub.properties.add(p);
                 return sub;
             };
         }
