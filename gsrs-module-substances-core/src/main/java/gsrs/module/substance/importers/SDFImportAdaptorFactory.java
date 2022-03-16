@@ -288,18 +288,18 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             return (sub, sdRec) -> {
                 Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
 		Property p = new Property();
-		p.name = (String) params.get("name");
+		p.setName((String) params.get("name"));
                 doBasicsImports(p,params);
 		Amount amt=new Amount();
 		p.setValue(amt);
 		Optional.ofNullable(params.get("valueAverage")).ifPresent(aa->{
-                    amt.average = (Double.parse(aa));
+                    amt.average = (Double.parseDouble(aa));
                 });
 		Optional.ofNullable(params.get("valueLow")).ifPresent(aa->{
-                    amt.low = (Double.parse(aa));
+                    amt.low = (Double.parseDouble(aa));
                 });
 		Optional.ofNullable(params.get("valueHigh")).ifPresent(aa->{
-                    amt.high = (Double.parse(aa));
+                    amt.high = (Double.parseDouble(aa));
                 });
 		Optional.ofNullable(params.get("valueNonNumeric")).ifPresent(aa->{
                     amt.nonNumericValue = aa;
