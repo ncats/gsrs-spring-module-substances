@@ -33,6 +33,7 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -163,6 +164,28 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
 
+    private static void assignReferences(GinasAccessReferenceControlled object, Object referenceList) {
+        List<String> refs  = (List<String>) referenceList;
+        if( refs != null ) {
+            refs.forEach(r -> object.addReference(r));
+        }
+    }
+	
+    private static void doBasicsImports(GinasAccessControlled object, Map<String, Object> params) {
+	if(object instanceof GinasAccessReferenceControlled){
+		assignReferences((GinasAccessReferenceControlled)object, params.getOrDefault("referenceUUIDs", null));
+	}
+	if(object instanceof GinasCommonData){
+		if (params.get("uuid") != null) {
+                	((GinasCommonData)object).setUuid(UUID.fromString(params.get("uuid").toString()));
+        	}
+	}
+	if (params.get("access") != null) {
+		//TODO: need to deal with this somehow, not sure how yet because of the
+		//need to use Group objects	
+	}
+    }
+
     public static class NameExtractorActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
         public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
             return (sub, sdRec) -> {
@@ -177,33 +200,19 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                         if(sn.isEmpty())continue;
                         sn=sn.trim();
                         Name n = new Name();
-                        n.setName(sn);
-                        assignReferences(n, params.getOrDefault("referenceUUIDs", null));
-                        if (params.get("uuid") != null) {
-                            n.uuid = UUID.fromString(params.get("uuid").toString());
-                        }
+			n.setName(sn);
+                        doBasicsImports(n,params);
                         //TODO: more params
                         sub.names.add(n);
                     }
                 }else {
                     Name n = new Name();
                     n.setName(suppliedName.trim());
-                    assignReferences(n, params.getOrDefault("referenceUUIDs", null));
-                    if (params.get("uuid") != null) {
-                        n.uuid = UUID.fromString(params.get("uuid").toString());
-                    }
-                    //TODO: more params
+		    doBasicsImports(n,params);
                     sub.names.add(n);
                 }
                 return sub;
             };
-        }
-    }
-
-    private static void assignReferences(CommonDataElementOfCollection object, Object referenceList) {
-        List<String> refs  = (List<String>) referenceList;
-        if( refs != null ) {
-            refs.forEach(r -> object.addReference(r));
         }
     }
 
@@ -213,10 +222,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                 Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
                 Code c = new Code((String) params.get("codeSystem"), (String) params.get("code"));
                 c.type = (String) params.get("codeType");
-                assignReferences(c, params.getOrDefault("referenceUUIDs", null));
-                if (params.get("uuid") != null) {
-                    c.uuid = UUID.fromString(params.get("uuid").toString());
-                }
+                doBasicsImports(c,params);
                 //TODO: more params
                 sub.addCode(c);
                 return sub;
@@ -231,12 +237,13 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                 Reference r = new Reference();
                 r.citation = (String) params.get("citation");
                 r.docType = (String) params.get("docType");
+		Optional.ofNullable(params.get("url")).ifPresent(url->{
+                    r.url=url;
+                });
                 Optional.ofNullable(params.get("referenceID")).ifPresent(rid->{
                     r.id=rid.toString();
                 });
-                if (params.get("uuid") != null) {
-                    r.uuid = UUID.fromString(params.get("uuid").toString());
-                }
+                doBasicsImports(r,params);
                 //TODO: more params
                 sub.addReference(r);
                 return sub;
@@ -250,17 +257,26 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                 Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
                 GinasChemicalStructure s = new GinasChemicalStructure();
                 s.molfile = (String) params.get("molfile");
-                //s setReferenceID(params.get("referenceID"));
-                          /*if(params.get("uuid")!=null){
-                            s.setUuid(UUID.fromString(params.get("uuid").toString()));
-                          }*/
-                //TODO: more params like stereo? where do moieties things?
+                doBasicsImports(s,params);
                 ((ChemicalSubstance) sub).setStructure(s);
                 return sub;
             };
         }
     }
 
+    public static class NotesExtractorActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
+        public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
+            return (sub, sdRec) -> {
+                Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
+		Note n = new Note();
+		n.note = (String) params.get("note");
+                doBasicsImports(n,params);
+                //TODO: more params
+                sub.notes.add(n);
+                return sub;
+            };
+        }
+    }
 
     private static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
 
@@ -268,6 +284,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         registry.put("common_name", new NameExtractorActionFactory());
         registry.put("code_import", new CodeExtractorActionFactory());
         registry.put("structure_and_moieties", new StructureExtractorActionFactory());
+	registry.put("note_import", new NotesExtractorActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
 
