@@ -38,6 +38,8 @@ import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Property;
+import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
