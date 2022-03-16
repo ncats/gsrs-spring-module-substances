@@ -308,7 +308,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                     amt.units = aa.toString();
                 });
 		Optional.ofNullable(params.get("defining")).ifPresent(aa->{
-                    amt.defining = Boolean.parseBoolean(params.getOrDefault("defining", "false").toString());
+                    p.setDefining(Boolean.parseBoolean(params.getOrDefault("defining", "false").toString()));
                 });		    
                 //TODO: more params
                 sub.properties.add(p);
