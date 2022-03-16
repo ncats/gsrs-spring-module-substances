@@ -241,7 +241,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                 r.citation = (String) params.get("citation");
                 r.docType = (String) params.get("docType");
 		Optional.ofNullable(params.get("url")).ifPresent(url->{
-                    r.url=url;
+                    r.url=url.toString();
                 });
                 Optional.ofNullable(params.get("referenceID")).ifPresent(rid->{
                     r.id=rid.toString();
