@@ -5,13 +5,14 @@ import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
-import jdk.internal.jline.internal.Log;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.util.List;
 import java.util.stream.Stream;
 
+@Slf4j
 public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> {
 
     List<SDFImportAdaptorFactory.MappingAction<Substance, SDFImportAdaptorFactory.SDRecordContext>> actions;
@@ -36,7 +37,8 @@ public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityContr
                    try {
                        s=action.act(s, sd);
                    } catch (Exception e) {
-                       Log.error(e);
+                       log.error(e.getMessage());
+                       e.printStackTrace();
                   }
                }
               return s;
