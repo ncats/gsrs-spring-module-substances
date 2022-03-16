@@ -1,12 +1,4 @@
-<<<<<<< HEAD
 package gsrs.substances.tests;
-=======
-<<<<<<< HEAD:gsrs-ncats-substance-extension/src/test/java/gov/nih/ncats/bases/AbstractSubstanceJpaEntityTest.java
-package gov.nih.ncats.bases;
-=======
-package gsrs.substances.tests;
->>>>>>> master:gsrs-module-substances-tests/src/main/java/gsrs/substances/tests/AbstractSubstanceJpaEntityTest.java
->>>>>>> master
 
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.startertests.GsrsJpaTest;

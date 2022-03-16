@@ -1,26 +1,41 @@
 package gsrs.module.substance.importers;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.models.CommonDataElementOfCollection;
-import ix.ginas.models.v1.*;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEntityController.ImportAdapterFactory<Substance> {
@@ -48,6 +63,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
 
     public static interface SDRecordContext {
         public String getStructure();
+        public String getMolfileName();
 
         public Optional<String> getProperty(String name);
 
@@ -94,6 +110,11 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             }
             return Optional.empty();
         }
+
+        @Override
+        public String getMolfileName() {
+            return c.getName();
+        }
     }
 
        private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
@@ -112,11 +133,16 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
     public static String resolveParameter(SDRecordContext rec, String inp){
-		inp = replacePattern(inp,SDF_RESOLVE, (p)->{
-			if(p.equals("molfile"))return Optional.ofNullable(rec.getStructure());
-			return rec.getProperty(p);
-		});
-		inp = replacePattern(inp,SPECIAL_RESOLVE, (p)->rec.resolveSpecial(p));
+		return resolveParameter(rec,inp,s->s);
+    }
+    
+    public static String resolveParameter(SDRecordContext rec, String inp, Function<String,String> encoder){
+        inp = replacePattern(inp,SDF_RESOLVE, (p)->{
+            if(p.equals("molfile"))return Optional.ofNullable(rec.getStructure()).map(encoder);
+            if(p.equals("molfile_name"))return Optional.ofNullable(rec.getMolfileName()).map(encoder);
+            return rec.getProperty(p).map(encoder);
+        });
+        inp = replacePattern(inp,SPECIAL_RESOLVE, (p)->rec.resolveSpecial(p).map(encoder));
         return inp;
     }
 
@@ -128,7 +154,10 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         ObjectMapper om = new ObjectMapper();
         Map<String, Object> newMap;
         JsonNode jsn = om.valueToTree(inputMap);
-        String json = resolveParameter(rec, jsn.toString());
+        String json = resolveParameter(rec, jsn.toString(), s->{
+            String m = om.valueToTree(s).toString();
+            return m.substring(1,m.length()-1);
+        });
         newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
         return newMap;
     }
@@ -138,22 +167,43 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
             return (sub, sdRec) -> {
                 Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
-                Name n = new Name();
-                n.setName((String) params.get("name"));
-                assignReferences(n, params.getOrDefault("referenceUUIDs", null));
-                if (params.get("uuid") != null) {
-                    n.uuid = UUID.fromString(params.get("uuid").toString());
+                
+                boolean splitNames=Boolean.parseBoolean(params.getOrDefault("split_names", "true").toString());
+                
+                String suppliedName=(String) params.get("name");
+                
+                if(splitNames) {
+                    for(String sn: suppliedName.trim().split("\n")) {
+                        if(sn.isEmpty())continue;
+                        sn=sn.trim();
+                        Name n = new Name();
+                        n.setName(sn);
+                        assignReferences(n, params.getOrDefault("referenceUUIDs", null));
+                        if (params.get("uuid") != null) {
+                            n.uuid = UUID.fromString(params.get("uuid").toString());
+                        }
+                        //TODO: more params
+                        sub.names.add(n);
+                    }
+                }else {
+                    Name n = new Name();
+                    n.setName(suppliedName.trim());
+                    assignReferences(n, params.getOrDefault("referenceUUIDs", null));
+                    if (params.get("uuid") != null) {
+                        n.uuid = UUID.fromString(params.get("uuid").toString());
+                    }
+                    //TODO: more params
+                    sub.names.add(n);
                 }
-                //TODO: more params
-                sub.names.add(n);
                 return sub;
             };
         }
     }
 
     private static void assignReferences(CommonDataElementOfCollection object, Object referenceList) {
-        if( referenceList != null ) {
-            Arrays.asList((String[]) referenceList).forEach(r -> object.addReference(r));
+        List<String> refs  = (List<String>) referenceList;
+        if( refs != null ) {
+            refs.forEach(r -> object.addReference(r));
         }
     }
 
@@ -181,7 +231,9 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                 Reference r = new Reference();
                 r.citation = (String) params.get("citation");
                 r.docType = (String) params.get("docType");
-                r.uuid = params.get("referenceID") ==null? UUID.randomUUID() : UUID.fromString((String) params.get("referenceID"));
+                Optional.ofNullable(params.get("referenceID")).ifPresent(rid->{
+                    r.id=rid.toString();
+                });
                 if (params.get("uuid") != null) {
                     r.uuid = UUID.fromString(params.get("uuid").toString());
                 }
