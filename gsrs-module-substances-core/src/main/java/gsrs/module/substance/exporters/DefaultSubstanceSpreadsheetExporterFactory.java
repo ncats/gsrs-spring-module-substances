@@ -172,7 +172,9 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                                                                                                       ));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN")));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.MPNS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.MPNS, "MPNS")));
+             
              DEFAULT_RECIPE_MAP.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN").replaceColumnName(DefaultColumns.INN.name(),"INN_ID"));
+             DEFAULT_RECIPE_MAP.put(DefaultColumns.USAN, new CodeSystemRecipe(DefaultColumns.USAN, "USAN").replaceColumnName(DefaultColumns.USAN.name(),"USAN_ID"));
          
              DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(Substance.class,DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
                  if (s instanceof ChemicalSubstance) {
