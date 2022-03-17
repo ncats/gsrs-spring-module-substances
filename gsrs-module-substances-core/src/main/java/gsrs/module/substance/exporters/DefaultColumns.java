@@ -22,6 +22,7 @@ public enum DefaultColumns implements Column {
     NCBI,
     USDA_PLANTS,
     INN,
+    USAN,
     EC, 
     NCI_THESAURUS, 
     PROTEIN_SEQUENCE,
