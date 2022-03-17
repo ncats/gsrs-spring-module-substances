@@ -224,7 +224,7 @@ public class Name extends CommonDataElementOfCollection {
     	r.publicDomain=true;
     	this.addReference(r,sub);
 		// Turning this off; TagsValidator should do this work.
-    	// sub.addTagString(loc);
+    	// 	sub.addTagString(loc);
     }
     
     /**
