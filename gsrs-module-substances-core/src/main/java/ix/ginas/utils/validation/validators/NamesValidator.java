@@ -27,8 +27,9 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private ReferenceRepository referenceRepository;
     @Autowired
     private SubstanceRepository substanceRepository;
-
-    boolean extractLocators;
+    // __alex__ made this true for testing
+    // Do we want this back on?
+    boolean extractLocators = true;
     public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
         List<Replacer> repList = new ArrayList<>();
         repList.add(new Replacer("^(\\s+)","" ).message("Name \"$0\" has leading whitespace which was removed"));

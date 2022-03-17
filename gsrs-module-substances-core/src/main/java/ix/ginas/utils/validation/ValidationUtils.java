@@ -22,6 +22,8 @@ import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.NucleicAcidUtils;
 import java.io.IOException;
+
+import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -216,6 +218,29 @@ public class ValidationUtils {
 	}
 
 	static private void extractLocators(Substance s, Name n,
+										List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+		Set<String> locators = TagUtilities.extractBracketNameTags(s);
+		if (locators.size() > 0) {
+			GinasProcessingMessage mes = GinasProcessingMessage
+					.WARNING_MESSAGE(
+							"Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:"
+									+ TagUtilities.sortTagsHashSet(locators).toString())
+					.appliableChange(true);
+			gpm.add(mes);
+			strat.processMessage(mes);
+			if (mes.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE) {
+				for (String loc : locators) {
+					n.name = n.name.replace("[" + loc + "]", "").trim();
+				}
+				for (String loc : locators) {
+					n.addLocator(s, loc);
+				}
+			}
+		}
+	}
+
+	/*
+	static private void extractLocators(Substance s, Name n,
                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
 		Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
 		Matcher m = p.matcher(n.name);
@@ -246,7 +271,7 @@ public class ValidationUtils {
 			}
 		}
 	}
-
+*/
        public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
                List<Replacer> repList = new ArrayList<>();
                repList.add(new Replacer("[\\t\\n\\r]", " ")

@@ -223,7 +223,8 @@ public class Name extends CommonDataElementOfCollection {
     	r.citation=this.name + " [" + loc + "]";
     	r.publicDomain=true;
     	this.addReference(r,sub);
-    	sub.addTagString(loc);
+		// Turning this off; TagsValidator should do this work.
+    	// sub.addTagString(loc);
     }
     
     /**
