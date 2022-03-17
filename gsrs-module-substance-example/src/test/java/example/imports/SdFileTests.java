@@ -18,8 +18,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import gsrs.module.substance.utils.NCATSFileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -30,19 +34,33 @@ import gsrs.module.substance.importers.SDFImportAdaptorFactory;
 import gsrs.module.substance.importers.SDFImportAdaptorFactory.ChemicalBackedSDRecordContext;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.test.context.TestPropertySource;
 
+@SpringBootTest
+@SpringBootConfiguration
 @Slf4j
+@TestPropertySource(properties = {
+        "ix.gsrs.sdfActions={structure_and_moieties:'gsrs.module.substance.importers.StructureExtractorActionFactory',code_import:'gsrs.module.substance.importers.CodeExtractorActionFactory',common_name:'gsrs.module.substance.importers.NameExtractorActionFactory'}",
+})
 public class SdFileTests {
+
+    @Value("#{${ix.gsrs.sdfActions}}")
+    Map<String, String >values;
 
     @Test
     public void testSdfInstructions1() {
         SDFImportAdaptorFactory importAdaptorFactory = new SDFImportAdaptorFactory();
 
         List<String> fieldNames = Arrays.asList("CAS", "select_name", "alpha code");
-        JsonNode importInfo = importAdaptorFactory.createDefaultSdfFileImport(new HashSet<>(fieldNames));
+        Map<String, NCATSFileUtils.InputFieldStatistics> map = new HashMap<>();
+        fieldNames.forEach(fn->map.put(fn, null));
+        JsonNode importInfo = importAdaptorFactory.createDefaultSdfFileImport(map);
         String json =importInfo.toPrettyString();
         System.out.println(json);
         Assertions.assertTrue(json.length()>0);
+        List<JsonNode> nodes=importInfo.findValues("actionName");
+        Assertions.assertEquals(5, nodes.size());
+        Assertions.assertEquals(1, nodes.stream().filter(n->n.textValue().equals("common_name")).count());
     }
 
     @Test
@@ -204,17 +222,26 @@ public class SdFileTests {
        assertNotNull(UUID.fromString(settingsResolved.get("uuid2").toString()));
     }
 
-/*
     @Test
-    public void testFindLookupValue() {
-        ObjectNode objectNode= JsonNodeFactory.instance.objectNode();
-        String expected="{{alpha code}}";
-        objectNode.put("codeSystem", "alpha code");
-        objectNode.put("code", expected);
-        objectNode.put("codeType", "PRIMARY");
+    public void testActionsFromConfig() throws IOException {
+        String fieldName= "registry";
+        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        try {
+            java.lang.reflect.Field registryField = sDFImportAdaptorFactory.getClass().getDeclaredField(fieldName);
+            registryField.setAccessible(true);
+            Map<String, SDFImportAdaptorFactory.MappingActionFactory<Substance, SDFImportAdaptorFactory.SDRecordContext>> reg=
+                    (Map<String, SDFImportAdaptorFactory.MappingActionFactory<Substance, SDFImportAdaptorFactory.SDRecordContext>>)
+                            registryField.get(sDFImportAdaptorFactory);
 
-        String actual =SDFImportAdaptorFactory.resolveParametersMap(objectNode);
-        Assertions.assertEquals(expected, actual);
+            Assertions.assertEquals(3, reg.size());
+            Assertions.assertTrue( reg.containsKey("structure_and_moieties"));
+            Assertions.assertTrue( reg.containsKey("common_name"));
+            Assertions.assertTrue( reg.containsKey("code_import"));
+            System.out.println("it works!");
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            log.error("Error accessing field: " + e.getMessage());
+            e.printStackTrace();
+            Assertions.fail("Error fails test");
+        }
     }
-*/
 }

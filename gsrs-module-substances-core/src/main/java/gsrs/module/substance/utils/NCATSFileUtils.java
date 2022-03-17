@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -34,20 +35,20 @@ public class NCATSFileUtils {
     private static final Pattern endRecordPattern = Pattern.compile("\\$\\$\\$\\$");
 
     @Data
-    public static class SDFFieldStatistics{
+    public static class InputFieldStatistics {
         private final int maxExamples;
         private String field;
         private List<String> examples= new ArrayList<>();        
         
-        public SDFFieldStatistics(String f){
+        public InputFieldStatistics(String f){
             this.field=f;
             this.maxExamples=MAX_READS;
         }
-        public SDFFieldStatistics(String f, int max){
+        public InputFieldStatistics(String f, int max){
             this.field=f;
             this.maxExamples=max;
         }
-        public SDFFieldStatistics add(String val){
+        public InputFieldStatistics add(String val){
             if(examples.size()<maxExamples){
                 examples.add(val);
             }
@@ -99,7 +100,7 @@ TODO: consider other data types like:
      */
     public static Set<String> getSdFileFields(InputStream istream) throws IOException {
         LinkedHashSet<String> fields = new LinkedHashSet<>();
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, "UTF8"))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8))) {
             while (br.ready()) {
                 String line = br.readLine();
                 Matcher matcher = sdFileFieldPattern.matcher(line);
@@ -116,15 +117,15 @@ TODO: consider other data types like:
    /*
     Read an SD file from an input stream and retrieve some basic statistics about the fields.
      */
-    public static List<SDFFieldStatistics> getSDFieldStatistics(InputStream istream) throws IOException {
+    public static Map<String, InputFieldStatistics> getSDFieldStatistics(InputStream istream) throws IOException {
         return getSDFieldStatistics(istream,MAX_READS);
     }
     
     /*
     Read an SD file from an input stream and retrieve some basic statistics about the fields.
      */
-    public static List<SDFFieldStatistics> getSDFieldStatistics(InputStream istream , int maxExamples) throws IOException {
-        Map<String, SDFFieldStatistics> retMap = new LinkedHashMap<>();
+    public static Map<String, InputFieldStatistics> getSDFieldStatistics(InputStream istream , int maxExamples) throws IOException {
+        Map<String, InputFieldStatistics> retMap = new LinkedHashMap<>();
 
         try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, "UTF8"))) {
             String fieldName=null;
@@ -136,7 +137,7 @@ TODO: consider other data types like:
                 Matcher endmatcher = endRecordPattern.matcher(line);
                 if(matcher.find()) { 
                     if(inValue){
-                        SDFFieldStatistics fs=retMap.computeIfAbsent(fieldName, k-> new SDFFieldStatistics(k, maxExamples));
+                        InputFieldStatistics fs=retMap.computeIfAbsent(fieldName, k-> new InputFieldStatistics(k, maxExamples));
                         fs.add(value.trim());
                     }
                     fieldName = matcher.group(1);
@@ -145,7 +146,7 @@ TODO: consider other data types like:
                     value="";
                 }else if(endmatcher.find()) { 
                     if(inValue){
-                        SDFFieldStatistics fs=retMap.computeIfAbsent(fieldName, k-> new SDFFieldStatistics(k, maxExamples));
+                        InputFieldStatistics fs=retMap.computeIfAbsent(fieldName, k-> new InputFieldStatistics(k, maxExamples));
                         fs.add(value.trim());
                     }
                     inValue=false;
@@ -156,6 +157,6 @@ TODO: consider other data types like:
                 }
             }
         }
-        return retMap.values().stream().collect(Collectors.toList());
+        return retMap;
     }
 }

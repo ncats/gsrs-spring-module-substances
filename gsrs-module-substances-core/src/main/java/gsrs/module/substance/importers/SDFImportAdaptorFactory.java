@@ -2,16 +2,7 @@ package gsrs.module.substance.importers;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -42,7 +33,15 @@ import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Substance;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.context.TestPropertySource;
 
+import javax.annotation.PostConstruct;
+
+@SpringBootConfiguration
 @Slf4j
 public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEntityController.ImportAdapterFactory<Substance> {
     public final static String SIMPLE_REF = "UUID_1";
@@ -54,6 +53,17 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     public final static String REFERENCE_ID_INSTRUCTION = "INSERT REFERENCE ID HERE";
     public final static String SDF_FIELD_LIST = "SDF Fields";
 
+    private Map<String, NCATSFileUtils.InputFieldStatistics> fileFieldStatisticsMap;
+
+    @Value("#{${ix.gsrs.sdfActions}}")
+    private Map<String, String> defaultImportActions;
+
+    private static Map<String, String> fileImportActions;
+
+
+    public SDFImportAdaptorFactory() {
+        init();
+    }
     //** ADDING ABSTRACT LAYERS START
     @Data
     public static class MappingActionFactoryMetadata {
@@ -100,19 +110,20 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         public MappingActionFactoryMetadata build() {
             return new MappingActionFactoryMetadata(this);
         }
+
     }
 
     @Data
     public static class MappingParameter<T> {
         private String fieldName;
-        private String fieldTitle;
+        private String label;
         private boolean required = false;
         private T defaultValue;
         private Class<T> valueType;
 
         public MappingParameter(MappingParameterBuilder builder) {
             this.fieldName = builder.fieldName;
-            this.fieldTitle = builder.fieldTitle;
+            this.label = builder.label;
             this.required = builder.required;
             this.defaultValue = (T) builder.defaultValue;
             this.valueType = builder.valueType;
@@ -125,7 +136,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
 
     public static class MappingParameterBuilder<T> {
         private String fieldName;
-        private String fieldTitle;
+        private String label;
         private boolean required = false;
         private T defaultValue;
         private Class<T> valueType;
@@ -135,8 +146,8 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             return this;
         }
 
-        public MappingParameterBuilder setFieldTitle(String fieldTitle) {
-            this.fieldTitle = fieldTitle;
+        public MappingParameterBuilder setLabel(String label) {
+            this.label = label;
             return this;
         }
 
@@ -163,6 +174,12 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             return new MappingParameterBuilder();
         }
 
+        public MappingParameterBuilder setFieldNameAndLabel(String fieldName, String fieldLabel) {
+            this.fieldName = fieldName;
+            this.label = fieldLabel;
+            return this;
+        }
+
         private MappingParameterBuilder() {
         }
     }
@@ -174,7 +191,8 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     public static interface MappingActionFactory<T, U> {
         public MappingAction<T, U> create(Map<String, Object> params);
 
-        public MappingActionFactoryMetadata getMetaData();
+        public MappingActionFactoryMetadata getMetadata();
+
     }
     //** ADDING ABSTRACT LAYERS END
 
@@ -337,7 +355,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
 
         @Override
-        public MappingActionFactoryMetadata getMetaData() {
+        public MappingActionFactoryMetadata getMetadata() {
             MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
             return builder.setLabel("Create Name")
                     .addParameterField(MappingParameter.builder()
@@ -356,6 +374,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                             .build())
                     .build();
         }
+
     }
 
     public static class CodeExtractorActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
@@ -372,7 +391,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
 
         @Override
-        public MappingActionFactoryMetadata getMetaData() {
+        public MappingActionFactoryMetadata getMetadata() {
             MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
             return builder.setLabel("Create Code")
                     .addParameterField(MappingParameter.builder()
@@ -391,6 +410,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                             .build())
                     .build();
         }
+
 
     }
 
@@ -415,7 +435,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
 
         @Override
-        public MappingActionFactoryMetadata getMetaData() {
+        public MappingActionFactoryMetadata getMetadata() {
             MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
             return builder.setLabel("Create Reference")
                     .addParameterField(MappingParameter.builder()
@@ -456,7 +476,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
 
         @Override
-        public MappingActionFactoryMetadata getMetaData() {
+        public MappingActionFactoryMetadata getMetadata() {
             MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
             return builder.setLabel("Create Structure")
                     .addParameterField(MappingParameter.builder()
@@ -474,10 +494,30 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                             .build())
                     .build();
         }
-
     }
 
     public static class NotesExtractorActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
+        private static MappingActionFactoryMetadata metadata;
+
+        static {
+            setupMetadata();
+        }
+
+        private static void setupMetadata() {
+            MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
+            metadata = builder.setLabel("Create Note")
+                    .addParameterField(MappingParameter.builder()
+                            .setFieldName("note")
+                            .setValueType(String.class)
+                            .setRequired(true)
+                            .build())
+                    .addParameterField(MappingParameter.builder()
+                            .setFieldNameAndLabel("comment", "Comments ")
+                            .setRequired(false)
+                            .build())
+                    .build();
+        }
+
         public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
             return (sub, sdRec) -> {
                 Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
@@ -491,15 +531,8 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
 
         @Override
-        public MappingActionFactoryMetadata getMetaData() {
-            MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
-            return builder.setLabel("Create Note")
-                    .addParameterField(MappingParameter.builder()
-                            .setFieldName("note")
-                            .setValueType(String.class)
-                            .setRequired(true)
-                            .build())
-                    .build();
+        public MappingActionFactoryMetadata getMetadata() {
+            return this.metadata;
         }
 
     }
@@ -538,7 +571,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         }
 
         @Override
-        public MappingActionFactoryMetadata getMetaData() {
+        public MappingActionFactoryMetadata getMetadata() {
             MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
             return builder.setLabel("Create Property")
                     .addParameterField(MappingParameter.builder()
@@ -573,18 +606,41 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
                             .build())
                     .build();
         }
-
     }
 
     private static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
 
-    static {
-        registry.put("common_name", new NameExtractorActionFactory());
-        registry.put("code_import", new CodeExtractorActionFactory());
-        registry.put("structure_and_moieties", new StructureExtractorActionFactory());
-        registry.put("note_import", new NotesExtractorActionFactory());
-        registry.put("property_import", new PropertyExtractorActionFactory());
-        registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
+    @PostConstruct
+    public void init(){
+        fileImportActions =defaultImportActions;
+        log.trace("fileImportActions: " + fileImportActions);
+        if(fileImportActions !=null && fileImportActions.size() >0) {
+            Map<String, Object> params =  Collections.emptyMap();
+            ObjectMapper mapper = new ObjectMapper();
+            Set<String> actionNames=fileImportActions.keySet();
+            actionNames.forEach(actionName->{
+                try {
+                    MappingActionFactory<Substance, SDRecordContext> mappingActionFactory =
+                            (MappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(params,
+                                    Class.forName( fileImportActions.get(actionName)));
+                    registry.put(actionName, mappingActionFactory);
+                    log.trace(String.format("added action %s as class with name %s", actionName, fileImportActions.get(actionName)));
+                } catch (ClassNotFoundException e) {
+                    log.error("error instantiating class.  message: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            });
+        }
+        else {
+            log.trace("using default actions");
+            registry.put("common_name", new NameExtractorActionFactory());
+            registry.put("code_import", new CodeExtractorActionFactory());
+            registry.put("structure_and_moieties", new StructureExtractorActionFactory());
+            registry.put("note_import", new NotesExtractorActionFactory());
+            registry.put("property_import", new PropertyExtractorActionFactory());
+            registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
+        }
+
     }
 
 
@@ -626,12 +682,14 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     public AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics predictSettings(InputStream is) {
         Set<String> fields = null;
         try {
-            fields = getFieldsForFile(is);
-            AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics statistics = new AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics();
+            Map<String, NCATSFileUtils.InputFieldStatistics>stats= getFieldsForFile(is);
+            AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics statistics =
+                    new AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics();
+            fields =stats.keySet();
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.putPOJO(SDF_FIELD_LIST, fields);
             statistics.setAdapterSchema(node);
-            statistics.setAdapterSettings(createDefaultSdfFileImport(fields));
+            statistics.setAdapterSettings(createDefaultSdfFileImport(stats));
             return statistics;
         } catch (IOException ex) {
             log.error("error reading list of fields from SD file: " + ex.getMessage());
@@ -640,7 +698,8 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
 
-    public JsonNode createDefaultSdfFileImport(Set<String> fieldNames) {
+    public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
+        Set<String> fieldNames =map.keySet();
         ObjectNode topLevelReturn = JsonNodeFactory.instance.objectNode();
         ArrayNode result = JsonNodeFactory.instance.arrayNode();
         ObjectNode structureNode = JsonNodeFactory.instance.objectNode();
@@ -686,11 +745,13 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         return referenceNode;
     }
 
-    public Set<String> getFieldsForFile(InputStream input) throws IOException {
+    public Map<String, NCATSFileUtils.InputFieldStatistics> getFieldsForFile(InputStream input) throws IOException {
         log.trace("starting in fieldsForSDF");
-        Set<String> fields = NCATSFileUtils.getSdFileFields(input);
-        log.trace("total fields: " + fields.size());
-        return fields;
+        Map<String, NCATSFileUtils.InputFieldStatistics> fieldStatisticsMap =
+                NCATSFileUtils.getSDFieldStatistics(input);
+        fileFieldStatisticsMap = fieldStatisticsMap;
+        log.trace("total fields: " + fileFieldStatisticsMap.keySet().size());
+        return fieldStatisticsMap;
     }
 
     public ObjectNode createCodeMap(String codeSystem, String codeType) {
