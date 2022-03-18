@@ -1,6 +1,8 @@
 package example.imports;
 
-import gsrs.module.substance.importers.SDFImportAdaptorFactory;
+import gsrs.module.substance.importers.MappingActionFactoryMetadata;
+import gsrs.module.substance.importers.MappingParameter;
+import gsrs.module.substance.importers.importActionFactories.NotesExtractorActionFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -14,11 +16,11 @@ public class ImporterAdapterTest {
         String itemName="Name1";
         Class itemType=String.class;
         String itemValue="Value1";
-        SDFImportAdaptorFactory.MappingParameterBuilder builder = SDFImportAdaptorFactory.MappingParameterBuilder.instance();
+        MappingParameter.MappingParameterBuilder builder = MappingParameter.MappingParameterBuilder.instance();
         builder.setFieldName(itemName)
                 .setValueType(itemType)
                 .setDefaultValue(itemValue);
-        SDFImportAdaptorFactory.MappingParameter parameter = builder.build();
+        MappingParameter parameter = builder.build();
 
         Assertions.assertEquals(itemName, parameter.getFieldName());
         Assertions.assertEquals(itemType, parameter.getValueType());
@@ -31,14 +33,14 @@ public class ImporterAdapterTest {
         Class itemType= List.class;
         String itemValue="New Value 1";
         String operationName = "Create Something";
-        SDFImportAdaptorFactory.MappingParameterBuilder parameterBuilder = SDFImportAdaptorFactory.MappingParameterBuilder.instance();
+        MappingParameter.MappingParameterBuilder parameterBuilder = MappingParameter.MappingParameterBuilder.instance();
         parameterBuilder.setFieldName(itemName)
                 .setValueType(itemType)
                 .setDefaultValue(itemValue);
-        SDFImportAdaptorFactory.MappingParameter parameter = parameterBuilder.build();
+        MappingParameter parameter = parameterBuilder.build();
 
-        SDFImportAdaptorFactory.MappingActionFactoryMetadataBuilder builder = SDFImportAdaptorFactory.MappingActionFactoryMetadataBuilder.instance();
-        SDFImportAdaptorFactory.MappingActionFactoryMetadata metadata= builder.setLabel(operationName)
+        MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder builder = MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder.instance();
+        MappingActionFactoryMetadata metadata= builder.setLabel(operationName)
                 .addParameterField(parameter)
                 .build();
         Assertions.assertEquals(itemName, metadata.getParameterFields().get(0).getFieldName());
@@ -47,9 +49,9 @@ public class ImporterAdapterTest {
 
     @Test
     public void testRequiredVsNot() {
-        SDFImportAdaptorFactory.NotesExtractorActionFactory factory = new SDFImportAdaptorFactory.NotesExtractorActionFactory();
-        List<SDFImportAdaptorFactory.MappingParameter> allParms= factory.getMetadata().getParameterFields();
-        List<SDFImportAdaptorFactory.MappingParameter> requiredParms= factory.getMetadata().getParameterFields()
+        NotesExtractorActionFactory factory = new NotesExtractorActionFactory();
+        List<MappingParameter> allParms= factory.getMetadata().getParameterFields();
+        List<MappingParameter> requiredParms= factory.getMetadata().getParameterFields()
                 .stream()
                 .filter(i->i.isRequired()).collect(Collectors.toList());
         Assertions.assertEquals(requiredParms.size()+1, allParms.size());

@@ -3,6 +3,9 @@ package gsrs.module.substance.importers;
 import gov.nih.ncats.molwitch.io.ChemicalReader;
 import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
+import gsrs.module.substance.importers.actions.ImportMappingAction;
+import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
+import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
@@ -15,9 +18,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> {
 
-    List<SDFImportAdaptorFactory.MappingAction<Substance, SDFImportAdaptorFactory.SDRecordContext>> actions;
+    List<ImportMappingAction<Substance, SDRecordContext>> actions;
     
-    public SDFImportAdapter(List<SDFImportAdaptorFactory.MappingAction<Substance, SDFImportAdaptorFactory.SDRecordContext>> actions){
+    public SDFImportAdapter(List<ImportMappingAction<Substance, SDRecordContext>> actions){
         this.actions = actions;
     }
     
@@ -28,12 +31,12 @@ public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityContr
     	
         return cr.stream()
           .map(c->{
-              return new SDFImportAdaptorFactory.ChemicalBackedSDRecordContext(c);
+              return new ChemicalBackedSDRecordContext(c);
           })
     	  .map(sd->{
                //TODO: perhaps a builder instead?
                Substance s = new ChemicalSubstance();
-               for(SDFImportAdaptorFactory.MappingAction<Substance, SDFImportAdaptorFactory.SDRecordContext> action: actions){
+               for(ImportMappingAction<Substance, SDRecordContext> action: actions){
                    try {
                        s=action.act(s, sd);
                    } catch (Exception e) {
