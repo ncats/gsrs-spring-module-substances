@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import gsrs.module.substance.services.ConsoleFilterService;
+import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -118,7 +122,16 @@ public class NameUtilities {
         if (input == null || input.length() == 0) {
             return results;
         }
-        ReplacementResult initialResult = replaceUnprintables(input.trim());
+        TagUtilities.BracketExtraction extract= TagUtilities.getBracketExtraction(input.trim());
+        String namePart=extract.getNamePart();
+        String suffix = extract.getTagTerms().stream().map(f->"[" + f + "]").collect(Collectors.joining(""));
+        if(suffix.length()>0){
+            suffix=" " + suffix;
+        }
+        if(namePart==null) {
+            namePart=input.trim();
+        }
+        ReplacementResult initialResult = replaceUnprintables(namePart);
 
         ReplacementResult resultForSpecifics = initialResult.update(makeSpecificReplacements(initialResult.getResult()));
         String workingString = resultForSpecifics.getResult();
@@ -127,7 +140,7 @@ public class NameUtilities {
         results.update(zeroWidthRemovalResult);
         workingString = nkfdNormalizations(results.getResult());
         results.update(removeSerialSpaces(workingString));
-        results.setResult(results.getResult().toUpperCase());
+        results.setResult(results.getResult().toUpperCase() +suffix);
         return results;
     }
 
@@ -144,7 +157,9 @@ public class NameUtilities {
         }
 
         public boolean matches(String test) {
-
+            if(test==null) {
+                return false;
+            }
             return this.p.matcher(test).find();
         }
 
@@ -298,6 +313,8 @@ public class NameUtilities {
                     .message("Replaced small caps character \"$0\" with standard form"));
         }
 
+        replacers.add(new Replacer("[\\[\\{]","("));
+        replacers.add(new Replacer("[\\]\\}]",")"));
     }
 
     private static String chr(int t) {
@@ -515,7 +532,7 @@ public class NameUtilities {
         // but not OK otherwise, as in '[1,4]DICHLOROBENZENE' or 'NAME[SOMETHING]' (without a space before '[')
         int initBracketPos = name.indexOf("[");
         int closeBracketPos = name.indexOf("]");
-        return initBracketPos > -1
+        return initBracketPos > 0
                 && ((name.charAt(initBracketPos - 1) != ' ')
                 || (closeBracketPos < (name.length() - 1)));
     }

@@ -364,4 +364,32 @@ public class NameUtilitiesTest {
         String actual = NameUtilities.getInstance().removeZeroWidthChars(input).getResult();
         Assertions.assertEquals(expected, actual);
     }
+
+    @Test
+    public void testNameWithEarlyBrackets() {
+        String nameWithEarlyBrackets= "[HELLO] THERE";
+        NameUtilities utilities= NameUtilities.getInstance();
+        boolean result = utilities.nameHasUnacceptableChar(nameWithEarlyBrackets);
+        Assertions.assertFalse(result);
+    }
+
+    @Test
+    public void TestfullyStandardizeNameWithEarlyBrackets() {
+        String nameWithEarlyBrackets= "[HELLO] THERE";
+        String expected = "(HELLO) THERE";
+        NameUtilities utilities= NameUtilities.getInstance();
+        ReplacementResult result= utilities.fullyStandardizeName(nameWithEarlyBrackets);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestfullyStandardizeNameWithEarlyBracketsAndBraces() {
+        String nameWithEarlyBrackets= "[user] {friendly} software";
+        String expected = "(USER) (FRIENDLY) SOFTWARE";
+        NameUtilities utilities= NameUtilities.getInstance();
+        ReplacementResult result= utilities.fullyStandardizeName(nameWithEarlyBrackets);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
 }
