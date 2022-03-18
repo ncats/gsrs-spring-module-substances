@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import gsrs.module.substance.importers.actions.ImportMappingActionFactory;
+import gsrs.dataExchange.model.MappingActionFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
@@ -239,8 +239,8 @@ public class SdFileTests {
             sDFImportAdaptorFactory.init();
             java.lang.reflect.Field registryField = sDFImportAdaptorFactory.getClass().getDeclaredField(fieldName);
             registryField.setAccessible(true);
-            Map<String, ImportMappingActionFactory<Substance, SDRecordContext>> reg =
-                    (Map<String, ImportMappingActionFactory<Substance, SDRecordContext>>)
+            Map<String, MappingActionFactory<Substance, SDRecordContext>> reg =
+                    (Map<String, MappingActionFactory<Substance, SDRecordContext>>)
                             registryField.get(sDFImportAdaptorFactory);
 
             Assertions.assertEquals(3, reg.size());

@@ -1,7 +1,9 @@
 package example.imports;
 
-import gsrs.module.substance.importers.MappingActionFactoryMetadata;
-import gsrs.module.substance.importers.MappingParameter;
+import gsrs.dataExchange.model.MappingActionFactoryMetadata;
+import gsrs.dataExchange.model.MappingActionFactoryMetadataBuilder;
+import gsrs.dataExchange.model.MappingParameter;
+import gsrs.dataExchange.model.MappingParameterBuilder;
 import gsrs.module.substance.importers.importActionFactories.NotesExtractorActionFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -16,7 +18,7 @@ public class ImporterAdapterTest {
         String itemName="Name1";
         Class itemType=String.class;
         String itemValue="Value1";
-        MappingParameter.MappingParameterBuilder builder = MappingParameter.MappingParameterBuilder.instance();
+        MappingParameterBuilder builder = MappingParameterBuilder.instance();
         builder.setFieldName(itemName)
                 .setValueType(itemType)
                 .setDefaultValue(itemValue);
@@ -33,13 +35,13 @@ public class ImporterAdapterTest {
         Class itemType= List.class;
         String itemValue="New Value 1";
         String operationName = "Create Something";
-        MappingParameter.MappingParameterBuilder parameterBuilder = MappingParameter.MappingParameterBuilder.instance();
+        MappingParameterBuilder parameterBuilder = MappingParameterBuilder.instance();
         parameterBuilder.setFieldName(itemName)
                 .setValueType(itemType)
                 .setDefaultValue(itemValue);
         MappingParameter parameter = parameterBuilder.build();
 
-        MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder builder = MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder.instance();
+        MappingActionFactoryMetadataBuilder builder = MappingActionFactoryMetadataBuilder.instance();
         MappingActionFactoryMetadata metadata= builder.setLabel(operationName)
                 .addParameterField(parameter)
                 .build();

@@ -1,18 +1,21 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import gsrs.module.substance.importers.MappingActionFactoryMetadata;
-import gsrs.module.substance.importers.MappingParameter;
-import gsrs.module.substance.importers.actions.ImportMappingAction;
+import gsrs.dataExchange.model.MappingAction;
+import gsrs.dataExchange.model.MappingActionFactoryMetadata;
+import gsrs.dataExchange.model.MappingActionFactoryMetadataBuilder;
+import gsrs.dataExchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 
+import java.util.List;
 import java.util.Map;
 
 import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
 
 public class CodeExtractorActionFactory extends BaseActionFactory {
-    public ImportMappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
+    @Override
+    public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         return (sub, sdRec) -> {
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             Code c = new Code((String) params.get("codeSystem"), (String) params.get("code"));
@@ -24,9 +27,10 @@ public class CodeExtractorActionFactory extends BaseActionFactory {
         };
     }
 
+
     @Override
     public MappingActionFactoryMetadata getMetadata() {
-        MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder();
+        MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
         return builder.setLabel("Create Code")
                 .addParameterField(MappingParameter.builder()
                         .setFieldName("codeValue")

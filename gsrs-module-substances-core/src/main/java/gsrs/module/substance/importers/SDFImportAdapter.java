@@ -3,7 +3,7 @@ package gsrs.module.substance.importers;
 import gov.nih.ncats.molwitch.io.ChemicalReader;
 import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
-import gsrs.module.substance.importers.actions.ImportMappingAction;
+import gsrs.dataExchange.model.MappingAction;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;
@@ -18,9 +18,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> {
 
-    List<ImportMappingAction<Substance, SDRecordContext>> actions;
+    List<MappingAction<Substance, SDRecordContext>> actions;
     
-    public SDFImportAdapter(List<ImportMappingAction<Substance, SDRecordContext>> actions){
+    public SDFImportAdapter(List<MappingAction<Substance, SDRecordContext>> actions){
         this.actions = actions;
     }
     
@@ -36,7 +36,7 @@ public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityContr
     	  .map(sd->{
                //TODO: perhaps a builder instead?
                Substance s = new ChemicalSubstance();
-               for(ImportMappingAction<Substance, SDRecordContext> action: actions){
+               for(MappingAction<Substance, SDRecordContext> action: actions){
                    try {
                        s=action.act(s, sd);
                    } catch (Exception e) {

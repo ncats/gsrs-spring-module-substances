@@ -1,6 +1,6 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import gsrs.module.substance.importers.actions.ImportMappingActionFactory;
+import gsrs.dataExchange.model.MappingActionFactory;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public abstract class BaseActionFactory implements ImportMappingActionFactory<Substance, SDRecordContext> {
+public abstract class BaseActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
 
     private static void assignReferences(GinasAccessReferenceControlled object, Object referenceList) {
         List<String> refs = (List<String>) referenceList;

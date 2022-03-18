@@ -1,9 +1,9 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import gsrs.module.substance.importers.MappingActionFactoryMetadata;
-import gsrs.module.substance.importers.MappingParameter;
-import gsrs.module.substance.importers.SDFImportAdaptorFactory;
-import gsrs.module.substance.importers.actions.ImportMappingAction;
+import gsrs.dataExchange.model.MappingAction;
+import gsrs.dataExchange.model.MappingActionFactoryMetadata;
+import gsrs.dataExchange.model.MappingActionFactoryMetadataBuilder;
+import gsrs.dataExchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
@@ -20,7 +20,7 @@ public class NotesExtractorActionFactory extends BaseActionFactory {
     }
 
     private static void setupMetadata() {
-        MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadata.MappingActionFactoryMetadataBuilder();
+        MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
         metadata = builder.setLabel("Create Note")
                 .addParameterField(MappingParameter.builder()
                         .setFieldName("note")
@@ -34,9 +34,14 @@ public class NotesExtractorActionFactory extends BaseActionFactory {
                 .build();
     }
 
-    public ImportMappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
+    public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
         return (sub, sdRec) -> {
-            Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
+            Map<String, Object> params = null;
+            try {
+                params = resolveParametersMap(sdRec, abstractParams);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             Note n = new Note();
             n.note = (String) params.get("note");
             doBasicsImports(n, params);

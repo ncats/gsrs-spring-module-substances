@@ -6,14 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import gov.nih.ncats.molwitch.Chemical;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
-import gsrs.module.substance.importers.actions.ImportMappingAction;
-import gsrs.module.substance.importers.actions.ImportMappingActionFactory;
+import gsrs.dataExchange.model.MappingAction;
+import gsrs.dataExchange.model.MappingActionFactory;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.models.v1.Substance;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
@@ -96,7 +96,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         return inputList.stream().map(s -> resolveParameter(rec, s)).collect(Collectors.toList());
     }
 
-    public static Map<String, Object> resolveParametersMap(SDRecordContext rec, Map<String, Object> inputMap) throws Exception {
+    public static Map<String, Object> resolveParametersMap(SDRecordContext rec, Map<String, Object> inputMap) {
         ObjectMapper om = new ObjectMapper();
         Map<String, Object> newMap;
         JsonNode jsn = om.valueToTree(inputMap);
@@ -104,8 +104,14 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             String m = om.valueToTree(s).toString();
             return m.substring(1, m.length() - 1);
         });
-        newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
-        return newMap;
+        try {
+            newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
+            return newMap;
+        } catch (Exception ex) {
+            log.error("Error in resolveParametersMap: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+        return new HashMap<>();
     }
 
 
@@ -116,7 +122,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
 
 
 
-    private static Map<String, ImportMappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
+    private static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init(){
@@ -129,8 +135,8 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
             Set<String> actionNames=fileImportActions.keySet();
             actionNames.forEach(actionName->{
                 try {
-                    ImportMappingActionFactory<Substance, SDRecordContext> mappingActionFactory =
-                            (ImportMappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(params,
+                    MappingActionFactory<Substance, SDRecordContext> mappingActionFactory =
+                            (MappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(params,
                                     Class.forName( fileImportActions.get(actionName)));
                     registry.put(actionName, mappingActionFactory);
                     log.trace(String.format("added action %s as class with name %s", actionName, fileImportActions.get(actionName)));
@@ -152,16 +158,23 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
 
-    public static List<ImportMappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) {
-        List<ImportMappingAction<Substance, SDRecordContext>> actions = new ArrayList<>();
+    public static List<MappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
+        List<MappingAction<Substance, SDRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
             ObjectMapper mapper = new ObjectMapper();
             Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {
             });
-            ImportMappingAction<Substance, SDRecordContext> action =
-                    (ImportMappingAction<Substance, SDRecordContext>) registry.get(actionName).create(params);
+            MappingAction<Substance, SDRecordContext> action =null;
+            try {
+                action=(MappingAction<Substance, SDRecordContext>) registry.get(actionName).create(params);
+            }
+            catch (Exception ex) {
+                log.error("Error in getMappingActions: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+
             actions.add(action);
         });
         return actions;
@@ -179,9 +192,10 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
         return Arrays.asList("sdf", "sd");
     }
 
+    @SneakyThrows
     @Override
     public AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
-        List<ImportMappingAction<Substance, SDRecordContext>> actions = getMappingActions(adapterSettings);
+        List<MappingAction<Substance, SDRecordContext>> actions = getMappingActions(adapterSettings);
         AbstractImportSupportingGsrsEntityController.ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }
