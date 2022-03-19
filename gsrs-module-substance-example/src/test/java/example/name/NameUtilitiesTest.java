@@ -368,8 +368,7 @@ public class NameUtilitiesTest {
     @Test
     public void testNameWithEarlyBrackets() {
         String nameWithEarlyBrackets= "[HELLO] THERE";
-        NameUtilities utilities= NameUtilities.getInstance();
-        boolean result = utilities.nameHasUnacceptableChar(nameWithEarlyBrackets);
+        boolean result = NameUtilities.getInstance().nameHasUnacceptableChar(nameWithEarlyBrackets);
         Assertions.assertFalse(result);
     }
 
@@ -377,8 +376,7 @@ public class NameUtilitiesTest {
     public void TestfullyStandardizeNameWithEarlyBrackets() {
         String nameWithEarlyBrackets= "[HELLO] THERE";
         String expected = "(HELLO) THERE";
-        NameUtilities utilities= NameUtilities.getInstance();
-        ReplacementResult result= utilities.fullyStandardizeName(nameWithEarlyBrackets);
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(nameWithEarlyBrackets);
         String actual=result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -387,9 +385,19 @@ public class NameUtilitiesTest {
     public void TestfullyStandardizeNameWithEarlyBracketsAndBraces() {
         String nameWithEarlyBrackets= "[user] {friendly} software";
         String expected = "(USER) (FRIENDLY) SOFTWARE";
-        NameUtilities utilities= NameUtilities.getInstance();
-        ReplacementResult result= utilities.fullyStandardizeName(nameWithEarlyBrackets);
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(nameWithEarlyBrackets);
         String actual=result.getResult();
         Assertions.assertEquals(expected, actual);
     }
+
+    @Test
+    public void testNameCleanup() {
+        String nameInput="[HI]THERE [INN][USAN]";
+        String expected ="(HI)THERE [INN][USAN]";
+        ReplacementResult result=NameUtilities.getInstance().fullyStandardizeName(nameInput);
+        String actual = result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+
 }
