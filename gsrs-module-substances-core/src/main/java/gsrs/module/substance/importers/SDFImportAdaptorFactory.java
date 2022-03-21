@@ -160,6 +160,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
 
     public static List<MappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
         List<MappingAction<Substance, SDRecordContext>> actions = new ArrayList<>();
+        System.out.println("adapterSettings: " + adapterSettings.toPrettyString());
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");

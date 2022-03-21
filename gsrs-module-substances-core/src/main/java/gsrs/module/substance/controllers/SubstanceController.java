@@ -22,6 +22,7 @@ import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
+import gsrs.module.substance.importers.SDFImportAdaptorFactory;
 import gsrs.module.substance.repository.*;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
@@ -1547,29 +1548,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Override
     public List<ImportAdapterFactory<Substance>> getImportAdapters(){
-        ImportAdapterFactory<Substance> factory = new ImportAdapterFactory() {
-            @Override
-            public String getAdapterName() {
-                return "simple adapter factory";
-            }
 
-            @Override
-            public List<String> getSupportedFileExtensions() {
-                return Arrays.asList(new String[]{"sdf"});
-            }
-
-            @Override
-            public ImportAdapter createAdapter(JsonNode adapterSettings) {
-                return null;
-            }
-
-            @Override
-            public ImportAdapterStatistics predictSettings(InputStream is) {
-                return null;
-            }
-        };
         List<ImportAdapterFactory<Substance>> factories = new ArrayList<>();
-        factories.add(factory);
+        factories.add(new SDFImportAdaptorFactory());
         return factories;
     }
 /*
