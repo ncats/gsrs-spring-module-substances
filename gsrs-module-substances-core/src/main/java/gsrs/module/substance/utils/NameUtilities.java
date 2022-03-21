@@ -144,134 +144,6 @@ public class NameUtilities {
         return results;
     }
 
-    public static class Replacer {
-
-        Pattern p;
-        String replace;
-        String message = "String \"$0\" matches forbidden pattern";
-        String postFixMessage = "";
-
-        public Replacer(String regex, String replace) {
-            this.p = Pattern.compile(regex);
-            this.replace = replace;
-        }
-
-        public boolean matches(String test) {
-            if(test==null) {
-                return false;
-            }
-            return this.p.matcher(test).find();
-        }
-
-        public String fix(String test, AtomicInteger firstMatch) {
-            Matcher m = p.matcher(test);
-            if (m.find() && firstMatch != null) {
-                firstMatch.set(m.start());
-            }
-            postFixMessage = getMessage(m.group());
-            return test.replaceAll(p.pattern(), replace);
-        }
-
-        public Replacer message(String msg) {
-            this.message = msg;
-            return this;
-        }
-
-        public String getMessage(String test) {
-            return message.replace("$0", test);
-        }
-
-        public String getPostFixMessage() {
-            return postFixMessage;
-        }
-    }
-
-    /**
-     * Represents the output of a text transformation. The result field contains
-     * the transformed text. The ReplacementNotes contain information about the
-     * specific replacements performed.
-     */
-    public static class ReplacementResult {
-
-        private List<ReplacementNote> replacementNotes = new ArrayList<>();
-        private String result;
-
-        public ReplacementResult(String result, List<ReplacementNote> notes) {
-            this.result = result;
-            replacementNotes = notes;
-        }
-
-        public void update(String updatedResult, List<ReplacementNote> additionalNotes) {
-            this.result = updatedResult;
-            this.replacementNotes.addAll(additionalNotes);
-        }
-
-        public ReplacementResult update(ReplacementResult newResult) {
-            this.result = newResult.getResult();
-            this.replacementNotes.addAll(newResult.getReplacementNotes());
-            return this;
-        }
-
-        public List<ReplacementNote> getReplacementNotes() {
-            return replacementNotes;
-        }
-
-        public void setReplacementNotes(List<ReplacementNote> replacementNotes) {
-            this.replacementNotes = replacementNotes;
-        }
-
-        public String getResult() {
-            return result;
-        }
-
-        public void setResult(String result) {
-            this.result = result;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("result: %s", this.result);
-        }
-    }
-
-    /**
-     * *
-     * A message about a text modification. position is the starting point in
-     * the original string where a character to be removed occurred replacement
-     * is the character that was replaced
-     */
-    public static class ReplacementNote {
-
-        private int position;
-        private String replacement;
-
-        public ReplacementNote(int position, String replacement) {
-            this.position = position;
-            this.replacement = replacement;
-        }
-
-        public int getPosition() {
-            return position;
-        }
-
-        public void setPosition(int position) {
-            this.position = position;
-        }
-
-        public String getReplacement() {
-            return replacement;
-        }
-
-        public void setReplacement(String replacement) {
-            this.replacement = replacement;
-        }
-
-        @Override
-        public String toString() {
-            return String.format("position: %d; replacement: %s", position, replacement);
-        }
-    }
-
     /**
      * Replace a series of specific characters that cannot be rendered in print
      *
@@ -488,7 +360,7 @@ public class NameUtilities {
     //todo: add notes about characters replaced
     public ReplacementResult removeZeroWidthChars(String input) {
 
-        List<ReplacementNote> notes = new ArrayList();
+        List<ReplacementNote> notes = new ArrayList<>();
         ReplacementResult replacementResult = new ReplacementResult(input, notes);
         if (input == null || input.length() == 0) {
             return replacementResult;
@@ -500,41 +372,5 @@ public class NameUtilities {
         return replacementResult;
     }
 
-    public boolean nameHasUnacceptableChar(String name) {
-        Pattern asciiPattern = Pattern.compile("\\A\\p{ASCII}*\\z");
-        Matcher asciiMatcher = asciiPattern.matcher(name);
-        Pattern lowerCasePattern = Pattern.compile("[a-z]+");
-        Matcher lowerCaseMatcher = lowerCasePattern.matcher(name);
-        List<Character> dirtyChars = Arrays.asList('\t', '\r', '\n', '`', '{', '}');
-
-        if (name == null || name.length() == 0) {
-            return false;
-        }
-
-        if (lowerCaseMatcher.find()) {
-            return true;
-        }
-
-        if ((!name.trim().equals(name))) {
-            return true;
-        }
-
-        if (!asciiMatcher.find()) {
-            return true;
-        }
-        for (char testChar : name.toCharArray()) {
-            if (dirtyChars.contains(testChar)) {
-                return true;
-            }
-        }
-
-        //square brackets are OK when they provide a name qualification, as int 'NAME [ORGANIZATION]'
-        // but not OK otherwise, as in '[1,4]DICHLOROBENZENE' or 'NAME[SOMETHING]' (without a space before '[')
-        int initBracketPos = name.indexOf("[");
-        int closeBracketPos = name.indexOf("]");
-        return initBracketPos > 0
-                && ((name.charAt(initBracketPos - 1) != ' ')
-                || (closeBracketPos < (name.length() - 1)));
-    }
 
 }
