@@ -1,13 +1,17 @@
 package ix.ginas.utils.validation.validators;
 
-import gsrs.module.substance.utils.NameUtilities;
-import ix.core.validator.GinasProcessingMessage;
-import ix.core.validator.ValidatorCallback;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Name;
-import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import java.util.HashMap;
 import java.util.Map;
+
+import gsrs.module.substance.utils.FDAFullNameStandardizer;
+import gsrs.module.substance.utils.FDAMinimumNameStandardizer;
+import gsrs.module.substance.utils.NameStandardizer;
+import gsrs.module.substance.utils.ReplacementResult;
+import ix.core.validator.GinasProcessingMessage;
+import ix.core.validator.ValidatorCallback;
+import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -16,12 +20,21 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
+    
+    
+    private NameStandardizer inPlaceStandardizer = new FDAMinimumNameStandardizer();
+    private NameStandardizer fullStandardizer = new FDAFullNameStandardizer();
+    
 
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
     
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
+        if(inPlaceStandardizer!=null)validateInPlace(objnew, objold, callback);
+        if(fullStandardizer!=null)validateFull(objnew, objold, callback);
+    }
+    public void validateFull(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         Map<String, Name> oldNames = new HashMap<>();
 
@@ -79,7 +92,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             String oldRegularName = null;
 
             if (oldName != null) {
-                oldStdNameCalc = NameUtilities.getInstance().fullyStandardizeName(oldName.name).getResult();
+                oldStdNameCalc = fullStandardizer.standardize(oldName.name).getResult();
                 oldStdNameGiven = oldName.stdName;
                 oldRegularName = oldName.name;
             }
@@ -94,18 +107,18 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             }
 
             if (name.stdName == null) {
-                name.stdName = NameUtilities.getInstance().fullyStandardizeName(name.name).getResult();
+                name.stdName = fullStandardizer.standardize(name.name).getResult();
                 log.debug("set (previously null) stdName to " + name.stdName);
             }
             else {
                 log.trace("stdName: " + name.stdName);
-                if (NameUtilities.getInstance().nameHasUnacceptableChar(name.stdName)) {
-                    String message = String.format("Names must contain only uppercase, numbers and other ASCII characters and may not have leading or trailing spaces or braces or brackets.  This name contains one or more non-allowed character: '%s'",
+                if (!fullStandardizer.isStandardized(name.stdName)) {
+                    String message = String.format("Standardized name does not meet standards.  This name may contain one or more non-allowed character: '%s'",
                             name.stdName);
                     callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
                 }
                 log.trace("warningOnMismatch: " + warningOnMismatch);
-                String newlyStandardizedName = NameUtilities.getInstance().fullyStandardizeName(name.name).getResult();
+                String newlyStandardizedName = fullStandardizer.standardize(name.name).getResult();
 
                 if (!newlyStandardizedName.equals(name.stdName)) {
                     if (name.stdName.equals(oldStdNameGiven)) {
@@ -161,6 +174,35 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
         });
     }
 
+    
+    public void validateInPlace(Substance s, Substance objold, ValidatorCallback callback) {
+        log.trace("starting in validate");
+        if (s == null) {
+            log.warn("Substance is null");
+            return;
+        }
+        if (s.names == null || s.names.isEmpty()) {
+            //do not expect this to happen -- substance will be tested for no names
+            log.warn("Substance has no names!");
+        }
+
+        s.names.forEach(n -> {
+
+            ReplacementResult minimallyStandardizedName = inPlaceStandardizer.standardize(n.name);
+            String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
+                    minimallyStandardizedName.getResult());
+            log.trace(debugMessage);
+
+            if (!minimallyStandardizedName.getResult().equals(n.name) || minimallyStandardizedName.getReplacementNotes().size() > 0) {
+                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format("Name %s minimally standardized to %s",
+                        n.name, minimallyStandardizedName.getResult()));
+                mes.appliableChange(true);
+                callback.addMessage(mes, () -> {
+                    n.name = minimallyStandardizedName.getResult();
+                });
+            }
+        });
+    }
     public boolean isWarningOnMismatch() {
         return warningOnMismatch;
     }
@@ -175,5 +217,13 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
     public void setRegenerateNameValue(String regenerateNameValue) {
         this.regenerateNameValue = regenerateNameValue;
+    }
+    
+    
+    public void setInPlaceNameStandardizerClass(String standardizer) throws Exception{
+        inPlaceStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
+    }
+    public void setFullNameStandardizerClass(String standardizer) throws Exception {
+        fullStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
     }
 }
