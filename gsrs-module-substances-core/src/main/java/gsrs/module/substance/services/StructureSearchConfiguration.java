@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties("ix.ginas.structure.search")
 @Data
-@Accessors(fluent = true)
+//@Accessors(fluent = true)
 public class StructureSearchConfiguration {
     private boolean includePolymers;
     private boolean includeModifications;
