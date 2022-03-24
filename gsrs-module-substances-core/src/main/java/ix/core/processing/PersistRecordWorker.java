@@ -30,17 +30,23 @@ public abstract class PersistRecordWorker implements Runnable {
     public void run() {
         TransformedRecord tr = null;
         ProcessingRecord rec = new ProcessingRecord();
+        
         try {
-            callback.extractionSuccess();
+            try {
+                callback.extractionSuccess();
+                }catch(Exception e) {}    
 
             Object trans = transformerFactory.createTransformerFor().transform(prg, rec);
 
             if (trans == null) {
                 throw new IllegalStateException("Transform error");
             }
-            callback.processedSuccess();
+          
             tr = AutowireHelper.getInstance().autowireAndProxy(new TransformedRecord(trans, prg.theRecord, rec, callback));
             tr.setConfig(bulkLoadServiceConfiguration);
+            try {
+                callback.processedSuccess();
+                }catch(Exception e) {}
         } catch (Throwable t) {
             callback.processedFailure();
             //t.printStackTrace();
