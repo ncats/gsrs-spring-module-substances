@@ -451,8 +451,7 @@ public class SubstanceBulkLoadService {
         if(stat !=null){
             stat.applyChange(change);
         }
-        saveJobInCurrentTransaction(job.id, stat);
-//        saveJobInSeparateTransaction(job.id, stat);
+        saveJobInSeparateTransaction(job.id, stat);
     }
     public Statistics applyStatisticsChangeForJob(String jobTerm, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(jobTerm);
@@ -524,7 +523,7 @@ public class SubstanceBulkLoadService {
                         prec.rec.message =  errors.get(0);
                         prec.rec.status = ProcessingRecord.Status.FAILED;
                     }
-                    prec.rec.stop = System.currentTimeMillis();
+                    prec.rec.stop = TimeUtil.getCurrentTimeMillis();
                 }
                 //copy of rec to get the stats in a detached
 
@@ -532,6 +531,7 @@ public class SubstanceBulkLoadService {
 
 
                 if (!worked){
+                    
                     throw new IllegalStateException(prec.rec.message);
                 }else{
                     log.debug("Saved substance " + (prec.recordToPersist != null ? prec.recordToPersist.get("uuid") : null)
