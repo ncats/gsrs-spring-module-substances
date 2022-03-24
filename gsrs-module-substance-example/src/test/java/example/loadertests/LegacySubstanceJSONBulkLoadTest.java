@@ -59,10 +59,10 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         Payload payload = tx.execute(status-> {
-            createUser("admin", Role.values());
+//            createUser("admin2", Role.values());
             //the old json has user TYLER and FDA-SRS too
-            createUser("TYLER", Role.values());
-            createUser("FDA_SRS", Role.values());
+//            createUser("TYLER", Role.values());
+//            createUser("FDA_SRS", Role.values());
                     try (InputStream in = dataFile.getInputStream()) {
                         return payloadService.createPayload(dataFile.getFilename(), "ignore",
                                 in, PayloadService.PayloadPersistType.TEMP);
