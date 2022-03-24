@@ -5,8 +5,8 @@
         </encoder>
     </appender>
 
-    <!-- comment out for travis
-    <root level="TRACE">
+    
+    <root level="WARN">
         <appender-ref ref="STDOUT" />
-    </root> -->
+    </root> 
 </configuration>
