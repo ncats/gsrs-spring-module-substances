@@ -20,15 +20,21 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
-    
-    
+
+    public enum InvalidStdNameBehavior {
+        warn,
+        error
+    }
+
     private NameStandardizer inPlaceStandardizer = new FDAMinimumNameStandardizer();
     private NameStandardizer fullStandardizer = new FDAFullNameStandardizer();
     
 
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
-    
+
+    private InvalidStdNameBehavior invalidStdNameBehavior= InvalidStdNameBehavior.error;
+
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         if(inPlaceStandardizer!=null)validateInPlace(objnew, objold, callback);
@@ -90,6 +96,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             String oldStdNameGiven = null;
             String oldStdNameCalc = null;
             String oldRegularName = null;
+            boolean warnedAboutThisNameStandardization = false;
 
             if (oldName != null) {
                 oldStdNameCalc = fullStandardizer.standardize(oldName.name).getResult();
@@ -113,9 +120,14 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             else {
                 log.trace("stdName: " + name.stdName);
                 if (!fullStandardizer.isStandardized(name.stdName)) {
+                    warnedAboutThisNameStandardization =true;
                     String message = String.format("Standardized name does not meet standards.  This name may contain one or more non-allowed character: '%s'",
                             name.stdName);
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
+                    if( invalidStdNameBehavior== InvalidStdNameBehavior.error) {
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(message));
+                    }else {
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
+                    }
                 }
                 log.trace("warningOnMismatch: " + warningOnMismatch);
                 String newlyStandardizedName = fullStandardizer.standardize(name.name).getResult();
@@ -162,7 +174,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                         }
                     }
                     else {
-                        if (warningOnMismatch) {
+                        if (warningOnMismatch && !warnedAboutThisNameStandardization) {
                             String message = String.format("Provided standardized name '%s' does not agree with newly standardized name '%s'. Provided standardized name will be used.",
                                     name.stdName, newlyStandardizedName);
                             callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
@@ -226,4 +238,13 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     public void setFullNameStandardizerClass(String standardizer) throws Exception {
         fullStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
     }
+
+    public InvalidStdNameBehavior isErrorOnInvalidStdName() {
+        return invalidStdNameBehavior;
+    }
+
+    public void setBehaviorOnInvalidStdName(String behavior) {
+        this.invalidStdNameBehavior = InvalidStdNameBehavior.valueOf(behavior);
+    }
+
 }
