@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
@@ -63,8 +64,10 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
 
     private final String fileName = "rep18.gsrs";
 
+  
     @BeforeEach
-    public void setupIndexers() throws IOException {
+    public void setupIndexers(TestInfo info) throws IOException {
+        System.out.println("Starting next test:" + info.getDisplayName());
         log.trace("setupIndexers");
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
