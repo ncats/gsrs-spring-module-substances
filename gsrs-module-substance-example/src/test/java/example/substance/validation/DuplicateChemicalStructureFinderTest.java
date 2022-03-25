@@ -1,6 +1,24 @@
 package example.substance.validation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -14,21 +32,6 @@ import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.test.context.support.WithMockUser;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 @WithMockUser(username = "admin", roles="Admin")
 //@Disabled("substance repository query doesn't work yet")
 public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEntityTest {
@@ -47,8 +50,9 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     private int nameCounter=0;
 
     @BeforeEach
-    public void resetNameCounter(){
+    public void resetNameCounter(TestInfo info){
         nameCounter=0;
+        System.out.println("Starting next test:" + info.getDisplayName());
     }
 
     @Test
