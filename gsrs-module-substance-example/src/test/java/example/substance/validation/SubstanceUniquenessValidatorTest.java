@@ -1,6 +1,24 @@
 package example.substance.validation;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+
 import example.GsrsModuleSubstanceApplication;
+import gov.nih.ncats.common.io.IOUtil;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
@@ -19,20 +37,6 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.UUID;
 
 /**
  *
@@ -64,10 +68,23 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
 
     private final String fileName = "rep18.gsrs";
 
+    @BeforeAll
+    public static void deleteOld() {
+        IOUtil.deleteRecursivelyQuitely(tempDir);
+    }
   
+    @AfterEach
+    public void deleteOldAfter() {
+        IOUtil.deleteRecursivelyQuitely(tempDir);
+    }
+    
     @BeforeEach
     public void setupIndexers(TestInfo info) throws IOException {
         System.out.println("Starting next test:" + info.getDisplayName());
+        
+//        IOUtil.deleteRecursivelyQuitely(tempDir);
+        System.out.println("Found :" + tempDir.getAbsolutePath());
+        
         log.trace("setupIndexers");
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
