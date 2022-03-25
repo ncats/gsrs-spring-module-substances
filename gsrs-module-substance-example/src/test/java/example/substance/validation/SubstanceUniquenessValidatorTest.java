@@ -82,8 +82,10 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         }
 
         File dataFile = new ClassPathResource(fileName).getFile();
+        System.out.println("Loading file:" + info.getDisplayName());
         loadGsrsFile(dataFile);
         log.trace("setupIndexers complete");
+        System.out.println("Finished setup:" + info.getDisplayName());
     }
 
     @Test
