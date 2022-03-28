@@ -47,7 +47,7 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
     private GsrsValidatorFactory validatorFactory;
 
     public LegacySubstanceJSONBulkLoadTest(){
-        super(true);
+        super(false);
     }
     @Transactional
     @Test
