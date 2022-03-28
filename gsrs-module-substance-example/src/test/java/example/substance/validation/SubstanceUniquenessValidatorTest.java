@@ -47,12 +47,12 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
-@TestPropertySource(properties = {
-        "logging.level.gsrs.module.substance.definitional=trace",
-        "logging.level.ix.core.util=trace",
-        "logging.level.ix.ginas.utils.validation=trace",
-        "logging.level.gsrs.module.substance.indexers=trace"
-})
+//@TestPropertySource(properties = {
+////        "logging.level.gsrs.module.substance.definitional=trace",
+////        "logging.level.ix.core.util=trace",
+////        "logging.level.ix.ginas.utils.validation=trace",
+////        "logging.level.gsrs.module.substance.indexers=trace"
+//})
 public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     public SubstanceUniquenessValidatorTest() {
@@ -87,6 +87,7 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
     
     @BeforeEach
     public void setupIndexers(TestInfo info) throws IOException {
+        System.gc();
         logit=true;
         tinfo=info;
         System.out.println("Starting next test:" + info.getDisplayName());
@@ -119,7 +120,15 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
                try {
                 System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
                 Util.printAllExecutingStackTraces();
-                Thread.sleep(60_000);
+
+                long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
+             // Get maximum size of heap in bytes. The heap cannot grow beyond this size.// Any attempt will result in an OutOfMemoryException.
+             long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
+              // Get amount of free memory within the heap in bytes. This size will increase // after garbage collection and decrease as new objects are created.
+             long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
+             
+             System.out.println("HEAP STUFF:" + heapSize + " HEAP MAX:" + heapMaxSize + " HEAP FREE:" + heapFreeSize);
+                Thread.sleep(60_000); 
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
