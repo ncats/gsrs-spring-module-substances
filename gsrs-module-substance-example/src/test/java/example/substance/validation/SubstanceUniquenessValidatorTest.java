@@ -36,6 +36,7 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
+import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -65,6 +66,10 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
 
     @Autowired
     StructureProcessor structureProcessor;
+    
+    private TestInfo tinfo = null;
+    
+    private boolean logit = true;
 
     private final String fileName = "rep18.gsrs";
 
@@ -74,12 +79,16 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
     }
   
     @AfterEach
-    public void deleteOldAfter() {
+    public void deleteOldAfter(TestInfo info) {
+        logit=false;
         IOUtil.deleteRecursivelyQuitely(tempDir);
+        System.out.println("Finished test:" + info.getDisplayName());
     }
     
     @BeforeEach
     public void setupIndexers(TestInfo info) throws IOException {
+        logit=true;
+        tinfo=info;
         System.out.println("Starting next test:" + info.getDisplayName());
         
 //        IOUtil.deleteRecursivelyQuitely(tempDir);
@@ -103,6 +112,22 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         loadGsrsFile(dataFile);
         log.trace("setupIndexers complete");
         System.out.println("Finished setup:" + info.getDisplayName());
+        
+        new Thread(()->{
+           int c= 0;
+           while(logit) {
+               try {
+                System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
+                Util.printAllExecutingStackTraces();
+                Thread.sleep(60_000);
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                logit=false;
+            }
+               
+           }
+        }).start();
     }
 
     @Test
