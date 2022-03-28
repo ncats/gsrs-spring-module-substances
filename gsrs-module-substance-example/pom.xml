@@ -17,6 +17,7 @@
     </properties>
 
     <build>
+	    <!--
 <plugins><plugin>
 <groupId>org.apache.maven.plugins</groupId>
 <artifactId>maven-surefire-plugin</artifactId>
@@ -25,6 +26,7 @@
             <argLine>-Xmx3524m</argLine>
         </configuration>
 	</plugin></plugins>
+-->
         <resources>
            <resource>
                 <directory>src/main/resources</directory>
