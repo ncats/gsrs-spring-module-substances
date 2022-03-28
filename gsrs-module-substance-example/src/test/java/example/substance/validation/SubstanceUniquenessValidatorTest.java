@@ -47,12 +47,12 @@ import lombok.extern.slf4j.Slf4j;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
-//@TestPropertySource(properties = {
-////        "logging.level.gsrs.module.substance.definitional=trace",
-////        "logging.level.ix.core.util=trace",
-////        "logging.level.ix.ginas.utils.validation=trace",
-////        "logging.level.gsrs.module.substance.indexers=trace"
-//})
+@TestPropertySource(properties = {
+        "logging.level.gsrs.module.substance.definitional=trace",
+//        "logging.level.ix.core.util=trace",
+//        "logging.level.ix.ginas.utils.validation=trace",
+        "logging.level.gsrs.module.substance.indexers=trace"
+})
 public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     public SubstanceUniquenessValidatorTest() {
@@ -128,7 +128,7 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
              long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
              
              System.out.println("HEAP STUFF:" + heapSize + " HEAP MAX:" + heapMaxSize + " HEAP FREE:" + heapFreeSize);
-                Thread.sleep(60_000); 
+                Thread.sleep(30_000); 
             } catch (Exception e) {
                 // TODO Auto-generated catch block
                 e.printStackTrace();
@@ -136,6 +136,7 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
             }
                
            }
+            System.out.println("StoppingNow:" + tinfo.getDisplayName() + " :" + (c));
         }).start();
     }
 
