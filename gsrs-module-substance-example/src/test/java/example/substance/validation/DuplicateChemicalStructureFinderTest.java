@@ -344,6 +344,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     public void load1100RecordsMoeitiesAndSearchForItShouldFindAskedForMaxCount(){
         String smiles ="C1CC=CC=C1";
         Set<String> uuids = IntStream.range(0, 1100)
+                .peek(r->{if(r%20==0)System.out.println("Registering:" + r);})
                 .mapToObj(i-> createAndPersistChemicalSubstanceWithMoietyStructures("[Na+][Cl-]", smiles).toString())
                 .collect(Collectors.toSet());
 
