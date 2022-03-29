@@ -347,9 +347,9 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         List<GsrsEntityService.CreationResult<Substance>> list = new ArrayList<>();
-        Stream<JsonNode> stream1 =yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses).stream();
         
-        try{
+        
+        try(Stream<JsonNode> stream1 =yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses).stream()){
           
         stream1.forEach(json->{
             list.add(transactionTemplate.execute(status ->{
