@@ -2,31 +2,30 @@ package gsrs.module.substance.services;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.AuditConfig;
 import gsrs.DefaultDataSourceConfig;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.ProcessingJobRepository;
 import gsrs.module.substance.repository.ProcessingRecordRepository;
-import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.XRefRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.AdminService;
 import gsrs.security.hasAdminRole;
+import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
-import gsrs.validator.ValidatorConfig;
 import ix.core.models.*;
 import ix.core.processing.*;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
 import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
-import ix.core.validator.ValidationResponse;
-import ix.core.validator.ValidatorCategory;
+import ix.core.validator.ValidationMessage;
 import ix.ginas.models.v1.Reference;
-import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
-import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -452,8 +451,7 @@ public class SubstanceBulkLoadService {
         if(stat !=null){
             stat.applyChange(change);
         }
-        saveJobInCurrentTransaction(job.id, stat);
-//        saveJobInSeparateTransaction(job.id, stat);
+        saveJobInSeparateTransaction(job.id, stat);
     }
     public Statistics applyStatisticsChangeForJob(String jobTerm, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(jobTerm);
@@ -473,7 +471,7 @@ public class SubstanceBulkLoadService {
      *
      */
     @Slf4j
-    public static class GinasSubstancePersister extends RecordPersister<Substance, Substance> {
+    public static class GinasSubstancePersister extends RecordPersister<JsonNode, JsonNode> {
 
         @Autowired
         private XRefRepository xRefRepository;
@@ -482,36 +480,50 @@ public class SubstanceBulkLoadService {
         private ProcessingRecordRepository processingRecordRepository;
 
         @Autowired
-        private SubstanceRepository substanceRepository;
+        private SubstanceEntityService substanceEntityService;
 
         @PersistenceContext
         private EntityManager entityManager;
 
 //        @Transactional(propagation = Propagation.REQUIRES_NEW)
-        public void persist(TransformedRecord<Substance, Substance> prec) throws Exception {
+        public void persist(TransformedRecord<JsonNode, JsonNode> prec) throws Exception {
             //System.out.println("Persisting:" + prec.recordToPersist.uuid + "\t" + prec.recordToPersist.getName());
 
             try{
                 boolean worked = false;
-                List<String> errors = new ArrayList<String>();
+                List<String> errors = new ArrayList<>();
                 if (prec.recordToPersist != null) {
                     try{
-                        substanceRepository.saveAndFlush(prec.recordToPersist);
-                        worked= true;
+                        GsrsEntityService.CreationResult result = substanceEntityService.createEntity(prec.recordToPersist,true);
+                        worked= result.isCreated();
+
+                        Throwable t = result.getThrowable();
+                        if(t !=null){
+                            t.printStackTrace();
+                            errors.add(t.getMessage());
+                        }
+                        if(!worked && errors.isEmpty()){
+                            //must be validation error
+                            List<ValidationMessage> messages = result.getValidationResponse().getValidationMessages();
+
+                            errors.add(messages.stream().filter(vm->  vm.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR)
+                                                    .findFirst().get().getMessage());
+                        }
                     }catch(Throwable t){
                         t.printStackTrace();
                         errors.add(t.getMessage());
                     }
                     if (worked) {
                         prec.rec.status = ProcessingRecord.Status.OK;
-                        prec.rec.xref = new XRef(prec.recordToPersist);
+                        //String kind, String id
+                        prec.rec.xref = new XRef(JsonSubstanceFactory.getSubstanceKind(prec.recordToPersist).getName(), prec.recordToPersist.get("uuid").asText());
                         //NOTE: the JPA mappings aren't set for cascade correctly? have to manually save both
                         xRefRepository.saveAndFlush(prec.rec.xref);
                     } else {
-                        prec.rec.message = errors.get(0);
+                        prec.rec.message =  errors.get(0);
                         prec.rec.status = ProcessingRecord.Status.FAILED;
                     }
-                    prec.rec.stop = System.currentTimeMillis();
+                    prec.rec.stop = TimeUtil.getCurrentTimeMillis();
                 }
                 //copy of rec to get the stats in a detached
 
@@ -519,13 +531,14 @@ public class SubstanceBulkLoadService {
 
 
                 if (!worked){
+                    
                     throw new IllegalStateException(prec.rec.message);
                 }else{
-                    log.debug("Saved substance " + (prec.recordToPersist != null ? prec.recordToPersist.getUuid() : null)
+                    log.debug("Saved substance " + (prec.recordToPersist != null ? prec.recordToPersist.get("uuid") : null)
                             + " record " + prec.rec.id);
                 }
             }catch(Throwable t){
-                log.debug("Fail saved substance " + (prec.recordToPersist != null ? prec.recordToPersist.getUuid() : null)
+                log.debug("Fail saved substance " + (prec.recordToPersist != null ? prec.recordToPersist.get("uuid") : null)
                         + " record " + prec.rec.id);
                 throw t;
             }
@@ -534,25 +547,6 @@ public class SubstanceBulkLoadService {
 
     }
 
-
-
-    public static class GinasSubstanceTransformer extends GinasAbstractSubstanceTransformer<JsonNode> {
-
-
-        public GinasSubstanceTransformer(ValidatorFactory validatorFactory) {
-            super(validatorFactory);
-        }
-
-        @Override
-        public String getName(JsonNode theRecord) {
-            return theRecord.get("name").asText();
-        }
-
-        @Override
-        public Substance transformSubstance(JsonNode rec) throws Throwable {
-            return JsonSubstanceFactory.makeSubstance(rec);
-        }
-    }
 //    /**
 //     * This Extractor is for explicitly testing that failed validation
 //     * records do fail.
@@ -690,33 +684,39 @@ public class SubstanceBulkLoadService {
 
     }
     @Slf4j
-    public abstract static class GinasAbstractSubstanceTransformer<K> extends RecordTransformer<K, Substance> {
+    public static class GinasSubstanceTransformer extends RecordTransformer<JsonNode, JsonNode> {
+        public static GinasSubstanceTransformer INSTANCE = new GinasSubstanceTransformer();
         /**
          * This is the key for the old GSRS 2.x processor we keep it for backwards compatibility.
          */
         private static final String PROCESSING_PLUGIN_KEY = "ix.utils.Util.GinasRecordProcessorPlugin";
         private static final String DOC_TYPE_BATCH_IMPORT = "BATCH_IMPORT";
-        private final ValidatorFactory validatorFactory;
 
-        public GinasAbstractSubstanceTransformer(ValidatorFactory validatorFactory) {
-            this.validatorFactory = validatorFactory;
-        }
+        private ObjectMapper mapper = new ObjectMapper();
 
         /**
          * This method copied from GSRS 2.x Substance class that didn't belong in substance
          * @param p
          */
-        private void addImportReference(Substance s, ProcessingJob p) {
+        private void addImportReference(JsonNode s, ProcessingJob p) {
             Reference r = new Reference();
             r.docType = DOC_TYPE_BATCH_IMPORT;
             r.citation = p.payload.name;
             r.documentDate = TimeUtil.getCurrentDate();
             String processingKey=p.getKeyMatching(PROCESSING_PLUGIN_KEY);
             r.id=processingKey;
-            s.addReference(r);
+
+            JsonNode references = s.get("references");
+            if(references.isMissingNode()){
+                ((ObjectNode)s).putArray("references").add(mapper.valueToTree(r));
+            }
+            if(references.isArray()){
+                ((ArrayNode)references).add(mapper.valueToTree(r));
+            }
+
         }
         @Override
-        public Substance transform(PayloadExtractedRecord<K> pr, ProcessingRecord rec) {
+        public JsonNode transform(PayloadExtractedRecord<JsonNode> pr, ProcessingRecord rec) {
 
             try {
                 rec.name = getName(pr.theRecord);
@@ -727,30 +727,32 @@ public class SubstanceBulkLoadService {
             // System.out.println("############## transforming:" + rec.name);
             rec.job = pr.job;
             rec.start = System.currentTimeMillis();
-            Substance sub = null;
-            try {
-                sub = transformSubstance(pr.theRecord);
-                addImportReference(sub, rec.job);
-                ValidationResponse resp = validatorFactory.createValidatorFor(sub, null, ValidatorConfig.METHOD_TYPE.BATCH, ValidatorCategory.CATEGORY_ALL())
-                        .validate(sub, null);
-                if(resp.hasError()){
-                    throw new IllegalArgumentException("validation error: " + resp.getValidationMessages());
-                }
-                rec.status = ProcessingRecord.Status.ADAPTED;
-            } catch (Throwable t) {
-                rec.stop = System.currentTimeMillis();
-                rec.status = ProcessingRecord.Status.FAILED;
-                rec.message = t.getMessage();
-                log.error(t.getMessage());
-                t.printStackTrace();
-                throw new IllegalStateException(t);
-            }
-            return sub;
+            rec.status = ProcessingRecord.Status.ADAPTED;
+            return pr.theRecord;
+//            Substance sub = null;
+//            try {
+//                sub = transformSubstance(pr.theRecord);
+//                addImportReference(sub, rec.job);
+//                ValidationResponse resp = validatorFactory.createValidatorFor(sub, null, ValidatorConfig.METHOD_TYPE.BATCH, ValidatorCategory.CATEGORY_ALL())
+//                        .validate(sub, null);
+//                if(resp.hasError()){
+//                    throw new IllegalArgumentException("validation error: " + resp.getValidationMessages());
+//                }
+//                rec.status = ProcessingRecord.Status.ADAPTED;
+//            } catch (Throwable t) {
+//                rec.stop = System.currentTimeMillis();
+//                rec.status = ProcessingRecord.Status.FAILED;
+//                rec.message = t.getMessage();
+//                log.error(t.getMessage());
+//                t.printStackTrace();
+//                throw new IllegalStateException(t);
+//            }
+//            return sub;
         }
 
-        public abstract String getName(K theRecord);
-
-        public abstract Substance transformSubstance(K rec) throws Throwable;
+        public String getName(JsonNode theRecord) {
+            return theRecord.get("name").asText();
+        }
     }
 
 }

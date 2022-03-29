@@ -1,14 +1,17 @@
 package example.name;
 
-import gsrs.module.substance.utils.NameUtilities;
-import gsrs.module.substance.utils.NameUtilities.ReplacementNote;
-import gsrs.module.substance.utils.NameUtilities.ReplacementResult;
-import lombok.extern.slf4j.Slf4j;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
+import gsrs.module.substance.utils.FDAFullNameStandardizer;
+import gsrs.module.substance.utils.NameStandardizer;
+import gsrs.module.substance.utils.NameUtilities;
+import gsrs.module.substance.utils.ReplacementNote;
+import gsrs.module.substance.utils.ReplacementResult;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
@@ -165,7 +168,7 @@ public class NameUtilitiesTest {
     public void testGreekLetterReplacements1() {
         String input = " Α, Β, Γ, Δ, Ε, Ζ, Η, Θ, Ι, Κ, Λ, Μ, Ν, Ξ, Ο, Π, Ρ, Σ, Τ, Υ, Φ, Χ, Ψ, and Ω";
         String expected = " .ALPHA., .BETA., .GAMMA., .DELTA., .EPSILON., .ZETA., .ETA., .THETA., .IOTA., .KAPPA., .LAMBDA., .MU., .NU., .XI., .OMICRON., .PI., .RHO., .SIGMA., .TAU., .UPSILON., .PHI., .CHI., .PSI., and .OMEGA.";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
+        ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
 //        result.getReplacementNotes().forEach(n -> {
 //            System.out.println(n);
 //        });
@@ -177,7 +180,7 @@ public class NameUtilitiesTest {
     public void testNumericReplacements1() {
         String input = "¹±³";
         String expected = "1+/-3";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
+        ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -195,7 +198,7 @@ public class NameUtilitiesTest {
     public void testSmallCaps() {
         String input = "ᴅ glucose";
         String expected = "D glucose";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
+        ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual); //, "Must replace small caps characters"
     }
@@ -212,7 +215,7 @@ public class NameUtilitiesTest {
     public void test2SmallCaps() {
         String input = "ʟᴅ glucose";
         String expected = "LD glucose";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
+        ReplacementResult result = NameUtilities.getInstance().makeSpecificReplacements(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual); //, "Must replace small caps characters"
     }
@@ -229,7 +232,7 @@ public class NameUtilitiesTest {
     public void testNonAsciiRemoval2() {
         String input = "some idea\u200B";
         String expected = "some idea";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
+        ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -238,7 +241,7 @@ public class NameUtilitiesTest {
     public void testNonAsciiRemoval3() {
         String input = "an little\u200Bbit of glucose©";
         String expected = "an littlebit of glucose?";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
+        ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
         String actual = NameUtilities.getInstance().nkfdNormalizations(result.getResult());
         Assertions.assertEquals(expected, actual);
     }
@@ -247,7 +250,7 @@ public class NameUtilitiesTest {
     public void testMoreZeroWidthRemoval() {
         String input = "an little\u200B\u200C\u200D sugar";
         String expected = "an little sugar";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
+        ReplacementResult result = NameUtilities.getInstance().removeZeroWidthChars(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
         result.getReplacementNotes().forEach(n -> log.trace(String.format("replaced char at %d (%s)", n.getPosition(), n.getReplacement())));
@@ -266,7 +269,7 @@ public class NameUtilitiesTest {
     public void testFull2() {
         String input = " Α, Β, Γ \u200C,an little\u200Cbit of glucose©";
         String expected = ".ALPHA., .BETA., .GAMMA. ,AN LITTLEBIT OF GLUCOSE?";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
+        ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -275,7 +278,7 @@ public class NameUtilitiesTest {
     public void testFull3() {
         String input = " Α, Β, Γ \u200C,  potassium diclofenac";
         String expected = ".ALPHA., .BETA., .GAMMA. , POTASSIUM DICLOFENAC";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
+        ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = result.getResult();
         Assertions.assertEquals(expected, actual);
     }
@@ -285,7 +288,7 @@ public class NameUtilitiesTest {
         //several chars from https://terpconnect.umd.edu/~zben/Web/CharSet/htmlchars.html
         String input = "pay attention\u00A1 There is \u00A4 to be made. No, \u00AB isn't XML. \u03A7 \u2191 ";
         String expected = "PAY ATTENTION? THERE IS ? TO BE MADE. NO, \" ISN'T XML. .CHI. ?";
-        NameUtilities.ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
+        ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
         String actual = NameUtilities.getInstance().nkfdNormalizations( result.getResult());
         Assertions.assertEquals(expected, actual);
     }
@@ -327,8 +330,8 @@ public class NameUtilitiesTest {
         String inputName = "chemical name";
         List<ReplacementNote> notes = new ArrayList<>();
 
-        NameUtilities.ReplacementResult result1;
-        result1 = new NameUtilities.ReplacementResult(inputName, notes);
+        ReplacementResult result1;
+        result1 = new ReplacementResult(inputName, notes);
 
         ReplacementNote note1 = new ReplacementNote(1, "hello");
         List<ReplacementNote> notes2 = new ArrayList<>();
@@ -364,4 +367,34 @@ public class NameUtilitiesTest {
         String actual = NameUtilities.getInstance().removeZeroWidthChars(input).getResult();
         Assertions.assertEquals(expected, actual);
     }
+
+    
+    @Test
+    public void TestfullyStandardizeNameWithEarlyBrackets() {
+        String nameWithEarlyBrackets= "[HELLO] THERE";
+        String expected = "(HELLO) THERE";
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(nameWithEarlyBrackets);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestfullyStandardizeNameWithEarlyBracketsAndBraces() {
+        String nameWithEarlyBrackets= "[user] {friendly} software";
+        String expected = "(USER) (FRIENDLY) SOFTWARE";
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(nameWithEarlyBrackets);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testNameCleanup() {
+        String nameInput="[HI]THERE [INN][USAN]";
+        String expected ="(HI)THERE [INN][USAN]";
+        ReplacementResult result=NameUtilities.getInstance().fullyStandardizeName(nameInput);
+        String actual = result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+
 }

@@ -4,24 +4,14 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.json.JsonEntityUtil;
 import ix.core.controllers.EntityFactory;
-import ix.core.models.ParentReference;
 import ix.core.models.Structure;
-import ix.core.util.EntityUtils;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.v1.*;
 
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by katzelda on 9/7/16.
@@ -44,6 +34,40 @@ public class JsonSubstanceFactory {
 
     public static Substance makeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
         return JsonEntityUtil.fixOwners(internalMakeSubstance(tree, messages), true);
+    }
+    public static Class<? extends Substance> getSubstanceKind(JsonNode tree){
+        JsonNode subclass = tree.get("substanceClass");
+        if (subclass != null && !subclass.isNull()) {
+            Substance.SubstanceClass type;
+            try {
+                type = Substance.SubstanceClass.valueOf(subclass.asText());
+            } catch (Exception e) {
+                throw new IllegalStateException("Unimplemented substance class:" + subclass.asText());
+            }
+                switch (type) {
+                    case chemical:
+                        return ChemicalSubstance.class;
+                    case concept:
+                        return Substance.class;
+                    case mixture:
+                        return MixtureSubstance.class;
+                    case nucleicAcid:
+                        return NucleicAcidSubstance.class;
+                    case protein:
+                        return ProteinSubstance.class;
+                    case polymer:
+                        return PolymerSubstance.class;
+                    case specifiedSubstanceG1:
+                        return SpecifiedSubstanceGroup1Substance.class;
+                    case structurallyDiverse:
+                        return StructurallyDiverseSubstance.class;
+                    default:   throw new IllegalStateException(
+                            "JSON parse error: Unimplemented substance class:\"" + subclass.asText() + "\"");
+                }
+
+
+        }
+        return Substance.class;
     }
     public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 

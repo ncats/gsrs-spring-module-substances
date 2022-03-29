@@ -3,18 +3,16 @@ package gsrs.module.substance.services;
 import com.fasterxml.jackson.databind.JsonNode;
 import ix.core.processing.RecordTransformFactory;
 import ix.core.processing.RecordTransformer;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.ValidatorFactory;
 
-public class GinasSubstanceTransformerFactory implements RecordTransformFactory<JsonNode, Substance> {
-    private final ValidatorFactory validatorFactory;
+public class GinasSubstanceTransformerFactory implements RecordTransformFactory<JsonNode, JsonNode> {
 
-    public GinasSubstanceTransformerFactory(ValidatorFactory validatorFactory) {
-        this.validatorFactory = validatorFactory;
+    public static GinasSubstanceTransformerFactory INSTANCE = new GinasSubstanceTransformerFactory();
+
+    private GinasSubstanceTransformerFactory(){
+        //can not instantiate
     }
-
     @Override
-    public RecordTransformer<JsonNode, Substance> createTransformerFor() {
-        return new SubstanceBulkLoadService.GinasSubstanceTransformer(validatorFactory);
+    public RecordTransformer<JsonNode, JsonNode> createTransformerFor() {
+        return SubstanceBulkLoadService.GinasSubstanceTransformer.INSTANCE;
     }
 }

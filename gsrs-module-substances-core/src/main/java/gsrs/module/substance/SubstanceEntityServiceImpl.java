@@ -8,9 +8,9 @@ import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.models.Role;
@@ -20,8 +20,10 @@ import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.strategy.BatchProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.utils.Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -55,10 +57,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private ObjectMapper objectMapper;
 
     @Autowired
-    private GroupService groupRepository;
+    private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
 
-//    @Autowired
-//    private CvSearchService searchService;
+    @Autowired
+    private SubstanceBulkLoadServiceConfiguration bulkLoadServiceConfiguration;
+
 
 
     @Override
@@ -71,27 +74,18 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return UUID.fromString(idAsString);
     }
 
-    private  GinasProcessingStrategy createAcceptApplyAllStrategy() {
-        return new GinasProcessingStrategy(groupRepository) {
-            @Override
-            public void processMessage(GinasProcessingMessage gpm) {
-                if (gpm.suggestedChange) {
-                    gpm.actionType = GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
-                } else {
-                    if (gpm.isError()) {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.FAIL;
-                    } else {
-                        gpm.actionType = GinasProcessingMessage.ACTION_TYPE.IGNORE;
-                    }
-                }
-            }
-        };
-    }
 
+
+    protected GsrsProcessingStrategy createProcessingStrategyFor(ValidatorConfig.METHOD_TYPE type){
+        if(type == ValidatorConfig.METHOD_TYPE.BATCH){
+            return new BatchProcessingStrategy(gsrsProcessingStrategyFactory.createNewStrategy(bulkLoadServiceConfiguration.getBatchProcessingStrategy()));
+        }
+        return gsrsProcessingStrategyFactory.createNewDefaultStrategy();
+    }
     @Override
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
-        
-        GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
+
+        GsrsProcessingStrategy strategy = createProcessingStrategyFor(type);
         ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
             public void complete() {
@@ -104,7 +98,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             .map(m -> (GinasProcessingMessage) m)
                             .collect(Collectors.toList());
                     //processMessage, handleMessages, addProblems?
-                    //Why all 3?
+                    //Why all 3? because right now each of these methods might set or change fields in validation response.
                     messages.stream().forEach(strategy::processMessage);
                     resp.setValid(false);
                     if (strategy.handleMessages((Substance) object, messages)) {
@@ -112,18 +106,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     }
                     strategy.addProblems((Substance) object, messages);
 
-
-                    if (GinasProcessingMessage.ALL_VALID(messages)) {
-                        resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
-                        resp.setValid(true);
-                    }else{
-                        if(resp.hasError()){
-                            resp.setValid(false);
-                        }else {
-                            //might be warnings
-                            resp.setValid(true);
-                        }
-                    }
+                    strategy.setIfValid(resp, messages);
                 }
             }
         };

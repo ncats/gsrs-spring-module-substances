@@ -1,6 +1,25 @@
 package example.substance.validation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.test.context.support.WithMockUser;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -14,21 +33,7 @@ import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.test.context.support.WithMockUser;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import ix.utils.Util;
 @WithMockUser(username = "admin", roles="Admin")
 //@Disabled("substance repository query doesn't work yet")
 public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEntityTest {
@@ -46,19 +51,49 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     private SubstanceRepository substanceRepository;
     private int nameCounter=0;
 
+    private boolean logit=true;
     @BeforeEach
-    public void resetNameCounter(){
+    public void resetNameCounter(TestInfo tinfo){
         nameCounter=0;
+        System.out.println("Starting next test:" + tinfo.getDisplayName());
+
+
+        new Thread(()->{
+            int c= 0;
+            while(logit) {
+                try {
+                    System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
+
+                    long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
+                    long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
+                    long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
+
+
+                    System.out.println("HEAP Size:" + heapSize + " HEAP Max:" + heapMaxSize + " HEAP Free:" + heapFreeSize);
+                    Thread.sleep(10_000); 
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    logit=false;
+                }
+
+            }
+            System.out.println("StoppingNow:" + tinfo.getDisplayName() + " :" + (c));
+        }).start();
+    }
+    @AfterEach
+    public void after() {
+        logit=false;
     }
 
     @Test
     public void noRecordsLoadedShouldNotFindAnyDups(){
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
-                                .setUUID(uuid)
-                                .setStructureWithDefaultReference("C1CC=CC=C1")
-                                .addName("a name")
-                                .build();
+                .setUUID(uuid)
+                .setStructureWithDefaultReference("C1CC=CC=C1")
+                .addName("a name")
+                .build();
         //have to structure process first to generate hashes
         Structure structure = structureProcessor.instrument(s.getStructure().toChemical(), true);
         s.getStructure().updateStructureFields(structure);
@@ -244,8 +279,8 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     public void load5RecordsAndSearchForItShouldFindThem(){
         String smiles ="C1CC=CC=C1";
         Set<String> uuids = IntStream.range(0, 5)
-                                    .mapToObj(i-> createAndPersistChemicalSubstanceWithStructure(smiles).toString())
-                                    .collect(Collectors.toSet());
+                .mapToObj(i-> createAndPersistChemicalSubstanceWithStructure(smiles).toString())
+                .collect(Collectors.toSet());
 
 
 
@@ -307,6 +342,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     public void load1100RecordsMoeitiesAndSearchForItShouldFindAskedForMaxCount(){
         String smiles ="C1CC=CC=C1";
         Set<String> uuids = IntStream.range(0, 1100)
+                .peek(r->{if(r%20==0)System.out.println("Registering:" + r);})
                 .mapToObj(i-> createAndPersistChemicalSubstanceWithMoietyStructures("[Na+][Cl-]", smiles).toString())
                 .collect(Collectors.toSet());
 

@@ -1,6 +1,24 @@
 package example.substance.validation;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.UUID;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
+
 import example.GsrsModuleSubstanceApplication;
+import gov.nih.ncats.common.io.IOUtil;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
@@ -18,20 +36,8 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
+import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.UUID;
 
 /**
  *
@@ -41,12 +47,13 @@ import java.util.UUID;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
-@TestPropertySource(properties = {
-        "logging.level.gsrs.module.substance.definitional=trace",
-        "logging.level.ix.core.util=trace",
-        "logging.level.ix.ginas.utils.validation=trace",
-        "logging.level.gsrs.module.substance.indexers=trace"
-})
+//@TestPropertySource(properties = {
+//        "logging.level.gsrs.module.substance.definitional=trace"
+        //,
+//        "logging.level.ix.core.util=trace",
+//        "logging.level.ix.ginas.utils.validation=trace",
+//        "logging.level.gsrs.module.substance.indexers=trace"
+//})
 public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     public SubstanceUniquenessValidatorTest() {
@@ -60,11 +67,35 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
 
     @Autowired
     StructureProcessor structureProcessor;
+    
+    private TestInfo tinfo = null;
+    
+    private boolean logit = true;
 
     private final String fileName = "rep18.gsrs";
 
+    @BeforeAll
+    public static void deleteOld() {
+        IOUtil.deleteRecursivelyQuitely(tempDir);
+    }
+  
+    @AfterEach
+    public void deleteOldAfter(TestInfo info) {
+        logit=false;
+        IOUtil.deleteRecursivelyQuitely(tempDir);
+        System.out.println("Finished test:" + info.getDisplayName());
+    }
+    
     @BeforeEach
-    public void setupIndexers() throws IOException {
+    public void setupIndexers(TestInfo info) throws IOException {
+        System.gc();
+        logit=true;
+        tinfo=info;
+        System.out.println("Starting next test:" + info.getDisplayName());
+        
+//        IOUtil.deleteRecursivelyQuitely(tempDir);
+        System.out.println("Found :" + tempDir.getAbsolutePath());
+        
         log.trace("setupIndexers");
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
@@ -79,8 +110,33 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         }
 
         File dataFile = new ClassPathResource(fileName).getFile();
+        System.out.println("Loading file:" + info.getDisplayName());
         loadGsrsFile(dataFile);
         log.trace("setupIndexers complete");
+        System.out.println("Finished setup:" + info.getDisplayName());
+        
+        new Thread(()->{
+           int c= 0;
+           while(logit) {
+               try {
+                System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
+                Util.printAllExecutingStackTraces();
+
+                long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
+                long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
+                long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
+
+                System.out.println("HEAP Size:" + heapSize + " HEAP Max:" + heapMaxSize + " HEAP Free:" + heapFreeSize);
+                Thread.sleep(30_000); 
+            } catch (Exception e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+                logit=false;
+            }
+               
+           }
+            System.out.println("StoppingNow:" + tinfo.getDisplayName() + " :" + (c));
+        }).start();
     }
 
     @Test
