@@ -1,15 +1,13 @@
 package example.loadertests;
 
-import example.GsrsModuleSubstanceApplication;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.services.SubstanceBulkLoadService;
-import gsrs.service.PayloadService;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.validator.GsrsValidatorFactory;
-import ix.core.models.Payload;
-import ix.core.models.Role;
-import ix.core.processing.PayloadProcessor;
-import ix.core.stats.Statistics;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.UncheckedIOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +20,15 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import example.GsrsModuleSubstanceApplication;
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.services.SubstanceBulkLoadService;
+import gsrs.service.PayloadService;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.validator.GsrsValidatorFactory;
+import ix.core.models.Payload;
+import ix.core.processing.PayloadProcessor;
+import ix.core.stats.Statistics;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
@@ -54,15 +55,23 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
     @Timeout(value = 10, unit = TimeUnit.MINUTES) //this will fail and kill the test if it takes more than 1 min
     public void loadGsrsFile() throws IOException, InterruptedException {
 
+        AtomicLong startCount = new AtomicLong();
+        TransactionTemplate tx4 = new TransactionTemplate(transactionManager);
+        tx4.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        tx4.executeWithoutResult( ignored ->{
+            startCount.set(substanceEntityService.count());
+            System.out.println("Starting count:"+ startCount.get());
+        });
+        
         Resource dataFile = new ClassPathResource("testdumps/rep90.ginas");
 
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         Payload payload = tx.execute(status-> {
-            createUser("admin", Role.values());
+//            createUser("admin2", Role.values());
             //the old json has user TYLER and FDA-SRS too
-            createUser("TYLER", Role.values());
-            createUser("FDA_SRS", Role.values());
+//            createUser("TYLER", Role.values());
+//            createUser("FDA_SRS", Role.values());
                     try (InputStream in = dataFile.getInputStream()) {
                         return payloadService.createPayload(dataFile.getFilename(), "ignore",
                                 in, PayloadService.PayloadPersistType.TEMP);
@@ -94,7 +103,7 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
         TransactionTemplate tx3 = new TransactionTemplate(transactionManager);
         tx3.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx3.executeWithoutResult( ignored ->{
-            assertEquals(effectivelyFinalStatistics.recordsPersistedSuccess.get(), substanceEntityService.count());
+            assertEquals(effectivelyFinalStatistics.recordsPersistedSuccess.get(), substanceEntityService.count() - startCount.get());
         });
 
 
