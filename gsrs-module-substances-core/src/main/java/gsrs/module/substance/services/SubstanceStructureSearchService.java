@@ -285,13 +285,13 @@ public class SubstanceStructureSearchService {
 
                 StreamUtil.StreamConcatter< Substance> sstream = StreamUtil.with(Stream.of(r));
 
-                if(!structureSearchConfiguration.includePolymers()){
+                if(!structureSearchConfiguration.isIncludePolymers()){
                     if(r instanceof PolymerSubstance){
                         return Stream.empty();
                     }
                 }
 
-                if(structureSearchConfiguration.includeModifications()){
+                if(structureSearchConfiguration.isIncludeModifications()){
                     //add modifications results as well
                     //This is likely to be a source of slow-down
                     //due to possibly missing indexes
@@ -308,7 +308,7 @@ public class SubstanceStructureSearchService {
                 }
 
 
-                if(structureSearchConfiguration.includeMixtures()){
+                if(structureSearchConfiguration.isIncludeMixtures()){
                     //add mixture results as well
                     List<Substance> mixlist = new ArrayList<>(mixtureSubstanceRepository.findByMixture_Components_Substance_Refuuid(result.getId()));
                     sstream = sstream.and(mixlist.stream());
