@@ -16,26 +16,11 @@ public class BracketTermIndexValueMaker implements IndexValueMaker<Substance> {
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
+        //ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN]
         if (substance.names!= null) {
             for (String tagTerm : TagUtilities.extractBracketNameTags(substance)) {
                 consumer.accept(IndexableValue.simpleFacetStringValue(TAG_FACET_NAME, tagTerm));
             }
         }
-        /*
-        Pattern p = Pattern.compile("(?:[ \\]])\\[([ \\-A-Za-z0-9]+)\\]");
-        if (substance.names != null) {
-            substance.names.stream()
-                    .filter(a -> a.getName().trim().endsWith("]"))
-                    .forEach(n -> {
-                        //ASPIRIN1,23[asguyasgda]asgduytqwqd [INN][USAN]
-                        Matcher m = p.matcher(n.getName());
-                        while (m.find()) {
-                            String loc = m.group(1);
-                            consumer.accept(IndexableValue.simpleFacetStringValue("GInAS Tag",loc));
-                        }
-                    });
-        }
-
-         */
     }
 }
