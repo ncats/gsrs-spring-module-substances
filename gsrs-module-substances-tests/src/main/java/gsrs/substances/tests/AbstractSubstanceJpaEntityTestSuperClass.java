@@ -1,38 +1,22 @@
 package gsrs.substances.tests;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gov.nih.ncats.common.io.InputStreamSupplier;
-import gov.nih.ncats.common.sneak.Sneak;
-import gov.nih.ncats.common.yield.Yield;
-import gsrs.autoconfigure.GsrsExportConfiguration;
-import gsrs.cache.GsrsCache;
-import gsrs.controller.GsrsControllerConfiguration;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
-import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.payload.LegacyPayloadConfiguration;
-import gsrs.payload.LegacyPayloadService;
-import gsrs.payload.PayloadController;
-import gsrs.repository.*;
-import gsrs.service.ExportService;
-import gsrs.service.GsrsEntityService;
-import gsrs.service.PayloadService;
-import gsrs.services.BackupService;
-import gsrs.startertests.GsrsEntityTestConfiguration;
-import gsrs.startertests.TestEntityProcessorFactory;
-import gsrs.startertests.TestGsrsValidatorFactory;
-import gsrs.startertests.TestIndexValueMakerFactory;
-import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
-import gsrs.startertests.jupiter.ResetAllEntityServicesBeforeEachExtension;
-import ix.core.models.Group;
-import ix.core.models.Principal;
-import ix.core.models.Role;
-import ix.core.models.UserProfile;
-import ix.core.util.EntityUtils;
-import ix.core.validator.ValidationResponse;
-import ix.ginas.models.v1.Substance;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import javax.persistence.EntityManager;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Scheduler;
@@ -57,20 +41,44 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.regex.Pattern;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
+import gov.nih.ncats.common.io.InputStreamSupplier;
+import gov.nih.ncats.common.sneak.Sneak;
+import gov.nih.ncats.common.yield.Yield;
+import gsrs.autoconfigure.GsrsExportConfiguration;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.GsrsControllerConfiguration;
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.payload.LegacyPayloadConfiguration;
+import gsrs.payload.LegacyPayloadService;
+import gsrs.payload.PayloadController;
+import gsrs.repository.ETagRepository;
+import gsrs.repository.EditRepository;
+import gsrs.repository.FileDataRepository;
+import gsrs.repository.GroupRepository;
+import gsrs.repository.PayloadRepository;
+import gsrs.service.ExportService;
+import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
+import gsrs.services.BackupService;
+import gsrs.startertests.GsrsEntityTestConfiguration;
+import gsrs.startertests.TestEntityProcessorFactory;
+import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.startertests.TestIndexValueMakerFactory;
+import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
+import gsrs.startertests.jupiter.ResetAllEntityServicesBeforeEachExtension;
+import ix.core.models.Group;
+import ix.core.models.Principal;
+import ix.core.models.Role;
+import ix.core.models.UserProfile;
+import ix.core.util.EntityUtils;
+import ix.core.validator.ValidationResponse;
+import ix.ginas.models.v1.Substance;
 /**
  * Parent Super-class of that should be used to
  * test Substances interacting with a test database.
@@ -339,9 +347,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         List<GsrsEntityService.CreationResult<Substance>> list = new ArrayList<>();
-
-        yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses)
-        .forEach(json->{
+        
+        
+        try(Stream<JsonNode> stream1 =yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses).stream()){
+          
+        stream1.forEach(json->{
             list.add(transactionTemplate.execute(status ->{
                 try {
                     GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json,true);
@@ -355,6 +365,9 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
                 }
             }));
         });
+        }catch(Exception e) {
+            e.printStackTrace();
+        }
 
 
         return list;

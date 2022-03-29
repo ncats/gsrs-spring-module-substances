@@ -1,5 +1,5 @@
 language: java
-
+size: large
 #this will reuse maven dependencies so it doesn't redownload everytime
 #cache:
 #  directories:
@@ -11,4 +11,4 @@ script:
   - ./mvnw -U clean install -DskipTests
 # this is really dirty but there is so much output from these tests and turning off logging and sql isn't enough
 # so I grep for ERROR lines which will show the test failures but that returns exit code of 0 if it finds a match so we want "not" that to fail the build if there are errors
-  - ./mvnw -q test 2>/dev/null
+  - ./mvnw test 2>/dev/null
