@@ -11,6 +11,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -32,6 +33,7 @@ import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
+import ix.utils.Util;
 @WithMockUser(username = "admin", roles="Admin")
 //@Disabled("substance repository query doesn't work yet")
 public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEntityTest {
@@ -49,10 +51,41 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     private SubstanceRepository substanceRepository;
     private int nameCounter=0;
 
+    private boolean logit=true;
     @BeforeEach
-    public void resetNameCounter(TestInfo info){
+    public void resetNameCounter(TestInfo tinfo){
         nameCounter=0;
-        System.out.println("Starting next test:" + info.getDisplayName());
+        System.out.println("Starting next test:" + tinfo.getDisplayName());
+        
+        
+        new Thread(()->{
+            int c= 0;
+            while(logit) {
+                try {
+                 System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
+//                 Util.printAllExecutingStackTraces();
+
+                 long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
+              // Get maximum size of heap in bytes. The heap cannot grow beyond this size.// Any attempt will result in an OutOfMemoryException.
+              long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
+               // Get amount of free memory within the heap in bytes. This size will increase // after garbage collection and decrease as new objects are created.
+              long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
+              
+              System.out.println("HEAP STUFF:" + heapSize + " HEAP MAX:" + heapMaxSize + " HEAP FREE:" + heapFreeSize);
+                 Thread.sleep(10_000); 
+             } catch (Exception e) {
+                 // TODO Auto-generated catch block
+                 e.printStackTrace();
+                 logit=false;
+             }
+                
+            }
+             System.out.println("StoppingNow:" + tinfo.getDisplayName() + " :" + (c));
+         }).start();
+    }
+    @AfterEach
+    public void after() {
+        logit=false;
     }
 
     @Test
