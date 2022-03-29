@@ -89,7 +89,7 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
         }
         //depending on the order the bulk load might fail if the substance currently requires a related substance to be present
         //(for example alt def?)
-        assertEquals(statistics.totalFailedAndPersisted(), 90);
+        assertEquals(90,statistics.totalFailedAndPersisted());
         Statistics effectivelyFinalStatistics = statistics;
         TransactionTemplate tx3 = new TransactionTemplate(transactionManager);
         tx3.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
