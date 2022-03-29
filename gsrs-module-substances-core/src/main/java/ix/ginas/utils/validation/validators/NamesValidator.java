@@ -29,9 +29,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private ReferenceRepository referenceRepository;
     @Autowired
     private SubstanceRepository substanceRepository;
-    // __alex__ made this true for testing
-    // Do we want this back on?
-    boolean extractLocators = true;
+    // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
+    boolean extractLocators = false;
     public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
         List<Replacer> repList = new ArrayList<>();
         repList.add(new Replacer("^(\\s+)","" ).message("Name \"$0\" has leading whitespace which was removed"));
@@ -295,23 +294,4 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
     }
 
-/*
-    static private Set<String> extractLocators(Name n) {
-        Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
-        Matcher m = p.matcher(n.name);
-        Set<String> locators = new LinkedHashSet<String>();
-        //TODO isn't while(m.find() ) sufficient?
-        if (m.find()) {
-            do {
-                String loc = m.group(1);
-
-                // System.out.println("LOCATOR:" + loc);
-                locators.add(loc);
-            } while (m.find(m.start(1)));
-        }
-        return locators;
-
-    }
-
- */
 }
