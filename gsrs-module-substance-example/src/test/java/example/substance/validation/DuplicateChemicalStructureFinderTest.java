@@ -56,32 +56,30 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     public void resetNameCounter(TestInfo tinfo){
         nameCounter=0;
         System.out.println("Starting next test:" + tinfo.getDisplayName());
-        
-        
+
+
         new Thread(()->{
             int c= 0;
             while(logit) {
                 try {
-                 System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
-//                 Util.printAllExecutingStackTraces();
+                    System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
 
-                 long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
-              // Get maximum size of heap in bytes. The heap cannot grow beyond this size.// Any attempt will result in an OutOfMemoryException.
-              long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
-               // Get amount of free memory within the heap in bytes. This size will increase // after garbage collection and decrease as new objects are created.
-              long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
-              
-              System.out.println("HEAP STUFF:" + heapSize + " HEAP MAX:" + heapMaxSize + " HEAP FREE:" + heapFreeSize);
-                 Thread.sleep(10_000); 
-             } catch (Exception e) {
-                 // TODO Auto-generated catch block
-                 e.printStackTrace();
-                 logit=false;
-             }
-                
+                    long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
+                    long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
+                    long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
+
+
+                    System.out.println("HEAP Size:" + heapSize + " HEAP Max:" + heapMaxSize + " HEAP Free:" + heapFreeSize);
+                    Thread.sleep(10_000); 
+                } catch (Exception e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                    logit=false;
+                }
+
             }
-             System.out.println("StoppingNow:" + tinfo.getDisplayName() + " :" + (c));
-         }).start();
+            System.out.println("StoppingNow:" + tinfo.getDisplayName() + " :" + (c));
+        }).start();
     }
     @AfterEach
     public void after() {
@@ -92,10 +90,10 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     public void noRecordsLoadedShouldNotFindAnyDups(){
         UUID uuid = UUID.randomUUID();
         ChemicalSubstance s = new ChemicalSubstanceBuilder()
-                                .setUUID(uuid)
-                                .setStructureWithDefaultReference("C1CC=CC=C1")
-                                .addName("a name")
-                                .build();
+                .setUUID(uuid)
+                .setStructureWithDefaultReference("C1CC=CC=C1")
+                .addName("a name")
+                .build();
         //have to structure process first to generate hashes
         Structure structure = structureProcessor.instrument(s.getStructure().toChemical(), true);
         s.getStructure().updateStructureFields(structure);
@@ -281,8 +279,8 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
     public void load5RecordsAndSearchForItShouldFindThem(){
         String smiles ="C1CC=CC=C1";
         Set<String> uuids = IntStream.range(0, 5)
-                                    .mapToObj(i-> createAndPersistChemicalSubstanceWithStructure(smiles).toString())
-                                    .collect(Collectors.toSet());
+                .mapToObj(i-> createAndPersistChemicalSubstanceWithStructure(smiles).toString())
+                .collect(Collectors.toSet());
 
 
 

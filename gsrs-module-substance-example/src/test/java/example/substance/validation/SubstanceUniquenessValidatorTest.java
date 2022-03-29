@@ -123,12 +123,10 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
                 Util.printAllExecutingStackTraces();
 
                 long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
-             // Get maximum size of heap in bytes. The heap cannot grow beyond this size.// Any attempt will result in an OutOfMemoryException.
-             long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
-              // Get amount of free memory within the heap in bytes. This size will increase // after garbage collection and decrease as new objects are created.
-             long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
-             
-             System.out.println("HEAP STUFF:" + heapSize + " HEAP MAX:" + heapMaxSize + " HEAP FREE:" + heapFreeSize);
+                long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
+                long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
+
+                System.out.println("HEAP Size:" + heapSize + " HEAP Max:" + heapMaxSize + " HEAP Free:" + heapFreeSize);
                 Thread.sleep(30_000); 
             } catch (Exception e) {
                 // TODO Auto-generated catch block
