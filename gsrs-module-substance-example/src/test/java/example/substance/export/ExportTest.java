@@ -56,6 +56,7 @@ public class ExportTest extends AbstractSubstanceJpaFullStackEntityTest {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.execute( status ->{
             boolean done=false;
+            assertEquals(90, substanceRepository.count());
             try(Stream<Substance> stream = substanceRepository.findAll().stream()) {
                 try {
                     ExportDir.ExportFile<ExportMetaData> exportFile= new ExportDir<>(tempDir, ExportMetaData.class).createFile("exportFile", exportMetaData);
@@ -65,8 +66,9 @@ public class ExportTest extends AbstractSubstanceJpaFullStackEntityTest {
                     Exporter<Substance> exporter = new Exporter<Substance>() {
                         @Override
                         public void export(Substance s) throws IOException {
+                            
+                            System.out.println("Exporting:" + s.uuid + " :" + ids.add(s.uuid.toString()));
                             latch.countDown();
-                            ids.add(s.uuid.toString());
                         }
 
                         @Override
