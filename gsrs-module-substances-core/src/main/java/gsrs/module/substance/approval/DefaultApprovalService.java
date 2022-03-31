@@ -9,7 +9,10 @@ import gsrs.security.hasApproverRole;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.SubstanceApprovalIdGenerator;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.math3.exception.NullArgumentException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,8 +31,13 @@ import java.util.Optional;
  * @see #defaultApprovalValidation(Substance, String)
  */
 @Service
+@Slf4j
 public class DefaultApprovalService implements ApprovalService{
 
+    public static enum ApprovalDependency {
+        CreatedBy,
+        LastEditedBy
+    }
 
     private SubstanceApprovalIdGenerator approvalIdGenerator;
 
@@ -37,6 +45,9 @@ public class DefaultApprovalService implements ApprovalService{
     private SubstanceRepository substanceRepository;
 
     private PrincipalRepository principalRepository;
+
+    @Value("${gsrs.substances.approvaldependency}")
+    private ApprovalDependency approvalDependency = ApprovalDependency.LastEditedBy;
 
     @Autowired
     public DefaultApprovalService(SubstanceApprovalIdGenerator approvalIdGenerator,
@@ -96,14 +107,31 @@ public class DefaultApprovalService implements ApprovalService{
         if (Substance.STATUS_APPROVED.equals(s.status)) {
             throw new ApprovalException("Cannot approve an approved substance");
         }
-        if (s.lastEditedBy == null) {
-            throw new ApprovalException(
-                    "There is no last editor associated with this record. One must be present to allow approval. Please contact your system administrator.");
-        } else {
-            if (s.lastEditedBy.username.equals(usernameOfApprover)) {
+        log.trace(String.format("in defaultApprovalValidation, usernameOfApprover: %s; this.approvalDependency: %s", usernameOfApprover, this.approvalDependency));
+        /*
+        check createdBy or lastEditedBy depending on a setting
+        */
+        boolean approvalOK =true;
+        String approvalMessage ="";
+        if(this.approvalDependency == ApprovalDependency.LastEditedBy) {
+            if (s.lastEditedBy == null) {
                 throw new ApprovalException(
-                        "You cannot approve a substance if you are the last editor of the substance.");
+                        "There is no last editor associated with this record. One must be present to allow approval. Please contact your system administrator.");
+            } else if (s.lastEditedBy.username.equalsIgnoreCase(usernameOfApprover)) {
+                approvalOK = false;
+                approvalMessage = "You cannot approve a substance if you are the last editor of the substance.";
             }
+        } else if( this.approvalDependency == ApprovalDependency.CreatedBy) {
+            if (s.createdBy == null) {
+                throw new ApprovalException(
+                        "There is no creator associated with this record. One must be present to allow approval. Please contact your system administrator.");
+            } else if (s.createdBy.username.equalsIgnoreCase(usernameOfApprover)) {
+                approvalOK = false;
+                approvalMessage = "You cannot approve a substance if you are the creator of the substance.";
+            }
+        }
+        if (!approvalOK) {
+            throw new ApprovalException(approvalMessage);
         }
         if (!s.isPrimaryDefinition()) {
             throw new ApprovalException("Cannot approve non-primary definitions.");
@@ -164,4 +192,22 @@ public class DefaultApprovalService implements ApprovalService{
                 .approvedBy(loggedInUsername.get())
                 .build();
     }
+
+    public ApprovalDependency getApprovalDependency() {
+        return approvalDependency;
+    }
+
+    public void setApprovalDependency(String approvalDependencyString) {
+        try{
+            this.approvalDependency= Enum.valueOf(ApprovalDependency.class, approvalDependencyString);
+        }
+        catch (IllegalArgumentException | NullPointerException ex) {
+            log.error("error parsing approval dependency: " + approvalDependencyString);
+        }
+    }
+
+    public void setApprovalDependency(ApprovalDependency approvalDependency) {
+        this.approvalDependency = approvalDependency;
+    }
+
 }
