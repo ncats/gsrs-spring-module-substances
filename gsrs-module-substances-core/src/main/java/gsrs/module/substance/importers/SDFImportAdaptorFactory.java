@@ -115,14 +115,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     }
 
 
-
-
-
-
-
-
-
-    private static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
+    protected static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
 
     @PostConstruct
     public void init(){
@@ -196,6 +189,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     @SneakyThrows
     @Override
     public AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
+        log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
         List<MappingAction<Substance, SDRecordContext>> actions = getMappingActions(adapterSettings);
         AbstractImportSupportingGsrsEntityController.ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;

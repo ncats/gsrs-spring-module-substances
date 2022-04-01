@@ -11,16 +11,20 @@ import ix.ginas.models.v1.Substance;
 import java.util.Map;
 
 import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
-@Deprecated
-public class NSRSCASExtractorActionFactory extends BaseActionFactory {
 
+@Deprecated
+public class NSRSSupplierIDExtractorActionFactory extends BaseActionFactory{
+
+    private final String CODE_SYSTEM="Supplier ID";
+    private final String CODE_TYPE ="PRIMARY";
     /*
         Use NSRSCustomCodeExtractorActionFactory instead
     */
 
-    private final String CODE_SYSTEM="CAS";
-    private final String DEFAULT_URL = "https://commonchemistry.cas.org/detail?cas_rn=";
-
+    /*
+    Supplier ID is an NSRS field represented as a code.
+    It is generally shared by a small group of Substances.
+     */
     @Override
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         MappingActionFactoryMetadata metaData = getMetadata();
@@ -29,16 +33,12 @@ public class NSRSCASExtractorActionFactory extends BaseActionFactory {
             Map<String, Object> adaptedParams = resolveParametersMap(sdRec, abstractParams);
             Map<String, Object> params = metaData.resolve(adaptedParams);
             Code c = new Code(CODE_SYSTEM, (String) adaptedParams.get("code"));
-            c.type = (String) params.get("codeType");
+            c.type = CODE_TYPE;
             if( adaptedParams.get("url") != null) {
                 String url =(String) adaptedParams.get("url");
-                if( url.equals(DEFAULT_URL)) {
-                    url = url + adaptedParams.get("code");
-                }
                 c.url = url;
             }
             doBasicsImports(c, params);
-            //TODO: more params
             sub.addCode(c);
             return sub;
         };
@@ -49,21 +49,9 @@ public class NSRSCASExtractorActionFactory extends BaseActionFactory {
         MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
         return builder.setLabel("Create Code")
                 .addParameterField(MappingParameter.builder()
-                        .setFieldNameAndLabel("code", "CAS Number")
+                        .setFieldNameAndLabel("code", "Supplier ID")
                         .setValueType(String.class)
                         .setRequired(true).build())
-                .addParameterField(MappingParameter.builder()
-                        .setFieldNameAndLabel("codeType", "Primary or Alternative")
-                        .setValueType(String.class)
-                        .setDefaultValue("PRIMARY")
-                        .build())
-                //this next one is primarily for testing right now; the processing is a little more complicated than the other fields
-                // we may remove this after showing this to users
-                .addParameterField(MappingParameter.builder()
-                        .setFieldNameAndLabel("url", "CAS Number URL")
-                        .setValueType(String.class)
-                        .setDefaultValue(DEFAULT_URL)
-                        .build())
                 .build();
     }
 }
