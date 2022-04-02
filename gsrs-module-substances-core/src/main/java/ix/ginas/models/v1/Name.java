@@ -124,10 +124,9 @@ public class Name extends CommonDataElementOfCollection {
     public String fullName;
     
     @Lob
-	@JSONEntity(title = "Standard Name") // Is this necessary for suggest category, try with and without?
     @Basic(fetch= FetchType.EAGER)
     @JsonView(BeanViews.JsonDiff.class)
-	@Indexable(name="Standard Name", suggest=true)
+	@Indexable(name="Standardized Name", suggest=true)
 	public String stdName;
     
     
