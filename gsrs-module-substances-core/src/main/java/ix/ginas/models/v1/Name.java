@@ -126,7 +126,8 @@ public class Name extends CommonDataElementOfCollection {
     @Lob
     @Basic(fetch= FetchType.EAGER)
     @JsonView(BeanViews.JsonDiff.class)
-    public String stdName;
+	@Indexable(name="Standardized Name", suggest=true)
+	public String stdName;
     
     
     @JSONEntity(title = "Name Type", format = JSONConstants.CV_NAME_TYPE, values = "JSONConstants.ENUM_NAMETYPE")
