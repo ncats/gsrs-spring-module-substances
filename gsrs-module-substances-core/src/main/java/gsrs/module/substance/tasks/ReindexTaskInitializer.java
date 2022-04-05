@@ -13,8 +13,8 @@ public class ReindexTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private ReindexService reindexService;
 
-	@Override
-	public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l){
+    @Override
+    public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l){
         UUID uuid = UUID.randomUUID();
         try {
             reindexService.execute(uuid, l);
@@ -22,12 +22,12 @@ public class ReindexTaskInitializer extends ScheduledTaskInitializer {
             e.printStackTrace();
         }
 
-	}
+    }
 
-	@Override
-	public String getDescription() {		
-		return "Reindex all core entities from backup tables";
-	}
+    @Override
+    public String getDescription() {
+        return "Reindex all core entities from backup tables";
+    }
 
 
 }

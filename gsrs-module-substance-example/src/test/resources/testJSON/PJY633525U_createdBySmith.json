@@ -1,0 +1,636 @@
+{
+	"uuid": "3ab18214-f0d3-465b-b610-fd6e78cf843c",
+	"created": 1624685245000,
+	"createdBy": "smith",
+	"lastEdited": 1624685245000,
+	"lastEditedBy": "admin",
+	"deprecated": false,
+	"definitionType": "PRIMARY",
+	"definitionLevel": "COMPLETE",
+	"substanceClass": "chemical",
+	"status": "COMPLETE",
+	"version": "5",
+	"approvedBy": "FDA_SRS",
+	"names": [
+		{
+			"uuid": "837ec5da-af4c-44c7-bc02-44113472c039",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"name": "ADAMANTANE",
+			"type": "sys",
+			"domains": [],
+			"languages": [
+				"en"
+			],
+			"nameJurisdiction": [],
+			"nameOrgs": [],
+			"preferred": false,
+			"displayName": true,
+			"_name": "ADAMANTANE",
+			"_nameHTML": "ADAMANTANE",
+			"references": [
+				"500606e7-e00f-4f8d-b651-0ff916e9d637",
+				"65ae7319-44c3-4e18-af11-905b865802a6",
+				"40fb258f-a302-40a2-91f1-7445f4591239",
+				"59b6e1e4-0b99-4f34-af32-e3b5fe80702f"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/names(837ec5da-af4c-44c7-bc02-44113472c039)?view=full"
+		},
+		{
+			"uuid": "aeda2620-48d2-4011-abb6-88658869edff",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"name": "TRICYCLO(3.3.1.13,7)DECANE",
+			"type": "sys",
+			"domains": [],
+			"languages": [
+				"en"
+			],
+			"nameJurisdiction": [],
+			"nameOrgs": [],
+			"preferred": false,
+			"displayName": false,
+			"_name": "TRICYCLO(3.3.1.13,7)DECANE",
+			"_nameHTML": "TRICYCLO(3.3.1.13,7)DECANE",
+			"references": [
+				"40fb258f-a302-40a2-91f1-7445f4591239",
+				"59b6e1e4-0b99-4f34-af32-e3b5fe80702f"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/names(aeda2620-48d2-4011-abb6-88658869edff)?view=full"
+		},
+		{
+			"uuid": "2ca20bb2-db16-4e06-85cf-c7594b98fcf6",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"name": "NSC-527913",
+			"type": "cd",
+			"domains": [],
+			"languages": [
+				"en"
+			],
+			"nameJurisdiction": [],
+			"nameOrgs": [],
+			"preferred": false,
+			"displayName": false,
+			"_name": "NSC-527913",
+			"_nameHTML": "NSC-527913",
+			"references": [
+				"40fb258f-a302-40a2-91f1-7445f4591239",
+				"59b6e1e4-0b99-4f34-af32-e3b5fe80702f"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/names(2ca20bb2-db16-4e06-85cf-c7594b98fcf6)?view=full"
+		},
+		{
+			"uuid": "e9bf1dcd-e6d6-403a-aa11-92ba257a213d",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"name": "ADAMANTANE [MI]",
+			"type": "cn",
+			"domains": [],
+			"languages": [
+				"en"
+			],
+			"nameJurisdiction": [],
+			"nameOrgs": [],
+			"preferred": false,
+			"displayName": false,
+			"_name": "ADAMANTANE [MI]",
+			"_nameHTML": "ADAMANTANE [MI]",
+			"references": [
+				"65ae7319-44c3-4e18-af11-905b865802a6",
+				"40fb258f-a302-40a2-91f1-7445f4591239"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/names(e9bf1dcd-e6d6-403a-aa11-92ba257a213d)?view=full"
+		}
+	],
+	"codes": [
+		{
+			"uuid": "0ba75dc6-64d4-4099-bdf6-2c385dda260e",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "CAS",
+			"code": "281-23-2",
+			"type": "PRIMARY",
+			"url": "https://chem.nlm.nih.gov/chemidplus/rn/281-23-2",
+			"_isClassification": false,
+			"references": [
+				"66b9400a-385b-416f-9caf-bc59e27cb47e",
+				"d80d559d-03c0-407a-b932-88eb6fccf11a"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(0ba75dc6-64d4-4099-bdf6-2c385dda260e)?view=full"
+		},
+		{
+			"uuid": "07f31579-0cb9-4e14-a3ef-931cc2936037",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "EVMPD",
+			"code": "SUB36875",
+			"type": "PRIMARY",
+			"_isClassification": false,
+			"references": [
+				"66b9400a-385b-416f-9caf-bc59e27cb47e"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(07f31579-0cb9-4e14-a3ef-931cc2936037)?view=full"
+		},
+		{
+			"uuid": "84779c72-3cc3-f44c-0ad9-71cf59aaab58",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "DRUG BANK",
+			"code": "DB03627",
+			"type": "PRIMARY",
+			"url": "http://www.drugbank.ca/drugs/DB03627",
+			"_isClassification": false,
+			"references": [
+				"cefacbfd-02c1-4977-a7a1-beb248e3a151"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(84779c72-3cc3-f44c-0ad9-71cf59aaab58)?view=full"
+		},
+		{
+			"uuid": "ee64b6ed-6961-47bd-96ac-0937459db0f6",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "ECHA (EC/EINECS)",
+			"code": "206-001-4",
+			"type": "PRIMARY",
+			"url": "https://echa.europa.eu/substance-information/-/substanceinfo/100.005.457",
+			"_isClassification": false,
+			"references": [
+				"66b9400a-385b-416f-9caf-bc59e27cb47e"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(ee64b6ed-6961-47bd-96ac-0937459db0f6)?view=full"
+		},
+		{
+			"uuid": "107b03f5-4650-99ed-846d-1aee518720e8",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "EPA CompTox",
+			"code": "281-23-2",
+			"type": "PRIMARY",
+			"url": "https://comptox.epa.gov/dashboard/dsstoxdb/results?utf8=%E2%9C%93&search=281-23-2",
+			"_isClassification": false,
+			"references": [
+				"fe6bbcc0-735b-1885-a3e3-585fe07c0320"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(107b03f5-4650-99ed-846d-1aee518720e8)?view=full"
+		},
+		{
+			"uuid": "02470431-c2d5-4ada-8a69-75cbcd40f1ac",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "FDA UNII",
+			"code": "PJY633525U",
+			"type": "PRIMARY",
+			"_isClassification": false,
+			"references": [],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(02470431-c2d5-4ada-8a69-75cbcd40f1ac)?view=full"
+		},
+		{
+			"uuid": "ccf00ce1-da5a-4ff1-b6f2-f255c4f876f0",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "MERCK INDEX",
+			"code": "M1407",
+			"comments": "Merck Index",
+			"type": "PRIMARY",
+			"url": "https://www.rsc.org/Merck-Index/monograph/M1407?q=authorize",
+			"_isClassification": false,
+			"references": [
+				"66b9400a-385b-416f-9caf-bc59e27cb47e"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(ccf00ce1-da5a-4ff1-b6f2-f255c4f876f0)?view=full"
+		},
+		{
+			"uuid": "6bf71829-d7a8-49ad-bfd7-6e56c5452053",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "MESH",
+			"code": "D000218",
+			"type": "PRIMARY",
+			"url": "http://www.ncbi.nlm.nih.gov/mesh/68000218",
+			"_isClassification": false,
+			"references": [
+				"66b9400a-385b-416f-9caf-bc59e27cb47e"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(6bf71829-d7a8-49ad-bfd7-6e56c5452053)?view=full"
+		},
+		{
+			"uuid": "c4b7ab52-d0a1-402e-ba4f-5e9788d8357e",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "PUBCHEM",
+			"code": "9238",
+			"type": "PRIMARY",
+			"url": "https://pubchem.ncbi.nlm.nih.gov/compound/9238",
+			"_isClassification": false,
+			"references": [
+				"66b9400a-385b-416f-9caf-bc59e27cb47e"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(c4b7ab52-d0a1-402e-ba4f-5e9788d8357e)?view=full"
+		},
+		{
+			"uuid": "f6fd320c-c449-4034-bd30-9e37851a035f",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"codeSystem": "WIKIPEDIA",
+			"code": "ADAMANTANE",
+			"type": "PRIMARY",
+			"url": "https://en.wikipedia.org/wiki/Adamantane",
+			"_isClassification": false,
+			"references": [
+				"66b9400a-385b-416f-9caf-bc59e27cb47e"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/codes(f6fd320c-c449-4034-bd30-9e37851a035f)?view=full"
+		}
+	],
+	"modifications": {
+		"uuid": "19dc7c8d-5ba9-4540-9d16-8be0c25398df",
+		"created": 1624685245000,
+		"createdBy": "smith",
+		"lastEdited": 1624685245000,
+		"lastEditedBy": "admin",
+		"deprecated": false,
+		"agentModifications": [],
+		"physicalModifications": [],
+		"structuralModifications": [],
+		"references": [],
+		"access": []
+	},
+	"notes": [],
+	"properties": [],
+	"relationships": [],
+	"references": [
+		{
+			"uuid": "40fb258f-a302-40a2-91f1-7445f4591239",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "CHEMID",
+			"docType": "CHEMID",
+			"publicDomain": true,
+			"tags": [
+				"NOMEN"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(40fb258f-a302-40a2-91f1-7445f4591239)?view=full"
+		},
+		{
+			"uuid": "500606e7-e00f-4f8d-b651-0ff916e9d637",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "ADAMANTANE [MI]",
+			"docType": "SRS_LOCATOR",
+			"publicDomain": true,
+			"tags": [],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(500606e7-e00f-4f8d-b651-0ff916e9d637)?view=full"
+		},
+		{
+			"uuid": "59b6e1e4-0b99-4f34-af32-e3b5fe80702f",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "CHEMID",
+			"docType": "SRS",
+			"publicDomain": true,
+			"tags": [
+				"NOMEN",
+				"PUBLIC_DOMAIN_RELEASE",
+				"AUTO_SELECTED"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(59b6e1e4-0b99-4f34-af32-e3b5fe80702f)?view=full"
+		},
+		{
+			"uuid": "65ae7319-44c3-4e18-af11-905b865802a6",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "MERCK",
+			"docType": "SRS",
+			"publicDomain": true,
+			"tags": [
+				"NOMEN"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(65ae7319-44c3-4e18-af11-905b865802a6)?view=full"
+		},
+		{
+			"uuid": "66b9400a-385b-416f-9caf-bc59e27cb47e",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "SRS CODE IMPORT",
+			"docType": "SRS",
+			"documentDate": 1493405812000,
+			"publicDomain": true,
+			"tags": [
+				"NOMEN"
+			],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(66b9400a-385b-416f-9caf-bc59e27cb47e)?view=full"
+		},
+		{
+			"uuid": "9de0590d-c3c5-42b9-b46e-fc70b45c2855",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "dump-public-2021-06-23_UPDATED.gsrs",
+			"docType": "BATCH_IMPORT",
+			"documentDate": 1624685245000,
+			"publicDomain": false,
+			"tags": [],
+			"id": "d30003db589cd802444f",
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(9de0590d-c3c5-42b9-b46e-fc70b45c2855)?view=full"
+		},
+		{
+			"uuid": "c469c60e-a7e6-476f-b97b-cdc8b5c94d89",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "SRS import [PJY633525U]",
+			"docType": "SRS",
+			"documentDate": 1493405812000,
+			"publicDomain": true,
+			"tags": [
+				"NOMEN"
+			],
+			"url": "http://fdasis.nlm.nih.gov/srs/srsdirect.jsp?regno=PJY633525U",
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(c469c60e-a7e6-476f-b97b-cdc8b5c94d89)?view=full"
+		},
+		{
+			"uuid": "cefacbfd-02c1-4977-a7a1-beb248e3a151",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"docType": "SYSTEM",
+			"publicDomain": true,
+			"tags": [],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(cefacbfd-02c1-4977-a7a1-beb248e3a151)?view=full"
+		},
+		{
+			"uuid": "d80d559d-03c0-407a-b932-88eb6fccf11a",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "STN",
+			"docType": "STN (SCIFINDER)",
+			"publicDomain": true,
+			"tags": [],
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(d80d559d-03c0-407a-b932-88eb6fccf11a)?view=full"
+		},
+		{
+			"uuid": "fe6bbcc0-735b-1885-a3e3-585fe07c0320",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1624685245000,
+			"lastEditedBy": "admin",
+			"deprecated": false,
+			"citation": "WEBSITE",
+			"docType": "WEBSITE",
+			"publicDomain": true,
+			"tags": [
+				"NOMEN",
+				"PUBLIC_DOMAIN_RELEASE"
+			],
+			"url": "https://comptox.epa.gov/dashboard/dsstoxdb/results?utf8=%E2%9C%93&search=281-23-2",
+			"access": [],
+			"_self": "https://ginas.ncats.nih.gov/app/api/v1/references(fe6bbcc0-735b-1885-a3e3-585fe07c0320)?view=full"
+		}
+	],
+	"approvalID": "PJY633525U",
+	"tags": [
+		"MI"
+	],
+	"structure": {
+		"id": "bf01acf7-b058-45b7-a547-a804d4d48ca8",
+		"created": 1624685245000,
+		"lastEdited": 1626898255000,
+		"deprecated": false,
+		"digest": "7bba04b7750f9afb84d41e22639c4276f4d60c8f",
+		"molfile": "\n  Marvin  07212116102D          \n\n 10 12  0  0  0  0            999 V2000\n    4.7695   -3.8422    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.7636   -3.2386    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.2845   -2.9321    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.2391   -2.9417    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.7230   -3.8530    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.2498   -4.1487    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.2558   -4.7522    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.3023   -4.7427    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.2952   -4.1378    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.8161   -3.8326    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  2  1  1  0  0  0  0\n  3  2  1  0  0  0  0\n  4  3  1  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  1  0  0  0  0\n  6  1  1  0  0  0  0\n  7  5  1  0  0  0  0\n  7  8  1  0  0  0  0\n  8  9  1  0  0  0  0\n  9  1  1  0  0  0  0\n 10  8  1  0  0  0  0\n  3 10  1  0  0  0  0\nM  END",
+		"smiles": "C1C2CC3CC1CC(C2)C3",
+		"formula": "C10H16",
+		"opticalActivity": "NONE",
+		"atropisomerism": "No",
+		"stereoCenters": 0,
+		"definedStereo": 0,
+		"ezCenters": 0,
+		"charge": 0,
+		"mwt": 136.234,
+		"properties": [
+			{
+				"id": 25144620,
+				"label": "LyChI_SMILES",
+				"text": "C1C2CC3CC1CC(C2)C3"
+			},
+			{
+				"id": 25144621,
+				"label": "LyChI_L1",
+				"term": "H1H24L3JA"
+			},
+			{
+				"id": 25144622,
+				"label": "LyChI_L2",
+				"term": "A6YCLZP464"
+			},
+			{
+				"id": 25144623,
+				"label": "LyChI_L3",
+				"term": "A4LZDB4N5MC"
+			},
+			{
+				"id": 25144624,
+				"label": "LyChI_L4",
+				"term": "A4C39YLST6DP"
+			},
+			{
+				"id": 25144625,
+				"label": "EXACT_HASH",
+				"term": "A4C39YLST6DP"
+			},
+			{
+				"id": 25144626,
+				"label": "STEREO_INSENSITIVE_HASH",
+				"term": "A4LZDB4N5MC"
+			}
+		],
+		"links": [],
+		"count": 1,
+		"createdBy": "smith",
+		"lastEditedBy": "GUEST",
+		"self": "https://ginas.ncats.nih.gov/app/api/v1/structures(bf01acf7-b058-45b7-a547-a804d4d48ca8)?view=full",
+		"stereochemistry": "ACHIRAL",
+		"access": [],
+		"references": [
+			"c469c60e-a7e6-476f-b97b-cdc8b5c94d89",
+			"59b6e1e4-0b99-4f34-af32-e3b5fe80702f"
+		],
+		"_formulaHTML": "C<sub>10</sub>H<sub>16</sub>",
+		"hash": "A4C39YLST6DP"
+	},
+	"moieties": [
+		{
+			"uuid": "f474fe65-c34e-42e7-85e1-3df68b5aa5b4",
+			"created": 1624685245000,
+			"createdBy": "smith",
+			"lastEdited": 1626898801000,
+			"lastEditedBy": "GUEST",
+			"deprecated": false,
+			"id": "f474fe65-c34e-42e7-85e1-3df68b5aa5b4",
+			"digest": "f64dbb114578110f93f87c343e4db09c45bd5ccb",
+			"molfile": "\n  Marvin  07212116202D          \n\n 10 12  0  0  0  0            999 V2000\n    4.7636   -3.2386    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.2845   -2.9321    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.2391   -2.9417    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    3.7230   -3.8530    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.2498   -4.1487    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.7695   -3.8422    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.2952   -4.1378    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.3023   -4.7427    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.8161   -3.8326    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    4.2558   -4.7522    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  2  1  1  0  0  0  0\n  1  6  1  0  0  0  0\n  3  2  1  0  0  0  0\n  2  9  1  0  0  0  0\n  3  4  1  0  0  0  0\n  4  5  1  0  0  0  0\n 10  4  1  0  0  0  0\n  5  6  1  0  0  0  0\n  7  6  1  0  0  0  0\n  8  7  1  0  0  0  0\n  9  8  1  0  0  0  0\n 10  8  1  0  0  0  0\nM  END",
+			"smiles": "C1C2CC3CC1CC(C2)C3",
+			"formula": "C10H16",
+			"opticalActivity": "NONE",
+			"atropisomerism": "No",
+			"stereoCenters": 0,
+			"definedStereo": 0,
+			"ezCenters": 0,
+			"charge": 0,
+			"mwt": 136.234,
+			"properties": [
+				{
+					"id": 25420393,
+					"label": "LyChI_SMILES",
+					"text": "C1C2CC3CC1CC(C2)C3"
+				},
+				{
+					"id": 25420394,
+					"label": "LyChI_L1",
+					"term": "H1H24L3JA"
+				},
+				{
+					"id": 25420395,
+					"label": "LyChI_L2",
+					"term": "A6YCLZP464"
+				},
+				{
+					"id": 25420396,
+					"label": "LyChI_L3",
+					"term": "A4LZDB4N5MC"
+				},
+				{
+					"id": 25420397,
+					"label": "LyChI_L4",
+					"term": "A4C39YLST6DP"
+				},
+				{
+					"id": 25420398,
+					"label": "EXACT_HASH",
+					"term": "A4C39YLST6DP"
+				},
+				{
+					"id": 25420399,
+					"label": "STEREO_INSENSITIVE_HASH",
+					"term": "A4LZDB4N5MC"
+				}
+			],
+			"links": [],
+			"count": 1,
+			"self": "https://ginas.ncats.nih.gov/app/api/v1/structures(f474fe65-c34e-42e7-85e1-3df68b5aa5b4)?view=full",
+			"stereochemistry": "ACHIRAL",
+			"access": [],
+			"references": [],
+			"_formulaHTML": "C<sub>10</sub>H<sub>16</sub>",
+			"hash": "A4C39YLST6DP",
+			"countAmount": {
+				"uuid": "6d41a191-7a14-423c-b461-d3c567ddaf28",
+				"created": 1624685245000,
+				"createdBy": "smith",
+				"lastEdited": 1624685245000,
+				"lastEditedBy": "admin",
+				"deprecated": false,
+				"type": "MOL RATIO",
+				"average": 1,
+				"units": "MOL RATIO",
+				"references": [],
+				"access": []
+			}
+		}
+	],
+	"_nameHTML": "ADAMANTANE",
+	"_approvalIDDisplay": "PJY633525U",
+	"_name": "ADAMANTANE",
+	"access": [],
+	"_self": "https://ginas.ncats.nih.gov/app/api/v1/substances(3ab18214-f0d3-465b-b610-fd6e78cf843c)?view=full"
+}

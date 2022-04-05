@@ -100,9 +100,9 @@ public class DefaultApprovalService implements ApprovalService{
             throw new ApprovalException(
                     "There is no last editor associated with this record. One must be present to allow approval. Please contact your system administrator.");
         } else {
-            if (s.lastEditedBy.username.equals(usernameOfApprover)) {
+            if (s.createdBy != null && s.createdBy.username.equalsIgnoreCase(usernameOfApprover)) {
                 throw new ApprovalException(
-                        "You cannot approve a substance if you are the last editor of the substance.");
+                        "You cannot approve a substance if you are the creator of the substance.");
             }
         }
         if (!s.isPrimaryDefinition()) {
