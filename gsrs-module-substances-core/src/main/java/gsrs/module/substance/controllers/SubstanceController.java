@@ -22,6 +22,7 @@ import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
+import gsrs.module.substance.importers.NSRSSDFImportAdapterFactory;
 import gsrs.module.substance.importers.SDFImportAdaptorFactory;
 import gsrs.module.substance.repository.*;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
@@ -1551,6 +1552,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         List<ImportAdapterFactory<Substance>> factories = new ArrayList<>();
         factories.add(new SDFImportAdaptorFactory());
+        factories.add(new NSRSSDFImportAdapterFactory());
         return factories;
     }
 /*

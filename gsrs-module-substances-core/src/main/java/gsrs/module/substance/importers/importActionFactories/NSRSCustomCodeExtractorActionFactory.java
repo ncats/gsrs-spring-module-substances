@@ -22,6 +22,13 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
     private String codeValueParameterName;
 
     private String[] parameterInfo;
+
+    public NSRSCustomCodeExtractorActionFactory() {
+    }
+
+    public NSRSCustomCodeExtractorActionFactory(String[] parameters) {
+        parameterInfo= parameters;
+    }
     /*
     This class creates GSRS codes for
         Supplier
@@ -68,6 +75,10 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
             if( parameterParts.length> 4) {
                 defaultValue= parameterParts[4];
             }
+            Boolean showInUI= true;
+            if( parameterParts.length>5 && parameterParts[5] != null && parameterParts[5].equalsIgnoreCase("FALSE")) {
+                showInUI= false;
+            }
 
             MappingParameterBuilder parameterBuilder = MappingParameter.builder();
             parameterBuilder.setFieldName(fieldName);
@@ -86,6 +97,7 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
             } else {
                 parameterBuilder.setRequired(true);
             }
+            parameterBuilder.setDisplayInUI(showInUI);
             builder.addParameterField(parameterBuilder.build());
         }
         return builder.build();

@@ -12,7 +12,7 @@ import java.util.Map;
 
 import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
 
-public class NameExtractorActionFactory extends BaseActionFactory {
+public class NSRSSampleNameExtractorActionFactory extends BaseActionFactory {
     @Override
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         return (sub, sdRec) -> {
@@ -29,7 +29,7 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                     Name n = new Name();
                     n.setName(sn);
                     doBasicsImports(n, params);
-                    //TODO: more params
+                    //TODO: more params and additional manipulations of the data
                     sub.names.add(n);
                 }
             } else {
@@ -47,7 +47,7 @@ public class NameExtractorActionFactory extends BaseActionFactory {
         MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
         return builder.setLabel("Create Name")
                 .addParameterField(MappingParameter.builder()
-                        .setFieldName("nameValue")
+                        .setFieldNameAndLabel("nameValue", "Sample Name")
                         .setValueType(String.class)
                         .setRequired(true).build())
                 .addParameterField(MappingParameter.builder()

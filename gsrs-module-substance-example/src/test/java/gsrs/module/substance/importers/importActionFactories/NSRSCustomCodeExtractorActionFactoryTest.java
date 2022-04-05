@@ -170,6 +170,61 @@ class NSRSCustomCodeExtractorActionFactoryTest {
     }
 
     @Test
+    void createForNCGCIDTest() throws Exception {
+        String supplierId = "S9376";
+        String supplierIdCodeSystem="Supplier ID";
+        Map<String, Object> abstractParams = new HashMap<>();
+        abstractParams.put("supplierID", supplierId);
+        abstractParams.put("codeType","PRIMARY");
+        NSRSCustomCodeExtractorActionFactory factory = new NSRSCustomCodeExtractorActionFactory();
+        factory.setActionName("Generic code creator");
+        factory.setCodeSystem(supplierIdCodeSystem);
+        factory.setActionName("SupplierIdCreator");
+        factory.setCodeSystemLabel("Supplier ID");
+        factory.setActionLabel("Supplier ID Creator");
+        factory.setCodeValueParameterName("supplierID");
+        String[] params = {
+                "supplierID`Supplier ID`java.lang.String`true",
+                "codeType`Primary or Alternative`java.lang.String`false`PRIMARY"
+        };
+        factory.setParameterInfo(params);
+
+        MappingAction<Substance, SDRecordContext> action = factory.create(abstractParams);
+        Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(=CC=C1)C(=C1)CCC(C)=O");
+        SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
+
+        ChemicalSubstance test = new ChemicalSubstance();
+        Substance newChem =action.act(test, record);
+        Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals(supplierIdCodeSystem) && c.code.equals(supplierId)));
+    }
+
+    @Test
+    public void internalOrExternalTest() throws Exception{
+        String[] prefixParams = {
+                "internalOrExternal`Internally Synthesized`java.lang.Boolean`true",
+                "codeSystem`codeSystem`java.lang.String`false`internal_external`false",
+                "codeType`Primary or Alternative`java.lang.String`false`PRIMARY`false"
+        };
+        NSRSCustomCodeExtractorActionFactory factory = new NSRSCustomCodeExtractorActionFactory(prefixParams);
+        factory.setActionName("internal flag generator");
+        factory.setCodeSystem("internal_external");
+        factory.setActionName("DummyCodeCreator");
+        factory.setCodeSystemLabel("Internal");
+        factory.setActionLabel("Dummy");
+        factory.setCodeValueParameterName("internalOrExternal");
+        Map<String, Object> abstractParams = new HashMap<>();
+        abstractParams.put("internalOrExternal", "FALSE");
+
+        MappingAction<Substance, SDRecordContext> action = factory.create(abstractParams);
+        Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(=CC=C1)C(=C1)CCC(C)=O");
+        SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
+
+        ChemicalSubstance test = new ChemicalSubstance();
+        Substance newChem =action.act(test, record);
+        Assertions.assertTrue(newChem.codes.stream().anyMatch(c->c.codeSystem.equals("internal_external") && c.code.equalsIgnoreCase("FALSE")));
+    }
+
+    @Test
     public void getMetadataTest() {
         NSRSCustomCodeExtractorActionFactory factory = new NSRSCustomCodeExtractorActionFactory();
         factory.setActionName("Dummy code creator");

@@ -43,9 +43,9 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
     private Map<String, NCATSFileUtils.InputFieldStatistics> fileFieldStatisticsMap;
 
     @Value("#{${ix.gsrs.sdfActions}}")
-    private Map<String, String> defaultImportActions;
+    protected Map<String, String> defaultImportActions;
 
-    private static Map<String, String> fileImportActions;
+    protected static Map<String, String> fileImportActions;
 
     public SDFImportAdaptorFactory() {
         init();
@@ -153,7 +153,7 @@ public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEnti
 
     public static List<MappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
         List<MappingAction<Substance, SDRecordContext>> actions = new ArrayList<>();
-        System.out.println("adapterSettings: " + adapterSettings.toPrettyString());
+        log.trace("adapterSettings: " + adapterSettings.toPrettyString());
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
