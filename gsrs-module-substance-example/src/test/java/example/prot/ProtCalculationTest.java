@@ -620,7 +620,42 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         List<Property> formulaProps = ProteinUtils.getMolFormulaProperties(protein88ECG9H7RA);
         assertEquals(expectedFormula, formulaProps.get(0).getValue().nonNumericValue);
     }
-    
+
+    @Test
+    public void proteinMolFormulaTest() {
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "MKKN";
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+
+        ProteinSubstance proteinSubstanceMixedCase = new ProteinSubstance();
+        Protein proteinMixedCase = new Protein();
+        Subunit subunit1MixedCase= new  Subunit();
+        proteinMixedCase.subunits = new ArrayList<>();
+        proteinMixedCase.subunits.add(subunit1MixedCase);
+        subunit1MixedCase.sequence =
+                "MkKn";
+        proteinSubstanceMixedCase.setProtein(proteinMixedCase);
+
+        Set<String> unknownResiduesMixed = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contributionMixedCase=
+                ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                        proteinSubstanceMixedCase, unknownResiduesMixed);
+
+        assertEquals(contribution.getFormula(), contributionMixedCase.getFormula(),
+                "Formula must be the same when protein sequence includes lowercase codes");
+    }
+
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 
