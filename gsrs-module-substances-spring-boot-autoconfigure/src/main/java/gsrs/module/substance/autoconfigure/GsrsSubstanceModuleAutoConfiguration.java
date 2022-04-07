@@ -43,9 +43,10 @@ public class GsrsSubstanceModuleAutoConfiguration {
     @Autowired
     private SequenceIndexerService sequenceIndexerService;
 
-
-    @Autowired
-    private SubstanceStructureSearchService structureSearchService;
+//    commenting out these lines for Spring Boot 2.6.6 compatibility (there were warnings about cyclic dependencies,
+    // plus this service was not used.
+//    @Autowired
+//    private SubstanceStructureSearchService structureSearchService;
 
 
     @Autowired
