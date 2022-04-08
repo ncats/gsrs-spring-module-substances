@@ -6,6 +6,7 @@ import ix.core.models.Structure;
 import ix.core.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import ix.core.chem.ChemCleaner;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -39,7 +40,11 @@ public class Chem {
                         a.setMassNumber(6);
                     });
         }
-        return chemicalToUse;
+        try{
+                return Chemical.parse(ChemCleaner.removeSGroupsAndLegacyAtomLists(c.toMol()));
+        }catch(Exception e){
+                return chemicalToUse;
+        }
     }
 
 
