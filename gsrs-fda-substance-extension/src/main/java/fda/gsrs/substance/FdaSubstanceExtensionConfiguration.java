@@ -24,7 +24,7 @@ public class FdaSubstanceExtensionConfiguration {
     }
 
     @Bean
-    public ClinicalTrialUSApi clinicalTrialsUSApi(ClinicalTrialUSApiConfiguration clinicalTrialUSApiConfiguration){
+    public ClinicalTrialUSApi clinicalTrialUSApi(ClinicalTrialUSApiConfiguration clinicalTrialUSApiConfiguration){
         return new ClinicalTrialUSApi(clinicalTrialUSApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialUSApiConfiguration.getBaseURL(), mapper);
     }
 
