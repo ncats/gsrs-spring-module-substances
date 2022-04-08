@@ -2,7 +2,9 @@ package fda.gsrs.substance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.hhs.gsrs.applications.api.ApplicationsApi;
+import gov.hhs.gsrs.clinicaltrial.us.api.ClinicalTrialUSApi;
 import gov.hhs.gsrs.products.api.ProductsApi;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -19,6 +21,11 @@ public class FdaSubstanceExtensionConfiguration {
     @Bean
     public ProductsApi productsApi( ProductsApiConfiguration productsApiConfiguration){
         return new ProductsApi(productsApiConfiguration.createNewRestTemplateBuilder(),productsApiConfiguration.getBaseURL(), mapper);
+    }
+
+    @Bean
+    public ClinicalTrialUSApi clinicalTrialsUSApi(ClinicalTrialUSApiConfiguration clinicalTrialUSApiConfiguration){
+        return new ClinicalTrialUSApi(clinicalTrialUSApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialUSApiConfiguration.getBaseURL(), mapper);
     }
 
     private ObjectMapper mapper = new ObjectMapper();
