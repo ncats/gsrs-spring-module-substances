@@ -279,7 +279,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 e.printStackTrace();
             }
             if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().name.equalsIgnoreCase(n.name)
-                    && s.names.stream().anyMatch(nm->nm.name.equals(oldDisplayName.get().name)) //make sure the old display name is still present
                 &&  (s.changeReason==null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
