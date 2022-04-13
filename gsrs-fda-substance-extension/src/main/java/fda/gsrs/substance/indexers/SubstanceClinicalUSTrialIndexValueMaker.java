@@ -31,7 +31,7 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
         try{
-        	SearchRequest searchRequest = SearchRequest.builder().q("root_clinicalTrialUSDrug_substanceKey:\"^" + substance.uuid + "$\"").top(1000000).simpleSearchOnly(true).build();
+        	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
 
 			SearchResult<ClinicalTrialUSDTO> searchResult = clinicalTrialUSApi.search(searchRequest);
 
@@ -41,16 +41,12 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 			if(ctusList==null) return;
 
 			ctusList.forEach(ctus -> {
-				if(ctus.getTrialNumber()!=null) {
-					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Number", ctus.getTrialNumber()));
-				}
 				if(ctus.getStatus()!=null) {
 					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Status", ctus.getStatus()));
 				}
 			});
 			long ctCount = ctusList.size();
 			if (ctCount>0) {
-				System.out.println("==== ctCount"+ctCount);
 				consumer.accept(IndexableValue.simpleFacetLongValue("Clinical Trial US Count", ctCount, countBuckets));
 			}
 		} catch(Exception e){

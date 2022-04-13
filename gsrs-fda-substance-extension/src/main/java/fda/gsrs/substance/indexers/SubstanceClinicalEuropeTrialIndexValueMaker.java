@@ -26,15 +26,14 @@ public class SubstanceClinicalEuropeTrialIndexValueMaker implements IndexValueMa
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
         try{
-        	SearchRequest searchRequest = SearchRequest.builder().q("root_clinicalTrialEuropeProductList_clinicalTrialEuropeDrugList_substanceKey:\"^" + substance.uuid + "$\"").top(1000000).simpleSearchOnly(true).build();
+        	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
 			SearchResult<ClinicalTrialEuropeDTO> searchResult = clinicalTrialEuropeApi.search(searchRequest);
 
 			List<ClinicalTrialEuropeDTO> cteuList = searchResult.getContent();
 			//substances may have more than one cteu and therefore multiple status values
+			if(cteuList==null) return;
+
 			cteuList.forEach(cteu -> {
-				if(cteu.getTrialNumber()!=null) {
-					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial EU Number", cteu.getTrialNumber()));
-				}
 				if(cteu.getTrialStatus()!=null) {
 					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial EU Status", cteu.getTrialStatus()));
 				}
