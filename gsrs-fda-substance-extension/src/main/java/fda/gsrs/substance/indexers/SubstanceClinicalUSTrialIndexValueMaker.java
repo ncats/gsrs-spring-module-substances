@@ -37,6 +37,9 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 
 			List<ClinicalTrialUSDTO> ctusList = searchResult.getContent();
 			//substances may have more than one ctus and therefore multiple status values
+
+			if(ctusList==null) return;
+
 			ctusList.forEach(ctus -> {
 				if(ctus.getTrialNumber()!=null) {
 					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Number", ctus.getTrialNumber()));
@@ -47,6 +50,7 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 			});
 			long ctCount = ctusList.size();
 			if (ctCount>0) {
+				System.out.println("==== ctCount"+ctCount);
 				consumer.accept(IndexableValue.simpleFacetLongValue("Clinical Trial US Count", ctCount, countBuckets));
 			}
 		} catch(Exception e){
