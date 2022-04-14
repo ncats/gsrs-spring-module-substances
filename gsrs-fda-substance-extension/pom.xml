@@ -53,5 +53,14 @@
             <version>0.1.2-SNAPSHOT</version>
         </dependency>
 
+        <!-- clinical-trials-api APPLICATION DEPENDENCIES FOR EXPORT -->
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>clinical-trials-api</artifactId>
+            <version>0.2.2-SNAPSHOT</version>
+        </dependency>
+
+
+
     </dependencies>
 </project>
