@@ -10,18 +10,29 @@ import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
 
 @SpringBootConfiguration
+@Configuration
+@PropertySource("application.conf")
 @Slf4j
 public class NSRSSDFImportAdapterFactory extends SDFImportAdaptorFactory {
     @Override
     public String getAdapterName() {
         return "NSRS SDF Adapter";
     }
+
+    @Value("${nsrs.sdfActions:blah")
+    private String adapterConfigInit;
+
+    @Value("#{${ix.gsrs.sdfActions}}")
+    protected Map<String, String> defaultImportActions;
 
     @SneakyThrows
     @Override
@@ -35,6 +46,8 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdaptorFactory {
     public void init(){
         fileImportActions =this.defaultImportActions;
         log.trace("fileImportActions: " + fileImportActions);
+        log.trace("adapterConfigInit: " + adapterConfigInit);
+
         registry.clear();
         if(fileImportActions !=null && fileImportActions.size() >0) {
             Map<String, Object> params =  Collections.emptyMap();
@@ -42,6 +55,11 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdaptorFactory {
             Set<String> actionNames=fileImportActions.keySet();
             actionNames.forEach(actionName->{
                 try {
+                    log.trace("processing actionName: " +actionName);
+                    if(actionName.contains(":")) {
+                        String paramsInner = actionName.split("\\_")[1];
+                        actionName = actionName.split("\\_")[0];
+                    }
                     MappingActionFactory<Substance, SDRecordContext> mappingActionFactory =
                             (MappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(params,
                                     Class.forName( fileImportActions.get(actionName)));
@@ -56,9 +74,10 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdaptorFactory {
         else {
             log.trace("using NSRS default actions");
             registry.put("sample_name", new NSRSSampleNameExtractorActionFactory());
+
             String[] casParams = {
                     "CASNumber`CAS Number`java.lang.String`true",
-                    "codeType`Primary or Alternative`java.lang.Integer`false`PRIMARY",
+                    "codeType`Primary or Alternative`java.lang.String`false`PRIMARY",
                     "url`CAS Number URL`java.lang.String`false`https://commonchemistry.cas.org/detail?cas_rn="
             };
             registry.put("cas_import", new NSRSCustomCodeExtractorActionFactory(casParams));

@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
 import gsrs.dataExchange.model.MappingActionFactory;
+import gsrs.imports.ImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 
 @SpringBootConfiguration
 @Slf4j
-public class SDFImportAdaptorFactory implements AbstractImportSupportingGsrsEntityController.ImportAdapterFactory<Substance> {
+public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> {
     public final static String SIMPLE_REF = "UUID_1";
     public final static String SIMPLE_REFERENCE_ACTION = "public_reference";
     public final static String ACTION_NAME = "actionName";

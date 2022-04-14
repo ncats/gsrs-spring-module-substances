@@ -16,6 +16,7 @@ import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
 import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.imports.ImportAdapterFactory;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
