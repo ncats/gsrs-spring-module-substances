@@ -7,10 +7,11 @@ import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate.SearchResult;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.List;
 import java.util.function.Consumer;
-
+@Slf4j
 public class SubstanceClinicalEuropeTrialIndexValueMaker implements IndexValueMaker<Substance> {
 
 	@Autowired
@@ -42,7 +43,7 @@ public class SubstanceClinicalEuropeTrialIndexValueMaker implements IndexValueMa
 				consumer.accept(IndexableValue.simpleFacetLongValue("Clinical Trial Europe Count", ctCount, countBuckets));
 			}
 		} catch(Exception e){
-			e.printStackTrace();
+			log.warn("Exception occurred when cross indexing a substance with Clinical Trials Europe.");
 		}
 	}
 }
