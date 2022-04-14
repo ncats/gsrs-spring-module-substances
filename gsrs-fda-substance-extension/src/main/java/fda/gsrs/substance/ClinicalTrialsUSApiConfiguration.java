@@ -5,5 +5,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties("gsrs.microservice.clinicaltrialseurope.api")
-public class ClinicalTrialEuropeApiConfiguration extends AbstractGsrsRestApiConfiguration { }
+@ConfigurationProperties("gsrs.microservice.clinicaltrialsus.api")
+public class ClinicalTrialsUSApiConfiguration extends AbstractGsrsRestApiConfiguration { }

@@ -2,8 +2,8 @@ package fda.gsrs.substance;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.hhs.gsrs.applications.api.ApplicationsApi;
-import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeApi;
-import gov.hhs.gsrs.clinicaltrial.us.api.ClinicalTrialUSApi;
+import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialsEuropeApi;
+import gov.hhs.gsrs.clinicaltrial.us.api.ClinicalTrialsUSApi;
 import gov.hhs.gsrs.products.api.ProductsApi;
 
 import org.springframework.context.annotation.Bean;
@@ -25,13 +25,13 @@ public class FdaSubstanceExtensionConfiguration {
     }
 
     @Bean
-    public ClinicalTrialUSApi clinicalTrialUSApi(ClinicalTrialUSApiConfiguration clinicalTrialUSApiConfiguration){
-        return new ClinicalTrialUSApi(clinicalTrialUSApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialUSApiConfiguration.getBaseURL(), mapper);
+    public ClinicalTrialsUSApi clinicalTrialsUSApi(ClinicalTrialsUSApiConfiguration clinicalTrialsUSApiConfiguration){
+        return new ClinicalTrialsUSApi(clinicalTrialsUSApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialsUSApiConfiguration.getBaseURL(), mapper);
     }
 
     @Bean
-    public ClinicalTrialEuropeApi clinicalTrialEuropeApi(ClinicalTrialEuropeApiConfiguration clinicalTrialEuropeApiConfiguration){
-        return new ClinicalTrialEuropeApi(clinicalTrialEuropeApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialEuropeApiConfiguration.getBaseURL(), mapper);
+    public ClinicalTrialsEuropeApi clinicalTrialsEuropeApi(ClinicalTrialsEuropeApiConfiguration clinicalTrialsEuropeApiConfiguration){
+        return new ClinicalTrialsEuropeApi(clinicalTrialsEuropeApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialsEuropeApiConfiguration.getBaseURL(), mapper);
     }
 
     private ObjectMapper mapper = new ObjectMapper();

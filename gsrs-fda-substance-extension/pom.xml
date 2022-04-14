@@ -56,7 +56,7 @@
         <!-- clinical-trials-api APPLICATION DEPENDENCIES FOR EXPORT -->
         <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-module-clinical-trials-api</artifactId>
+            <artifactId>clinical-trials-api</artifactId>
             <version>0.2.2-SNAPSHOT</version>
         </dependency>
 
