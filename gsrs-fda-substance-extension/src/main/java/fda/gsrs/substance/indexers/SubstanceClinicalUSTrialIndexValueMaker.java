@@ -46,7 +46,7 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 				consumer.accept(IndexableValue.simpleFacetLongValue("Clinical Trial US Count", ctCount, countBuckets));
 			}
 		} catch(Exception e){
-			log.warn("Exception occurred when cross indexing a substance with Clinical Trials US.");
+			log.warn("Exception occurred when cross indexing a substance with Clinical Trials US.", e);
 		}
     }
 }

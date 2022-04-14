@@ -43,7 +43,7 @@ public class SubstanceClinicalEuropeTrialIndexValueMaker implements IndexValueMa
 				consumer.accept(IndexableValue.simpleFacetLongValue("Clinical Trial Europe Count", ctCount, countBuckets));
 			}
 		} catch(Exception e){
-			log.warn("Exception occurred when cross indexing a substance with Clinical Trials Europe.");
+			log.warn("Exception occurred when cross indexing a substance with Clinical Trials Europe.", e);
 		}
 	}
 }
