@@ -4,10 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.imports.ConfigBasedGsrsImportAdapterFactoryFactory;
 import gsrs.imports.ImportAdapterFactory;
-import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
-import gsrs.substances.tests.AbstractSubstanceJpaEntityTestSuperClass;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import ix.ginas.models.GinasCommonData;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -17,7 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class DefaultImportAdapterFactoryConfigTest { //extends AbstractGsrsJpaEntityJunit5Test
+public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void testDoNothing() {
@@ -41,23 +39,13 @@ public class DefaultImportAdapterFactoryConfigTest { //extends AbstractGsrsJpaEn
         config.setImportAdapterFactories(adapterConfig);
 
         ConfigBasedGsrsImportAdapterFactoryFactory factoryFactory = new ConfigBasedGsrsImportAdapterFactoryFactory();
-        Field[] fields = factoryFactory.getClass().getDeclaredFields();
-        /*for (Field field: fields
-             ) {
-            System.out.println(field.getName());
-            if( field.getName().toUpperCase(Locale.ROOT).contains("CONFIG")) {
-                field.setAccessible(true);
-                field.set(factoryFactory, config);
-                System.out.println("set field value");
-            }
-        }  */
         Field configField= factoryFactory.getClass().getDeclaredField("gsrsFactoryConfiguration"); //gsrs.imports.ConfigBasedGsrsImportAdapterFactoryFactory.
         configField.setAccessible(true);
         configField.set(factoryFactory, config);
         System.out.println("set field value");
 
-        List<ImportAdapterFactory<GinasCommonData>> adapterFactories= factoryFactory.newFactory(substanceContext,
-                GinasCommonData.class);
+        List<ImportAdapterFactory<Substance>> adapterFactories= factoryFactory.newFactory(substanceContext,
+                Substance.class);
         Assertions.assertEquals(1, adapterFactories.size());
     }
 
@@ -87,7 +75,7 @@ public class DefaultImportAdapterFactoryConfigTest { //extends AbstractGsrsJpaEn
         action1.put("fields", fields);
 
         actions.add(action1);
-        parameters.put("actions", actions);
+        parameters.put("fileImportActions", actions);
         return parameters;
     }
 

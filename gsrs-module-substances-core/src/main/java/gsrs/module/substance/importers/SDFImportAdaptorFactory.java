@@ -62,7 +62,13 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
     public static final Pattern SDF_RESOLVE = Pattern.compile("\\{\\{([^\\}]*)\\}\\}");
     public static final Pattern SPECIAL_RESOLVE = Pattern.compile("\\[\\[([^\\]]*)\\]\\]");
 
+    public static Map<String, String> getFileImportActions() {
+        return fileImportActions;
+    }
 
+    public static void setFileImportActions(Map<String, String> fileImportActions) {
+        SDFImportAdaptorFactory.fileImportActions = fileImportActions;
+    }
 
     private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
         Matcher m = p.matcher(inp);
@@ -120,7 +126,9 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
 
     @PostConstruct
     public void init(){
-        fileImportActions =defaultImportActions;
+        if( fileImportActions== null && defaultImportActions!=null && defaultImportActions.size()>0 ) {
+            fileImportActions = defaultImportActions;
+        }
         log.trace("fileImportActions: " + fileImportActions);
         registry.clear();
         if(fileImportActions !=null && fileImportActions.size() >0) {
