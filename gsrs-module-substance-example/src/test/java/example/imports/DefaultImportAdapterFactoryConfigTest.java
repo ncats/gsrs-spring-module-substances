@@ -18,12 +18,6 @@ import java.util.Map;
 public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
-    public void testDoNothing() {
-        Assertions.assertTrue(true);
-        System.out.println("yes, it's true");
-    }
-
-    @Test
     public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException, JsonProcessingException {
         String substanceContext="substance";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
