@@ -536,6 +536,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         Structure structure = structureOp.get();
 
+        
         String cleaned = CtTableCleaner.clean(structure.molfile);
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
@@ -583,6 +584,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
             attributes.addAttribute("q", hash);
             attributes.addAttribute("includeBreakdown", false);
+            
+            Optional.ofNullable(httpServletRequest.getParameterValues("facet")).ifPresent(ss->{
+                attributes.addAttribute("facet", ss);    
+            });
+            Optional.ofNullable(httpServletRequest.getParameterValues("order")).ifPresent(ss->{
+                attributes.addAttribute("order", ss);    
+            });
+            
             // do a text search for that hash value?
             // This technically breaks things, but is probably okay for now
             //
