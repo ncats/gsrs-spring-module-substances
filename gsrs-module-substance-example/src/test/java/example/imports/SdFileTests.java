@@ -236,7 +236,7 @@ public class SdFileTests {
             Field defValuesField = sDFImportAdaptorFactory.getClass().getDeclaredField("defaultImportActions");
             defValuesField.setAccessible(true);
             defValuesField.set(sDFImportAdaptorFactory, values);
-            sDFImportAdaptorFactory.init();
+            sDFImportAdaptorFactory.initialize();
             java.lang.reflect.Field registryField = sDFImportAdaptorFactory.getClass().getDeclaredField(fieldName);
             registryField.setAccessible(true);
             Map<String, MappingActionFactory<Substance, SDRecordContext>> reg =

@@ -44,7 +44,7 @@ class NSRSCASExtractorActionFactoryTest {
         } catch (JsonProcessingException e) {
             System.err.println("no metadata available.");;
         }
-        Assertions.assertEquals(2, metadata.getParameterFields().size());
+        Assertions.assertEquals(3, metadata.getParameterFields().size());
         Assertions.assertTrue(metadata.getParameterFields().stream().anyMatch(f->f.getLabel().equals("CAS Number")));
     }
 

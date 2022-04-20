@@ -10,33 +10,29 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
-    public void testSetup() throws ClassNotFoundException, IllegalAccessException, NoSuchFieldException, JsonProcessingException {
+    public void testSetup() throws IllegalAccessException, NoSuchFieldException {
         String substanceContext="substance";
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
         Map<String, List<Map<String,Object>>> adapterConfig = new HashMap<>();
         Map<String,Object> oneAdapter = new HashMap<>();
         oneAdapter.put("importAdapterFactoryClass", "gsrs.module.substance.importers.SDFImportAdaptorFactory");
         oneAdapter.put("adapterName", "NSRS SDF Adapter");
-        oneAdapter.put("extensions", new String[] {"sdf", "sd"});
+        oneAdapter.put("extensions", Arrays.asList(new String[] {"sdf", "sd"}));
         oneAdapter.put("parameters", buildConfigParameters());
         List<Map<String,Object>> adapters = new ArrayList<>();
         adapters.add(oneAdapter);
         adapterConfig.put(substanceContext, adapters);
         config.setImportAdapterFactories(adapterConfig);
-
         ConfigBasedGsrsImportAdapterFactoryFactory factoryFactory = new ConfigBasedGsrsImportAdapterFactoryFactory();
         Field configField= factoryFactory.getClass().getDeclaredField("gsrsFactoryConfiguration"); //gsrs.imports.ConfigBasedGsrsImportAdapterFactoryFactory.
         configField.setAccessible(true);
         configField.set(factoryFactory, config);
-        System.out.println("set field value");
+        //System.out.println("set field value");
 
         List<ImportAdapterFactory<Substance>> adapterFactories= factoryFactory.newFactory(substanceContext,
                 Substance.class);

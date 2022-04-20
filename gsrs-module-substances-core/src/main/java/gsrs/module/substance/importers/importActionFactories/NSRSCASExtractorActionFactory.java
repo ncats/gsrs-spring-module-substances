@@ -25,10 +25,11 @@ public class NSRSCASExtractorActionFactory extends BaseActionFactory {
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         MappingActionFactoryMetadata metaData = getMetadata();
         return (sub, sdRec) -> {
-
+            //resolveParametersMap leaves most things unchanged. molfile undergo conversion to structures
             Map<String, Object> adaptedParams = resolveParametersMap(sdRec, abstractParams);
+            //metaData.resolve turns the parameter map from input into a map of values that correspond to a GSRS Code object
             Map<String, Object> params = metaData.resolve(adaptedParams);
-            Code c = new Code(CODE_SYSTEM, (String) adaptedParams.get("code"));
+            Code c = new Code(CODE_SYSTEM, (String) params.get("code"));
             c.type = (String) params.get("codeType");
             if( adaptedParams.get("url") != null) {
                 String url =(String) adaptedParams.get("url");
@@ -51,6 +52,7 @@ public class NSRSCASExtractorActionFactory extends BaseActionFactory {
                 .addParameterField(MappingParameter.builder()
                         .setFieldNameAndLabel("code", "CAS Number")
                         .setValueType(String.class)
+                        .setLookupKey("CASNumber")
                         .setRequired(true).build())
                 .addParameterField(MappingParameter.builder()
                         .setFieldNameAndLabel("codeType", "Primary or Alternative")

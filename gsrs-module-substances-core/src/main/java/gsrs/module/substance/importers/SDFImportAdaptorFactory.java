@@ -46,10 +46,10 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
     @Value("#{${ix.gsrs.sdfActions}}")
     protected Map<String, String> defaultImportActions;
 
-    protected static Map<String, String> fileImportActions;
+    protected Map<String, String> fileImportActions;
 
     public SDFImportAdaptorFactory() {
-        init();
+        //init();
     }
     //** ADDING ABSTRACT LAYERS START
 
@@ -62,12 +62,12 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
     public static final Pattern SDF_RESOLVE = Pattern.compile("\\{\\{([^\\}]*)\\}\\}");
     public static final Pattern SPECIAL_RESOLVE = Pattern.compile("\\[\\[([^\\]]*)\\]\\]");
 
-    public static Map<String, String> getFileImportActions() {
+    public Map<String, String> getFileImportActions() {
         return fileImportActions;
     }
 
-    public static void setFileImportActions(Map<String, String> fileImportActions) {
-        SDFImportAdaptorFactory.fileImportActions = fileImportActions;
+    public void setFileImportActions(Map<String, String> fileImportActions) {
+        fileImportActions = fileImportActions;
     }
 
     private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
@@ -124,8 +124,8 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
 
     protected static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
 
-    @PostConstruct
-    public void init(){
+    @Override
+    public void initialize(){
         if( fileImportActions== null && defaultImportActions!=null && defaultImportActions.size()>0 ) {
             fileImportActions = defaultImportActions;
         }
