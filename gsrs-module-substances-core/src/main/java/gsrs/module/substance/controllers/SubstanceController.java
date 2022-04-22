@@ -583,6 +583,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
             attributes.addAttribute("q", hash);
+            attributes.addAttribute("includeBreakdown", false);
             Optional.ofNullable(httpServletRequest.getParameterValues("facet")).ifPresent(ss->{
                 //In the spring RedirectAttributes object, adding String[] arrays
                 //directly turns the arrays into a single String comma separated.
