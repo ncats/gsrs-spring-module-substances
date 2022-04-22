@@ -31,7 +31,7 @@ public class NSRSSupplierIDExtractorActionFactory extends BaseActionFactory{
         return (sub, sdRec) -> {
 
             Map<String, Object> adaptedParams = resolveParametersMap(sdRec, abstractParams);
-            Map<String, Object> params = metaData.resolve(adaptedParams);
+            Map<String, Object> params = metaData.resolveAndValidate(adaptedParams);
             Code c = new Code(CODE_SYSTEM, (String) adaptedParams.get("code"));
             c.type = CODE_TYPE;
             if( adaptedParams.get("url") != null) {

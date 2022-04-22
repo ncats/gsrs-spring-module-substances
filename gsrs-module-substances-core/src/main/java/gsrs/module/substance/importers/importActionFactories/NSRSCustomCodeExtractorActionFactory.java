@@ -1,5 +1,8 @@
 package gsrs.module.substance.importers.importActionFactories;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataExchange.model.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Code;
@@ -7,28 +10,27 @@ import ix.ginas.models.v1.Substance;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
 
 @Slf4j
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
-    private String codeSystem;
-    private String CODE_TYPE ="PRIMARY";
-    private String codeSystemLabel;
     private String actionName;
     private String actionLabel;
-    private String codeValueParameterName;
-
-    private String[] parameterInfo;
+    private String codeSystem;
+    /*
+    private String codeSystemLabel;
+    private String codeValueParameterName;*/
+    private List<Map<String, Object>> fields;
 
     public NSRSCustomCodeExtractorActionFactory() {
     }
 
-    public NSRSCustomCodeExtractorActionFactory(String[] parameters) {
-        parameterInfo= parameters;
-    }
     /*
     This class creates GSRS codes for
         Supplier
@@ -44,10 +46,11 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
         return (sub, sdRec) -> {
 
             Map<String, Object> adaptedParams = resolveParametersMap(sdRec, abstractParams);
-            Map<String, Object> resolvedParameters = metaData.resolve(adaptedParams);
-            String codeValue = (String)  resolvedParameters.get(codeValueParameterName);
+            Map<String, Object> resolvedParameters = metaData.resolveAndValidate(adaptedParams);
+            String codeValue = (String)  resolvedParameters.get("code");
             Code c = new Code(codeSystem, codeValue);
-            c.type = CODE_TYPE;
+            c.type = (String) resolvedParameters.get("codeType");
+            //todo: add url and other fields as default parameters to metadata (not expected to change)
             if(  resolvedParameters.get("url") != null) {
                 String url =(String)  resolvedParameters.get("url");
                 if(url.endsWith("=")) {
@@ -63,9 +66,18 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
 
     @Override
     public MappingActionFactoryMetadata getMetadata() {
+        /*
+        Deserialize a 'fields' into metadata
+        fields is a list of Map<String, Object> into a list of Mapping Parameters
+        when you pass around types,
+         */
+        List<MappingParameter> params= (new ObjectMapper()).convertValue(fields, new TypeReference<ArrayList<MappingParameter>>() {});
+
         MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
+        builder.setParameterFields(params);
         builder.setLabel(actionLabel);
-        for(String parameter : parameterInfo) {
+
+        /*for(String parameter : parameterInfo) {
             String[] parameterParts = parameter.split("`");
             String fieldName = parameterParts[0];
             String fieldLabel = parameterParts[1];
@@ -99,7 +111,7 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
             }
             parameterBuilder.setDisplayInUI(showInUI);
             builder.addParameterField(parameterBuilder.build());
-        }
+        }*/
         return builder.build();
     }
 

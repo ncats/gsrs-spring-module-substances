@@ -28,7 +28,7 @@ public class NSRSCASExtractorActionFactory extends BaseActionFactory {
             //resolveParametersMap leaves most things unchanged. molfile undergo conversion to structures
             Map<String, Object> adaptedParams = resolveParametersMap(sdRec, abstractParams);
             //metaData.resolve turns the parameter map from input into a map of values that correspond to a GSRS Code object
-            Map<String, Object> params = metaData.resolve(adaptedParams);
+            Map<String, Object> params = metaData.resolveAndValidate(adaptedParams);
             Code c = new Code(CODE_SYSTEM, (String) params.get("code"));
             c.type = (String) params.get("codeType");
             if( adaptedParams.get("url") != null) {
