@@ -63,22 +63,22 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
     }
 
     public void setFileImportActions(List<Map<String, Object>> fileImportActions) {
-        fileImportActions = fileImportActions;
+        this.fileImportActions = fileImportActions;
     }
 
     private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
         Matcher m = p.matcher(inp);
-        StringBuilder nstr = new StringBuilder();
+        StringBuilder newString = new StringBuilder();
         int start = 0;
         while (m.find()) {
             int ss = m.start(0);
-            nstr.append(inp.substring(start, ss));
+            newString.append(inp.substring(start, ss));
             start = m.end(0);
             String prop = m.group(1);
-            nstr.append(resolver.apply(prop).get());
+            newString.append(resolver.apply(prop).get());
         }
-        nstr.append(inp.substring(start));
-        return nstr.toString();
+        newString.append(inp.substring(start));
+        return newString.toString();
     }
 
     public static String resolveParameter(SDRecordContext rec, String inp) {
@@ -124,7 +124,7 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
     }
 
 
-    protected static Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
+    protected Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
 
     @Override
     public void initialize(){
@@ -209,7 +209,7 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
 
-    public static List<MappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
+    public List<MappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
         List<MappingAction<Substance, SDRecordContext>> actions = new ArrayList<>();
         log.trace("adapterSettings: " + adapterSettings.toPrettyString());
         adapterSettings.get("actions").forEach(js -> {
@@ -258,6 +258,9 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
     public AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics predictSettings(InputStream is) {
         Set<String> fields = null;
         try {
+            if(registry == null || registry.isEmpty()) {
+                initialize();
+            }
             Map<String, NCATSFileUtils.InputFieldStatistics>stats= getFieldsForFile(is);
             AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics statistics =
                     new AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics();

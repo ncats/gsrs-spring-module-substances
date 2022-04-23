@@ -51,7 +51,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         JsonNode configNode= buildConfigNode();
         SDFImportAdaptorFactory factory = new SDFImportAdaptorFactory();
         factory.initialize();
-        List<MappingAction<Substance, SDRecordContext>> mappingActions= SDFImportAdaptorFactory.getMappingActions(configNode);
+        List<MappingAction<Substance, SDRecordContext>> mappingActions= factory.getMappingActions(configNode);
         Assertions.assertTrue(mappingActions.size()>0);
         System.out.println("class: " + mappingActions.get(0).getClass().getName());
     }

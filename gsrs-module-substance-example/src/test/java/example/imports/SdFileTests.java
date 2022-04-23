@@ -11,16 +11,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import gsrs.dataExchange.model.MappingActionFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
@@ -49,9 +46,6 @@ import org.springframework.test.context.TestPropertySource;
                 "common_name:'gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory'}",
 })
 public class SdFileTests {
-
-    @Value("#{${ix.gsrs.sdfActions}}")
-    Map<String, String> values;
 
     @Test
     public void testSdfInstructions1() {
@@ -99,6 +93,7 @@ public class SdFileTests {
         InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
         SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
         AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics settings = sDFImportAdaptorFactory.predictSettings(fis);
+
         fis.close();
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
@@ -122,6 +117,7 @@ public class SdFileTests {
         c.setName("MY_NAME");
         c.setProperty("NAME", "NAME_0\r\n\r\nNAME_1\r\nNAME_2\r\nIBUPROFEN\r\nNAME_3");
         ByteArrayInputStream bais = new ByteArrayInputStream(c.toSd().getBytes());
+        sDFImportAdaptorFactory.initialize();
         AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics settings = sDFImportAdaptorFactory.predictSettings(bais);
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
@@ -228,7 +224,7 @@ public class SdFileTests {
         assertNotNull(UUID.fromString(settingsResolved.get("uuid2").toString()));
     }
 
-    @Test
+/*    @Test
     public void testActionsFromConfig() throws IOException {
         String fieldName = "registry";
         SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
@@ -253,5 +249,5 @@ public class SdFileTests {
             e.printStackTrace();
             Assertions.fail("Error fails test");
         }
-    }
+    }*/
 }
