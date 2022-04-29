@@ -48,7 +48,6 @@ public class ExcelSubstanceRelatedClinicalTrialsUSExporter implements Exporter<S
 	public void export(Substance s) throws IOException{
 
 		SearchResult<ClinicalTrialUSDTO> result = getClinicalTrialsUSRelatedToSubstance(s);
-		System.out.println("SIZE: " + result.getContent().size());
 
 		List<ClinicalTrialUSDTO> trialList = result.getContent();
 
