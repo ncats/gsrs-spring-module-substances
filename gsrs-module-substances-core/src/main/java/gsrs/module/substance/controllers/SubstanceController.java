@@ -584,12 +584,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
             attributes.addAttribute("q", hash);
             attributes.addAttribute("includeBreakdown", false);
-            
             Optional.ofNullable(httpServletRequest.getParameterValues("facet")).ifPresent(ss->{
-                attributes.addAttribute("facet", ss);    
+                //In the spring RedirectAttributes object, adding String[] arrays
+                //directly turns the arrays into a single String comma separated.
+                //Instead, we want to set multiple values. The "asMap" method
+                //is tied to the real model as a Map and can be directly modified.
+                //However, the "put" and "putAll" methods are still overridden to
+                //serialize the String[] arrays. However, "putIfAbsent" is not
+                //overridden, so the String[] can be stored directly in this way.
+                //This works for when attributes is an instance of RedirectAttributesModelMap
+                //which it currently is.
+                attributes.asMap().putIfAbsent("facet", ss);
             });
             Optional.ofNullable(httpServletRequest.getParameterValues("order")).ifPresent(ss->{
-                attributes.addAttribute("order", ss);    
+                attributes.asMap().putIfAbsent("order", ss);
             });
             
             // do a text search for that hash value?
