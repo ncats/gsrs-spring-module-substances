@@ -18,7 +18,7 @@ public class ExcelSubstanceRelatedClinicalTrialsUSExporterFactory implements Exp
     @Autowired
     public ClinicalTrialsUSApi clinicalTrialsUSApi;
 
-    OutputFormat format = new OutputFormat("ctxlsx", "Spreadsheet File");
+    OutputFormat format = new OutputFormat("ctusxlsx", "Spreadsheet File");
     String source = null;
     
     @Override
