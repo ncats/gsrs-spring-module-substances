@@ -14,8 +14,11 @@ enum ClinicalTrialUSDefaultColumns implements Column {
     TRIAL_NUMBER,
     TITLE,
     SUBSTANCE_NAME,
-    SUBSTANCE_KEY
-}
+    SUBSTANCE_KEY,
+    CONDITIONS,
+    SPONSOR_NAME,
+    OUTCOME_MEASURES
+    }
 
 public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> {
 
@@ -27,14 +30,9 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
 
     private static SubstanceEntityService substanceEntityService;
 
-    private static StringBuilder substanceApprovalIdSB;
-    private static StringBuilder substanceActiveMoietySB;
-
     private ClinicalTrialUSDTOExporter(Builder builder, SubstanceEntityService substanceEntityService) {
 
         this.substanceEntityService = substanceEntityService;
-        substanceApprovalIdSB = new StringBuilder();
-        substanceActiveMoietySB = new StringBuilder();
 
         this.spreadsheet = builder.spreadsheet;
         this.recipeMap = builder.columns;
@@ -78,11 +76,22 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
             StringBuilder sb = getClinicalTrialUSDrugDetails(s, ClinicalTrialUSDefaultColumns.SUBSTANCE_NAME);
             cell.writeString(sb.toString());
         }));
-
-
         DEFAULT_RECIPE_MAP.put(ClinicalTrialUSDefaultColumns.SUBSTANCE_KEY, SingleColumnValueRecipe.create( ClinicalTrialUSDefaultColumns.SUBSTANCE_KEY ,(s, cell) ->{
             StringBuilder sb = getClinicalTrialUSDrugDetails(s, ClinicalTrialUSDefaultColumns.SUBSTANCE_KEY);
             cell.writeString(sb.toString());
+        }));
+
+        DEFAULT_RECIPE_MAP.put(ClinicalTrialUSDefaultColumns.CONDITIONS, SingleColumnValueRecipe.create( ClinicalTrialUSDefaultColumns.CONDITIONS ,(s, cell) ->{
+            cell.writeString(s.getConditions());
+        }));
+
+        DEFAULT_RECIPE_MAP.put(ClinicalTrialUSDefaultColumns.SPONSOR_NAME, SingleColumnValueRecipe.create( ClinicalTrialUSDefaultColumns.SPONSOR_NAME ,(s, cell) ->{
+            cell.writeString(s.getSponsor());
+        }));
+
+
+        DEFAULT_RECIPE_MAP.put(ClinicalTrialUSDefaultColumns.OUTCOME_MEASURES, SingleColumnValueRecipe.create( ClinicalTrialUSDefaultColumns.OUTCOME_MEASURES ,(s, cell) ->{
+            cell.writeString(s.getOutcomeMeasures());
         }));
     }
 
