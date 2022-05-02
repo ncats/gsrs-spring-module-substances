@@ -961,10 +961,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
     @hasApproverRole
     public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
-
+        log.trace("in approveGetMethod, substanceUUIDOrName: " + substanceUUIDOrName);
         Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
 
         if(!substance.isPresent()){
+            log.trace("no present");
             return getGsrsControllerConfiguration().handleNotFound(queryParameters);
         }
         String[] error = new String[1];
@@ -975,10 +976,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             try {
                 ApprovalService.ApprovalResult result = approvalService.approve(s);
-
+                log.trace("ApprovalResult result: " + result.getApprovedBy());
                 return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
-            } catch (ApprovalService.ApprovalException e) {
+            } catch (Exception e) { //ApprovalService.ApprovalException
                 error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
+                log.error(error[0]);
                 return Optional.empty();
             }
         });
