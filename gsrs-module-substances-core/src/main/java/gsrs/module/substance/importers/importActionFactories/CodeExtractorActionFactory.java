@@ -7,16 +7,20 @@ import gsrs.dataExchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
 import java.util.Map;
 
-import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
+import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
+@Slf4j
 public class CodeExtractorActionFactory extends BaseActionFactory {
     @Override
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+        log.trace("in create");
         return (sub, sdRec) -> {
+            log.trace("lambda");
+            abstractParams.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             Code c = new Code((String) params.get("codeSystem"), (String) params.get("code"));
             c.type = (String) params.get("codeType");

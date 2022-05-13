@@ -10,7 +10,7 @@ import ix.ginas.models.v1.Substance;
 
 import java.util.Map;
 
-import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
+import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
 @Deprecated
 public class NSRSSupplierIDExtractorActionFactory extends BaseActionFactory{

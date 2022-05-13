@@ -11,7 +11,7 @@ import ix.ginas.models.v1.Substance;
 import java.util.Map;
 import java.util.Optional;
 
-import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
+import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
 public class ReferenceExtractorActionFactory extends BaseActionFactory {
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {

@@ -11,6 +11,7 @@ import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
+import gsrs.payload.LegacyPayloadService;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
@@ -40,7 +41,7 @@ import org.springframework.context.annotation.Import;
 
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
-        GsrsProcessingStrategyFactory.class
+        GsrsProcessingStrategyFactory.class, LegacyPayloadService.class
 })
 public class SubstanceCoreConfiguration {
 

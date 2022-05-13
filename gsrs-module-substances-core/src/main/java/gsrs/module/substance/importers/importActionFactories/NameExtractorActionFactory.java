@@ -7,11 +7,13 @@ import gsrs.dataExchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 
-import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
+import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
+@Slf4j
 public class NameExtractorActionFactory extends BaseActionFactory {
     @Override
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
@@ -25,7 +27,13 @@ public class NameExtractorActionFactory extends BaseActionFactory {
             if (splitNames) {
                 for (String sn : suppliedName.trim().split("\n")) {
                     if (sn.isEmpty()) continue;
+                    //check for duplicates
                     sn = sn.trim();
+                    String finalSn = sn; //weird limitation of lambdas in Java
+                    if(sub.names.stream().anyMatch(n->n.name.equals(finalSn))){
+                        log.info(String.format("duplicate name '%s' skipped", sn));
+                        continue;
+                    }
                     Name n = new Name();
                     n.setName(sn);
                     doBasicsImports(n, params);
@@ -33,10 +41,16 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                     sub.names.add(n);
                 }
             } else {
-                Name n = new Name();
-                n.setName(suppliedName.trim());
-                doBasicsImports(n, params);
-                sub.names.add(n);
+                String finalSn = suppliedName; //weird limitation of lambdas in Java
+                if(sub.names.stream().anyMatch(n->n.name.equals(finalSn))){
+                    log.info(String.format("duplicate name '%s' skipped", suppliedName));
+                }
+                else {
+                    Name n = new Name();
+                    n.setName(suppliedName.trim());
+                    doBasicsImports(n, params);
+                    sub.names.add(n);
+                }
             }
             return sub;
         };

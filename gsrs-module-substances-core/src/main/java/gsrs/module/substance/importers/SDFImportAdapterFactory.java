@@ -1,18 +1,18 @@
 package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
 import gsrs.dataExchange.model.MappingActionFactory;
-import gsrs.imports.ImportAdapterFactory;
+import gsrs.imports.*;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
+import gsrs.module.substance.utils.NameUtilities;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 @SpringBootConfiguration
 @Slf4j
-public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> {
+public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> {
     public final static String SIMPLE_REF = "UUID_1";
     public final static String SIMPLE_REFERENCE_ACTION = "public_reference";
     public final static String ACTION_NAME = "actionName";
@@ -41,14 +41,14 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
 
     private Map<String, NCATSFileUtils.InputFieldStatistics> fileFieldStatisticsMap;
 
-    protected List<Map<String, Object>> fileImportActions;
+    protected List<ActionConfigImpl> fileImportActions;
 
-    public SDFImportAdaptorFactory() {
+    public SDFImportAdapterFactory() {
         //init();
     }
     //** ADDING ABSTRACT LAYERS START
 
-
+    private static final Pattern FIELD_NAME_PATTERN = Pattern.compile("\\{\\{(\\w+)\\}\\}");
 
 
     //** ADDING ABSTRACT LAYERS END
@@ -57,12 +57,12 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
     public static final Pattern SDF_RESOLVE = Pattern.compile("\\{\\{([^\\}]*)\\}\\}");
     public static final Pattern SPECIAL_RESOLVE = Pattern.compile("\\[\\[([^\\]]*)\\]\\]");
 
-    //todo: change getters and setters to use real pojo
-    public List<Map<String, Object>> getFileImportActions() {
+    public List<ActionConfigImpl> getFileImportActions() {
         return fileImportActions;
     }
 
-    public void setFileImportActions(List<Map<String, Object>> fileImportActions) {
+    public void setFileImportActions(List<ActionConfigImpl> fileImportActions) {
+        log.trace("setFileImportActions");
         this.fileImportActions = fileImportActions;
     }
 
@@ -89,6 +89,14 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
         inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
             if (p.equals("molfile")) return Optional.ofNullable(rec.getStructure()).map(encoder);
             if (p.equals("molfile_name")) return Optional.ofNullable(rec.getMolfileName()).map(encoder);
+            Matcher fieldNameMatcher= FIELD_NAME_PATTERN.matcher(p);
+            if(fieldNameMatcher.matches()) {
+                String fieldName = fieldNameMatcher.group(1);
+                log.trace("looking for fieldName " + fieldName +
+                    "value: " + (rec.getProperty(fieldName).isPresent() ? rec.getProperty(fieldName).get() : "null"));
+                rec.getProperties().forEach(pn->log.trace("property " + pn));
+                return rec.getProperty(fieldName);
+            }
             return rec.getProperty(p).map(encoder);
         });
         inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p).map(encoder));
@@ -106,6 +114,7 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
      */
     public static Map<String, Object> resolveParametersMap(SDRecordContext rec, Map<String, Object> inputMap)
         throws Exception{
+        log.trace("in resolveParametersMap");
         ObjectMapper om = new ObjectMapper();
         Map<String, Object> newMap;
         JsonNode jsn = om.valueToTree(inputMap);
@@ -131,68 +140,28 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
         log.trace("fileImportActions: " + fileImportActions);
         registry.clear();
         if(fileImportActions !=null && fileImportActions.size() >0) {
-            /*
-                    Map<String, Object> parameters = new HashMap<>();
-        List< Map<String, Object>> actions = new ArrayList<>();
-        Map<String, Object> action1 = new HashMap<>();
-        action1.put("actionName", "cas_import");
-        action1.put("importActionFactoryClass", "gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory");
-
-        List<Map<String, Object>> fields = new ArrayList<>();
-        Map<String, Object> field1 = new HashMap<>();
-        field1.put("fieldName", "CASNumber");
-        field1.put("fieldLabel", "CAS Number");
-        field1.put("fieldType", "java.lang.String");
-        field1.put("required", true);
-        field1.put("showInUi", true);
-        fields.add(field1);
-        Map<String, Object> field2 = new HashMap<>();
-        field2.put("fieldName", "codeType");
-        field2.put("fieldLabel", "Primary or Alternative");
-        field2.put("fieldType", "java.lang.String");
-        field2.put("required", false);
-        field2.put("defaultValue", "PRIMARY");
-        field2.put("showInUi", true);
-        fields.add(field2);
-        action1.put("fields", fields);
-
-        actions.add(action1);
-        parameters.put("fileImportActions", actions);
-        return parameters;
-
-             */
+            log.trace("config-specific init");
             ObjectMapper mapper = new ObjectMapper();
             fileImportActions.forEach(fia->{
-                //todo: pojo model for this config
-                String actionName =(String)fia.get("actionName");
-                String className =(String)fia.get("importActionFactoryClass");
-                MappingActionFactory<Substance, SDRecordContext> mappingActionFactory =
-                        null;
+                String actionName =fia.getActionName();
+                Class actionClass =fia.getActionClass();
+                MappingActionFactory<Substance, SDRecordContext> mappingActionFactory;
                 try {
+                    SerializationConfig config;
+                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                     mappingActionFactory = (MappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(fia,
-                            Class.forName(className));
+                            actionClass);
 
+                    if(!fia.getParameters().isEmpty()) {
+                        mappingActionFactory.setParameters(fia.getParameters());
+                        mappingActionFactory.implementParameters();
+                    }
                 } catch (Exception e) {
                     log.error("Error parsing parameter metadata", e);
                     throw new RuntimeException(e);
                 }
                 registry.put(actionName, mappingActionFactory);
             });
-            /*(Map<String, Object> params =  Collections.emptyMap();
-
-            Set<String> actionNames=fileImportActions.keySet();
-            actionNames.forEach(actionName->{
-                try {
-                    MappingActionFactory<Substance, SDRecordContext> mappingActionFactory =
-                            (MappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(params,
-                                    Class.forName( fileImportActions.get(actionName)));
-                    registry.put(actionName, mappingActionFactory);
-                    log.trace(String.format("added action %s as class with name %s", actionName, fileImportActions.get(actionName)));
-                } catch (ClassNotFoundException e) {
-                    log.error("error instantiating class.  message: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            });*/
         }
         else {
             defaultInitialize();
@@ -216,19 +185,28 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
             ObjectMapper mapper = new ObjectMapper();
-            Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {
-            });
+            log.trace("about to call convertValue");
+            Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
+            log.trace("Finished call to convertValue");
             MappingAction<Substance, SDRecordContext> action =null;
             try {
-                log.trace("looking for action " + actionName);
-                action=(MappingAction<Substance, SDRecordContext>) registry.get(actionName).create(params);
+                log.trace("looking for action " + actionName + "; registry size: " + registry.size());
+                MappingActionFactory<Substance, SDRecordContext> mappingActionFactory=registry.get(actionName);
+                log.trace("mappingActionFactory: " + mappingActionFactory);
+                if( mappingActionFactory!=null ) {
+                    action=mappingActionFactory.create(params);
+                    actions.add(action);
+                }
+                else {
+                    log.error("No action found for "+ actionName);
+                }
             }
             catch (Exception ex) {
                 log.error("Error in getMappingActions: " + ex.getMessage());
                 ex.printStackTrace();
             }
 
-            actions.add(action);
+
         });
         return actions;
     }
@@ -247,23 +225,32 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
 
     @SneakyThrows
     @Override
-    public AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
         List<MappingAction<Substance, SDRecordContext>> actions = getMappingActions(adapterSettings);
-        AbstractImportSupportingGsrsEntityController.ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
+        ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }
 
     @Override
-    public AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics predictSettings(InputStream is) {
+    public ImportAdapterStatistics predictSettings(InputStream is) {
+        log.trace("in predictSettings");
         Set<String> fields = null;
         try {
             if(registry == null || registry.isEmpty()) {
                 initialize();
             }
+            /*
+            intended logic 28 April 2022:
+            steps:
+            1: calculate summary statistics based on sd file input
+            2: look through all steps in registry for any step marked as 'prediction steps' (todo: find better term) (aka default steps)
+                    e.g., peak loading for NSRS.  this becomes a PROPERTY but we don't show them that configuration thing to select from because that would be a
+                        distraction. more obscure case: an SD file property called 'melting point' that gets mapped to a property
+             */
             Map<String, NCATSFileUtils.InputFieldStatistics>stats= getFieldsForFile(is);
-            AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics statistics =
-                    new AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics();
+            ImportAdapterStatistics statistics =
+                    new ImportAdapterStatistics();
             fields =stats.keySet();
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.putPOJO(SDF_FIELD_LIST, fields);
@@ -278,6 +265,7 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
 
 
     public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
+        log.trace("in createDefaultSdfFileImport");
         Set<String> fieldNames =map.keySet();
         ObjectNode topLevelReturn = JsonNodeFactory.instance.objectNode();
         ArrayNode result = JsonNodeFactory.instance.arrayNode();
@@ -288,12 +276,12 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
         result.add(structureNode);
         fieldNames.forEach(f -> {
             ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
-            if (f.toUpperCase(Locale.ROOT).endsWith("NAME")) {
-                actionNode.put(ACTION_NAME, "common_name");
+            if (f.toUpperCase(Locale.ROOT).endsWith("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
+                actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
                 ObjectNode mapNode = createNameMap(f, null);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else {
-                actionNode.put(ACTION_NAME, "code_import");
+                actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
                 ObjectNode mapNode = createCodeMap(f, "PRIMARY");
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             }
@@ -361,5 +349,13 @@ public class SDFImportAdaptorFactory implements ImportAdapterFactory<Substance> 
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         mapNode.put("molfile", "{{molfile}}");
         return mapNode;
+    }
+
+    /*
+    Remove spaces and non-printable characters
+     */
+    private String createCleanFieldName(String fieldName) {
+        NameUtilities.ReplacementResult cleaned =NameUtilities.getInstance().fullyStandardizeName(fieldName);
+        return cleaned.getResult().replace(" ", "");
     }
 }

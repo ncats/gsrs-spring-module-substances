@@ -5,25 +5,29 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.io.*;
+import java.nio.file.Files;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
+import gov.nih.ncats.common.util.CachedSupplier;
+import gsrs.controller.AbstractImportSupportingGsrsEntityController;
+import gsrs.imports.ImportAdapter;
+import gsrs.imports.ImportAdapterFactory;
+import gsrs.imports.ImportAdapterStatistics;
+import gsrs.module.substance.controllers.SubstanceController;
+import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
+import gsrs.payload.PayloadController;
+import gsrs.repository.PayloadRepository;
+import gsrs.service.PayloadService;
+import ix.core.models.Payload;
+import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
@@ -31,11 +35,14 @@ import org.springframework.core.io.ClassPathResource;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
-import gsrs.module.substance.importers.SDFImportAdaptorFactory;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 @SpringBootTest
 @SpringBootConfiguration
@@ -47,20 +54,24 @@ import org.springframework.test.context.TestPropertySource;
 })
 public class SdFileTests {
 
+    List<ImportAdapterFactory<Substance>> factories = Arrays.asList(new SDFImportAdapterFactory());
+    private CachedSupplier<List<ImportAdapterFactory<Substance>>> importAdapterFactories
+            = CachedSupplier.of(() -> factories);
+
     @Test
     public void testSdfInstructions1() {
-        SDFImportAdaptorFactory importAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory importAdapterFactory = new SDFImportAdapterFactory();
 
         List<String> fieldNames = Arrays.asList("CAS", "select_name", "alpha code");
         Map<String, NCATSFileUtils.InputFieldStatistics> map = new HashMap<>();
         fieldNames.forEach(fn -> map.put(fn, null));
-        JsonNode importInfo = importAdaptorFactory.createDefaultSdfFileImport(map);
+        JsonNode importInfo = importAdapterFactory.createDefaultSdfFileImport(map);
         String json = importInfo.toPrettyString();
         System.out.println(json);
         Assertions.assertTrue(json.length() > 0);
         List<JsonNode> nodes = importInfo.findValues("actionName");
         Assertions.assertEquals(5, nodes.size());
-        Assertions.assertEquals(1, nodes.stream().filter(n -> n.textValue().equals("common_name")).count());
+        Assertions.assertEquals(1, nodes.stream().filter(n -> n.textValue().startsWith("common_name")).count());
     }
 
     @Test
@@ -70,8 +81,8 @@ public class SdFileTests {
         log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
 
         InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
-        AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics settings = sDFImportAdaptorFactory.predictSettings(fis);
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
+        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis);
         fis.close();
 
         JsonNode adapter = settings.getAdapterSettings();
@@ -89,21 +100,22 @@ public class SdFileTests {
         String fileName = "testSDF/structures.molV2.sdf";
         File dataFile = new ClassPathResource(fileName).getFile();
         log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
-
         InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
-        AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics settings = sDFImportAdaptorFactory.predictSettings(fis);
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
+        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis);
 
         fis.close();
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
         log.trace(adapter.toPrettyString());
-        AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> importAdapter = sDFImportAdaptorFactory.createAdapter(adapter);
+        ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         InputStream fisRead = new FileInputStream(dataFile.getAbsoluteFile());
         Stream<Substance> substanceStream = importAdapter.parse(fisRead);
         substanceStream.forEach(s -> {
             Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
-            Assertions.assertEquals(1, s.names.size());
+            Assertions.assertTrue(s.names.size()>=1);
+            Assertions.assertTrue( s.codes.size()>=1);
+
             log.trace("full substance: ");
             log.trace(s.toFullJsonNode().toPrettyString());
         });
@@ -112,17 +124,17 @@ public class SdFileTests {
 
     @Test
     public void createSubstanceStreamTestWithMultipleNames() throws IOException {
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
         Chemical c = Chemical.parse("CCCCCCCC");
         c.setName("MY_NAME");
         c.setProperty("NAME", "NAME_0\r\n\r\nNAME_1\r\nNAME_2\r\nIBUPROFEN\r\nNAME_3");
         ByteArrayInputStream bais = new ByteArrayInputStream(c.toSd().getBytes());
-        sDFImportAdaptorFactory.initialize();
-        AbstractImportSupportingGsrsEntityController.ImportAdapterStatistics settings = sDFImportAdaptorFactory.predictSettings(bais);
+        sDFImportAdapterFactory.initialize();
+        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(bais);
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
         log.trace(adapter.toPrettyString());
-        AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> importAdapter = sDFImportAdaptorFactory.createAdapter(adapter);
+        ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         bais = new ByteArrayInputStream(c.toSd().getBytes());
         Stream<Substance> substanceStream = importAdapter.parse(bais);
         substanceStream.forEach(s -> {
@@ -136,16 +148,16 @@ public class SdFileTests {
 
     @Test
    public void parseUUIDTest() throws IOException {
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
 
         String uuidSyntax1 = "[[UUID_1]]";
         String uuidSyntax2 = "[[UUID_2]]";
         Chemical c = Chemical.parse("CCCCCCCC");
 
         ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdaptorFactory.resolveParameter(ctx, uuidSyntax1);
-        String res1_again = sDFImportAdaptorFactory.resolveParameter(ctx, uuidSyntax1);
-        String res2_first = sDFImportAdaptorFactory.resolveParameter(ctx, uuidSyntax2);
+        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
+        String res1_again = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
+        String res2_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax2);
         assertEquals(res1_first, res1_again);
 
         assertNotEquals(res1_first, res2_first);
@@ -157,45 +169,45 @@ public class SdFileTests {
 
     @Test
     public void parsePropertyTest() throws IOException {
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
 
         String prop1 = "{{FOO}}";
         Chemical c = Chemical.parse("CCCCCCCC");
         c.setProperty("FOO", "BAR");
 
         ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdaptorFactory.resolveParameter(ctx, prop1);
+        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, prop1);
         assertEquals("BAR", res1_first);
     }
 
     @Test
     public void parseMolfileTest() throws IOException {
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
 
         String prop1 = "{{molfile}}";
         Chemical c = Chemical.parse("CCCCCCCC");
 
         ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdaptorFactory.resolveParameter(ctx, prop1);
+        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, prop1);
         assertTrue(res1_first.contains("V2000"));
     }
 
     @Test
     public void parseMolfileNameTest() throws IOException {
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
 
         String prop1 = "{{molfile_name}}";
         Chemical c = Chemical.parse("CCCCCCCC");
         c.setName("MY_NAME");
 
         ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdaptorFactory.resolveParameter(ctx, prop1);
+        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, prop1);
         assertEquals("MY_NAME", res1_first);
     }
 
     @Test
     public void parseMapTest() throws Exception {
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
 
         Chemical c = Chemical.parse("CCCCCCCC");
         c.setName("MY_NAME");
@@ -211,7 +223,7 @@ public class SdFileTests {
         settings.put("uuid1again", "[[UUID_1]]");
         settings.put("uuid2", "[[UUID_2]]");
 
-        Map<String, Object> settingsResolved = sDFImportAdaptorFactory.resolveParametersMap(ctx, settings);
+        Map<String, Object> settingsResolved = sDFImportAdapterFactory.resolveParametersMap(ctx, settings);
 
 
         assertEquals("MY_NAME", settingsResolved.get("molfile_name"));
@@ -224,20 +236,76 @@ public class SdFileTests {
         assertNotNull(UUID.fromString(settingsResolved.get("uuid2").toString()));
     }
 
+    @Test
+    public void TestPreview() throws Exception {
+        String fileName = "testSDF/chembl_30_first_36.sdf";
+        File dataFile = new ClassPathResource(fileName).getFile();
+        log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
+
+        SubstanceController controller = new SubstanceController();
+        Map<String, String> queryParameters = new HashMap<>();
+        queryParameters.put("adapter", "NSRS SDF Adapter");
+        MultipartFile file = new MultipartFile() {
+            @Override
+            public String getName() {
+                return dataFile.getName();
+            }
+
+            @Override
+            public String getOriginalFilename() {
+                return dataFile.getName();
+            }
+
+            @Override
+            public String getContentType() {
+                return "application/x-sdf";
+            }
+
+            @Override
+            public boolean isEmpty() {
+                return false;
+            }
+
+            @Override
+            public long getSize() {
+                return dataFile.length();
+            }
+
+            @Override
+            public byte[] getBytes() throws IOException {
+                return Files.readAllBytes(dataFile.toPath());
+                //return new byte[0];
+            }
+
+            @Override
+            public InputStream getInputStream() throws IOException {
+                return null;
+            }
+
+            @Override
+            public void transferTo(File file) throws IOException, IllegalStateException {
+
+            }
+        };
+
+        ResponseEntity<Object> responseEntity= controller.handleImport(file, queryParameters);
+
+        Assertions.assertNotNull(responseEntity.getBody());
+    }
 /*    @Test
     public void testActionsFromConfig() throws IOException {
         String fieldName = "registry";
-        SDFImportAdaptorFactory sDFImportAdaptorFactory = new SDFImportAdaptorFactory();
+        SDFImportAdapterFactory SDFImportAdapterFactory = new SDFImportAdapterFactory();
         try {
-            Field defValuesField = sDFImportAdaptorFactory.getClass().getDeclaredField("defaultImportActions");
+            Field defValuesField = SDFImportAdapterFactory.getClass().getDeclaredField("defaultImportActions");
             defValuesField.setAccessible(true);
-            defValuesField.set(sDFImportAdaptorFactory, values);
-            sDFImportAdaptorFactory.initialize();
-            java.lang.reflect.Field registryField = sDFImportAdaptorFactory.getClass().getDeclaredField(fieldName);
+            defValuesField.set(SDFImportAdapterFactory, values);
+            SDFImportAdapterFactory.initialize();
+            java.lang.reflect.Field registryField = SDFImportAdapterFactory.getClass().getDeclaredField(fieldName);
             registryField.setAccessible(true);
             Map<String, MappingActionFactory<Substance, SDRecordContext>> reg =
                     (Map<String, MappingActionFactory<Substance, SDRecordContext>>)
-                            registryField.get(sDFImportAdaptorFactory);
+                            registryField.get(SDFImportAdapterFactory);
 
             Assertions.assertEquals(3, reg.size());
             Assertions.assertTrue(reg.containsKey("structure_and_moieties"));
@@ -250,4 +318,5 @@ public class SdFileTests {
             Assertions.fail("Error fails test");
         }
     }*/
+
 }

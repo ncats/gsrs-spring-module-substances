@@ -4,6 +4,7 @@ import gov.nih.ncats.molwitch.io.ChemicalReader;
 import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
+import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @Slf4j
-public class SDFImportAdapter implements AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> {
+public class SDFImportAdapter implements ImportAdapter<Substance> {
 
     List<MappingAction<Substance, SDRecordContext>> actions;
     

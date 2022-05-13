@@ -16,15 +16,12 @@ import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.*;
 import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.imports.ImportAdapterFactory;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
-import gsrs.module.substance.importers.NSRSSDFImportAdapterFactory;
-import gsrs.module.substance.importers.SDFImportAdaptorFactory;
 import gsrs.module.substance.repository.*;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
@@ -1548,14 +1545,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return newDisplay;
     }
 
+/*
     @Override
     public List<ImportAdapterFactory<Substance>> getImportAdapters(){
-
         List<ImportAdapterFactory<Substance>> factories = new ArrayList<>();
+        factories.addAll(super.getImportAdapters());
         factories.add(new SDFImportAdaptorFactory());
         factories.add(new NSRSSDFImportAdapterFactory());
         return factories;
     }
+*/
 /*
     @PostGsrsRestApiMapping(path="/import")
     public ResponseEntity<Object> fieldsForSDF(@NotNull @RequestBody MultipartFile file,

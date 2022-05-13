@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static gsrs.module.substance.importers.SDFImportAdaptorFactory.resolveParametersMap;
+import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
 @Slf4j
 @Data
@@ -26,6 +26,7 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
     /*
     private String codeSystemLabel;
     private String codeValueParameterName;*/
+    //Do we need this?
     private List<Map<String, Object>> fields;
 
     public NSRSCustomCodeExtractorActionFactory() {
@@ -115,4 +116,18 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
         return builder.build();
     }
 
+    @Override
+    public void implementParameters() {
+        if( this.parameters != null && !this.parameters.isEmpty()) {
+            if( parameters.get("actionName") != null ){
+                this.actionName= (String) parameters.get("actionName");
+            }
+            if( parameters.get("actionLabel") != null ){
+                this.actionLabel=(String)parameters.get("actionLabel");
+            }
+            if( parameters.get("codeSystem") != null ){
+                this.codeSystem=(String)parameters.get("codeSystem");
+            }
+        }
+    }
 }

@@ -1,8 +1,8 @@
 package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
+import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Substance;
@@ -23,7 +23,7 @@ import java.util.Map;
 @PropertySource("application.conf")
 @Slf4j
 
-public class NSRSSDFImportAdapterFactory extends SDFImportAdaptorFactory {
+public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
     @Override
     public String getAdapterName() {
         return "NSRS SDF Adapter";
@@ -35,9 +35,9 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdaptorFactory {
 
     @SneakyThrows
     @Override
-    public AbstractImportSupportingGsrsEntityController.ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         List<MappingAction<Substance, SDRecordContext>> actions = getMappingActions(adapterSettings);
-        AbstractImportSupportingGsrsEntityController.ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
+        ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }
 

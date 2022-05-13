@@ -7,11 +7,14 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.v1.Substance;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public abstract class BaseActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
+
+    Map<String, Object> parameters = new HashMap<>();
 
     private static void assignReferences(GinasAccessReferenceControlled object, Object referenceList) {
         List<String> refs = (List<String>) referenceList;
@@ -34,4 +37,18 @@ public abstract class BaseActionFactory implements MappingActionFactory<Substanc
             //need to use Group objects
         }
     }
+
+    public void implementParameters() {
+    }
+
+    @Override
+    public Map<String, Object> getParameters() {
+        return parameters;
+    }
+
+    @Override
+    public void setParameters(Map<String, Object> parameters) {
+        this.parameters = parameters;
+    }
+
 }
