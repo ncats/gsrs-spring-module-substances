@@ -22,11 +22,14 @@ public class CodeExtractorActionFactory extends BaseActionFactory {
             log.trace("lambda");
             abstractParams.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
+            log.trace("params: ");
+            params.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
             Code c = new Code((String) params.get("codeSystem"), (String) params.get("code"));
             c.type = (String) params.get("codeType");
             doBasicsImports(c, params);
-            //TODO: more params
+            //TODO: consider more params
             sub.addCode(c);
+            log.trace( String.format( "Added code with value %s; system: %s; type: %s", c.code, c.codeSystem, c.type));
             return sub;
         };
     }

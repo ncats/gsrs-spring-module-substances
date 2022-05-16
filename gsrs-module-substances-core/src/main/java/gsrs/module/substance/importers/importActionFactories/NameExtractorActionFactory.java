@@ -17,6 +17,7 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 public class NameExtractorActionFactory extends BaseActionFactory {
     @Override
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+        log.trace("in create");
         return (sub, sdRec) -> {
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
 

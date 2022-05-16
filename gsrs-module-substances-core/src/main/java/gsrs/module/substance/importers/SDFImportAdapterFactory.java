@@ -2,7 +2,6 @@ package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.DeserializationConfig;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -12,7 +11,6 @@ import gsrs.imports.*;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
-import gsrs.module.substance.utils.NameUtilities;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -100,6 +98,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             return rec.getProperty(p).map(encoder);
         });
         inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p).map(encoder));
+        log.trace("resolveParameter going return "+ inp);
         return inp;
     }
 
@@ -122,6 +121,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             String m = om.valueToTree(s).toString();
             return m.substring(1, m.length() - 1);
         });
+        log.trace("resolveParametersMap json: " + json);
         try {
             newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
             return newMap;
@@ -180,7 +180,6 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
 
     public List<MappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
         List<MappingAction<Substance, SDRecordContext>> actions = new ArrayList<>();
-        log.trace("adapterSettings: " + adapterSettings.toPrettyString());
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
@@ -276,7 +275,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         result.add(structureNode);
         fieldNames.forEach(f -> {
             ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
-            if (f.toUpperCase(Locale.ROOT).endsWith("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
+            if (f.toUpperCase(Locale.ROOT).contains("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
                 actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
                 ObjectNode mapNode = createNameMap(f, null);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
@@ -351,11 +350,5 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         return mapNode;
     }
 
-    /*
-    Remove spaces and non-printable characters
-     */
-    private String createCleanFieldName(String fieldName) {
-        NameUtilities.ReplacementResult cleaned =NameUtilities.getInstance().fullyStandardizeName(fieldName);
-        return cleaned.getResult().replace(" ", "");
-    }
+
 }

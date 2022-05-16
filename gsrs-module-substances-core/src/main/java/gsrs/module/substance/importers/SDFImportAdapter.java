@@ -45,6 +45,7 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
                        e.printStackTrace();
                   }
                }
+               log.trace(String.format("created substance has %d names and %d codes", s.names.size(), s.codes.size()));
               return s;
           });
     }
