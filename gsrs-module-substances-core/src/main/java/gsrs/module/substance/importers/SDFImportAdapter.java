@@ -39,13 +39,16 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
                Substance s = new ChemicalSubstance();
                for(MappingAction<Substance, SDRecordContext> action: actions){
                    try {
+                       log.trace("Before action, substance has {} names and {} codes", s.names.size(), s.codes.size());
                        s=action.act(s, sd);
+                       log.trace("After action, substance has {} names and {} codes", s.names.size(), s.codes.size());
                    } catch (Exception e) {
                        log.error(e.getMessage());
                        e.printStackTrace();
                   }
                }
-               log.trace(String.format("created substance has %d names and %d codes", s.names.size(), s.codes.size()));
+               log.trace("created substance has {} names and {} codes", s.names.size(), s.codes.size());
+               log.trace(s.toFullJsonNode().toPrettyString());
               return s;
           });
     }

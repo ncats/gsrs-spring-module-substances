@@ -4,10 +4,12 @@ import gsrs.dataExchange.model.MappingAction;
 import gsrs.dataExchange.model.MappingActionFactoryMetadata;
 import gsrs.dataExchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataExchange.model.MappingParameter;
+import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 
+import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
 
@@ -19,13 +21,16 @@ public class ReferenceExtractorActionFactory extends BaseActionFactory {
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             Reference r = new Reference();
             r.citation = (String) params.get("citation");
+            if( r.citation.equalsIgnoreCase(SDFImportAdapterFactory.REFERENCE_INSTRUCTION)) {
+                r.citation= String.format("File %s imported on %s", getAdapterSchema().get("fileName"), new Date());
+            }
             r.docType = (String) params.get("docType");
             Optional.ofNullable(params.get("url")).ifPresent(url -> {
                 r.url = url.toString();
             });
-            Optional.ofNullable(params.get("referenceID")).ifPresent(rid -> {
+            /*Optional.ofNullable(params.get("referenceID")).ifPresent(rid -> {
                 r.id = rid.toString();
-            });
+            });*/
             doBasicsImports(r, params);
             //TODO: more params
             sub.addReference(r);

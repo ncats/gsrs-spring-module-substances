@@ -29,7 +29,7 @@ public class CodeExtractorActionFactory extends BaseActionFactory {
             doBasicsImports(c, params);
             //TODO: consider more params
             sub.addCode(c);
-            log.trace( String.format( "Added code with value %s; system: %s; type: %s", c.code, c.codeSystem, c.type));
+            log.trace( "Added code with value {}; system: {}; type: {}", c.code, c.codeSystem, c.type);
             return sub;
         };
     }

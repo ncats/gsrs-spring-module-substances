@@ -24,6 +24,7 @@ public class NameExtractorActionFactory extends BaseActionFactory {
             boolean splitNames = Boolean.parseBoolean(params.getOrDefault("split_names", "true").toString());
 
             String suppliedName = (String) params.get("name");
+            String nameType = params.get("nameType") != null ? (String) params.get("nameType") : "cn";
 
             if (splitNames) {
                 for (String sn : suppliedName.trim().split("\n")) {
@@ -37,6 +38,7 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                     }
                     Name n = new Name();
                     n.setName(sn);
+                    n.type=nameType;
                     doBasicsImports(n, params);
                     //TODO: more params
                     sub.names.add(n);
@@ -49,6 +51,7 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                 else {
                     Name n = new Name();
                     n.setName(suppliedName.trim());
+                    n.type=nameType;
                     doBasicsImports(n, params);
                     sub.names.add(n);
                 }

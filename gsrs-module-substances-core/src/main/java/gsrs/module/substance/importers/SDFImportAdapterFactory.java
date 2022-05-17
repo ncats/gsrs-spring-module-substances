@@ -55,6 +55,9 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     public static final Pattern SDF_RESOLVE = Pattern.compile("\\{\\{([^\\}]*)\\}\\}");
     public static final Pattern SPECIAL_RESOLVE = Pattern.compile("\\[\\[([^\\]]*)\\]\\]");
 
+    private String originalFileName;
+    private ImportAdapterStatistics statistics;
+
     public List<ActionConfigImpl> getFileImportActions() {
         return fileImportActions;
     }
@@ -121,7 +124,6 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             String m = om.valueToTree(s).toString();
             return m.substring(1, m.length() - 1);
         });
-        log.trace("resolveParametersMap json: " + json);
         try {
             newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
             return newMap;
@@ -191,6 +193,9 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             try {
                 log.trace("looking for action " + actionName + "; registry size: " + registry.size());
                 MappingActionFactory<Substance, SDRecordContext> mappingActionFactory=registry.get(actionName);
+                if( mappingActionFactory instanceof BaseActionFactory) {
+                    ((BaseActionFactory) mappingActionFactory).setAdapterSchema(this.statistics.getAdapterSchema());
+                }
                 log.trace("mappingActionFactory: " + mappingActionFactory);
                 if( mappingActionFactory!=null ) {
                     action=mappingActionFactory.create(params);
@@ -253,8 +258,10 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             fields =stats.keySet();
             ObjectNode node = JsonNodeFactory.instance.objectNode();
             node.putPOJO(SDF_FIELD_LIST, fields);
+            node.put("fileName", getFileName());
             statistics.setAdapterSchema(node);
             statistics.setAdapterSettings(createDefaultSdfFileImport(stats));
+            this.statistics=statistics;
             return statistics;
         } catch (IOException ex) {
             log.error("error reading list of fields from SD file: " + ex.getMessage());
@@ -262,6 +269,15 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         return null;
     }
 
+    @Override
+    public void setFileName(String fileName) {
+        originalFileName=fileName;
+    }
+
+    @Override
+    public String getFileName() {
+        return originalFileName;
+    }
 
     public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
         log.trace("in createDefaultSdfFileImport");
