@@ -53,7 +53,6 @@ public class ClinicalTrialEuropeDTOExporterFactory implements ExporterFactory {
 
 		ClinicalTrialEuropeDTOExporter.Builder builder = new ClinicalTrialEuropeDTOExporter.Builder(spreadsheet);
 		configure(builder, params);
-		3
 		return builder.build(substanceEntityService);
 	}
 

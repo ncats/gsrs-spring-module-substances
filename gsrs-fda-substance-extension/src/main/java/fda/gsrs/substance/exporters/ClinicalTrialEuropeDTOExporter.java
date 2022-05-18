@@ -1,8 +1,11 @@
 package fda.gsrs.substance.exporters;
 
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeDTO;
+import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeDrugDTO;
+import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeProductDTO;
 import gsrs.module.substance.SubstanceEntityService;
 import ix.ginas.exporters.*;
+import ix.ginas.models.v1.Substance;
 
 import java.io.IOException;
 import java.util.*;
@@ -14,7 +17,7 @@ enum ClinicalTrialEuropeDefaultColumns implements Column {
     SUBSTANCE_KEY,
     CONDITIONS,
     SPONSOR_NAME,
-    OUTCOME_MEASURES
+    RESULTS
     }
 
 public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEuropeDTO> {
@@ -86,45 +89,42 @@ public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEur
             cell.writeString(s.getSponsorName());
         }));
 
-
-        DEFAULT_RECIPE_MAP.put(ClinicalTrialEuropeDefaultColumns.OUTCOME_MEASURES, SingleColumnValueRecipe.create( ClinicalTrialEuropeDefaultColumns.OUTCOME_MEASURES ,(s, cell) ->{
+        DEFAULT_RECIPE_MAP.put(ClinicalTrialEuropeDefaultColumns.RESULTS, SingleColumnValueRecipe.create( ClinicalTrialEuropeDefaultColumns.RESULTS,(s, cell) ->{
             cell.writeString(s.getTrialResults());
         }));
     }
 
-
-
     private static StringBuilder getClinicalTrialEuropeDrugDetails(ClinicalTrialEuropeDTO s, ClinicalTrialEuropeDefaultColumns fieldName) {
         StringBuilder sb = new StringBuilder();
-/*
         try {
-            if (s.getClinicalTrialEuropeDrug().size() > 0) {
-
-                for (ClinicalTrialEuropeDrugDTO substance : s.getClinicalTrialEuropeDrug()) {
-
-                    if (sb.length() != 0) {
-                        sb.append("|");
-                    }
-                    switch (fieldName) {
-                        case SUBSTANCE_KEY:
-                            sb.append((substance.getSubstanceKey() != null) ? substance.getSubstanceKey()  : "(No Substance Key)");
-                            break;
-                        case SUBSTANCE_NAME:
-                            Optional<Substance> substanceEntity = substanceEntityService.get(UUID.fromString(substance.getSubstanceKey()));
-                            String ptUTF8=substanceEntity.get().getDisplayName()
-                                    .map(n->n.getName())
-                                    .orElse("(No Substance Name)");
-                            sb.append(ptUTF8);
-                            break;
-                        default:
-                            break;
+            List<ClinicalTrialEuropeProductDTO> pList= s.getClinicalTrialEuropeProductList();
+            if (pList!=null && !pList.isEmpty()) {
+                for (ClinicalTrialEuropeProductDTO p : pList) {
+                    List<ClinicalTrialEuropeDrugDTO> dList = p.getClinicalTrialEuropeDrugList();
+                    for (ClinicalTrialEuropeDrugDTO d : dList) {
+                        if (sb.length() != 0) {
+                            sb.append("|");
+                        }
+                        switch (fieldName) {
+                            case SUBSTANCE_KEY:
+                                sb.append((d.getSubstanceKey() != null) ? d.getSubstanceKey() : "(No Substance Key)");
+                                break;
+                            case SUBSTANCE_NAME:
+                                Optional<Substance> substanceEntity = substanceEntityService.get(UUID.fromString(d.getSubstanceKey()));
+                                String ptUTF8 = substanceEntity.get().getDisplayName()
+                                        .map(n -> n.getName())
+                                        .orElse("(No Substance Name)");
+                                sb.append(ptUTF8);
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-*/
         return sb;
     }
     /**
