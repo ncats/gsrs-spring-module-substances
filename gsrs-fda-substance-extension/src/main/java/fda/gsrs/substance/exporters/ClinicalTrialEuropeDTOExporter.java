@@ -2,6 +2,7 @@ package fda.gsrs.substance.exporters;
 
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeDTO;
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeDrugDTO;
+import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeMeddraDTO;
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeProductDTO;
 import gsrs.module.substance.SubstanceEntityService;
 import ix.ginas.exporters.*;
@@ -82,7 +83,8 @@ public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEur
         }));
 
         DEFAULT_RECIPE_MAP.put(ClinicalTrialEuropeDefaultColumns.CONDITIONS, SingleColumnValueRecipe.create( ClinicalTrialEuropeDefaultColumns.CONDITIONS ,(s, cell) ->{
-            // cell.writeString(s.getConditions());
+            StringBuilder sb = getMeddraTermDetails(s, ClinicalTrialEuropeDefaultColumns.CONDITIONS);
+            cell.writeString(sb.toString());
         }));
 
         DEFAULT_RECIPE_MAP.put(ClinicalTrialEuropeDefaultColumns.SPONSOR_NAME, SingleColumnValueRecipe.create( ClinicalTrialEuropeDefaultColumns.SPONSOR_NAME ,(s, cell) ->{
@@ -127,6 +129,29 @@ public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEur
         }
         return sb;
     }
+
+    private static StringBuilder getMeddraTermDetails(ClinicalTrialEuropeDTO s, ClinicalTrialEuropeDefaultColumns fieldName) {
+        StringBuilder sb = new StringBuilder();
+        List<ClinicalTrialEuropeMeddraDTO> list = s.getClinicalTrialEuropeMeddraList();
+        if(list !=null && !list.isEmpty()){
+            for(ClinicalTrialEuropeMeddraDTO item : list){
+                if(sb.length()!=0) {
+                    sb.append("|");
+                }
+                switch (fieldName) {
+                    case CONDITIONS:
+                        String value = (item != null && item.getMeddraTerm()!=null) ? item.getMeddraTerm(): "(Null Meddra Term)";
+                        sb.append(value);
+                        break;
+                    default:
+                        break;
+                }
+            }
+        }
+        return sb;
+    }
+
+
     /**
      * Builder class that makes a SpreadsheetExporter.  By default, the default columns are used
      * but these may be modified using the add/remove column methods.
