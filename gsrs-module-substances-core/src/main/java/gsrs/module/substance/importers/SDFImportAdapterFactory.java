@@ -42,11 +42,8 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     protected List<ActionConfigImpl> fileImportActions;
 
     public SDFImportAdapterFactory() {
-        //init();
     }
     //** ADDING ABSTRACT LAYERS START
-
-    private static final Pattern FIELD_NAME_PATTERN = Pattern.compile("\\{\\{(\\w+)\\}\\}");
 
 
     //** ADDING ABSTRACT LAYERS END
@@ -76,6 +73,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             newString.append(inp.substring(start, ss));
             start = m.end(0);
             String prop = m.group(1);
+            log.trace("prop: " + prop + " from inp: " + inp);
             newString.append(resolver.apply(prop).get());
         }
         newString.append(inp.substring(start));
@@ -87,21 +85,13 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     }
 
     public static String resolveParameter(SDRecordContext rec, String inp, Function<String, String> encoder) {
+
         inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
             if (p.equals("molfile")) return Optional.ofNullable(rec.getStructure()).map(encoder);
             if (p.equals("molfile_name")) return Optional.ofNullable(rec.getMolfileName()).map(encoder);
-            Matcher fieldNameMatcher= FIELD_NAME_PATTERN.matcher(p);
-            if(fieldNameMatcher.matches()) {
-                String fieldName = fieldNameMatcher.group(1);
-                log.trace("looking for fieldName " + fieldName +
-                    "value: " + (rec.getProperty(fieldName).isPresent() ? rec.getProperty(fieldName).get() : "null"));
-                rec.getProperties().forEach(pn->log.trace("property " + pn));
-                return rec.getProperty(fieldName);
-            }
             return rec.getProperty(p).map(encoder);
         });
         inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p).map(encoder));
-        log.trace("resolveParameter going return "+ inp);
         return inp;
     }
 

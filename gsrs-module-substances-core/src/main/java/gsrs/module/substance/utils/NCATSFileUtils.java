@@ -127,7 +127,7 @@ TODO: consider other data types like:
     public static Map<String, InputFieldStatistics> getSDFieldStatistics(InputStream istream , int maxExamples) throws IOException {
         Map<String, InputFieldStatistics> retMap = new LinkedHashMap<>();
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, "UTF8"))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, "UTF-8"))) {
             String fieldName=null;
             String value="";
             boolean inValue=false;

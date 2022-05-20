@@ -8,7 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import gov.nih.ncats.common.util.CachedSupplier;
@@ -27,8 +28,10 @@ import ix.core.models.Payload;
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 
@@ -39,6 +42,7 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -52,6 +56,9 @@ import org.springframework.web.multipart.MultipartFile;
                 "code_import:'gsrs.module.substance.importers.importActionFactories.CodeExtractorActionFactory'," +
                 "common_name:'gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory'}",
 })
+@RunWith(value = SpringJUnit4ClassRunner.class)
+@EnableAutoConfiguration
+
 public class SdFileTests {
 
     List<ImportAdapterFactory<Substance>> factories = Arrays.asList(new SDFImportAdapterFactory());
@@ -237,7 +244,7 @@ public class SdFileTests {
     }
 
     @Test
-    public void TestPreview() throws Exception {
+    protected void TestPreview() throws Exception {
         String fileName = "testSDF/chembl_30_first_36.sdf";
         File dataFile = new ClassPathResource(fileName).getFile();
         log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
@@ -291,6 +298,47 @@ public class SdFileTests {
         ResponseEntity<Object> responseEntity= controller.handleImport(file, queryParameters);
 
         Assertions.assertNotNull(responseEntity.getBody());
+    }
+
+    @Test
+    public void testParseRange() {
+        Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\-(\\d+\\.?\\d+)(.+)");
+        String input1 = "159.1-190.6 °C";
+        String expectedLower ="159.1";
+        String expectedUpper ="190.6";
+        Matcher m = rangePattern.matcher(input1);
+        String lower="";
+        String upper="";
+        String units ="";
+        if(m.matches())  {
+            lower= m.group(1);
+            upper = m.group(2);
+            units=m.group(3);
+        }
+        assertEquals(expectedLower, lower);
+        assertEquals(expectedUpper, upper);
+        System.out.println("units: " + units);
+    }
+
+    @Test
+    public void testParseRange2() {
+        Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+)(.+)");
+        String input1 =     "722.2±60.0 °C    Press: 760 Torr";
+                    input1= "722.2±60.0 °C    Press: 760 Torr";
+        String expectedBase ="722.2";
+        String expectedVariation ="60.0";
+        Matcher m = rangePattern.matcher(input1);
+        String base="";
+        String range="";
+        String unitsAndConditions ="";
+        if(m.matches())  {
+            base= m.group(1);
+            range = m.group(2);
+            unitsAndConditions=m.group(3);
+        }
+        assertEquals(expectedBase, base);
+        assertEquals(expectedVariation, range);
+        System.out.println("unitsAndConditions: " + unitsAndConditions);
     }
 /*    @Test
     public void testActionsFromConfig() throws IOException {
