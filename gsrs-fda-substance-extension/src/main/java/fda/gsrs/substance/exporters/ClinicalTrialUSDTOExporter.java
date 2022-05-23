@@ -2,25 +2,29 @@ package fda.gsrs.substance.exporters;
 
 import gov.hhs.gsrs.clinicaltrial.us.api.ClinicalTrialUSDTO;
 import gov.hhs.gsrs.clinicaltrial.us.api.ClinicalTrialUSDrugDTO;
+import gsrs.cache.GsrsCache;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.ginas.exporters.*;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.*;
 
-enum ClinicalTrialUSDefaultColumns implements Column {
-    TRIAL_NUMBER,
-    TITLE,
-    SUBSTANCE_NAME,
-    SUBSTANCE_KEY,
-    CONDITIONS,
-    SPONSOR_NAME,
-    OUTCOME_MEASURES
-    }
-
+@Slf4j
 public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> {
+
+    enum ClinicalTrialUSDefaultColumns implements Column {
+        TRIAL_NUMBER,
+        TITLE,
+        SUBSTANCE_NAME,
+        SUBSTANCE_KEY,
+        CONDITIONS,
+        SPONSOR_NAME,
+        OUTCOME_MEASURES
+    }
 
     private final Spreadsheet spreadsheet;
 
@@ -28,11 +32,15 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
 
     private final List<ColumnValueRecipe<ClinicalTrialUSDTO>> recipeMap;
 
-    private static SubstanceEntityService substanceEntityService;
+    private static SubstanceEntityService staticSubstanceEntityService;
+
+    private static GsrsCache gsrsCache;
 
     private ClinicalTrialUSDTOExporter(Builder builder, SubstanceEntityService substanceEntityService) {
 
-        this.substanceEntityService = substanceEntityService;
+        if(staticSubstanceEntityService ==null){
+            staticSubstanceEntityService = substanceEntityService;
+        }
 
         this.spreadsheet = builder.spreadsheet;
         this.recipeMap = builder.columns;
@@ -113,11 +121,17 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
                             sb.append((substance.getSubstanceKey() != null) ? substance.getSubstanceKey()  : "(No Substance Key)");
                             break;
                         case SUBSTANCE_NAME:
-                            Optional<Substance> substanceEntity = substanceEntityService.get(UUID.fromString(substance.getSubstanceKey()));
-                            String ptUTF8=substanceEntity.get().getDisplayName()
-                                    .map(n->n.getName())
-                                    .orElse("(No Substance Name)");
-                            sb.append(ptUTF8);
+                            Optional<Substance> substanceEntity = staticSubstanceEntityService.get(UUID.fromString(substance.getSubstanceKey()));
+                            if(gsrsCache==null){
+                                gsrsCache  = StaticContextAccessor.getBean(GsrsCache.class);
+                            }
+                            String nm = gsrsCache.getOrElse("CTUSDTOEXPSKEY:" + substance.getSubstanceKey(), ()->{
+                                Optional<Substance> staticSubstanceEntity = staticSubstanceEntityService.get(UUID.fromString(substance.getSubstanceKey()));
+                                return substanceEntity.get().getDisplayName()
+                                        .map(n -> n.getName())
+                                        .orElse("(No Substance Name)");
+                            });
+                            sb.append(nm);
                             break;
                         default:
                             break;
@@ -125,9 +139,8 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("Exception getting CT US substance details.", ex);
         }
-
         return sb;
     }
     /**

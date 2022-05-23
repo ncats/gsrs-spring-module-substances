@@ -8,12 +8,13 @@ import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
-
+@Slf4j
 public class ExcelSubstanceRelatedClinicalTrialsEuropeExporter implements Exporter<Substance> {
 
 	private OutputStream os;
@@ -30,9 +31,8 @@ public class ExcelSubstanceRelatedClinicalTrialsEuropeExporter implements Export
 			ExporterFactory.Parameters params = new ExportParameters(format, true);
 			ClinicalTrialEuropeDTOExporterFactory factory = new ClinicalTrialEuropeDTOExporterFactory();
 			this.clinicalTrialEuropeDTOExporter = factory.createNewExporter(os, params);
-
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception instantiating ExcelSubstanceRelatedClinicalTrialsEuropeExporter.", ex);
 		}
 	}
 
@@ -40,7 +40,7 @@ public class ExcelSubstanceRelatedClinicalTrialsEuropeExporter implements Export
 		try {
 			this.clinicalTrialEuropeDTOExporter.export(clinicalTrialEuropeDTO);
 		}catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception in method exportClinicalTrialEurope.", ex);
 		}
 	}
 
@@ -61,7 +61,7 @@ public class ExcelSubstanceRelatedClinicalTrialsEuropeExporter implements Export
 			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + s.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
 			return clinicalTrialsEuropeApi.search(searchRequest);
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception in method getClinicalTrialEuropeRelatedToSubstance.", ex);
 		}
 		return null;
 	}
@@ -73,7 +73,8 @@ public class ExcelSubstanceRelatedClinicalTrialsEuropeExporter implements Export
 				clinicalTrialEuropeDTOExporter.close();
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception closing clinicalTrialEuropeDTOExporter.", ex);
+			throw ex;
 		}
 	}
 

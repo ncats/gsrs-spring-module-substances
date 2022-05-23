@@ -4,24 +4,28 @@ import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeDTO;
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeDrugDTO;
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeMeddraDTO;
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialEuropeProductDTO;
+import gsrs.cache.GsrsCache;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.ginas.exporters.*;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.*;
 
-enum ClinicalTrialEuropeDefaultColumns implements Column {
-    TRIAL_NUMBER,
-    TITLE,
-    SUBSTANCE_NAME,
-    SUBSTANCE_KEY,
-    CONDITIONS,
-    SPONSOR_NAME,
-    RESULTS
-    }
-
+@Slf4j
 public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEuropeDTO> {
+
+    enum ClinicalTrialEuropeDefaultColumns implements Column {
+        TRIAL_NUMBER,
+        TITLE,
+        SUBSTANCE_NAME,
+        SUBSTANCE_KEY,
+        CONDITIONS,
+        SPONSOR_NAME,
+        RESULTS
+    }
 
     private final Spreadsheet spreadsheet;
 
@@ -29,11 +33,15 @@ public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEur
 
     private final List<ColumnValueRecipe<ClinicalTrialEuropeDTO>> recipeMap;
 
-    private static SubstanceEntityService substanceEntityService;
+    private static SubstanceEntityService staticSubstanceEntityService;
+
+    private static GsrsCache gsrsCache;
 
     private ClinicalTrialEuropeDTOExporter(Builder builder, SubstanceEntityService substanceEntityService) {
 
-        this.substanceEntityService = substanceEntityService;
+        if(staticSubstanceEntityService ==null){
+            staticSubstanceEntityService = substanceEntityService;
+        }
 
         this.spreadsheet = builder.spreadsheet;
         this.recipeMap = builder.columns;
@@ -112,12 +120,17 @@ public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEur
                                 sb.append((d.getSubstanceKey() != null) ? d.getSubstanceKey() : "(No Substance Key)");
                                 break;
                             case SUBSTANCE_NAME:
-                                Optional<Substance> substanceEntity = substanceEntityService.get(UUID.fromString(d.getSubstanceKey()));
-                                String ptUTF8 = substanceEntity.get().getDisplayName()
-                                        .map(n -> n.getName())
-                                        .orElse("(No Substance Name)");
-                                sb.append(ptUTF8);
-                                break;
+                                if(gsrsCache==null){
+                                    gsrsCache  = StaticContextAccessor.getBean(GsrsCache.class);
+                                }
+                                String nm = gsrsCache.getOrElse("CTEUDTOEXPSKEY:" + d.getSubstanceKey(), ()->{
+                                    Optional<Substance> substanceEntity = staticSubstanceEntityService.get(UUID.fromString(d.getSubstanceKey()));
+                                    return substanceEntity.get().getDisplayName()
+                                            .map(n -> n.getName())
+                                            .orElse("(No Substance Name)");
+
+                                });
+                                sb.append(nm);
                             default:
                                 break;
                         }
@@ -125,7 +138,7 @@ public class ClinicalTrialEuropeDTOExporter implements Exporter<ClinicalTrialEur
                 }
             }
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("Exception getting CT EU substance details.", ex);
         }
         return sb;
     }
