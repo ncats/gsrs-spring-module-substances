@@ -38,7 +38,7 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 
 			ctusList.forEach(ctus -> {
 				if(ctus.getStatus()!=null) {
-					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Status", ctus.getStatus()));
+					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Status", ctus.getRecruitment()));
 				}
 			});
 			long ctCount = ctusList.size();
