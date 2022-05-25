@@ -37,7 +37,8 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 			if(ctusList==null) return;
 
 			ctusList.forEach(ctus -> {
-				if(ctus.getStatus()!=null) {
+				if(ctus.getRecruitment()!=null) {
+					// using recruitment for status because ct gov now lists recruitment as a field.
 					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Status", ctus.getRecruitment()));
 				}
 			});
