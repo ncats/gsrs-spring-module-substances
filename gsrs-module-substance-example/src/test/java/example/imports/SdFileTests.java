@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.regex.Matcher;
@@ -117,7 +118,7 @@ public class SdFileTests {
         log.trace(adapter.toPrettyString());
         ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         InputStream fisRead = new FileInputStream(dataFile.getAbsoluteFile());
-        Stream<Substance> substanceStream = importAdapter.parse(fisRead);
+        Stream<Substance> substanceStream = importAdapter.parse(fisRead, Charset.defaultCharset().name());
         substanceStream.forEach(s -> {
             Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
             Assertions.assertTrue(s.names.size()>=1);
@@ -143,7 +144,7 @@ public class SdFileTests {
         log.trace(adapter.toPrettyString());
         ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         bais = new ByteArrayInputStream(c.toSd().getBytes());
-        Stream<Substance> substanceStream = importAdapter.parse(bais);
+        Stream<Substance> substanceStream = importAdapter.parse(bais, Charset.defaultCharset().name());
         substanceStream.forEach(s -> {
             log.trace("full substance: ");
             log.trace(s.toFullJsonNode().toPrettyString());

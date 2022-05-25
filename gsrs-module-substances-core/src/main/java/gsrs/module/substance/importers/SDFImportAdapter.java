@@ -2,7 +2,6 @@ package gsrs.module.substance.importers;
 
 import gov.nih.ncats.molwitch.io.ChemicalReader;
 import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataExchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
@@ -13,6 +12,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -20,6 +20,8 @@ import java.util.stream.Stream;
 public class SDFImportAdapter implements ImportAdapter<Substance> {
 
     List<MappingAction<Substance, SDRecordContext>> actions;
+
+    private String fileEncoding;
     
     public SDFImportAdapter(List<MappingAction<Substance, SDRecordContext>> actions){
         this.actions = actions;
@@ -27,8 +29,9 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
     
     @SneakyThrows
     @Override
-    public Stream<Substance> parse(InputStream is) {
-        ChemicalReader cr = ChemicalReaderFactory.newReader(is);
+    public Stream<Substance> parse(InputStream is, String encoding) {
+        log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
+        ChemicalReader cr = ChemicalReaderFactory.newReader(is, encoding);
     	
         return cr.stream()
           .map(c->{
@@ -51,5 +54,13 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
                log.trace(s.toFullJsonNode().toPrettyString());
               return s;
           });
+    }
+
+    public String getFileEncoding() {
+        return fileEncoding;
+    }
+
+    public void setFileEncoding(String fileEncoding) {
+        this.fileEncoding = fileEncoding;
     }
 }

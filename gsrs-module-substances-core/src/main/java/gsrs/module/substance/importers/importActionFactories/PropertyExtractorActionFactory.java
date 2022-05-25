@@ -56,8 +56,8 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
                     Matcher m2= variationPattern.matcher(rangeRaw);
                     if( m2.matches()){
                         log.trace("variationPattern matches");
-                        String baseRaw = m.group(1);
-                        String variationRaw=m.group(2);
+                        String baseRaw = m2.group(1);
+                        String variationRaw=m2.group(2);
                         Double base = null;
                         Double variation = null;
                         try {

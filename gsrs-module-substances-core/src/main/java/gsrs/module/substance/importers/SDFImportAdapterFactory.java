@@ -68,16 +68,28 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         Matcher m = p.matcher(inp);
         StringBuilder newString = new StringBuilder();
         int start = 0;
+        boolean foundValue=false;
         while (m.find()) {
             int ss = m.start(0);
             newString.append(inp.substring(start, ss));
             start = m.end(0);
             String prop = m.group(1);
             log.trace("prop: " + prop + " from inp: " + inp);
-            newString.append(resolver.apply(prop).get());
+            Optional<String> value = resolver.apply(prop);
+            if (value.isPresent()) {
+                newString.append(value.get());
+                log.trace("We have value: " + value.get());
+                foundValue= true;
+            }
+            else {
+                log.trace("no value");
+            }
         }
-        newString.append(inp.substring(start));
-        return newString.toString();
+        if( foundValue) {
+            newString.append(inp.substring(start));
+            return newString.toString();
+        }
+        return inp;
     }
 
     public static String resolveParameter(SDRecordContext rec, String inp) {
@@ -106,7 +118,9 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
      */
     public static Map<String, Object> resolveParametersMap(SDRecordContext rec, Map<String, Object> inputMap)
         throws Exception{
-        log.trace("in resolveParametersMap");
+        log.trace("in resolveParametersMap. rec properties: ");
+        rec.getProperties().forEach(p->log.trace("property: {}; value: {}", p, rec.getProperty(p)));
+        inputMap.keySet().forEach(k->log.trace("key: {}, val: {}", k, inputMap.get(k)));
         ObjectMapper om = new ObjectMapper();
         Map<String, Object> newMap;
         JsonNode jsn = om.valueToTree(inputMap);
