@@ -20,7 +20,7 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
         TRIAL_NUMBER,
         TITLE,
         SUBSTANCE_NAME,
-        SUBSTANCE_KEY,
+        SUBSTANCE_UUID,
         CONDITIONS,
         SPONSOR_NAME,
         OUTCOME_MEASURES
@@ -84,8 +84,8 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
             StringBuilder sb = getClinicalTrialUSDrugDetails(s, ClinicalTrialUSDefaultColumns.SUBSTANCE_NAME);
             cell.writeString(sb.toString());
         }));
-        DEFAULT_RECIPE_MAP.put(ClinicalTrialUSDefaultColumns.SUBSTANCE_KEY, SingleColumnValueRecipe.create( ClinicalTrialUSDefaultColumns.SUBSTANCE_KEY ,(s, cell) ->{
-            StringBuilder sb = getClinicalTrialUSDrugDetails(s, ClinicalTrialUSDefaultColumns.SUBSTANCE_KEY);
+        DEFAULT_RECIPE_MAP.put(ClinicalTrialUSDefaultColumns.SUBSTANCE_UUID, SingleColumnValueRecipe.create( ClinicalTrialUSDefaultColumns.SUBSTANCE_UUID ,(s, cell) ->{
+            StringBuilder sb = getClinicalTrialUSDrugDetails(s, ClinicalTrialUSDefaultColumns.SUBSTANCE_UUID);
             cell.writeString(sb.toString());
         }));
 
@@ -117,7 +117,7 @@ public class ClinicalTrialUSDTOExporter implements Exporter<ClinicalTrialUSDTO> 
                         sb.append("|");
                     }
                     switch (fieldName) {
-                        case SUBSTANCE_KEY:
+                        case SUBSTANCE_UUID:
                             sb.append((substance.getSubstanceKey() != null) ? substance.getSubstanceKey()  : "(No Substance Key)");
                             break;
                         case SUBSTANCE_NAME:
