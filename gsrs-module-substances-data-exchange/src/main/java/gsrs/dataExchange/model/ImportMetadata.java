@@ -17,9 +17,7 @@ import java.util.UUID;
 @Backup
 @JSONEntity(name = "metadata", title = "Metadata")
 @Entity
-@Table(name = "ix_ginas_import_metadata")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorValue("META")
+@Table(name = "ix_import_metadata")
 @Slf4j
 @IndexableRoot
 public class ImportMetadata {

@@ -8,13 +8,9 @@ import javax.persistence.*;
 import java.util.Date;
 import java.util.UUID;
 
-@Backup
 @Entity
-@Table(name = "ix_ginas_import_validation")
-@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@DiscriminatorValue("META")
+@Table(name = "ix_import_validation")
 @Slf4j
-@IndexableRoot
 public class Validation {
 
     public enum ImportValidationType {
