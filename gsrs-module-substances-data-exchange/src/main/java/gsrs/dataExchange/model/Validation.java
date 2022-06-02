@@ -32,6 +32,7 @@ public class Validation {
 
     public String ValidationMessage;
 
+    @Lob
     public String ValidationJson;
 
     public Date ValidationDate;
