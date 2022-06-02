@@ -2,7 +2,10 @@ package gsrs.dataExchange.model;
 
 import ix.core.models.Backup;
 import ix.core.models.IndexableRoot;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.UUID;
@@ -10,6 +13,7 @@ import java.util.UUID;
 @Backup
 @Table(name = "ix_import_matchup")
 @Slf4j
+@Data
 public class Matchup {
 
     public enum RecordMatchType {
@@ -17,19 +21,29 @@ public class Matchup {
         permanent,
         external /*not sure if we'll use this*/
     }
-    public UUID RECORD_ID;
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GeneratedValue(generator = "NullUUIDGenerator")
+    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = true)
+    private UUID recordId;
 
-    public int Version;
+    private int version;
 
-    public String Key;
+    private String key;
 
-    public String Value;
+    private String value;
 
-    public String Qualifier;
+    private String qualifier;
 
-    public UUID MatchedRecord;
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GeneratedValue(generator = "NullUUIDGenerator")
+    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = true)
+    private UUID matchedRecord;
 
-    public RecordMatchType MatchType;
+    private RecordMatchType matchType;
 
-    public int MatchLevel;
+    private int matchLevel;
 }

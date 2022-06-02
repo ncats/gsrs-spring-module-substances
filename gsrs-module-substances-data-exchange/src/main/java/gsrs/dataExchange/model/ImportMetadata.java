@@ -6,7 +6,10 @@ import ix.core.models.Backup;
 import ix.core.models.BeanViews;
 import ix.core.models.IndexableRoot;
 import ix.ginas.models.utils.JSONEntity;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
 import java.util.ArrayList;
@@ -20,6 +23,7 @@ import java.util.UUID;
 @Table(name = "ix_import_metadata")
 @Slf4j
 @IndexableRoot
+@Data
 public class ImportMetadata {
 
     public enum RecordImportStatus {
@@ -36,7 +40,8 @@ public class ImportMetadata {
     }
 
     public enum RecordVersionStatus {
-        current, superseded
+        current, 
+        superseded
     }
 
     public enum RecordValidationStatus {
@@ -54,32 +59,39 @@ public class ImportMetadata {
         indexed
     }
 
-    public UUID RECORD_ID;
+    @Id
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GeneratedValue(generator = "NullUUIDGenerator")
+    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false, unique = true)    private UUID recordId;
 
-    public String SourceName;
+    private String sourceName;
 
-    public Date VersionCreationDate;
+    private Date versionCreationDate;
 
-    public int Version;
+    private int version;
 
-    public RecordImportStatus ImportStatus;
+    private RecordImportStatus importStatus;
 
-    public RecordImportType ImportType;
+    private RecordImportType importType;
 
-    public RecordVersionStatus VersionStatus;
+    private RecordVersionStatus versionStatus;
 
-    public RecordValidationStatus ValidationStatus;
+    private RecordValidationStatus validationStatus;
 
-    public RecordProcessStatus ProcessStatus;
+    private RecordProcessStatus processStatus;
+
+    private String entityClass;
 
     @JSONEntity(title = "KeyValueMappings")
-    @OneToMany(mappedBy = "record_id", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "recordId", cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<KeyValueMapping> KeyValueMappings = new ArrayList<>();
 
     @JSONEntity(title = "Validations")
-    @OneToMany(mappedBy = "record_id, version", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "recordId, version", cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
     public List<Validation> validations = new ArrayList<>();
