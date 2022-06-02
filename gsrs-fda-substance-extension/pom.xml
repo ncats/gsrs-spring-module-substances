@@ -43,14 +43,14 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>applications-api</artifactId>
-            <version>0.1.2-SNAPSHOT</version>
+            <version>0.1.3-SNAPSHOT</version>
         </dependency>
 
         <!-- products-api PRODUCT DEPENDENCIES FOR EXPORT -->
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>products-api</artifactId>
-            <version>0.1.2-SNAPSHOT</version>
+            <version>0.1.3-SNAPSHOT</version>
         </dependency>
 
         <!-- clinical-trials-api APPLICATION DEPENDENCIES FOR EXPORT -->

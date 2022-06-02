@@ -27,14 +27,20 @@ enum AppAllDefaultColumns implements Column {
     APP_STATUS,
     APP_SUB_TYPE,
     DIVISION_CLASS_DESC,
-    INDICATION,
-    PRODUCT_NAME,
+    STATUS_DATE,
+    SUBMIT_DATE,
+    NONPROPRIETARY_NAME,
+    DOSAGE_FORM,
+    ROUTE_OF_ADMINISTRATION,
     PROVENANCE,
+    PRODUCT_NAME,
+    APPLICANT_INGREDIENT_NAME,
     SUBSTANCE_KEY,
     APPROVAL_ID,
     SUBSTANCE_NAME,
     ACTIVE_MOIETY,
     INGREDIENT_TYPE,
+    INDICATION,
     FROM_TABLE
 }
 
@@ -89,6 +95,11 @@ public class ApplicationAllDTOExporter implements Exporter<ApplicationAllDTO> {
 
         DEFAULT_RECIPE_MAP = new LinkedHashMap<>();
 
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.APPLICANT_INGREDIENT_NAME, SingleColumnValueRecipe.create(AppAllDefaultColumns.APPLICANT_INGREDIENT_NAME ,(s, cell) ->{
+            StringBuilder sb = getIngredientDetails(s, AppAllDefaultColumns.APPLICANT_INGREDIENT_NAME);
+            cell.writeString(sb.toString());
+        }));
+
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.SUBSTANCE_NAME, SingleColumnValueRecipe.create(AppAllDefaultColumns.SUBSTANCE_NAME ,(s, cell) ->{
             StringBuilder sb = getIngredientName(s);
             cell.writeString(sb.toString());
@@ -112,27 +123,38 @@ public class ApplicationAllDTOExporter implements Exporter<ApplicationAllDTO> {
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.APP_TYPE, SingleColumnValueRecipe.create(AppAllDefaultColumns.APP_TYPE, (s, cell) -> cell.writeString(s.getAppType())));
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.APP_NUMBER, SingleColumnValueRecipe.create(AppAllDefaultColumns.APP_NUMBER, (s, cell) -> cell.writeString(s.getAppNumber())));
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.TITLE, SingleColumnValueRecipe.create(AppAllDefaultColumns.TITLE, (s, cell) -> cell.writeString(s.getTitle())));
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.SPONSOR_NAME, SingleColumnValueRecipe.create(AppAllDefaultColumns.SPONSOR_NAME, (s, cell) -> cell.writeString(s.getSponsorName())));
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.APP_STATUS, SingleColumnValueRecipe.create(AppAllDefaultColumns.APP_STATUS, (s, cell) -> cell.writeString(s.getAppStatus())));
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.STATUS_DATE, SingleColumnValueRecipe.create( AppAllDefaultColumns.STATUS_DATE ,(s, cell) -> cell.writeString(s.getStatusDate())));
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.SUBMIT_DATE, SingleColumnValueRecipe.create( AppAllDefaultColumns.SUBMIT_DATE ,(s, cell) -> cell.writeString(s.getSubmitDate())));
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.NONPROPRIETARY_NAME, SingleColumnValueRecipe.create( AppAllDefaultColumns.NONPROPRIETARY_NAME ,(s, cell) -> cell.writeString(s.getNonProprietaryName())));
+
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.PRODUCT_NAME, SingleColumnValueRecipe.create(AppAllDefaultColumns.PRODUCT_NAME, (s, cell) -> {
             StringBuilder sb = getProductDetails(s, AppAllDefaultColumns.PRODUCT_NAME);
             cell.writeString(sb.toString());
         }));
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.DOSAGE_FORM, SingleColumnValueRecipe.create( AppAllDefaultColumns.DOSAGE_FORM ,(s, cell) ->{
+            StringBuilder sb = getProductDetails(s, AppAllDefaultColumns.DOSAGE_FORM);
+            cell.writeString(sb.toString());
+        }));
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.ROUTE_OF_ADMINISTRATION, SingleColumnValueRecipe.create( AppAllDefaultColumns.ROUTE_OF_ADMINISTRATION ,(s, cell) ->{
+            StringBuilder sb = getProductDetails(s, AppAllDefaultColumns.ROUTE_OF_ADMINISTRATION);
+            cell.writeString(sb.toString());
+        }));
 
-        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.SPONSOR_NAME, SingleColumnValueRecipe.create(AppAllDefaultColumns.SPONSOR_NAME, (s, cell) -> cell.writeString(s.getSponsorName())));
-        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.APP_STATUS, SingleColumnValueRecipe.create(AppAllDefaultColumns.APP_STATUS, (s, cell) -> cell.writeString(s.getAppStatus())));
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.APP_SUB_TYPE, SingleColumnValueRecipe.create(AppAllDefaultColumns.APP_SUB_TYPE, (s, cell) -> cell.writeString(s.getAppSubType())));
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.DIVISION_CLASS_DESC, SingleColumnValueRecipe.create(AppAllDefaultColumns.DIVISION_CLASS_DESC, (s, cell) -> cell.writeString(s.getDivisionClassDesc())));
         DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.PROVENANCE, SingleColumnValueRecipe.create(AppAllDefaultColumns.PROVENANCE, (s, cell) -> cell.writeString(s.getProvenance())));
 
-        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.FROM_TABLE, SingleColumnValueRecipe.create(AppAllDefaultColumns.FROM_TABLE, (s, cell) -> {
+        DEFAULT_RECIPE_MAP.put(AppAllDefaultColumns.FROM_TABLE, SingleColumnValueRecipe.create( AppAllDefaultColumns.FROM_TABLE ,(s, cell) -> {
             String fromTable = null;
             if (s.getFromTable() != null) {
-                if (s.getFromTable().equalsIgnoreCase("SRS")) {
-                    fromTable = "GSRS";
-                } else if (s.getFromTable().equalsIgnoreCase("Darrts")) {
+                if (s.getFromTable().equalsIgnoreCase("Integrity")) {
                     fromTable = "Integrity/DARRTS";
                 }
-            } else {
-                fromTable = "GSRS";
+                else {
+                    fromTable = s.getFromTable();
+                }
             }
             cell.writeString(fromTable);
         }));
@@ -162,8 +184,19 @@ public class ApplicationAllDTOExporter implements Exporter<ApplicationAllDTO> {
                         default:
                             break;
                     }
-                }
-            }
+                } // for ProductNameSrsAll
+
+                switch (fieldName) {
+                    case DOSAGE_FORM:
+                        sb.append((prod.getDosageForm() != null) ? prod.getDosageForm() : "(No Dosage Form)");
+                        break;
+                    case ROUTE_OF_ADMINISTRATION:
+                        sb.append((prod.getRouteAdmin() != null) ? prod.getRouteAdmin() : "(No Route of Admin)");
+                        break;
+                    default:
+                        break;
+                } // Product switch
+            } // for ProductSrsAll
         }
         return sb;
     }
@@ -242,6 +275,9 @@ public class ApplicationAllDTOExporter implements Exporter<ApplicationAllDTO> {
 
                         try {
                             switch (fieldName) {
+                                case APPLICANT_INGREDIENT_NAME:
+                                    sb.append((ingred.getApplicantIngredName() != null) ? ingred.getApplicantIngredName() : "");
+                                    break;
                                 case SUBSTANCE_KEY:
                                     sb.append((ingred.getSubstanceKey() != null) ? ingred.getSubstanceKey() : "(No Substance Key)");
                                     break;
