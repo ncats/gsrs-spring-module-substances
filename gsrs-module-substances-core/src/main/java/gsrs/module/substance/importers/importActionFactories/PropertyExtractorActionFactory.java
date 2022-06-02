@@ -23,7 +23,7 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
         Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\-(\\d+\\.?\\d+)(.+)");
-        Pattern variationPattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+)(.+)");
+        Pattern variationPattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+) (.+)");
         return (sub, sdRec) -> {
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             if(params.get("name")==null ||params.get("propertyType")==null){
@@ -58,6 +58,10 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
                         log.trace("variationPattern matches");
                         String baseRaw = m2.group(1);
                         String variationRaw=m2.group(2);
+                        String units ="";
+                        if( m2.groupCount() >= 3) {
+                            units= m.group(3);
+                        }
                         Double base = null;
                         Double variation = null;
                         try {
@@ -65,6 +69,10 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
                             variation= Double.parseDouble(variationRaw);
                             amt.low=base-variation;
                             amt.high=base+variation;
+                            if(units.length()>0) {
+                                units = units.split(" ")[0].trim();
+                                amt.units=units;
+                            }
                             log.trace("created low {} and high {} from base {} and variation {}",
                                     amt.low, amt.high, base, variation);
                         } catch (Exception ex){

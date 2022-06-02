@@ -12,6 +12,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class SdfAdapterFactoryTest {
@@ -53,6 +55,7 @@ public class SdfAdapterFactoryTest {
         mappingAction.act(chemicalSubstance, record);
         chemicalSubstance.properties.forEach(p->log.trace("property: {}, amt: {}", p.getName(), p.getValue().toString()));
         Assertions.assertEquals(1, chemicalSubstance.properties.size());
+        Assertions.assertEquals("°C", chemicalSubstance.properties.get(0).getValue().units);
     }
 
     private Optional<String> getSdProperty(String name) {
@@ -86,6 +89,14 @@ public class SdfAdapterFactoryTest {
         return Optional.of(data);
     }
 
+    @Test
+    public void regexTest() {
+        Pattern variationPattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+) (.+)");
+        String data ="722.2±60.0 °C    Press: 760 Torr";
+        Matcher matcher = variationPattern.matcher(data);
+        Assertions.assertTrue(matcher.matches() && matcher.groupCount()>0);
+        System.out.println("count: " + matcher.groupCount());
+    }
     private SDRecordContext record = new SDRecordContext() {
         @Override
         public String getStructure() {
