@@ -18,7 +18,14 @@ import java.util.List;
 
 @JSONEntity(title = "Relationship", isFinal = true)
 @Entity
-@Table(name="ix_ginas_relationship")
+@Table(name="ix_ginas_relationship",
+    indexes = {
+        @Index(name = "interaction_index", columnList = "interaction_type"),
+        @Index(name = "qualification_index", columnList = "qualification"),
+        @Index(name = "type_index", columnList = "type"),
+        @Index(name = "relate_originate_index", columnList = "originator_uuid")
+    }
+)
 @SingleParent
 public class Relationship extends /*CommonDataElementOfCollection */ GinasCommonSubData {
     

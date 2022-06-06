@@ -21,7 +21,11 @@ import java.util.*;
 
 @JSONEntity(title = "Name", isFinal = true)
 @Entity
-@Table(name="ix_ginas_name")
+@Table(name = "ix_ginas_name",
+    indexes = {
+        @Index(name = "name_index", columnList = "name")
+    }
+)
 @SingleParent
 @IndexableRoot
 public class Name extends CommonDataElementOfCollection {
