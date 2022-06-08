@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Entity
-@Table(name="ix_ginas_substanceref")
+@Table(name="ix_ginas_substanceref", indexes = {@Index(name = "sub_ref_index", columnList = "refuuid")})
 @JSONEntity(name = "substanceReference", isFinal = true)
 @EntityListeners(SubstanceReferenceEntityListener.class)
 public class SubstanceReference extends GinasCommonSubData {
