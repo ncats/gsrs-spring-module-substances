@@ -57,7 +57,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
         l.message("Initializing standardization");
         log.trace("Initializing standardization");
-        List<Substance> substanceList = substanceRepository.findAll();
+        //List<Substance> substanceList =
+        long totalSubstances =substanceRepository.count();
 
         ProcessListener listen = ProcessListener.onCountChange((sofar, total) -> {
             if (total != null) {
@@ -70,8 +71,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         l.message("Initializing name standardization: acquiring list");
 
         listen.newProcess();
-        listen.totalRecordsToProcess(substanceList.size());
-        log.trace("got list ");
+        listen.totalRecordsToProcess((int)totalSubstances);
+        log.trace("got list. size: {}", totalSubstances);
 
         ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
         l.message("Initializing name standardization: acquiring user account");
