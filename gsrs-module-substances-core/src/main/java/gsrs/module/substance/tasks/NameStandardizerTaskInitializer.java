@@ -1,11 +1,14 @@
 package gsrs.module.substance.tasks;
 
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
+import gsrs.module.substance.repository.NameRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.utils.NameStandardizer;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
+import gsrs.springUtils.StaticContextAccessor;
+import ix.core.util.EntityUtils;
 import ix.core.utils.executor.ProcessListener;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
@@ -13,17 +16,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.data.domain.Pageable;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -36,15 +40,19 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private SubstanceRepository substanceRepository;
 
     @Autowired
+    private NameRepository nameRepository;
+
+    @Autowired
     private AdminService adminService;
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
-    public NameStandardizerTaskInitializer() {
-    }
-
     private final Integer PAGE_SIZE=200;
+
+    private Map<UUID, Name> substancesToSave = new HashMap<>();
+    private List<Name> namesToSave = new ArrayList<>();
+
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
         if( this.nameStandardizerClassName== null || this.nameStandardizerClassName.length()==0) {
@@ -91,8 +99,9 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 log.trace("got tx " + tx);
                 tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 try {
-                    processInBackground(substanceRepository, nameStandardizer);
-/*
+                    processNames(nameStandardizer);
+/*                    processInBackground(substanceRepository, nameStandardizer);
+
                     log.trace("before substanceRepository.streamAll. substanceRepository: " + substanceRepository);
                     substanceRepository.streamAll().forEach(substance -> {
                         log.trace("processing substance " + substance.getUuid());
@@ -153,14 +162,15 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         AtomicBoolean nameChanged = new AtomicBoolean(false);
         try {
             Substance fullSubstance= substanceRepository.getOne(substance.uuid);
+            System.out.println("total names: " + fullSubstance.names.size());
             fullSubstance.names.forEach((Name name) -> {
-                log.trace("in StandardNameValidator, Name " + name.name);
+                log.trace("in standardizeNamesForSubstance, Name " + name.name);
 
                 if (name.stdName != null && name.stdName.equals(regenerateNameValue)) {
                     name.stdName = null;
                 }
 
-                if (name.stdName == null) {
+                if (name.stdName == null || name.stdName.length()==0) {
                     name.stdName = nameStandardizer.standardize(name.name).getResult();
                     log.debug("set (previously null) stdName to " + name.stdName);
                     nameChanged.set(true);
@@ -175,6 +185,29 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         return nameChanged.get();
     }
 
+    private boolean standardizeName(Name name, NameStandardizer nameStandardizer){
+        log.trace("starting in standardizeName");
+        AtomicBoolean nameChanged = new AtomicBoolean(false);
+        try {
+                log.trace("in StandardNameValidator, Name '{}'; stand.  name: '{}'", name.name, name.stdName);
+
+                if (name.stdName != null && name.stdName.equals(regenerateNameValue)) {
+                    name.stdName = null;
+                }
+
+                if (name.stdName == null || name.stdName.length()==0) {
+                    name.stdName = nameStandardizer.standardize(name.name).getResult();
+                    log.debug("set (previously null) stdName to " + name.stdName);
+                    nameChanged.set(true);
+                }
+
+        } catch (Exception ex) {
+            log.error("Error processing names");
+            log.error(ex.getMessage());
+            ex.printStackTrace();
+        }
+        return nameChanged.get();
+    }
     private void processInBackground(SubstanceRepository repository, NameStandardizer nameStandardizer){
         log.trace("starting in processInBackground");
         Pageable pageable = PageRequest.of(0, PAGE_SIZE);
@@ -202,4 +235,87 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
 
     }
+
+    private void processNames(NameStandardizer nameStandardizer){
+        log.trace("starting in processNames");
+        Pageable pageable = PageRequest.of(0, PAGE_SIZE);
+        Pageable currentPageable = pageable;
+
+        while(currentPageable != null) {
+            Page page = nameRepository.findAll(currentPageable);
+            log.trace("got page");
+            Stream<Name> nameStream = page.stream();
+
+            nameStream.forEach( name->{
+                log.trace("processing name with ID {}", name.uuid.toString());
+                if(standardizeName(name, nameStandardizer) ) {
+                    try {
+                        log.trace("resaving name {}", name.name);
+                        name.type="on";
+                        name.fullName= name.stdName;
+                        //saveSubstanceFromName(name);
+                        name.forceUpdate();
+                        //namesToSave.add(name);
+                        TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+                        log.trace("got tx " + tx);
+                        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                        tx.setReadOnly(false);
+                        tx.executeWithoutResult(c-> {
+                            log.trace("before saveAndFlush");
+                            log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
+                            //log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
+                            log.trace("name dirtyness: " + name.isDirty());
+                            nameRepository.saveAndFlush(StaticContextAccessor.getEntityManagerFor(Name.class).merge(name));
+                            log.trace("finished saveAndFlush");
+                        });
+
+                        log.trace("saved name {}", name.name);
+                    } catch (Exception ex) {
+                        log.error("Error during save: {}", ex.getMessage());
+                    }
+                }
+            });
+            if(page.hasNext()){
+                currentPageable = page.nextPageable();
+            }else{
+                currentPageable=null;
+            }
+        }
+    }
+
+    private void saveSubstancesAndNames() {
+        Set<UUID> substanceIdsToSave = new HashSet<>();
+        substanceIdsToSave= namesToSave.stream().map(n->n.fetchOwner().getUuid())
+                        .collect(Collectors.toSet());
+        namesToSave.forEach(n->{
+
+        });
+    }
+
+    private void saveSubstanceFromName(Name name) {
+        log.trace("in saveSubstanceFromName");
+        try {
+            Substance substance = name.getOwner();
+            for( Name n : substance.names) {
+                if(n.uuid.equals(name.uuid)){
+                    n.stdName= name.stdName;
+                }
+            }
+
+            TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+            log.trace("got tx " + tx);
+            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            tx.setReadOnly(false);
+            tx.executeWithoutResult(c-> {
+
+                this.substanceRepository.saveAndFlush(substance);
+            });
+
+            log.trace("saved substance {}", substance.uuid.toString());
+        }
+        catch (Exception ex) {
+            log.error("Error saving  substance: {}", ex.getMessage());
+        }
+    }
+
 }
