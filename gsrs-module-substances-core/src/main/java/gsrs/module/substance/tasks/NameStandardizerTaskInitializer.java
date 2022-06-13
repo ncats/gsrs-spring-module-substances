@@ -51,7 +51,6 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private final Integer PAGE_SIZE=200;
 
     private Map<UUID, Name> substancesToSave = new HashMap<>();
-    private List<Name> namesToSave = new ArrayList<>();
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
@@ -251,11 +250,9 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 if(standardizeName(name, nameStandardizer) ) {
                     try {
                         log.trace("resaving name {}", name.name);
-                        name.type="on";
-                        name.fullName= name.stdName;
-                        //saveSubstanceFromName(name);
+                        /*name.type="on";
+                        name.fullName= name.stdName;*/
                         name.forceUpdate();
-                        //namesToSave.add(name);
                         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                         log.trace("got tx " + tx);
                         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -264,8 +261,13 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                             log.trace("before saveAndFlush");
                             log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
                             //log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
-                            log.trace("name dirtyness: " + name.isDirty());
-                            nameRepository.saveAndFlush(StaticContextAccessor.getEntityManagerFor(Name.class).merge(name));
+                            log.trace("name dirtiness: " + name.isDirty());
+                            //hack to make sure name persists
+                            Name name2 = StaticContextAccessor.getEntityManagerFor(Name.class).merge(name);
+                            log.trace("name2 dirtiness: " + name2.isDirty());
+                            name2.forceUpdate();
+                            log.trace("name2 dirtiness after update: " + name2.isDirty());
+                            nameRepository.saveAndFlush(name2);
                             log.trace("finished saveAndFlush");
                         });
 
@@ -283,39 +285,5 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
     }
 
-    private void saveSubstancesAndNames() {
-        Set<UUID> substanceIdsToSave = new HashSet<>();
-        substanceIdsToSave= namesToSave.stream().map(n->n.fetchOwner().getUuid())
-                        .collect(Collectors.toSet());
-        namesToSave.forEach(n->{
-
-        });
-    }
-
-    private void saveSubstanceFromName(Name name) {
-        log.trace("in saveSubstanceFromName");
-        try {
-            Substance substance = name.getOwner();
-            for( Name n : substance.names) {
-                if(n.uuid.equals(name.uuid)){
-                    n.stdName= name.stdName;
-                }
-            }
-
-            TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-            log.trace("got tx " + tx);
-            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            tx.setReadOnly(false);
-            tx.executeWithoutResult(c-> {
-
-                this.substanceRepository.saveAndFlush(substance);
-            });
-
-            log.trace("saved substance {}", substance.uuid.toString());
-        }
-        catch (Exception ex) {
-            log.error("Error saving  substance: {}", ex.getMessage());
-        }
-    }
 
 }
