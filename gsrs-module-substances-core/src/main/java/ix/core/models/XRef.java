@@ -14,7 +14,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name="ix_core_xref")
+@Table(name="ix_core_xref",indexes = {@Index(name = "xref_refid_index", columnList = "refid"),
+		@Index(name = "xref_kind_index", columnList = "kind")})
 @Slf4j
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_xref_seq", allocationSize = 1)
 public class XRef extends IxModel {
