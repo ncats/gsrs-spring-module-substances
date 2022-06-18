@@ -38,7 +38,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private String regenerateNameValue = "";
     private Boolean forceRecalculationOfAll =false;
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
-    private DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HHmmss");
+    private DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH-mm-ss");
     private String outputPath;
     private String name = "nameStandardizationReport";
     private String STANDARD_FILE_ENCODING ="UTF-8";
@@ -78,21 +78,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
         l.message("Initializing standardization");
         log.trace("Initializing standardization");
-        //long totalSubstances =substanceRepository.count();
-
-        /*ProcessListener listen = ProcessListener.onCountChange((sofar, total) -> {
-            if (total != null) {
-                l.message("Generated standard names for :" + sofar + " of " + total);
-            } else {
-                l.message("Generated standard names for :" + sofar);
-            }
-        });*/
 
         l.message("Initializing name standardization: acquiring list");
-
-        /*listen.newProcess();
-        listen.totalRecordsToProcess((int)totalSubstances);
-        log.trace("got list. size: {}", totalSubstances);*/
 
         ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
         l.message("Initializing name standardization: acquiring user account");
@@ -101,6 +88,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         log.trace("starting process");
 
         try (PrintStream out = makePrintStream(writeFile)){
+            out.format(Locale.US, "Existing standardized name\tNew standardized name\tMessage\n");
             adminService.runAs(adminAuth, (Runnable) () -> {
                 TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                 log.trace("got outer tx " + tx);
@@ -147,8 +135,9 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private File getOutputFile() {
         return FilePathParserUtils.getFileParserBuilder()
                 .suppliedFilePath(outputPath)
-                .defaultFilePath("reports/" + name + "-%DATE%.txt")
+                .defaultFilePath("reports/" + name + "-%DATE% %TIME%.txt")
                 .dateFormatter(formatter)
+                .timeFormatter(formatterTime)
                 .build()
                 .getFile();
     }
@@ -162,8 +151,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 String prevStdName = name.stdName;
                 String newlyStdName =nameStandardizer.standardize(name.name).getResult();
                 if(  !newlyStdName.equals(prevStdName)) {
-                    printStream.format(Locale.US, "Existing standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
-                            name.name, prevStdName, newlyStdName);
+                    printStream.format(Locale.US, "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
+                            prevStdName, newlyStdName, name.name, prevStdName, newlyStdName);
                 }
                 if ( forceRecalculationOfAll || (name.stdName != null && name.stdName.equals(regenerateNameValue))) {
                     name.stdName = null;
