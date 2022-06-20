@@ -88,7 +88,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         log.trace("starting process");
 
         try (PrintStream out = makePrintStream(writeFile)){
-            out.format(Locale.US, "Existing standardized name\tNew standardized name\tMessage\n");
+            out.printf("Existing standardized name\tNew standardized name\tMessage\n");
             adminService.runAs(adminAuth, (Runnable) () -> {
                 TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                 log.trace("got outer tx " + tx);
@@ -151,7 +151,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 String prevStdName = name.stdName;
                 String newlyStdName =nameStandardizer.standardize(name.name).getResult();
                 if(  !newlyStdName.equals(prevStdName)) {
-                    printStream.format(Locale.US, "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
+                    printStream.format( "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
                             prevStdName, newlyStdName, name.name, prevStdName, newlyStdName);
                 }
                 if ( forceRecalculationOfAll || (name.stdName != null && name.stdName.equals(regenerateNameValue))) {
