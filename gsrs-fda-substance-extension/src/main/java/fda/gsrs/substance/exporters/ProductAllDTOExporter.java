@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.io.IOException;
 import java.util.*;
+import lombok.extern.slf4j.Slf4j;
 
 enum ProdAllDefaultColumns implements Column {
     PRODUCT_ID,
@@ -42,6 +43,7 @@ enum ProdAllDefaultColumns implements Column {
     SUBSTANCE_KEY
 }
 
+@Slf4j
 public class ProductAllDTOExporter implements Exporter<ProductMainAllDTO> {
 
     private final Spreadsheet spreadsheet;
