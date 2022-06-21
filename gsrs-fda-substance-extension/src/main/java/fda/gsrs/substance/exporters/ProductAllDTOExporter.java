@@ -94,7 +94,7 @@ public class ProductAllDTOExporter implements Exporter<ProductMainAllDTO> {
             } // Ingredient size > 0
         } // try
         catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("Error exporting Product record in Substance for Product ID: " + s.getProductId(), ex);
         }
     }
 
