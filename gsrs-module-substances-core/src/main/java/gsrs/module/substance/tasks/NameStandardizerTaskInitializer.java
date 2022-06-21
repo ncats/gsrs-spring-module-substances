@@ -4,6 +4,7 @@ import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.config.FilePathParserUtils;
 import gsrs.module.substance.repository.NameRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.utils.FDAFullNameStandardizer;
 import gsrs.module.substance.utils.NameStandardizer;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
@@ -23,7 +24,6 @@ import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Data
 public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
-    private String nameStandardizerClassName = null;
     private String regenerateNameValue = "";
     private Boolean forceRecalculationOfAll =false;
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
@@ -42,6 +41,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private String outputPath;
     private String name = "nameStandardizationReport";
     private String STANDARD_FILE_ENCODING ="UTF-8";
+    private NameStandardizer nameStandardizer = new FDAFullNameStandardizer();
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -57,25 +57,14 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
-        if( this.nameStandardizerClassName== null || this.nameStandardizerClassName.length()==0) {
-            this.nameStandardizerClassName="gsrs.module.substance.utils.FDAFullNameStandardardizer";
-        }
 
         File writeFile = getOutputFile();
         File abfile = writeFile.getAbsoluteFile();
         File pfile = abfile.getParentFile();
 
         pfile.mkdirs();
-        log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.nameStandardizerClassName,
+        log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.nameStandardizer.getClass().getName(),
                 this.forceRecalculationOfAll);
-        NameStandardizer nameStandardizer;
-        try  {
-            nameStandardizer = (NameStandardizer) Class.forName(this.nameStandardizerClassName).getDeclaredConstructor().newInstance();
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
-            log.error(e.getMessage());
-            log.error("cannot perform standardization; no standardizer");
-            return;
-        }
         l.message("Initializing standardization");
         log.trace("Initializing standardization");
 
@@ -88,13 +77,13 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         log.trace("starting process");
 
         try (PrintStream out = makePrintStream(writeFile)){
-            out.printf("Existing standardized name\tNew standardized name\tMessage\n");
+            out.print("Existing standardized name\tNew standardized name\tMessage\n");
             adminService.runAs(adminAuth, (Runnable) () -> {
                 TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                 log.trace("got outer tx " + tx);
                 tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 try {
-                    processNames(nameStandardizer, l, out);
+                    processNames(l, out);
                 } catch (Exception ex) {
                     l.message("Error standardizing. error: " + ex.getMessage());
                 }
@@ -123,8 +112,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         return "Regenerate standardized names for all substances in the database";
     }
 
-    public void setNameStandardizerClassName(String nameStandardizerClassName) {
-        this.nameStandardizerClassName = nameStandardizerClassName;
+    public void setNameStandardizerClassName(String nameStandardizerClassName) throws Exception {
+        this.nameStandardizer = (NameStandardizer) Class.forName(nameStandardizerClassName).getDeclaredConstructor().newInstance();
     }
 
     /**
@@ -142,19 +131,19 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 .getFile();
     }
 
-    private boolean standardizeName(Name name, NameStandardizer nameStandardizer, PrintStream printStream){
+    private boolean standardizeName(Name name, PrintStream printStream){
         log.trace("starting in standardizeName");
         AtomicBoolean nameChanged = new AtomicBoolean(false);
         try {
                 log.trace("in StandardNameValidator, Name '{}'; stand.  name: '{}'", name.name, name.stdName);
 
                 String prevStdName = name.stdName;
-                String newlyStdName =nameStandardizer.standardize(name.name).getResult();
-                if(  !newlyStdName.equals(prevStdName)) {
+                String newlyStdName =this.nameStandardizer.standardize(name.name).getResult();
+                if (!newlyStdName.equals(prevStdName)) {
                     printStream.format( "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
                             prevStdName, newlyStdName, name.name, prevStdName, newlyStdName);
                 }
-                if ( forceRecalculationOfAll || (name.stdName != null && name.stdName.equals(regenerateNameValue))) {
+                if (forceRecalculationOfAll || (name.stdName != null && name.stdName.equals(regenerateNameValue))) {
                     name.stdName = null;
                 }
 
@@ -172,7 +161,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         return nameChanged.get();
     }
 
-    private void processNames(NameStandardizer nameStandardizer, SchedulerPlugin.TaskListener l, PrintStream printStream){
+    private void processNames(SchedulerPlugin.TaskListener l, PrintStream printStream){
         log.trace("starting in processNames");
 
         List<String> nameIds= nameRepository.getAllUuids();
@@ -189,7 +178,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             }
             Name name = nameOpt.get();
             log.trace("processing name with ID {}", name.uuid.toString());
-            if(standardizeName(name, nameStandardizer, printStream) ) {
+            if(standardizeName(name, printStream) ) {
                 try {
                     log.trace("resaving name {}", name.name);
                     name.forceUpdate();
