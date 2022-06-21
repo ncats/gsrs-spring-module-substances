@@ -10,7 +10,6 @@ import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
 import gsrs.springUtils.StaticContextAccessor;
-import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.Name;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -21,14 +20,12 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 @Data
@@ -132,8 +129,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     }
 
     private boolean standardizeName(Name name, PrintStream printStream){
-        log.trace("starting in standardizeName");
-        AtomicBoolean nameChanged = new AtomicBoolean(false);
+        //log.trace("starting in standardizeName");
+        Boolean nameChanged = false;
         try {
                 log.trace("in StandardNameValidator, Name '{}'; stand.  name: '{}'", name.name, name.stdName);
 
@@ -150,15 +147,14 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 if (name.stdName == null || name.stdName.length()==0) {
                     name.stdName = newlyStdName;
                     log.debug("set (previously null) stdName to " + name.stdName);
-                    nameChanged.set(true);
+                    nameChanged= true;
                 }
 
         } catch (Exception ex) {
             log.error("Error processing names");
             log.error(ex.getMessage());
-            ex.printStackTrace();
         }
-        return nameChanged.get();
+        return nameChanged;
     }
 
     private void processNames(SchedulerPlugin.TaskListener l, PrintStream printStream){
@@ -181,23 +177,22 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             if(standardizeName(name, printStream) ) {
                 try {
                     log.trace("resaving name {}", name.name);
-                    name.forceUpdate();
+                    //name.forceUpdate();
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                    log.trace("got tx " + tx);
+                    //log.trace("got tx " + tx);
                     tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     tx.setReadOnly(false);
                     tx.executeWithoutResult(c-> {
                         log.trace("before saveAndFlush");
-                        log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
+                        //log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
                         //log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
-                        log.trace("name dirtiness: " + name.isDirty());
                         //hack to make sure name persists
                         Name name2 = StaticContextAccessor.getEntityManagerFor(Name.class).merge(name);
                         //log.trace("name2 dirtiness: " + name2.isDirty());
                         name2.forceUpdate();
                         //log.trace("name2 dirtiness after update: " + name2.isDirty());
                         nameRepository.saveAndFlush(name2);
-                        log.trace("finished saveAndFlush");
+                        //log.trace("finished saveAndFlush");
                     });
 
                     log.trace("saved name {}", name.name);
