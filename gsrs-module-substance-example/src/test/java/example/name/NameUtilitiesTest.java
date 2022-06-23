@@ -396,5 +396,14 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, actual);
     }
 
+    @Test
+    public void testNameX1() {
+        String inputName ="species 1 × species 2";
+        String expected = "SPECIES 1 X SPECIES 2";
+
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
 
 }

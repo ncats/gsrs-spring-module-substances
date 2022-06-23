@@ -167,6 +167,7 @@ public class NameUtilities {
     }
 
     private void initReplacers() {
+        replacers.add(new Replacer("\\×", "X"));
         String[] replacementTokensGreek = REPLACEMENT_SOURCE_GREEK.split(";");
         for (int i = 0; i < replacementTokensGreek.length; i = i + 2) {
             replacers.add(new Replacer(replacementTokensGreek[i], replacementTokensGreek[i + 1])
