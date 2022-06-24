@@ -27,7 +27,10 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
+		System.out.println("At start of subst ct indexer");
+
         try{
+
         	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
 
 			SearchResult<ClinicalTrialUSDTO> searchResult = clinicalTrialsUSApi.search(searchRequest);
@@ -37,9 +40,9 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
 			if(ctusList==null) return;
 
 			ctusList.forEach(ctus -> {
-				if(ctus.getRecruitment()!=null) {
-					// using recruitment for status because ct gov now lists recruitment as a field.
-					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Status", ctus.getRecruitment()));
+				if(ctus.getStatus()!=null) {
+					System.out.println("ctus.getStatus:" + ctus.getStatus());
+					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial US Status", ctus.getStatus()));
 				}
 			});
 			long ctCount = ctusList.size();
