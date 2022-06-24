@@ -1335,6 +1335,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
     private static void preProcessChemical(Chemical c,  RendererOptions renderOptions){
+	    
+        log.info("processing chemical");
         if(c!=null){
 
 

@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 @JSONEntity(title = "Reference", isFinal = true)
 @Entity
-@Table(name="ix_ginas_reference")
+@Table(name="ix_ginas_reference", indexes = {@Index(name = "ref_id_index", columnList = "id")})
 @SingleParent
 @IndexableRoot
 public class Reference extends GinasCommonData {
