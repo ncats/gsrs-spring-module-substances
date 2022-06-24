@@ -57,7 +57,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>clinical-trials-api</artifactId>
-            <version>0.2.2-SNAPSHOT</version>
+            <version>0.2.3-SNAPSHOT</version>
         </dependency>
 
 
