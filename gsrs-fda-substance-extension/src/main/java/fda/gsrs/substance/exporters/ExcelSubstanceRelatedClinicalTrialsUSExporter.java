@@ -8,12 +8,14 @@ import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 public class ExcelSubstanceRelatedClinicalTrialsUSExporter implements Exporter<Substance> {
 
 	private OutputStream os;
@@ -32,7 +34,7 @@ public class ExcelSubstanceRelatedClinicalTrialsUSExporter implements Exporter<S
 			this.clinicalTrialUSDTOExporter = factory.createNewExporter(os, params);
 
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception instantiating ExcelSubstanceRelatedClinicalTrialsUSExporter.", ex);
 		}
 	}
 
@@ -40,7 +42,7 @@ public class ExcelSubstanceRelatedClinicalTrialsUSExporter implements Exporter<S
 		try {
 			this.clinicalTrialUSDTOExporter.export(clinicalTrialUSDTO);
 		}catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception in method exportClinicalTrialUS.", ex);
 		}
 	}
 
@@ -61,7 +63,7 @@ public class ExcelSubstanceRelatedClinicalTrialsUSExporter implements Exporter<S
 			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + s.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
 			return clinicalTrialsUSApi.search(searchRequest);
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception in method getClinicalTrialsUSRelatedToSubstance", ex);
 		}
 		return null;
 	}
@@ -73,7 +75,8 @@ public class ExcelSubstanceRelatedClinicalTrialsUSExporter implements Exporter<S
 				clinicalTrialUSDTOExporter.close();
 			}
 		} catch (Exception ex) {
-			ex.printStackTrace();
+			log.error("Exception closing clinicalTrialUSDTOExporter.", ex);
+			throw ex;
 		}
 	}
 

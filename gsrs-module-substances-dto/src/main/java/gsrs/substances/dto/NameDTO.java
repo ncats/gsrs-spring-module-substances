@@ -15,7 +15,8 @@ public class NameDTO extends SubstanceComponentBaseDTO{
 
     private UUID uuid;
     private String name;
-    private String displayName;
+    private String stdName;
+    private boolean displayName;
     private boolean preferred;
     private String type;
 

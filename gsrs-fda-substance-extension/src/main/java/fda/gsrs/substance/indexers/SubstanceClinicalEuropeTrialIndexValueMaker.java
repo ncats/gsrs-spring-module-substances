@@ -35,7 +35,7 @@ public class SubstanceClinicalEuropeTrialIndexValueMaker implements IndexValueMa
 
 			cteuList.forEach(cteu -> {
 				if(cteu.getTrialStatus()!=null) {
-					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial EU Status", cteu.getTrialStatus()));
+					consumer.accept(IndexableValue.simpleFacetStringValue("Clinical Trial Europe Status", cteu.getTrialStatus()));
 				}
 			});
 			long ctCount = cteuList.size();
