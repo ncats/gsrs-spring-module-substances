@@ -208,7 +208,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
                 
         JsonNode jsn = om.readTree(istruct.getBody().toString());
         String strID=jsn.at("/structure/id").asText();        
-        substanceController.structureSearchGet(strID, "exact", null, null, null, null, null, false, null, mockedRequest, mockAtt);
+        substanceController.structureSearchGet(strID, "exact", null, null, null, null, null, false, null, null, mockedRequest, mockAtt);
         
         //Should get called twice: once in full structure and once in moiety
         //TODO: eventually this may fail due to changing how processing works. 
@@ -247,7 +247,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         lstd.reset();
         assertEquals(0,lstd.getStdCallCount());
         
-        substanceController.structureSearchGet(smiles, "exact", null, null, null, null, null, false, null, mockedRequest, mockAtt);
+        substanceController.structureSearchGet(smiles, "exact", null, null, null, null, null, false, null, null, mockedRequest, mockAtt);
         
 
         assertTrue(lstd.getStdCallCount()>=2, "Standardization should be called at least twice, but could be called more in some cases");

@@ -522,13 +522,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam(required = false) Integer fdim,
             @RequestParam(required = false) String field,
             @RequestParam(value = "sync", required = false, defaultValue = "false") boolean sync,
+            @RequestParam(required = false) String qText,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest,
             RedirectAttributes attributes) throws Exception {
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
-
-
 
         Optional<Structure> structureOp = parseStructureQuery(q, true);
         if(!structureOp.isPresent()){
@@ -582,6 +581,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
+
+            // Search for the hash and also add the qText (Query parameters).
+            if (qText != null) {
+                hash = hash + " AND (" + qText + ")";
+            }
+
             attributes.addAttribute("q", hash);
             attributes.addAttribute("includeBreakdown", false);
             Optional.ofNullable(httpServletRequest.getParameterValues("facet")).ifPresent(ss->{
