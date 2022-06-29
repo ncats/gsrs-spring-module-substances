@@ -488,6 +488,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SubstanceStructureSearchService.StructureSearchType.parseType(s)).ifPresent(c->rb.type(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
+        
+	String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
@@ -505,7 +507,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
+	
         attributes.addAttribute("q", structure.get().id.toString());
+	if(qText!=null){
+		attributes.addAttribute("qText", qText);
+	}
         if(sync) {
             attributes.addAttribute("sync", true);
         }
@@ -522,13 +528,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam(required = false) Integer fdim,
             @RequestParam(required = false) String field,
             @RequestParam(value = "sync", required = false, defaultValue = "false") boolean sync,
+            @RequestParam(required = false) String qText,
             @RequestParam Map<String, String> queryParameters,
             HttpServletRequest httpServletRequest,
             RedirectAttributes attributes) throws Exception {
 
         Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
-
-
 
         Optional<Structure> structureOp = parseStructureQuery(q, true);
         if(!structureOp.isPresent()){
@@ -582,6 +587,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
+
+            // Search for the hash and also add the qText (Query parameters).
+            if (qText != null) {
+                hash = hash + " AND (" + qText + ")";
+            }
+
             attributes.addAttribute("q", hash);
             attributes.addAttribute("includeBreakdown", false);
             Optional.ofNullable(httpServletRequest.getParameterValues("facet")).ifPresent(ss->{
@@ -615,6 +626,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         updateSearchContextGenerator(resultContext, queryParameters);
 
         //TODO move to service
+	//TODO: need to add support for qText in the "focused" version of
+	// all structure searches. This may require some deeper changes.
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
     }
