@@ -6,6 +6,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.EntityFetcher;
+import ix.core.chem.Chem;
 import ix.core.models.Group;
 import ix.core.models.Structure;
 import ix.core.util.EntityUtils.Key;
@@ -213,7 +214,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
                      try {
                          Chemical chem = s.toChemical();
-                         cell.writeString(Inchi.asStdInchi(chem)
+                         cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(chem))
                                           .getKey()
                                           .replace("InChIKey=", ""));
                      } catch (Exception e) {
