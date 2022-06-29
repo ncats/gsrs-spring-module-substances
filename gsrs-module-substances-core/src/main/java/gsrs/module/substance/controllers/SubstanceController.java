@@ -488,6 +488,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SubstanceStructureSearchService.StructureSearchType.parseType(s)).ifPresent(c->rb.type(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
+        
+	String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
@@ -505,7 +507,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
+	
         attributes.addAttribute("q", structure.get().id.toString());
+	if(qText!=null){
+		attributes.addAttribute("qText", qText);
+	}
         if(sync) {
             attributes.addAttribute("sync", true);
         }
@@ -620,6 +626,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         updateSearchContextGenerator(resultContext, queryParameters);
 
         //TODO move to service
+	//TODO: need to add support for qText in the "focused" version of
+	// all structure searches. This may require some deeper changes.
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return substanceFactoryDetailedSearch(focused, sync);
     }
