@@ -39,6 +39,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private String name = "nameStandardizationReport";
     private String STANDARD_FILE_ENCODING ="UTF-8";
     private NameStandardizer nameStandardizer = new FDAFullNameStandardizer();
+    private String description;
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -106,7 +107,12 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
     @Override
     public String getDescription() {
-        return "Regenerate standardized names for all substances in the database";
+        if( description == null) {
+            return "Regenerate standardized names for all substances in the database";
+        }
+        else {
+            return description;
+        }
     }
 
     public void setNameStandardizerClassName(String nameStandardizerClassName) throws Exception {
