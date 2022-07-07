@@ -2,18 +2,15 @@ package ix.ginas.utils.validation.validators;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.chem.Chem;
 import ix.core.validator.GinasProcessingMessage;
-import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.ControlledVocabulary;
 import ix.ginas.models.v1.FragmentVocabularyTerm;
@@ -35,10 +32,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CVFragmentStructureValidator extends AbstractValidatorPlugin<ControlledVocabulary> {
 	
-	public CVFragmentStructureValidator(){
-		log.error("In CVFragmentStructureValidator");		
-	}	
-	
 	private class FragmentChanges{
 		
 		private List<FragmentVocabularyTerm> addedTerms = new ArrayList<FragmentVocabularyTerm>();
@@ -58,7 +51,8 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 				.collect(Collectors.toList());
 				
 		if(invalidUpdateTerms.size()>0) {
-			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Display, fragmentStructure or value cannot be null."));			
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Display, fragmentStructure or value cannot be null."));
+			return;
 		}
 		
 		FragmentChanges changes = getAddedUpdatedDeletedTerms(newCV, oldCV);
@@ -69,8 +63,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		.filter(t->t.k().isPresent())
 		.map(Tuple.kmap(k->k.get()))
 		.collect(Tuple.toGroupedMap());
-		
-		
+				
 		List<FragmentVocabularyTerm> addedOrUpdatedTerms = new ArrayList<FragmentVocabularyTerm>(); 
 		addedOrUpdatedTerms.addAll(changes.addedTerms);
 		addedOrUpdatedTerms.addAll(changes.updatedTerms);		
@@ -81,53 +74,56 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 	private Optional<String> getHash(FragmentVocabularyTerm term) {
 		try {
 			String inputStructure = term.getFragmentStructure().split(" ")[0];			
-			Chemical chem = Chemical.createFromSmarts(inputStructure);
-			chem = Chem.RemoveQueryAtomsForPseudoInChI(chem);
-			return Optional.of(chem.toInchi().getKey());
-			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			Chemical chem = Chemical.parse(inputStructure);			
+			chem = Chem.RemoveQueryAtomsForPseudoInChI(chem);			
+			return Optional.of(chem.toInchi().getKey());			
+		} catch (IOException e) {			
 			e.printStackTrace();
 			return Optional.empty();
-		}
-		
+		}		
 	}	
 		
-	private void chemicalValidation(FragmentVocabularyTerm term, Map<String,List<String>> lookup, ValidatorCallback callback) {
+	private void chemicalValidation(FragmentVocabularyTerm term, Map<String,List<String>> lookup, ValidatorCallback callback) {		
 		
+		String fragmentStructure = term.getFragmentStructure().trim();
+		Chemical chem;
 		try {
-			String fragmentStructure = term.getFragmentStructure().trim();
-			Chemical chem;
-//			try {
-//				chem = Chemical.parse(fragmentStructure);				
-//			}catch(IOException ex) {				
-				chem = Chemical.createFromSmarts(fragmentStructure.split(" ")[0]);
+			chem = Chemical.parse(fragmentStructure);				
+		}catch(IOException ex) {	
+			try {
+				chem = Chemical.parse(fragmentStructure.split(" ")[0]);
 				if (!Optional.ofNullable(chem).isPresent()) {
 					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-	                    "Illegal chemical structure format: " + term.getFragmentStructure()));
+							"Illegal chemical structure format: " + term.getFragmentStructure()));
 					return;
 				}
-//			}
-			
-			String smiles = chem.toSmiles();
+			}catch(IOException IOEx) {
+				callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+						"Illegal chemical structure format: " + term.getFragmentStructure()));
+				return;
+			}
+		}
+		
+		String smiles;
+		try {
+			smiles = chem.toSmiles();
 			// todo: may need to add warning with applicable change
 			if(!Optional.ofNullable(term.getSimplifiedStructure()).isPresent())
-				term.setSimplifiedStructure(smiles);
-			
-			
-			Optional<String> hash = getHash(term);
-			if(!hash.isPresent()) {
-				callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-	                    "Illegal chemical structure format: " + term.getFragmentStructure()));
-			} else if(lookup.get(hash.get()).size()>1) {
-				callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-	                    "This fragment structure appears to have duplicates: " + term.getFragmentStructure()));				
-			}			
-			
-		} catch (IOException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}					
+				term.setSimplifiedStructure(smiles);			    
+		} catch (IOException e) {
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+					"Illegal chemical structure format: " + term.getFragmentStructure()));
+			return;
+		}			
+		
+		Optional<String> hash = getHash(term);
+		if(!hash.isPresent()) {
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "Illegal chemical structure format getting hash: " + term.getFragmentStructure()));
+		} else if(lookup.get(hash.get()).size()>1) {
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "This fragment structure appears to have duplicates: " + term.getFragmentStructure()));				
+		}			
 	}	
 	
 	private FragmentChanges getAddedUpdatedDeletedTerms(ControlledVocabulary newCV, ControlledVocabulary oldCV) {	
