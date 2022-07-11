@@ -43,7 +43,8 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 	@Override
     public void validate(ControlledVocabulary newCV, ControlledVocabulary oldCV, ValidatorCallback callback) {
 		
-		List<FragmentVocabularyTerm> invalidUpdateTerms =newCV.getTerms().stream()				
+		List<FragmentVocabularyTerm> invalidUpdateTerms =newCV.getTerms().stream()
+				.filter(term-> term instanceof FragmentVocabularyTerm)
 				.map(term->(FragmentVocabularyTerm)term)
 				.filter(term->!Optional.ofNullable(term.getFragmentStructure()).isPresent() 
 						|| !Optional.ofNullable(term.getDisplay()).isPresent()
@@ -58,6 +59,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		FragmentChanges changes = getAddedUpdatedDeletedTerms(newCV, oldCV);
 		
 		Map<String, List<String>> hashLookup = newCV.getTerms().stream()
+		.filter(term-> term instanceof FragmentVocabularyTerm)
 		.map(key->(FragmentVocabularyTerm)key)		
 		.map(f->Tuple.of(getHash(f), f.getValue()))
 		.filter(t->t.k().isPresent())
@@ -130,7 +132,8 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 		FragmentChanges fragmentChanges = new FragmentChanges();
 					
-		List<FragmentVocabularyTerm> termsAfterUpdate =newCV.getTerms().stream()							
+		List<FragmentVocabularyTerm> termsAfterUpdate =newCV.getTerms().stream()
+				.filter(term->term instanceof FragmentVocabularyTerm)
 				.map(term->(FragmentVocabularyTerm)term)			
 				.collect(Collectors.toList());
 		
@@ -140,7 +143,8 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 			return fragmentChanges;
 		}
 		
-		List<FragmentVocabularyTerm> termsBeforeUpdate = oldCV.getTerms().stream()				
+		List<FragmentVocabularyTerm> termsBeforeUpdate = oldCV.getTerms().stream()
+				.filter(term-> term instanceof FragmentVocabularyTerm)
 				.map(term->(FragmentVocabularyTerm)term)				
 				.collect(Collectors.toList());
 							
