@@ -12,6 +12,7 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.*;
@@ -21,6 +22,7 @@ import java.util.regex.Pattern;
 /**
  * Created by katzelda on 5/11/18.
  */
+@Slf4j
 public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
     @Autowired
@@ -91,6 +93,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     }
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
+        log.trace("in NamesValidator.validate");
         boolean preferred = false;
         int display = 0;
         Iterator<Name> nameIterator = s.names.iterator();
