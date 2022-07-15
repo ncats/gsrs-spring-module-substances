@@ -68,7 +68,7 @@
                     <artifactId>log4j-to-slf4j</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>log4j</groupId>
+        		    <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
             </exclusions>
@@ -95,7 +95,7 @@
                     <artifactId>log4j-to-slf4j</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>log4j</groupId>
+				    <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
             </exclusions>
@@ -187,7 +187,7 @@
                     <artifactId>log4j-to-slf4j</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>log4j</groupId>
+				    <groupId>log4j</groupId>
                     <artifactId>log4j</artifactId>
                 </exclusion>
             </exclusions>
@@ -195,7 +195,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.10-SNAPSHOT</version>
+            <version>1.0.9</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -223,7 +223,7 @@
                     <artifactId>log4j-to-slf4j</artifactId>
                 </exclusion>
                 <exclusion>
-                    <groupId>log4j</groupId>
+                   <groupId>log4j</groupId>
                    <artifactId>log4j</artifactId>
                 </exclusion>
             </exclusions>
@@ -259,5 +259,10 @@
                     </exclusion>
                 </exclusions>
           </dependency>
+	<dependency>
+            <groupId>com.oracle.database.jdbc</groupId>
+            <artifactId>ojdbc8</artifactId>
+            <version>19.8.0.0</version>
+        </dependency>
     </dependencies>
 </project>
