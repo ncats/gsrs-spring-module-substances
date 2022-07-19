@@ -115,6 +115,11 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("name can not be null"));
                 continue;
             }
+            String forbiddenName="WOBBLEDOBBLE";
+            if( n.getName().contains(forbiddenName)) {
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("You may not name substances " + forbiddenName));
+                continue;
+            }
             if (n.preferred) {
                 preferred = true;
             }
