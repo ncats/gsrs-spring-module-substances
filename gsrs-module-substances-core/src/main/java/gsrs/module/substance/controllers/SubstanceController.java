@@ -1,56 +1,32 @@
 package gsrs.module.substance.controllers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import gov.nih.ncats.common.io.IOUtil;
-import gov.nih.ncats.molwitch.Atom;
-import gov.nih.ncats.molwitch.Bond;
-import gov.nih.ncats.molwitch.Bond.Stereo;
-import gov.nih.ncats.molwitch.Chemical;
-import gov.nih.ncats.molwitch.MolwitchException;
-import gov.nih.ncats.molwitch.io.CtTableCleaner;
-import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
-import gov.nih.ncats.molwitch.renderer.RendererOptions;
-import gsrs.cache.GsrsCache;
-import gsrs.controller.*;
-import gsrs.controller.hateoas.GsrsLinkUtil;
-import gsrs.legacy.LegacyGsrsSearchService;
-import gsrs.module.substance.RendererOptionsConfig;
-import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
-import gsrs.module.substance.approval.ApprovalService;
-import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
-import gsrs.module.substance.repository.*;
-import gsrs.module.substance.services.SubstanceSequenceSearchService;
-import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
-import gsrs.module.substance.services.SubstanceStructureSearchService;
-import gsrs.repository.EditRepository;
-import gsrs.security.hasApproverRole;
-import gsrs.service.GsrsEntityService;
-import gsrs.service.PayloadService;
-import ix.core.EntityFetcher;
-import ix.core.chem.*;
-import ix.core.controllers.EntityFactory;
-import ix.core.models.Payload;
-import ix.core.models.Structure;
-import ix.core.search.SearchOptions;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
-import ix.core.search.SearchResultContext;
-import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.Key;
-import ix.ginas.models.v1.*;
-import ix.ginas.utils.JsonSubstanceFactory;
-import ix.seqaln.SequenceIndexer;
-import ix.utils.CallableUtil;
-import ix.utils.CallableUtil.TypedCallable;
-import ix.utils.UUIDUtil;
-import ix.utils.Util;
-import lombok.Builder;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import java.awt.Dimension;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
+
+import javax.imageio.ImageIO;
+import javax.servlet.http.HttpServletRequest;
+import javax.validation.constraints.NotBlank;
+
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -75,21 +51,78 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Stream;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import gov.nih.ncats.common.io.IOUtil;
+import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.Bond;
+import gov.nih.ncats.molwitch.Bond.Stereo;
+import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.molwitch.MolwitchException;
+import gov.nih.ncats.molwitch.io.CtTableCleaner;
+import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
+import gov.nih.ncats.molwitch.renderer.RendererOptions;
+import gsrs.GsrsFactoryConfiguration;
+import gsrs.cache.GsrsCache;
+import gsrs.controller.EtagLegacySearchEntityController;
+import gsrs.controller.GetGsrsRestApiMapping;
+import gsrs.controller.GsrsRestApiController;
+import gsrs.controller.IdHelpers;
+import gsrs.controller.PostGsrsRestApiMapping;
+import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.legacy.LegacyGsrsSearchService;
+import gsrs.module.substance.RendererOptionsConfig;
+import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
+import gsrs.module.substance.SubstanceEntityServiceImpl;
+import gsrs.module.substance.approval.ApprovalService;
+import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
+import gsrs.module.substance.repository.ChemicalSubstanceRepository;
+import gsrs.module.substance.repository.StructuralUnitRepository;
+import gsrs.module.substance.repository.StructureRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.repository.SubunitRepository;
+import gsrs.module.substance.services.SubstanceSequenceSearchService;
+import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
+import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.repository.EditRepository;
+import gsrs.security.hasApproverRole;
+import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
+import ix.core.EntityFetcher;
+import ix.core.chem.Chem;
+import ix.core.chem.ChemAligner;
+import ix.core.chem.ChemCleaner;
+import ix.core.chem.PolymerDecode;
+import ix.core.chem.StructureProcessor;
+import ix.core.controllers.EntityFactory;
+import ix.core.models.Payload;
+import ix.core.models.Structure;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.search.SearchResultContext;
+import ix.core.search.text.TextIndexer;
+import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
+import ix.ginas.models.v1.Amount;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Moiety;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.Subunit;
+import ix.ginas.models.v1.Unit;
+import ix.ginas.utils.JsonSubstanceFactory;
+import ix.seqaln.SequenceIndexer;
+import ix.utils.CallableUtil;
+import ix.utils.CallableUtil.TypedCallable;
+import ix.utils.UUIDUtil;
+import ix.utils.Util;
+import lombok.Builder;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * GSRS Rest API controller for the {@link Substance} entity.
@@ -107,6 +140,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         so.addDateRangeFacet("root_lastEdited");
         so.addDateRangeFacet("root_approved");
         so.addDateRangeFacet("root_created");
+        
+        if (gsrsFactoryConfiguration != null) {
+            Optional<Map<String, Object>> conf = gsrsFactoryConfiguration
+                    .getSearchSettingsFor(SubstanceEntityServiceImpl.CONTEXT);
+            
+            String restrict = conf
+                    .map(cc -> cc.get("restrictDefaultToIdentifiers"))
+                    .filter(bb -> bb != null).map(bb -> bb.toString())
+                    .orElse(null);
+            if (restrict != null && "true".equalsIgnoreCase(restrict)) {
+                so.setDefaultField(TextIndexer.FULL_IDENTIFIER_FIELD);
+            }
+        }
+        
 
         return so;
     }
@@ -216,6 +263,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
     @Autowired
     private SubstanceSequenceSearchService substanceSequenceSearchService;
+    
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
