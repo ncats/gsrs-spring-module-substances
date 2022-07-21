@@ -156,7 +156,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                      if(!wroteName) {
                          //TODO: Something based on what comes back
                      }
-             }).replaceColumnName(DefaultColumns.STD_NAME.name(), "PT"));
+             }).replaceColumnName(DefaultColumns.STD_NAME.name(), "DISPLAY_NAME"));
              
              DEFAULT_RECIPE_MAP.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS").replaceColumnName(DefaultColumns.CAS.name(),"RN"));
              DEFAULT_RECIPE_MAP.put(DefaultColumns.EC, new CodeSystemRecipe(DefaultColumns.EC, "ECHA (EC/EINECS)"));
@@ -260,7 +260,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                  }else {
                      cell.writeString(s.getName());
                  }
-             }).replaceColumnName(DefaultColumns.NAME.name(), "UTF8_PT"));
+             }).replaceColumnName(DefaultColumns.NAME.name(), "UTF8_DISPLAY_NAME"));
                          
              
 
