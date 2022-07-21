@@ -28,7 +28,7 @@ public class FDANameExporter implements Exporter<Substance> {
         this.showPrivates =showPrivates;
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tUNII\tBDNUM\tDISPLAY_TERM\tUTF8_DISPLAY_TERM\tPARENT_BDUM\tPARENT_DISPLAY_TERM\tUTF8_PARENT_DISPLAY_TERM");
+        bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tUNII\tBDNUM\tDISPLAY_NAME\tUTF8_DISPLAY_NAME\tPARENT_BDUM\tPARENT_DISPLAY_NAME\tUTF8_PARENT_DISPLAY_NAME");
 
         bw.newLine();
     }
@@ -115,8 +115,6 @@ public class FDANameExporter implements Exporter<Substance> {
         		            .map(n->n.getName())
         		            .orElse("");
         
-        //        bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tUNII\tBDNUM\tDISPLAY_TERM\tUTF8_DISPLAY_TERM\tPARENT_BDUM\tPARENT_DISPLAY_TERM\tUTF8_PARENT_DISPLAY_TERM");
-
         
         for ( Name n :ing.getAllNames()){
             boolean isPublic = n.getAccess().isEmpty();
