@@ -289,6 +289,7 @@ public class NameUtilitiesTest {
         String input = "pay attention\u00A1 There is \u00A4 to be made. No, \u00AB isn't XML. \u03A7 \u2191 ";
         String expected = "PAY ATTENTION? THERE IS ? TO BE MADE. NO, \" ISN'T XML. .CHI. ?";
         ReplacementResult result = NameUtilities.getInstance().fullyStandardizeName(input);
+        System.out.println("initial result: " + result.getResult());
         String actual = NameUtilities.getInstance().nkfdNormalizations( result.getResult());
         Assertions.assertEquals(expected, actual);
     }
@@ -405,5 +406,37 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, result.getResult());
     }
 
+
+    @Test
+    public void testRemoveHtml() {
+        String input="<i>must</i> <b>remove</b>";
+        String expected = "must remove";
+        String actual = NameUtilities.getInstance().removeHtmlUsingJsoup(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testRemoveIllFormedHtml() {
+        String input="<i>must <b>remove";
+        String expected = "must remove";
+        String actual = NameUtilities.getInstance().removeHtmlUsingJsoup(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testRemoveDangerousHtml() {
+        String input="Some simple <script>performMischief()</script>text";
+        String expected = "Some simple text";
+        String actual = NameUtilities.getInstance().removeHtmlUsingJsoup(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testRemoveNestedHtml() {
+        String input="Some <div class=\"x\">text that <emphasis>contains</emphasis> a message for us</div>";
+        String expected = "Some text that contains a message for us";
+        String actual = NameUtilities.getInstance().removeHtmlUsingJsoup(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
 
 }

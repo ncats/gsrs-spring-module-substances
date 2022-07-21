@@ -2,16 +2,17 @@ package gsrs.module.substance.utils;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import gsrs.module.substance.services.ConsoleFilterService;
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.owasp.html.PolicyFactory;
+import org.owasp.html.HtmlPolicyBuilder;
 
 /**
  *
@@ -140,6 +141,7 @@ public class NameUtilities {
         results.update(zeroWidthRemovalResult);
         workingString = nkfdNormalizations(results.getResult());
         results.update(removeSerialSpaces(workingString));
+        results.update(removeHtmlUsingJsoup(results.getResult()));
         results.setResult(results.getResult().toUpperCase() +suffix);
         return results;
     }
@@ -374,4 +376,18 @@ public class NameUtilities {
     }
 
 
+    /*public ReplacementResult removeHtml(String input) {
+        PolicyFactory policy = new HtmlPolicyBuilder()
+                .toFactory();
+        List<ReplacementNote> notes = new ArrayList<>();
+        ReplacementResult replacementResult = new ReplacementResult(policy.sanitize(input), notes);
+        return replacementResult;
+    }*/
+
+    public ReplacementResult removeHtmlUsingJsoup(String input) {
+        String cleanText = Jsoup.parse(input).text();
+        List<ReplacementNote> notes = new ArrayList<>();
+        ReplacementResult replacementResult = new ReplacementResult(cleanText, notes);
+        return replacementResult;
+    }
 }
