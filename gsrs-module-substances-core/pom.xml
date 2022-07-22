@@ -202,6 +202,11 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-data-exchange-infrastructure</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
             <version>0.6.3</version>
         </dependency>

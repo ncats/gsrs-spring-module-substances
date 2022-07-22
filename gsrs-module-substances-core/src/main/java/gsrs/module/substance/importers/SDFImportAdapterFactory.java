@@ -283,6 +283,11 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         return originalFileName;
     }
 
+    @Override
+    public String getHoldingServiceName() {
+        return "gsrs.holdingArea.services.DefaultHoldingAreaService";
+    }
+
     public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
         log.trace("in createDefaultSdfFileImport");
         Set<String> fieldNames =map.keySet();
