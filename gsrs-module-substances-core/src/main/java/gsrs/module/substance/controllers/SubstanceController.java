@@ -626,10 +626,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            hash = "root_structure_properties_term:" + structure.getExactHash();
+            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-            hash= structure.getStereoInsensitiveHash();
+            String sins=structure.getStereoInsensitiveHash();
+            hash= "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
 
         if(hash !=null){
