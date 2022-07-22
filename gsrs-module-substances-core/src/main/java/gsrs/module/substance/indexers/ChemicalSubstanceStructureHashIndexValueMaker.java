@@ -73,14 +73,19 @@ public class ChemicalSubstanceStructureHashIndexValueMaker implements IndexValue
 
     }
     
-    private void addHashes(String stereoInsensitive, String exact, String prefix, Consumer<IndexableValue> consumer) {
+    public static void addHashes(String stereoInsensitive, String exact, String prefix, Consumer<IndexableValue> consumer) {
 
-        consumer.accept(IndexableValue.simpleStringValue(prefix + "_term", stereoInsensitive));
-        consumer.accept(IndexableValue.simpleStringValue(prefix + "_term", exact));
-        consumer.accept(IndexableValue.simpleStringValue(prefix, exact));
-        consumer.accept(IndexableValue.simpleStringValue(prefix, stereoInsensitive));
-        consumer.accept(IndexableValue.simpleStringValue(prefix + "_STEREO_INSENSITIVE_HASH", stereoInsensitive));
-        consumer.accept(IndexableValue.simpleStringValue(prefix + "_EXACT_HASH", exact));
+        if(stereoInsensitive!=null) {
+            consumer.accept(IndexableValue.simpleStringValue(prefix + "_term", stereoInsensitive));
+            consumer.accept(IndexableValue.simpleStringValue(prefix, stereoInsensitive));
+            consumer.accept(IndexableValue.simpleStringValue(prefix + "_STEREO_INSENSITIVE_HASH", stereoInsensitive));
+        }
+        
+        if(exact!=null) {
+            consumer.accept(IndexableValue.simpleStringValue(prefix + "_term", exact));
+            consumer.accept(IndexableValue.simpleStringValue(prefix, exact));
+            consumer.accept(IndexableValue.simpleStringValue(prefix + "_EXACT_HASH", exact));
+        }
         
         
     }

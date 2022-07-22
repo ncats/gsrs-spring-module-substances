@@ -46,15 +46,13 @@ public class PolymerStructureHashIndexValueMaker implements IndexValueMaker<Subs
             Structure structure = structureProcessor.instrument(s.polymer.displayStructure.molfile, components);
 
 
-
-
-            consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", structure.getStereoInsensitiveHash()));
-            consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", structure.getExactHash()));
-
-
+            String stereoInsensitive=structure.getStereoInsensitiveHash();
+            String exact=structure.getExactHash();            
+            ChemicalSubstanceStructureHashIndexValueMaker.addHashes(stereoInsensitive, exact, "root_structure_properties", consumer);
             components.forEach(m->{
-                consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_properties_term", m.getStereoInsensitiveHash()));
-                consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_properties_term", m.getExactHash()));
+                String sins=m.getStereoInsensitiveHash();
+                String exa=m.getExactHash();
+                ChemicalSubstanceStructureHashIndexValueMaker.addHashes(sins, exa, "root_moieties_properties", consumer);
             });
 
         }catch(Exception e){
