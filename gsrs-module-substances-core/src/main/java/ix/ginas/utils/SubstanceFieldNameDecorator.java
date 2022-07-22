@@ -33,7 +33,18 @@ public class SubstanceFieldNameDecorator implements FieldNameDecorator {
 			
 			m.put("root_uuid" , "Substance UUID"); 
             m.put("root_structure_inchikey" , "InChIKey");
+            
             m.put("root_structure_properties_term" , "Structure Property");
+            m.put("root_structure_properties" , "Structure Property");
+            
+            m.put("root_moieties_properties_term" , "Moiety Structure Property");
+            m.put("root_moieties_properties" , "Moiety Structure Property");
+            
+            m.put("root_structure_properties_STEREO_INSENSITIVE_HASH" , "Structure Insensitive Hash");
+            m.put("root_structure_properties_EXACT_HASH" , "Structure Exact Hash");
+            
+            m.put("root_moieties_properties_STEREO_INSENSITIVE_HASH" , "Moiety Structure Insensitive Hash");
+            m.put("root_moieties_properties_EXACT_HASH" , "Moiety Structure Exact Hash");
             
 			m.put("root_names_stdName" , "Standardized Name");
 			m.put("root_Display Name","Display Name"); 
