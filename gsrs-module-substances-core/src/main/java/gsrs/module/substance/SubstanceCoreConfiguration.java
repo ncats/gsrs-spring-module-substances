@@ -21,8 +21,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import gsrs.holdingArea.services.ImportMetadataLegacySearchService;
-import gsrs.startertests.TestGsrsValidatorFactory;
+//import gsrs.holdingArea.services.ImportMetadataLegacySearchService;
 
 
 @Configuration
@@ -46,8 +45,8 @@ import gsrs.startertests.TestGsrsValidatorFactory;
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,
-        ImportMetadataLegacySearchService.class,
-        TestGsrsValidatorFactory.class,
+  //      ImportMetadataLegacySearchService.class,
+        //TestGsrsValidatorFactory.class,
         TextIndexerFactory.class
 })
 public class SubstanceCoreConfiguration {
