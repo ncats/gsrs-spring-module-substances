@@ -200,11 +200,11 @@
             <artifactId>gsrs-data-exchange</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
-        <!--dependency>
+        <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-data-exchange-infrastructure</artifactId>
+            <artifactId>gsrs-spring-starter-tests</artifactId>
             <version>${gsrs.version}</version>
-        </dependency-->
+        </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>

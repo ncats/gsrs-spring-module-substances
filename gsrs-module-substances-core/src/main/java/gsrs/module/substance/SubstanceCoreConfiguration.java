@@ -12,6 +12,7 @@ import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.payload.LegacyPayloadService;
+import gsrs.startertests.TestGsrsValidatorFactory;
 import ix.core.search.text.TextIndexerFactory;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
@@ -45,9 +46,10 @@ import org.springframework.context.annotation.Import;
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,
+        TextIndexerFactory.class,
   //      ImportMetadataLegacySearchService.class,
-        //TestGsrsValidatorFactory.class,
-        TextIndexerFactory.class
+        TestGsrsValidatorFactory.class,
+        //
 })
 public class SubstanceCoreConfiguration {
 
