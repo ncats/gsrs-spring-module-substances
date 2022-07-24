@@ -424,7 +424,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     public String fetchIndexedDisplayName() {
         Optional<Name> aName = getDisplayName();
         if(aName.isPresent()){
-            return aName.get().name;
+            return aName.get().getName();
         }else {
             return null;
         }
@@ -434,7 +434,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     public String getName() {
         Optional<Name> aName = getDisplayName();
         if(aName.isPresent()){
-            return aName.get().name;
+            return aName.get().getName();
         }
         if(this.isAlternativeDefinition()){
             SubstanceReference subref=this.getPrimaryDefinitionReference();
@@ -1213,7 +1213,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         StringBuilder sb = new StringBuilder();
 
         for (Name n : getOfficialNames()) {
-            String name = n.name;
+            String name = n.getName();
             sb.append(name + "\n");
 
             for (String loc : n.getLocators(this)) {
@@ -1227,7 +1227,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         // clear builder
         sb.setLength(0);
         for (Name n : getNonOfficialNames()) {
-            String name = n.name;
+            String name = n.getName();
             sb.append(name + "\n");
 
             for (String loc : n.getLocators(this)) {

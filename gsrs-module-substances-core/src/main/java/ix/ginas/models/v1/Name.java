@@ -12,6 +12,7 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.serialization.KeywordDeserializer;
 import ix.ginas.models.serialization.KeywordListSerializer;
+import ix.ginas.models.utils.HtmlUtil;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import org.apache.commons.lang3.ObjectUtils;
@@ -114,7 +115,7 @@ public class Name extends CommonDataElementOfCollection {
 	}
 
     @JSONEntity(title = "Name", isRequired = true)
-    @Column(nullable=false)
+    @Column(nullable=false, length=1024)
     @Indexable(name="Name", suggest=true)
     public String name;
 
@@ -191,33 +192,12 @@ public class Name extends CommonDataElementOfCollection {
 	}
 
     private void tidyName () {
-        if (name.getBytes().length > 255) {
+        if (name.length() > 1023) {
             fullName = name;
-            name = truncateString(name,254);
-            
+            name = HtmlUtil.truncateString(name, 1023);
         }
     }
-    
-    private static String truncateString(String s, int maxBytes){
-    	byte[] b = (s+"   ").getBytes();
-    	if(maxBytes>=b.length){
-    		return s;
-    	}
-    	boolean lastComplete=false;
-    	for(int i=maxBytes;i>=0;i--){
-    		if(lastComplete)
-    			return new String(Arrays.copyOf(b, i));
-    		if((b[i] & 0x80) ==0){
-    			return new String(Arrays.copyOf(b, i));
-    		}
-    		if(b[i]==-79){
-    			lastComplete=true;
-    		}
-    	}
-    	
-    	return "";
-    }
-    
+
     public void addLocator(Substance sub, String loc){
     	Reference r = new Reference();
     	r.docType=Name.SRS_LOCATOR;

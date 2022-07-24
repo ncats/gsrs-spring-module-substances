@@ -5,6 +5,7 @@ import ix.core.models.Indexable;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.SubstanceReferenceEntityListener;
+import ix.ginas.models.utils.HtmlUtil;
 import ix.ginas.models.utils.JSONEntity;
 
 import javax.persistence.*;
@@ -23,7 +24,7 @@ public class SubstanceReference extends GinasCommonSubData {
         SubstanceReference ref = new SubstanceReference();
 
         ref.refuuid = s.getOrGenerateUUID().toString();
-        ref.refPname = s.getName();
+        ref.refPname = HtmlUtil.truncateString(s.getName(), 1023);
         ref.approvalID = s.approvalID;
         ref.substanceClass = Substance.SubstanceClass.reference.toString();
         ref.wrappedSubstance = s;
