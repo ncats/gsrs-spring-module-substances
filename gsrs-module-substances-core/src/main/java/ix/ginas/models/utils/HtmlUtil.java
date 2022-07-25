@@ -1,10 +1,12 @@
 package ix.ginas.models.utils;
 
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
 import org.jsoup.parser.Parser;
+import org.jsoup.safety.Safelist;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 
@@ -57,11 +59,13 @@ public final class HtmlUtil {
     }
 
     public static String truncateString(String s, int len){
+        Safelist sl = Safelist.none().addTags("i", "b", "sub", "sup", "small");
+        String cleanText = Jsoup.clean(s, sl);
         if (s.length() <= len) {
-            return s;
+            return cleanText;
         }
 
-        Document srcDoc = Parser.parseBodyFragment(s, "");
+        Document srcDoc = Parser.parseBodyFragment(cleanText, "");
         srcDoc.outputSettings().prettyPrint(false);
 
         Document dstDoc = Document.createShell(srcDoc.baseUri());
