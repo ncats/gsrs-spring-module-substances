@@ -7,6 +7,7 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * apply a minimal standardization (remove serial white space and non-printable
@@ -16,6 +17,9 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
+
+    @Autowired
+    NameUtilities nameUtilities;
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
@@ -31,7 +35,7 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
         s.names.forEach(n -> {
 
-            ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
+            ReplacementResult minimallyStandardizedName = nameUtilities.standardizeMinimally(n.name);
             String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
                     minimallyStandardizedName.getResult());
             log.trace(debugMessage);

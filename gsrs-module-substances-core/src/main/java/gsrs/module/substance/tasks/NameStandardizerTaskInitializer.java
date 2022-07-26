@@ -157,8 +157,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 }
 
         } catch (Exception ex) {
-            log.error("Error processing names");
-            log.error(ex.getMessage());
+            log.error("Error processing names", ex);
         }
         return nameChanged;
     }

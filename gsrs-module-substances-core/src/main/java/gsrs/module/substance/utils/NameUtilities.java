@@ -11,27 +11,41 @@ import java.util.stream.Collectors;
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
-import org.owasp.html.PolicyFactory;
-import org.owasp.html.HtmlPolicyBuilder;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.stereotype.Service;
 
 /**
  *
  * @author mitch
  */
 @Slf4j
+@Configuration
+@ConfigurationProperties(prefix = "ix.nameutilities.config")
+@Service
 public class NameUtilities {
 
+    private boolean replacementsInitialized =false;
     private static final NameUtilities INSTANCE = new NameUtilities();
 
-    private NameUtilities() {
-        initReplacers();
-    }
-
     public static NameUtilities getInstance() {
-        return INSTANCE;
+        return new NameUtilities();
     }
 
-    private static final String REPLACEMENT_SOURCE_GREEK = "\u03B1;.ALPHA.;\u03B2;.BETA.;\u03B3;.GAMMA.;\u03B4;.DELTA.;\u03B5;.EPSILON.;\u03B6;.ZETA.;\u03B7;.ETA.;\u03B8;.THETA.;\u03B9;.IOTA.;\u03BA;.KAPPA.;\u03BB;.LAMBDA.;\u03BC;.MU.;\u03BD;.NU.;\u03BE;.XI.;\u03BF;.OMICRON.;\u03C0;.PI.;\u03C1;.RHO.;\u03C2;.SIGMA.;\u03C3;.SIGMA.;\u03C4;.TAU.;\u03C5;.UPSILON.;\u03C6;.PHI.;\u03C7;.CHI.;\u03C8;.PSI.;\u03C9;.OMEGA.;\u0391;.ALPHA.;\u0392;.BETA.;\u0393;.GAMMA.;\u0394;.DELTA.;\u0395;.EPSILON.;\u0396;.ZETA.;\u0397;.ETA.;\u0398;.THETA.;\u0399;.IOTA.;\u039A;.KAPPA.;\u039B;.LAMBDA.;\u039C;.MU.;\u039D;.NU.;\u039E;.XI.;\u039F;.OMICRON.;\u03A0;.PI.;\u03A1;.RHO.;\u03A3;.SIGMA.;\u03A4;.TAU.;\u03A5;.UPSILON.;\u03A6;.PHI.;\u03A7;.CHI.;\u03A8;.PSI.;\u03A9;.OMEGA.";
+    public void setBasicTest(String basicTest) {
+        log.trace("in setBasicTest, new value: {}", basicTest);
+        this.basicTest = basicTest;
+    }
+
+    public void setReplacementSourceGreek(String replacementSourceGreek) {
+        log.trace("in setReplacementSourceGreek, new value: {}", replacementSourceGreek);
+        this.replacementSourceGreek = replacementSourceGreek;
+    }
+
+    private String basicTest;
+
+    private String replacementSourceGreek;// = "\u03B1;.ALPHA.;\u03B2;.BETA.;\u03B3;.GAMMA.;\u03B4;.DELTA.;\u03B5;.EPSILON.;\u03B6;.ZETA.;\u03B7;.ETA.;\u03B8;.THETA.;\u03B9;.IOTA.;\u03BA;.KAPPA.;\u03BB;.LAMBDA.;\u03BC;.MU.;\u03BD;.NU.;\u03BE;.XI.;\u03BF;.OMICRON.;\u03C0;.PI.;\u03C1;.RHO.;\u03C2;.SIGMA.;\u03C3;.SIGMA.;\u03C4;.TAU.;\u03C5;.UPSILON.;\u03C6;.PHI.;\u03C7;.CHI.;\u03C8;.PSI.;\u03C9;.OMEGA.;\u0391;.ALPHA.;\u0392;.BETA.;\u0393;.GAMMA.;\u0394;.DELTA.;\u0395;.EPSILON.;\u0396;.ZETA.;\u0397;.ETA.;\u0398;.THETA.;\u0399;.IOTA.;\u039A;.KAPPA.;\u039B;.LAMBDA.;\u039C;.MU.;\u039D;.NU.;\u039E;.XI.;\u039F;.OMICRON.;\u03A0;.PI.;\u03A1;.RHO.;\u03A3;.SIGMA.;\u03A4;.TAU.;\u03A5;.UPSILON.;\u03A6;.PHI.;\u03A7;.CHI.;\u03A8;.PSI.;\u03A9;.OMEGA.";
     private static final String REPLACEMENT_SOURCE_NUMERIC = "\u2192;->;\\xB1;+/-;±;+/-;\u2190;<-;\\xB2;2;\\xB3;3;\\xB9;1;\u2070;0;\u2071;1;\u2072;2;\u2073;3;\u2074;4;\u2075;5;\u2076;6;\u2077;7;\u2078;8;\u2079;9;\u207A;+;\u207B;-;\u2080;0;\u2081;1;\u2082;2;\u2083;3;\u2084;4;\u2085;5;\u2086;6;\u2087;7;\u2088;8;\u2089;9;\u208A;+;\u208B;-";
     private static final String REPLACEMENT_SOURCE_SMALL_CAPS = "ʟ;L;ᴅ;D";
     private final List<Replacer> replacers = new ArrayList<>();
@@ -83,9 +97,17 @@ public class NameUtilities {
     private static final Pattern PATTERN_CASE39 = Pattern.compile("\u00BC");
     private static final Pattern PATTERN_CASE40 = Pattern.compile("\u00BD");
     private static final Pattern PATTERN_CASE41 = Pattern.compile("﹘");
-    
-    
+
+    public NameUtilities() {
+        log.trace("in NameUtilities ctor, basicTest: {}", basicTest);
+        //initReplacers();
+    }
+
     public ReplacementResult standardizeMinimally(String input) {
+        if(!replacementsInitialized){
+            initReplacers();
+            replacementsInitialized=true;
+        }
         if (input == null || input.length() == 0) {
             return new ReplacementResult(input, new ArrayList<>());
         }
@@ -119,6 +141,10 @@ public class NameUtilities {
      * @return text data + messages about some of the replacements
      */
     public ReplacementResult fullyStandardizeName(String input) {
+        if(!replacementsInitialized){
+            initReplacers();
+            replacementsInitialized=true;
+        }
         ReplacementResult results = new ReplacementResult(input, new ArrayList<>());
         if (input == null || input.length() == 0) {
             return results;
@@ -169,8 +195,14 @@ public class NameUtilities {
     }
 
     private void initReplacers() {
+        log.trace("in initReplacers(), basicTest: {}", basicTest);
         replacers.add(new Replacer("\\×", "X"));
-        String[] replacementTokensGreek = REPLACEMENT_SOURCE_GREEK.split(";");
+        log.trace("REPLACEMENT_SOURCE_GREEK: {}", replacementSourceGreek);
+        if( replacementSourceGreek == null) {
+            replacementSourceGreek ="\u03B1;.ALPHA.;\u03B2;.BETA.;\u03B3;.GAMMA.";
+        }
+
+        String[] replacementTokensGreek = replacementSourceGreek.split(";");
         for (int i = 0; i < replacementTokensGreek.length; i = i + 2) {
             replacers.add(new Replacer(replacementTokensGreek[i], replacementTokensGreek[i + 1])
                     .message("Replaced Greek character \"$0\" with standard form"));

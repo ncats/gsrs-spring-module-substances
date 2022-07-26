@@ -14,6 +14,7 @@ import gsrs.module.substance.repository.NucleicAcidSubstanceRepository;
 import gsrs.module.substance.repository.ProteinSubstanceRepository;
 import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.*;
+import gsrs.module.substance.utils.NameUtilities;
 import gsrs.service.PayloadService;
 import ix.seqaln.service.SequenceIndexerService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -172,4 +173,8 @@ public class GsrsSubstanceModuleAutoConfiguration {
     public RelationshipService relationshipService(){
         return new RelationshipService();
     }
+
+    @Bean
+    @ConditionalOnMissingBean(NameUtilities.class)
+    public NameUtilities nameUtilities(){return new NameUtilities();}
 }
