@@ -1,6 +1,5 @@
 package gsrs.module.substance.utils;
 
-import gsrs.springUtils.AutowireHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,7 +19,14 @@ public class FDAFullNameStandardizer implements NameStandardizer{
 
     @Override
     public ReplacementResult standardize(String input) {
-        Objects.requireNonNull(nameUtilities, "autowiring of  NameUtilities must work");
+        /*
+        Tested out the strategy below BUT, calling the constructor directly leads to an object that is not
+        correctly initialized
+        if( nameUtilities == null) {
+            nameUtilities= new NameUtilities();
+            AutowireHelper.getInstance().autowireAndProxy(nameUtilities);
+        }*/
+        Objects.requireNonNull(nameUtilities, "autowiring of NameUtilities must work");
         return nameUtilities.fullyStandardizeName(input);
     }
     

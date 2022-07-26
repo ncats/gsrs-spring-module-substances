@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 
@@ -24,15 +24,15 @@ import javax.annotation.PostConstruct;
 @Slf4j
 @Configuration
 @ConfigurationProperties(prefix = "ix.nameutilities.config")
-@Service
+@Component
 public class NameUtilities {
 
     private boolean replacementsInitialized =false;
-    private static final NameUtilities INSTANCE = new NameUtilities();
+    //private static final NameUtilities INSTANCE = new NameUtilities();
 
-    public static NameUtilities getInstance() {
+    /*public static NameUtilities getInstance() {
         return INSTANCE;
-    }
+    }*/
 
     public void setBasicTest(String basicTest) {
         log.trace("in setBasicTest, new value: {}", basicTest);
