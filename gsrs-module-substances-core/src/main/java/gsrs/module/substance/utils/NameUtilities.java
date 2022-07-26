@@ -13,8 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
+
+import javax.annotation.PostConstruct;
 
 /**
  *
@@ -30,7 +31,7 @@ public class NameUtilities {
     private static final NameUtilities INSTANCE = new NameUtilities();
 
     public static NameUtilities getInstance() {
-        return new NameUtilities();
+        return INSTANCE;
     }
 
     public void setBasicTest(String basicTest) {
@@ -43,6 +44,12 @@ public class NameUtilities {
         this.replacementSourceGreek = replacementSourceGreek;
     }
 
+    @PostConstruct
+    public void completeSetup() {
+        log.trace("in completeSetup");
+        initReplacers();
+        replacementsInitialized=true;
+    }
     private String basicTest;
 
     private String replacementSourceGreek;// = "\u03B1;.ALPHA.;\u03B2;.BETA.;\u03B3;.GAMMA.;\u03B4;.DELTA.;\u03B5;.EPSILON.;\u03B6;.ZETA.;\u03B7;.ETA.;\u03B8;.THETA.;\u03B9;.IOTA.;\u03BA;.KAPPA.;\u03BB;.LAMBDA.;\u03BC;.MU.;\u03BD;.NU.;\u03BE;.XI.;\u03BF;.OMICRON.;\u03C0;.PI.;\u03C1;.RHO.;\u03C2;.SIGMA.;\u03C3;.SIGMA.;\u03C4;.TAU.;\u03C5;.UPSILON.;\u03C6;.PHI.;\u03C7;.CHI.;\u03C8;.PSI.;\u03C9;.OMEGA.;\u0391;.ALPHA.;\u0392;.BETA.;\u0393;.GAMMA.;\u0394;.DELTA.;\u0395;.EPSILON.;\u0396;.ZETA.;\u0397;.ETA.;\u0398;.THETA.;\u0399;.IOTA.;\u039A;.KAPPA.;\u039B;.LAMBDA.;\u039C;.MU.;\u039D;.NU.;\u039E;.XI.;\u039F;.OMICRON.;\u03A0;.PI.;\u03A1;.RHO.;\u03A3;.SIGMA.;\u03A4;.TAU.;\u03A5;.UPSILON.;\u03A6;.PHI.;\u03A7;.CHI.;\u03A8;.PSI.;\u03A9;.OMEGA.";
@@ -98,13 +105,14 @@ public class NameUtilities {
     private static final Pattern PATTERN_CASE40 = Pattern.compile("\u00BD");
     private static final Pattern PATTERN_CASE41 = Pattern.compile("﹘");
 
-    public NameUtilities() {
-        log.trace("in NameUtilities ctor, basicTest: {}", basicTest);
+    private NameUtilities() {
+        log.trace("in NameUtilities ctor");
         //initReplacers();
     }
 
     public ReplacementResult standardizeMinimally(String input) {
         if(!replacementsInitialized){
+            log.trace("standardizeMinimally about to call initReplacers()");
             initReplacers();
             replacementsInitialized=true;
         }
@@ -142,6 +150,7 @@ public class NameUtilities {
      */
     public ReplacementResult fullyStandardizeName(String input) {
         if(!replacementsInitialized){
+            log.trace("in fullyStandardizeName, replacementsInitialized false.  Calling initReplacers()");
             initReplacers();
             replacementsInitialized=true;
         }

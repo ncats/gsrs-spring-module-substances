@@ -41,8 +41,7 @@ import org.springframework.context.annotation.Import;
 
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
-        GsrsProcessingStrategyFactory.class,
-        NameUtilities.class
+        GsrsProcessingStrategyFactory.class
 })
 public class SubstanceCoreConfiguration {
 

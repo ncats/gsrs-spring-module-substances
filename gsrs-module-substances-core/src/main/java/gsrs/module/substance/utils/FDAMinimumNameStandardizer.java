@@ -8,12 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 public class FDAMinimumNameStandardizer implements NameStandardizer{
 
-    @Autowired
-    NameUtilities nameUtilities;
-
     @Override
     public ReplacementResult standardize(String input) {
-        return nameUtilities.standardizeMinimally(input);
+        return NameUtilities.getInstance().standardizeMinimally(input);
     }
     
 }
