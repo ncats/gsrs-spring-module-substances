@@ -105,7 +105,7 @@ public class NameUtilities {
     private static final Pattern PATTERN_CASE40 = Pattern.compile("\u00BD");
     private static final Pattern PATTERN_CASE41 = Pattern.compile("﹘");
 
-    private NameUtilities() {
+    public NameUtilities() {
         log.trace("in NameUtilities ctor");
         //initReplacers();
     }

@@ -18,6 +18,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
+    @Autowired
+    NameUtilities nameUtilities;
+
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
@@ -32,7 +35,7 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
         s.names.forEach(n -> {
 
-            ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
+            ReplacementResult minimallyStandardizedName = nameUtilities.standardizeMinimally(n.name);
             String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
                     minimallyStandardizedName.getResult());
             log.trace(debugMessage);
