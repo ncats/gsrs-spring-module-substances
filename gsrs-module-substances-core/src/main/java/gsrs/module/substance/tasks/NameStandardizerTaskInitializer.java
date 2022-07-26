@@ -138,13 +138,13 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         //log.trace("starting in standardizeName");
         Boolean nameChanged = false;
         try {
-                log.trace("in StandardNameValidator, Name '{}'; stand.  name: '{}'", name.name, name.stdName);
+                log.trace("in StandardNameValidator, Name '{}'; stand.  name: '{}'", name.getName(), name.stdName);
 
                 String prevStdName = name.stdName;
-                String newlyStdName =this.nameStandardizer.standardize(name.name).getResult();
+                String newlyStdName =this.nameStandardizer.standardize(name.getName()).getResult();
                 if (!newlyStdName.equals(prevStdName)) {
                     printStream.format( "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
-                            prevStdName, newlyStdName, name.name, prevStdName, newlyStdName);
+                            prevStdName, newlyStdName, name.getName(), prevStdName, newlyStdName);
                 }
                 if (forceRecalculationOfAll || (name.stdName != null && name.stdName.equals(regenerateNameValue))) {
                     name.stdName = null;
@@ -182,7 +182,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             log.trace("processing name with ID {}", name.uuid.toString());
             if(standardizeName(name, printStream) ) {
                 try {
-                    log.trace("resaving name {}", name.name);
+                    log.trace("resaving name {}", name.getName());
                     //name.forceUpdate();
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                     //log.trace("got tx " + tx);
@@ -201,7 +201,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                         //log.trace("finished saveAndFlush");
                     });
 
-                    log.trace("saved name {}", name.name);
+                    log.trace("saved name {}", name.getName());
                 } catch (Exception ex) {
                     log.error("Error during save: {}", ex.getMessage());
                 }
