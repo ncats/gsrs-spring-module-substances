@@ -34,12 +34,17 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
             consumer.accept(DefinitionalElement.of("structure.properties.stereoChemistry",
                     structure.stereoChemistry.toString(), 2));
             log.debug("structure.stereoChemistry : " + structure.stereoChemistry.toString());
+            
+            if(structure.opticalActivity!=null){
+                String stereoTxt=structure.stereoChemistry.toString().toUpperCase();    
+                if(stereoTxt.equals("UNKNOWN") || stereoTxt.equals("MIXED") || stereoTxt.equals("EPIMERIC")){
+                    consumer.accept(DefinitionalElement.of("structure.properties.opticalActivity",
+                            structure.opticalActivity.toString(), 2));
+                    log.debug("structure.opticalActivity.toString(): " + structure.opticalActivity.toString());
+                }
+            }
         }
-        if(structure.opticalActivity!=null){
-            consumer.accept(DefinitionalElement.of("structure.properties.opticalActivity",
-                    structure.opticalActivity.toString(), 2));
-            log.debug("structure.opticalActivity.toString(): " + structure.opticalActivity.toString());
-        }
+      
         if( chemicalSubstance.moieties != null) {
             for(Moiety m: chemicalSubstance.moieties){
                 String mh=m.structure.getStereoInsensitiveHash();
@@ -50,9 +55,13 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
                 consumer.accept(DefinitionalElement.of("moiety[" + mh + "].stereoChemistry",
                         m.structure.stereoChemistry.toString(), 2));
                 log.debug("m.structure.stereoChemistry.toString(): " + m.structure.stereoChemistry.toString());
-                consumer.accept(DefinitionalElement.of("moiety[" + mh + "].opticalActivity",
-                        m.structure.opticalActivity.toString(), 2));
-                log.debug("m.structure.opticalActivity.toString(): " + m.structure.opticalActivity.toString());
+                
+                String stereoTxt= m.structure.stereoChemistry.toString();
+                if(stereoTxt.equals("UNKNOWN") || stereoTxt.equals("MIXED") || stereoTxt.equals("EPIMERIC")){
+                    consumer.accept(DefinitionalElement.of("moiety[" + mh + "].opticalActivity",
+                            m.structure.opticalActivity.toString(), 2));
+                    log.debug("m.structure.opticalActivity.toString(): " + m.structure.opticalActivity.toString());
+                }
                 consumer.accept(DefinitionalElement.of("moiety[" + mh + "].countAmount",
                         m.getCountAmount().toString(), 2));
                 log.debug("m.getCountAmount().toString(): " + m.getCountAmount().toString());
