@@ -7,6 +7,7 @@ import gsrs.module.substance.utils.FDAFullNameStandardizer;
 import gsrs.module.substance.utils.FDAMinimumNameStandardizer;
 import gsrs.module.substance.utils.NameStandardizer;
 import gsrs.module.substance.utils.ReplacementResult;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Name;
@@ -234,9 +235,11 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     
     public void setInPlaceNameStandardizerClass(String standardizer) throws Exception{
         inPlaceStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
+        AutowireHelper.getInstance().autowire(inPlaceStandardizer);
     }
     public void setFullNameStandardizerClass(String standardizer) throws Exception {
         fullStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
+        AutowireHelper.getInstance().autowire(fullStandardizer);
     }
 
     public InvalidStdNameBehavior isErrorOnInvalidStdName() {

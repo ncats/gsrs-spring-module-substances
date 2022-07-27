@@ -9,6 +9,7 @@ import gsrs.module.substance.utils.NameStandardizer;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.ginas.models.v1.Name;
 import lombok.Data;
@@ -119,6 +120,9 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         this.nameStandardizer = (NameStandardizer) Class.forName(nameStandardizerClassName).getDeclaredConstructor().newInstance();
     }
 
+    private void autowireIfNeeded(){
+        AutowireHelper.getInstance().autowire(this.nameStandardizer);
+    }
     /**
      * Returns the File used to output the report
      *
@@ -163,6 +167,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     }
 
     private void processNames(SchedulerPlugin.TaskListener l, PrintStream printStream){
+        autowireIfNeeded();
         log.trace("starting in processNames");
 
         List<String> nameIds= nameRepository.getAllUuids();

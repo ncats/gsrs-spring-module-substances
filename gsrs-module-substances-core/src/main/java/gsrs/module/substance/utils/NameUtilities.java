@@ -141,6 +141,13 @@ public class NameUtilities {
         return result;
     }
 
+    public void assureDependencies(){
+        if(!replacementsInitialized){
+            log.trace("in fullyStandardizeName, replacementsInitialized false.  Calling initReplacers()");
+            initReplacers();
+            replacementsInitialized=true;
+        }
+    }
     /**
      * modify a text string so that it contains only standard ASCII characters.
      * This method is designed for chemical names.
@@ -148,7 +155,7 @@ public class NameUtilities {
      * @param input text data
      * @return text data + messages about some of the replacements
      */
-    public ReplacementResult fullyStandardizeName(String input) {
+        public ReplacementResult fullyStandardizeName(String input) {
         if(!replacementsInitialized){
             log.trace("in fullyStandardizeName, replacementsInitialized false.  Calling initReplacers()");
             initReplacers();
