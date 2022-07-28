@@ -6,9 +6,14 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 @Slf4j
 public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalElementImplementation {
+
+    private List<String> stereoUsingOpticalActivities = Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC");
+
     @Override
     public boolean supports(Object s) {
         return s instanceof ChemicalSubstance;
@@ -36,8 +41,9 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
             log.debug("structure.stereoChemistry : " + structure.stereoChemistry.toString());
             
             if(structure.opticalActivity!=null){
-                String stereoTxt=structure.stereoChemistry.toString().toUpperCase();    
-                if(stereoTxt.equals("UNKNOWN") || stereoTxt.equals("MIXED") || stereoTxt.equals("EPIMERIC")){
+                String stereoTxt=structure.stereoChemistry.toString().toUpperCase();
+                if(stereoUsingOpticalActivities.contains(stereoTxt)){
+                    log.trace("using optical activity in def hash for structure");
                     consumer.accept(DefinitionalElement.of("structure.properties.opticalActivity",
                             structure.opticalActivity.toString(), 2));
                     log.debug("structure.opticalActivity.toString(): " + structure.opticalActivity.toString());
@@ -56,8 +62,9 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
                         m.structure.stereoChemistry.toString(), 2));
                 log.debug("m.structure.stereoChemistry.toString(): " + m.structure.stereoChemistry.toString());
                 
-                String stereoTxt= m.structure.stereoChemistry.toString();
-                if(stereoTxt.equals("UNKNOWN") || stereoTxt.equals("MIXED") || stereoTxt.equals("EPIMERIC")){
+                String stereoTxt= m.structure.stereoChemistry.toString().toUpperCase();
+                if( stereoUsingOpticalActivities.contains(stereoTxt)){
+                    log.trace("using optical activity in def hash for moiety");
                     consumer.accept(DefinitionalElement.of("moiety[" + mh + "].opticalActivity",
                             m.structure.opticalActivity.toString(), 2));
                     log.debug("m.structure.opticalActivity.toString(): " + m.structure.opticalActivity.toString());
