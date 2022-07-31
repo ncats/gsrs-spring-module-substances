@@ -60,7 +60,7 @@ public final class HtmlUtil {
         }
     }
 
-    public static String truncateString(String s, int len){
+    public static String truncate(String s, int len){
         Document srcDoc = Parser.parseBodyFragment(s, "");
         srcDoc.outputSettings().prettyPrint(false);
 

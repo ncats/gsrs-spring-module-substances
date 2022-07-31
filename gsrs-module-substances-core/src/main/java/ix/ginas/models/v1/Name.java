@@ -194,7 +194,7 @@ public class Name extends CommonDataElementOfCollection {
     private void tidyName () {
         if (name.length() > 1023) {
             fullName = name;
-            name = HtmlUtil.truncateString(name, 1023);
+            name = HtmlUtil.truncate(name, 1023);
         }
     }
 
