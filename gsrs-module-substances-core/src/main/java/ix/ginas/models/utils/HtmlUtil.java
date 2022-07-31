@@ -42,8 +42,19 @@ public final class HtmlUtil {
                     if (safetags.contains(parentTag) || (parentTag == "body" && depth == 1)) {
                         String curText = ((TextNode) node).getWholeText();
                         String resHtml = dst.html();
-                        if (curText.length() + resHtml.length() > maxLen) {
-                            cur.appendText(curText.substring(0, maxLen - resHtml.length()));
+                        if (node.outerHtml().length() + resHtml.length() > maxLen) {
+                            StringBuilder sb = new StringBuilder(curText);
+                            int curHtmlLength = node.outerHtml().length();
+                            if (maxLen <= resHtml.length())
+                                throw new IllegalStateException();
+                            sb.setLength(maxLen - resHtml.length() + 1);
+                            while (curHtmlLength > maxLen - resHtml.length()) {
+                                sb.setLength(sb.length() - 1);
+                                curHtmlLength = sb.length();
+                                curHtmlLength += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
+                                curHtmlLength += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
+                            }
+                            cur.appendText(sb.toString());
                             throw new IllegalStateException();
                         } else {
                             cur.appendText(curText);
