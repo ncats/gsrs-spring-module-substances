@@ -73,6 +73,30 @@ public final class HtmlUtil {
         }
     }
 
+    public static String replaceFromLists(String str, String[] searchList, String[] replaceList) {
+        if(str ==null){
+            return null;
+        }
+        StringBuilder sb = new StringBuilder(str);
+        for (int i = 0; i < searchList.length; i++)
+        {
+            String key = searchList[i];
+            if ("".equals(key)) {
+                continue;
+            }
+            String value = replaceList[i];
+
+            int start = sb.indexOf(key, 0);
+            while (start > -1) {
+                int end = start + key.length();
+                int nextSearchStart = start + value.length();
+                sb.replace(start, end, value);
+                start = sb.indexOf(key, nextSearchStart);
+            }
+        }
+        return sb.toString();
+    }
+
     public static String truncate(String s, int len){
         Document srcDoc = Parser.parseBodyFragment(s, "");
         srcDoc.outputSettings().prettyPrint(false);
