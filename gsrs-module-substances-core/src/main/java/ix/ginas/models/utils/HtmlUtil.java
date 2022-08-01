@@ -1,8 +1,10 @@
 package ix.ginas.models.utils;
 
 import java.util.Set;
+import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
 import org.jsoup.parser.Parser;
+import org.jsoup.safety.Safelist;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 
@@ -12,12 +14,12 @@ import org.jsoup.select.NodeVisitor;
  * Created by epuzanov on 7/25/22.
  */
 public final class HtmlUtil {
+    private static final Set<String> safetags = Set.of("b", "i", "small", "sub", "sup");
     private static class TruncateVisitor implements NodeVisitor {
         private int maxLen = 0;
         private Element dst;
         private Element cur;
         private boolean stop = false;
-        private static final Set<String> safetags = Set.of("b", "i", "small", "sub", "sup");
 
         public TruncateVisitor (Element dst, int maxLen) {
             this.maxLen = maxLen;
@@ -87,5 +89,20 @@ public final class HtmlUtil {
         } catch (IllegalStateException ex) {}
 
         return dst.html() + "...";
+    }
+
+    public static String clean(String content, String charset) {
+        Safelist sl = Safelist.none().addTags(safetags.toArray(String[]::new));
+        Document.OutputSettings settings = new Document.OutputSettings();
+        settings.prettyPrint(false);
+        settings.charset(charset);
+        settings.escapeMode(Entities.EscapeMode.base);
+        String safeHtml = Jsoup.clean(content, "", sl, settings);
+        return(safeHtml);
+    }
+
+    public static boolean isValid(String content) {
+        Safelist sl = Safelist.none().addTags(safetags.toArray(String[]::new));
+        return Jsoup.isValid(content, sl);
     }
 }
