@@ -153,4 +153,10 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     
     @Query("select s from Substance s")
     public Stream<Substance> streamAll();
+
+    @Query("select s.id from Substance s")
+    List<UUID> getAllIds();
+
+    @Query("select s.id from Substance s where dtype='CHE'")
+    List<UUID> getAllChemicalIds();
 }
