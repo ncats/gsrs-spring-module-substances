@@ -1,6 +1,6 @@
 package example.imports;
 
-import gsrs.dataExchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingAction;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.PropertyExtractorActionFactory;
 import gsrs.module.substance.importers.model.SDRecordContext;

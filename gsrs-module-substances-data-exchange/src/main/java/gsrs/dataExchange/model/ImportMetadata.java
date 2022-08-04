@@ -1,4 +1,4 @@
-package gsrs.dataExchange.model;
+package gsrs.dataexchange.model;
 
 import com.fasterxml.jackson.annotation.JsonView;
 import ix.core.EntityMapperOptions;

@@ -1,9 +1,9 @@
 package example.imports;
 
-import gsrs.dataExchange.model.MappingActionFactoryMetadata;
-import gsrs.dataExchange.model.MappingActionFactoryMetadataBuilder;
-import gsrs.dataExchange.model.MappingParameter;
-import gsrs.dataExchange.model.MappingParameterBuilder;
+import gsrs.dataexchange.model.MappingActionFactoryMetadata;
+import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
+import gsrs.dataexchange.model.MappingParameter;
+import gsrs.dataexchange.model.MappingParameterBuilder;
 import gsrs.module.substance.importers.importActionFactories.NotesExtractorActionFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

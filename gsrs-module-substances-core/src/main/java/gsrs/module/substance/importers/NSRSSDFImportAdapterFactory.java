@@ -1,7 +1,7 @@
 package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.dataExchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.SDRecordContext;

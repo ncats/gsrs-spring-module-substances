@@ -1,4 +1,4 @@
-package gsrs.dataExchange.model;
+package gsrs.dataexchange.model;
 
 import ix.core.models.Backup;
 import ix.core.models.IndexableRoot;

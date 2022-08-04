@@ -1,6 +1,7 @@
 package ix.ginas.utils.validation.validators;
 
 import gsrs.module.substance.utils.NameUtilities;
+import gsrs.module.substance.utils.ReplacementResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
@@ -30,7 +31,7 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
         s.names.forEach(n -> {
 
-            NameUtilities.ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
+            ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
             String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
                     minimallyStandardizedName.getResult());
             log.trace(debugMessage);

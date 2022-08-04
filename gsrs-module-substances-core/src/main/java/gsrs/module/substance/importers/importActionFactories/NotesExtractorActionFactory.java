@@ -1,9 +1,9 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import gsrs.dataExchange.model.MappingAction;
-import gsrs.dataExchange.model.MappingActionFactoryMetadata;
-import gsrs.dataExchange.model.MappingActionFactoryMetadataBuilder;
-import gsrs.dataExchange.model.MappingParameter;
+import gsrs.dataexchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingActionFactoryMetadata;
+import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
+import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;

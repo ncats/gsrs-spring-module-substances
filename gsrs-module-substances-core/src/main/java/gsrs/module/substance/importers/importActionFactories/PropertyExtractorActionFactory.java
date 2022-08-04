@@ -1,16 +1,14 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import gsrs.dataExchange.model.MappingAction;
-import gsrs.dataExchange.model.MappingActionFactoryMetadata;
-import gsrs.dataExchange.model.MappingActionFactoryMetadataBuilder;
-import gsrs.dataExchange.model.MappingParameter;
+import gsrs.dataexchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingActionFactoryMetadata;
+import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
+import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
-import scala.sys.Prop;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -55,12 +53,12 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
                 } else {
                     Matcher m2= variationPattern.matcher(rangeRaw);
                     if( m2.matches()){
-                        log.trace("variationPattern matches");
+                        log.trace("variationPattern matches. total groups: {}", m2.groupCount());
                         String baseRaw = m2.group(1);
                         String variationRaw=m2.group(2);
                         String units ="";
                         if( m2.groupCount() >= 3) {
-                            units= m.group(3);
+                            units= m2.group(3);
                         }
                         Double base = null;
                         Double variation = null;
@@ -76,20 +74,34 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
                             log.trace("created low {} and high {} from base {} and variation {}",
                                     amt.low, amt.high, base, variation);
                         } catch (Exception ex){
-                            log.warn("Error parsing rangeRaw: " + rangeRaw);
+                            log.warn("Error parsing rangeRaw: {}", rangeRaw);
                         }
                     }
                 }
             }
             Optional.ofNullable(params.get("valueAverage")).ifPresent(aa -> {
-                amt.average = (Double.parseDouble(aa.toString()));
-                log.trace("average: " + amt.average);
+                Optional<Double> parsedDouble= tryParse(aa.toString());
+                if( parsedDouble.isPresent()) {
+                    amt.average =parsedDouble.get();
+                    log.trace("average: " + amt.average);
+                }
+                 log.trace ("no number in {}", aa);
             });
             Optional.ofNullable(params.get("valueLow")).ifPresent(aa -> {
-                amt.low = (Double.parseDouble(aa.toString()));
+                Optional<Double> parsedDouble= tryParse(aa.toString());
+                if( parsedDouble.isPresent()) {
+                    amt.low =parsedDouble.get();
+                    log.trace("low: " + amt.low);
+                }
+                log.trace ("no number for low in {}", aa);
             });
             Optional.ofNullable(params.get("valueHigh")).ifPresent(aa -> {
-                amt.high = (Double.parseDouble(aa.toString()));
+                Optional<Double> parsedDouble= tryParse(aa.toString());
+                if( parsedDouble.isPresent()) {
+                    amt.high =parsedDouble.get();
+                    log.trace("high: " + amt.high);
+                }
+                log.trace ("no number for high in {}", aa.toString());
             });
             Optional.ofNullable(params.get("valueNonNumeric")).ifPresent(aa -> {
                 amt.nonNumericValue = aa.toString();
@@ -167,5 +179,15 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
             return false;
         }
         return true;
+    }
+
+    private Optional<Double> tryParse(String inputValue) {
+        try{
+            Double parsed=Double.parseDouble(inputValue);
+            return Optional.of(parsed);
+        } catch (NumberFormatException numberFormatException){
+
+        }
+        return Optional.empty();
     }
 }

@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import gsrs.dataExchange.model.MappingAction;
-import gsrs.dataExchange.model.MappingActionFactory;
+import gsrs.dataexchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.imports.*;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
@@ -41,6 +41,8 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
 
     protected List<ActionConfigImpl> fileImportActions;
 
+    private Class holdingAreaService;
+
     public SDFImportAdapterFactory() {
     }
     //** ADDING ABSTRACT LAYERS START
@@ -74,7 +76,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             newString.append(inp.substring(start, ss));
             start = m.end(0);
             String prop = m.group(1);
-            log.trace("prop: " + prop + " from inp: " + inp);
+            log.trace("prop: {} from inp: {}", prop, inp);
             Optional<String> value = resolver.apply(prop);
             if (value.isPresent()) {
                 newString.append(value.get());
@@ -195,10 +197,11 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             log.trace("Finished call to convertValue");
             MappingAction<Substance, SDRecordContext> action =null;
             try {
-                log.trace("looking for action " + actionName + "; registry size: " + registry.size());
+                log.trace("looking for action {}; registry size: {}", actionName, registry.size());
                 MappingActionFactory<Substance, SDRecordContext> mappingActionFactory=registry.get(actionName);
-                if( mappingActionFactory instanceof BaseActionFactory) {
+                if( mappingActionFactory instanceof BaseActionFactory && this.statistics != null) {
                     ((BaseActionFactory) mappingActionFactory).setAdapterSchema(this.statistics.getAdapterSchema());
+                    log.trace("called setAdapterSchema");
                 }
                 log.trace("mappingActionFactory: " + mappingActionFactory);
                 if( mappingActionFactory!=null ) {
@@ -284,8 +287,14 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     }
 
     @Override
-    public String getHoldingServiceName() {
-        return "gsrs.holdingArea.services.DefaultHoldingAreaService";
+    public Class getHoldingAreaService() {
+        log.trace("hard coded holding area service name!");
+        return this.holdingAreaService;
+    }
+
+    @Override
+    public void setHoldingAreaService(Class holdingAreaService){
+        this.holdingAreaService=holdingAreaService;
     }
 
     public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {

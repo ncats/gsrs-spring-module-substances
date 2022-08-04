@@ -12,9 +12,10 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
-import lombok.extern.slf4j.Slf4j;
+import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.swing.text.html.HTML;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,15 +23,14 @@ import java.util.regex.Pattern;
 /**
  * Created by katzelda on 5/11/18.
  */
-@Slf4j
 public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
     @Autowired
     private ReferenceRepository referenceRepository;
     @Autowired
     private SubstanceRepository substanceRepository;
-
-    boolean extractLocators;
+    // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
+    boolean extractLocators = false;
     public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
         List<Replacer> repList = new ArrayList<>();
         repList.add(new Replacer("^(\\s+)","" ).message("Name \"$0\" has leading whitespace which was removed"));
@@ -93,7 +93,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     }
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        log.trace("in NamesValidator.validate");
         boolean preferred = false;
         int display = 0;
         Iterator<Name> nameIterator = s.names.iterator();
@@ -122,8 +121,16 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             if (n.isDisplayName()) {
                 display++;
             }
+
             if (extractLocators) {
-                Set<String> locators = extractLocators(n);
+                // This is not being used in the FDA GSRS implementation (2022)
+                // At one point and maybe still it was/is used in the NCATS public version.
+                // This has to be done at the name level rather than the substance level
+                // because bracketted tag terms are removed from the Name.name string in the process.
+                // The warning may not be sufficiently explanatory to the user as he/she is not
+                // shown which name(s) have been changed in the warning.
+                TagUtilities.BracketExtraction be = TagUtilities.getBracketExtraction(n.name);
+                List<String> locators = be.getTagTerms();
                 if(!locators.isEmpty()){
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
@@ -132,7 +139,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                             .appliableChange(true);
                     callback.addMessage(mes, ()->{
                         for (String loc : locators) {
-                            n.name = n.name.replace("[" + loc + "]", "").trim();
+                            // Name is changed to just the namePart!
+                            n.name = be.getNamePart();
                         }
                         for (String loc : locators) {
                             n.addLocator(s, loc);
@@ -140,6 +148,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                     });
                 }
             }
+
             if (n.languages == null || n.languages.isEmpty()) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
@@ -270,7 +279,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 e.printStackTrace();
             }
             if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().name.equalsIgnoreCase(n.name)
-                    && s.names.stream().anyMatch(nm->nm.name.equals(oldDisplayName.get().name)) //make sure the old display name is still present
                 &&  (s.changeReason==null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
@@ -285,21 +293,4 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
     }
 
-
-    static private Set<String> extractLocators(Name n) {
-        Pattern p = Pattern.compile("(?:[ \\]])\\[([A-Z0-9]*)\\]");
-        Matcher m = p.matcher(n.name);
-        Set<String> locators = new LinkedHashSet<String>();
-        //TODO isn't while(m.find() ) sufficient?
-        if (m.find()) {
-            do {
-                String loc = m.group(1);
-
-                // System.out.println("LOCATOR:" + loc);
-                locators.add(loc);
-            } while (m.find(m.start(1)));
-        }
-        return locators;
-
-    }
 }

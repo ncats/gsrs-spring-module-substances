@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 //import gsrs.holdingArea.services.ImportMetadataLegacySearchService;
-
+import gsrs.holdingarea.service.ImportMetadataLegacySearchService;
 
 @Configuration
 @Import({SubstanceController.class, EditController2.class, NameController.class, CodeController.class, ReferenceController.class,
@@ -49,6 +49,7 @@ import org.springframework.context.annotation.Import;
         TextIndexerFactory.class,
   //      ImportMetadataLegacySearchService.class,
         TestGsrsValidatorFactory.class,
+        ImportMetadataLegacySearchService.class
         //
 })
 public class SubstanceCoreConfiguration {

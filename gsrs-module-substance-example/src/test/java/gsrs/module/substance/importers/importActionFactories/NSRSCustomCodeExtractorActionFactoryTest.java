@@ -1,8 +1,8 @@
 package gsrs.module.substance.importers.importActionFactories;
 
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.dataExchange.model.MappingAction;
-import gsrs.dataExchange.model.MappingActionFactoryMetadata;
+import gsrs.dataexchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;

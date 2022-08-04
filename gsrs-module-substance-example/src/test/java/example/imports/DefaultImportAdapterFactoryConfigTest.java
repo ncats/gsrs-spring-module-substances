@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.dataExchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.*;
 import gsrs.module.substance.importers.NSRSSDFImportAdapterFactory;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
