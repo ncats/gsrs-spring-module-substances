@@ -1,4 +1,4 @@
-package gsrs.dataExchange.extractors;
+package gsrs.dataexchange.extractors;
 
 import gsrs.holdingarea.model.MatchableKeyValueTupleExtractor;
 

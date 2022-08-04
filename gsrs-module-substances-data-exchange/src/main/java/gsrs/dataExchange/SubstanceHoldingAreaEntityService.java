@@ -1,7 +1,7 @@
-package gsrs.dataExchange;
+package gsrs.dataexchange;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import gsrs.dataExchange.extractors.ExplicitMatchableExtractorFactory;
+import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.module.substance.SubstanceEntityService;

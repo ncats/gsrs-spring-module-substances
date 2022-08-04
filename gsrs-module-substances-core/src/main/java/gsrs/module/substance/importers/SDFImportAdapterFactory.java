@@ -42,6 +42,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     protected List<ActionConfigImpl> fileImportActions;
 
     private Class holdingAreaService;
+    private Class entityService;
 
     public SDFImportAdapterFactory() {
     }
@@ -295,6 +296,36 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     @Override
     public void setHoldingAreaService(Class holdingAreaService){
         this.holdingAreaService=holdingAreaService;
+    }
+
+    @Override
+    public Class getHoldingAreaEntityService() {
+        return null;
+    }
+
+    @Override
+    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
+
+    }
+
+    @Override
+    public List<Class> getEntityServices() {
+        return null;
+    }
+
+    @Override
+    public void setEntityServices(List<Class> services) {
+
+    }
+
+    @Override
+    public Class getEntityServiceClass() {
+        return entityService;
+    }
+
+    @Override
+    public void setEntityServiceClass(Class newClass) {
+        entityService=newClass;
     }
 
     public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
