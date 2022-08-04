@@ -31,12 +31,12 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
 		messages.add(GinasProcessingMessage
 						.WARNING_MESSAGE("Polymer substance structure is for display, and is not complete in definition"));
 
-		return polymer.displayStructure.toChemical(messages);
+		return polymer.idealizedStructure.toChemical(messages);
 	}
 
 	@Override
 	public Optional<Structure> getStructureToRender() {
-		return Optional.ofNullable(this.polymer.displayStructure);
+		return Optional.ofNullable(this.polymer.idealizedStructure);
 	}
 
 	@JsonIgnore
@@ -57,7 +57,7 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
 	@JsonIgnore
 	@Indexable(indexed = false, structure = true)
 	public String getStructureMolfile() {
-		return polymer.displayStructure.molfile;
+		return polymer.idealizedStructure.molfile;
 	}
 	//TODO katzelda FEb 2021 : moved definitional hash to their own components
 //
