@@ -6,11 +6,6 @@ import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.utils.validation.validators.ChemicalValidator;
-import ix.ginas.utils.validation.validators.SaltValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,6 +31,7 @@ public class SubstanceRepoRetrieveTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
     private TestIndexValueMakerFactory testIndexValueMakerFactory;
+
 
     @BeforeEach
     public void runSetup() throws IOException {
@@ -65,5 +61,4 @@ public class SubstanceRepoRetrieveTest extends AbstractSubstanceJpaEntityTest {
         System.out.println("total chemicals: " + idsChemicals.size());
         Assertions.assertEquals(9, idsChemicals.size());
     }
-
 }
