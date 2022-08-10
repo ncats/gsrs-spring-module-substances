@@ -137,20 +137,37 @@ public class SubstanceBulkLoadService {
     public Statistics getStatisticsFor(String jobId){
         return getStatisticsForJob(jobId);
     }
+
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
-        /*synchronized (jobLock) {
-            log.trace("starting statistics save in getStatisticsFor");
+        synchronized (jobLock) {
+            log.trace("skipping sleep");
+            if( !stats._isDone()) {
+                log.info("skipping save of job in process");
+                return null;
+            }
+            TransactionTemplate tx = new TransactionTemplate(transactionManager);
+            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
+        }
+    }
+    /*private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
+        ProcessingJob job = processingJobRepository.findById(jobId).get();
+        log.trace("skipping the save");
+        return job;
+*//*
+        synchronized (jobLock) {
+            log.trace("starting job save in saveJobInSeparateTransaction");
             long start = TimeUtil.getCurrentTimeMillis();
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             ProcessingJob pjt= tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
-            long after = TimeUtil.getCurrentTimeMillis();
-            log.trace("time: {}", (after-start));
+            long end = TimeUtil.getCurrentTimeMillis();
+            log.trace("time: {}", (end-start));
             return pjt;
-        }*/
-        return saveJobInCurrentTransaction(jobId, stats);
+        }
+*//*
     }
-
+*/
     private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats) {
         ProcessingJob job = processingJobRepository.findById(jobId).get();
         if (!stats._isDone()) {
@@ -522,10 +539,12 @@ public class SubstanceBulkLoadService {
                     }
                     if (worked) {
                         prec.rec.status = ProcessingRecord.Status.OK;
+/*
                         //String kind, String id
                         prec.rec.xref = new XRef(JsonSubstanceFactory.getSubstanceKind(prec.recordToPersist).getName(), prec.recordToPersist.get("uuid").asText());
                         //NOTE: the JPA mappings aren't set for cascade correctly? have to manually save both
                         xRefRepository.saveAndFlush(prec.rec.xref);
+*/
                     } else {
                         prec.rec.message =  errors.get(0);
                         prec.rec.status = ProcessingRecord.Status.FAILED;
