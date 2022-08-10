@@ -10,6 +10,7 @@ import gsrs.service.PayloadService;
 import ix.core.models.Payload;
 import ix.core.models.ProcessingJob;
 import ix.core.processing.PayloadProcessor;
+//import jdk.internal.net.http.common.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
@@ -17,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -24,7 +26,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+
 @RestController
+@Slf4j
 public class SubstanceLegacyBulkLoadController {
 
     @Autowired
@@ -58,7 +62,6 @@ public class SubstanceLegacyBulkLoadController {
     }
 
     ///admin/load
-    @Transactional
     @hasAdminRole
     @PostMapping("/api/v1/admin/load")
     public Object handleFileUpload(@RequestParam("file-name") MultipartFile file,
@@ -76,7 +79,7 @@ public class SubstanceLegacyBulkLoadController {
             //in other transactions in a multithreaded way
 
 
-            TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+            /*TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             UUID payloadId = transactionTemplate.execute(status -> {
                 try {
@@ -96,8 +99,38 @@ public class SubstanceLegacyBulkLoadController {
                                 .payload(payload)
                                 .preserveOldEditInfo(preserveAuditInfo)
                                 .build());
+            log.trace("processor.jobId: {}",  processor.jobId);
+            return processingJobService.get(processor.jobId).get();*/
+            TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            UUID payloadId = transactionTemplate.execute(status -> {
+                try {
+                    return payloadService.createPayload(file.getOriginalFilename(), PayloadController.predictMimeTypeFromFile(file),
+                            file.getBytes(), PayloadService.PayloadPersistType.TEMP).id;
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            });
 
-            return processingJobService.get(processor.jobId).get();
+            Payload payload = payloadRepository.findById(payloadId).get();
+            log.trace("fetched payload {}", payload.id);
+            //Beta UI sets this to true only if checked otherwise it's passed in as false
+            boolean preserveAuditInfo = Boolean.parseBoolean(queryParameters.getOrDefault("preserve-audit", "false"));
+
+            PayloadProcessor processor =
+                     substanceBulkLoadService.submit(
+                            SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
+                                    .payload(payload)
+                                    .preserveOldEditInfo(preserveAuditInfo)
+                                    .build());
+
+            log.trace("bulk service has been submitted");
+            transactionTemplate = new TransactionTemplate(platformTransactionManager);
+            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            return transactionTemplate.execute(s->{
+               return processingJobService.get(processor.jobId).get();
+            });
+
         }catch(Throwable t){
             t.printStackTrace();
             throw t;

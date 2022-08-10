@@ -65,6 +65,7 @@ public class SubstanceBulkLoadService {
     private static final Logger TransformFailLogger = LoggerFactory.getLogger("transformFail");
     private static final Logger ExtractFailLogger = LoggerFactory.getLogger("extractFail");
 
+    private final static int NUMBER_OF_LOADING_THREADS=1;
 
     public static Logger getPersistFailureLogger(){
         return PersistFailLogger;
@@ -137,11 +138,17 @@ public class SubstanceBulkLoadService {
         return getStatisticsForJob(jobId);
     }
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
-        synchronized (jobLock) {
+        /*synchronized (jobLock) {
+            log.trace("starting statistics save in getStatisticsFor");
+            long start = TimeUtil.getCurrentTimeMillis();
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
-        }
+            ProcessingJob pjt= tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
+            long after = TimeUtil.getCurrentTimeMillis();
+            log.trace("time: {}", (after-start));
+            return pjt;
+        }*/
+        return saveJobInCurrentTransaction(jobId, stats);
     }
 
     private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats) {
@@ -228,7 +235,7 @@ public class SubstanceBulkLoadService {
         storeStatisticsForJob(pp.key, new Statistics());
 
 
-        final ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(3, MAX_EXTRACTION_QUEUE);
+        final ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(NUMBER_OF_LOADING_THREADS, MAX_EXTRACTION_QUEUE);
 
         final PersistRecordWorkerFactory factory = configuration.getPersistRecordWorkerFactory(parameters);
 
