@@ -21,6 +21,7 @@ import ix.core.models.*;
 import ix.core.processing.*;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
+import ix.core.util.EntityUtils;
 import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
 import ix.core.validator.ValidationMessage;
@@ -140,8 +141,11 @@ public class SubstanceBulkLoadService {
 
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
         synchronized (jobLock) {
-            log.trace("skipping sleep");
-            if( !stats._isDone()) {
+            if(stats==null ) {
+                log.info("skipping save because stats is null");
+                return null;
+            }
+            if(!stats._isDone()) {
                 log.info("skipping save of job in process");
                 return null;
             }
@@ -150,24 +154,7 @@ public class SubstanceBulkLoadService {
             return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
         }
     }
-    /*private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
-        ProcessingJob job = processingJobRepository.findById(jobId).get();
-        log.trace("skipping the save");
-        return job;
-*//*
-        synchronized (jobLock) {
-            log.trace("starting job save in saveJobInSeparateTransaction");
-            long start = TimeUtil.getCurrentTimeMillis();
-            TransactionTemplate tx = new TransactionTemplate(transactionManager);
-            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            ProcessingJob pjt= tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
-            long end = TimeUtil.getCurrentTimeMillis();
-            log.trace("time: {}", (end-start));
-            return pjt;
-        }
-*//*
-    }
-*/
+
     private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats) {
         ProcessingJob job = processingJobRepository.findById(jobId).get();
         if (!stats._isDone()) {
@@ -246,9 +233,6 @@ public class SubstanceBulkLoadService {
             processingJobRepository.saveAndFlush(job);
             return job.id;
         });
-        //owner now set automatically in created by?
-//        job.owner= ((UserProfile) GsrsSecurityUtils.getCurrentUser()).user.;
-//        saveJobInSeparateTransaction(job);
         storeStatisticsForJob(pp.key, new Statistics());
 
 
@@ -264,8 +248,16 @@ public class SubstanceBulkLoadService {
             public void run() {
                 TransactionTemplate tx = new TransactionTemplate(transactionManager);
                 tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                tx.executeWithoutResult(ignore->{
-                ProcessingJob job = processingJobRepository.findById(pp.jobId).get();
+                tx.executeWithoutResult(ignore-> {
+                    TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
+                    tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    ProcessingJob job = tx2.execute(s -> {
+                        ProcessingJob innerJob=processingJobRepository.findById(pp.jobId).get();
+                        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
+                        log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
+                        return innerJob;
+                    });
+
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
                 //katzelda 6/2019: IDE says we don't ever use the FilterSessions but we do it's just a sideeffect that gets used when we
@@ -350,14 +342,6 @@ public class SubstanceBulkLoadService {
                 }
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
-//                    Statistics stat = getStatisticsForJob(pp.key);
-                    //don't mark extraction done that changes the stats and changes
-                    //the initial estimate we can just use that
-
-//                    stat.applyChange(Statistics.CHANGE.MARK_EXTRACTION_DONE);
-//                    job.status =ProcessingJob.Status.COMPLETE;
-//                    job.message="";
-//                    saveJobInSeparateTransaction(pp.jobId, stat);
                     executorServices.remove(pp.key);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
@@ -539,12 +523,10 @@ public class SubstanceBulkLoadService {
                     }
                     if (worked) {
                         prec.rec.status = ProcessingRecord.Status.OK;
-/*
-                        //String kind, String id
-                        prec.rec.xref = new XRef(JsonSubstanceFactory.getSubstanceKind(prec.recordToPersist).getName(), prec.recordToPersist.get("uuid").asText());
-                        //NOTE: the JPA mappings aren't set for cascade correctly? have to manually save both
-                        xRefRepository.saveAndFlush(prec.rec.xref);
-*/
+                        /*
+                        we used to save the individual records separately but as of August 2022, we're
+                        streamlining the saving process
+                         */
                     } else {
                         prec.rec.message =  errors.get(0);
                         prec.rec.status = ProcessingRecord.Status.FAILED;
@@ -573,30 +555,6 @@ public class SubstanceBulkLoadService {
 
     }
 
-//    /**
-//     * This Extractor is for explicitly testing that failed validation
-//     * records do fail.
-//     *
-//     * @author peryeata
-//     *
-//     */
-//    public static class GinasAlwaysFailTestDumpExtractor extends GinasDumpExtractor {
-//        public GinasAlwaysFailTestDumpExtractor(InputStream is) {
-//            super(is);
-//        }
-//
-//        @Override
-//        public RecordTransformer getTransformer() {
-//            return new RecordTransformer<JsonNode, Substance>(){
-//                @Override
-//                public Substance transform(PayloadExtractedRecord<JsonNode> pr, ProcessingRecord rec) {
-//                    throw new IllegalStateException("Intentionally failed validation");
-//                }
-//
-//            };
-//        }
-//
-//    }
 
     public static class GinasDumpExtractor extends GinasJSONExtractor {
         BufferedReader buff;
@@ -635,10 +593,6 @@ public class SubstanceBulkLoadService {
                     //use static pattern so we don't recompile on every split call
                     //which is what String.split() does
                     String[] toks = TOKEN_SPLIT_PATTERN.split(line);
-                    // Logger.debug("extracting:"+ toks[1]);
-//				ByteArrayInputStream bis = new ByteArrayInputStream(toks[2].getBytes(StandardCharsets.UTF_8));
-//
-//				return mapper.readTree(bis);
                     if(toks ==null || toks.length <2){
                         continue;
                     }
@@ -755,25 +709,6 @@ public class SubstanceBulkLoadService {
             rec.start = System.currentTimeMillis();
             rec.status = ProcessingRecord.Status.ADAPTED;
             return pr.theRecord;
-//            Substance sub = null;
-//            try {
-//                sub = transformSubstance(pr.theRecord);
-//                addImportReference(sub, rec.job);
-//                ValidationResponse resp = validatorFactory.createValidatorFor(sub, null, ValidatorConfig.METHOD_TYPE.BATCH, ValidatorCategory.CATEGORY_ALL())
-//                        .validate(sub, null);
-//                if(resp.hasError()){
-//                    throw new IllegalArgumentException("validation error: " + resp.getValidationMessages());
-//                }
-//                rec.status = ProcessingRecord.Status.ADAPTED;
-//            } catch (Throwable t) {
-//                rec.stop = System.currentTimeMillis();
-//                rec.status = ProcessingRecord.Status.FAILED;
-//                rec.message = t.getMessage();
-//                log.error(t.getMessage());
-//                t.printStackTrace();
-//                throw new IllegalStateException(t);
-//            }
-//            return sub;
         }
 
         public String getName(JsonNode theRecord) {
