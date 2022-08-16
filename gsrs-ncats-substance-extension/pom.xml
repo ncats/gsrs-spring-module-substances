@@ -88,11 +88,6 @@
             <optional>true</optional>
         </dependency>
         <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-module-substances-core</artifactId>
-            <version>${gsrs.substance.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
             <exclusions>
@@ -162,31 +157,9 @@
             <version>${gsrs.substance.version}</version>
         </dependency>
         <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>molwitch</artifactId>
-            <version>0.6.1-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>molwitch</artifactId>
-            <version>0.6.1-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -194,11 +167,11 @@
             <version>3.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-data-exchange</artifactId>
             <version>3.0-SNAPSHOT</version>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
@@ -208,12 +181,6 @@
             <artifactId>gsrs-module-substances-tests</artifactId>
             <version>3.0-SNAPSHOT</version>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-module-substances-core</artifactId>
-            <version>${gsrs.substance.version}</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>

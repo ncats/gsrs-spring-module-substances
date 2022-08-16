@@ -4,8 +4,10 @@ import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.model.MatchableKeyValueTupleExtractor;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElement;
+import gsrs.module.substance.services.ConfigBasedDefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
+import gsrs.springUtils.AutowireHelper;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.DefHashCalcRequirements;
 import lombok.extern.slf4j.Slf4j;
@@ -32,14 +34,16 @@ public class DefinitionalHashMatchableExtractor implements MatchableKeyValueTupl
     private DefinitionalElementImplementation definitionalElementImplementation;
     @Override
     public void extract(Substance substance, Consumer<MatchableKeyValueTuple> c) {
-        DefHashCalcRequirements defHashCalcRequirements = new DefHashCalcRequirements(definitionalElementFactory, substanceSearchService, transactionManager);
+        ConfigBasedDefinitionalElementFactory configBasedDefinitionalElementFactory = new ConfigBasedDefinitionalElementFactory();
+        configBasedDefinitionalElementFactory= AutowireHelper.getInstance().autowireAndProxy(configBasedDefinitionalElementFactory);
         /*
         wrapping the call to DefaultHoldingAreaService.getDefinitionalHash in a try/catch prevents an Exception from interrupting
         a daisy-chain of extractors called from a unit test
          */
         try {
             List<DefinitionalElement> definitionalElements = new ArrayList<>();
-            definitionalElementImplementation.computeDefinitionalElements(substance, definitionalElements::add);
+            configBasedDefinitionalElementFactory.addDefinitionalElementsFor(substance, definitionalElements::add);
+            //definitionalElementImplementation.computeDefinitionalElements(substance, definitionalElements::add);
             //List<String> defHashLayers = definitionalElementImplementation. .getDefinitionalHash(substance, defHashCalcRequirements);
             for (int i = 0; i < definitionalElements.size(); i++) {
                 MatchableKeyValueTuple tuple =
