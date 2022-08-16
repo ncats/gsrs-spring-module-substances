@@ -1,4 +1,4 @@
- package example;
+package example;
 
 import gsrs.*;
 import gsrs.cv.EnableControlledVocabulary;
