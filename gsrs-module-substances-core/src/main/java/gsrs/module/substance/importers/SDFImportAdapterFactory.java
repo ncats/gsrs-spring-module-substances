@@ -397,9 +397,13 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     }
 
     public ObjectNode createNameMap(String nameField, String nameType, String language) {
+        log.trace("in createNameMap");
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         if (nameType == null || nameType.length() == 0) {
             nameType = "cn";
+        }
+        if(language==null || language.length()==0) {
+            language="en";
         }
         mapNode.put("name", String.format("{{%s}}", nameField));
         mapNode.put("nameType", nameType);

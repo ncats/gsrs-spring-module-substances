@@ -6,12 +6,11 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.core.models.Keyword;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
@@ -25,6 +24,12 @@ public class ReferenceExtractorActionFactory extends BaseActionFactory {
                 r.citation= String.format("File %s imported on %s", getAdapterSchema().get("fileName"), new Date());
             }
             r.docType = (String) params.get("docType");
+            r.publicDomain = params.get("publicDomain")!=null && params.get("publicDomain").toString().equalsIgnoreCase("true");
+
+            List<String> tags = params.get("tags") !=null ? (List<String>) params.get("tags") : null;
+            if( tags!=null) {
+                tags.forEach(t->r.tags.add(new Keyword(t)));
+            }
             Optional.ofNullable(params.get("url")).ifPresent(url -> {
                 r.url = url.toString();
             });
