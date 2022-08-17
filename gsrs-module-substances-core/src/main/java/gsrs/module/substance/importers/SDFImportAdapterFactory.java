@@ -342,7 +342,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
             if (f.toUpperCase(Locale.ROOT).contains("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
                 actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
-                ObjectNode mapNode = createNameMap(f, null);
+                ObjectNode mapNode = createNameMap(f, null, null);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
@@ -396,13 +396,14 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         return mapNode;
     }
 
-    public ObjectNode createNameMap(String nameField, String nameType) {
+    public ObjectNode createNameMap(String nameField, String nameType, String language) {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         if (nameType == null || nameType.length() == 0) {
             nameType = "cn";
         }
         mapNode.put("name", String.format("{{%s}}", nameField));
         mapNode.put("nameType", nameType);
+        mapNode.put("lang", language);
         ArrayNode refs = JsonNodeFactory.instance.arrayNode();
         refs.add(String.format("[[%s]]", SIMPLE_REF));
         mapNode.set("referenceUUIDs", refs);

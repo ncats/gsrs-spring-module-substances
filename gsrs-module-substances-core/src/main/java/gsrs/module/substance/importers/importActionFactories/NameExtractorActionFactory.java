@@ -5,6 +5,7 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.core.models.Keyword;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,9 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 
 @Slf4j
 public class NameExtractorActionFactory extends BaseActionFactory {
+
+    private static final String DEFAULT_LANGUAGE = "en";
+    private static final String DEFAULT_NAME_TYPE = "cn";
     @Override
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
@@ -24,7 +28,9 @@ public class NameExtractorActionFactory extends BaseActionFactory {
             boolean splitNames = Boolean.parseBoolean(params.getOrDefault("split_names", "true").toString());
 
             String suppliedName = (String) params.get("name");
-            String nameType = params.get("nameType") != null ? (String) params.get("nameType") : "cn";
+            String nameType = params.get("nameType") != null ? (String) params.get("nameType") : DEFAULT_NAME_TYPE;
+            String language = params.get("lang") != null ? (String) params.get("lang") : DEFAULT_LANGUAGE;
+            Boolean isDisplayName = params.get("displayName") != null && params.get("displayName").toString().equalsIgnoreCase("TRUE");
 
             if (splitNames) {
                 for (String sn : suppliedName.trim().split("\n")) {
@@ -39,6 +45,8 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                     Name n = new Name();
                     n.setName(sn);
                     n.type=nameType;
+                    n.languages.add(new Keyword(language));
+                    n.displayName=isDisplayName;
                     doBasicsImports(n, params);
                     //TODO: more params
                     sub.names.add(n);
