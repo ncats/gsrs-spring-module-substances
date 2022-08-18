@@ -37,9 +37,14 @@ public class SdfAdapterFactoryTest {
         meta.put("valueRange", "{{boiling.point.predicted}}");
         meta.put("propertyType", "physical");
         Map<String, Object> resolved= SDFImportAdapterFactory.resolveParametersMap(record, meta);
-        String expected="134523-00-5";
         Assertions.assertEquals(3, resolved.size());
+        Assertions.assertEquals("722.2±60.0 °C    Press: 760 Torr", resolved.get("valueRange"));
     }
+
+    /*@Test
+    public void testresolveParameter() {
+        String propertyValue = SDFImportAdapterFactory.resolveParameter(record, )
+    }*/
 
     @Test
     public void PropertyExtractorActionFactoryTest() throws Exception {

@@ -100,7 +100,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     }
 
     public static String resolveParameter(SDRecordContext rec, String inp, Function<String, String> encoder) {
-
+        log.trace("in resolveParameter, inp: {}, encode: {}", inp, encoder.toString());
         inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
             if (p.equals("molfile")) return Optional.ofNullable(rec.getStructure()).map(encoder);
             if (p.equals("molfile_name")) return Optional.ofNullable(rec.getMolfileName()).map(encoder);
@@ -156,7 +156,6 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
                 Class actionClass =fia.getActionClass();
                 MappingActionFactory<Substance, SDRecordContext> mappingActionFactory;
                 try {
-                    SerializationConfig config;
                     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
                     mappingActionFactory = (MappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(fia,
                             actionClass);
@@ -344,6 +343,10 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
                 actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
                 ObjectNode mapNode = createNameMap(f, null, null);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
+            } else if(looksLikeProperty(f)) {
+                actionNode.put(ACTION_NAME, "property_import");
+                ObjectNode mapNode = createPropertyMap(f);
+                actionNode.set(ACTION_PARAMETERS, mapNode);
             } else {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
                 ObjectNode mapNode = createCodeMap(f, "PRIMARY");
@@ -354,6 +357,11 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         result.add(createDefaultReferenceNode());
         topLevelReturn.set("actions", result);
         return topLevelReturn;
+    }
+
+    private boolean looksLikeProperty(String fieldName) {
+        List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka");
+        return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
     }
 
     private JsonNode createDefaultReferenceReferenceNode() {
@@ -414,9 +422,22 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         return mapNode;
     }
 
+    public ObjectNode createPropertyMap(String fieldName) {
+        log.trace("in createPropertyMap");
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("name", fieldName);
+        mapNode.put("propertyType", "chemical|physical");
+        mapNode.put("valueRange", String.format("{{%s}}", fieldName));
+        mapNode.put("valueUnits", "");
+        return mapNode;
+    }
+
     public ObjectNode createMolfileMap() {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         mapNode.put("molfile", "{{molfile}}");
+        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
+        refs.add(String.format("[[%s]]", SIMPLE_REF));
+        mapNode.set("referenceUUIDs", refs);
         return mapNode;
     }
 
