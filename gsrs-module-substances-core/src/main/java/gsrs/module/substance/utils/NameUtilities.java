@@ -432,6 +432,42 @@ public class NameUtilities {
         return replacementResult;
     }*/
 
+    public ReplacementResult removeHtml(String input) {
+        Pattern superScript = Pattern.compile("(.*)\\<SUP\\>(.+)\\<\\/SUP\\>(.*)", Pattern.CASE_INSENSITIVE);
+        Pattern subScript = Pattern.compile("(.*)\\<SUB>(.+)\\<\\/SUB\\>(.*)", Pattern.CASE_INSENSITIVE);
+        String superReplacement =" SUP(%s)";
+        String subReplacement =" SUB(%s)";
+        Matcher superMatcher= superScript.matcher(input);
+        String superedInput = input;
+        if( superMatcher.find()) {
+            StringBuffer sb = new StringBuffer();
+            if( superMatcher.group(1) != null && superMatcher.group(1).length()>0){
+                sb.append(superMatcher.group(1));
+            }
+            superMatcher.appendReplacement(sb, String.format(superReplacement, superMatcher.group(2)));
+            if( superMatcher.group(3) != null && superMatcher.group(3).length()>0){
+                sb.append(superMatcher.group(3));
+            }
+            superedInput= sb.toString();
+        }
+        String subbedInput = superedInput;
+        Matcher subMatcher= subScript.matcher(superedInput);
+        if( subMatcher.find()) {
+            StringBuffer sb = new StringBuffer();
+            if( subMatcher.group(1) != null && subMatcher.group(1).length()>0){
+                sb.append(subMatcher.group(1));
+            }
+            subMatcher.appendReplacement(sb, String.format(subReplacement, subMatcher.group(2)));
+            if( subMatcher.group(3) != null && subMatcher.group(3).length()>0){
+                sb.append(subMatcher.group(3));
+            }
+            subbedInput= sb.toString();
+        }
+        String cleanText = Jsoup.parse(subbedInput).text();
+        List<ReplacementNote> notes = new ArrayList<>();
+        ReplacementResult replacementResult = new ReplacementResult(cleanText, notes);
+        return replacementResult;
+    }
     public ReplacementResult removeHtmlUsingJsoup(String input) {
         String cleanText = Jsoup.parse(input).text();
         List<ReplacementNote> notes = new ArrayList<>();

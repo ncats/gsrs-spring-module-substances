@@ -3,11 +3,12 @@ package example.name;
 import java.util.ArrayList;
 import java.util.List;
 
+import gsrs.springUtils.AutowireHelper;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import gsrs.module.substance.utils.FDAFullNameStandardizer;
-import gsrs.module.substance.utils.NameStandardizer;
 import gsrs.module.substance.utils.NameUtilities;
 import gsrs.module.substance.utils.ReplacementNote;
 import gsrs.module.substance.utils.ReplacementResult;
@@ -19,11 +20,18 @@ import org.springframework.beans.factory.annotation.Autowired;
  * @author mitch
  */
 @Slf4j
-public class NameUtilitiesTest {
+public class NameUtilitiesTest  {
 
     @Autowired
-    NameUtilities nameUtilities;
-    
+    private static NameUtilities nameUtilities;
+
+    @BeforeEach
+    public void assureDependencies() {
+        if( nameUtilities==null) {
+            nameUtilities=new NameUtilities();
+            //nameUtilities= AutowireHelper.getInstance().autowireAndProxy(nameUtilities );
+        }
+    }
     @Test //Remove a tab
     public void testStandardize16() {
         String inputName = "A '\t' name";
@@ -440,6 +448,78 @@ public class NameUtilitiesTest {
         String input="Some <div class=\"x\">text that <emphasis>contains</emphasis> a message for us</div>";
         String expected = "Some text that contains a message for us";
         String actual = nameUtilities.removeHtmlUsingJsoup(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSub1() {
+        String input ="Substance mentioned<SUB>1</SUB> and text";
+        String expected = "Substance mentioned SUB(1) and text";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSub2() {
+        String input ="<SUB>interesting</SUB>text";
+        String expected = "SUB(interesting)text";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSub3() {
+        String input ="Name with comment<sub>546</sub> and text";
+        String expected = "Name with comment SUB(546) and text";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSub4() {
+        String input ="Note<SUb>0</SUb>";
+        String expected = "Note SUB(0)";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSub5() {
+        String input ="<b>Note</b><SUb>0</SUb>";
+        String expected = "Note SUB(0)";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSuper1() {
+        String input ="Name with reference<SUP>1</SUP> and text";
+        String expected = "Name with reference SUP(1) and text";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSuper2() {
+        String input ="<SUP>2</SUP>text that starts";
+        String expected = "SUP(2)text that starts";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSuper3() {
+        String input ="Name with reference<sup>1</sup> and text";
+        String expected = "Name with reference SUP(1) and text";
+        String actual = nameUtilities.removeHtml(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testReplaceSuper4() {
+        String input ="Name with some reference<SUP>1</SUP>";
+        String expected = "Name with some reference SUP(1)";
+        String actual = nameUtilities.removeHtml(input).getResult();
         Assertions.assertEquals(expected, actual);
     }
 
