@@ -5,8 +5,11 @@ import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.module.substance.SubstanceEntityService;
+import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.validator.ValidationResponse;
+import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,9 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
 
     @Autowired
     protected SubstanceEntityService substanceEntityService;
+
+    @Autowired
+    private StructureProcessor structureProcessor;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -44,6 +50,16 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
 
     @Override
     public List<MatchableKeyValueTuple> extractKVM(Substance substance) {
+        if( substance instanceof ChemicalSubstance) {
+            log.trace("chemical substance in extractKVM");
+            ChemicalSubstance chemicalSubstance = (ChemicalSubstance) substance;
+            log.trace("going to instrument structure");
+            Structure structure = structureProcessor.instrument(chemicalSubstance.getStructure().toChemical(), true);
+            chemicalSubstance.getStructure().updateStructureFields(structure);
+        }
+        else {
+            log.trace("other type of substance");
+        }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
         ExplicitMatchableExtractorFactory factory = new ExplicitMatchableExtractorFactory();
         factory.createExtractorFor(Substance.class).extract(substance, allMatchables::add);
