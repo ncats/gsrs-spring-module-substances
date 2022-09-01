@@ -9,7 +9,7 @@ public class Replacer {
     Pattern p;
     String replace;
     String message = "String \"$0\" matches forbidden pattern";
-    String postFixMessage = "A";
+    String postFixMessage = "";
 
     public Replacer(String regex, String replace) {
         this.p = Pattern.compile(regex);

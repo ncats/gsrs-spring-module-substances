@@ -9,14 +9,17 @@ import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 
 import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
+@Slf4j
 public class ReferenceExtractorActionFactory extends BaseActionFactory {
     public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) {
         return (sub, sdRec) -> {
+            log.trace("in create");
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             Reference r = new Reference();
             r.citation = (String) params.get("citation");
@@ -66,6 +69,11 @@ public class ReferenceExtractorActionFactory extends BaseActionFactory {
                         .setFieldName("referenceID")
                         .setValueType(String.class)
                         .setDefaultValue("PRIMARY")
+                        .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("publicDomain")
+                        .setValueType(Boolean.class)
+                        .setDefaultValue(true)
                         .build())
                 .build();
     }

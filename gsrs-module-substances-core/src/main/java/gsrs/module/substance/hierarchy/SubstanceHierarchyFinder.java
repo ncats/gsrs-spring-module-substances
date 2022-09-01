@@ -213,6 +213,7 @@ public class SubstanceHierarchyFinder {
 						});
 					});
 
+			
 			return yield.stream();
 		}
 		

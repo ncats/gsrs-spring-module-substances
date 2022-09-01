@@ -52,7 +52,7 @@ public class NucleicAcidValidationTest extends AbstractSubstanceJpaEntityTest {
             assertFalse(response.isValid());
 
             assertTrue(response.getValidationMessages().stream()
-                    .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR &&  m.getMessage().contains("must have at least 1 subunit"))
+                    .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR &&  m.getMessage().contains("at least 1 subunit"))
                     .findAny().isPresent());
 
 
