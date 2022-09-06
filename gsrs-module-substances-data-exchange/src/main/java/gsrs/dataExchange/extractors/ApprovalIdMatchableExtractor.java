@@ -12,12 +12,14 @@ public class ApprovalIdMatchableExtractor implements MatchableKeyValueTupleExtra
 
     @Override
     public void extract(Substance substance, Consumer<MatchableKeyValueTuple> c) {
-        MatchableKeyValueTuple tuple =
-                MatchableKeyValueTuple.builder()
-                        .key(APPROVAL_ID_KEY)
-                        .value(substance.approvalID)
-                        .layer(APPROVAL_ID_LAYER)
-                        .build();
-        c.accept(tuple);
+        if(substance.approvalID!= null && substance.approvalID.length() >0) {
+            MatchableKeyValueTuple tuple =
+                    MatchableKeyValueTuple.builder()
+                            .key(APPROVAL_ID_KEY)
+                            .value(substance.approvalID)
+                            .layer(APPROVAL_ID_LAYER)
+                            .build();
+            c.accept(tuple);
+        }
     }
 }

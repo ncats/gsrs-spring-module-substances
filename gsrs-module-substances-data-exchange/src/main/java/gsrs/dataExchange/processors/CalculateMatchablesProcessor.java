@@ -4,6 +4,7 @@ import gsrs.dataexchange.SubstanceHoldingAreaEntityService;
 import gsrs.holdingarea.model.KeyValueMapping;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.repository.KeyValueMappingRepository;
+import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -64,6 +65,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
     private void recalculateMatchablesFor(Substance substance) {
         log.trace("looking at substance " + substance.getUuid());
+        substanceHoldingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceHoldingAreaEntityService);
         //clear out the old stuff
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);

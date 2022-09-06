@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityService<Substance> {
@@ -51,6 +52,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     @Override
     public List<MatchableKeyValueTuple> extractKVM(Substance substance) {
         if( substance instanceof ChemicalSubstance) {
+            Objects.requireNonNull(structureProcessor, "A structure processor is required to handle a chemical substances!");
             log.trace("chemical substance in extractKVM");
             ChemicalSubstance chemicalSubstance = (ChemicalSubstance) substance;
             log.trace("going to instrument structure");
