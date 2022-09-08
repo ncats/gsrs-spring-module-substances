@@ -5,6 +5,7 @@ import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.text.IndexValueMaker;
@@ -27,6 +28,9 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
 
     @Autowired
     private StructureProcessor structureProcessor;
+
+    @Autowired
+    private SubstanceRepository repository;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -71,5 +75,10 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     @Override
     public IndexValueMaker<Substance> createIVM(Substance substance) {
         return null;
+    }
+
+    @Override
+    public Substance persistEntity(Substance substance) {
+        return repository.saveAndFlush(substance);
     }
 }
