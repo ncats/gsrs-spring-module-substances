@@ -288,12 +288,13 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
 
     @Override
     public Class getHoldingAreaService() {
-        log.trace("hard coded holding area service name!");
+        log.trace("using holding area service name from adapter factory");
         return this.holdingAreaService;
     }
 
     @Override
     public void setHoldingAreaService(Class holdingAreaService){
+        log.trace("in setHoldingAreaService " + holdingAreaService.getName());
         this.holdingAreaService=holdingAreaService;
     }
 
