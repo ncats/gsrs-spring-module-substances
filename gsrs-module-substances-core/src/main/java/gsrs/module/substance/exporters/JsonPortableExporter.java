@@ -16,7 +16,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.PrivateKey;
 import java.time.format.DateTimeFormatter;
@@ -32,6 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.cxf.common.util.StringUtils;
+import org.apache.cxf.rs.security.jose.common.JoseType;
 import org.apache.cxf.rs.security.jose.jwa.ContentAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.KeyAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.SignatureAlgorithm;
@@ -64,9 +64,10 @@ public class JsonPortableExporter implements Exporter<Substance> {
     private static final JsonWebKeys jwks = loadJwks("export.jwks");
     private static final String privateKeyId = findPrivateKeyId();
     private static final ContentAlgorithm enc = ContentAlgorithm.A256GCM;
-    private static final KeyAlgorithm alg = KeyAlgorithm.RSA_OAEP_256;
+    private static final KeyAlgorithm alg = KeyAlgorithm.RSA_OAEP;
     private static final SignatureAlgorithm sig = SignatureAlgorithm.RS256;
     private static final String gsrsVersion = "3.0.2";
+    private static final boolean sign = false;
 
     public JsonPortableExporter(OutputStream out) throws IOException{
         Objects.requireNonNull(out);
@@ -103,13 +104,13 @@ public class JsonPortableExporter implements Exporter<Substance> {
         uuidToIndex(tree);
         scrub(tree);
         checkAccess(tree);
-        return sign(tree, protectedHeaders);
-    }
-
-    private static String sign(JsonNode node, JwsHeaders protectedHeaders) {
-        JwsCompactProducer jwsProducer = new JwsCompactProducer(protectedHeaders, node.toString());
-        JwsSignatureProvider jwsp = JwsUtils.getSignatureProvider(jwks.getKey(privateKeyId), sig);
-        return jwsProducer.signWith(jwsp);
+        String out = tree.toString();
+        if (sign) {
+            JwsCompactProducer jwsProducer = new JwsCompactProducer(protectedHeaders, out);
+            JwsSignatureProvider jwsp = JwsUtils.getSignatureProvider(jwks.getKey(privateKeyId), sig);
+            out = jwsProducer.signWith(jwsp);
+        }
+        return out;
     }
 
     private static void encrypt(JsonNode node) {
@@ -118,20 +119,24 @@ public class JsonPortableExporter implements Exporter<Substance> {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode result = mapper.createObjectNode();
         JweHeaders protectedHeaders = new JweHeaders(enc);
+        protectedHeaders.setType(JoseType.JOSE_JSON);
         JweHeaders sharedUnprotectedHeaders = new JweHeaders();
         sharedUnprotectedHeaders.setKeyEncryptionAlgorithm(alg);
         ContentEncryptionProvider contentEncryption = JweUtils.getContentEncryptionProvider(enc, true);
         List<JweEncryptionProvider> jweProviders = new LinkedList<JweEncryptionProvider>();
+        List<JweHeaders> perRecipientHeades = new LinkedList<JweHeaders>();
         if (privateKeyId != null && node.get("access").findValue(privateKeyId) == null) {
-            keyEncryption = JweUtils.getPublicKeyEncryptionProvider(JwkUtils.toRSAPublicKey(jwks.getKey(privateKeyId)), alg);
+            keyEncryption = JweUtils.getKeyEncryptionProvider(jwks.getKey(privateKeyId), alg);
             jweProviders.add(new JweEncryption(keyEncryption, contentEncryption));
+            perRecipientHeades.add(new JweHeaders(privateKeyId));
         }
         Iterator<JsonNode> it = node.get("access").elements();
         while (it.hasNext()) {
             key = jwks.getKey(it.next().asText());
             if (key != null) {
-                keyEncryption = JweUtils.getPublicKeyEncryptionProvider(JwkUtils.toRSAPublicKey(key), alg);
+                keyEncryption = JweUtils.getKeyEncryptionProvider(key, alg);
                 jweProviders.add(new JweEncryption(keyEncryption, contentEncryption));
+                perRecipientHeades.add(new JweHeaders(key.getKeyId()));
             }
         }
         if (!jweProviders.isEmpty()) {
@@ -139,7 +144,7 @@ public class JsonPortableExporter implements Exporter<Substance> {
                                         sharedUnprotectedHeaders,
                                         StringUtils.toBytesUTF8(node.toString()));
             try {
-                result = mapper.readTree(p.encryptWith(jweProviders));
+                result = mapper.readTree(p.encryptWith(jweProviders, perRecipientHeades));
             } catch (Exception e) {
             }
         }
@@ -153,7 +158,7 @@ public class JsonPortableExporter implements Exporter<Substance> {
 
     private static JsonWebKeys loadJwks(String fileName) {
         try {
-            return JwkUtils.readJwkSet(Files.readString(Path.of(fileName)));
+            return JwkUtils.readJwkSet(new String(Files.readAllBytes(Paths.get(fileName))));
         } catch (Exception e) {
             return new JsonWebKeys();
         }
