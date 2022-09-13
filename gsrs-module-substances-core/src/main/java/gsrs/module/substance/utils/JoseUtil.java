@@ -20,9 +20,12 @@ import org.apache.cxf.rs.security.jose.jwa.ContentAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.KeyAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.SignatureAlgorithm;
 import org.apache.cxf.rs.security.jose.jwe.ContentEncryptionProvider;
+import org.apache.cxf.rs.security.jose.jwe.JweDecryptionProvider;
 import org.apache.cxf.rs.security.jose.jwe.JweEncryption;
 import org.apache.cxf.rs.security.jose.jwe.JweEncryptionProvider;
 import org.apache.cxf.rs.security.jose.jwe.JweHeaders;
+import org.apache.cxf.rs.security.jose.jwe.JweJsonConsumer;
+import org.apache.cxf.rs.security.jose.jwe.JweJsonEncryptionEntry;
 import org.apache.cxf.rs.security.jose.jwe.JweJsonProducer;
 import org.apache.cxf.rs.security.jose.jwe.JweUtils;
 import org.apache.cxf.rs.security.jose.jwe.KeyEncryptionProvider;
@@ -121,6 +124,30 @@ public class JoseUtil {
             }
         }
         node.removeAll();
+        Iterator<Map.Entry<String, JsonNode>> fields = result.fields();
+        while (fields.hasNext()) {
+            Map.Entry<String, JsonNode> field = fields.next();
+            node.set(field.getKey(), field.getValue());
+        }
+    }
+
+    public static void decrypt(ObjectNode node) {
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode result = mapper.createObjectNode();
+        JweJsonConsumer consumer = new JweJsonConsumer(node.toString());
+        node.removeAll();
+        try {
+            KeyAlgorithm keyAlgo = consumer.getSharedUnprotectedHeader().getKeyEncryptionAlgorithm();
+            ContentAlgorithm ctAlgo = consumer.getProtectedHeader().getContentEncryptionAlgorithm();
+            JweDecryptionProvider jwe = JweUtils.createJweDecryptionProvider(JweUtils.getKeyDecryptionProvider(jwks.getKey(privateKeyId), keyAlgo), ctAlgo);
+            for (JweJsonEncryptionEntry encEntry : consumer.getRecipients()) {
+                if (privateKeyId.equals(encEntry.getUnprotectedHeader().getKeyId())) {
+                    result = mapper.readTree(consumer.decryptWith(jwe, encEntry).getContent());
+                    break;
+                }
+            }
+        } catch (Exception e) {
+        }
         Iterator<Map.Entry<String, JsonNode>> fields = result.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
