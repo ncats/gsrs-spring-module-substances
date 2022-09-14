@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
@@ -62,15 +63,20 @@ public class JsonPortableExporter implements Exporter<Substance> {
         uuidToIndex(tree);
         scrub(tree);
         checkAccess(tree);
+        addMetadata(tree);
         String out = tree.toString();
         if (sign) {
-            Map<String, Object> headers = new HashMap<String, Object>();
-            headers.put("ori", tree.hasNonNull("_self") ? tree.get("_self").asText() : "Unknown");
-            headers.put("ver", gsrsVersion);
-            headers.put("dat", ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT));
-            out = JoseUtil.getInstance().sign(out, headers);
+            out = JoseUtil.getInstance().sign(out);
         }
         return out;
+    }
+
+    private static void addMetadata(JsonNode tree) {
+        ObjectNode metadata = JsonNodeFactory.instance.objectNode();
+        metadata.set("ori", new TextNode(tree.hasNonNull("_self") ? tree.get("_self").asText() : "Unknown"));
+        metadata.set("ver", new TextNode(gsrsVersion));
+        metadata.set("dat", new TextNode(ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT)));
+        ((ObjectNode) tree).set("_metadata", metadata);
     }
 
     private static void uuidToIndex (JsonNode node) {

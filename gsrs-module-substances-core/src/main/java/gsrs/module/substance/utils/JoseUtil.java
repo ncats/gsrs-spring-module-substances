@@ -78,8 +78,8 @@ public class JoseUtil {
         return INSTANCE;
     }
 
-    public static String sign(String str, Map<String, Object> headers) {
-        JwsHeaders protectedHeaders = new JwsHeaders(headers);
+    public static String sign(String str) {
+        JwsHeaders protectedHeaders = new JwsHeaders();
         protectedHeaders.setKeyId(privateKeyId);
         protectedHeaders.setContentType("application/json");
         try {
@@ -97,10 +97,11 @@ public class JoseUtil {
         JwsCompactConsumer jwsConsumer = new JwsCompactConsumer(jwsCompactStr);
         try {
             JwsHeaders headers = jwsConsumer.getJwsHeaders();
-            boolean verified = jwsConsumer.verifySignatureWith(jwks.getKey(headers.getKeyId()), headers.getSignatureAlgorithm());
             result = (ObjectNode) mapper.readTree(jwsConsumer.getDecodedJwsPayloadBytes());
-            result.set("_metadata", mapper.readTree(jwsConsumer.getDecodedJsonHeaders()));
-            ((ObjectNode) result.get("_metadata")).set("verified", JsonNodeFactory.instance.booleanNode(verified));
+            if (result.has("_metadata")) {
+                boolean verified = jwsConsumer.verifySignatureWith(jwks.getKey(headers.getKeyId()), headers.getSignatureAlgorithm());
+                ((ObjectNode) result.get("_metadata")).set("verified", JsonNodeFactory.instance.booleanNode(verified));
+            }
         } catch (Exception e) {
         }
         return result;
