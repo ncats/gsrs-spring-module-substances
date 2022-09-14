@@ -2,6 +2,8 @@ package gsrs.module.substance.utils;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.BooleanNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import java.nio.file.Files;
@@ -32,6 +34,7 @@ import org.apache.cxf.rs.security.jose.jwe.KeyEncryptionProvider;
 import org.apache.cxf.rs.security.jose.jwk.JsonWebKey;
 import org.apache.cxf.rs.security.jose.jwk.JsonWebKeys;
 import org.apache.cxf.rs.security.jose.jwk.JwkUtils;
+import org.apache.cxf.rs.security.jose.jws.JwsCompactConsumer;
 import org.apache.cxf.rs.security.jose.jws.JwsCompactProducer;
 import org.apache.cxf.rs.security.jose.jws.JwsHeaders;
 import org.apache.cxf.rs.security.jose.jws.JwsSignatureProvider;
@@ -82,17 +85,32 @@ public class JoseUtil {
         try {
             JwsCompactProducer jwsProducer = new JwsCompactProducer(protectedHeaders, str);
             JwsSignatureProvider jwsp = JwsUtils.getSignatureProvider(jwks.getKey(privateKeyId), sig);
-            return jwsProducer.signWith(jwsp);
+            str = jwsProducer.signWith(jwsp);
         } catch (Exception e) {
-            return str;
         }
+        return str;
+    }
+
+    public static ObjectNode verify(String jwsCompactStr) {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode result = JsonNodeFactory.instance.objectNode();
+        JwsCompactConsumer jwsConsumer = new JwsCompactConsumer(jwsCompactStr);
+        try {
+            JwsHeaders headers = jwsConsumer.getJwsHeaders();
+            boolean verified = jwsConsumer.verifySignatureWith(jwks.getKey(headers.getKeyId()), headers.getSignatureAlgorithm());
+            result = (ObjectNode) mapper.readTree(jwsConsumer.getDecodedJwsPayloadBytes());
+            result.set("_metadata", mapper.readTree(jwsConsumer.getDecodedJsonHeaders()));
+            ((ObjectNode) result.get("_metadata")).set("verified", JsonNodeFactory.instance.booleanNode(verified));
+        } catch (Exception e) {
+        }
+        return result;
     }
 
     public static void encrypt(ObjectNode node) {
         JsonWebKey key;
         KeyEncryptionProvider keyEncryption;
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode result = mapper.createObjectNode();
+        JsonNode result = JsonNodeFactory.instance.objectNode();
         JweHeaders protectedHeaders = new JweHeaders(enc);
         protectedHeaders.setType(JoseType.JOSE_JSON);
         JweHeaders sharedUnprotectedHeaders = new JweHeaders();
@@ -133,7 +151,7 @@ public class JoseUtil {
 
     public static void decrypt(ObjectNode node) {
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode result = mapper.createObjectNode();
+        ObjectNode result = JsonNodeFactory.instance.objectNode();
         JweJsonConsumer consumer = new JweJsonConsumer(node.toString());
         node.removeAll();
         try {
@@ -142,7 +160,7 @@ public class JoseUtil {
             JweDecryptionProvider jwe = JweUtils.createJweDecryptionProvider(JweUtils.getKeyDecryptionProvider(jwks.getKey(privateKeyId), keyAlgo), ctAlgo);
             for (JweJsonEncryptionEntry encEntry : consumer.getRecipients()) {
                 if (privateKeyId.equals(encEntry.getUnprotectedHeader().getKeyId())) {
-                    result = mapper.readTree(consumer.decryptWith(jwe, encEntry).getContent());
+                    result = (ObjectNode) mapper.readTree(consumer.decryptWith(jwe, encEntry).getContent());
                     break;
                 }
             }
