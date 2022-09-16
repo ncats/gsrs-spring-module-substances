@@ -27,6 +27,12 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.expanders.BasicRecordExpanderFactory;
+import gsrs.module.substance.scrubbers.SubstanceRecordScrubberFactory;
+import ix.ginas.exporters.DefaultSubstanceScrubberFactory;
+import ix.ginas.exporters.RecordExpander;
+import ix.ginas.exporters.RecordExpanderFactory;
+import ix.ginas.exporters.RecordScrubberFactory;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -1629,5 +1635,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
 
+    @Override
+    public RecordScrubberFactory<Substance> getScrubberFactory(){
+        return new SubstanceRecordScrubberFactory();
+    }
 
+    @Override
+    public RecordExpanderFactory<Substance> getExpanderFactory(){
+        return new BasicRecordExpanderFactory();
+    }
     }
