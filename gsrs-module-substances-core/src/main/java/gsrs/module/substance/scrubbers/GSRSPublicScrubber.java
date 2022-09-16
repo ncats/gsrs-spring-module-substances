@@ -8,6 +8,9 @@ import com.jayway.jsonpath.Predicate;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.Unchecked;
+import gsrs.module.substance.repository.SubstanceRepository;
+import ix.core.EntityFetcher;
+import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Note;
@@ -15,6 +18,7 @@ import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.File;
@@ -50,6 +54,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
     @Value("${gsrs.scrubber.access3}")
     private static String access3="$.relationships[?(@.access.length()>0)][?(@.type=='SUBSTANCE->SUB_CONCEPT')].access[?]";
+
+    @Autowired
+    private SubstanceRepository substanceRepository;
 
     JsonNode settingsNode;
 
@@ -150,6 +157,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
         //Delete all things which are marked protected
         dc.delete("$..[?(@.access.length()>0)]");
+        log.trace("delete of $..[?(@.access.length()>0)] succeeded");
 
         if(defprivate){
             dc.delete("$..properties");
@@ -510,7 +518,16 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         }
         Substance substance = (Substance)object;
         log.trace("cast to substance with UUID {}", substance.uuid.toString());
-        String substanceJson=substance.toFullJsonNode().toString();
+        String substanceJson;
+        try {
+            substanceJson = substance.toFullJsonNode().toString();
+        } catch (Exception ex){
+            log.error("Error retrieving substance!");
+            EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
+            Optional<Substance> substanceRefetch = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);
+            //Substance subRefetch=substanceRepository.getOne(substance.uuid);
+            substanceJson = substanceRefetch.get().toFullJsonNode().toString();
+        }
         log.trace("got json");
         String cleanJson= restrictedJSON( substanceJson);
         log.trace("cleaned JSON");
