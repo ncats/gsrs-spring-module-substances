@@ -156,6 +156,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
 
         //Delete all things which are marked protected
+        String debugLine = dc.read("$..[?(@.access.length()>0)]").toString();
         dc.delete("$..[?(@.access.length()>0)]");
         log.trace("delete of $..[?(@.access.length()>0)] succeeded");
 
@@ -522,15 +523,20 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         try {
             substanceJson = substance.toFullJsonNode().toString();
         } catch (Exception ex){
-            log.error("Error retrieving substance!");
+            log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
             Optional<Substance> substanceRefetch = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);
-            //Substance subRefetch=substanceRepository.getOne(substance.uuid);
             substanceJson = substanceRefetch.get().toFullJsonNode().toString();
         }
         log.trace("got json");
-        String cleanJson= restrictedJSON( substanceJson);
-        log.trace("cleaned JSON");
-        return Optional.of( SubstanceBuilder.from(cleanJson).build());
+        try {
+            String cleanJson= restrictedJSON( substanceJson);
+            log.trace("cleaned JSON");
+            return Optional.of( SubstanceBuilder.from(cleanJson).build());
+        }
+        catch (Exception ex) {
+            log.warn("error processing record; Will return empty", ex);
+        }
+        return Optional.empty();
     }
 }
