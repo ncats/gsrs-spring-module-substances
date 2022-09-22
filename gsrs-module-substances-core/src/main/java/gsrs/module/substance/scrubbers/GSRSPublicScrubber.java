@@ -14,21 +14,30 @@ import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
 import ix.ginas.exporters.ScrubberParameterSchema;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.GinasAccessReferenceControlled;
+import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Note;
+import ix.core.models.Group;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
+import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import scala.collection.SeqViewLike;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
+/*
+Note: as of 22 September, most of this class is commented out and a quick and dirty implementation is in place.
+This will change in the ensuing weeks
+ */
 @Slf4j
 public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
     private Set<String> groupsToInclude;
@@ -72,21 +81,94 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    public String restrictedJSONSimple(String s) {
+    private Substance scrubAccess(Substance starting) throws IOException {
+        System.out.println("scrubAccess");
+        Substance copy = starting;
+        List<GinasAccessReferenceControlled> children= copy.getAllChildrenCapableOfHavingReferences();
+        for (GinasAccessReferenceControlled child: children
+             ) {
+            Set<Group> cleanGroups= child.getAccess().stream()
+                    .filter(g->groupsToInclude.contains( g.name))
+                    .collect(Collectors.toSet());
+            child.setAccess(cleanGroups);
+        }
+        System.out.printf("output: %s\n", copy.toFullJsonNode().toString());
+        return copy;
+    }
 
+    private Substance scrubDates(Substance starting) throws IOException {
+        System.out.println("scrubDates");
+        Substance copy = starting;
+        copy.created=null;
+        copy.lastEdited=null;
+        /*List<GinasAccessReferenceControlled> children= copy.getAllChildrenCapableOfHavingReferences();
+        for (GinasAccessReferenceControlled child: children
+        ) {
+
+        }*/
+        System.out.printf("output: %s\n", copy.toFullJsonNode().toString());
+        return copy;
+    }
+
+    private Substance scrubApprovalId(Substance substance) {
+        String approvalId = substance.getApprovalID();
+        System.out.printf("in scrubApprovalId, approvalId: %s\n", approvalId);
+        if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCodeSystem()!= null
+                && this.scrubberSettings.getApprovalIdCodeSystem().length()>0
+                && this.scrubberSettings.getCopyApprovalIdToCode()) {
+            boolean foundCode =false;
+            Optional<Code> code=substance.codes.stream().filter(c->c.codeSystem.equals(this.scrubberSettings.getApprovalIdCodeSystem())).findFirst();
+            if( code.isPresent()) {
+                System.out.println("code already present");
+                code.get().setCode(approvalId);
+            }else{
+                System.out.println("will create code");
+                Code approvalIdCode= new Code();
+                approvalIdCode.codeSystem=scrubberSettings.getApprovalIdCodeSystem();
+                approvalIdCode.code=approvalId;
+                approvalIdCode.type="PRIMARY";
+                substance.addCode(approvalIdCode);
+            }
+        }
+        return substance;
+    }
+
+    public String restrictedJSONSimple(String s) {
+        System.out.println("starting restrictedJSONSimple 4");
         DocumentContext dc = JsonPath.parse(s);
+
+        Predicate expensivePredicate = new Predicate() {
+            public boolean apply(PredicateContext context) {
+                System.out.println("in original expensivePredicate");
+                String value = context.item(Map.class).get("price").toString();
+                return Float.valueOf(value) > 20.00;
+            }
+        };
+        Predicate expensivePredicate1 = new Predicate() {
+            public boolean apply(PredicateContext context) {
+                System.out.println("in expensivePredicate");
+                String accessData = context.item(Map.class).get("access").toString();
+                return accessData!=null && accessData.length()>0;
+            }
+        };
         Predicate accessPredicate = context -> {
             System.out.println("hello from predicate");
-            log.trace("hello from lambda");
-            Map ref=context.item(Map.class);
+            /*log.trace("hello from lambda");*/
+            /*Map ref=context.item(Map.class);
             List<String> access=(List<String>)ref.get("access");
             if(access.stream().anyMatch(ac->groupsToInclude.contains(ac))) {
                 return false;
-            }
+            }*/
             return true;
         };
+
         System.out.println("before delete");
-        //dc.delete("$..[?(@.access.length()>0)]", accessPredicate);
+/*        dc.delete("$[*]['access']", c->{
+            System.out.println("in predicate lambda");
+            return false;
+        });
+*/
+        dc.delete("$..[?(@.access.length()>0)]", expensivePredicate);
         System.out.println("after delete");
         return dc.jsonString();
     }
@@ -564,9 +646,29 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         }
         Substance substance = (Substance)object;
         log.trace("cast to substance with UUID {}", substance.uuid.toString());
+        Substance substanceToReturn = substance;
+        if( this.scrubberSettings.getRemoveAllLocked()){
+            substanceToReturn = scrubAccess(substanceToReturn);
+        }
+        if(this.scrubberSettings.getRemoveNotes()) {
+            substanceToReturn.notes.clear();
+        }
+        if(this.scrubberSettings.getRemoveChangeReason()) {
+            substanceToReturn.changeReason="";
+        }
+
+        if(this.scrubberSettings.getRemoveDates()){
+            substanceToReturn = scrubDates(substanceToReturn);
+        }
+
+        if(scrubberSettings.getApprovalIdCleanup()){
+            substanceToReturn= scrubApprovalId(substanceToReturn);
+        }
+        return Optional.of( scrubAccess(substance));/*
         String substanceJson;
         try {
             substanceJson = substance.toFullJsonNode().toString();
+            System.out.println(substanceJson);
         } catch (Exception ex){
             log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
@@ -582,6 +684,6 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         catch (Exception ex) {
             log.warn("error processing record; Will return empty", ex);
         }
-        return Optional.empty();
+        return Optional.empty();*/
     }
 }
