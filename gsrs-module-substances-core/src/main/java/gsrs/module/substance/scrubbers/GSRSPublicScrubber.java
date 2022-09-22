@@ -12,6 +12,7 @@ import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
+import ix.ginas.exporters.ScrubberParameterSchema;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
@@ -30,6 +31,16 @@ import java.util.stream.Stream;
 
 @Slf4j
 public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
+    private Set<String> groupsToInclude;
+    private ScrubberParameterSchema scrubberSettings;
+
+    public GSRSPublicScrubber( ScrubberParameterSchema scrubberSettings){
+        this.scrubberSettings =scrubberSettings;
+        groupsToInclude= Arrays.stream(Optional.ofNullable( scrubberSettings.getAccessGroupsToInclude()).orElse("").split("\n"))
+                .map(t->t.trim())
+                .filter(t->t.length()>0)
+                .collect(Collectors.toSet());
+    }
     //TODO remove all private access things
     //As transformer
     //1. Remove all things which have $..access!=[]
@@ -40,6 +51,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
     //NOT FINISHED!!!!
 
+    //get these things from factory... by way of parsing config object (deserialized from config file)
+    // add a constructor that gives a ScrubberParameterSchema object
+    //
     @Value("${gsrs.scrubber.ref.pattern1:$..references[?(@.docType=='BDNUM')].uuid}")
     private static String pattern1 ="$..references[?(@.docType=='BDNUM')].uuid";
 
@@ -58,17 +72,27 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    JsonNode settingsNode;
+    public String restrictedJSONSimple(String s) {
 
-    public JsonNode getSettingsNode() {
-        return settingsNode;
+        DocumentContext dc = JsonPath.parse(s);
+        Predicate accessPredicate = context -> {
+            System.out.println("hello from predicate");
+            log.trace("hello from lambda");
+            Map ref=context.item(Map.class);
+            List<String> access=(List<String>)ref.get("access");
+            if(access.stream().anyMatch(ac->groupsToInclude.contains(ac))) {
+                return false;
+            }
+            return true;
+        };
+        System.out.println("before delete");
+        //dc.delete("$..[?(@.access.length()>0)]", accessPredicate);
+        System.out.println("after delete");
+        return dc.jsonString();
     }
 
-    public void setSettingsNode(JsonNode settingsNode) {
-        this.settingsNode = settingsNode;
-    }
 
-    public static String restrictedJSON(String s){
+        public String restrictedJSON(String s){
 
         DocumentContext dc = JsonPath.parse(s);
 
@@ -119,6 +143,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
         dc.delete("$..notes[?(@.note)]");
 
+        /*
         dc.delete(access1, (r)->{
             //System.out.println("AM HURRAY!");
             //java.awt.Toolkit.getDefaultToolkit().beep();
@@ -138,6 +163,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
             //java.awt.Toolkit.getDefaultToolkit().beep();
             return true;
         });
+         */
 
 			/*
 			Stream.of("$..structure[?(@.references.length()==0)]",
@@ -153,12 +179,48 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 		      .isPresent();
 			*/
 
-
-
         //Delete all things which are marked protected
         String debugLine = dc.read("$..[?(@.access.length()>0)]").toString();
-        dc.delete("$..[?(@.access.length()>0)]");
-        log.trace("delete of $..[?(@.access.length()>0)] succeeded");
+        log.trace(debugLine);
+        System.out.println("before delete");
+        System.out.println(dc.jsonString());
+        Predicate accessPredicate = context -> {
+            System.out.println("hello from predicate");
+            log.trace("hello from lambda");
+            /*Map ref=context.item(Map.class);
+            List<String> access=(List<String>)ref.get("access");
+            if(access.stream().anyMatch(ac->groupsToInclude.contains(ac))) {
+                return false;
+            }
+            return true;*/
+            return false;
+        };
+        System.out.println("before read");
+        String predicated="";
+        //dc.read(s,accessPredicate);
+        //System.out.println("after predicate");
+        //System.out.println(predicated);
+        try {
+            dc.delete("$..[?(@.access.length()>0)]", accessPredicate);
+        } catch (Exception ex){
+            System.err.println("error: " + ex.getMessage());
+        }
+
+        return dc.jsonString();
+/*
+
+        dc.delete("$..[?(@.access.length()>0)]", js->{
+            System.out.println("hello from lambda");
+            log.trace("hello from lambda");
+            Map ref=js.item(Map.class);
+            List<String> access=(List<String>)ref.get("access");
+            if(access.stream().anyMatch(ac->groupsToInclude.contains(ac))) {
+                return false;
+            }
+            return true;
+        });
+        System.out.println("after delete");
+        System.out.println(dc.jsonString());
 
         if(defprivate){
             dc.delete("$..properties");
@@ -189,7 +251,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
                 Unchecked.uncheck(()->Thread.sleep(10_000));
                 try(PrintWriter pw = new PrintWriter(new FileOutputStream(
                         new File("ind-like-references.txt"),
-                        true /* append = true */))){
+                        true */
+/* append = true *//*
+))){
                     pw.println("IND-like citation: " + dc.read("$.uuid") + "\t" +dc.read("$.approvalID")+ "\t" + ref.get("docType")+ "\t" + ref.get("citation"));
 
                 }catch(Exception e){
@@ -214,7 +278,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
             try(PrintWriter pw = new PrintWriter(new FileOutputStream(
                     new File("unreferencedNames.txt"),
-                    true /* append = true */))){
+                    true */
+/* append = true *//*
+))){
 
                 Map m = f.item(Map.class);
                 String appid = "";
@@ -233,16 +299,11 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
             }catch(Exception e){
                 e.printStackTrace();
 
-                java.awt.Toolkit.getDefaultToolkit().beep();
-                Unchecked.uncheck(()->Thread.sleep(10_000));
+                //java.awt.Toolkit.getDefaultToolkit().beep();
+                //Unchecked.uncheck(()->Thread.sleep(10_000));
             }
             return true;
         });
-
-
-
-
-
 
 
         //TODO:
@@ -251,13 +312,6 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
         //dc.delete("$.references[?(@.uuid in ['" + probablyRemoveRset + "'])]");
         //dc.delete("$..references[?(@ in ['" + probablyRemoveRset + "'])]");
-
-
-
-
-
-
-
 
         Set<String> allUnderscores = new HashSet<String>();
 
@@ -288,12 +342,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         //TODO: probably add references for these?
         //System.out.println((Object)dc.read("$.names[?(@.references.length()==0)]"));
 
-
-
         Set<String> keepRefs = new LinkedHashSet<String>();
-
-
-
 
         //Look through names to decide if we should keep some references
 
@@ -303,7 +352,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
             try(PrintWriter pw = new PrintWriter(new FileOutputStream(
                     new File("unreferencedNames.txt"),
-                    true /* append = true */))){
+                    true */
+/* append = true *//*
+))){
 
                 Map m = f.item(Map.class);
 
@@ -326,8 +377,6 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
                     //not in the delete list
                     return false;
                 }
-
-
 
                 String appid = "";
                 String by=m.get("lastEditedBy")+"";
@@ -366,9 +415,6 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
                 pw.println(log);
                 System.out.println(log);
 
-
-
-
             }catch(Exception e){
                 e.printStackTrace();
                 java.awt.Toolkit.getDefaultToolkit().beep();
@@ -376,8 +422,6 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
             }
             return false;
         });
-
-
 
         probablyRemoveReferences.removeAll(keepRefs);
 
@@ -403,7 +447,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         if(isDefNoReferences){
             try(PrintWriter pw = new PrintWriter(new FileOutputStream(
                     new File("uniiDefinitions.txt"),
-                    true /* append = true */))){
+                    true */
+/* append = true *//*
+))){
 
                 //java.awt.Toolkit.getDefaultToolkit().beep();
                 //System.out.println(dc.read("$.approvalID").toString());
@@ -414,11 +460,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
             }
         }
 
-
         dc.delete("$.names[?(@.references.length()==0)][?]", (f)->{
             return true;
         });
-
 
         //TODO: remove lastEdited / lastEditedBy / deprecated=false
         dc.delete("$..lastEdited");
@@ -501,6 +545,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         }
 
         return dc.jsonString();
+    */
     }
 
     private static Map toMap(Note note){
@@ -530,7 +575,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         }
         log.trace("got json");
         try {
-            String cleanJson= restrictedJSON( substanceJson);
+            String cleanJson= restrictedJSONSimple( substanceJson);
             log.trace("cleaned JSON");
             return Optional.of( SubstanceBuilder.from(cleanJson).build());
         }
