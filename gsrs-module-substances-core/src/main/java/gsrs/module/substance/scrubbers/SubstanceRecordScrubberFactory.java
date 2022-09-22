@@ -13,10 +13,22 @@ public class SubstanceRecordScrubberFactory implements RecordScrubberFactory<Sub
     @Override
     public RecordScrubber<Substance> createScrubber(JsonNode settings) {
         ScrubberParameterSchema settingsObject = (new ObjectMapper()).convertValue(settings, ScrubberParameterSchema.class);
-        GSRSPublicScrubber scrubber = new GSRSPublicScrubber(settingsObject);
+        ScrubberParameterSchema scrubberSettings;
+        if( settingsObject !=null && settingsObject.getRemoveDates()!=null
+            && settingsObject.getRemoveAllLocked()!=null){
+            scrubberSettings=settingsObject;
+        } else {
+            scrubberSettings = new ScrubberParameterSchema();
+            scrubberSettings.setAccessGroupsToInclude("WHO");
+            scrubberSettings.setRemoveAllLocked(true);
+            scrubberSettings.setRemoveNotes(true);
+            scrubberSettings.setRemoveChangeReason(false);
+            scrubberSettings.setRemoveDates(false);
+            scrubberSettings.setApprovalIdCleanup(false);
+        }
 
+        GSRSPublicScrubber scrubber = new GSRSPublicScrubber(scrubberSettings);
         scrubber= AutowireHelper.getInstance().autowireAndProxy(scrubber);
-
         return scrubber;
     }
 }
