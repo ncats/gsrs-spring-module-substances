@@ -1,4 +1,4 @@
-package ix.ginas.models.utils;
+package gsrs.module.substance.utils;
 
 import java.util.Set;
 import org.jsoup.Jsoup;

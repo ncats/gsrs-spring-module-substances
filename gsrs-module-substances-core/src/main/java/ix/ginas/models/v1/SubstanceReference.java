@@ -1,11 +1,11 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import gsrs.module.substance.utils.HtmlUtil;
 import ix.core.models.Indexable;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.SubstanceReferenceEntityListener;
-import ix.ginas.models.utils.HtmlUtil;
 import ix.ginas.models.utils.JSONEntity;
 
 import javax.persistence.*;
