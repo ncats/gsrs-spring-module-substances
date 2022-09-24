@@ -152,24 +152,53 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
             }
         };
         Predicate accessPredicate = context -> {
-            System.out.println("hello from predicate");
+            System.out.println("hello from access predicate");
             /*log.trace("hello from lambda");*/
-            /*Map ref=context.item(Map.class);
-            List<String> access=(List<String>)ref.get("access");
-            if(access.stream().anyMatch(ac->groupsToInclude.contains(ac))) {
+            //Map ref=context.item(Map.class);
+            String accessGroup=context.item(String.class);
+            System.out.printf("got ref %s\n", accessGroup);
+            if(groupsToInclude.contains(accessGroup)) {
+                System.out.printf("predicate found a match to %s\n", String.join(",", accessGroup));
                 return false;
-            }*/
+            }
             return true;
         };
 
         System.out.println("before delete");
-/*        dc.delete("$[*]['access']", c->{
-            System.out.println("in predicate lambda");
-            return false;
-        });
-*/
-        dc.delete("$..[?(@.access.length()>0)]", expensivePredicate);
+        dc.delete("$..['access'][?]", accessPredicate);
+
         System.out.println("after delete");
+
+        if( scrubberSettings.getRemoveNotes()){
+            log.trace("deleting notes");
+            dc.delete("$..notes[?(@.note)]");
+        }
+
+        if( scrubberSettings.getRemoveChangeReason()){
+            dc.delete("$.changeReason");
+        }
+
+        if(scrubberSettings.getRemoveDates()) {
+            dc.delete("$..lastEdited");
+            dc.delete("$..created");
+        }
+        if(scrubberSettings.getRemoveCodesBySystem() && scrubberSettings.getCodeSystemsToRemove()!=null){
+            List<String> codeSystemsToRemove = Arrays.asList(scrubberSettings.getCodeSystemsToRemove().split("\n"));
+
+            Predicate codeSystemPredicate = context -> {
+                System.out.println("hello from codeSystemPredicate");
+                /*log.trace("hello from lambda");*/
+                String codeSystem=context.item(String.class);
+                System.out.printf("got codeSystem %s\n", codeSystem);
+                if(codeSystemsToRemove.contains(codeSystem)) {
+                    System.out.printf("predicate found a match to %s\n", String.join(",", codeSystem));
+                    return true;
+                }
+                return false;
+            };
+            dc.delete("$..codes[?(@.codeSystem)]",codeSystemPredicate);
+
+        }
         return dc.jsonString();
     }
 
@@ -646,7 +675,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         }
         Substance substance = (Substance)object;
         log.trace("cast to substance with UUID {}", substance.uuid.toString());
-        Substance substanceToReturn = substance;
+        /*Substance substanceToReturn = substance;
         if( this.scrubberSettings.getRemoveAllLocked()){
             substanceToReturn = scrubAccess(substanceToReturn);
         }
@@ -664,11 +693,12 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         if(scrubberSettings.getApprovalIdCleanup()){
             substanceToReturn= scrubApprovalId(substanceToReturn);
         }
-        return Optional.of( scrubAccess(substance));/*
+        return Optional.of( scrubAccess(substance));*/
+
         String substanceJson;
         try {
             substanceJson = substance.toFullJsonNode().toString();
-            System.out.println(substanceJson);
+            System.out.println("before");
         } catch (Exception ex){
             log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
@@ -678,12 +708,13 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         log.trace("got json");
         try {
             String cleanJson= restrictedJSONSimple( substanceJson);
-            log.trace("cleaned JSON");
+            System.out.println("cleaned JSON: ");
+            System.out.println(cleanJson);
             return Optional.of( SubstanceBuilder.from(cleanJson).build());
         }
         catch (Exception ex) {
             log.warn("error processing record; Will return empty", ex);
         }
-        return Optional.empty();*/
+        return Optional.empty();
     }
 }
