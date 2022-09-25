@@ -14,7 +14,7 @@ import org.jsoup.select.NodeVisitor;
  * Created by epuzanov on 7/25/22.
  */
 public final class HtmlUtil {
-    private static final Set<String> safetags = Set.of("b", "i", "small", "sub", "sup");
+    private static final Set<String> safetags = Set.of("i", "small", "sub", "sup");
     private static class TruncateVisitor implements NodeVisitor {
         private int maxLen = 0;
         private Element dst;
@@ -71,30 +71,6 @@ public final class HtmlUtil {
                 cur = cur.parent();
             }
         }
-    }
-
-    public static String replaceFromLists(String str, String[] searchList, String[] replaceList) {
-        if(str ==null){
-            return null;
-        }
-        StringBuilder sb = new StringBuilder(str);
-        for (int i = 0; i < searchList.length; i++)
-        {
-            String key = searchList[i];
-            if ("".equals(key)) {
-                continue;
-            }
-            String value = replaceList[i];
-
-            int start = sb.indexOf(key, 0);
-            while (start > -1) {
-                int end = start + key.length();
-                int nextSearchStart = start + value.length();
-                sb.replace(start, end, value);
-                start = sb.indexOf(key, nextSearchStart);
-            }
-        }
-        return sb.toString();
     }
 
     public static String truncate(String s, int len){
