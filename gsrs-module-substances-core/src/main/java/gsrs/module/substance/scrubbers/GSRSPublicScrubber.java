@@ -5,6 +5,7 @@ import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.Filter;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
+import com.jayway.jsonpath.internal.path.PredicateContextImpl;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.common.util.Unchecked;
@@ -137,37 +138,35 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         System.out.println("starting restrictedJSONSimple 4");
         DocumentContext dc = JsonPath.parse(s);
 
-        Predicate expensivePredicate = new Predicate() {
-            public boolean apply(PredicateContext context) {
-                System.out.println("in original expensivePredicate");
-                String value = context.item(Map.class).get("price").toString();
-                return Float.valueOf(value) > 20.00;
-            }
-        };
-        Predicate expensivePredicate1 = new Predicate() {
-            public boolean apply(PredicateContext context) {
-                System.out.println("in expensivePredicate");
-                String accessData = context.item(Map.class).get("access").toString();
-                return accessData!=null && accessData.length()>0;
-            }
-        };
         Predicate accessPredicate = context -> {
             System.out.println("hello from access predicate");
             /*log.trace("hello from lambda");*/
             //Map ref=context.item(Map.class);
-            String accessGroup=context.item(String.class);
-            System.out.printf("got ref %s\n", accessGroup);
-            if(groupsToInclude.contains(accessGroup)) {
-                System.out.printf("predicate found a match to %s\n", String.join(",", accessGroup));
+            Map<String,Object> properties=context.item(Map.class);
+            if( properties==null){
+                System.out.println("properties null");
                 return false;
+            }
+            JSONArray array = (JSONArray) properties.get("access");
+            if( array.size()==0){
+                System.out.println("access array empty!");
+                return false;
+            }
+            for(int i=0; i<array.size();i++){
+                String accessGroup = (String) array.get(i);
+                System.out.printf("got ref %s\n", accessGroup);
+                if(groupsToInclude.contains(accessGroup)) {
+                    System.out.printf("predicate found a match to %s\n", String.join(",", accessGroup));
+                    return false;
+                }
             }
             return true;
         };
 
-        System.out.println("before delete");
-        dc.delete("$..['access'][?]", accessPredicate);
+        System.out.println("before delete of access");
+        dc.delete("$..[?]['access']", accessPredicate);
 
-        System.out.println("after delete");
+        System.out.println("after delete of access");
 
         if( scrubberSettings.getRemoveNotes()){
             log.trace("deleting notes");
@@ -187,8 +186,8 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
 
             Predicate codeSystemPredicate = context -> {
                 System.out.println("hello from codeSystemPredicate");
-                /*log.trace("hello from lambda");*/
-                String codeSystem=context.item(String.class);
+                Map code=context.item(Map.class);
+                String codeSystem= (String)code.get("codeSystem");
                 System.out.printf("got codeSystem %s\n", codeSystem);
                 if(codeSystemsToRemove.contains(codeSystem)) {
                     System.out.printf("predicate found a match to %s\n", String.join(",", codeSystem));
@@ -196,8 +195,8 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
                 }
                 return false;
             };
-            dc.delete("$..codes[?(@.codeSystem)]",codeSystemPredicate);
-
+            System.out.println("Before code delete");
+            dc.delete("$['codes'][?]",codeSystemPredicate);
         }
         return dc.jsonString();
     }
@@ -699,6 +698,7 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         try {
             substanceJson = substance.toFullJsonNode().toString();
             System.out.println("before");
+            System.out.println(substanceJson);
         } catch (Exception ex){
             log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
