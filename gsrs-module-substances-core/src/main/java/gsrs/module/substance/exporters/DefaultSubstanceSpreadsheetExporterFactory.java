@@ -267,7 +267,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
          
              DEFAULT_RECIPE_MAP.put(DefaultColumns.SUBSTANCE_TYPE, SingleColumnValueRecipe.create(DefaultColumns.SUBSTANCE_TYPE, (s, cell) -> cell.writeString(s.substanceClass.name())));
 
-             //Lazy place to put new default columns
+             //Lazy place to put new basic columns
              DEFAULT_RECIPE_MAP.put(DefaultColumns.PROTEIN_SEQUENCE, createRestrictableRecipe(DefaultColumns.PROTEIN_SEQUENCE, (s,pubOnly, cell) -> {
                  if (s instanceof ProteinSubstance) {
                      ProteinSubstance proteinSubstance = (ProteinSubstance) s;

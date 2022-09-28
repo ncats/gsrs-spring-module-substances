@@ -1,37 +1,27 @@
-package gsrs.module.substance.scrubbers;
+package gsrs.module.substance.scrubbers.basic;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.Filter;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
-import com.jayway.jsonpath.internal.path.PredicateContextImpl;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.stream.StreamUtil;
-import gov.nih.ncats.common.util.Unchecked;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.EntityFetcher;
+import ix.core.models.Group;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
-import ix.ginas.exporters.ScrubberParameterSchema;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Note;
-import ix.core.models.Group;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
-import org.hibernate.tool.schema.internal.exec.ScriptTargetOutputToFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import scala.collection.SeqViewLike;
 
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -40,13 +30,18 @@ Note: as of 22 September, most of this class is commented out and a quick and di
 This will change in the ensuing weeks
  */
 @Slf4j
-public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
+public class BasicSubstanceScrubber<T> implements RecordScrubber<T> {
     private Set<String> groupsToInclude;
-    private ScrubberParameterSchema scrubberSettings;
+    private Set<String> groupsToRemove;
+    private BasicSubstanceScrubberParameters scrubberSettings;
 
-    public GSRSPublicScrubber( ScrubberParameterSchema scrubberSettings){
+    public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
         this.scrubberSettings =scrubberSettings;
         groupsToInclude= Arrays.stream(Optional.ofNullable( scrubberSettings.getAccessGroupsToInclude()).orElse("").split("\n"))
+                .map(t->t.trim())
+                .filter(t->t.length()>0)
+                .collect(Collectors.toSet());
+        groupsToRemove= Arrays.stream(Optional.ofNullable( scrubberSettings.getAccessGroupsToRemove()).orElse("").split("\n"))
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
@@ -102,11 +97,6 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         Substance copy = starting;
         copy.created=null;
         copy.lastEdited=null;
-        /*List<GinasAccessReferenceControlled> children= copy.getAllChildrenCapableOfHavingReferences();
-        for (GinasAccessReferenceControlled child: children
-        ) {
-
-        }*/
         System.out.printf("output: %s\n", copy.toFullJsonNode().toString());
         return copy;
     }
@@ -138,10 +128,9 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         System.out.println("starting restrictedJSONSimple 4");
         DocumentContext dc = JsonPath.parse(s);
 
-        Predicate accessPredicate = context -> {
-            System.out.println("hello from access predicate");
-            /*log.trace("hello from lambda");*/
-            //Map ref=context.item(Map.class);
+        Predicate objectWithAccessPredicate = context -> {
+            System.out.println("hello from objectWithAccessPredicate");
+            System.out.println("root: " + context.root().getClass().getName());
             Map<String,Object> properties=context.item(Map.class);
             if( properties==null){
                 System.out.println("properties null");
@@ -154,7 +143,11 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
             }
             for(int i=0; i<array.size();i++){
                 String accessGroup = (String) array.get(i);
-                System.out.printf("got ref %s\n", accessGroup);
+                System.out.printf("got access %s\n", accessGroup);
+                if( groupsToRemove.contains(accessGroup)) {
+                    System.out.printf("predicate found a remove match to %s\n", String.join(",", accessGroup));
+                    return true;//definitely delete an item that has a group on the 'remove' list
+                }
                 if(groupsToInclude.contains(accessGroup)) {
                     System.out.printf("predicate found a match to %s\n", String.join(",", accessGroup));
                     return false;
@@ -163,8 +156,32 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
             return true;
         };
 
+        System.out.println("before delete of data with access");
+        dc.delete("$..[?][@]['access']", objectWithAccessPredicate);
+        System.out.println("after delete of data with access");
+
+        Predicate accessPredicate = context -> {
+            System.out.println("hello from accessPredicate");
+            System.out.println("root: " + context.root().getClass().getName());
+            String accessGroup =context.item(String.class);
+
+            System.out.printf("got ref %s\n", accessGroup);
+            if( groupsToRemove.contains(accessGroup)) {
+                System.out.printf("predicate found a remove match to %s\n", String.join(",", accessGroup));
+                return true;//definitely delete an item that has a group on the 'remove' list
+            }
+            if(groupsToInclude.contains(accessGroup)) {
+                System.out.printf("predicate found a match to %s\n", String.join(",", accessGroup));
+                return false;
+            }
+            return true;
+        };
         System.out.println("before delete of access");
-        dc.delete("$..[?]['access']", accessPredicate);
+        try {
+            dc.delete("$..access[?]", accessPredicate);
+        }catch (Exception ex){
+            System.err.println("Error deleting access: " +ex.getMessage());
+        }
 
         System.out.println("after delete of access");
 
@@ -664,6 +681,34 @@ public class GSRSPublicScrubber<T> implements RecordScrubber<T> {
         return m;
     }
 
+    public String testAll(String json){
+        DocumentContext dc = JsonPath.parse(json);
+        //"$..[?]",
+        String output;
+        try{
+            output= dc.read("$..[?]['access']", (s)-> {
+
+                System.out.printf("item class: %s; root: %s\n", s.item().getClass().getName(), s.root().getClass().getName());
+                if( s.item().getClass().equals(JSONArray.class)){
+                    JSONArray array = s.item(JSONArray.class);
+                    if( array == null) {
+                        System.out.println("item null");
+                    } else {
+                        System.out.printf("array size: %d",array.size());
+                        array.forEach(a-> System.out.printf("element type: %s\n", a.getClass().getName()));
+                    }
+
+                }
+                System.out.println(s.item());
+                return true;
+            });
+        }
+        catch (Exception ex){
+            System.err.println("Error: " + ex.getMessage());
+            output="error!";
+        }
+        return output;
+    }
     @SneakyThrows
     @Override
     public Optional scrub(Object object) {

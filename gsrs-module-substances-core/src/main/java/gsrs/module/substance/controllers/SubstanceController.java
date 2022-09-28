@@ -27,10 +27,8 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
-import gsrs.module.substance.expanders.BasicRecordExpanderFactory;
-import gsrs.module.substance.scrubbers.SubstanceRecordScrubberFactory;
-import ix.ginas.exporters.DefaultSubstanceScrubberFactory;
-import ix.ginas.exporters.RecordExpander;
+import gsrs.module.substance.expanders.basic.BasicRecordExpanderFactory;
+import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
@@ -951,7 +949,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 .reduce(SimpleStandardizer::and).orElse(null);
 
         String mode = Optional.ofNullable(queryParameters.get("mode"))
-                .orElse("default");
+                .orElse("basic");
 
         boolean isQuery="query".equalsIgnoreCase(mode);
 
@@ -1138,7 +1136,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @GetGsrsRestApiMapping({"/render({ID})", "/render/{ID}"})
     public Object render(@PathVariable("ID") String idOrSmiles,
                          @RequestParam(value = "format", required = false, defaultValue = "svg") String format,
-                         //default stereo to empty string which spring returns as null Boolean object
+                         //basic stereo to empty string which spring returns as null Boolean object
                          @RequestParam(value = "version", required = false) String version,
                          @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                          @RequestParam(value = "context", required = false) String contextId,
@@ -1160,7 +1158,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
-                //if we're here, we have a substance but nothing to render return default for substance type
+                //if we're here, we have a substance but nothing to render return basic for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey());
             }
             input = s2r.getInput();
@@ -1637,7 +1635,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Override
     public RecordScrubberFactory<Substance> getScrubberFactory(){
-        return new SubstanceRecordScrubberFactory();
+        return new BasicSubstanceScrubberFactory();
     }
 
     @Override

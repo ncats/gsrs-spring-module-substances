@@ -1,19 +1,15 @@
-package gsrs.module.substance.expanders;
+package gsrs.module.substance.expanders.basic;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.ginas.exporters.RecordExpander;
-import ix.ginas.models.v1.Relationship;
-import ix.ginas.models.v1.StructurallyDiverseSubstance;
+import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
-import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 

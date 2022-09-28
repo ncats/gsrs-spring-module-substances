@@ -157,7 +157,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             // with the primary definition. This is a bad check for a lot of reasons but may work for right now
             
             // Tyler Oct 4 2021: It turns out setting the propagation settings helps isolate the session/
-            // transactions okay. We may need to default to things like this in the future:
+            // transactions okay. We may need to basic to things like this in the future:
             // transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             
             Relationship r1=s.getPrimaryDefinitionRelationships().get();

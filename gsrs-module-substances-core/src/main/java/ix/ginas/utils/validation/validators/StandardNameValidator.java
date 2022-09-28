@@ -135,7 +135,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                 if (!newlyStandardizedName.equals(name.stdName)) {
                     if (name.stdName.equals(oldStdNameGiven)) {
                         if (oldStdNameGiven.equals(oldStdNameCalc)) {
-                            //The old name was default standardized, so the new name should be too
+                            //The old name was basic standardized, so the new name should be too
                             //no need to warn.
                             name.stdName = newlyStandardizedName;
                             log.debug("set (previously standardized) stdName to " + name.stdName);

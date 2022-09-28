@@ -52,7 +52,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
             } else if (!withDisplay && withIdealized) {
                 GinasProcessingMessage gpmwarn = GinasProcessingMessage
                         .WARNING_MESSAGE(
-                                "No Display Structure found, default to using Idealized Structure")
+                                "No Display Structure found, basic to using Idealized Structure")
                         .appliableChange(true);
                 callback.addMessage(gpmwarn, ()-> {
                     try {
@@ -67,7 +67,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
             } else if (withDisplay && !withIdealized) {
                 GinasProcessingMessage gpmwarn = GinasProcessingMessage
                         .INFO_MESSAGE(
-                                "No Idealized Structure found, default to using Display Structure")
+                                "No Idealized Structure found, basic to using Display Structure")
                         .appliableChange(true);
                 callback.addMessage(gpmwarn, ()-> {
                             try {

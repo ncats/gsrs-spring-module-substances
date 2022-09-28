@@ -250,7 +250,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         List<String> expectedIds = Arrays.asList("302cedcc-895f-421c-acf4-1348bbdb31f4", "79dbcc59-e887-40d1-a0e3-074379b755e4",
                 "deb33005-e87e-4e7f-9704-d5b4c80d3023", "5b611b0d-b798-45ed-ba02-6f0a2f85986b",
                 "306d24b9-a6b8-4091-8024-02f9ec24b705", "90e9191d-1a81-4a53-b7ee-560bf9e68109");
-        Collections.sort(expectedIds);//use default sort order
+        Collections.sort(expectedIds);//use basic sort order
 
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -262,7 +262,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
-                .sorted() //use default sort order
+                .sorted() //use basic sort order
                 .collect(Collectors.toList());
 
         assertEquals(actualIds, expectedIds);
@@ -273,7 +273,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         String codeSystem1 = "DRUG BANK";
         String substanceClass = "protein";
         List<String> expectedIds = Arrays.asList("044e6d9c-37c0-42ac-848e-2e41937216b1", "deb33005-e87e-4e7f-9704-d5b4c80d3023");
-        Collections.sort(expectedIds);//use default sort order
+        Collections.sort(expectedIds);//use basic sort order
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
@@ -285,7 +285,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
-                .sorted() //use default sort order
+                .sorted() //use basic sort order
                 .collect(Collectors.toList());
         assertEquals(actualIds, expectedIds);
     }

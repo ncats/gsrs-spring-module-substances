@@ -367,7 +367,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
     /**
      * Get the structure of this Substance
-     * to Render.  By default returns `Optional.empty()`
+     * to Render.  By basic returns `Optional.empty()`
      * override this method.
      * @return
      */
@@ -1272,7 +1272,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
     /**
      * Create a new {@link Chemical} object for this Substance.
-     * By default, this will create an empty Chemical, subclasses
+     * By basic, this will create an empty Chemical, subclasses
      * that are actually Chemicals should override this method
      * to return something meaningful.
      *
