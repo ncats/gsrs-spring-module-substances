@@ -191,7 +191,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
             }
             // Check for duplicates in the record.
-            if(!stdNamesInRecord.add(name.stdName)){
+            if(!stdNamesInRecord.add(name.stdName.toUpperCase())){
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .ERROR_MESSAGE(
                                 "Standard Name '"
