@@ -1,8 +1,8 @@
 package ix.ginas.utils.validation.validators;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.utils.FDAFullNameStandardizer;
 import gsrs.module.substance.utils.FDAMinimumNameStandardizer;
 import gsrs.module.substance.utils.NameStandardizer;
@@ -12,7 +12,10 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
+import ix.ginas.utils.validation.ValidationUtils;
+import jdk.internal.loader.AbstractClassLoaderValue;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *
@@ -20,15 +23,18 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
+    @Autowired
+    private SubstanceRepository substanceRepository;
 
     public enum InvalidStdNameBehavior {
         warn,
         error
     }
 
+    // validateInPlace does a minimal replacement of 'awful' characters for the main 'name' field.
+    // validateFull does a more comprehensive set of standardizations for the standard name field.
     private NameStandardizer inPlaceStandardizer = new FDAMinimumNameStandardizer();
     private NameStandardizer fullStandardizer = new FDAFullNameStandardizer();
-    
 
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
@@ -43,6 +49,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     public void validateFull(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         Map<String, Name> oldNames = new HashMap<>();
+        Set<String> stdNamesInRecord = new HashSet<String>();
 
         //
         // The options here are:
@@ -183,6 +190,30 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                 }
 
             }
+            // Check for duplicates in the record.
+            if(!stdNamesInRecord.add(name.stdName)){
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .ERROR_MESSAGE(
+                                "Standard Name '"
+                                        + name.stdName
+                                        + "' is a duplicate standard name in the record.")
+                        .markPossibleDuplicate();
+                callback.addMessage(mes);
+            }
+
+
+            SubstanceRepository.SubstanceSummary s2 = checkStdNameForDuplicateInOtherRecords(objnew, name.stdName);
+            if (s2!=null) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .WARNING_MESSAGE(
+                                "Name '"
+                                        + name.stdName
+                                        + "' collides (possible duplicate) with existing standard name for substance:")
+                        . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
+                        ;
+                callback.addMessage(mes);
+            }
+
         });
     }
 
@@ -247,4 +278,25 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
         this.invalidStdNameBehavior = InvalidStdNameBehavior.valueOf(behavior);
     }
 
+    public SubstanceRepository.SubstanceSummary checkStdNameForDuplicateInOtherRecords(Substance s, String stdName) {
+        try {
+            List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_StdNameIgnoreCase(stdName);
+            if (sr!=null && !sr.isEmpty()) {
+                // Does the regular names validator need to add a loop like this instead of just checking the first row found?
+                // Couldn't the first row found be the same record?
+                SubstanceRepository.SubstanceSummary s2 = null;
+                Iterator<SubstanceRepository.SubstanceSummary> it = sr.iterator();
+                while(it.hasNext()){
+                    s2 = it.next();
+                    if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
+                        return s2;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // Should we be throwing an error?
+            log.warn("Problem checking for duplicate standard name.", e);
+        }
+        return null;
+    }
 }

@@ -52,6 +52,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     Optional<SubstanceSummary> findSummaryByUuid(UUID uuid);
 
     List<SubstanceSummary> findByNames_NameIgnoreCase(String name);
+    List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
+
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
