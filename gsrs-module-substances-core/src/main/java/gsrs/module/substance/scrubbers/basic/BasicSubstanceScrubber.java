@@ -51,7 +51,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     private BasicSubstanceScrubberParameters scrubberSettings;
 
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
-        this.scrubberSettings =scrubberSettings;
+        this.scrubberSettings = scrubberSettings;
         groupsToInclude= Arrays.stream(Optional.ofNullable( scrubberSettings.getAccessGroupsToInclude()).orElse("").split("\n"))
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
@@ -343,6 +343,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             // but we need to check.
             Substance snew = SubstanceBuilder.from(substanceJson).build();            
             scrubAccess(snew);
+            substanceJson = snew.toFullJsonNode().toString();
             String cleanJson= restrictedJSONSimple(substanceJson);
             snew = SubstanceBuilder.from(cleanJson).build();
             removeStaleReferences(snew);
