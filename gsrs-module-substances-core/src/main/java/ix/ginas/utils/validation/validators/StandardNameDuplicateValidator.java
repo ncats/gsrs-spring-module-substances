@@ -56,6 +56,7 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                     // System.out.println("language for " + name.stdName + "  = " + language);
                     Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k->new HashSet<>());
                     if(!stdNames.add(uppercaseStdName)){
+                        System.out.println("Found duplicate stdname in record!");
                         GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Standard Name '"
@@ -70,7 +71,7 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                 if (s2 != null) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .ERROR_MESSAGE(
-                                    "Name '"
+                                    "Standard name '"
                                             + name.stdName
                                             + "' collides (possible duplicate) with existing standard name for substance:")
                             .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
@@ -95,6 +96,8 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
             }
         } catch (Exception e) {
             // Should we be throwing an error?
+            System.out.println("Problem checking for duplicate standard name.");
+            e.printStackTrace();
             log.warn("Problem checking for duplicate standard name.", e);
         }
         return null;
