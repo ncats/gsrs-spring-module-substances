@@ -1,14 +1,7 @@
 package gsrs.module.substance.scrubbers.basic;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -29,7 +22,6 @@ import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
@@ -37,6 +29,8 @@ import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
+import scala.collection.immutable.List;
+
 /*
 Note: as of 22 September, most of this class is commented out and a quick and dirty implementation is in place.
 This will change in the ensuing weeks
@@ -52,18 +46,18 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
         this.scrubberSettings = scrubberSettings;
-        groupsToInclude= Arrays.stream(Optional.ofNullable( scrubberSettings.getAccessGroupsToInclude()).orElse("").split("\n"))
+        groupsToInclude= scrubberSettings.getAccessGroupsToInclude().stream()
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
         
         
         //TODO: not entirely sure when we'd use this
-        groupsToRemove= Arrays.stream(Optional.ofNullable( scrubberSettings.getAccessGroupsToRemove()).orElse("").split("\n"))
+        groupsToRemove= scrubberSettings.getAccessGroupsToRemove().stream()
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
-        codeSystemsToRemove = Arrays.stream(Optional.ofNullable( scrubberSettings.getCodeSystemsToRemove()).orElse("").split("\n"))
+        codeSystemsToRemove = scrubberSettings.getCodeSystemsToRemove().stream()
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
@@ -129,7 +123,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     	}
     	GinasAccessReferenceControlled finalMainDefinition = mainDefinition;    	
     	
-    	if(scrubberSettings.getRemoveAllLocked()) {
+    	if(scrubberSettings.isRemoveAllLocked()) {
     		forEachObjectWithAccess(starting, (bm)->{
     			
     			GinasAccessControlled b=bm;
@@ -155,7 +149,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     	}
     	
     	//remove all definitions if this setting is true
-    	if(isDefinitionScrubbed[0] && scrubberSettings.getRemoveScrubbedDefinitionalElementsEntirely()) {
+    	if(isDefinitionScrubbed[0] && scrubberSettings.isRemoveScrubbedDefinitionalElementsEntirely()) {
     		starting.properties.stream()
 					    		.filter(prop->prop.isDefining())
 					    		.forEach(p->{
@@ -170,11 +164,11 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     			});
     		}    		
     	}
-    	if(isDefinitionScrubbed[0] && scrubberSettings.getSetScrubbedDefinitionalElementsIncomplete()) {
+    	if(isDefinitionScrubbed[0] && scrubberSettings.isSetScrubbedDefinitionalElementsIncomplete()) {
     		starting.definitionLevel=SubstanceDefinitionLevel.INCOMPLETE;
     	}
     	
-       	if(isDefinitionScrubbed[0] && scrubberSettings.getConvertScrubbedDefinitionsToConcepts()) {
+       	if(isDefinitionScrubbed[0] && scrubberSettings.isConvertScrubbedDefinitionsToConcepts()) {
     		starting.substanceClass=SubstanceClass.concept;
     	}
        	
@@ -200,7 +194,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         System.out.printf("in scrubApprovalId, approvalId: %s\n", approvalId);
         if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCodeSystem()!= null
                 && this.scrubberSettings.getApprovalIdCodeSystem().length()>0
-                && this.scrubberSettings.getCopyApprovalIdToCode()) {
+                && this.scrubberSettings.isCopyApprovalIdToCode()) {
             boolean foundCode =false;
             Optional<Code> code=substance.codes.stream().filter(c->c.codeSystem.equals(this.scrubberSettings.getApprovalIdCodeSystem())).findFirst();
             if( code.isPresent()) {
@@ -222,7 +216,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         System.out.println("starting restrictedJSONSimple 4");
         DocumentContext dc = JsonPath.parse(s);
 
-        if( scrubberSettings.getRemoveNotes()){
+        if( scrubberSettings.isRemoveNotes()){
             log.trace("deleting notes");
             dc.delete("$['notes'][?]", (ctx)->{
             	Map code=ctx.item(Map.class);
@@ -234,16 +228,16 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             });
         }
 
-        if( scrubberSettings.getRemoveChangeReason()){
+        if( scrubberSettings.isRemoveChangeReason()){
             dc.delete("$.changeReason");
         }
 
-        if(scrubberSettings.getRemoveDates()) {
+        if(scrubberSettings.isRemoveDates()) {
             dc.delete("$..lastEdited");
             dc.delete("$..created");
         }
-        if(scrubberSettings.getAuditInformationCleanup()) {
-        	if(scrubberSettings.getDeidentifyAuditUser()) {
+        if(scrubberSettings.isAuditInformationCleanup()) {
+        	if(scrubberSettings.isDeidentifyAuditUser()) {
         		dc.delete("$..lastEditedBy");
         		dc.delete("$..createdBy");
         		dc.delete("$..approvedBy");
@@ -256,7 +250,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         	}
         }
         
-        if(scrubberSettings.getRemoveCodesBySystem() && !this.codeSystemsToRemove.isEmpty()){
+        if(scrubberSettings.isRemoveCodesBySystem() && !this.codeSystemsToRemove.isEmpty()){
             Predicate codeSystemPredicate = context -> {
                 System.out.println("hello from codeSystemPredicate");
                 Map code=context.item(Map.class);

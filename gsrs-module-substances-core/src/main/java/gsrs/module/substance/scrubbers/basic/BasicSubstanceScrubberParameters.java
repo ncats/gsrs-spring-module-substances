@@ -1,8 +1,11 @@
 package gsrs.module.substance.scrubbers.basic;
 
+import java.io.Serializable;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Generated;
+
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,13 +18,11 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  * Scrubber Parameters
  * <p>
  * Factors that control the behavior of a Java class that removes private parts of a data object before the object is shared
- *
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "removeDates",
         "deidentifyAuditUser",
-        "deidentifiedReferencePatterns",
         "accessGroupsToInclude",
         "accessGroupsToRemove",
         "removeElementsIfNoExportablePublicRef",
@@ -47,7 +48,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "newStatusValue",
         "AuditInformationCleanup",
         "newAuditorValue",
-        "removeAllEntryTimestamps",
         "scrubbedDefinitionHandling",
         "removeScrubbedDefinitionalElementsEntirely",
         "setScrubbedDefinitionalElementsIncomplete",
@@ -55,299 +55,216 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "addNoteToScrubbedDefinitions"
 })
 @Generated("jsonschema2pojo")
-public class BasicSubstanceScrubberParameters {
+public class BasicSubstanceScrubberParameters implements Serializable {
 
     /**
      * Remove Date
      * <p>
-     *
-     *
      */
     @JsonProperty("removeDates")
-    private boolean removeDates=false;
+    private boolean removeDates;
     /**
      * Deidentify Audit User
      * <p>
-     *
-     *
      */
     @JsonProperty("deidentifyAuditUser")
-    private boolean deidentifyAuditUser=false;
-    /**
-     * Deidentified Reference Patterns
-     * <p>
-     *
-     *
-     */
-    @JsonProperty("deidentifiedReferencePatterns")
-    private String deidentifiedReferencePatterns;
+    private boolean deidentifyAuditUser;
     /**
      * Access Groups to Include
      * <p>
-     *
-     *
      */
     @JsonProperty("accessGroupsToInclude")
-    private String accessGroupsToInclude;
+    private List<String> accessGroupsToInclude = null;
     /**
      * Access Groups to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("accessGroupsToRemove")
-    private String accessGroupsToRemove;
+    private List<String> accessGroupsToRemove = null;
     /**
      * Remove Elements if no exportable selected public domain reference
      * <p>
-     *
-     *
      */
     @JsonProperty("removeElementsIfNoExportablePublicRef")
     private String removeElementsIfNoExportablePublicRef;
     /**
      * Remove all Locked
      * <p>
-     *
-     *
      */
     @JsonProperty("removeAllLocked")
     private boolean removeAllLocked;
     /**
      * Remove Codes by System
      * <p>
-     *
-     *
      */
     @JsonProperty("removeCodesBySystem")
     private boolean removeCodesBySystem;
     /**
      * Code Systems to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("codeSystemsToRemove")
-    private String codeSystemsToRemove;
+    private List<String> codeSystemsToRemove = null;
     /**
      * Code Systems to Keep
      * <p>
-     *
-     *
      */
     @JsonProperty("codeSystemsToKeep")
-    private String codeSystemsToKeep;
+    private List<String> codeSystemsToKeep = null;
     /**
      * Remove References by Criteria
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesByCriteria")
     private boolean removeReferencesByCriteria;
     /**
      * Reference Types to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("referenceTypesToRemove")
-    private String referenceTypesToRemove;
+    private List<String> referenceTypesToRemove = null;
     /**
      * Citation Patterns to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("citationPatternsToRemove")
     private String citationPatternsToRemove;
     /**
      * Exclude Reference by Pattern
      * <p>
-     *
-     *
      */
     @JsonProperty("excludeReferenceByPattern")
     private boolean excludeReferenceByPattern;
     /**
      * Substance Reference Cleanup
      * <p>
-     *
-     *
      */
     @JsonProperty("substanceReferenceCleanup")
     private boolean substanceReferenceCleanup;
     /**
      * Remove References to Filtered Substances
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesToFilteredSubstances")
     private boolean removeReferencesToFilteredSubstances;
     /**
      * Remove References to Substances Non-Exported Definitions
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesToSubstancesNonExportedDefinitions")
     private boolean removeReferencesToSubstancesNonExportedDefinitions;
     /**
      * Remove Notes
      * <p>
-     *
-     *
      */
     @JsonProperty("removeNotes")
     private boolean removeNotes;
     /**
      * Remove Change Reason
      * <p>
-     *
-     *
      */
     @JsonProperty("removeChangeReason")
     private boolean removeChangeReason;
     /**
      * Approval Id clean-up
      * <p>
-     *
-     *
      */
     @JsonProperty("approvalIdCleanup")
     private boolean approvalIdCleanup;
     /**
      * Remove Approval Id
      * <p>
-     *
-     *
      */
     @JsonProperty("removeApprovalId")
     private boolean removeApprovalId;
     /**
      * Copy Approval Id to code if code not already present
      * <p>
-     *
-     *
      */
     @JsonProperty("copyApprovalIdToCode")
     private boolean copyApprovalIdToCode;
     /**
      * Remove Approval Id
      * <p>
-     *
-     *
      */
     @JsonProperty("approvalIdCodeSystem")
     private String approvalIdCodeSystem;
     /**
      * Regenerate UUIDs
      * <p>
-     *
-     *
      */
     @JsonProperty("regenerateUUIDs")
     private boolean regenerateUUIDs;
     /**
      * Change All Statuses
      * <p>
-     *
-     *
      */
     @JsonProperty("changeAllStatuses")
     private boolean changeAllStatuses;
     /**
      * New Status Value
      * <p>
-     *
-     *
      */
     @JsonProperty("newStatusValue")
     private String newStatusValue;
     /**
      * Audit Information clean-up
      * <p>
-     *
-     *
      */
     @JsonProperty("AuditInformationCleanup")
     private boolean auditInformationCleanup;
     /**
      * New Auditor Value
      * <p>
-     *
-     *
      */
     @JsonProperty("newAuditorValue")
     private String newAuditorValue;
     /**
-     * Remove all entry timestamps
-     * <p>
-     *
-     *
-     */
-    @JsonProperty("removeAllEntryTimestamps")
-    private boolean removeAllEntryTimestamps;
-    /**
      * Scrubbed Definition Handling
      * <p>
-     *
-     *
      */
     @JsonProperty("scrubbedDefinitionHandling")
     private boolean scrubbedDefinitionHandling;
     /**
      * Remove partially/fully scrubbed definitional records entirely
      * <p>
-     *
-     *
      */
     @JsonProperty("removeScrubbedDefinitionalElementsEntirely")
     private boolean removeScrubbedDefinitionalElementsEntirely;
     /**
      * Set partially/fully scrubbed definitional records to definitional level "Incomplete"
      * <p>
-     *
-     *
      */
     @JsonProperty("setScrubbedDefinitionalElementsIncomplete")
     private boolean setScrubbedDefinitionalElementsIncomplete;
     /**
      * Convert partially/fully scrubbed definitional records to "Concepts"
      * <p>
-     *
-     *
      */
     @JsonProperty("convertScrubbedDefinitionsToConcepts")
     private boolean convertScrubbedDefinitionsToConcepts;
     /**
      * add a note to partially/fully scrubbed definitional records
      * <p>
-     *
-     *
      */
     @JsonProperty("addNoteToScrubbedDefinitions")
     private String addNoteToScrubbedDefinitions;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private final static long serialVersionUID = 1893093356264778288L;
 
     /**
      * Remove Date
      * <p>
-     *
-     *
      */
     @JsonProperty("removeDates")
-    public boolean getRemoveDates() {
+    public boolean isRemoveDates() {
         return removeDates;
     }
 
     /**
      * Remove Date
      * <p>
-     *
-     *
      */
     @JsonProperty("removeDates")
     public void setRemoveDates(boolean removeDates) {
@@ -357,19 +274,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Deidentify Audit User
      * <p>
-     *
-     *
      */
     @JsonProperty("deidentifyAuditUser")
-    public boolean getDeidentifyAuditUser() {
+    public boolean isDeidentifyAuditUser() {
         return deidentifyAuditUser;
     }
 
     /**
      * Deidentify Audit User
      * <p>
-     *
-     *
      */
     @JsonProperty("deidentifyAuditUser")
     public void setDeidentifyAuditUser(boolean deidentifyAuditUser) {
@@ -377,76 +290,44 @@ public class BasicSubstanceScrubberParameters {
     }
 
     /**
-     * Deidentified Reference Patterns
-     * <p>
-     *
-     *
-     */
-    @JsonProperty("deidentifiedReferencePatterns")
-    public String getDeidentifiedReferencePatterns() {
-        return deidentifiedReferencePatterns;
-    }
-
-    /**
-     * Deidentified Reference Patterns
-     * <p>
-     *
-     *
-     */
-    @JsonProperty("deidentifiedReferencePatterns")
-    public void setDeidentifiedReferencePatterns(String deidentifiedReferencePatterns) {
-        this.deidentifiedReferencePatterns = deidentifiedReferencePatterns;
-    }
-
-    /**
      * Access Groups to Include
      * <p>
-     *
-     *
      */
     @JsonProperty("accessGroupsToInclude")
-    public String getAccessGroupsToInclude() {
+    public List<String> getAccessGroupsToInclude() {
         return accessGroupsToInclude;
     }
 
     /**
      * Access Groups to Include
      * <p>
-     *
-     *
      */
     @JsonProperty("accessGroupsToInclude")
-    public void setAccessGroupsToInclude(String accessGroupsToInclude) {
+    public void setAccessGroupsToInclude(List<String> accessGroupsToInclude) {
         this.accessGroupsToInclude = accessGroupsToInclude;
     }
 
     /**
      * Access Groups to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("accessGroupsToRemove")
-    public String getAccessGroupsToRemove() {
+    public List<String> getAccessGroupsToRemove() {
         return accessGroupsToRemove;
     }
 
     /**
      * Access Groups to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("accessGroupsToRemove")
-    public void setAccessGroupsToRemove(String accessGroupsToRemove) {
+    public void setAccessGroupsToRemove(List<String> accessGroupsToRemove) {
         this.accessGroupsToRemove = accessGroupsToRemove;
     }
 
     /**
      * Remove Elements if no exportable selected public domain reference
      * <p>
-     *
-     *
      */
     @JsonProperty("removeElementsIfNoExportablePublicRef")
     public String getRemoveElementsIfNoExportablePublicRef() {
@@ -456,8 +337,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove Elements if no exportable selected public domain reference
      * <p>
-     *
-     *
      */
     @JsonProperty("removeElementsIfNoExportablePublicRef")
     public void setRemoveElementsIfNoExportablePublicRef(String removeElementsIfNoExportablePublicRef) {
@@ -467,19 +346,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove all Locked
      * <p>
-     *
-     *
      */
     @JsonProperty("removeAllLocked")
-    public boolean getRemoveAllLocked() {
+    public boolean isRemoveAllLocked() {
         return removeAllLocked;
     }
 
     /**
      * Remove all Locked
      * <p>
-     *
-     *
      */
     @JsonProperty("removeAllLocked")
     public void setRemoveAllLocked(boolean removeAllLocked) {
@@ -489,19 +364,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove Codes by System
      * <p>
-     *
-     *
      */
     @JsonProperty("removeCodesBySystem")
-    public boolean getRemoveCodesBySystem() {
+    public boolean isRemoveCodesBySystem() {
         return removeCodesBySystem;
     }
 
     /**
      * Remove Codes by System
      * <p>
-     *
-     *
      */
     @JsonProperty("removeCodesBySystem")
     public void setRemoveCodesBySystem(boolean removeCodesBySystem) {
@@ -511,63 +382,51 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Code Systems to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("codeSystemsToRemove")
-    public String getCodeSystemsToRemove() {
+    public List<String> getCodeSystemsToRemove() {
         return codeSystemsToRemove;
     }
 
     /**
      * Code Systems to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("codeSystemsToRemove")
-    public void setCodeSystemsToRemove(String codeSystemsToRemove) {
+    public void setCodeSystemsToRemove(List<String> codeSystemsToRemove) {
         this.codeSystemsToRemove = codeSystemsToRemove;
     }
 
     /**
      * Code Systems to Keep
      * <p>
-     *
-     *
      */
     @JsonProperty("codeSystemsToKeep")
-    public String getCodeSystemsToKeep() {
+    public List<String> getCodeSystemsToKeep() {
         return codeSystemsToKeep;
     }
 
     /**
      * Code Systems to Keep
      * <p>
-     *
-     *
      */
     @JsonProperty("codeSystemsToKeep")
-    public void setCodeSystemsToKeep(String codeSystemsToKeep) {
+    public void setCodeSystemsToKeep(List<String> codeSystemsToKeep) {
         this.codeSystemsToKeep = codeSystemsToKeep;
     }
 
     /**
      * Remove References by Criteria
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesByCriteria")
-    public boolean getRemoveReferencesByCriteria() {
+    public boolean isRemoveReferencesByCriteria() {
         return removeReferencesByCriteria;
     }
 
     /**
      * Remove References by Criteria
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesByCriteria")
     public void setRemoveReferencesByCriteria(boolean removeReferencesByCriteria) {
@@ -577,30 +436,24 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Reference Types to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("referenceTypesToRemove")
-    public String getReferenceTypesToRemove() {
+    public List<String> getReferenceTypesToRemove() {
         return referenceTypesToRemove;
     }
 
     /**
      * Reference Types to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("referenceTypesToRemove")
-    public void setReferenceTypesToRemove(String referenceTypesToRemove) {
+    public void setReferenceTypesToRemove(List<String> referenceTypesToRemove) {
         this.referenceTypesToRemove = referenceTypesToRemove;
     }
 
     /**
      * Citation Patterns to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("citationPatternsToRemove")
     public String getCitationPatternsToRemove() {
@@ -610,8 +463,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Citation Patterns to Remove
      * <p>
-     *
-     *
      */
     @JsonProperty("citationPatternsToRemove")
     public void setCitationPatternsToRemove(String citationPatternsToRemove) {
@@ -621,19 +472,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Exclude Reference by Pattern
      * <p>
-     *
-     *
      */
     @JsonProperty("excludeReferenceByPattern")
-    public boolean getExcludeReferenceByPattern() {
+    public boolean isExcludeReferenceByPattern() {
         return excludeReferenceByPattern;
     }
 
     /**
      * Exclude Reference by Pattern
      * <p>
-     *
-     *
      */
     @JsonProperty("excludeReferenceByPattern")
     public void setExcludeReferenceByPattern(boolean excludeReferenceByPattern) {
@@ -643,19 +490,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Substance Reference Cleanup
      * <p>
-     *
-     *
      */
     @JsonProperty("substanceReferenceCleanup")
-    public boolean getSubstanceReferenceCleanup() {
+    public boolean isSubstanceReferenceCleanup() {
         return substanceReferenceCleanup;
     }
 
     /**
      * Substance Reference Cleanup
      * <p>
-     *
-     *
      */
     @JsonProperty("substanceReferenceCleanup")
     public void setSubstanceReferenceCleanup(boolean substanceReferenceCleanup) {
@@ -665,19 +508,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove References to Filtered Substances
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesToFilteredSubstances")
-    public boolean getRemoveReferencesToFilteredSubstances() {
+    public boolean isRemoveReferencesToFilteredSubstances() {
         return removeReferencesToFilteredSubstances;
     }
 
     /**
      * Remove References to Filtered Substances
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesToFilteredSubstances")
     public void setRemoveReferencesToFilteredSubstances(boolean removeReferencesToFilteredSubstances) {
@@ -687,19 +526,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove References to Substances Non-Exported Definitions
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesToSubstancesNonExportedDefinitions")
-    public boolean getRemoveReferencesToSubstancesNonExportedDefinitions() {
+    public boolean isRemoveReferencesToSubstancesNonExportedDefinitions() {
         return removeReferencesToSubstancesNonExportedDefinitions;
     }
 
     /**
      * Remove References to Substances Non-Exported Definitions
      * <p>
-     *
-     *
      */
     @JsonProperty("removeReferencesToSubstancesNonExportedDefinitions")
     public void setRemoveReferencesToSubstancesNonExportedDefinitions(boolean removeReferencesToSubstancesNonExportedDefinitions) {
@@ -709,19 +544,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove Notes
      * <p>
-     *
-     *
      */
     @JsonProperty("removeNotes")
-    public boolean getRemoveNotes() {
+    public boolean isRemoveNotes() {
         return removeNotes;
     }
 
     /**
      * Remove Notes
      * <p>
-     *
-     *
      */
     @JsonProperty("removeNotes")
     public void setRemoveNotes(boolean removeNotes) {
@@ -731,19 +562,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove Change Reason
      * <p>
-     *
-     *
      */
     @JsonProperty("removeChangeReason")
-    public boolean getRemoveChangeReason() {
+    public boolean isRemoveChangeReason() {
         return removeChangeReason;
     }
 
     /**
      * Remove Change Reason
      * <p>
-     *
-     *
      */
     @JsonProperty("removeChangeReason")
     public void setRemoveChangeReason(boolean removeChangeReason) {
@@ -753,19 +580,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Approval Id clean-up
      * <p>
-     *
-     *
      */
     @JsonProperty("approvalIdCleanup")
-    public boolean getApprovalIdCleanup() {
+    public boolean isApprovalIdCleanup() {
         return approvalIdCleanup;
     }
 
     /**
      * Approval Id clean-up
      * <p>
-     *
-     *
      */
     @JsonProperty("approvalIdCleanup")
     public void setApprovalIdCleanup(boolean approvalIdCleanup) {
@@ -775,19 +598,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove Approval Id
      * <p>
-     *
-     *
      */
     @JsonProperty("removeApprovalId")
-    public boolean getRemoveApprovalId() {
+    public boolean isRemoveApprovalId() {
         return removeApprovalId;
     }
 
     /**
      * Remove Approval Id
      * <p>
-     *
-     *
      */
     @JsonProperty("removeApprovalId")
     public void setRemoveApprovalId(boolean removeApprovalId) {
@@ -797,19 +616,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Copy Approval Id to code if code not already present
      * <p>
-     *
-     *
      */
     @JsonProperty("copyApprovalIdToCode")
-    public boolean getCopyApprovalIdToCode() {
+    public boolean isCopyApprovalIdToCode() {
         return copyApprovalIdToCode;
     }
 
     /**
      * Copy Approval Id to code if code not already present
      * <p>
-     *
-     *
      */
     @JsonProperty("copyApprovalIdToCode")
     public void setCopyApprovalIdToCode(boolean copyApprovalIdToCode) {
@@ -819,8 +634,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove Approval Id
      * <p>
-     *
-     *
      */
     @JsonProperty("approvalIdCodeSystem")
     public String getApprovalIdCodeSystem() {
@@ -830,8 +643,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove Approval Id
      * <p>
-     *
-     *
      */
     @JsonProperty("approvalIdCodeSystem")
     public void setApprovalIdCodeSystem(String approvalIdCodeSystem) {
@@ -841,19 +652,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Regenerate UUIDs
      * <p>
-     *
-     *
      */
     @JsonProperty("regenerateUUIDs")
-    public boolean getRegenerateUUIDs() {
+    public boolean isRegenerateUUIDs() {
         return regenerateUUIDs;
     }
 
     /**
      * Regenerate UUIDs
      * <p>
-     *
-     *
      */
     @JsonProperty("regenerateUUIDs")
     public void setRegenerateUUIDs(boolean regenerateUUIDs) {
@@ -863,19 +670,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Change All Statuses
      * <p>
-     *
-     *
      */
     @JsonProperty("changeAllStatuses")
-    public boolean getChangeAllStatuses() {
+    public boolean isChangeAllStatuses() {
         return changeAllStatuses;
     }
 
     /**
      * Change All Statuses
      * <p>
-     *
-     *
      */
     @JsonProperty("changeAllStatuses")
     public void setChangeAllStatuses(boolean changeAllStatuses) {
@@ -885,8 +688,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * New Status Value
      * <p>
-     *
-     *
      */
     @JsonProperty("newStatusValue")
     public String getNewStatusValue() {
@@ -896,8 +697,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * New Status Value
      * <p>
-     *
-     *
      */
     @JsonProperty("newStatusValue")
     public void setNewStatusValue(String newStatusValue) {
@@ -907,19 +706,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Audit Information clean-up
      * <p>
-     *
-     *
      */
     @JsonProperty("AuditInformationCleanup")
-    public boolean getAuditInformationCleanup() {
+    public boolean isAuditInformationCleanup() {
         return auditInformationCleanup;
     }
 
     /**
      * Audit Information clean-up
      * <p>
-     *
-     *
      */
     @JsonProperty("AuditInformationCleanup")
     public void setAuditInformationCleanup(boolean auditInformationCleanup) {
@@ -929,8 +724,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * New Auditor Value
      * <p>
-     *
-     *
      */
     @JsonProperty("newAuditorValue")
     public String getNewAuditorValue() {
@@ -940,8 +733,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * New Auditor Value
      * <p>
-     *
-     *
      */
     @JsonProperty("newAuditorValue")
     public void setNewAuditorValue(String newAuditorValue) {
@@ -949,43 +740,17 @@ public class BasicSubstanceScrubberParameters {
     }
 
     /**
-     * Remove all entry timestamps
-     * <p>
-     *
-     *
-     */
-    @JsonProperty("removeAllEntryTimestamps")
-    public boolean getRemoveAllEntryTimestamps() {
-        return removeAllEntryTimestamps;
-    }
-
-    /**
-     * Remove all entry timestamps
-     * <p>
-     *
-     *
-     */
-    @JsonProperty("removeAllEntryTimestamps")
-    public void setRemoveAllEntryTimestamps(boolean removeAllEntryTimestamps) {
-        this.removeAllEntryTimestamps = removeAllEntryTimestamps;
-    }
-
-    /**
      * Scrubbed Definition Handling
      * <p>
-     *
-     *
      */
     @JsonProperty("scrubbedDefinitionHandling")
-    public boolean getScrubbedDefinitionHandling() {
+    public boolean isScrubbedDefinitionHandling() {
         return scrubbedDefinitionHandling;
     }
 
     /**
      * Scrubbed Definition Handling
      * <p>
-     *
-     *
      */
     @JsonProperty("scrubbedDefinitionHandling")
     public void setScrubbedDefinitionHandling(boolean scrubbedDefinitionHandling) {
@@ -995,19 +760,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Remove partially/fully scrubbed definitional records entirely
      * <p>
-     *
-     *
      */
     @JsonProperty("removeScrubbedDefinitionalElementsEntirely")
-    public boolean getRemoveScrubbedDefinitionalElementsEntirely() {
+    public boolean isRemoveScrubbedDefinitionalElementsEntirely() {
         return removeScrubbedDefinitionalElementsEntirely;
     }
 
     /**
      * Remove partially/fully scrubbed definitional records entirely
      * <p>
-     *
-     *
      */
     @JsonProperty("removeScrubbedDefinitionalElementsEntirely")
     public void setRemoveScrubbedDefinitionalElementsEntirely(boolean removeScrubbedDefinitionalElementsEntirely) {
@@ -1017,19 +778,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Set partially/fully scrubbed definitional records to definitional level "Incomplete"
      * <p>
-     *
-     *
      */
     @JsonProperty("setScrubbedDefinitionalElementsIncomplete")
-    public boolean getSetScrubbedDefinitionalElementsIncomplete() {
+    public boolean isSetScrubbedDefinitionalElementsIncomplete() {
         return setScrubbedDefinitionalElementsIncomplete;
     }
 
     /**
      * Set partially/fully scrubbed definitional records to definitional level "Incomplete"
      * <p>
-     *
-     *
      */
     @JsonProperty("setScrubbedDefinitionalElementsIncomplete")
     public void setSetScrubbedDefinitionalElementsIncomplete(boolean setScrubbedDefinitionalElementsIncomplete) {
@@ -1039,19 +796,15 @@ public class BasicSubstanceScrubberParameters {
     /**
      * Convert partially/fully scrubbed definitional records to "Concepts"
      * <p>
-     *
-     *
      */
     @JsonProperty("convertScrubbedDefinitionsToConcepts")
-    public boolean getConvertScrubbedDefinitionsToConcepts() {
+    public boolean isConvertScrubbedDefinitionsToConcepts() {
         return convertScrubbedDefinitionsToConcepts;
     }
 
     /**
      * Convert partially/fully scrubbed definitional records to "Concepts"
      * <p>
-     *
-     *
      */
     @JsonProperty("convertScrubbedDefinitionsToConcepts")
     public void setConvertScrubbedDefinitionsToConcepts(boolean convertScrubbedDefinitionsToConcepts) {
@@ -1061,8 +814,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * add a note to partially/fully scrubbed definitional records
      * <p>
-     *
-     *
      */
     @JsonProperty("addNoteToScrubbedDefinitions")
     public String getAddNoteToScrubbedDefinitions() {
@@ -1072,8 +823,6 @@ public class BasicSubstanceScrubberParameters {
     /**
      * add a note to partially/fully scrubbed definitional records
      * <p>
-     *
-     *
      */
     @JsonProperty("addNoteToScrubbedDefinitions")
     public void setAddNoteToScrubbedDefinitions(String addNoteToScrubbedDefinitions) {

@@ -1,5 +1,6 @@
 package example.substance.export;
 
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,13 +65,13 @@ public class ExportConfigTest {
     @Test
     public void testScrubberSchema() throws JsonProcessingException {
         BasicSubstanceScrubberParameters schema = new BasicSubstanceScrubberParameters();
-        schema.setAccessGroupsToInclude("Center for top-secret research");
-        schema.setCodeSystemsToKeep("CAS\0aChemSpider");
+        schema.setAccessGroupsToInclude( Arrays.asList( "Center for top-secret research"));
+        schema.setCodeSystemsToKeep(Arrays.asList("CAS", "ChemSpider"));
         schema.setApprovalIdCodeSystem("Approval ID");
         schema.setChangeAllStatuses(false);
         schema.setDeidentifyAuditUser(false);
         schema.setRemoveReferencesByCriteria(true);
-        schema.setReferenceTypesToRemove("IND\0ANDA");
+        schema.setReferenceTypesToRemove( Arrays.asList("IND", "NDA"));
         ObjectMapper objectMapper = new ObjectMapper();
         String schemaString = objectMapper.writeValueAsString(schema);
         System.out.printf("schemaString: %s", schemaString);
