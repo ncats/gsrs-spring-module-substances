@@ -19,6 +19,10 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
     @Autowired
     private SubstanceRepository substanceRepository;
 
+    public void setSubstanceRepository(SubstanceRepository substanceRepository) {
+        this.substanceRepository = substanceRepository;
+    }
+
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
 
@@ -53,10 +57,8 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                 String uppercaseStdName = name.stdName.toUpperCase();
                 while(iter.hasNext()){
                     String language = iter.next().getValue();
-                    // System.out.println("language for " + name.stdName + "  = " + language);
                     Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k->new HashSet<>());
                     if(!stdNames.add(uppercaseStdName)){
-                        System.out.println("Found duplicate stdname in record!");
                         GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Standard Name '"
