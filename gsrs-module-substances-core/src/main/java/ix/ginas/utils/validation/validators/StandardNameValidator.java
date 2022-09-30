@@ -1,8 +1,8 @@
 package ix.ginas.utils.validation.validators;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
-import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.utils.FDAFullNameStandardizer;
 import gsrs.module.substance.utils.FDAMinimumNameStandardizer;
 import gsrs.module.substance.utils.NameStandardizer;
@@ -12,10 +12,7 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
-import ix.ginas.utils.validation.ValidationUtils;
-import jdk.internal.loader.AbstractClassLoaderValue;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *
@@ -23,18 +20,15 @@ import org.springframework.beans.factory.annotation.Autowired;
  */
 @Slf4j
 public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
-    @Autowired
-    private SubstanceRepository substanceRepository;
 
     public enum InvalidStdNameBehavior {
         warn,
         error
     }
 
-    // validateInPlace does a minimal replacement of 'awful' characters for the main 'name' field.
-    // validateFull does a more comprehensive set of standardizations for the standard name field.
     private NameStandardizer inPlaceStandardizer = new FDAMinimumNameStandardizer();
     private NameStandardizer fullStandardizer = new FDAFullNameStandardizer();
+
 
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
@@ -49,7 +43,6 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     public void validateFull(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         Map<String, Name> oldNames = new HashMap<>();
-        Set<String> stdNamesInRecord = new HashSet<String>();
 
         //
         // The options here are:
@@ -63,33 +56,33 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
         //       in which case, the stdName remains as provided
         //
         //  Then, on standardization:
-        //  A. If there is a null stdname: 
+        //  A. If there is a null stdname:
         //         generate an stdName.
         //  B. If there is a non-null stdName, it is the SAME stdName as the old
         //      stdName, AND standardizing the OLD name would yield the old
-        //      stdName: 
+        //      stdName:
         //         regenerate the stdName and DO NOT warn.
         //  C. If there is a non-null stdName, it is the SAME stdName as the old
         //      stdName, AND standardizing the OLD name would NOT yield the old
         //      stdName AND the new regular name is DIFFERENT than the old
-        //      regular name AND the provided stdName WAS ORIGINALLY null: 
+        //      regular name AND the provided stdName WAS ORIGINALLY null:
         //         regenerate the stdName but DO warn that it's being
         //         regenerated.
         //  D. If there is a non-null stdName, it is the SAME stdName as the old
         //      stdName, AND standardizing the OLD name would NOT yield the old
         //      stdName AND the new regular name is DIFFERENT than the old
-        //      regular name AND the provided stdName WAS originally NON-NULL: 
+        //      regular name AND the provided stdName WAS originally NON-NULL:
         //         keep provided stdName, but warn of discrepency and
         //         tell user to explicitly remove stdName to regenerate
         //  E. If there is a non-null stdName, it is the SAME stdName as the old
         //      stdName, AND standardizing the OLD name would NOT yield the old
         //      stdName AND the new regular name is the SAME as the old
-        //      regular name: 
+        //      regular name:
         //         keep the stdName provided and do not warn
         //  F. If there is a non-null stdName and it is NOT the same as
         //     the old stdName (or there is no old stdName):
         //          warn the user of the mismatch, KEEP PROVIDED stdName
-        //        
+        //
         if (objold != null) {
             objold.names.forEach(n -> {
                 oldNames.put(n.uuid.toString(), n);
@@ -190,34 +183,10 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                 }
 
             }
-            // Check for duplicates in the record.
-            if(!stdNamesInRecord.add(name.stdName.toUpperCase())){
-                GinasProcessingMessage mes = GinasProcessingMessage
-                        .ERROR_MESSAGE(
-                                "Standard Name '"
-                                        + name.stdName
-                                        + "' is a duplicate standard name in the record.")
-                        .markPossibleDuplicate();
-                callback.addMessage(mes);
-            }
-
-
-            SubstanceRepository.SubstanceSummary s2 = checkStdNameForDuplicateInOtherRecords(objnew, name.stdName);
-            if (s2!=null) {
-                GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(
-                                "Name '"
-                                        + name.stdName
-                                        + "' collides (possible duplicate) with existing standard name for substance:")
-                        . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
-                        ;
-                callback.addMessage(mes);
-            }
-
         });
     }
 
-    
+
     public void validateInPlace(Substance s, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         if (s == null) {
@@ -261,8 +230,8 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     public void setRegenerateNameValue(String regenerateNameValue) {
         this.regenerateNameValue = regenerateNameValue;
     }
-    
-    
+
+
     public void setInPlaceNameStandardizerClass(String standardizer) throws Exception{
         inPlaceStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
     }
@@ -278,25 +247,4 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
         this.invalidStdNameBehavior = InvalidStdNameBehavior.valueOf(behavior);
     }
 
-    public SubstanceRepository.SubstanceSummary checkStdNameForDuplicateInOtherRecords(Substance s, String stdName) {
-        try {
-            List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_StdNameIgnoreCase(stdName);
-            if (sr!=null && !sr.isEmpty()) {
-                // Does the regular names validator need to add a loop like this instead of just checking the first row found?
-                // Couldn't the first row found be the same record?
-                SubstanceRepository.SubstanceSummary s2 = null;
-                Iterator<SubstanceRepository.SubstanceSummary> it = sr.iterator();
-                while(it.hasNext()){
-                    s2 = it.next();
-                    if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
-                        return s2;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Should we be throwing an error?
-            log.warn("Problem checking for duplicate standard name.", e);
-        }
-        return null;
-    }
 }
