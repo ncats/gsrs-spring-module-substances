@@ -27,7 +27,8 @@ public class BasicSubstanceScrubberFactory implements RecordScrubberFactory<Subs
     private static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
         ObjectMapper mapper =new ObjectMapper();
         try {
-            return mapper.readTree(JSONSchema);
+            JsonNode schemaNode=mapper.readTree(JSONSchema);
+            return schemaNode;
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -71,9 +72,11 @@ public class BasicSubstanceScrubberFactory implements RecordScrubberFactory<Subs
 
     @SneakyThrows
     private static String getSchemaString() {
+        log.trace("starting getSchemaString");
         ClassPathResource fileResource = new ClassPathResource("schemas/scrubberSchema.json");
         byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
         String schemaString =new String(binaryData, StandardCharsets.UTF_8);
+        //log.trace("read schema:{}", schemaString);
         return schemaString;
     }
 }

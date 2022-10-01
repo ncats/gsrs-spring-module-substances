@@ -125,23 +125,6 @@
       },
       "CVDomain": "DOCUMENT_TYPE"
     },
-    "accessGroupsToInclude": {
-      "comments": "names of access groups to that will NOT be removed ",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "title": "Access Groups to Include",
-      "visibleIf": {
-        "removeAllLocked": [
-          true
-        ]
-      },
-      "widget": {
-        "id": "multi-select"
-      },
-      "CVDomain": "ACCESS_GROUP"
-    },
     "citationPatternsToRemove": {
       "comments": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
       "type": "string",
@@ -312,20 +295,26 @@
     }
   },
   "required": [],
-  "if": "removeCodesBySystem",
-  "then": {
-    "oneOf": [
-      [
-        "codeSystemsToRemove",
-        "codeSystemsToKeep"
-      ]
-    ]
-  },
-  "if": "removeAllLocked",
-  "then": {
-    "oneOf": [
-      "accessGroupsToInclude",
-      "accessGroupsToRemove"
-    ]
-  }
+  "constraints": [
+    {
+      "if": "removeCodesBySystem",
+      "then": {
+        "oneOf": [
+          [
+            "codeSystemsToRemove",
+            "codeSystemsToKeep"
+          ]
+        ]
+      }
+    },
+    {
+      "if": "removeAllLocked",
+      "then": {
+        "oneOf": [
+          "accessGroupsToInclude",
+          "accessGroupsToRemove"
+        ]
+      }
+    }
+  ]
 }

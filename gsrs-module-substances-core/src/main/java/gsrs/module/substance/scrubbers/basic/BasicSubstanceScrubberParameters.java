@@ -1,6 +1,5 @@
 package gsrs.module.substance.scrubbers.basic;
 
-import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +54,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "addNoteToScrubbedDefinitions"
 })
 @Generated("jsonschema2pojo")
-public class BasicSubstanceScrubberParameters implements Serializable {
+public class BasicSubstanceScrubberParameters {
 
     /**
      * Remove Date
@@ -251,7 +250,6 @@ public class BasicSubstanceScrubberParameters implements Serializable {
     private String addNoteToScrubbedDefinitions;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
-    private final static long serialVersionUID = 1893093356264778288L;
 
     /**
      * Remove Date
