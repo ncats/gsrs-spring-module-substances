@@ -3,10 +3,10 @@ package ix.ginas.utils.validation.validators;
 import java.util.HashMap;
 import java.util.Map;
 
-import gsrs.module.substance.utils.FDAFullNameStandardizer;
-import gsrs.module.substance.utils.FDAMinimumNameStandardizer;
-import gsrs.module.substance.utils.NameStandardizer;
-import gsrs.module.substance.utils.ReplacementResult;
+import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
+import gsrs.module.substance.standardizer.FDAMinimumNameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Name;

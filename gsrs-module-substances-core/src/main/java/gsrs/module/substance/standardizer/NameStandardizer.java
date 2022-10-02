@@ -1,4 +1,4 @@
-package gsrs.module.substance.utils;
+package gsrs.module.substance.standardizer;
 
 import java.text.Normalizer;
 import java.util.ArrayList;

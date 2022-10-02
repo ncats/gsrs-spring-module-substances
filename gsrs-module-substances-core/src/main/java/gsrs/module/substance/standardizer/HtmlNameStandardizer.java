@@ -1,5 +1,6 @@
-package gsrs.module.substance.utils;
+package gsrs.module.substance.standardizer;
 
+import gsrs.module.substance.utils.HtmlUtil;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
