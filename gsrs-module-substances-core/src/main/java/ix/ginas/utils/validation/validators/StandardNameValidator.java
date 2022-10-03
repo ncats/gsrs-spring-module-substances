@@ -3,9 +3,9 @@ package ix.ginas.utils.validation.validators;
 import java.util.HashMap;
 import java.util.Map;
 
-import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
-import gsrs.module.substance.standardizer.FDAMinimumNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
+import gsrs.module.substance.standardizer.StdNameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
@@ -13,6 +13,7 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *
@@ -21,19 +22,29 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
+    @Autowired
+    private NameStandardizerConfiguration nameStandardizerConfiguration;
+
+    @Autowired
+    private StdNameStandardizerConfiguration stdNameStandardizerConfiguration;
+
     public enum InvalidStdNameBehavior {
         warn,
         error
     }
 
-    private NameStandardizer inPlaceStandardizer = new FDAMinimumNameStandardizer();
-    private NameStandardizer fullStandardizer = new FDAFullNameStandardizer();
-    
+    private NameStandardizer inPlaceStandardizer;
+    private NameStandardizer fullStandardizer;
 
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
 
     private InvalidStdNameBehavior invalidStdNameBehavior= InvalidStdNameBehavior.error;
+
+    public StandardNameValidator() {
+        inPlaceStandardizer = nameStandardizerConfiguration.getNameStandardizer();
+        fullStandardizer = stdNameStandardizerConfiguration.getNameStandardizer();
+    }
 
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {

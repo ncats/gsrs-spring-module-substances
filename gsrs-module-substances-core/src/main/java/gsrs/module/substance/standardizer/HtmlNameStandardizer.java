@@ -3,16 +3,20 @@ package gsrs.module.substance.standardizer;
 import gsrs.module.substance.utils.HtmlUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.commons.lang3.StringUtils;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
  * @author Egor Puzanov
  */
+@Slf4j
 public class HtmlNameStandardizer extends AbstractNameStandardizer{
 
-    private static String[] utfStrings = {"\u00B9", "\u00B2", "\u00B3", "</sup><sup>", "</sub><sub>", "</i><i>"};
-    private static String[] htmlStrings = {"<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>", "", "", ""};
+    public Pattern[] search = {Pattern.compile("\\p{C}"), Pattern.compile("\\s{2,}"), Pattern.compile("\u00B9"), Pattern.compile("\u00B2"), Pattern.compile("\u00B3"), Pattern.compile("</sup><sup>"), Pattern.compile("</sub><sub>"), Pattern.compile("</i><i>")};
+    public String[] replace = {"", " ", "<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>", "", "", ""};
 
     public static ReplacementResult cleanHtml(String input) {
         List<ReplacementNote> notes = new ArrayList<>();
@@ -32,10 +36,8 @@ public class HtmlNameStandardizer extends AbstractNameStandardizer{
     public ReplacementResult standardize(String input) {
         ReplacementResult result = new ReplacementResult(input, new ArrayList<>());
         if (input != null && input.length() != 0) {
-            result.update(this.replaceRegex(result.getResult(), "\\p{C}", ""));
-            result.update(this.replaceRegex(result.getResult(), "\\s{2,}", " "));
-            result.update(this.replaceFromLists(result.getResult(), utfStrings, htmlStrings));
             result.update(this.cleanHtml(result.getResult()));
+            result.update(this.replaceRegexLists(result.getResult(), search, replace));
         }
         return result;
     }
