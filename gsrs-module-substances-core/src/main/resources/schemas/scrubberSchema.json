@@ -51,10 +51,24 @@
     },
     "removeElementsIfNoExportablePublicRef": {
       "comments": "elements to remove when they have no public references",
-      "type": "string",
+      "type": "boolean",
       "title": "Remove Elements if no exportable selected public domain reference",
       "visibleIf": {
         "removeAllLocked": [
+          true
+        ]
+      }
+    },
+    "elementsToRemove": {
+      "comments": "elements to remove when the substance has no public references",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["Names", "Codes", "Definition", "Notes", "Relationships", "Properties", "Modifications"]
+      },
+      "title": "Elements to remove",
+      "visibleIf": {
+        "removeElementsIfNoExportablePublicRef": [
           true
         ]
       }

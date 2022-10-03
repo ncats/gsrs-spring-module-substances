@@ -29,7 +29,6 @@ import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
-import scala.collection.immutable.List;
 
 /*
 Note: as of 22 September, most of this class is commented out and a quick and dirty implementation is in place.
@@ -42,22 +41,27 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 	private Set<String> groupsToInclude;
     private Set<String> groupsToRemove;
     private Set<String> codeSystemsToRemove;
+    private Set<String> codeSystemsToKeep;
     private BasicSubstanceScrubberParameters scrubberSettings;
 
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
         this.scrubberSettings = scrubberSettings;
-        groupsToInclude= scrubberSettings.getAccessGroupsToInclude().stream()
+        groupsToInclude= Optional.ofNullable(scrubberSettings.getAccessGroupsToInclude()).orElse(Collections.emptyList()).stream()
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
         
         
         //TODO: not entirely sure when we'd use this
-        groupsToRemove= scrubberSettings.getAccessGroupsToRemove().stream()
+        groupsToRemove= Optional.ofNullable(scrubberSettings.getAccessGroupsToRemove()).orElse(Collections.emptyList()).stream()
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
-        codeSystemsToRemove = scrubberSettings.getCodeSystemsToRemove().stream()
+        codeSystemsToRemove = Optional.ofNullable(scrubberSettings.getCodeSystemsToRemove()).orElse(Collections.emptyList()).stream()
+                .map(t->t.trim())
+                .filter(t->t.length()>0)
+                .collect(Collectors.toSet());
+        codeSystemsToKeep=Optional.ofNullable(scrubberSettings.getCodeSystemsToKeep()).orElse(Collections.emptyList()).stream()
                 .map(t->t.trim())
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
@@ -180,15 +184,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return starting;
     }
 
-    private Substance scrubDates(Substance starting) throws IOException {
-        System.out.println("scrubDates");
-        Substance copy = starting;
-        copy.created=null;
-        copy.lastEdited=null;
-        System.out.printf("output: %s\n", copy.toFullJsonNode().toString());
-        return copy;
-    }
-
     private Substance scrubApprovalId(Substance substance) {
         String approvalId = substance.getApprovalID();
         System.out.printf("in scrubApprovalId, approvalId: %s\n", approvalId);
@@ -250,19 +245,27 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         	}
         }
         
-        if(scrubberSettings.isRemoveCodesBySystem() && !this.codeSystemsToRemove.isEmpty()){
+        if(scrubberSettings.isRemoveCodesBySystem() && (!codeSystemsToRemove.isEmpty() || !codeSystemsToKeep.isEmpty())){
             Predicate codeSystemPredicate = context -> {
                 System.out.println("hello from codeSystemPredicate");
                 Map code=context.item(Map.class);
                 String codeSystem= (String)code.get("codeSystem");
                 System.out.printf("got codeSystem %s\n", codeSystem);
+                if( codeSystemsToKeep.size()>0) {
+                    if (codeSystemsToKeep.contains(codeSystem)) {
+                        log.trace("not going to delete code with system {}", codeSystem);
+                        return false;
+                    } else {
+                        return true;
+                    }
+                }
                 if(codeSystemsToRemove.contains(codeSystem)) {
-                    System.out.printf("predicate found a match to %s\n", String.join(",", codeSystem));
+                    log.trace("predicate found a match to {}", String.join(",", codeSystem));
                     return true;
                 }
                 return false;
             };
-            System.out.println("Before code delete");
+            log.trace("Before code delete");
             dc.delete("$['codes'][?]",codeSystemPredicate);
         }
         //TODO Keep list for codes?
@@ -310,7 +313,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     public Optional<Substance> scrub(Substance substance) {
         log.trace("starting in scrub");
        
-        log.trace("cast to substance with UUID {}", substance.uuid.toString());
+        log.trace("cast to substance with UUID {}", (substance.uuid==null) ? "null" : substance.uuid.toString());
 
         
         String substanceJson;

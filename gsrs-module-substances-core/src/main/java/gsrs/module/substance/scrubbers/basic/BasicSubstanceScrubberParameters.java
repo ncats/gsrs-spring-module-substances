@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "accessGroupsToInclude",
         "accessGroupsToRemove",
         "removeElementsIfNoExportablePublicRef",
+        "elementsToRemove",
         "removeAllLocked",
         "removeCodesBySystem",
         "codeSystemsToRemove",
@@ -85,7 +86,13 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("removeElementsIfNoExportablePublicRef")
-    private String removeElementsIfNoExportablePublicRef;
+    private boolean removeElementsIfNoExportablePublicRef;
+    /**
+     * Elements to remove
+     * <p>
+     */
+    @JsonProperty("elementsToRemove")
+    private List<String> elementsToRemove = null;
     /**
      * Remove all Locked
      * <p>
@@ -328,7 +335,7 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("removeElementsIfNoExportablePublicRef")
-    public String getRemoveElementsIfNoExportablePublicRef() {
+    public boolean isRemoveElementsIfNoExportablePublicRef() {
         return removeElementsIfNoExportablePublicRef;
     }
 
@@ -337,8 +344,26 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("removeElementsIfNoExportablePublicRef")
-    public void setRemoveElementsIfNoExportablePublicRef(String removeElementsIfNoExportablePublicRef) {
+    public void setRemoveElementsIfNoExportablePublicRef(boolean removeElementsIfNoExportablePublicRef) {
         this.removeElementsIfNoExportablePublicRef = removeElementsIfNoExportablePublicRef;
+    }
+
+    /**
+     * Elements to remove
+     * <p>
+     */
+    @JsonProperty("elementsToRemove")
+    public List<String> getElementsToRemove() {
+        return elementsToRemove;
+    }
+
+    /**
+     * Elements to remove
+     * <p>
+     */
+    @JsonProperty("elementsToRemove")
+    public void setElementsToRemove(List<String> elementsToRemove) {
+        this.elementsToRemove = elementsToRemove;
     }
 
     /**
