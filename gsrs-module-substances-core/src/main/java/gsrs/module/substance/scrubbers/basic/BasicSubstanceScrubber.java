@@ -3,10 +3,12 @@ package gsrs.module.substance.scrubbers.basic;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.Predicate;
 
 import gov.nih.ncats.common.stream.StreamUtil;
@@ -20,10 +22,7 @@ import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.Note;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
 import lombok.SneakyThrows;
@@ -108,9 +107,46 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     		o.setReferences(refs);
     		
     	});
-    	
     }
 
+    private void CleanUpReferences(Substance substance){
+        log.trace("starting CleanUpReferences");
+        if(!scrubberSettings.isRemoveReferencesByCriteria()){
+            return;
+        }
+        List<Pattern> patternsToCheck = Arrays.stream(Optional.ofNullable(scrubberSettings.getCitationPatternsToRemove()).orElse("")
+                        .split("\n"))
+                .map(s->Pattern.compile(s))
+                .collect(Collectors.toList());
+        log.trace("pattern total {}", patternsToCheck.size());
+
+        substance.getAllChildrenCapableOfHavingReferences().forEach(c->{
+            List<Reference> referencesToRemove= new ArrayList<>();
+            log.trace("looking at refs for {}", c.toString());
+            c.getReferencesAsUUIDs().forEach(r->{
+                Reference reference = substance.getReferenceByUUID(r.toString());
+                if(scrubberSettings.getReferenceTypesToRemove()!=null && !scrubberSettings.getReferenceTypesToRemove().isEmpty()) {
+                    if (scrubberSettings.getReferenceTypesToRemove().contains(reference.docType)) {
+                        referencesToRemove.add(reference);
+                        log.trace("Adding reference to deletion list: {}", r.toString());
+                    }
+                }
+                if(!patternsToCheck.isEmpty()){
+                    patternsToCheck.forEach(p->{
+                       if( p.matcher(reference.citation).matches()) {
+                            log.trace("adding reference with citation {} because it matches {}", reference.citation,
+                                    p.pattern());
+                            referencesToRemove.add(reference);
+                        }
+                    });
+                }
+            });
+            if(!referencesToRemove.isEmpty()) {
+                substance.references.removeAll(referencesToRemove);
+                log.trace("removed references");
+            }
+        });
+    }
 
     private Substance scrubAccess(Substance starting) throws IOException {
     	Set<Group> toDelete = new HashSet<>();
@@ -129,7 +165,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     	
     	if(scrubberSettings.isRemoveAllLocked()) {
     		forEachObjectWithAccess(starting, (bm)->{
-    			
+    			log.trace("examining object {}", bm.getClass().getName());
     			GinasAccessControlled b=bm;
     			Set<String> accessSet = b.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
     			//If it's not empty, remove everything UNLESS
@@ -150,6 +186,34 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     				}
     			}
     		});
+            if(scrubberSettings.isRemoveElementsIfNoExportablePublicRef() && scrubberSettings.getElementsToRemove().size()>0){
+                starting.getAllChildrenCapableOfHavingReferences().forEach(c->{
+                    if( isElementOnList(c, scrubberSettings.getElementsToRemove())){
+                        if( c.getReferencesAsUUIDs().stream().noneMatch(r-> {
+                            Reference ref = starting.getReferenceByUUID(r.toString());
+                            return (ref!=null && ref.publicDomain);
+                        })){
+                            log.trace("going to delete element {} ({}) because it has no public ref", c.getClass().getName(), c.toString());
+                            c.setAccess(toDelete);
+                        }
+                    }
+                    if(scrubberSettings.getElementsToRemove().contains("Definition")){
+                        if(starting instanceof GinasSubstanceDefinitionAccess) {
+                            GinasSubstanceDefinitionAccess definitionAccess = (GinasSubstanceDefinitionAccess)starting;
+                            GinasAccessReferenceControlled defining= definitionAccess.getDefinitionElement();
+                            if(defining.getReferencesAsUUIDs().stream().noneMatch(r->{
+                                Reference ref = starting.getReferenceByUUID(r.toString());
+                                return (ref!=null && ref.publicDomain);
+                            })){
+                                isDefinitionScrubbed[0]=true;
+                                //do we set it to concept here?
+                                //todo: find out if more is required
+                                log.info("definition to be scrubbed");
+                            }
+                        }
+                    }
+                });
+            }
     	}
     	
     	//remove all definitions if this setting is true
@@ -186,17 +250,17 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     private Substance scrubApprovalId(Substance substance) {
         String approvalId = substance.getApprovalID();
-        System.out.printf("in scrubApprovalId, approvalId: %s\n", approvalId);
+        log.trace("in scrubApprovalId, approvalId: {}", approvalId);
         if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCodeSystem()!= null
                 && this.scrubberSettings.getApprovalIdCodeSystem().length()>0
                 && this.scrubberSettings.isCopyApprovalIdToCode()) {
             boolean foundCode =false;
             Optional<Code> code=substance.codes.stream().filter(c->c.codeSystem.equals(this.scrubberSettings.getApprovalIdCodeSystem())).findFirst();
             if( code.isPresent()) {
-                System.out.println("code already present");
+                log.trace("code already present");
                 code.get().setCode(approvalId);
             }else{
-                System.out.println("will create code");
+                log.trace("will create code");
                 Code approvalIdCode= new Code();
                 approvalIdCode.codeSystem=scrubberSettings.getApprovalIdCodeSystem();
                 approvalIdCode.code=approvalId;
@@ -208,7 +272,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     }
 
     public String restrictedJSONSimple(String s) {
-        System.out.println("starting restrictedJSONSimple 4");
+        log.trace("starting restrictedJSONSimple 4");
         DocumentContext dc = JsonPath.parse(s);
 
         if( scrubberSettings.isRemoveNotes()){
@@ -247,10 +311,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         
         if(scrubberSettings.isRemoveCodesBySystem() && (!codeSystemsToRemove.isEmpty() || !codeSystemsToKeep.isEmpty())){
             Predicate codeSystemPredicate = context -> {
-                System.out.println("hello from codeSystemPredicate");
+                log.trace("hello from codeSystemPredicate");
                 Map code=context.item(Map.class);
                 String codeSystem= (String)code.get("codeSystem");
-                System.out.printf("got codeSystem %s\n", codeSystem);
+                log.trace("got codeSystem {}", codeSystem);
                 if( codeSystemsToKeep.size()>0) {
                     if (codeSystemsToKeep.contains(codeSystem)) {
                         log.trace("not going to delete code with system {}", codeSystem);
@@ -268,11 +332,9 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             log.trace("Before code delete");
             dc.delete("$['codes'][?]",codeSystemPredicate);
         }
-        //TODO Keep list for codes?
-        
+
+
         dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-        
-        
         
         return dc.jsonString();
     }
@@ -285,18 +347,18 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         try{
             output= dc.read("$..[?]['access']", (s)-> {
 
-                System.out.printf("item class: %s; root: %s\n", s.item().getClass().getName(), s.root().getClass().getName());
+                log.trace("item class: {}; root: {}", s.item().getClass().getName(), s.root().getClass().getName());
                 if( s.item().getClass().equals(JSONArray.class)){
                     JSONArray array = s.item(JSONArray.class);
                     if( array == null) {
-                        System.out.println("item null");
+                        log.trace("item null");
                     } else {
-                        System.out.printf("array size: %d",array.size());
-                        array.forEach(a-> System.out.printf("element type: %s\n", a.getClass().getName()));
+                        log.trace("array size: {}",array.size());
+                        array.forEach(a-> log.trace("element type: {}", a.getClass().getName()));
                     }
 
                 }
-                System.out.println(s.item());
+                //log.trace(s.item());
                 return true;
             });
         }
@@ -306,7 +368,34 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
         return output;
     }
-    
+
+    public boolean isElementOnList(Object object, List<String> approximateNames) {
+        String objectTypeNameish="";
+        String[] nameParts=object.getClass().getName().split("\\.");
+        String switchName=nameParts[nameParts.length-1].toUpperCase(Locale.ROOT);
+        switch (switchName){
+            case "NAME" :
+                objectTypeNameish  = "Names";
+                break;
+            case "CODE" :
+                objectTypeNameish  = "Codes";
+                break;
+            case "NOTE":
+                objectTypeNameish  = "Notes";
+                break;
+            case "RELATIONSHIP" :
+                objectTypeNameish="Relationships";
+                break;
+            case "PROPERTY" :
+                objectTypeNameish="Properties";
+                break;
+            case "MODIFICATION" :
+                objectTypeNameish="Modifications";
+                break;
+
+        }
+        return approximateNames.contains(objectTypeNameish);
+    }
     
     @SneakyThrows
     @Override
@@ -321,8 +410,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         	//just a force thing to fetch if needed
             substanceJson = substance.toFullJsonNode().toString();
 //            msub=substance;
-            System.out.println("before");
-            System.out.println(substanceJson);
+            log.trace("before");
+            log.trace(substanceJson);
         } catch (Exception ex){
             log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
@@ -331,9 +420,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             substanceJson = substanceRefetch.get().toFullJsonNode().toString();
         }
        
-        
-        
-        
+
         log.trace("got json");
         try {
         	 //TODO: confirm if this forces as a concept. It should not,
@@ -343,6 +430,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             substanceJson = snew.toFullJsonNode().toString();
             String cleanJson= restrictedJSONSimple(substanceJson);
             snew = SubstanceBuilder.from(cleanJson).build();
+            CleanUpReferences(snew);
             removeStaleReferences(snew);
             scrubApprovalId(snew);
             return Optional.ofNullable(snew);
@@ -354,6 +442,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     }
     
     public static void main(String[] args) {
-    	System.out.println("ASDASD");
+    	log.trace("main method");
     }
 }

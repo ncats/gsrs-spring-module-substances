@@ -123,7 +123,7 @@
       "type": "boolean"
     },
     "referenceTypesToRemove": {
-      "comments": "Document Types to look at.  When a Reference is of that document type, remove it",
+      "comments": "Document Types to look at. When a Reference is of that document type, remove it",
       "type": "array",
       "items": {
         "type": "string"
