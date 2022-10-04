@@ -16,22 +16,49 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @Slf4j
 public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Substance> {
+
+    // Please adjust test class if you change these message texts.
+    private final String DUPLICATE_IN_SAME_RECORD_MESSAGE = "Standard Name '%s' is a duplicate standard name in the same record.";
+    private final String DUPLICATE_IN_OTHER_RECORD_MESSAGE = "Standard Name '%s' collides (possible duplicate) with existssing standard name for other substance:";
+
     @Autowired
     private SubstanceRepository substanceRepository;
+
+
+    private boolean checkDuplicateInOtherRecord = true;
+    private boolean checkDuplicateInSameRecord = true;
+    private boolean onDuplicateInOtherRecordShowError = true;
+    private boolean onDuplicateInSameRecordShowError = false;
+
+    // User adds/edits standard name in substance record that has a duplicate standard name within
+    // the substance record and in the same language.
+    // ==> warning
+
+    // User adds/edits standard name in substance record that has a duplicate in another substance
+    // record ==> error
 
     public void setSubstanceRepository(SubstanceRepository substanceRepository) {
         this.substanceRepository = substanceRepository;
     }
 
+    public void setOnDuplicateInOtherRecordShowError(boolean onDuplicateInOtherRecordShowError) {
+        this.onDuplicateInOtherRecordShowError = onDuplicateInOtherRecordShowError;
+    }
+
+    public void setOnDuplicateInSameRecordShowError(boolean onDuplicateInSameRecordShowError) {
+        this.onDuplicateInSameRecordShowError = onDuplicateInSameRecordShowError;
+    }
+
+    public void setCheckDuplicateInOtherRecord(boolean checkDuplicateInOtherRecord) {
+        this.checkDuplicateInOtherRecord = checkDuplicateInOtherRecord;
+    }
+
+    public void setCheckDuplicateInSameRecord(boolean checkDuplicateInSameRecord) {
+        this.checkDuplicateInSameRecord = checkDuplicateInSameRecord;
+    }
+
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
-
-        // User adds/edits standard name in substance record that has a duplicate standard name within
-        // the substance record and in the same language.
-        // ==> warning
-
-        // User adds/edits standard name in substance record that has a duplicate in another substance
-        // record ==> error
 
         Map<String, Set<String>> stdNameSetByLanguage = new HashMap<>();
 
@@ -53,36 +80,45 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                 }
 
                 // Check for duplicates in the record.
-                Iterator<Keyword> iter = name.languages.iterator();
-                String uppercaseStdName = name.stdName.toUpperCase();
-                while(iter.hasNext()){
-                    String language = iter.next().getValue();
-                    Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k->new HashSet<>());
-                    if(!stdNames.add(uppercaseStdName)){
-                        GinasProcessingMessage mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Standard Name '"
-                                                + name.stdName
-                                                + "' is a duplicate standard name in the record.")
-                                .markPossibleDuplicate();
-                        callback.addMessage(mes);
+                if(checkDuplicateInSameRecord) {
+                    Iterator<Keyword> iter = name.languages.iterator();
+                    String uppercaseStdName = name.stdName.toUpperCase();
+                    while (iter.hasNext()) {
+                        String language = iter.next().getValue();
+                        Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
+                        if (!stdNames.add(uppercaseStdName)) {
+                            if (onDuplicateInSameRecordShowError) {
+                                GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
+                                mes.markPossibleDuplicate();
+                                callback.addMessage(mes);
+                            } else {
+                                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
+                                mes.markPossibleDuplicate();
+                                callback.addMessage(mes);
+                            }
+
+                        }
                     }
                 }
+                if(checkDuplicateInOtherRecord) {
+                    SubstanceRepository.SubstanceSummary s2 = checkStdNameForDuplicateInOtherRecords(objnew, name.stdName);
+                    if (s2 != null) {
+                        if (onDuplicateInOtherRecordShowError) {
+                            GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
+                            mes.addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                            callback.addMessage(mes);
+                        } else {
+                            GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
+                            mes.addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                            callback.addMessage(mes);
+                        }
 
-                SubstanceRepository.SubstanceSummary s2 = checkStdNameForDuplicateInOtherRecords(objnew, name.stdName);
-                if (s2 != null) {
-                    GinasProcessingMessage mes = GinasProcessingMessage
-                            .ERROR_MESSAGE(
-                                    "Standard name '"
-                                            + name.stdName
-                                            + "' collides (possible duplicate) with existing standard name for substance:")
-                            .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
-                    callback.addMessage(mes);
+                    }
                 }
-            }
+            } // if stdName not null
+
         });
     }
-
     public SubstanceRepository.SubstanceSummary checkStdNameForDuplicateInOtherRecords(Substance s, String stdName) {
         try {
             List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_StdNameIgnoreCase(stdName);

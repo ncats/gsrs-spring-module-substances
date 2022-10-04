@@ -81,17 +81,22 @@ public void runSetup() throws IOException {
                 substanceRepository.saveAndFlush(s2);
                 cache.clearCache();
 
-                // Searching/Finding on this!!
-                String testStdName = name2.stdName;
-
                 Assertions.assertEquals(substanceRepository.count(), 2);
+
+                // Searching/Finding on this!!
+                String testName = name2.name; // A
+                String testStdName = name2.stdName; // B
+
+                List<SubstanceRepository.SubstanceSummary> sslA = substanceRepository.findByNames_NameIgnoreCase(testName);
+                // This fails.
+                Assertions.assertEquals(sslA.size(), 1);
 
                 // This doesn't work for me in the test context.
                 // findByNames_StdNameIgnoreCase does seem to work as expected when
                 // testing from the frontend.
-                List<SubstanceRepository.SubstanceSummary> ssl = substanceRepository.findByNames_StdNameIgnoreCase(testStdName);
+                List<SubstanceRepository.SubstanceSummary> sslB = substanceRepository.findByNames_StdNameIgnoreCase(testStdName);
                 // This fails.
-                Assertions.assertEquals(ssl.size(), 2);
+                Assertions.assertEquals(sslB.size(), 2);
         }
 
         @Test
@@ -174,12 +179,13 @@ public void runSetup() throws IOException {
                 response.getValidationMessages().forEach(vm->{
                         log.trace( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
                 });
-                Assertions.assertTrue(response.getValidationMessages().get(0).getMessage().contains("collides (possible duplicate) with existing standard name for substance"));
+                Assertions.assertTrue(response.getValidationMessages().get(0).getMessage().contains("collides (possible duplicate) with existing standard name for other substance"));
         }
 
 
         @Test
-        public void testDuplicateInSameRecord() {
+        public void testDuplicateInSameRecordShowWarning() {
+                boolean showError = false;
                 Substance s1 = new Substance();
                 Name name1 = new Name();
                 name1.name ="TestSame1";
@@ -202,11 +208,49 @@ public void runSetup() throws IOException {
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
                 StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                validator.setCheckDuplicateInSameRecord(true);
+                validator.setOnDuplicateInSameRecordShowError(showError);
                 validator.setSubstanceRepository(substanceRepository);
                 ValidationResponse<Substance> response = validator.validate(s1, null);
                 response.getValidationMessages().forEach(vm->{
-                        log.trace( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
+                        Assertions.assertEquals(vm.getMessageType().toString(), "WARNING");
+                        Assertions.assertTrue(vm.getMessage().contains("duplicate standard name in the same record"));
                 });
-                Assertions.assertTrue(response.getValidationMessages().get(0).getMessage().contains("duplicate standard name in the record"));
         }
+
+        @Test
+        public void testDuplicateInSameRecordShowError() {
+                boolean showError = true;
+                Substance s1 = new Substance();
+                Name name1 = new Name();
+                name1.name ="TestSame1";
+                name1.stdName ="TestSame1 std";
+                if (name1.languages == null) {
+                        name1.languages = new EmbeddedKeywordList();
+                }
+                name1.languages.add(new Keyword("en"));
+                name1.languages.add(new Keyword("fr"));
+                s1.names.add(name1);
+                Name name2 = new Name();
+                name2.name ="TestSame2";
+                name2.stdName ="TestSame1 std";
+                if (name1.languages == null) {
+                        name1.languages = new EmbeddedKeywordList();
+                }
+                name2.languages.add(new Keyword("en"));
+                name2.languages.add(new Keyword("fr"));
+                s1.names.add(name2);
+                substanceRepository.saveAndFlush(s1);
+                cache.clearCache();
+                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                validator.setCheckDuplicateInSameRecord(true);
+                validator.setOnDuplicateInSameRecordShowError(showError);
+                validator.setSubstanceRepository(substanceRepository);
+                ValidationResponse<Substance> response = validator.validate(s1, null);
+                response.getValidationMessages().forEach(vm->{
+                        Assertions.assertEquals(vm.getMessageType().toString(), "ERROR");
+                        Assertions.assertTrue(vm.getMessage().contains("duplicate standard name in the same record"));
+                });
+        }
+
 }
