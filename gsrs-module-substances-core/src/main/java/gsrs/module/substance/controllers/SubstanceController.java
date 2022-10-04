@@ -82,6 +82,7 @@ import gsrs.module.substance.repository.SubunitRepository;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
@@ -124,8 +125,11 @@ import lombok.extern.slf4j.Slf4j;
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
-
-    @Override
+	
+	@Autowired 
+	private SubstanceMatchViewGenerator matchViewGenerator;
+	
+	@Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
 
         so= super.instrumentSearchOptions(so);
@@ -379,7 +383,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     private List<SubstanceHierarchyFinder.TreeNode2> makeJsonTreeForAPI(Substance sub) {
-
+    	
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.setReadOnly(true);
@@ -1501,7 +1505,5 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(newDisplay.size()==0)newDisplay=null;
         return newDisplay;
     }
-
-
 
     }
