@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.Predicate;
 
 import gov.nih.ncats.common.stream.StreamUtil;
@@ -18,10 +17,7 @@ import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
 import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.GinasAccessControlled;
-import ix.ginas.models.GinasAccessReferenceControlled;
-import ix.ginas.models.GinasCommonSubData;
-import ix.ginas.models.GinasSubstanceDefinitionAccess;
+import ix.ginas.models.*;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
@@ -114,11 +110,15 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         if(!scrubberSettings.isRemoveReferencesByCriteria()){
             return;
         }
-        List<Pattern> patternsToCheck = Arrays.stream(Optional.ofNullable(scrubberSettings.getCitationPatternsToRemove()).orElse("")
-                        .split("\n"))
-                .map(s->Pattern.compile(s))
-                .collect(Collectors.toList());
-        log.trace("pattern total {}", patternsToCheck.size());
+        List<Pattern> patternsToCheck = new ArrayList<>();
+        if(scrubberSettings.isExcludeReferenceByPattern() && scrubberSettings.getCitationPatternsToRemove()!=null) {
+            String[] patternArray=scrubberSettings.getCitationPatternsToRemove().split("\n");
+            log.trace("split array into {}", patternArray.length);
+            patternsToCheck.addAll( Arrays.stream(patternArray)
+                    .map(s ->Pattern.compile(s))
+                    .collect(Collectors.toList()));
+            log.trace("pattern total {} ",  patternsToCheck.size());
+        }
 
         substance.getAllChildrenCapableOfHavingReferences().forEach(c->{
             List<Reference> referencesToRemove= new ArrayList<>();
@@ -254,7 +254,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCodeSystem()!= null
                 && this.scrubberSettings.getApprovalIdCodeSystem().length()>0
                 && this.scrubberSettings.isCopyApprovalIdToCode()) {
-            boolean foundCode =false;
             Optional<Code> code=substance.codes.stream().filter(c->c.codeSystem.equals(this.scrubberSettings.getApprovalIdCodeSystem())).findFirst();
             if( code.isPresent()) {
                 log.trace("code already present");
@@ -267,6 +266,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 approvalIdCode.type="PRIMARY";
                 substance.addCode(approvalIdCode);
             }
+        }
+
+        if(scrubberSettings.isRemoveApprovalId()){
+            substance.approvalID=null;
         }
         return substance;
     }
@@ -369,34 +372,38 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return output;
     }
 
-    public boolean isElementOnList(Object object, List<String> approximateNames) {
-        String objectTypeNameish="";
+    public boolean isElementOnList(Object object, List<BasicSubstanceScrubberParameters.RemoveableElements> approximateNames) {
         String[] nameParts=object.getClass().getName().split("\\.");
         String switchName=nameParts[nameParts.length-1].toUpperCase(Locale.ROOT);
         switch (switchName){
             case "NAME" :
-                objectTypeNameish  = "Names";
-                break;
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NAMES);
             case "CODE" :
-                objectTypeNameish  = "Codes";
-                break;
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.CODES);
             case "NOTE":
-                objectTypeNameish  = "Notes";
-                break;
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NOTES);
             case "RELATIONSHIP" :
-                objectTypeNameish="Relationships";
-                break;
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.RELATIONSHIPS);
             case "PROPERTY" :
-                objectTypeNameish="Properties";
-                break;
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.PROPERTIES);
             case "MODIFICATION" :
-                objectTypeNameish="Modifications";
-                break;
-
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.MODIFICATIONS);
         }
-        return approximateNames.contains(objectTypeNameish);
+        return false;
     }
-    
+
+    private Substance reassignUuids(Substance substance) {
+        log.trace("starting reassignUuids");
+        substance.uuid=UUID.randomUUID();
+        substance.getAllChildrenCapableOfHavingReferences().stream()
+                .forEach(c-> {
+                    if (c instanceof GinasCommonData) {
+                        ((GinasCommonData) c).uuid = UUID.randomUUID();
+                    }
+                });
+        return substance;
+    }
+
     @SneakyThrows
     @Override
     public Optional<Substance> scrub(Substance substance) {
@@ -430,9 +437,20 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             substanceJson = snew.toFullJsonNode().toString();
             String cleanJson= restrictedJSONSimple(substanceJson);
             snew = SubstanceBuilder.from(cleanJson).build();
-            CleanUpReferences(snew);
+            if(scrubberSettings.isSubstanceReferenceCleanup()) {
+                CleanUpReferences(snew);
+            }
             removeStaleReferences(snew);
-            scrubApprovalId(snew);
+            if( scrubberSettings.isApprovalIdCleanup()) {
+                scrubApprovalId(snew);
+            }
+            if(scrubberSettings.isRegenerateUUIDs()){
+                snew = reassignUuids(snew);
+            }
+            if(scrubberSettings.isChangeAllStatuses() ) {
+                //even null works
+                snew.status=scrubberSettings.getNewStatusValue();
+            }
             return Optional.ofNullable(snew);
         }
         catch (Exception ex) {

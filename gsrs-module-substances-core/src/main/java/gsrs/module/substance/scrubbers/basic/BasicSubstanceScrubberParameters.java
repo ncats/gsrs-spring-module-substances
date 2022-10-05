@@ -7,10 +7,12 @@ import javax.annotation.Generated;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonValue;
 
 
 /**
@@ -20,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
+        "removeableElements",
         "removeDates",
         "deidentifyAuditUser",
         "accessGroupsToInclude",
@@ -57,6 +60,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @Generated("jsonschema2pojo")
 public class BasicSubstanceScrubberParameters {
 
+    @JsonProperty("removeableElements")
+    private BasicSubstanceScrubberParameters.RemoveableElements removeableElements;
     /**
      * Remove Date
      * <p>
@@ -92,7 +97,7 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("elementsToRemove")
-    private List<String> elementsToRemove = null;
+    private List<RemoveableElements> elementsToRemove = null;
     /**
      * Remove all Locked
      * <p>
@@ -258,6 +263,16 @@ public class BasicSubstanceScrubberParameters {
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
+    @JsonProperty("removeableElements")
+    public BasicSubstanceScrubberParameters.RemoveableElements getRemoveableElements() {
+        return removeableElements;
+    }
+
+    @JsonProperty("removeableElements")
+    public void setRemoveableElements(BasicSubstanceScrubberParameters.RemoveableElements removeableElements) {
+        this.removeableElements = removeableElements;
+    }
+
     /**
      * Remove Date
      * <p>
@@ -353,7 +368,7 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("elementsToRemove")
-    public List<String> getElementsToRemove() {
+    public List<RemoveableElements> getElementsToRemove() {
         return elementsToRemove;
     }
 
@@ -362,7 +377,7 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("elementsToRemove")
-    public void setElementsToRemove(List<String> elementsToRemove) {
+    public void setElementsToRemove(List<RemoveableElements> elementsToRemove) {
         this.elementsToRemove = elementsToRemove;
     }
 
@@ -860,6 +875,51 @@ public class BasicSubstanceScrubberParameters {
     @JsonAnySetter
     public void setAdditionalProperty(String name, Object value) {
         this.additionalProperties.put(name, value);
+    }
+
+    @Generated("jsonschema2pojo")
+    public enum RemoveableElements {
+
+        NAMES("Names"),
+        CODES("Codes"),
+        DEFINITION("Definition"),
+        NOTES("Notes"),
+        RELATIONSHIPS("Relationships"),
+        PROPERTIES("Properties"),
+        MODIFICATIONS("Modifications");
+        private final String value;
+        private final static Map<String, BasicSubstanceScrubberParameters.RemoveableElements> CONSTANTS = new HashMap<String, BasicSubstanceScrubberParameters.RemoveableElements>();
+
+        static {
+            for (BasicSubstanceScrubberParameters.RemoveableElements c : values()) {
+                CONSTANTS.put(c.value, c);
+            }
+        }
+
+        RemoveableElements(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return this.value;
+        }
+
+        @JsonValue
+        public String value() {
+            return this.value;
+        }
+
+        @JsonCreator
+        public static BasicSubstanceScrubberParameters.RemoveableElements fromValue(String value) {
+            BasicSubstanceScrubberParameters.RemoveableElements constant = CONSTANTS.get(value);
+            if (constant == null) {
+                throw new IllegalArgumentException(value);
+            } else {
+                return constant;
+            }
+        }
+
     }
 
 }

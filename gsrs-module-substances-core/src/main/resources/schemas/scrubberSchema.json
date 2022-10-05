@@ -5,6 +5,10 @@
   "description": "Factors that control the behavior of a Java class that removes private parts of a data object before the object is shared",
   "type": "object",
   "properties": {
+    "removeableElements" : {
+      "type" : "string",
+      "enum" : ["Names", "Codes", "Definition", "Notes", "Relationships", "Properties", "Modifications"]
+    },
     "removeDates": {
       "comments": "When true, remove all date fields from output",
       "type": "boolean",
@@ -63,8 +67,7 @@
       "comments": "elements to remove when the substance has no public references",
       "type": "array",
       "items": {
-        "type": "string",
-        "enum": ["Names", "Codes", "Definition", "Notes", "Relationships", "Properties", "Modifications"]
+        "type": "removeableElements"
       },
       "title": "Elements to remove",
       "visibleIf": {
@@ -245,7 +248,12 @@
     "newStatusValue": {
       "comments": "new string value to assign to all individual status fields throughout the object",
       "type": "string",
-      "title": "New Status Value"
+      "title": "New Status Value",
+      "visibleIf": {
+        "changeAllStatuses": [
+          true
+        ]
+      }
     },
     "AuditInformationCleanup": {
       "comments": "When true, apply succeeding criteria to audit fields",
