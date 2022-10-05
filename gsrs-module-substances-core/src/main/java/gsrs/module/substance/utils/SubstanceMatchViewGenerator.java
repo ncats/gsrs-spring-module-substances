@@ -31,7 +31,7 @@ public class SubstanceMatchViewGenerator implements MatchViewGenerator{
 			try {
 				Substance s = (Substance)EntityFetcher.of(key).call();
 				if(s.getDisplayName().isPresent()) {
-					builder.displayName(s.getDisplayName().get().toString());
+					builder.displayName(s.getDisplayName().get().name);
 				}
 				//todo: evaluate whether to use substance summary 
 				builder.displayCodeName(displayCodeName);
