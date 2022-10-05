@@ -38,6 +38,7 @@ import org.springframework.context.annotation.Import;
         ProcessingJobController.class, ProcessingJobEntityService.class,
         //used by bulk loader
         ConsoleFilterService.class,
+        SubstanceMatchViewGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class
