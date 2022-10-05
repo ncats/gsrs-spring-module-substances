@@ -12,7 +12,7 @@ public class SubstanceLegacySearchService extends LegacyGsrsSearchService<Substa
     @Autowired
     public SubstanceLegacySearchService(SubstanceRepository repository) {
     	//todo: make the "UNII" can be read from config file or other settings
-        super(Substance.class, repository, new SubstanceMatchViewGenerator("UNII"));
+        super(Substance.class, repository, new SubstanceMatchViewGenerator());
     }
 
 
