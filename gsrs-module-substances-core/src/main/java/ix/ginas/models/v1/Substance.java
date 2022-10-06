@@ -1008,6 +1008,16 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
                 }
             }
         }
+
+        if(properties!=null && !properties.isEmpty()) {
+            properties.forEach(p->{
+                if( p.isDefining()){
+                    if( p.getReferencedSubstance()!=null) {
+                        srefs.add(p.getReferencedSubstance());
+                    }
+                }
+            });
+        }
         return srefs;
     }
 

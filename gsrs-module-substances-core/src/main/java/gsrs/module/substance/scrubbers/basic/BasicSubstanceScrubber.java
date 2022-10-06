@@ -372,22 +372,22 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return output;
     }
 
-    public boolean isElementOnList(Object object, List<BasicSubstanceScrubberParameters.RemoveableElements> approximateNames) {
+    public boolean isElementOnList(Object object, List<String> approximateNames) {
         String[] nameParts=object.getClass().getName().split("\\.");
         String switchName=nameParts[nameParts.length-1].toUpperCase(Locale.ROOT);
         switch (switchName){
             case "NAME" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NAMES);
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NAMES.toString());
             case "CODE" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.CODES);
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.CODES.toString());
             case "NOTE":
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NOTES);
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NOTES.toString());
             case "RELATIONSHIP" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.RELATIONSHIPS);
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.RELATIONSHIPS.toString());
             case "PROPERTY" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.PROPERTIES);
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.PROPERTIES.toString());
             case "MODIFICATION" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.MODIFICATIONS);
+                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.MODIFICATIONS.toString());
         }
         return false;
     }

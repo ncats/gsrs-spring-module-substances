@@ -66,9 +66,16 @@
     "elementsToRemove": {
       "comments": "elements to remove when the substance has no public references",
       "type": "array",
-      "items": {
-        "type": "removeableElements"
-      },
+      "items":
+        [
+          "Names",
+          "Codes",
+          "Definition",
+          "Notes",
+          "Relationships",
+          "Properties",
+          "Modifications"
+        ],
       "title": "Elements to remove",
       "visibleIf": {
         "removeElementsIfNoExportablePublicRef": [

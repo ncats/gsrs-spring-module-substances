@@ -97,7 +97,7 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("elementsToRemove")
-    private List<RemoveableElements> elementsToRemove = null;
+    private List<String> elementsToRemove = null;
     /**
      * Remove all Locked
      * <p>
@@ -368,7 +368,7 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("elementsToRemove")
-    public List<RemoveableElements> getElementsToRemove() {
+    public List<String> getElementsToRemove() {
         return elementsToRemove;
     }
 
@@ -377,7 +377,7 @@ public class BasicSubstanceScrubberParameters {
      * <p>
      */
     @JsonProperty("elementsToRemove")
-    public void setElementsToRemove(List<RemoveableElements> elementsToRemove) {
+    public void setElementsToRemove(List<String> elementsToRemove) {
         this.elementsToRemove = elementsToRemove;
     }
 
@@ -887,7 +887,6 @@ public class BasicSubstanceScrubberParameters {
         RELATIONSHIPS("Relationships"),
         PROPERTIES("Properties"),
         MODIFICATIONS("Modifications");
-        private final String value;
         private final static Map<String, BasicSubstanceScrubberParameters.RemoveableElements> CONSTANTS = new HashMap<String, BasicSubstanceScrubberParameters.RemoveableElements>();
 
         static {
@@ -896,18 +895,10 @@ public class BasicSubstanceScrubberParameters {
             }
         }
 
+        private final String value;
+
         RemoveableElements(String value) {
             this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return this.value;
-        }
-
-        @JsonValue
-        public String value() {
-            return this.value;
         }
 
         @JsonCreator
@@ -920,6 +911,15 @@ public class BasicSubstanceScrubberParameters {
             }
         }
 
+        @Override
+        public String toString() {
+            return this.value;
+        }
+
+        @JsonValue
+        public String value() {
+            return this.value;
+        }
     }
 
 }
