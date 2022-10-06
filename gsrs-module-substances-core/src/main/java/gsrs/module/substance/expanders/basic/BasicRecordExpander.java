@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -27,9 +26,11 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
     @Autowired
     protected SubstanceEntityService substanceEntityService;
 
-    private boolean includeDefinitions = true;
-    private int generationsToExpand = 1;
+    private boolean includeDefinitionalItems = true;
+    private int definitionalGenerations = 1;
+    private int generationsToExpandRelated = 1;
     private boolean includeRelated = true;
+    private boolean includeModifyingItems  = true;
 
     public void applySettings(JsonNode settings) {
         if (!(settings instanceof ObjectNode)) {
@@ -37,14 +38,20 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
             return;
         }
         ObjectNode objectNode = (ObjectNode) settings;
-        if (objectNode.has("includeDefinitions")) {
-            includeDefinitions = objectNode.get("includeDefinitions").asBoolean();
+        if (objectNode.has("includeDefinitionalItems")) {
+            includeDefinitionalItems = objectNode.get("includeDefinitionalItems").asBoolean();
         }
-        if (objectNode.has("generationsToExpand")) {
-            generationsToExpand = objectNode.get("generationsToExpand").asInt();
+        if (objectNode.has("definitionalGenerations")) {
+            definitionalGenerations = objectNode.get("definitionalGenerations").asInt();
+        }
+        if (objectNode.has("generationsToExpandRelated")) {
+            generationsToExpandRelated = objectNode.get("generationsToExpandRelated").asInt();
         }
         if (objectNode.has("includeRelated")) {
             includeRelated = objectNode.get("includeRelated").asBoolean();
+        }
+        if(objectNode.has("includeModifyingItems")) {
+            includeModifyingItems = objectNode.get("includeModifyingItems").asBoolean();
         }
     }
 
@@ -53,7 +60,7 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
         log.trace("expandRecord with {}", substance.uuid.toString());
         Set<Substance> subs = new HashSet<>();
         subs.add(substance);
-        if (includeDefinitions) {
+        if (includeDefinitionalItems) {
             appendDefinitionalSubstances(substance, (s) -> {
                 if (subs.stream().noneMatch(s2 -> s2.getUuid().equals(s.getUuid()))) {
                     subs.add(s);
@@ -88,7 +95,7 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
                 referred =optionalSubstance.get();
                 //log.trace("accepting substance {}", referred.uuid.toString());
                 consumer.accept(referred);
-                if (generation < generationsToExpand) {
+                if (generation < definitionalGenerations) {
                     appendDefinitionalSubstances(referred, consumer, generation+1);
                 }
             }
@@ -98,7 +105,6 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
     private void appendRelatedSubstances(Substance substance, Consumer<Substance> consumer, int generation) {
         log.trace("starting in appendRelatedSubstances, generation: {}", generation);
         for (Relationship rel : substance.relationships) {
-
             if (rel.relatedSubstance != null && rel.relatedSubstance.refuuid != null) {
                 log.trace("looking for substance with UUID {}", rel.relatedSubstance.refuuid);
                 Substance relatedSubstance = substanceRepository.findBySubstanceReference(rel.relatedSubstance);
@@ -111,7 +117,7 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
                     }
                     relatedSubstance =optionalSubstance.get();
                     consumer.accept(relatedSubstance);
-                    if (generation < generationsToExpand) {
+                    if (generation < generationsToExpandRelated) {
                         appendRelatedSubstances(relatedSubstance, consumer, generation+1);
                     }
                 }
@@ -119,7 +125,7 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
                     log.warn("Error retrieving related substance with UUID {}", rel.relatedSubstance.refuuid);
                 }
             }
-            if( rel.mediatorSubstance!= null ){
+            if( includeModifyingItems && rel.mediatorSubstance!= null ){
                 Substance mediatorSubstance = substanceRepository.findBySubstanceReference (rel.mediatorSubstance);
                 if(mediatorSubstance!=null) {
                     log.trace("We have a mediator sub: {}", mediatorSubstance.uuid.toString());
@@ -130,15 +136,13 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
                     }
                     mediatorSubstance = optionalSubstance.get();
                     consumer.accept(mediatorSubstance);
-                    if (generation < generationsToExpand) {
+                    if (generation < generationsToExpandRelated) {
                         appendRelatedSubstances(mediatorSubstance, consumer, generation+1);
                     }
                 } else {
                     log.warn("Error retrieving related substance with UUID {}", rel.mediatorSubstance.refuuid);
                 }
-
             }
         }
-
     }
 }

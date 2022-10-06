@@ -77,8 +77,8 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions", true);
-        configurationNode.put("generationsToExpand", 1);
+        configurationNode.put("includeDefinitionalItems", true);
+        configurationNode.put("definitionalGenerations", 1);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(basicSubstanceId)).get();
 
@@ -97,8 +97,8 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions", true);
-        configurationNode.put("generationsToExpand", 1);
+        configurationNode.put("includeDefinitionalItems", true);
+        configurationNode.put("definitionalGenerations", 1);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(basicSubstanceId)).get();
 
@@ -120,8 +120,8 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions", true);
-        configurationNode.put("generationsToExpand", 2);
+        configurationNode.put("includeDefinitionalItems", true);
+        configurationNode.put("definitionalGenerations", 2);
         configurationNode.put("includeRelated", false);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(basicSubstanceId)).get();
@@ -144,8 +144,8 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions", true);
-        configurationNode.put("generationsToExpand", 1);
+        configurationNode.put("includeDefinitionalItems", true);
+        configurationNode.put("definitionalGenerations", 1);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(basicSubstanceId)).get();
 
@@ -163,9 +163,9 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions",false);
+        configurationNode.put("includeDefinitionalItems",false);
         configurationNode.put("includeRelated",true);
-        configurationNode.put("generationsToExpand",1);
+        configurationNode.put("generationsToExpandRelated",1);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(basicSubstanceId)).get();
 
@@ -186,12 +186,11 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions",false);
+        configurationNode.put("includeDefinitionalItems",false);
         configurationNode.put("includeRelated",true);
-        configurationNode.put("generationsToExpand",1);
+        configurationNode.put("generationsToExpandRelated",1);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(startingSubstanceId)).get();
-
         Stream<Substance> expanded = expander.expandRecord(startingMixture);
         List<Substance> fullExpanded = expanded.collect(Collectors.toList());
         Assertions.assertTrue(fullExpanded.stream().anyMatch(r->r.uuid.toString().equals(relatedId)));
@@ -207,9 +206,9 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions",false);
+        configurationNode.put("includeDefinitionalItems",false);
         configurationNode.put("includeRelated",true);
-        configurationNode.put("generationsToExpand",1);
+        configurationNode.put("generationsToExpandRelated",1);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(startingSubstanceId)).get();
 
@@ -230,9 +229,9 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions",false);
+        configurationNode.put("includeDefinitionalItems",false);
         configurationNode.put("includeRelated",true);
-        configurationNode.put("generationsToExpand",3);
+        configurationNode.put("generationsToExpandRelated",3);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(startingSubstanceId)).get();
 
@@ -255,9 +254,9 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         BasicRecordExpander expander = new BasicRecordExpander();
         expander = AutowireHelper.getInstance().autowireAndProxy(expander);
         ObjectNode configurationNode = JsonNodeFactory.instance.objectNode();
-        configurationNode.put("includeDefinitions",false);
+        configurationNode.put("includeDefinitionalItems",false);
         configurationNode.put("includeRelated",true);
-        configurationNode.put("generationsToExpand",4);
+        configurationNode.put("generationsToExpandRelated",4);
         expander.applySettings(configurationNode);
         Substance startingMixture = substanceEntityService.get(UUID.fromString(startingSubstanceId)).get();
 
