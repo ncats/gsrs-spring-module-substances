@@ -887,6 +887,7 @@ public class BasicSubstanceScrubberParameters {
         RELATIONSHIPS("Relationships"),
         PROPERTIES("Properties"),
         MODIFICATIONS("Modifications");
+        private final String value;
         private final static Map<String, BasicSubstanceScrubberParameters.RemoveableElements> CONSTANTS = new HashMap<String, BasicSubstanceScrubberParameters.RemoveableElements>();
 
         static {
@@ -895,10 +896,18 @@ public class BasicSubstanceScrubberParameters {
             }
         }
 
-        private final String value;
-
         RemoveableElements(String value) {
             this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return this.value;
+        }
+
+        @JsonValue
+        public String value() {
+            return this.value;
         }
 
         @JsonCreator
@@ -911,15 +920,6 @@ public class BasicSubstanceScrubberParameters {
             }
         }
 
-        @Override
-        public String toString() {
-            return this.value;
-        }
-
-        @JsonValue
-        public String value() {
-            return this.value;
-        }
     }
 
 }

@@ -5,9 +5,17 @@
   "description": "Factors that control the behavior of a Java class that removes private parts of a data object before the object is shared",
   "type": "object",
   "properties": {
-    "removeableElements" : {
-      "type" : "string",
-      "enum" : ["Names", "Codes", "Definition", "Notes", "Relationships", "Properties", "Modifications"]
+    "removeableElements": {
+      "type": "string",
+      "enum": [
+        "Names",
+        "Codes",
+        "Definition",
+        "Notes",
+        "Relationships",
+        "Properties",
+        "Modifications"
+      ]
     },
     "removeDates": {
       "comments": "When true, remove all date fields from output",
@@ -66,8 +74,8 @@
     "elementsToRemove": {
       "comments": "elements to remove when the substance has no public references",
       "type": "array",
-      "items":
-        [
+      "items": {
+        "options": [
           "Names",
           "Codes",
           "Definition",
@@ -75,7 +83,8 @@
           "Relationships",
           "Properties",
           "Modifications"
-        ],
+        ]
+      },
       "title": "Elements to remove",
       "visibleIf": {
         "removeElementsIfNoExportablePublicRef": [
