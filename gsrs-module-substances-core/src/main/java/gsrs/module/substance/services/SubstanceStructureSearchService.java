@@ -187,7 +187,7 @@ public class SubstanceStructureSearchService {
             if(order !=null) {
                 map.put("order", order);
             }
-            if(!field.trim().isEmpty()){
+            if(!field.trim().isEmpty()) {
                 map.put("field", field.trim());
             }
             map.put("cutoff", cutoff);

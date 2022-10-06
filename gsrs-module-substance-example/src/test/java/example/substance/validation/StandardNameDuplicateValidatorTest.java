@@ -1,5 +1,6 @@
 package example.substance.validation;
 
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Keyword;
 import ix.core.validator.ValidationResponse;
@@ -11,15 +12,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import gsrs.cache.GsrsCache;
-import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.TestIndexValueMakerFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
-import java.io.File;
+import org.springframework.transaction.PlatformTransactionManager;
 import java.io.IOException;
 import java.util.List;
 
@@ -27,14 +24,17 @@ import java.util.List;
 @Slf4j
 public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaEntityTest {
 
-// @Autowired
-// private SubstanceRepository substanceRepository;
+
+@Autowired
+private SubstanceLegacySearchService searchService;
+
+@Autowired
+private PlatformTransactionManager transactionManager;
+
 
 @Autowired
 private GsrsCache cache;
 
-@Autowired
-private TestIndexValueMakerFactory testIndexValueMakerFactory;
 
 @BeforeEach
 
@@ -51,6 +51,7 @@ public void runSetup() throws IOException {
         // loadGsrsFile(dataFile);
         // log.trace("loaded rep18 data file");
 }
+
 
         @Test
         public void testFindInRepository() {
@@ -89,14 +90,14 @@ public void runSetup() throws IOException {
 
                 List<SubstanceRepository.SubstanceSummary> sslA = substanceRepository.findByNames_NameIgnoreCase(testName);
                 // This fails.
-                Assertions.assertEquals(sslA.size(), 1);
+                Assertions.assertEquals(1, sslA.size());
 
                 // This doesn't work for me in the test context.
                 // findByNames_StdNameIgnoreCase does seem to work as expected when
                 // testing from the frontend.
                 List<SubstanceRepository.SubstanceSummary> sslB = substanceRepository.findByNames_StdNameIgnoreCase(testStdName);
                 // This fails.
-                Assertions.assertEquals(sslB.size(), 2);
+                Assertions.assertEquals(2, sslB.size());
         }
 
         @Test
@@ -198,7 +199,7 @@ public void runSetup() throws IOException {
                 s1.names.add(name1);
                 Name name2 = new Name();
                 name2.name ="TestSame2";
-                name2.stdName ="TestSame1 std";
+                name2.stdName ="TestSame1 std";  // 1 on purpose
                 if (name1.languages == null) {
                         name1.languages = new EmbeddedKeywordList();
                 }
@@ -211,11 +212,14 @@ public void runSetup() throws IOException {
                 validator.setCheckDuplicateInSameRecord(true);
                 validator.setOnDuplicateInSameRecordShowError(showError);
                 validator.setSubstanceRepository(substanceRepository);
+                validator.setTransactionManager(transactionManager);
+                validator.setSearchService(searchService);
                 ValidationResponse<Substance> response = validator.validate(s1, null);
-                response.getValidationMessages().forEach(vm->{
-                        Assertions.assertEquals(vm.getMessageType().toString(), "WARNING");
-                        Assertions.assertTrue(vm.getMessage().contains("duplicate standard name in the same record"));
-                });
+                long c = response.getValidationMessages().stream().filter(vm -> {
+return                        (vm.getMessageType().equals("WARNING") && vm.getMessage().contains(validator.getDUPLICATE_IN_SAME_RECORD_MESSAGE_TEST_FRAGMENT()));
+                }).count();
+                Assertions.assertEquals(1, c);
+
         }
 
         @Test
@@ -247,10 +251,10 @@ public void runSetup() throws IOException {
                 validator.setOnDuplicateInSameRecordShowError(showError);
                 validator.setSubstanceRepository(substanceRepository);
                 ValidationResponse<Substance> response = validator.validate(s1, null);
-                response.getValidationMessages().forEach(vm->{
-                        Assertions.assertEquals(vm.getMessageType().toString(), "ERROR");
-                        Assertions.assertTrue(vm.getMessage().contains("duplicate standard name in the same record"));
-                });
+                long c = response.getValidationMessages().stream().filter(vm -> {
+                        return (vm.getMessageType().equals("ERROR") && vm.getMessage().contains(validator.getDUPLICATE_IN_SAME_RECORD_MESSAGE_TEST_FRAGMENT()));
+                }).count();
+
         }
 
 }
