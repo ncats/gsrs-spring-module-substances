@@ -67,15 +67,13 @@ public class StandardNameDuplicateValidatorViaIndexerTest extends AbstractSubsta
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
         AutowireHelper.getInstance().autowire(hashIndexer);
         testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        {
-        ValidatorConfig config = new DefaultValidatorConfig();
-        // config.setValidatorClass(ChemicalValidator.class);
-        config.setNewObjClass(Substance.class);
-        factory.addValidator("substances", config);
-        }
-
-        File dataFile = new ClassPathResource(fileName).getFile();
-        // loadGsrsFile(dataFile);
+                {
+                        ValidatorConfig config = new DefaultValidatorConfig();
+                        config.setNewObjClass(Substance.class);
+                        factory.addValidator("substances", config);
+                }
+                        // File dataFile = new ClassPathResource(fileName).getFile();
+                        // loadGsrsFile(dataFile);
         }
 
         @Test
@@ -85,33 +83,40 @@ public class StandardNameDuplicateValidatorViaIndexerTest extends AbstractSubsta
                 validator.setSearchService(searchService);
                 validator.setSubstanceRepository(substanceRepository);
 
+                String template = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
+
                 Substance s1 = null;
                 Substance s2 = null;
-                // how to load substances with a preset uuid?
-                String id1 = "a7dcc059-7f47-4815-8444-2157381b8f17";
-                String id2 = "b7dcc059-7f47-4815-8444-2157381b8f18";
-                String name1 = "Test1";
-                String stdName1 = "Test1 Std";
-                String name2 = "Test2";
-                String stdName2 = "Test1 Std";  // The 1 is on purpose
 
-                String j1 = "{\"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME_1__\", \"stdName\": \"__STDNAME_1__\", \"references\": [\"__ID_1__\"]}], \"references\": [{\"uuid\": \"__ID_1__\", \"citation\": \"Some Citatation __NAME_1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
-                String j2 = "{\"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME_2__\", \"stdName\": \"__STDNAME_2__\", \"references\": [\"__ID_2__\"]}], \"references\": [{\"uuid\": \"__ID_2__\", \"citation\": \"Some Citatation __NAME_2__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
-                j1 = j1.replaceAll("__ID_1__", id1);
-                j2 = j2.replaceAll("__ID_2__", id2);
-                j1 = j1.replaceAll("__NAME_1__", name1);
-                j2 = j2.replaceAll("__NAME_2__", name2);
-                j1 = j1.replaceAll("__STDNAME_1__", stdName1);
-                j2 = j2.replaceAll("__STDNAME_2__", stdName2);
+                String j1 = template;
+                String subId_a = "25cc4754-ccf1-4db2-bb6a-367581fa17ea";
+                String refId1_a = "a7dcc059-7f47-4815-8444-2157381b8f17";
+                String name1_a = "Test1";
+                String stdName1_a = "Test1 Std";
+                j1 = j1.replaceAll("__UUID__", subId_a);
+                j1 = j1.replaceAll("__REFERENCE_ID1__", refId1_a);
+                j1 = j1.replaceAll("__NAME1__", name1_a);
+                j1 = j1.replaceAll("__STDNAME1__", stdName1_a);
+
+                String j2 = template;
+                String subId_b = "72c9ee92-8e97-4a19-b208-faf7739ad60d";
+                String refId1_b = "b7dcc059-7f47-4815-8444-2157381b8f18";
+                String name1_b = "Test2";
+                String stdName1_b = "Test1 Std";  // The 1 is on purpose
+                j2 = j2.replaceAll("__UUID__", subId_b);
+                j2 = j2.replaceAll("__REFERENCE_ID1__", refId1_b);
+                j2 = j2.replaceAll("__NAME1__", name1_b);
+                j2 = j2.replaceAll("__STDNAME1__", stdName1_b);
+
 
                 s1 = loadSubstanceFromJsonString(j1);
                 s2 = loadSubstanceFromJsonString(j2);
 
                 assertEquals(substanceRepository.count(), 2);
 
-                List<Substance> substances1 = validator.findIndexedSubstancesByStdName(stdName2);
+                List<Substance> substances1 = validator.findIndexedSubstancesByStdName(stdName1_b);
                 assertEquals(substances1.size(), 2);
-                Substance otherSubstance1 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName2);
+                Substance otherSubstance1 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
                 assertEquals(otherSubstance1.getUuid(), s1.getUuid());
 
                 String wontBeFound = "Strange thing";
@@ -130,24 +135,30 @@ public class StandardNameDuplicateValidatorViaIndexerTest extends AbstractSubsta
                 validator.setCheckDuplicateInOtherRecord(true);
                 validator.setOnDuplicateInOtherRecordShowError(true);
 
+                String template = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
+
                 Substance s1 = null;
                 Substance s2 = null;
-                // how to load substances with a preset uuid?
-                String id1 = "a7dcc059-7f47-4815-8444-2157381b8f17";
-                String id2 = "b7dcc059-7f47-4815-8444-2157381b8f18";
-                String name1 = "Test1";
-                String stdName1 = "Test1 Std";
-                String name2 = "Test2";
-                String stdName2 = "Test1 Std";  // The 1 is on purpose
 
-                String j1 = "{\"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME_1__\", \"stdName\": \"__STDNAME_1__\", \"references\": [\"__ID_1__\"]}], \"references\": [{\"uuid\": \"__ID_1__\", \"citation\": \"Some Citatation __NAME_1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
-                String j2 = "{\"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME_2__\", \"stdName\": \"__STDNAME_2__\", \"references\": [\"__ID_2__\"]}], \"references\": [{\"uuid\": \"__ID_2__\", \"citation\": \"Some Citatation __NAME_2__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
-                j1 = j1.replaceAll("__ID_1__", id1);
-                j2 = j2.replaceAll("__ID_2__", id2);
-                j1 = j1.replaceAll("__NAME_1__", name1);
-                j2 = j2.replaceAll("__NAME_2__", name2);
-                j1 = j1.replaceAll("__STDNAME_1__", stdName1);
-                j2 = j2.replaceAll("__STDNAME_2__", stdName2);
+                String j1 = template;
+                String subId_a = "25cc4754-ccf1-4db2-bb6a-367581fa17ea";
+                String refId1_a = "a7dcc059-7f47-4815-8444-2157381b8f17";
+                String name1_a = "Test1";
+                String stdName1_a = "Test1 Std";
+                j1 = j1.replaceAll("__UUID__", subId_a);
+                j1 = j1.replaceAll("__REFERENCE_ID1__", refId1_a);
+                j1 = j1.replaceAll("__NAME1__", name1_a);
+                j1 = j1.replaceAll("__STDNAME1__", stdName1_a);
+
+                String j2 = template;
+                String subId_b = "72c9ee92-8e97-4a19-b208-faf7739ad60d";
+                String refId1_b = "b7dcc059-7f47-4815-8444-2157381b8f18";
+                String name1_b = "Test2";
+                String stdName1_b = "Test1 Std";  // The 1 is on purpose
+                j2 = j2.replaceAll("__UUID__", subId_b);
+                j2 = j2.replaceAll("__REFERENCE_ID1__", refId1_b);
+                j2 = j2.replaceAll("__NAME1__", name1_b);
+                j2 = j2.replaceAll("__STDNAME1__", stdName1_b);
 
                 s1 = loadSubstanceFromJsonString(j1);
                 s2 = loadSubstanceFromJsonString(j2);
@@ -161,8 +172,6 @@ public class StandardNameDuplicateValidatorViaIndexerTest extends AbstractSubsta
                         }
                 });
         }
-
-
 
 
         public Substance loadSubstanceFromJsonString(String jsonText) {

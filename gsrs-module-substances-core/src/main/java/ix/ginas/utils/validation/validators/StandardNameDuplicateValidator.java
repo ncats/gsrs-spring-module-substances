@@ -146,10 +146,12 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                         Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
                         if (!stdNames.add(uppercaseStdName)) {
                             if (onDuplicateInSameRecordShowError) {
+                                System.out.println("=== IF 1a ===");
                                 GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
                                 mes.markPossibleDuplicate();
                                 callback.addMessage(mes);
                             } else {
+                                System.out.println("=== IF 2a ===");
                                 GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
                                 mes.markPossibleDuplicate();
                                 callback.addMessage(mes);
@@ -162,10 +164,12 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                     Substance otherSubstance = checkStdNameForDuplicateInOtherRecordsViaIndexer(objnew, name.stdName);
                     if (otherSubstance != null) {
                         if (onDuplicateInOtherRecordShowError) {
+                            System.out.println("=== IF 2b ===");
                             GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
                             mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
                             callback.addMessage(mes);
                         } else {
+                            System.out.println("=== IF 2b ===");
                             GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
                             mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
                             callback.addMessage(mes);
