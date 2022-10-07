@@ -172,11 +172,10 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 assertEquals(substanceRepository.count(), 2);
 
                 ValidationResponse<Substance> response = validator.validate(s2, null);
-                response.getValidationMessages().forEach(vm->{
-                        if(vm.getMessage().contains(validator.getDUPLICATE_IN_OTHER_RECORD_MESSAGE_TEST_FRAGMENT())) {
-                                Assertions.assertEquals("ERROR", vm.getMessageType().toString());
-                        }
-                });
+
+                boolean found = response.getValidationMessages().stream().
+                anyMatch(vm->vm.getMessageType().toString().equals("ERROR") && vm.getMessage().contains(validator.getDUPLICATE_IN_OTHER_RECORD_MESSAGE_TEST_FRAGMENT()));
+                Assertions.assertTrue(found);
         }
 
 
@@ -277,6 +276,4 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 Assertions.assertTrue(found);
         }
 
-
-
-        }
+}

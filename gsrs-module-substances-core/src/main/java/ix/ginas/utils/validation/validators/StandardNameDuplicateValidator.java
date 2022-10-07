@@ -217,11 +217,11 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
 
     public List<Substance> findIndexedSubstancesByStdName(String stdName) {
         Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
-        String query = "root_names_stdName:\"" + stdName + "\"";
+        String query = "root_names_stdName:\"^" + stdName + "$\"";
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
-                .query("root_names_stdName:\"" + stdName + "\"")
+                .query("root_names_stdName:\"^" + stdName + "$\"")
                 .top(Integer.MAX_VALUE)
                 .build();
         List<Substance> substances = getSearchList(request);
@@ -233,8 +233,8 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
         // need to build a search result list with one substance.
         Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
         Objects.requireNonNull(excludeUuid, "Parameter 'excludeUuid' must not be null");
-        String query = "root_names_stdName:\"" + stdName + "\"";
-        query += " AND NOT " + "root_uuid:\"^"+ excludeUuid +"$\"";
+        String query = "root_names_stdName:\"^" + stdName + "$\"";
+        query += " AND NOT " + "root_uuid:\"^" + excludeUuid + "$\"";
         SearchRequest request = new SearchRequest.Builder()
         .kind(Substance.class)
         .fdim(0)
