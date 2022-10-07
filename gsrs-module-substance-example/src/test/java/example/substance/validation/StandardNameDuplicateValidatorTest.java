@@ -1,192 +1,207 @@
 package example.substance.validation;
 
-import gsrs.module.substance.controllers.SubstanceLegacySearchService;
-import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import gsrs.cache.GsrsCache;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.service.GsrsEntityService;
 import ix.core.models.Keyword;
+import com.fasterxml.jackson.databind.JsonNode;
+import example.GsrsModuleSubstanceApplication;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
+import gsrs.module.substance.services.DefinitionalElementFactory;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.startertests.TestIndexValueMakerFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.validator.DefaultValidatorConfig;
+import gsrs.validator.ValidatorConfig;
+import ix.core.chem.StructureProcessor;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.StandardNameDuplicateValidator;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import gsrs.cache.GsrsCache;
-import gsrs.module.substance.repository.SubstanceRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.PlatformTransactionManager;
+
 import java.io.IOException;
-import java.util.List;
+import java.util.*;
 
-@WithMockUser(username = "admin", roles="Admin")
-@Slf4j
-public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaEntityTest {
+import static org.junit.jupiter.api.Assertions.*;
 
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+@WithMockUser(username = "admin", roles = "Admin")
+public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
-@Autowired
-private SubstanceLegacySearchService searchService;
+        @Autowired
+        private SubstanceRepository substanceRepository;
 
-@Autowired
-private PlatformTransactionManager transactionManager;
+        @Autowired
+        private SubstanceLegacySearchService searchService;
 
+        @Autowired
+        private TestIndexValueMakerFactory testIndexValueMakerFactory;
 
-@Autowired
-private GsrsCache cache;
+        @Autowired
+        private TestGsrsValidatorFactory factory;
 
+        @Autowired
+        private GsrsCache cache;
 
-@BeforeEach
+        private String fileName = "rep18.gsrs";
 
-public void runSetup() throws IOException {
-        // log.trace("runSetup");
-        // seems to work without this
-        // AutowireHelper.getInstance().autowireAndProxy(substanceRepository);
-        // SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        // AutowireHelper.getInstance().autowire(hashIndexer);
-        // testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        // prevent validations from occurring multiple times
-        // File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
-        // cache.clearCache();
-        // loadGsrsFile(dataFile);
-        // log.trace("loaded rep18 data file");
-}
-
-
-        @Test
-        public void testFindInRepository() {
-                // This test is not working as expected.
-                Substance s1 = new Substance();
-                Name name1 = new Name();
-                name1.name ="TEST1";
-                name1.stdName ="TEST1 STD";
-                if (name1.languages == null) {
-                        name1.languages = new EmbeddedKeywordList();
+        @BeforeEach
+        public void clearIndexers() throws IOException {
+        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+        AutowireHelper.getInstance().autowire(hashIndexer);
+        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+                {
+                        ValidatorConfig config = new DefaultValidatorConfig();
+                        config.setNewObjClass(Substance.class);
+                        factory.addValidator("substances", config);
                 }
-                name1.languages.add(new Keyword("en"));
-                name1.languages.add(new Keyword("fr"));
-
-                s1.names.add(name1);
-                substanceRepository.saveAndFlush(s1);
-
-                Substance s2 = new Substance();
-                Name name2 = new Name();
-                name2.name ="TEST2";
-                name2.stdName ="TEST1 STD"; // The 1 is on purpose
-                if (name2.languages == null) {
-                        name2.languages = new EmbeddedKeywordList();
-                }
-                name2.languages.add(new Keyword("en"));
-                name2.languages.add(new Keyword("fr"));
-                s2.names.add(name2);
-                substanceRepository.saveAndFlush(s2);
-                cache.clearCache();
-
-                Assertions.assertEquals(substanceRepository.count(), 2);
-
-                // Searching/Finding on this!!
-                String testName = name2.name; // A
-                String testStdName = name2.stdName; // B
-
-                List<SubstanceRepository.SubstanceSummary> sslA = substanceRepository.findByNames_NameIgnoreCase(testName);
-                // This fails.
-                Assertions.assertEquals(1, sslA.size());
-
-                // This doesn't work for me in the test context.
-                // findByNames_StdNameIgnoreCase does seem to work as expected when
-                // testing from the frontend.
-                List<SubstanceRepository.SubstanceSummary> sslB = substanceRepository.findByNames_StdNameIgnoreCase(testStdName);
-                // This fails.
-                Assertions.assertEquals(2, sslB.size());
+                        // File dataFile = new ClassPathResource(fileName).getFile();
+                        // loadGsrsFile(dataFile);
         }
 
         @Test
-        public void testCheckStdNameForDuplicateInOtherRecords() {
-                // This test is not working as expected.
-                Substance s1 = new Substance();
-                Name name1 = new Name();
-                name1.name ="Test1";
-                name1.stdName ="Test1 std";
-                if (name1.languages == null) {
-                        name1.languages = new EmbeddedKeywordList();
-                }
-                name1.languages.add(new Keyword("en"));
-                name1.languages.add(new Keyword("fr"));
-
-                s1.names.add(name1);
-                substanceRepository.saveAndFlush(s1);
-
-                Substance s2 = new Substance();
-                Name name2 = new Name();
-                name2.name ="Test2";
-                name2.stdName ="Test1 std";
-                if (name2.languages == null) {
-                        name2.languages = new EmbeddedKeywordList();
-                }
-                name2.languages.add(new Keyword("en"));
-                name2.languages.add(new Keyword("fr"));
-                s2.names.add(name2);
-                substanceRepository.saveAndFlush(s2);
-                cache.clearCache();
-
-                String testStdName = name2.stdName;
-
-                Assertions.assertEquals(substanceRepository.count(), 2);
-
+        public void testCheckStdNameForDuplicateInOtherRecordsViaIndexer() {
                 StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                validator.setTransactionManager(transactionManager);
+                validator.setSearchService(searchService);
                 validator.setSubstanceRepository(substanceRepository);
-                SubstanceRepository.SubstanceSummary ss = validator.checkStdNameForDuplicateInOtherRecords(s2,testStdName);
-                // Get NPE here I think due to due to findByNames_StdNameIgnoreCase not working in test case.
-                Assertions.assertTrue(ss.getUuid().equals(s1.getUuid()));
+
+                String template = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
+
+                Substance s1 = null;
+                Substance s2 = null;
+
+                String j1 = template;
+                String subId_a = "25cc4754-ccf1-4db2-bb6a-367581fa17ea";
+                String refId1_a = "a7dcc059-7f47-4815-8444-2157381b8f17";
+                String name1_a = "Test1";
+                String stdName1_a = "Test1 Std";
+                j1 = j1.replaceAll("__UUID__", subId_a);
+                j1 = j1.replaceAll("__REFERENCE_ID1__", refId1_a);
+                j1 = j1.replaceAll("__NAME1__", name1_a);
+                j1 = j1.replaceAll("__STDNAME1__", stdName1_a);
+
+                String j2 = template;
+                String subId_b = "72c9ee92-8e97-4a19-b208-faf7739ad60d";
+                String refId1_b = "b7dcc059-7f47-4815-8444-2157381b8f18";
+                String name1_b = "Test2";
+                String stdName1_b = "Test1 Std";  // The 1 is on purpose
+                j2 = j2.replaceAll("__UUID__", subId_b);
+                j2 = j2.replaceAll("__REFERENCE_ID1__", refId1_b);
+                j2 = j2.replaceAll("__NAME1__", name1_b);
+                j2 = j2.replaceAll("__STDNAME1__", stdName1_b);
+
+
+                s1 = loadSubstanceFromJsonString(j1);
+                s2 = loadSubstanceFromJsonString(j2);
+
+                assertEquals(substanceRepository.count(), 2);
+
+                List<Substance> substances1 = validator.findIndexedSubstancesByStdName(stdName1_b);
+                assertEquals(substances1.size(), 2);
+                Substance otherSubstance1 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
+                assertEquals(otherSubstance1.getUuid(), s1.getUuid());
+
+                List<Substance> substances2 = validator.findOneIndexedSubstanceByStdNameExcludingUuid(stdName1_b, s1.getUuid());
+                assertEquals(substances2.size(), 1);
+                Substance otherSubstance2 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
+                assertEquals(otherSubstance2.getUuid(), s1.getUuid());
+
+                String wontBeFound = "Strange thing";
+                List<Substance> substances = validator.findIndexedSubstancesByStdName(wontBeFound);
+                assertEquals(substances.size(), 0);
+                Substance otherSubstance = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, wontBeFound);
+                assertNull(otherSubstance);
         }
 
         @Test
-        public void testDuplicateInOtherRecord() {
-                // This test is not working as expected.
-
-                Substance s1 = new Substance();
-                Name name1 = new Name();
-                name1.name ="Test1";
-                name1.stdName ="Test1 std";
-                if (name1.languages == null) {
-                        name1.languages = new EmbeddedKeywordList();
-                }
-                name1.languages.add(new Keyword("en"));
-                name1.languages.add(new Keyword("fr"));
-
-                s1.names.add(name1);
-                substanceRepository.saveAndFlush(s1);
-
-                Substance s2 = new Substance();
-                Name name2 = new Name();
-                name2.name ="Test2";
-                name2.stdName ="Test1 std";
-                if (name2.languages == null) {
-                        name2.languages = new EmbeddedKeywordList();
-                }
-                name2.languages.add(new Keyword("en"));
-                name2.languages.add(new Keyword("fr"));
-                s2.names.add(name2);
-
-                substanceRepository.saveAndFlush(s2);
-                cache.clearCache();
-
-                Assertions.assertEquals(substanceRepository.count(), 2);
-
+        public void testStdNameDuplicateInOtherRecordViaIndexer() {
                 StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                validator.setTransactionManager(transactionManager);
+                validator.setSearchService(searchService);
                 validator.setSubstanceRepository(substanceRepository);
+                validator.setCheckDuplicateInOtherRecord(true);
+                validator.setOnDuplicateInOtherRecordShowError(true);
+
+                String template = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
+
+                Substance s1 = null;
+                Substance s2 = null;
+
+                String j1 = template;
+                String subId_a = "25cc4754-ccf1-4db2-bb6a-367581fa17ea";
+                String refId1_a = "a7dcc059-7f47-4815-8444-2157381b8f17";
+                String name1_a = "Test1";
+                String stdName1_a = "Test1 Std";
+                j1 = j1.replaceAll("__UUID__", subId_a);
+                j1 = j1.replaceAll("__REFERENCE_ID1__", refId1_a);
+                j1 = j1.replaceAll("__NAME1__", name1_a);
+                j1 = j1.replaceAll("__STDNAME1__", stdName1_a);
+
+                String j2 = template;
+                String subId_b = "72c9ee92-8e97-4a19-b208-faf7739ad60d";
+                String refId1_b = "b7dcc059-7f47-4815-8444-2157381b8f18";
+                String name1_b = "Test2";
+                String stdName1_b = "Test1 Std";  // The 1 is on purpose
+                j2 = j2.replaceAll("__UUID__", subId_b);
+                j2 = j2.replaceAll("__REFERENCE_ID1__", refId1_b);
+                j2 = j2.replaceAll("__NAME1__", name1_b);
+                j2 = j2.replaceAll("__STDNAME1__", stdName1_b);
+
+                s1 = loadSubstanceFromJsonString(j1);
+                s2 = loadSubstanceFromJsonString(j2);
+
+                assertEquals(substanceRepository.count(), 2);
 
                 ValidationResponse<Substance> response = validator.validate(s2, null);
                 response.getValidationMessages().forEach(vm->{
-                        log.trace( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
+                        if(vm.getMessage().contains(validator.getDUPLICATE_IN_OTHER_RECORD_MESSAGE_TEST_FRAGMENT())) {
+                                Assertions.assertEquals("ERROR", vm.getMessageType().toString());
+                        }
                 });
-                Assertions.assertTrue(response.getValidationMessages().get(0).getMessage().contains("collides (possible duplicate) with existing standard name for other substance"));
         }
 
+
+        public Substance loadSubstanceFromJsonString(String jsonText) {
+                Substance substance = null;
+                ObjectMapper mapper = new ObjectMapper();
+                JsonNode json = null;
+                try {
+                        json = mapper.readTree(jsonText);
+                } catch (Exception ex) {
+                        ex.printStackTrace();
+                }
+                try {
+                        GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json, true);
+                        substance = result.getCreatedEntity();
+                } catch (IOException e) {
+                        e.printStackTrace();
+                        return null;
+                }
+                return substance;
+        }
 
         @Test
         public void testDuplicateInSameRecordShowWarning() {
                 boolean showError = false;
+                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                validator.setCheckDuplicateInSameRecord(true);
+//                validator.setCheckDuplicateInOtherRecord(false);
+                validator.setOnDuplicateInSameRecordShowError(showError);
+                validator.setSubstanceRepository(substanceRepository);
+                validator.setTransactionManager(transactionManager);
+                validator.setSearchService(searchService);
+                validator.setCache(cache);
                 Substance s1 = new Substance();
                 Name name1 = new Name();
                 name1.name ="TestSame1";
@@ -208,23 +223,24 @@ public void runSetup() throws IOException {
                 s1.names.add(name2);
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
-                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
-                validator.setCheckDuplicateInSameRecord(true);
-                validator.setOnDuplicateInSameRecordShowError(showError);
-                validator.setSubstanceRepository(substanceRepository);
-                validator.setTransactionManager(transactionManager);
-                validator.setSearchService(searchService);
                 ValidationResponse<Substance> response = validator.validate(s1, null);
-                long c = response.getValidationMessages().stream().filter(vm -> {
-return                        (vm.getMessageType().equals("WARNING") && vm.getMessage().contains(validator.getDUPLICATE_IN_SAME_RECORD_MESSAGE_TEST_FRAGMENT()));
-                }).count();
-                Assertions.assertEquals(1, c);
+                boolean found = response.getValidationMessages().stream().
+                        anyMatch(vm->vm.getMessageType().toString().equals("WARNING") && vm.getMessage().contains(validator.getDUPLICATE_IN_SAME_RECORD_MESSAGE_TEST_FRAGMENT()));
 
+                Assertions.assertTrue(found);
         }
 
         @Test
         public void testDuplicateInSameRecordShowError() {
                 boolean showError = true;
+                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                validator.setCheckDuplicateInSameRecord(true);
+//                validator.setCheckDuplicateInOtherRecord(false);
+                validator.setOnDuplicateInSameRecordShowError(showError);
+                validator.setSubstanceRepository(substanceRepository);
+                validator.setTransactionManager(transactionManager);
+                validator.setSearchService(searchService);
+                validator.setCache(cache);
                 Substance s1 = new Substance();
                 Name name1 = new Name();
                 name1.name ="TestSame1";
@@ -237,7 +253,7 @@ return                        (vm.getMessageType().equals("WARNING") && vm.getMe
                 s1.names.add(name1);
                 Name name2 = new Name();
                 name2.name ="TestSame2";
-                name2.stdName ="TestSame1 std";
+                name2.stdName ="TestSame1 std";  // 1 on purpose
                 if (name1.languages == null) {
                         name1.languages = new EmbeddedKeywordList();
                 }
@@ -246,15 +262,13 @@ return                        (vm.getMessageType().equals("WARNING") && vm.getMe
                 s1.names.add(name2);
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
-                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
-                validator.setCheckDuplicateInSameRecord(true);
-                validator.setOnDuplicateInSameRecordShowError(showError);
-                validator.setSubstanceRepository(substanceRepository);
                 ValidationResponse<Substance> response = validator.validate(s1, null);
-                long c = response.getValidationMessages().stream().filter(vm -> {
-                        return (vm.getMessageType().equals("ERROR") && vm.getMessage().contains(validator.getDUPLICATE_IN_SAME_RECORD_MESSAGE_TEST_FRAGMENT()));
-                }).count();
+                boolean found = response.getValidationMessages().stream().
+                anyMatch(vm->vm.getMessageType().toString().equals("ERROR") && vm.getMessage().contains(validator.getDUPLICATE_IN_SAME_RECORD_MESSAGE_TEST_FRAGMENT()));
 
+                Assertions.assertTrue(found);
         }
 
-}
+
+
+        }

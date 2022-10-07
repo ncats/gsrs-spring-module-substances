@@ -1,8 +1,10 @@
 package ix.ginas.utils.validation.validators;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.cache.GsrsCache;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -29,6 +31,8 @@ import org.apache.lucene.search.TopDocs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+
+import javax.imageio.IIOException;
 
 @Slf4j
 public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Substance> {
@@ -57,8 +61,6 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
 
     @Autowired
     private GsrsCache cache;
-
-
 
     private boolean checkDuplicateInOtherRecord = true;
     private boolean checkDuplicateInSameRecord = true;
@@ -124,6 +126,7 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
 
             if (name.stdName != null) {
                 // Include language default or trust that it is already done?
+                // Make a method for this in NameUtilities for more DRY?
                 if (name.languages == null || name.languages.isEmpty()) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
@@ -146,17 +149,14 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                         Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
                         if (!stdNames.add(uppercaseStdName)) {
                             if (onDuplicateInSameRecordShowError) {
-                                System.out.println("=== IF 1a ===");
                                 GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
                                 mes.markPossibleDuplicate();
                                 callback.addMessage(mes);
                             } else {
-                                System.out.println("=== IF 2a ===");
                                 GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
                                 mes.markPossibleDuplicate();
                                 callback.addMessage(mes);
                             }
-
                         }
                     }
                 }
@@ -164,12 +164,10 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                     Substance otherSubstance = checkStdNameForDuplicateInOtherRecordsViaIndexer(objnew, name.stdName);
                     if (otherSubstance != null) {
                         if (onDuplicateInOtherRecordShowError) {
-                            System.out.println("=== IF 2b ===");
                             GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
                             mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
                             callback.addMessage(mes);
                         } else {
-                            System.out.println("=== IF 2b ===");
                             GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
                             mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
                             callback.addMessage(mes);
@@ -180,7 +178,7 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
 
         });
     }
-
+    /*
     public Substance checkStdNameForDuplicateInOtherRecordsViaIndexer(Substance s, String stdName) {
         List<Substance> substances = findIndexedSubstancesByStdName(stdName);
         try {
@@ -195,22 +193,54 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                 }
             }
         } catch (Exception e) {
-            // Should we be throwing an error?
-            System.out.println("Problem checking for duplicate standard name.");
-            e.printStackTrace();
-            log.warn("Problem checking for duplicate standard name.", e);
+            // Should we throw it?
+            log.error("Problem checking for duplicate standard name.", e);
         }
-
+        return null;
+    }
+*/
+    public Substance checkStdNameForDuplicateInOtherRecordsViaIndexer(Substance s, String stdName) {
+        List<Substance> substances = findOneIndexedSubstanceByStdNameExcludingUuid(stdName, s.getOrGenerateUUID());
+        try {
+            if (substances!=null && !substances.isEmpty()) {
+                Substance s2 = null;
+                Iterator<Substance> it = substances.iterator();
+                s2 = it.next();
+                return s2;
+            }
+        } catch (Exception e) {
+            // Should we throw it?
+            log.error("Problem checking for duplicate standard name.", e);
+        }
         return null;
     }
 
     public List<Substance> findIndexedSubstancesByStdName(String stdName) {
+        Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
+        String query = "root_names_stdName:\"" + stdName + "\"";
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
                 .query("root_names_stdName:\"" + stdName + "\"")
                 .top(Integer.MAX_VALUE)
                 .build();
+        List<Substance> substances = getSearchList(request);
+        return substances;
+    }
+
+    public List<Substance> findOneIndexedSubstanceByStdNameExcludingUuid(String stdName, UUID excludeUuid) {
+        // This one allows you to exclude a specific uuid, that way we only
+        // need to build a search result list with one substance.
+        Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
+        Objects.requireNonNull(excludeUuid, "Parameter 'excludeUuid' must not be null");
+        String query = "root_names_stdName:\"" + stdName + "\"";
+        query += " AND NOT " + "root_uuid:\"^"+ excludeUuid +"$\"";
+        SearchRequest request = new SearchRequest.Builder()
+        .kind(Substance.class)
+        .fdim(0)
+        .query(query)
+        .top(1)
+        .build();
         List<Substance> substances = getSearchList(request);
         return substances;
     }
@@ -235,34 +265,8 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                         .collect(Collectors.toList());
             } catch (Exception e) {
                 throw new RuntimeException(e);
-
             }
         });
         return substances;
     }
-
-
-    // Don't use this
-    public SubstanceRepository.SubstanceSummary checkStdNameForDuplicateInOtherRecords(Substance s, String stdName) {
-        try {
-            List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_StdNameIgnoreCase(stdName);
-            if (sr!=null && !sr.isEmpty()) {
-                SubstanceRepository.SubstanceSummary s2 = null;
-                Iterator<SubstanceRepository.SubstanceSummary> it = sr.iterator();
-                while(it.hasNext()){
-                    s2 = it.next();
-                    if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
-                        return s2;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Should we be throwing an error?
-            System.out.println("Problem checking for duplicate standard name.");
-            e.printStackTrace();
-            log.warn("Problem checking for duplicate standard name.", e);
-        }
-        return null;
-    }
-
 }
