@@ -117,11 +117,19 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 Substance otherSubstance2 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
                 assertEquals(otherSubstance2.getUuid(), s1.getUuid());
 
-                String wontBeFound = "Strange thing";
-                List<Substance> substances = validator.findIndexedSubstancesByStdName(wontBeFound);
-                assertEquals(substances.size(), 0);
-                Substance otherSubstance = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, wontBeFound);
-                assertNull(otherSubstance);
+                String wontBeFound3 = "Strange thing";
+                List<Substance> substances3 = validator.findIndexedSubstancesByStdName(wontBeFound3);
+                assertEquals(substances3.size(), 0);
+                Substance otherSubstance3 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, wontBeFound3);
+                assertNull(otherSubstance3);
+
+                String wontBeFound4 = "Strange thing";
+                List<Substance> substances4 = validator.findIndexedSubstancesByStdName(wontBeFound4);
+                assertEquals(substances4.size(), 0);
+                Substance otherSubstance4 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, wontBeFound4);
+                assertNull(otherSubstance4);
+
+
         }
 
         @Test
