@@ -354,6 +354,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
                         .collect(Collectors.toList());
             } catch (Exception e) {
                 throw new RuntimeException(e);
+
             }
         });
         return substances;
