@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="ix_ginas_parameter")
+@Table(name = "ix_ginas_parameter", indexes = {@Index(name = "parameter_owner_index", columnList = "owner_uuid")})
 @JSONEntity(title = "Parameter", isFinal = true)
 @SingleParent
 public class Parameter extends GinasCommonSubData {

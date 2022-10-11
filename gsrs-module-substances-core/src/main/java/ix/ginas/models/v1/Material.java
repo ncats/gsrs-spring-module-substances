@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="ix_ginas_material")
+@Table(name="ix_ginas_material", indexes = {@Index(name = "material_owner_index", columnList = "owner_uuid")})
 @SingleParent
 public class Material extends GinasCommonSubData {
 	@ParentReference

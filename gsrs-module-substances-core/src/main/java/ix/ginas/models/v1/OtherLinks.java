@@ -13,7 +13,7 @@ import java.util.List;
 
 
 @Entity
-@Table(name="ix_ginas_otherlinks")
+@Table(name="ix_ginas_otherlinks", indexes = {@Index(name = "otherlinks_owner_index", columnList = "owner_uuid")})
 @SingleParent
 public class OtherLinks extends GinasCommonSubData {
 	@ManyToOne(cascade = CascadeType.PERSIST)

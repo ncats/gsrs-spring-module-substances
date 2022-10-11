@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="ix_ginas_physicalpar")
+@Table(name="ix_ginas_physicalpar", indexes = {@Index(name = "physicalpar_owner_index", columnList = "owner_uuid")})
 @JSONEntity(title = "Physical Parameter", isFinal = true)
 @SingleParent
 public class PhysicalParameter extends GinasCommonSubData {

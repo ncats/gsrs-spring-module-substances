@@ -14,7 +14,7 @@ import java.util.List;
 
 @SuppressWarnings("serial")
 @Entity
-@Table(name="ix_ginas_linkage")
+@Table(name="ix_ginas_linkage", indexes = {@Index(name = "linkage_owner_index", columnList = "owner_uuid")})
 @SingleParent
 public class Linkage extends GinasCommonSubData {
 	@ParentReference

@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="ix_ginas_structuralmod")
+@Table(name="ix_ginas_structuralmod", indexes = {@Index(name = "structuralmod_owner_index", columnList = "owner_uuid")})
 @JSONEntity(title = "Structural Modification", isFinal = true)
 @SingleParent
 public class StructuralModification extends GinasCommonSubData {

@@ -13,7 +13,7 @@ import java.util.List;
 
 @JSONEntity(title = "Agent Modification", isFinal = true)
 @Entity
-@Table(name="ix_ginas_agentmod")
+@Table(name="ix_ginas_agentmod", indexes = {@Index(name = "agentmod_owner_index", columnList = "owner_uuid")})
 @SingleParent
 public class AgentModification extends GinasCommonSubData {
 

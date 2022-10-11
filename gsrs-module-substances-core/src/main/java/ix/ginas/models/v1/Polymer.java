@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="ix_ginas_polymer")
+@Table(name="ix_ginas_polymer", indexes = {@Index(name = "polymer_owner_index", columnList = "owner_uuid")})
 public class Polymer extends GinasCommonSubData {
 	@ParentReference
     @OneToOne(mappedBy="polymer")

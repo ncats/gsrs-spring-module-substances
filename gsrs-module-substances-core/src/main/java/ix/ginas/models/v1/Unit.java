@@ -26,7 +26,7 @@ import java.util.regex.Pattern;
  * but may only be a fragment of an SRU that doesn't repeat.
  */
 @Entity
-@Table(name="ix_ginas_unit")
+@Table(name = "ix_ginas_unit", indexes = {@Index(name = "unit_owner_index", columnList = "owner_uuid")})
 @SingleParent
 public class Unit extends GinasCommonSubData {
 	@ManyToOne(cascade = CascadeType.PERSIST)

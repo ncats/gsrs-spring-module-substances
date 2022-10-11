@@ -13,7 +13,7 @@ import java.util.List;
 
 @SuppressWarnings("serial")
 @Entity
-@Table(name="ix_ginas_sugar")
+@Table(name = "ix_ginas_sugar", indexes = {@Index(name = "sugar_owner_index", columnList = "owner_uuid")})
 @SingleParent
 public class Sugar extends GinasCommonSubData {
 	@ManyToOne(cascade = CascadeType.PERSIST)

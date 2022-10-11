@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name="ix_ginas_physicalmod")
+@Table(name = "ix_ginas_physicalmod", indexes = {@Index(name = "physicalmod_owner_index", columnList = "owner_uuid")})
 @JSONEntity(title = "Physical Modification", isFinal = true)
 @SingleParent
 public class PhysicalModification extends GinasCommonSubData {
