@@ -15,8 +15,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HtmlNameStandardizer extends AbstractNameStandardizer{
 
-    public Pattern[] search = {Pattern.compile("\\p{C}"), Pattern.compile("\\s{2,}"), Pattern.compile("\u00B9"), Pattern.compile("\u00B2"), Pattern.compile("\u00B3"), Pattern.compile("</sup><sup>"), Pattern.compile("</sub><sub>"), Pattern.compile("</i><i>")};
-    public String[] replace = {"", " ", "<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>", "", "", ""};
+    public Pattern[] search = {Pattern.compile("\\p{C}"), Pattern.compile("\\s{2,}"),
+        Pattern.compile("\u00B9"), Pattern.compile("\u00B2"), Pattern.compile("\u00B3"),
+        Pattern.compile("<-"), Pattern.compile("->"), Pattern.compile("\\+\\/-"),
+        Pattern.compile("SUP\\(([^\\)]*)\\)"), Pattern.compile("SUB\\(([^\\)]*)\\)"),
+        Pattern.compile("<small>L</small>"), Pattern.compile("<small>D</small>"),
+        Pattern.compile("</sup><sup>"), Pattern.compile("</sub><sub>"), Pattern.compile("</i><i>")};
+
+    public String[] replace = {"", " ", "<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>",
+        "\u2190", "\u2192", "\u00B1", "<sup>$1</sup>", "<sub>$1</sub>", "ʟ", "ᴅ", "", "", ""};
 
     public static ReplacementResult cleanHtml(String input) {
         List<ReplacementNote> notes = new ArrayList<>();
@@ -34,8 +41,9 @@ public class HtmlNameStandardizer extends AbstractNameStandardizer{
 
     @Override
     public ReplacementResult standardize(String input) {
-        ReplacementResult result = new ReplacementResult(input, new ArrayList<>());
+        ReplacementResult result = new ReplacementResult(input.trim(), new ArrayList<>());
         if (input != null && input.length() != 0) {
+            result.update(this.replaceRegexLists(result.getResult(), search, replace));
             result.update(this.cleanHtml(result.getResult()));
             result.update(this.replaceRegexLists(result.getResult(), search, replace));
         }

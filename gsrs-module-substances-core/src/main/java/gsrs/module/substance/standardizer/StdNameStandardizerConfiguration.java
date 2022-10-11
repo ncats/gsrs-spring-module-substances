@@ -22,7 +22,7 @@ public class StdNameStandardizerConfiguration {
     @ConditionalOnMissingBean
     public NameStandardizer getNameStandardizer() {
         if(standardizerClass == null) {
-            return new HtmlNameStandardizer();
+            return new HtmlStdNameStandardizer();
         }
         ObjectMapper mapper = new ObjectMapper();
 

@@ -79,11 +79,10 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
             StringBuilder sb = new StringBuilder(input);
             for (int i = 0; i < searchList.length; i++) {
                 String key = searchList[i];
-                if ("".equals(key)) {
+                String value = replaceList[i];
+                if ("".equals(key) || value == null) {
                     continue;
                 }
-                String value = replaceList[i];
-
                 int start = sb.indexOf(key, 0);
                 while (start > -1) {
                     int end = start + key.length();
@@ -104,10 +103,10 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
         if (input != null && input.length() != 0) {
             for (int i = 0; i < searchList.length; i++) {
                 Pattern pat = searchList[i];
-                if (pat == null) {
+                if (pat == null || replaceList[i] == null) {
                     continue;
                 }
-                Matcher matcher = pat.matcher(input);
+                Matcher matcher = pat.matcher(result.getResult());
                 if (matcher.find()) {
                     notes.add(new ReplacementNote(matcher.start(), replaceList[i]));
                     result.setResult(matcher.replaceAll(replaceList[i]));
