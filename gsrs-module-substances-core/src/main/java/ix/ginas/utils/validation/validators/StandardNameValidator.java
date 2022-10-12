@@ -40,6 +40,11 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
         if(inPlaceStandardizer!=null)validateInPlace(objnew, objold, callback);
         if(fullStandardizer!=null)validateFull(objnew, objold, callback);
     }
+
+    // validateFull does a more comprehensive set of standardizations for the standard name field.
+    // validateInPlace does a minimal replacement of 'awful' characters - for  the main 'name' field.
+
+
     public void validateFull(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         Map<String, Name> oldNames = new HashMap<>();
