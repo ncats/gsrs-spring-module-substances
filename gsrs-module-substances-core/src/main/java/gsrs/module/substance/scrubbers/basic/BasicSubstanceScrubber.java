@@ -42,43 +42,39 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
         this.scrubberSettings = scrubberSettings;
         groupsToInclude= Optional.ofNullable(scrubberSettings.getAccessGroupsToInclude()).orElse(Collections.emptyList()).stream()
-                .map(t->t.trim())
+                .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
         
         
         //TODO: not entirely sure when we'd use this
         groupsToRemove= Optional.ofNullable(scrubberSettings.getAccessGroupsToRemove()).orElse(Collections.emptyList()).stream()
-                .map(t->t.trim())
+                .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
         codeSystemsToRemove = Optional.ofNullable(scrubberSettings.getCodeSystemsToRemove()).orElse(Collections.emptyList()).stream()
-                .map(t->t.trim())
+                .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
         codeSystemsToKeep=Optional.ofNullable(scrubberSettings.getCodeSystemsToKeep()).orElse(Collections.emptyList()).stream()
-                .map(t->t.trim())
+                .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
     }
     
     private void forEachObjectWithAccess(Substance s, Consumer<GinasAccessControlled> consumer) {
     	StreamUtil.with(s.getAllChildrenCapableOfHavingReferences().stream().map(n->(GinasAccessControlled)n))
-    			  .and(s.references.stream().map(n->(GinasAccessControlled)n))
+    			  .and(s.references.stream().map(n->n))
     			  .and(s)
     			  .stream()
     			  .distinct()
-    			  .forEach(ss->{
-    				  consumer.accept(ss);
-    			  });
+    			  .forEach(consumer::accept);
     }
     
     private void forEachObjectWithReferences(Substance s, Consumer<GinasAccessReferenceControlled> consumer) {
     	StreamUtil.with(s.getAllChildrenCapableOfHavingReferences().stream())
     			  .stream()
-    			  .forEach(ss->{
-    				  consumer.accept(ss);
-    			  });
+    			  .forEach(consumer::accept);
     }
     
     //TODO remove all private access things
@@ -128,7 +124,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 if(scrubberSettings.getReferenceTypesToRemove()!=null && !scrubberSettings.getReferenceTypesToRemove().isEmpty()) {
                     if (scrubberSettings.getReferenceTypesToRemove().contains(reference.docType)) {
                         referencesToRemove.add(reference);
-                        log.trace("Adding reference to deletion list: {}", r.toString());
+                        log.trace("Adding reference to deletion list: {}", r);
                     }
                 }
                 if(!patternsToCheck.isEmpty()){
@@ -219,7 +215,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     	//remove all definitions if this setting is true
     	if(isDefinitionScrubbed[0] && scrubberSettings.isRemoveScrubbedDefinitionalElementsEntirely()) {
     		starting.properties.stream()
-					    		.filter(prop->prop.isDefining())
+					    		.filter(Property::isDefining)
 					    		.forEach(p->{
 					    			p.setAccess(toDelete);
 					    		});
@@ -283,10 +279,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             dc.delete("$['notes'][?]", (ctx)->{
             	Map code=ctx.item(Map.class);
             	Object o=code.get("access");
-            	if(o!=null && o.toString().contains(TO_FORCE_KEEP)) {
-            		return false;
-            	}
-            	return true;
+                return o == null || !o.toString().contains(TO_FORCE_KEEP);
             });
         }
 
@@ -409,16 +402,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     public Optional<Substance> scrub(Substance substance) {
         log.trace("starting in scrub");
        
-        log.trace("cast to substance with UUID {}", (substance.uuid==null) ? "null" : substance.uuid.toString());
-
-        
         String substanceJson;
         try {
         	//just a force thing to fetch if needed
             substanceJson = substance.toFullJsonNode().toString();
 //            msub=substance;
             log.trace("before");
-            log.trace(substanceJson);
+            //log.trace(substanceJson);
         } catch (Exception ex){
             log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
@@ -426,7 +416,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 //            msub=substanceRefetch.orElse(null);
             substanceJson = substanceRefetch.get().toFullJsonNode().toString();
         }
-       
 
         log.trace("got json");
         try {
@@ -451,6 +440,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 //even null works
                 snew.status=scrubberSettings.getNewStatusValue();
             }
+            log.trace("successful completion of scrub");
             return Optional.ofNullable(snew);
         }
         catch (Exception ex) {

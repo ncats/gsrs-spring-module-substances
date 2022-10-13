@@ -8,6 +8,7 @@ import ix.ginas.exporters.OutputFormat;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
+import lombok.Data;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,10 +18,13 @@ import java.util.stream.Collectors;
 /**
  * Created by katzelda on 8/23/16.
  */
+@Data
 public class SdfExporterFactory implements ExporterFactory {
 
     private static final char NAME_PROP_SEPARATOR = '|';
     private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("sdf", "SD (sdf) File"));
+    private String approvalIDName ="APPROVAL_ID";
+
     @Override
     public boolean supports(Parameters params) {
         return "sdf".equals(params.getFormat().getExtension());
@@ -31,19 +35,22 @@ public class SdfExporterFactory implements ExporterFactory {
         return formats;
     }
 
+
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, Parameters params) throws IOException {
-        return new SdfExporter(out, BasicGsrsPropertyModifier.INSTANCE);
+        return new SdfExporter(out, new BasicGsrsPropertyModifier(approvalIDName));
     }
 
-    public static void addProperties(Chemical c, Substance parentSubstance, List<GinasProcessingMessage> messages){
-        BasicGsrsPropertyModifier.INSTANCE.modify(c, parentSubstance, messages);
+    /*public static void addProperties(Chemical c, Substance parentSubstance, List<GinasProcessingMessage> messages){
+        new BasicGsrsPropertyModifier(approvalI ).modify(c, parentSubstance, messages);
     }
+*/
+    private class BasicGsrsPropertyModifier implements SdfExporter.ChemicalModifier {
 
-    private enum BasicGsrsPropertyModifier implements SdfExporter.ChemicalModifier {
-
-        INSTANCE;
-
+        String approvalIdFieldName;
+        private BasicGsrsPropertyModifier(String approvalIdFieldName) {
+            this.approvalIdFieldName=approvalIdFieldName;
+        }
         private void addNames(List<Name> srcNames, Substance parentSubstance, Set<String> destNames) {
             for (Name n : srcNames) {
                 String name = n.name;
@@ -71,7 +78,7 @@ public class SdfExporterFactory implements ExporterFactory {
         public void modify(Chemical c, Substance parentSubstance, List<GinasProcessingMessage> messages) {
 
             if (parentSubstance.approvalID != null) {
-                c.setProperty("APPROVAL_ID", parentSubstance.approvalID);
+                c.setProperty(SdfExporterFactory.this.approvalIDName, parentSubstance.approvalID);
             }
 
             //TODO change names/name to have several name properties?

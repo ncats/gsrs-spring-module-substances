@@ -32,6 +32,9 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
     private boolean includeRelated = true;
     private boolean includeModifyingItems  = true;
 
+    private Set<Substance> subs = new HashSet<>();
+    private Set<String> retrievalErrors = new HashSet<>();
+
     public void applySettings(JsonNode settings) {
         if (!(settings instanceof ObjectNode)) {
             log.warn("in applySettings, settings parameter not of expected type (ObjectNode)");
@@ -57,22 +60,30 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
 
     @Override
     public Stream<Substance> expandRecord(Substance substance) {
-        log.trace("expandRecord with {}", substance.uuid.toString());
-        Set<Substance> subs = new HashSet<>();
+        log.trace("starting in expandRecord with {}", substance.uuid.toString());
+        subs.clear();
+        retrievalErrors.clear();;
+        Stream<Substance> stream =expandRecord(substance, 1);
+        log.trace("finished in expandRecord");
+        return stream;
+    }
+
+    public Stream<Substance> expandRecord(Substance substance, int initialGeneration) {
+        log.trace("starting in expandRecord, generation: {}", initialGeneration);
         subs.add(substance);
         if (includeDefinitionalItems) {
             appendDefinitionalSubstances(substance, (s) -> {
                 if (subs.stream().noneMatch(s2 -> s2.getUuid().equals(s.getUuid()))) {
                     subs.add(s);
                 }
-            }, 1);
+            }, initialGeneration);
         }
         if (includeRelated) {
             appendRelatedSubstances(substance, (s)->{
                 if (subs.stream().noneMatch(s2 -> s2.getUuid().equals(s.getUuid()))) {
                     subs.add(s);
                 }
-            }, 1);
+            }, initialGeneration);
         }
         return subs.stream();
     }
@@ -80,12 +91,21 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
     private void appendDefinitionalSubstances(Substance substance, Consumer<Substance> consumer, int generation) {
         log.trace("starting in appendDefinitionalSubstances, generation: {}", generation);
         for (SubstanceReference ref : substance.getDependsOnSubstanceReferences()) {
+            if(ref.refuuid!=null && retrievalErrors.contains(ref.refuuid)){
+                log.trace("short-circuiting retrieval of {}", ref.refuuid);
+                continue;
+            }
+            log.trace("before substanceRepository.findBySubstanceReference");
             Substance referred = substanceRepository.findBySubstanceReference(ref);
-
+            log.trace("completed substanceRepository.findBySubstanceReference");
             if (referred == null) {
                 log.warn("Error retrieving substance by ref approvalid {} or uuid {}", ref.approvalID,
                         ref.refuuid);
             } else {
+                if(referred.uuid!=null && retrievalErrors.contains(referred.uuid.toString())) {
+                    log.trace("skipping substance that we already were unable to retrieve");
+                    continue;
+                }
                 //may be necessary to retrieve entire substance?
                 Optional<Substance> optionalSubstance = substanceEntityService.get(referred.uuid);
                 if( !optionalSubstance.isPresent()){
@@ -93,10 +113,10 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
                     continue;
                 }
                 referred =optionalSubstance.get();
-                //log.trace("accepting substance {}", referred.uuid.toString());
                 consumer.accept(referred);
+                log.trace("added substance {} to the output", referred.uuid.toString());
                 if (generation < definitionalGenerations) {
-                    appendDefinitionalSubstances(referred, consumer, generation+1);
+                    expandRecord(referred, generation+1);
                 }
             }
         }
@@ -106,41 +126,60 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
         log.trace("starting in appendRelatedSubstances, generation: {}", generation);
         for (Relationship rel : substance.relationships) {
             if (rel.relatedSubstance != null && rel.relatedSubstance.refuuid != null) {
-                log.trace("looking for substance with UUID {}", rel.relatedSubstance.refuuid);
-                Substance relatedSubstance = substanceRepository.findBySubstanceReference(rel.relatedSubstance);
-                if(relatedSubstance!=null) {
-                    //may be necessary to retrieve entire substance?
-                    Optional<Substance> optionalSubstance=substanceEntityService.get(relatedSubstance.uuid);
-                    if(!optionalSubstance.isPresent()){
-                        log.error("Error retrieving substance!");
-                        continue;
+                if( retrievalErrors.contains(rel.relatedSubstance.refuuid)) {
+                    log.trace("short-circuiting retrieval of {}", rel.relatedSubstance.refuuid);
+                } else {
+                    log.trace("looking for substance with UUID {}", rel.relatedSubstance.refuuid);
+                    if (retrievalErrors.contains(rel.relatedSubstance.refuuid) || subs.stream().anyMatch(s -> s.getUuid().toString().equals(rel.relatedSubstance.refuuid))) {
+                        log.trace("skipping retrieval of substance because it has failed before or it's already in the output set");
+                    } else {
+                        Substance relatedSubstance = substanceRepository.findBySubstanceReference(rel.relatedSubstance);
+                        if (relatedSubstance != null) {
+                            //may be necessary to retrieve entire substance?
+                            Optional<Substance> optionalSubstance = substanceEntityService.get(relatedSubstance.uuid);
+                            if (!optionalSubstance.isPresent()) {
+                                log.error("Error retrieving substance!");
+                                continue;
+                            }
+                            relatedSubstance = optionalSubstance.get();
+                            consumer.accept(relatedSubstance);
+                            if (generation < generationsToExpandRelated) {
+                                expandRecord(relatedSubstance, generation + 1);
+                            }
+
+                        } else {
+                            log.warn("Error retrieving related substance with UUID {}", rel.relatedSubstance.refuuid);
+                        }
                     }
-                    relatedSubstance =optionalSubstance.get();
-                    consumer.accept(relatedSubstance);
-                    if (generation < generationsToExpandRelated) {
-                        appendRelatedSubstances(relatedSubstance, consumer, generation+1);
-                    }
-                }
-                else {
-                    log.warn("Error retrieving related substance with UUID {}", rel.relatedSubstance.refuuid);
                 }
             }
             if( includeModifyingItems && rel.mediatorSubstance!= null ){
-                Substance mediatorSubstance = substanceRepository.findBySubstanceReference (rel.mediatorSubstance);
-                if(mediatorSubstance!=null) {
-                    log.trace("We have a mediator sub: {}", mediatorSubstance.uuid.toString());
-                    Optional<Substance> optionalSubstance=substanceEntityService.get(mediatorSubstance.uuid);
-                    if(!optionalSubstance.isPresent()){
-                        log.error("Error retrieving substance!");
-                        continue;
-                    }
-                    mediatorSubstance = optionalSubstance.get();
-                    consumer.accept(mediatorSubstance);
-                    if (generation < generationsToExpandRelated) {
-                        appendRelatedSubstances(mediatorSubstance, consumer, generation+1);
-                    }
+                if( rel.mediatorSubstance.refuuid!=null && retrievalErrors.contains(rel.mediatorSubstance.refuuid)){
+                    log.trace("short-circuiting retrieval of mediator {}", rel.mediatorSubstance.refuuid);
                 } else {
-                    log.warn("Error retrieving related substance with UUID {}", rel.mediatorSubstance.refuuid);
+                    log.trace("calling ");
+                    Substance mediatorSubstance = substanceRepository.findBySubstanceReference(rel.mediatorSubstance);
+                    log.trace("complete");
+                    if (mediatorSubstance != null) {
+                        log.trace("We have a mediator sub: {}", mediatorSubstance.uuid.toString());
+                        String mediatorUuid = mediatorSubstance.uuid.toString();
+                        if (retrievalErrors.contains(mediatorUuid) || subs.stream().anyMatch(s -> s.getUuid().toString().equals(mediatorUuid))) {
+                            log.trace("skipping retrieval of mediator substance because of previous error OR it's already in the output set");
+                        } else {
+                            Optional<Substance> optionalSubstance = substanceEntityService.get(mediatorSubstance.uuid);
+                            if (!optionalSubstance.isPresent()) {
+                                log.error("Error retrieving substance!");
+                                continue;
+                            }
+                            mediatorSubstance = optionalSubstance.get();
+                            consumer.accept(mediatorSubstance);
+                            if (generation < generationsToExpandRelated) {
+                                expandRecord(mediatorSubstance, generation + 1);
+                            }
+                        }
+                    } else {
+                        log.warn("Error retrieving related substance with UUID {}", rel.mediatorSubstance.refuuid);
+                    }
                 }
             }
         }

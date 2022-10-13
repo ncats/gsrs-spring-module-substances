@@ -10,7 +10,7 @@ import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
-import ix.ginas.exporters.DefaultExporterFactoryConfig;
+import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
 import ix.ginas.models.v1.Substance;
@@ -100,7 +100,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         /*Field fld= cls.getField("obj");
         fld.setAccessible(true);
         Object listOfValues= fld.get(response.getBody());
-        List<DefaultExporterFactoryConfig> items= (List<DefaultExporterFactoryConfig>)  listOfValues;
+        List<SpecificExporterSettings> items= (List<SpecificExporterSettings>)  listOfValues;
         items.forEach(i-> System.out.println(String.format("config key: %s; id: %s", i.getConfigurationKey(), i.getConfigurationId())));*/
 
         System.out.println(response.getBody().toString());
@@ -123,7 +123,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
                 .setAllAuditorsToAbstractUser(true)
                 .build();
         JsonNode generalSettings = objectMapper.valueToTree(generalExportSettings);
-        DefaultExporterFactoryConfig config =  DefaultExporterFactoryConfig.builder()
+        SpecificExporterSettings config =  SpecificExporterSettings.builder()
                 .exporterKey(expConfKey)
                 .exporterSettings(exporterSettings)
                 .generalSettings(generalSettings)

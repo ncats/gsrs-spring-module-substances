@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
-import ix.ginas.exporters.DefaultExporterFactoryConfig;
+import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
 import org.junit.jupiter.api.Assertions;
@@ -33,7 +33,7 @@ public class ExportConfigTest {
                 .setAllAuditorsToAbstractUser(true)
                 .build();
         JsonNode generalSettings = objectMapper.valueToTree(generalExportSettings);
-        DefaultExporterFactoryConfig config =  DefaultExporterFactoryConfig.builder()
+        SpecificExporterSettings settings =  SpecificExporterSettings.builder()
                 .exporterKey("SDF")
                 .exporterSettings(exporterSettings)
                 .generalSettings(generalSettings)
@@ -42,7 +42,7 @@ public class ExportConfigTest {
                 .build();
         ObjectMapper mapper = new ObjectMapper();
 
-        String configString =mapper.writeValueAsString(config);
+        String configString =mapper.writeValueAsString(settings);
         System.out.println(configString);
 
         Assertions.assertTrue(configString.length()>0);
