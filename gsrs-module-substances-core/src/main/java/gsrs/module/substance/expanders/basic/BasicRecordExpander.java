@@ -92,7 +92,7 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
             }
             log.trace("before retrieval");
             Substance referred = (Substance) EntityFetcher.of(ref.getKeyForReferencedSubstance()).call();
-            log.trace("completed fetch");
+            log.trace("completed retrieval");
             if (referred == null) {
                 log.warn("Error retrieving substance by ref approval id {} or uuid {}", ref.approvalID,
                         ref.refuuid);
@@ -118,7 +118,9 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
                     if (retrievalErrors.contains(rel.relatedSubstance.refuuid) || subs.stream().anyMatch(s -> s.getUuid().toString().equals(rel.relatedSubstance.refuuid))) {
                         log.trace("skipping retrieval of substance because it has failed before or it's already in the output set");
                     } else {
+                        log.trace("before retrieval");
                         Substance relatedSubstance = (Substance) EntityFetcher.of(rel.relatedSubstance.getKeyForReferencedSubstance()).call();
+                        log.trace("completed retrieval");
                         if (relatedSubstance != null) {
                             subs.add(relatedSubstance);
                             if (generation < generationsToExpandRelated) {
@@ -136,8 +138,9 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
                     log.trace("short-circuiting retrieval of mediator {}", rel.mediatorSubstance.refuuid);
                 } else {
                     log.trace("going to fetch mediator substance ");
+                    log.trace("before retrieval");
                     Substance mediatorSubstance = (Substance) EntityFetcher.of(rel.mediatorSubstance.getKeyForReferencedSubstance()).call();
-                    log.trace("complete");
+                    log.trace("completed retrieval");
                     if (mediatorSubstance != null) {
                         log.trace("We have a mediator sub: {}", mediatorSubstance.uuid.toString());
                         subs.add(mediatorSubstance);
