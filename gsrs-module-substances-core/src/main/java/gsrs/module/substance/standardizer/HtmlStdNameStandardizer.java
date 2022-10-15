@@ -18,6 +18,7 @@ public class HtmlStdNameStandardizer extends HtmlNameStandardizer{
     public boolean upperCase = true;
     public boolean preserveTag = true;
     public boolean nkfdNormalize = true;
+    public boolean removeUnprintables = true;
     public Pattern[] search = {Pattern.compile("\u2190"), Pattern.compile("\u2192"),
         Pattern.compile("±"), Pattern.compile("\u00B1"), Pattern.compile("\\×"),
         Pattern.compile("\u00B9"), Pattern.compile("\u00B2"), Pattern.compile("\u00B3"),
@@ -122,12 +123,14 @@ public class HtmlStdNameStandardizer extends HtmlNameStandardizer{
             if(nkfdNormalize){
                 result.setResult(nkfdNormalizations(result.getResult()));
             }
-            result.setResult(result.getResult().replaceAll("\\p{C}", ""));
             if(upperCase){
                 result.setResult(result.getResult().toUpperCase());
             }
             if(suffix.length() > 0){
                 result.setResult(result.getResult() + " " + suffix);
+            }
+            if(removeUnprintables){
+                result.setResult(result.getResult().replaceAll("\\p{C}", ""));
             }
         }
         return result;
