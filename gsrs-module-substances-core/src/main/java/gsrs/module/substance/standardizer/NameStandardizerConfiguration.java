@@ -11,26 +11,45 @@ import java.util.Collections;
 import java.util.Map;
 
 @Configuration
-@ConfigurationProperties("gsrs.standardizers.substances.name")
+@ConfigurationProperties("gsrs.standardizers.substances")
 @Data
 public class NameStandardizerConfiguration {
 
-    private Class standardizerClass;
-    private Map<String, Object> parameters;
+    private Map<String, Object> name;
+    private Map<String, Object> stdname;
 
     @Bean
-    @ConditionalOnMissingBean
-    public NameStandardizer getNameStandardizer() {
+    public NameStandardizer nameStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
+        ObjectMapper mapper = new ObjectMapper();
+        Class standardizerClass = null;
+        Map<String, Object> parameters = null;
+        if (name != null) {
+            standardizerClass = Class.forName((String) name.get("standardizerClass"));
+            parameters = (Map<String, Object>) name.get("parameters");
+        }
         if(standardizerClass == null) {
             HtmlNameStandardizer standardizer = new HtmlNameStandardizer();
-            String[] searchStrings = {"\\p{C}", "\\s{2,}", "\u00B9", "\u00B2", "\u00B3", "</sup><sup>", "</sub><sub>", "</i><i>"};
-            String[] replaceStrings = {"", " ", "<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>", "", "", ""};
-            standardizer.setSearch(searchStrings);
-            standardizer.setReplace(replaceStrings);
             return (NameStandardizer) standardizer;
         }
-        ObjectMapper mapper = new ObjectMapper();
+        if(parameters == null) {
+            return (NameStandardizer) mapper.convertValue(Collections.emptyMap(), standardizerClass);
+        }
+        return (NameStandardizer) mapper.convertValue(parameters, standardizerClass);
+    }
 
+    @Bean
+    public NameStandardizer stdNameStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
+        ObjectMapper mapper = new ObjectMapper();
+        Class standardizerClass = null;
+        Map<String, Object> parameters = null;
+        if (stdname != null) {
+            standardizerClass = Class.forName((String) stdname.get("standardizerClass"));
+            parameters = (Map<String, Object>) stdname.get("parameters");
+        }
+        if(standardizerClass == null) {
+            HtmlStdNameStandardizer standardizer = new HtmlStdNameStandardizer();
+            return (NameStandardizer) standardizer;
+        }
         if(parameters == null) {
             return (NameStandardizer) mapper.convertValue(Collections.emptyMap(), standardizerClass);
         }

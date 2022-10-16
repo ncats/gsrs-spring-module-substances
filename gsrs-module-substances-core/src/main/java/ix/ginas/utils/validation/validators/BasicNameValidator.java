@@ -3,7 +3,6 @@ package ix.ginas.utils.validation.validators;
 import gsrs.module.substance.utils.NameUtilities;
 import gsrs.module.substance.standardizer.ReplacementResult;
 import gsrs.module.substance.standardizer.NameStandardizer;
-import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
@@ -21,13 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
     @Autowired
-    private NameStandardizerConfiguration nameStandardizerConfiguration;
-
     private NameStandardizer nameStandardizer;
-
-    public BasicNameValidator() {
-        nameStandardizer = nameStandardizerConfiguration.getNameStandardizer();
-    }
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {

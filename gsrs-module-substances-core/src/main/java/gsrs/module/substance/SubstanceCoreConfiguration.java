@@ -9,6 +9,7 @@ import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinderConfig;
 import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.*;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
@@ -26,7 +27,7 @@ import org.springframework.context.annotation.Import;
         EditEntityService.class, NameLegacySearchService.class, CodeLegacySearchService.class, ReferenceLegacySearchService.class,
         SubstanceEntityServiceImpl.class, RelationEventListener.class,
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
-        LegacyGinasAppController.class,
+        LegacyGinasAppController.class, NameStandardizerConfiguration.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
