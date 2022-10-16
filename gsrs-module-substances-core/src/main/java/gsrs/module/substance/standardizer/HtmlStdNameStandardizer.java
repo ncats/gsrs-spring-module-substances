@@ -1,7 +1,6 @@
 package gsrs.module.substance.standardizer;
 
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
-import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -87,24 +86,6 @@ public class HtmlStdNameStandardizer extends HtmlNameStandardizer{
         ".TAU.", ".UPSILON.", ".PHI.", ".CHI.", ".PSI.", ".OMEGA.", "", "", "", "",
         "SUP(", ")", "SUB(", ")"};
 
-    public String nkfdNormalizations(String inputString) {
-        log.trace(inputString);
-        log.trace("Length:" + inputString.length());
-
-        String normalized = Normalizer.normalize(inputString, Normalizer.Form.NFKD);
-        log.trace(normalized);
-        log.trace("Length:" + normalized.length());
-
-        normalized = normalized.replaceAll("\\p{Mn}+", "");
-        log.trace(normalized);
-        log.trace("Length:" + normalized.length());
-
-        normalized = normalized.replaceAll("[^\\p{ASCII}]", "?");
-        log.trace(normalized);
-        log.trace("Length:" + normalized.length());
-        return normalized;
-    }
-
     @Override
     public ReplacementResult standardize(String input) {
         ReplacementResult result = new ReplacementResult(input.trim(), new ArrayList<>());
@@ -121,7 +102,7 @@ public class HtmlStdNameStandardizer extends HtmlNameStandardizer{
             }
             result.update(this.replaceRegexLists(result.getResult(), search, replace));
             if(nkfdNormalize){
-                result.setResult(nkfdNormalizations(result.getResult()));
+                result.setResult(this.nkfdNormalizations(result.getResult()));
             }
             if(upperCase){
                 result.setResult(result.getResult().toUpperCase());

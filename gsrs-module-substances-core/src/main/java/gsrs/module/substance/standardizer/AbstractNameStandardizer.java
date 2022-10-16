@@ -1,5 +1,6 @@
 package gsrs.module.substance.standardizer;
 
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -7,11 +8,13 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  *
  * @author Egor Puzanov
  */
+@Slf4j
 public abstract class AbstractNameStandardizer implements NameStandardizer{
 
     public Pattern[] search;
@@ -128,5 +131,23 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
                                 })
                                 .toArray(Pattern[]::new);
         return replaceRegexLists(input, patList, replaceList);
+    }
+
+    public String nkfdNormalizations(String inputString) {
+        log.trace(inputString);
+        log.trace("Length:" + inputString.length());
+
+        String normalized = Normalizer.normalize(inputString, Normalizer.Form.NFKD);
+        log.trace(normalized);
+        log.trace("Length:" + normalized.length());
+
+        normalized = normalized.replaceAll("\\p{Mn}+", "");
+        log.trace(normalized);
+        log.trace("Length:" + normalized.length());
+
+        normalized = normalized.replaceAll("[^\\p{ASCII}]", "?");
+        log.trace(normalized);
+        log.trace("Length:" + normalized.length());
+        return normalized;
     }
 }
