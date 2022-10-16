@@ -6,7 +6,7 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import gsrs.module.substance.standardizer.HtmlStdNameStandardizer;
+import gsrs.module.substance.standardizer.HtmlNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
 import gsrs.module.substance.standardizer.ReplacementNote;
 import gsrs.module.substance.standardizer.ReplacementResult;
@@ -19,7 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HtmlStdNameStandardizerTest {
 
-    NameStandardizer standardizer = new HtmlStdNameStandardizer();
+    NameStandardizer standardizer = new HtmlNameStandardizer();
 
     @Test //Remove a tab
     public void testStandardize16() {

@@ -1,12 +1,17 @@
 package gsrs.module.substance.standardizer;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import gsrs.module.substance.utils.HtmlUtil;
+import ix.ginas.utils.validation.validators.tags.TagUtilities;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import org.apache.commons.lang3.StringUtils;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -15,15 +20,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class HtmlNameStandardizer extends AbstractNameStandardizer{
 
-    public Pattern[] search = {Pattern.compile("\\p{C}"), Pattern.compile("\\s{2,}"),
-        Pattern.compile("\u00B9"), Pattern.compile("\u00B2"), Pattern.compile("\u00B3"),
-        Pattern.compile("<-"), Pattern.compile("->"), Pattern.compile("\\+\\/-"),
-        Pattern.compile("SUP\\(([^\\)]*)\\)"), Pattern.compile("SUB\\(([^\\)]*)\\)"),
-        Pattern.compile("<small>L</small>"), Pattern.compile("<small>D</small>"),
-        Pattern.compile("</sup><sup>"), Pattern.compile("</sub><sub>"), Pattern.compile("</i><i>")};
-
-    public String[] replace = {"", " ", "<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>",
-        "\u2190", "\u2192", "\u00B1", "<sup>$1</sup>", "<sub>$1</sub>", "ʟ", "ᴅ", "", "", ""};
+    public boolean plainText = false;
+    public boolean upperCase = false;
+    public boolean preserveTag = false;
+    public boolean nkfdNormalize = false;
+    public boolean removeUnprintables = false;
 
     public static ReplacementResult cleanHtml(String input) {
         List<ReplacementNote> notes = new ArrayList<>();
@@ -43,9 +44,31 @@ public class HtmlNameStandardizer extends AbstractNameStandardizer{
     public ReplacementResult standardize(String input) {
         ReplacementResult result = new ReplacementResult(input.trim(), new ArrayList<>());
         if (input != null && input.length() != 0) {
-            result.update(this.replaceRegexLists(result.getResult(), search, replace));
-            result.update(this.cleanHtml(result.getResult()));
-            result.update(this.replaceRegexLists(result.getResult(), search, replace));
+            String suffix = "";
+            if(!plainText){
+                result.update(this.cleanHtml(result.getResult()));
+            }
+            if (preserveTag) {
+                TagUtilities.BracketExtraction extract = TagUtilities.getBracketExtraction(result.getResult());
+                String namePart = extract.getNamePart();
+                suffix = extract.getTagTerms().stream().map(f->"[" + f + "]").collect(Collectors.joining(""));
+                if(suffix.length() > 0 && namePart != null){
+                    result.setResult(namePart);
+                }
+            }
+            result.update(this.replaceRegexLists(result.getResult()));
+            if(nkfdNormalize){
+                result.setResult(this.nkfdNormalizations(result.getResult()));
+            }
+            if(upperCase){
+                result.setResult(result.getResult().toUpperCase());
+            }
+            if(suffix.length() > 0){
+                result.setResult(result.getResult() + " " + suffix);
+            }
+            if(removeUnprintables){
+                result.setResult(result.getResult().replaceAll("\\p{C}", ""));
+            }
         }
         return result;
     }

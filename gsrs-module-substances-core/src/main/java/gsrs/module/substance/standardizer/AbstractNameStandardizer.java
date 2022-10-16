@@ -1,5 +1,7 @@
 package gsrs.module.substance.standardizer;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,24 +12,34 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
+
 /**
  *
  * @author Egor Puzanov
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Slf4j
 public abstract class AbstractNameStandardizer implements NameStandardizer{
 
-    public Pattern[] search;
-    public String[] replace;
+    private Pattern[] search;
+    private String[] replace;
+
+    public Pattern[] getSearch() {
+        return this.search;
+    }
 
     public void setSearch(Pattern[] searchList) {
         this.search = searchList;
     }
 
-    public void setSearch(String[] searchList) {
-        this.search = Arrays.stream(searchList)
-                                .map(s->{
-                                    if (s != null && !s.isEmpty()) return null;
+    @JsonProperty
+    public void setSearch(Map<Integer, String> m) {
+        log.info(m.toString());
+        this.search = m.entrySet().stream()
+                                .sorted(Map.Entry.comparingByKey())
+                                .map(e->{
+                                    String s = e.getValue();
+                                    if (s == null || s.isEmpty()) return null;
                                     try{
                                         return Pattern.compile(s);
                                     }catch(Exception ex){
@@ -35,18 +47,22 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
                                     }
                                 })
                                 .toArray(Pattern[]::new);
+        log.info(Arrays.toString(this.search));
     }
 
-    public void setSearch(Map<Integer, String> m) {
-        setSearch(m.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e->e.getValue()).toArray(String[]::new));
+    public String[] getReplace() {
+        return this.replace;
     }
 
     public void setReplace(String[] replaceList) {
         this.replace = replaceList;
     }
 
+    @JsonProperty
     public void setReplace(Map<Integer, String> m) {
-        setReplace(m.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e->e.getValue()).toArray(String[]::new));
+        log.info(m.toString());
+        this.replace = m.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e->e.getValue()).toArray(String[]::new);
+        log.info(Arrays.toString(this.replace));
     }
 
     public void setReplacements(Map<String, String> m) {
@@ -74,7 +90,6 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
         this.replace = replaceStrings.stream().toArray(String[]::new);
     }
 
-
     public static ReplacementResult replaceFromLists(String input, String[] searchList, String[] replaceList) {
         List<ReplacementNote> notes = new ArrayList<>();
         ReplacementResult result = new ReplacementResult(input, notes);
@@ -98,6 +113,10 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
             result.setResult(sb.toString());
         }
         return result;
+    }
+
+    public ReplacementResult replaceRegexLists(String input) {
+        return replaceRegexLists(input, search, replace);
     }
 
     public static ReplacementResult replaceRegexLists(String input, Pattern[] searchList, String[] replaceList) {
