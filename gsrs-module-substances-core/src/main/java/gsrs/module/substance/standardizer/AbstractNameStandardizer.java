@@ -30,24 +30,24 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
 
     public void setSearch(Pattern[] searchList) {
         this.search = searchList;
+        log.debug("NameStandardizer search list: " + Arrays.toString(this.search));
     }
 
     @JsonProperty
     public void setSearch(Map<Integer, String> m) {
-        log.info(m.toString());
-        this.search = m.entrySet().stream()
-                                .sorted(Map.Entry.comparingByKey())
-                                .map(e->{
-                                    String s = e.getValue();
-                                    if (s == null || s.isEmpty()) return null;
-                                    try{
-                                        return Pattern.compile(s);
-                                    }catch(Exception ex){
-                                        return null;
-                                    }
-                                })
-                                .toArray(Pattern[]::new);
-        log.info(Arrays.toString(this.search));
+        setSearch(m.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(e->{
+                        String s = e.getValue();
+                        if (s == null || s.isEmpty()) return null;
+                        try{
+                            return Pattern.compile(s);
+                        }catch(Exception ex){
+                            return null;
+                        }
+                    })
+                    .toArray(Pattern[]::new));
     }
 
     public String[] getReplace() {
@@ -56,30 +56,38 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
 
     public void setReplace(String[] replaceList) {
         this.replace = replaceList;
+        log.debug("NameStandardizer replacement list: " + Arrays.toString(this.replace));
     }
 
     @JsonProperty
     public void setReplace(Map<Integer, String> m) {
-        log.info(m.toString());
-        this.replace = m.entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e->e.getValue()).toArray(String[]::new);
-        log.info(Arrays.toString(this.replace));
+        setReplace(m.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .map(e->e.getValue())
+                    .toArray(String[]::new));
     }
 
-    public void setReplacements(Map<String, String> m) {
+    public void setOverrides(Map<Integer, Map<Integer, String>> m) {
         List<String> searchStrings = Arrays.stream(this.search).map(Pattern::toString).collect(Collectors.toList());
         List<String> replaceStrings = Arrays.asList(this.replace);
-        for (Map.Entry<String, String> entry : m.entrySet()) {
-            int idx = searchStrings.indexOf(entry.getKey());
+        List<Map<Integer, String>> overrides = (List<Map<Integer, String>>) m.entrySet()
+                                            .stream()
+                                            .sorted(Map.Entry.comparingByKey())
+                                            .map(e->e.getValue())
+                                            .collect(Collectors.toList());
+        for (Map<Integer, String> entry : overrides) {
+            int idx = searchStrings.indexOf(entry.get(0));
             if (idx > -1) {
-                replaceStrings.set(idx, entry.getValue());
+                replaceStrings.set(idx, entry.get(1));
             } else {
-                searchStrings.add(entry.getKey());
-                replaceStrings.add(entry.getValue());
+                searchStrings.add(entry.get(0));
+                replaceStrings.add(entry.get(1));
             }
         }
         this.search = searchStrings.stream()
                                 .map(s->{
-                                    if (s != null && !s.isEmpty()) return null;
+                                    if (s == null || s.isEmpty()) return null;
                                     try{
                                         return Pattern.compile(s);
                                     }catch(Exception ex){

@@ -15,6 +15,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+/**
+ *
+ * @author Egor Puzanov
+ */
 @Configuration
 @ConfigurationProperties("gsrs.standardizers.substances")
 @Data
@@ -97,17 +101,32 @@ public class NameStandardizerConfiguration {
         if(parameters.isEmpty()) {
             return (NameStandardizer) mapper.convertValue(Collections.emptyMap(), standardizerClass);
         }
-        if (parameters.containsKey("replacements")) {
-            Map<String, String> replacements = (Map<String, String>) parameters.remove("replacements");
-            List<String> searchStrings = ((Map<String, String>) parameters.getOrDefault("search", Collections.emptyMap())).entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e->e.getValue()).collect(Collectors.toList());
-            List<String> replaceStrings = ((Map<String, String>) parameters.getOrDefault("replace", Collections.emptyMap())).entrySet().stream().sorted(Map.Entry.comparingByKey()).map(e->e.getValue()).collect(Collectors.toList());
-            for (Map.Entry<String, String> entry : replacements.entrySet()) {
-                int idx = searchStrings.indexOf(entry.getKey());
+        if (parameters.containsKey("overrides")) {
+            List<Map<Integer, String>> overrides = (List<Map<Integer, String>>) ((Map<Integer, Map<Integer, String>>) parameters.remove("overrides"))
+                                            .entrySet()
+                                            .stream()
+                                            .sorted(Map.Entry.comparingByKey())
+                                            .map(e->e.getValue())
+                                            .collect(Collectors.toList());
+            List<String> searchStrings = ((Map<String, String>) parameters.getOrDefault("search", Collections.emptyMap()))
+                                            .entrySet()
+                                            .stream()
+                                            .sorted(Map.Entry.comparingByKey())
+                                            .map(e->e.getValue())
+                                            .collect(Collectors.toList());
+            List<String> replaceStrings = ((Map<String, String>) parameters.getOrDefault("replace", Collections.emptyMap()))
+                                            .entrySet()
+                                            .stream()
+                                            .sorted(Map.Entry.comparingByKey())
+                                            .map(e->e.getValue())
+                                            .collect(Collectors.toList());
+            for (Map<Integer, String> entry : overrides) {
+                int idx = searchStrings.indexOf(entry.get(0));
                 if (idx > -1) {
-                    replaceStrings.set(idx, entry.getValue());
+                    replaceStrings.set(idx, entry.get(1));
                 } else {
-                    searchStrings.add(entry.getKey());
-                    replaceStrings.add(entry.getValue());
+                    searchStrings.add(entry.get(0));
+                    replaceStrings.add(entry.get(1));
                 }
             }
             parameters.put("search", (Map<Integer, String>) searchStrings.stream().collect(Collectors.toMap(e->searchStrings.indexOf(e), e->e)));
