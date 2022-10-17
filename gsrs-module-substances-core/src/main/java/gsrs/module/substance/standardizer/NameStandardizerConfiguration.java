@@ -29,18 +29,26 @@ public class NameStandardizerConfiguration {
 
     @Bean
     public NameStandardizer nameStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
-        List<String> search = Arrays.asList("\\s{2,}", "\u00B9", "\u00B2", "\u00B3", "&lt;-", "-&gt;", "\\+\\/-", "<\\/sup><sup>", "<\\/sub><sub>", "<\\/i><i>");
-        List<String> replace = Arrays.asList(" ", "<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>", "\u2190", "\u2192", "\u00B1", "", "", "");
+        List<String> search = Arrays.asList("[\u00AD\u2010\u2011\u2012\u2013\u2014\u2212\u2015]",
+            "\\s{2,}", "\u00B9", "\u00B2", "\u00B3", "&lt;-", "-&gt;", "&lt;=", "=&gt;", "\\+\\/-", "<\\/sup><sup>", "<\\/sub><sub>",
+            "<\\/i><i>", "<small>L<\\/small>", "<small>D<\\/small>", "1/3", "2/3", "1/5", "2/5", "3/5", "4/5", "1/6", "5/6", "1/8", "3/8",
+            "5/8", "7/8", "1/4", "1/2", "[\u00B4\u02B9\u02BC\u02C8\u0301\u2018\u2019\u201B\u2032\u2034\u2037]",
+            "[\u00AB\u00BB\u02BA\u030B\u030E\u201C\u201D\u201E\u201F\u2033\u2036\u3003\u301D\u301E]");
+        List<String> replace = Arrays.asList("-", " ", "<sup>1</sup>", "<sup>2</sup>", "<sup>3</sup>", "\u2190", "\u2192", "\u2264", "\u2265", "\u00B1",
+            "", "", "", "ʟ", "ᴅ", "\u2153", "\u2154", "\u2155", "\u2156", "\u2157", "\u2158", "\u2159", "\u215A", "\u215B", "\u215C", "\u215D",
+            "\u215E", "\u00BC", "\u00BD", "'", "\"");
         Map<String, Object> parameters = new HashMap<String, Object>();
         parameters.put("search", (Map<Integer, String>) search.stream().collect(Collectors.toMap(e->search.indexOf(e), e->e)));
         final Iterator<Integer> iter = IntStream.range(0, replace.size()).iterator();
         parameters.put("replace", (Map<Integer, String>) replace.stream().collect(Collectors.toMap(e->iter.next(), e->e)));
+        parameters.put("plainText", false);
+        parameters.put("removeUnprintables", true);
         return buildStandardizer(name, parameters);
     }
 
     @Bean
     public NameStandardizer stdNameStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
-        List<String> search = Arrays.asList("\u2190", "\u2192", "±", "\u00B1", "\\×", "\u00B9", "\u00B2",
+        List<String> search = Arrays.asList("\u2190", "\u2192", "\u00B1", "\\×", "\u00B9", "\u00B2",
             "\u00B3", "\u2070", "\u2071", "\u2072", "\u2073", "\u2074", "\u2075", "\u2076", "\u2077",
             "\u2078", "\u2079", "\u207A", "\u207B", "\u2080", "\u2081", "\u2082", "\u2083", "\u2084", "\u2085",
             "\u2086", "\u2087", "\u2088", "\u2089", "\u208A", "\u208B", "ʟ", "ᴅ", "[\u200B\u200C\u200D\u2060\uFEFF]",
@@ -61,7 +69,7 @@ public class NameStandardizerConfiguration {
             "\u039B", "\u039C", "\u039D", "\u039E", "\u039F", "\u03A0", "\u03A1", "\u03A3", "\u03A4",
             "\u03A5", "\u03A6", "\u03A7", "\u03A8", "\u03A9", "<i>", "</i>", "</sup><sup>", "</sub><sub>",
             "<sup>", "</sup>", "<sub>", "</sub>");
-        List<String> replace = Arrays.asList("<-", "->", "+/-", "+/-", "X", "1", "2", "3", "0", "1", "2",
+        List<String> replace = Arrays.asList("<-", "->", "+/-", "X", "1", "2", "3", "0", "1", "2",
             "3", "4", "5", "6", "7", "8", "9", "+", "-", "0" , "1", "2", "3", "4", "5", "6",
             "7", "8", "9", "+", "-", "L", "D", "", "'", "\"", "-", "!", "#", "%", "*", ",",
             "/", ":", "?", "[", "\\", "]", "^", "_", "`", "(", "|", "||", "~", "<", "<=", ">",
@@ -102,7 +110,7 @@ public class NameStandardizerConfiguration {
             return (NameStandardizer) mapper.convertValue(Collections.emptyMap(), standardizerClass);
         }
         if (parameters.containsKey("overrides")) {
-            List<Map<Integer, String>> overrides = (List<Map<Integer, String>>) ((Map<Integer, Map<Integer, String>>) parameters.remove("overrides"))
+            List<Map<String, String>> overrides = (List<Map<String, String>>) ((Map<Integer, Map<String, String>>) parameters.remove("overrides"))
                                             .entrySet()
                                             .stream()
                                             .sorted(Map.Entry.comparingByKey())
@@ -120,13 +128,13 @@ public class NameStandardizerConfiguration {
                                             .sorted(Map.Entry.comparingByKey())
                                             .map(e->e.getValue())
                                             .collect(Collectors.toList());
-            for (Map<Integer, String> entry : overrides) {
-                int idx = searchStrings.indexOf(entry.get(0));
+            for (Map<String, String> entry : overrides) {
+                int idx = searchStrings.indexOf(entry.get("0"));
                 if (idx > -1) {
-                    replaceStrings.set(idx, entry.get(1));
+                    replaceStrings.set(idx, entry.get("1"));
                 } else {
-                    searchStrings.add(entry.get(0));
-                    replaceStrings.add(entry.get(1));
+                    searchStrings.add(entry.get("0"));
+                    replaceStrings.add(entry.get("1"));
                 }
             }
             parameters.put("search", (Map<Integer, String>) searchStrings.stream().collect(Collectors.toMap(e->searchStrings.indexOf(e), e->e)));

@@ -6,20 +6,28 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import gsrs.module.substance.standardizer.HtmlNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.ReplacementNote;
 import gsrs.module.substance.standardizer.ReplacementResult;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  *
- * @author mitch
+ * @author Egor Puzanov
  */
 @Slf4j
 public class HtmlStdNameStandardizerTest {
 
-    NameStandardizer standardizer = new HtmlNameStandardizer();
+    NameStandardizer standardizer = getStandardizer();
+
+    private NameStandardizer getStandardizer() {
+        try {
+            return (new NameStandardizerConfiguration()).stdNameStandardizer();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 
     @Test //Remove a tab
     public void testStandardize16() {
@@ -72,9 +80,9 @@ public class HtmlStdNameStandardizerTest {
     @Test
     public void testMultipleHyphenLike() {
         String input = "|\u00AD|\u2010|\u2011|\u2012|\u2013|\u2014|\u2212|\u2015|";
-        String expected = "|-|-|-|-|-|-|-|-|";
+        String expected = "||-|-|-|-|-|-|-|";
         String actual = standardizer.standardize(input).getResult();
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expected, actual); //, "Because of removing Unprintable characters \u00AD first"
     }
 
     @Test
@@ -177,9 +185,9 @@ public class HtmlStdNameStandardizerTest {
     @Test
     public void testNkfdNormalization() {
         String input = "𝐸₃éé👍!";
-        String expected = "E3EE?!";
+        String expected = "?3EE?!";
         String actual = standardizer.standardize(input).getResult();
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expected, actual); //, "Because of removing Unprintable characters first"
     }
 
     @Test
@@ -324,9 +332,9 @@ public class HtmlStdNameStandardizerTest {
     @Test
     public void testHyphenoids(){
         String input = "\u00AD\u2010\u2011\u2012something else\u2013\u2014\u2212\u2015";
-        String expected ="----SOMETHING ELSE----";
+        String expected ="---SOMETHING ELSE----";
         String actual = standardizer.standardize(input).getResult();
-        Assertions.assertEquals(expected, actual);
+        Assertions.assertEquals(expected, actual); //, "Because of removing Unprintable characters \u00AD first"
     }
 
     @Test

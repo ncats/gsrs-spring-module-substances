@@ -45,6 +45,9 @@ public class HtmlNameStandardizer extends AbstractNameStandardizer{
         ReplacementResult result = new ReplacementResult(input.trim(), new ArrayList<>());
         if (input != null && input.length() != 0) {
             String suffix = "";
+            if(removeUnprintables){
+                result.setResult(result.getResult().replaceAll("\\p{C}", ""));
+            }
             if(!plainText){
                 result.update(this.cleanHtml(result.getResult()));
             }
@@ -65,9 +68,6 @@ public class HtmlNameStandardizer extends AbstractNameStandardizer{
             }
             if(suffix.length() > 0){
                 result.setResult(result.getResult() + " " + suffix);
-            }
-            if(removeUnprintables){
-                result.setResult(result.getResult().replaceAll("\\p{C}", ""));
             }
         }
         return result;

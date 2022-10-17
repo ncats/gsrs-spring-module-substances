@@ -1,5 +1,6 @@
 package gsrs.module.substance.standardizer;
 
+import org.springframework.context.annotation.DependsOn;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.text.Normalizer;
@@ -68,21 +69,21 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
                     .toArray(String[]::new));
     }
 
-    public void setOverrides(Map<Integer, Map<Integer, String>> m) {
+    public void setOverrides(Map<Integer, Map<String, String>> m) {
         List<String> searchStrings = Arrays.stream(this.search).map(Pattern::toString).collect(Collectors.toList());
         List<String> replaceStrings = Arrays.asList(this.replace);
-        List<Map<Integer, String>> overrides = (List<Map<Integer, String>>) m.entrySet()
+        List<Map<String, String>> overrides = (List<Map<String, String>>) m.entrySet()
                                             .stream()
                                             .sorted(Map.Entry.comparingByKey())
                                             .map(e->e.getValue())
                                             .collect(Collectors.toList());
-        for (Map<Integer, String> entry : overrides) {
-            int idx = searchStrings.indexOf(entry.get(0));
+        for (Map<String, String> entry : overrides) {
+            int idx = searchStrings.indexOf(entry.get("0"));
             if (idx > -1) {
-                replaceStrings.set(idx, entry.get(1));
+                replaceStrings.set(idx, entry.get("1"));
             } else {
-                searchStrings.add(entry.get(0));
-                replaceStrings.add(entry.get(1));
+                searchStrings.add(entry.get("0"));
+                replaceStrings.add(entry.get("1"));
             }
         }
         this.search = searchStrings.stream()

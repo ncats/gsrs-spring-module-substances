@@ -6,20 +6,28 @@ import java.util.List;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import gsrs.module.substance.standardizer.HtmlNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.ReplacementNote;
 import gsrs.module.substance.standardizer.ReplacementResult;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  *
- * @author mitch
+ * @author Egor Puzanov
  */
 @Slf4j
 public class HtmlNameStandardizerTest {
 
-    NameStandardizer standardizer = new HtmlNameStandardizer();
+    NameStandardizer standardizer = getStandardizer();
+
+    private NameStandardizer getStandardizer() {
+        try {
+            return (new NameStandardizerConfiguration()).nameStandardizer();
+        } catch (Exception ex) {
+            return null;
+        }
+    }
 
     @Test
     public void testMinimalStandardization() {
