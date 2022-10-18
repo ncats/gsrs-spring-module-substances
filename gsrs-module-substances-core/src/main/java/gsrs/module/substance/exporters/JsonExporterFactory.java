@@ -42,9 +42,9 @@ public class JsonExporterFactory implements ExporterFactory {
     @Override
     public JsonNode getSchema() {
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
-        parameters.put("excludedCollections","String[]");
-        parameters.put("recordLimit", "Integer");
-        return parameters;
+        parameters.put("excludedCollections",String[].class.getName());
+        parameters.put("recordLimit", Integer.class.getName());
+        return generateSchemaNode("JSON Exporter Parameters", parameters);
     }
 
 

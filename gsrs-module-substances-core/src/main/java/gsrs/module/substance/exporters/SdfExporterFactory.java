@@ -41,7 +41,7 @@ public class SdfExporterFactory implements ExporterFactory {
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, Parameters params) throws IOException {
-        return new SdfExporter(out, new BasicGsrsPropertyModifier(approvalIDName));
+        return new SdfExporter(out, new BasicGsrsPropertyModifier(approvalIDName), params);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class SdfExporterFactory implements ExporterFactory {
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
         parameters.put("fields","String[]");
         parameters.put("approvalIDName", "String");
-        return parameters;
+        return generateSchemaNode("SDF File Exporter Parameters", parameters);
     }
 
     /*public static void addProperties(Chemical c, Substance parentSubstance, List<GinasProcessingMessage> messages){

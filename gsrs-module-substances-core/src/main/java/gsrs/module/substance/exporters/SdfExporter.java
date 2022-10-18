@@ -6,13 +6,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.exporters.Exporter;
+import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+@Slf4j
 public class SdfExporter implements Exporter<Substance> {
     @FunctionalInterface
     public interface ChemicalModifier {
@@ -25,13 +28,18 @@ public class SdfExporter implements Exporter<Substance> {
 
     private final ChemicalModifier modifier;
 
-    public SdfExporter(OutputStream out, ChemicalModifier modifier){
+    private final ExporterFactory.Parameters parameters;
+
+    public SdfExporter(OutputStream out, ChemicalModifier modifier, ExporterFactory.Parameters parameters){
         Objects.requireNonNull(out);
         Objects.requireNonNull(modifier);
 
         this.out = new BufferedWriter(new OutputStreamWriter(out));
         this.modifier  = modifier;
-
+        this.parameters=parameters;
+    }
+    public SdfExporter(OutputStream out, ChemicalModifier modifier){
+        this(out, modifier, null);
     }
     public SdfExporter(OutputStream out){
        this(out, NO_OP_MODIFIER);
@@ -43,11 +51,12 @@ public class SdfExporter implements Exporter<Substance> {
 
     @Override
     public void export(Substance s) throws IOException {
-
+        log.trace("starting export");
         List<GinasProcessingMessage> warnings = new ArrayList<>();
 
         Chemical chem = s.toChemical( warnings::add);
-
+        System.out.println("properties");
+        chem.getProperties().keySet().forEach(k-> System.out.println(k));
 
 
         modifier.modify(chem, s, warnings);
