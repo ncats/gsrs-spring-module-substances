@@ -1,5 +1,8 @@
 package gsrs.module.substance.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
@@ -35,4 +38,14 @@ public class JsonExporterFactory implements ExporterFactory {
 //        }
 //        return new JsonExporter(out);
     }
+
+    @Override
+    public JsonNode getSchema() {
+        ObjectNode parameters = JsonNodeFactory.instance.objectNode();
+        parameters.put("excludedCollections","String[]");
+        parameters.put("recordLimit", "Integer");
+        return parameters;
+    }
+
+
 }

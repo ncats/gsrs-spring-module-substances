@@ -12,6 +12,7 @@ import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import lombok.extern.slf4j.Slf4j;
@@ -266,6 +267,7 @@ public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEnt
         Assertions.assertTrue(fullExpanded.stream().anyMatch(s->s.getUuid().toString().equals(relatedId)));
         Assertions.assertTrue(fullExpanded.stream().anyMatch(s->s.getUuid().toString().equals(mediatorSubstanceId)));
         Assertions.assertTrue(fullExpanded.size()>1);
+        StructurallyDiverseSubstance sds;
     }
 
 }

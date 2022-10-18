@@ -1,5 +1,8 @@
 package gsrs.module.substance.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.exporters.Exporter;
@@ -63,7 +66,6 @@ public class SdfExporter implements Exporter<Substance> {
     public void close() throws IOException {
         out.close();
     }
-
 
     private static String formatMolfile(Chemical c) throws Exception {
         String mol = c.toSd();

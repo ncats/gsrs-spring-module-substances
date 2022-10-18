@@ -39,6 +39,12 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     private Set<String> codeSystemsToKeep;
     private BasicSubstanceScrubberParameters scrubberSettings;
 
+    enum RECORD_PUB_STATUS {
+        FULLY_PUBLIC,
+        DEFINITION_PROTECTED,
+        FULLY_PROTECTED
+    }
+
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
         this.scrubberSettings = scrubberSettings;
         groupsToInclude= Optional.ofNullable(scrubberSettings.getAccessGroupsToInclude()).orElse(Collections.emptyList()).stream()
@@ -395,6 +401,91 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                     }
                 });
         return substance;
+    }
+
+    public boolean isRecordExcluded(Substance starting){
+        if(scrubberSettings.isRemoveAllLocked()) {
+            Set<String> accessSet = starting.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
+            //If it's not empty, remove everything UNLESS
+            if(!accessSet.isEmpty()) {
+                accessSet.retainAll(groupsToInclude);
+                // There's something in the inclusion list
+                if(!accessSet.isEmpty()) {
+                    return false; //record NOT excluded (okay to include)
+                }else {
+                    //this means the whole thing is restricted
+                    return true; //record IS to be excluded
+                }
+            }
+        }
+        return false; //if scrubber not set to scrub out, always return false
+    }
+
+    public boolean isRecordDefinitionExcluded(Substance substance) {
+        Set<String> accessSet = substance.getPrimaryDefinitionReference().getAccess().stream()
+                .map(a->a.name)
+                .collect(Collectors.toSet());
+        if( substance instanceof GinasSubstanceDefinitionAccess) {
+            GinasAccessReferenceControlled  accessHolder= (( GinasSubstanceDefinitionAccess)substance).getDefinitionElement();
+            accessHolder.getAccess().stream()
+                    .map(g->g.name)
+                    .forEach(a-> accessSet.add(a));
+        }
+        if(substance.getPrimaryDefinitionRelationships().isPresent()){
+            substance.getPrimaryDefinitionRelationships().get().getAccess().stream()
+                    .map(g->g.name)
+                    .forEach(a-> accessSet.add(a));
+        }
+        if(!accessSet.isEmpty()) {
+            accessSet.retainAll(groupsToInclude);
+            // There's something in the inclusion list
+            if(!accessSet.isEmpty()) {
+                return false; //record NOT excluded (okay to include)
+            }else {
+                //this means the whole thing is restricted
+                return true; //record IS to be excluded
+            }
+        }
+        return false; //if scrubber not set to scrub out, always return false
+    }
+
+    public RECORD_PUB_STATUS getPublishable(SubstanceReference sref) throws Exception {
+        Substance rsub = (Substance) EntityFetcher.of(sref.getKeyForReferencedSubstance()).call();;
+
+        if(rsub==null){
+            return RECORD_PUB_STATUS.FULLY_PROTECTED;
+        }
+        if(isRecordExcluded(rsub)){
+            return RECORD_PUB_STATUS.FULLY_PROTECTED;
+        }else if(isRecordDefinitionExcluded(rsub)){
+            return RECORD_PUB_STATUS.DEFINITION_PROTECTED;
+        }
+        return RECORD_PUB_STATUS.FULLY_PUBLIC;
+    }
+
+
+    public Optional<Substance> scrubBasedOnDefDefs(Substance substance) {
+        Optional<Substance> returnSubstance = Optional.of(substance);
+        substance.getDependsOnSubstanceReferences().forEach(thing->{
+            RECORD_PUB_STATUS status;
+            try {
+                status=getPublishable(thing);
+                switch(status){
+                    case FULLY_PUBLIC: return;
+
+                    case DEFINITION_PROTECTED:
+                        //do  C2 stuff here
+                    case FULLY_PROTECTED:
+                        //do  C3 stuff here
+
+                }
+            }
+            catch(Exception ex) {
+                log.trace("Error computing publishable of substance", ex);
+            }
+
+        });
+        return returnSubstance;
     }
 
     @SneakyThrows

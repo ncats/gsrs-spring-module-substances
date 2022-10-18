@@ -1,4 +1,4 @@
-package exports.scrubbers;
+package example.exports.scrubbers;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
@@ -7,10 +7,11 @@ import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
 import gsrs.substances.tests.SubstanceTestUtil;
 import ix.core.models.Group;
+import ix.core.models.Keyword;
 import ix.core.models.Principal;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
+import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.models.v1.*;
-import org.h2.pagestore.db.ScanCursor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -1213,6 +1214,39 @@ public class BasicSubstanceScrubberTests {
         Assertions.assertEquals("approved", cleanedChemical.status);
     }
 
+    @Test
+    public void testReferencedSubstanceCleanup() {
+        //building up a structurally diverse substance where the parent is protected.
+        StructurallyDiverseSubstance parent = new StructurallyDiverseSubstance();
+        StructurallyDiverse parentCore= new StructurallyDiverse();
+        parentCore.part.add(new Keyword("WHOLE"));
+        parentCore.sourceMaterialClass="ORGANISM";
+        parentCore.sourceMaterialType="PLANT";
+        parentCore.organismFamily= "Myrtaceae";
+        parentCore.organismGenus="Taxandria";
+        parentCore.organismSpecies="fragrans";
+        parentCore.organismAuthor="(J. R. Wheeler & N. G. Marchant) J. R. Wheeler & N. G. Marchant";
+        parent.structurallyDiverse=parentCore;
+        parent.names.add(new Name("Taxandria fragrans whole"));
+        Group protectedGroup = new Group("protected");
+        parent.getAccess().add(protectedGroup);
+        UUID parentUuid= parent.getOrGenerateUUID();
+
+        StructurallyDiverseSubstance child = new StructurallyDiverseSubstance();
+        StructurallyDiverse childCore = new StructurallyDiverse();
+        childCore.parentSubstance = new SubstanceReference();
+        childCore.parentSubstance = SubstanceReference.newReferenceFor(parent);
+        childCore.part.add(new Keyword("FLOWER"));
+        childCore.part.add(new Keyword("LEAF"));
+        childCore.part.add(new Keyword("STEM"));
+
+        child.structurallyDiverse=childCore;
+        child.structurallyDiverse=childCore;
+
+
+        Assertions.assertEquals(parentUuid.toString(), child.structurallyDiverse.parentSubstance.refuuid);
+    }
+    
 
     private void predicateUsageAssertionHelper(List<?> predicate) {
         System.out.println(predicate.toString());

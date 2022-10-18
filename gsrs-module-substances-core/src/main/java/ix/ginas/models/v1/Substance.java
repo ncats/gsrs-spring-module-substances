@@ -889,7 +889,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         n.note=note;
 
         this.notes.add(n);
-        this.setIsDirty("references");
+        this.setIsDirty("notes");
         return n;
     }
 

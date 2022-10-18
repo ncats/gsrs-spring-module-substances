@@ -1,5 +1,8 @@
 package gsrs.module.substance.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.exporters.Exporter;
@@ -41,9 +44,18 @@ public class SdfExporterFactory implements ExporterFactory {
         return new SdfExporter(out, new BasicGsrsPropertyModifier(approvalIDName));
     }
 
+    @Override
+    public JsonNode getSchema() {
+        ObjectNode parameters = JsonNodeFactory.instance.objectNode();
+        parameters.put("fields","String[]");
+        parameters.put("approvalIDName", "String");
+        return parameters;
+    }
+
     /*public static void addProperties(Chemical c, Substance parentSubstance, List<GinasProcessingMessage> messages){
         new BasicGsrsPropertyModifier(approvalI ).modify(c, parentSubstance, messages);
     }
+
 */
     private class BasicGsrsPropertyModifier implements SdfExporter.ChemicalModifier {
 
