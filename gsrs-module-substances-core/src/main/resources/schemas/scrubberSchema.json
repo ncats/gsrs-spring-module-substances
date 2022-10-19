@@ -44,23 +44,6 @@
       },
       "CVDomain": "ACCESS_GROUP"
     },
-    "accessGroupsToRemove": {
-      "comments": "names of access groups to that WILL be removed ",
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "title": "Access Groups to Remove",
-      "visibleIf": {
-        "removeAllLocked": [
-          true
-        ]
-      },
-      "widget": {
-        "id": "multi-select"
-      },
-      "CVDomain": "ACCESS_GROUP"
-    },
     "removeElementsIfNoExportablePublicRef": {
       "comments": "elements to remove when they have no public references",
       "type": "boolean",
@@ -349,8 +332,7 @@
       "if": "removeAllLocked",
       "then": {
         "oneOf": [
-          "accessGroupsToInclude",
-          "accessGroupsToRemove"
+          "accessGroupsToInclude"
         ]
       }
     }

@@ -21,6 +21,14 @@ public interface GinasAccessReferenceControlled extends GinasAccessControlled {
 
 	void setReferences(Set<Keyword> references);
 	
+	public default void setReferenceUuids(Set<UUID> uuids) {
+		Set<Keyword> refs= uuids
+			    .stream()
+			    .map(uu->new Keyword(GinasCommonSubData.REFERENCE,uu.toString()))
+			    .collect(Collectors.toSet());
+		this.setReferences(refs);
+	}
+	
 	@JsonIgnore
 	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences();
 

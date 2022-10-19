@@ -14,6 +14,7 @@ import gov.nih.ncats.common.stream.StreamUtil;
 import ix.core.EntityFetcher;
 import ix.core.models.Group;
 import ix.core.models.Keyword;
+import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
 import ix.ginas.modelBuilders.SubstanceBuilder;
@@ -34,7 +35,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     private static final String TO_DELETE = "TO_DELETE";
     private static final String TO_FORCE_KEEP = "TO_FORCE_KEEP";
 	private Set<String> groupsToInclude;
-    private Set<String> groupsToRemove;
+	private Set<String> statusesToInclude;
     private Set<String> codeSystemsToRemove;
     private Set<String> codeSystemsToKeep;
     private BasicSubstanceScrubberParameters scrubberSettings;
@@ -52,12 +53,11 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
         
-        
-        //TODO: not entirely sure when we'd use this
-        groupsToRemove= Optional.ofNullable(scrubberSettings.getAccessGroupsToRemove()).orElse(Collections.emptyList()).stream()
+        statusesToInclude= Optional.ofNullable(scrubberSettings.getStatusesToInclude()).orElse(Collections.emptyList()).stream()
                 .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
+        
         codeSystemsToRemove = Optional.ofNullable(scrubberSettings.getCodeSystemsToRemove()).orElse(Collections.emptyList()).stream()
                 .map(String::trim)
                 .filter(t->t.length()>0)
@@ -97,17 +97,16 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     	Set<UUID> references = s.references.stream().map(r->r.uuid).collect(Collectors.toSet());
     	
     	forEachObjectWithReferences(s, (o)->{
-    		Set<Keyword> refs= o.getReferencesAsUUIDs()
+    		Set<UUID> refs= o.getReferencesAsUUIDs()
     						    .stream()
     						    .filter(uu->references.contains(uu))
-    						    .map(uu->new Keyword(GinasCommonSubData.REFERENCE,uu.toString()))
     						    .collect(Collectors.toSet());
-    		o.setReferences(refs);
+    		o.setReferenceUuids(refs);
     		
     	});
     }
 
-    private void CleanUpReferences(Substance substance){
+    private void cleanUpReferences(Substance substance){
         log.trace("starting CleanUpReferences");
         if(!scrubberSettings.isRemoveReferencesByCriteria()){
             return;
@@ -393,11 +392,22 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     private Substance reassignUuids(Substance substance) {
         log.trace("starting reassignUuids");
-        substance.uuid=UUID.randomUUID();
+        Map<UUID,UUID> oldToNewUUIDMap = new HashMap<>();
+        substance.uuid=oldToNewUUIDMap.computeIfAbsent(substance.uuid, (k)->UUID.randomUUID());
+        substance.references.forEach(r->{
+        	r.uuid=oldToNewUUIDMap.computeIfAbsent(r.uuid, (k)->UUID.randomUUID());
+        });
         substance.getAllChildrenCapableOfHavingReferences().stream()
                 .forEach(c-> {
+                	
+                	//change reference uuids and references to those uuids
+                	Set<UUID> newRefUuids = c.getReferencesAsUUIDs().stream().map(u->oldToNewUUIDMap.getOrDefault(u, null)).filter(u->u!=null).collect(Collectors.toSet());
+                	c.setReferenceUuids(newRefUuids);
+                	
                     if (c instanceof GinasCommonData) {
-                        ((GinasCommonData) c).uuid = UUID.randomUUID();
+                        ((GinasCommonData) c).uuid = oldToNewUUIDMap.computeIfAbsent(((GinasCommonData) c).uuid, (k)->UUID.randomUUID());
+                    }else if(c instanceof Structure) {
+                    	((Structure) c).id = oldToNewUUIDMap.computeIfAbsent(((Structure) c).id , (k)->UUID.randomUUID());
                     }
                 });
         return substance;
@@ -407,6 +417,15 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     // status
 
     public boolean isRecordExcluded(Substance starting){
+    	//This is theoretically the implementation of that TODO
+    	if(scrubberSettings.isRemoveBasedOnStatus()) {
+    		String status=this.getStatusForSubstance(starting);
+    		//filter out
+    		if(!this.statusesToInclude.contains(status)) {
+    			return true;
+    		}
+    		
+        }
         if(scrubberSettings.isRemoveAllLocked()) {
             Set<String> accessSet = starting.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
             //If it's not empty, remove everything UNLESS
@@ -432,7 +451,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 .map(a->a.name)
                 .collect(Collectors.toSet());*/
         Set<String> accessSet = new HashSet<>();
-        if( substance instanceof GinasSubstanceDefinitionAccess) {
+        if(substance instanceof GinasSubstanceDefinitionAccess) {
             GinasAccessReferenceControlled accessHolder= (( GinasSubstanceDefinitionAccess)substance).getDefinitionElement();
             accessHolder.getAccess().stream()
                     .map(g->g.name)
@@ -440,7 +459,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
         /*
         May need to comment this out?
-        every record (excpet concepts) has a def
+        every record (except concepts) has a def
         can protect alt def independent of primary def...
         not necessarily a relationship between the 2
         e.g. vaccine
@@ -498,8 +517,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
                     case DEFINITION_PROTECTED:
                         //do  C2 stuff here
+                    	//for now considered the same as fully public
+                    	return;
+                    	
                     case FULLY_PROTECTED:
                         //do  C3 stuff here
+                    	
+                    	return;
 
                 }
             }
@@ -572,7 +596,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             String cleanJson= restrictedJSONSimple(substanceJson);
             snew = SubstanceBuilder.from(cleanJson).build();
             if(scrubberSettings.isSubstanceReferenceCleanup()) {
-                CleanUpReferences(snew);
+                cleanUpReferences(snew);
             }
             removeStaleReferences(snew);
             if( scrubberSettings.isApprovalIdCleanup()) {

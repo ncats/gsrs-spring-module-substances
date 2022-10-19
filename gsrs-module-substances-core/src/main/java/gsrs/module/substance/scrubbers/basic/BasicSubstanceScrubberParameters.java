@@ -26,10 +26,10 @@ import com.fasterxml.jackson.annotation.JsonValue;
         "removeDates",
         "deidentifyAuditUser",
         "accessGroupsToInclude",
-        "accessGroupsToRemove",
         "removeElementsIfNoExportablePublicRef",
         "elementsToRemove",
         "removeAllLocked",
+        "removeBasedOnStatus",
         "removeCodesBySystem",
         "codeSystemsToRemove",
         "codeSystemsToKeep",
@@ -74,18 +74,29 @@ public class BasicSubstanceScrubberParameters {
      */
     @JsonProperty("deidentifyAuditUser")
     private boolean deidentifyAuditUser;
+    
+    /**
+     * Remove records based on status
+     * <p>
+     */
+    @JsonProperty("removeBasedOnStatus")
+    private boolean removeBasedOnStatus;
+    
+    
     /**
      * Access Groups to Include
      * <p>
      */
     @JsonProperty("accessGroupsToInclude")
     private List<String> accessGroupsToInclude = null;
+    
     /**
-     * Access Groups to Remove
+     * Statuses to Include
      * <p>
      */
-    @JsonProperty("accessGroupsToRemove")
-    private List<String> accessGroupsToRemove = null;
+    @JsonProperty("statusesToInclude")
+    private List<String> statusesToInclude;
+    
     /**
      * Remove Elements if no exportable selected public domain reference
      * <p>
@@ -262,6 +273,7 @@ public class BasicSubstanceScrubberParameters {
     private String addNoteToScrubbedDefinitions;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+	
 
     @JsonProperty("removeableElements")
     public BasicSubstanceScrubberParameters.RemoveableElements getRemoveableElements() {
@@ -326,24 +338,25 @@ public class BasicSubstanceScrubberParameters {
     public void setAccessGroupsToInclude(List<String> accessGroupsToInclude) {
         this.accessGroupsToInclude = accessGroupsToInclude;
     }
-
+    
     /**
-     * Access Groups to Remove
+     * Access Groups to Include
      * <p>
      */
-    @JsonProperty("accessGroupsToRemove")
-    public List<String> getAccessGroupsToRemove() {
-        return accessGroupsToRemove;
+    @JsonProperty("statusesToInclude")
+    public List<String> getStatusesToInclude() {
+        return statusesToInclude;
     }
 
     /**
-     * Access Groups to Remove
+     * Access Groups to Include
      * <p>
      */
-    @JsonProperty("accessGroupsToRemove")
-    public void setAccessGroupsToRemove(List<String> accessGroupsToRemove) {
-        this.accessGroupsToRemove = accessGroupsToRemove;
+    @JsonProperty("statusesToInclude")
+    public void setStatusesToInclude(List<String> statusesToInclude) {
+        this.statusesToInclude = statusesToInclude;
     }
+
 
     /**
      * Remove Elements if no exportable selected public domain reference
@@ -380,7 +393,7 @@ public class BasicSubstanceScrubberParameters {
     public void setElementsToRemove(List<String> elementsToRemove) {
         this.elementsToRemove = elementsToRemove;
     }
-
+   
     /**
      * Remove all Locked
      * <p>
@@ -398,6 +411,29 @@ public class BasicSubstanceScrubberParameters {
     public void setRemoveAllLocked(boolean removeAllLocked) {
         this.removeAllLocked = removeAllLocked;
     }
+    
+
+    
+
+
+    /**
+     * Remove based on status
+     * <p>
+     */
+    @JsonProperty("removeBasedOnStatus")
+    public boolean isRemoveBasedOnStatus() {
+        return removeBasedOnStatus;
+    }
+
+    /**
+     * Remove based on status
+     * <p>
+     */
+    @JsonProperty("removeBasedOnStatus")
+    public void setRemoveBasedOnStatus(boolean removeBasedOnStatus) {
+        this.removeBasedOnStatus = removeBasedOnStatus;
+    }
+
 
     /**
      * Remove Codes by System
