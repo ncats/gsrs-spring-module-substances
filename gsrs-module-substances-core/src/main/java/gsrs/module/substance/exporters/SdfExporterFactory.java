@@ -47,7 +47,8 @@ public class SdfExporterFactory implements ExporterFactory {
     @Override
     public JsonNode getSchema() {
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
-        parameters.put("fields","String[]");
+        parameters.put("addNames", "boolean");
+        parameters.put("addCodes", "boolean");
         parameters.put("approvalIDName", "String");
         return generateSchemaNode("SDF File Exporter Parameters", parameters);
     }

@@ -403,6 +403,9 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return substance;
     }
 
+    //todo: within the following method, look at computed status and exclude based on the status... if setting includes looking at
+    // status
+
     public boolean isRecordExcluded(Substance starting){
         if(scrubberSettings.isRemoveAllLocked()) {
             Set<String> accessSet = starting.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
@@ -422,20 +425,37 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     }
 
     public boolean isRecordDefinitionExcluded(Substance substance) {
-        Set<String> accessSet = substance.getPrimaryDefinitionReference().getAccess().stream()
+        //look at refs to make sure there's nothing that looks a protected document... but that's done
+        // elsewhere and too complicated to repeat
+
+        /*Set<String> accessSet = substance.getPrimaryDefinitionReference().getAccess().stream()
                 .map(a->a.name)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toSet());*/
+        Set<String> accessSet = new HashSet<>();
         if( substance instanceof GinasSubstanceDefinitionAccess) {
-            GinasAccessReferenceControlled  accessHolder= (( GinasSubstanceDefinitionAccess)substance).getDefinitionElement();
+            GinasAccessReferenceControlled accessHolder= (( GinasSubstanceDefinitionAccess)substance).getDefinitionElement();
             accessHolder.getAccess().stream()
                     .map(g->g.name)
                     .forEach(a-> accessSet.add(a));
         }
+        /*
+        May need to comment this out?
+        every record (excpet concepts) has a def
+        can protect alt def independent of primary def...
+        not necessarily a relationship between the 2
+        e.g. vaccine
+            1) sequence of mRNA
+            2) ref to virus and part
+        in case where primary def is protected but alt def is public, we could make alt def primary
+        use case: user desires all chemical definitions of things that have an alt def.
+
+        skip this for now.
         if(substance.getPrimaryDefinitionRelationships().isPresent()){
             substance.getPrimaryDefinitionRelationships().get().getAccess().stream()
                     .map(g->g.name)
                     .forEach(a-> accessSet.add(a));
-        }
+        }*/
+        //todo: make this a helper method
         if(!accessSet.isEmpty()) {
             accessSet.retainAll(groupsToInclude);
             // There's something in the inclusion list
@@ -464,6 +484,9 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     }
 
 
+    /*
+    take an input substance and mutate it in a way that handles substance refs that may be publishable.
+     */
     public Optional<Substance> scrubBasedOnDefDefs(Substance substance) {
         Optional<Substance> returnSubstance = Optional.of(substance);
         substance.getDependsOnSubstanceReferences().forEach(thing->{
@@ -485,7 +508,38 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             }
 
         });
+        //todo: add getAllSubstanceReferences to Substance.java
+        // return 2 things:
+        //   return substance refs... 2 kinds. Incidental to parent.  Just a compnoent
+        //     those that are 'only' part.
+        //     relationship means nothing with null substance ref
+        //     mixture component means nothing with null substance ref
+        //      monomers, ssg1 constituents: means nothing
+        //      treat parent object like it's nothing...
+        ///     don't remove
+        //     str modification may be interesting w/o ref?
+        //      properties may contain substance refs.  Without substance ref, the property is useful anyhow
+        //      mixture parent; str div; polymer parent; hybrid paternal/maternal/
+        //      todo: create a table with all types of substance refs.
+        //      return a tuple<parent object, substance ref>
+        //
+        //substance.getAllSubstanceReferences()
         return returnSubstance;
+    }
+
+    private static String getStatusForSubstance(Substance substance){
+        if(substance.substanceClass.equals(SubstanceClass.concept)){
+            if(substance.isSubstanceVariant()){
+                if(substance.getParentSubstanceReference().approvalID!=null){
+                    //note: possible to fetch full record and check its status, but the above is a faster way to get
+                    //  the same info
+                    return "approved subconcept";
+                }
+                return "pending subconcept";
+            }
+            return "concept";
+        }
+        return substance.status;
     }
 
     @SneakyThrows
