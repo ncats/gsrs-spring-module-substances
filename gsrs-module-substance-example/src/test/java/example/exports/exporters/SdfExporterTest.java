@@ -45,12 +45,12 @@ public class SdfExporterTest {
         OutputFormat outputFormat = new OutputFormat("sdf", "SDF");
         BufferedOutputStream outputStream= new BufferedOutputStream(fos);
         DefaultParameters parameters = new DefaultParameters(outputFormat,false, details);
-
         SdfExporter exporter= (SdfExporter) factory.createNewExporter(outputStream, parameters );
         exporter.export(createSubstanceWithNamesAndCodes());
-        outputStream.flush();
-        outputStream.close();
-        fos.close();
+//        outputStream.flush();
+//        outputStream.close();
+//        fos.flush();
+//        fos.close();
         Assertions.assertTrue(outputFile.exists());
         String fileData= Files.readString(outputFile.toPath());
         System.out.println("fileData: " + fileData);

@@ -43,7 +43,9 @@ public class ChemicalRenderingFullStackTest  extends AbstractSubstanceJpaFullSta
     }
 
     private String getSVGFrom(UUID id,String version) throws Exception {
-        byte[] bod2=(byte[]) ((ResponseEntity)substanceController.render(id.toString(), "svg", version, false, null, 200, false, null))
+        byte[] bod2=(byte[]) ((ResponseEntity)substanceController.render(id.toString(), "svg", version, false, null, 200,
+                null, null, null, null, null,
+                false, null))
                 .getBody();
         String xml = Arrays.stream(new String(bod2).split("\n"))
                 //remove description from svg which contains timestamp
