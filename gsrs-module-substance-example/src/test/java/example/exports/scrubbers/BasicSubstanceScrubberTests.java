@@ -80,7 +80,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -163,7 +162,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude(Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(false);
         scrubberSettings.setRemoveChangeReason(false);
@@ -253,7 +251,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -314,7 +311,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -428,7 +424,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -475,7 +470,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -527,7 +521,6 @@ public class BasicSubstanceScrubberTests {
         proteinSubstance.createdBy=user1;
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -579,7 +572,6 @@ public class BasicSubstanceScrubberTests {
         proteinSubstance.createdBy=user1;
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -652,7 +644,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -739,7 +730,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -814,7 +804,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -884,7 +873,6 @@ public class BasicSubstanceScrubberTests {
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
-        scrubberSettings.setAccessGroupsToRemove(Collections.singletonList("protected"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);

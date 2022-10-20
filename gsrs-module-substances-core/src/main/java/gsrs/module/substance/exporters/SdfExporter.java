@@ -19,11 +19,11 @@ import java.util.Objects;
 public class SdfExporter implements Exporter<Substance> {
     @FunctionalInterface
     public interface ChemicalModifier {
-        void modify(Chemical c, Substance parentSubstance, List<GinasProcessingMessage> messages);
+        void modify(Chemical c, Substance parentSubstance, List<GinasProcessingMessage> messages, JsonNode detailedParameters);
+
     }
 
-
-    private static final ChemicalModifier NO_OP_MODIFIER = (c, s, messages) ->{};
+    private static final ChemicalModifier NO_OP_MODIFIER = (c, s, messages, detailedParameters) ->{};
     private final BufferedWriter out;
 
     private final ChemicalModifier modifier;
@@ -59,7 +59,7 @@ public class SdfExporter implements Exporter<Substance> {
         chem.getProperties().keySet().forEach(k-> System.out.println(k));
 
 
-        modifier.modify(chem, s, warnings);
+        modifier.modify(chem, s, warnings, parameters.detailedParameters());
         try {
 
             String content = formatMolfile(chem);

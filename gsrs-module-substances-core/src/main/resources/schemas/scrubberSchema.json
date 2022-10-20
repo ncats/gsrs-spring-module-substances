@@ -327,14 +327,6 @@
           ]
         ]
       }
-    },
-    {
-      "if": "removeAllLocked",
-      "then": {
-        "oneOf": [
-          "accessGroupsToInclude"
-        ]
-      }
     }
   ]
 }
