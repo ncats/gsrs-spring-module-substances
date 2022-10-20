@@ -8,7 +8,11 @@ import gsrs.springUtils.AutowireHelper;
 import ix.ginas.exporters.RecordExpander;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.stream.Stream;
+
+@Slf4j
 public class BasicRecordExpanderFactory implements RecordExpanderFactory<Substance> {
     private final static String JSONSchema ="{\n" +
             "  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +
@@ -73,6 +77,11 @@ public class BasicRecordExpanderFactory implements RecordExpanderFactory<Substan
 
     @Override
     public RecordExpander<Substance> createExpander(JsonNode settings) {
+        if(settings==null || settings.size()==0){
+            log.warn("in createExpander, settings null/empty");
+            RecordExpander<Substance> identityExpander = ( t)-> Stream.of(t);
+            return identityExpander;
+        }
         BasicRecordExpander expander = new BasicRecordExpander();
         expander=AutowireHelper.getInstance().autowireAndProxy(expander);
         expander.applySettings(settings);

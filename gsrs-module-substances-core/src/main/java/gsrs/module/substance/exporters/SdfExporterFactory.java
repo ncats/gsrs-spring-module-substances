@@ -104,7 +104,7 @@ public class SdfExporterFactory implements ExporterFactory {
             c.setName(parentSubstance.getName());
             StringBuilder sb = new StringBuilder();
 
-            if(detailedParameters.hasNonNull(NAME_PARAMETERS) && detailedParameters.get(NAME_PARAMETERS).booleanValue()) {
+            if(detailedParameters!=null && detailedParameters.hasNonNull(NAME_PARAMETERS) && detailedParameters.get(NAME_PARAMETERS).booleanValue()) {
                 c.setProperty("NAME", parentSubstance.getName());
                 Set<String> names = new LinkedHashSet<>();
 //            names.add(parentSubstance.getName());
@@ -116,7 +116,7 @@ public class SdfExporterFactory implements ExporterFactory {
             }
 
 
-            if(detailedParameters.hasNonNull(CODE_PARAMETERS) && detailedParameters.get(CODE_PARAMETERS).booleanValue()) {
+            if(detailedParameters!=null && detailedParameters.hasNonNull(CODE_PARAMETERS) && detailedParameters.get(CODE_PARAMETERS).booleanValue()) {
                 //there's probably a way to make this into one giant collector...
                 Map<String, List<Code>> codes = parentSubstance.codes.stream()
                         .collect(Collectors.groupingBy(cd -> cd.codeSystem));

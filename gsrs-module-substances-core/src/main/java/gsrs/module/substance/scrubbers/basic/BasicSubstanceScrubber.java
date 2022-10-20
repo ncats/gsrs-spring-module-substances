@@ -312,10 +312,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         
         if(scrubberSettings.isRemoveCodesBySystem() && (!codeSystemsToRemove.isEmpty() || !codeSystemsToKeep.isEmpty())){
             Predicate codeSystemPredicate = context -> {
-                log.trace("hello from codeSystemPredicate");
                 Map code=context.item(Map.class);
                 String codeSystem= (String)code.get("codeSystem");
-                log.trace("got codeSystem {}", codeSystem);
                 if( codeSystemsToKeep.size()>0) {
                     if (codeSystemsToKeep.contains(codeSystem)) {
                         log.trace("not going to delete code with system {}", codeSystem);

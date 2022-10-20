@@ -1,8 +1,6 @@
 package gsrs.module.substance.exporters;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.exporters.Exporter;
@@ -55,9 +53,6 @@ public class SdfExporter implements Exporter<Substance> {
         List<GinasProcessingMessage> warnings = new ArrayList<>();
 
         Chemical chem = s.toChemical( warnings::add);
-        System.out.println("properties");
-        chem.getProperties().keySet().forEach(k-> System.out.println(k));
-
 
         modifier.modify(chem, s, warnings, parameters.detailedParameters());
         try {
@@ -65,7 +60,7 @@ public class SdfExporter implements Exporter<Substance> {
             String content = formatMolfile(chem);
             out.write(content);
             out.newLine();
-
+            //out.flush();//this line goes in just to make unit tests pass.
         }catch(Exception e){
             throw new IOException("error exporting to sdf file", e);
         }

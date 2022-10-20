@@ -3,8 +3,10 @@ package gsrs.module.substance.scrubbers.basic;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
+import ix.ginas.exporters.NoOpRecordScrubberFactory;
 import ix.ginas.exporters.RecordScrubber;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.models.v1.Substance;
@@ -19,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Optional;
 
 @Slf4j
 public class BasicSubstanceScrubberFactory implements RecordScrubberFactory<Substance> {
@@ -39,17 +42,12 @@ public class BasicSubstanceScrubberFactory implements RecordScrubberFactory<Subs
     public RecordScrubber<Substance> createScrubber(JsonNode settings) {
         log.trace("in BasicSubstanceScrubberFactory.createScrubber");
         BasicSubstanceScrubberParameters settingsObject = (new ObjectMapper()).convertValue(settings, BasicSubstanceScrubberParameters.class);
-        log.trace(" settingsObject: {}", (settingsObject==null ? "null" : "not null"));
-        //hack for demo 28 September 2022
-        //todo: make sure real settings get passe!
+        log.trace(" settingsObject: {}", (settingsObject==null || settings.size()==0 ? "null" : "not null"));
+
         if(settingsObject==null){
-            settingsObject = new BasicSubstanceScrubberParameters();
-            settingsObject.setRemoveNotes(true);
-            settingsObject.setRemoveChangeReason(false);
-            settingsObject.setRemoveDates(true);
-            settingsObject.setRemoveCodesBySystem(true);
-            settingsObject.setCodeSystemsToKeep(Arrays.asList( "CAS","Wikipedia"));
-            settingsObject.setCodeSystemsToRemove(Arrays.asList("BDNUM"));
+            log.warn("no settings supplied to createScrubber");
+            RecordScrubber<Substance> identityScrubber = (t)-> Optional.of(t);
+            return identityScrubber;
         }
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(settingsObject);
