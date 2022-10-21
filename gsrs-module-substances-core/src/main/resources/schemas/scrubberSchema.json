@@ -20,7 +20,7 @@
       "title": "Remove all Locked",
       "type": "boolean"
     },
-    "accessGroupsToInclude": {
+    "removeAllLockedAccessGroupsToInclude": {
       "comments": "names of access groups to that will NOT be removed ",
       "type": "array",
       "items": {
@@ -37,7 +37,7 @@
       },
       "CVDomain": "ACCESS_GROUP"
     },
-    "removeElementsIfNoExportablePublicRef": {
+    "removeAllLockedRemoveElementsIfNoExportablePublicRef": {
       "comments": "elements to remove when they have no public references",
       "type": "boolean",
       "title": "Remove Elements if no exportable selected public domain reference",
@@ -47,7 +47,7 @@
         ]
       }
     },
-    "elementsToRemove": {
+    "removeElementsIfNoExportablePublicRefElementsToRemove": {
       "comments": "elements to remove when the substance has no public references",
       "type": "array",
       "items": {
@@ -76,7 +76,7 @@
       "title": "Remove Codes by System",
       "type": "boolean"
     },
-    "codeSystemsToRemove": {
+    "removeCodesBySystemCodeSystemsToRemove": {
       "comments": "Code Systems to remove",
       "type": "array",
       "items": {
@@ -93,7 +93,7 @@
       },
       "CVDomain": "CODE_SYSTEM"
     },
-    "codeSystemsToKeep": {
+    "removeCodesBySystemCodeSystemsToKeep": {
       "comments": "Code Systems to keep",
       "type": "array",
       "items": {
@@ -115,7 +115,7 @@
       "title": "Remove References by Criteria",
       "type": "boolean"
     },
-    "referenceTypesToRemove": {
+    "removeReferencesByCriteriaReferenceTypesToRemove": {
       "comments": "Document Types to look at. When a Reference is of that document type, remove it",
       "type": "array",
       "items": {
@@ -132,7 +132,7 @@
       },
       "CVDomain": "DOCUMENT_TYPE"
     },
-    "citationPatternsToRemove": {
+    "removeReferencesByCriteriaCitationPatternsToRemove": {
       "comments": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
       "type": "string",
       "title": "Citation Patterns to Remove",
@@ -145,7 +145,7 @@
         "id": "multi-select"
       }
     },
-    "excludeReferenceByPattern": {
+    "removeReferencesByCriteriaExcludeReferenceByPattern": {
       "comments": "Remove References by looking at citationPatternsToRemove",
       "title": "Exclude Reference by Pattern",
       "type": "boolean",
@@ -160,7 +160,7 @@
       "type": "boolean",
       "title": "Substance Reference Cleanup"
     },
-    "removeReferencesToFilteredSubstances": {
+    "substanceReferenceCleanupRemoveReferencesToFilteredSubstances": {
       "comments": "When true, when a substance is removed, remove any references to it",
       "type": "boolean",
       "title": "Remove References to Filtered Substances",
@@ -170,7 +170,7 @@
         ]
       }
     },
-    "removeReferencesToSubstancesNonExportedDefinitions": {
+    "substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions": {
       "comments": "When true, when a substance's definition is removed, remove any references to it",
       "type": "boolean",
       "title": "Remove References to Substances Non-Exported Definitions",
@@ -195,7 +195,7 @@
       "type": "boolean",
       "title": "Approval Id clean-up"
     },
-    "removeApprovalId": {
+    "approvalIdCleanupRemoveApprovalId": {
       "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
       "type": "boolean",
       "title": "Remove Approval Id",
@@ -205,7 +205,7 @@
         ]
       }
     },
-    "copyApprovalIdToCode": {
+    "approvalIdCleanupCopyApprovalIdToCode": {
       "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
       "type": "boolean",
       "title": "Copy Approval Id to code if code not already present",
@@ -215,7 +215,7 @@
         ]
       }
     },
-    "approvalIdCodeSystem": {
+    "approvalIdCleanupApprovalIdCodeSystem": {
       "comments": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
       "type": "string",
       "title": "Remove Approval Id",
@@ -235,7 +235,7 @@
       "type": "boolean",
       "title": "Change All Statuses"
     },
-    "newStatusValue": {
+    "changeAllStatusesNewStatusValue": {
       "comments": "new string value to assign to all individual status fields throughout the object",
       "type": "string",
       "title": "New Status Value",
@@ -245,12 +245,12 @@
         ]
       }
     },
-    "AuditInformationCleanup": {
+    "auditInformationCleanup": {
       "comments": "When true, apply succeeding criteria to audit fields",
       "type": "boolean",
       "title": "Audit Information clean-up"
     },
-    "newAuditorValue": {
+    "auditInformationCleanupNewAuditorValue": {
       "comments": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
       "title": "New Auditor Value",
       "type": "string",
@@ -265,7 +265,12 @@
       "title": "Scrubbed Definition Handling",
       "type": "boolean"
     },
-    "removeScrubbedDefinitionalElementsEntirely": {
+    "removeBasedOnStatus": {
+      "comments": "Delete records if they have a certain status value",
+      "title": "Delete records based on status",
+      "type": "boolean"
+    },
+    "scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely": {
       "comments": "When a defining element has been modified, remove it entirely",
       "title": "Remove partially/fully scrubbed definitional records entirely",
       "type": "boolean",
@@ -275,7 +280,7 @@
         ]
       }
     },
-    "setScrubbedDefinitionalElementsIncomplete": {
+    "scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete": {
       "comments": "When a defining element has been modified, set definitional level to \"Incomplete\"",
       "title": "Set partially/fully scrubbed definitional records to definitional level \"Incomplete\"",
       "type": "boolean",
@@ -285,7 +290,7 @@
         ]
       }
     },
-    "convertScrubbedDefinitionsToConcepts": {
+    "scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts": {
       "comments": "When a substance's defining element has been modified, convert the substance type to \"Concept\"",
       "title": "Convert partially/fully scrubbed definitional records to \"Concepts\"",
       "type": "boolean",
@@ -295,13 +300,75 @@
         ]
       }
     },
-    "addNoteToScrubbedDefinitions": {
+    "scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions": {
       "comments": "When a substance's defining element has been modified, add a Note",
       "title": "add a note to partially/fully scrubbed definitional records",
       "type": "string",
       "visibleIf": {
         "scrubbedDefinitionHandling": [
           true
+        ]
+      }
+    },
+    "scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions": {
+      "comments": "Treat partially scrubbed definitions with the same settings as fully scrubbed definitions",
+      "title": "Treat partially scrubbed definitions with same settings",
+      "type": "boolean",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ]
+      }
+    },
+    "scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely": {
+      "comments": "When a defining element has been partially scrubbed, remove it entirely",
+      "title": "Remove PARTIALLY scrubbed definitional records entirely",
+      "type": "boolean",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ],
+        "scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions": [
+          false
+        ]
+      }
+    },
+    "scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete": {
+      "comments": "When a defining element has been partially scrubbed, set definitional level to \"Incomplete\"",
+      "title": "Set PARTIALLY scrubbed definitional records to definitional level \"Incomplete\"",
+      "type": "boolean",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ],
+        "scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions": [
+          false
+        ]
+      }
+    },
+    "scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts": {
+      "comments": "When a substance's defining element has been partially scrubbed, convert the substance type to \"Concept\"",
+      "title": "Convert PARTIALLY scrubbed definitional records to \"Concepts\"",
+      "type": "boolean",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ],
+        "scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions": [
+          false
+        ]
+      }
+    },
+    "scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions": {
+      "comments": "When a substance's defining element has been partially scrubbed, add a Note",
+      "title": "add a note to PARTIALLY scrubbed definitional records",
+      "type": "string",
+      "visibleIf": {
+        "scrubbedDefinitionHandling": [
+          true
+        ],
+        "scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions": [
+          false
         ]
       }
     }
@@ -313,8 +380,8 @@
       "then": {
         "oneOf": [
           [
-            "codeSystemsToRemove",
-            "codeSystemsToKeep"
+            "removeCodesBySystemCodeSystemsToRemove",
+            "removeCodesBySystemCodeSystemsToKeep"
           ]
         ]
       }

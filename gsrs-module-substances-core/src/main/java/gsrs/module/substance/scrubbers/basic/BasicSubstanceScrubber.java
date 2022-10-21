@@ -13,7 +13,6 @@ import com.jayway.jsonpath.Predicate;
 import gov.nih.ncats.common.stream.StreamUtil;
 import ix.core.EntityFetcher;
 import ix.core.models.Group;
-import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
@@ -48,21 +47,22 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
         this.scrubberSettings = scrubberSettings;
-        groupsToInclude= Optional.ofNullable(scrubberSettings.getAccessGroupsToInclude()).orElse(Collections.emptyList()).stream()
+
+        groupsToInclude= Optional.ofNullable(scrubberSettings.getRemoveAllLockedAccessGroupsToInclude()).orElse(Collections.emptyList()).stream()
                 .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
-        
-        statusesToInclude= Optional.ofNullable(scrubberSettings.getStatusesToInclude()).orElse(Collections.emptyList()).stream()
+
+        /*statusesToInclude= Optional.ofNullable(scrubberSettings.getStatusesToInclude()).orElse(Collections.emptyList()).stream()
                 .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
-        
-        codeSystemsToRemove = Optional.ofNullable(scrubberSettings.getCodeSystemsToRemove()).orElse(Collections.emptyList()).stream()
+        */
+        codeSystemsToRemove = Optional.ofNullable(scrubberSettings.getRemoveCodesBySystemCodeSystemsToRemove()).orElse(Collections.emptyList()).stream()
                 .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
-        codeSystemsToKeep=Optional.ofNullable(scrubberSettings.getCodeSystemsToKeep()).orElse(Collections.emptyList()).stream()
+        codeSystemsToKeep=Optional.ofNullable(scrubberSettings.getRemoveCodesBySystemCodeSystemsToKeep()).orElse(Collections.emptyList()).stream()
                 .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
@@ -112,8 +112,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             return;
         }
         List<Pattern> patternsToCheck = new ArrayList<>();
-        if(scrubberSettings.isExcludeReferenceByPattern() && scrubberSettings.getCitationPatternsToRemove()!=null) {
-            String[] patternArray=scrubberSettings.getCitationPatternsToRemove().split("\n");
+        if(scrubberSettings.isRemoveReferencesByCriteriaExcludeReferenceByPattern() && scrubberSettings.getRemoveReferencesByCriteriaCitationPatternsToRemove()!=null) {
+            String[] patternArray=scrubberSettings.getRemoveReferencesByCriteriaCitationPatternsToRemove().split("\n");
             log.trace("split array into {}", patternArray.length);
             patternsToCheck.addAll( Arrays.stream(patternArray)
                     .map(s ->Pattern.compile(s))
@@ -126,8 +126,9 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             log.trace("looking at refs for {}", c.toString());
             c.getReferencesAsUUIDs().forEach(r->{
                 Reference reference = substance.getReferenceByUUID(r.toString());
-                if(scrubberSettings.getReferenceTypesToRemove()!=null && !scrubberSettings.getReferenceTypesToRemove().isEmpty()) {
-                    if (scrubberSettings.getReferenceTypesToRemove().contains(reference.docType)) {
+                if(scrubberSettings.getRemoveReferencesByCriteriaReferenceTypesToRemove()!=null
+                        && !scrubberSettings.getRemoveReferencesByCriteriaReferenceTypesToRemove().isEmpty()) {
+                    if (scrubberSettings.getRemoveReferencesByCriteriaReferenceTypesToRemove().contains(reference.docType)) {
                         referencesToRemove.add(reference);
                         log.trace("Adding reference to deletion list: {}", r);
                     }
@@ -187,9 +188,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     				}
     			}
     		});
-            if(scrubberSettings.isRemoveElementsIfNoExportablePublicRef() && scrubberSettings.getElementsToRemove().size()>0){
+            if(scrubberSettings.isRemoveAllLockedRemoveElementsIfNoExportablePublicRef()
+                    && scrubberSettings.getRemoveElementsIfNoExportablePublicRefElementsToRemove().size()>0){
                 starting.getAllChildrenCapableOfHavingReferences().forEach(c->{
-                    if( isElementOnList(c, scrubberSettings.getElementsToRemove())){
+                    if( isElementOnList(c, scrubberSettings.getRemoveElementsIfNoExportablePublicRefElementsToRemove())){
                         if( c.getReferencesAsUUIDs().stream().noneMatch(r-> {
                             Reference ref = starting.getReferenceByUUID(r.toString());
                             return (ref!=null && ref.publicDomain);
@@ -198,7 +200,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                             c.setAccess(toDelete);
                         }
                     }
-                    if(scrubberSettings.getElementsToRemove().contains("Definition")){
+                    if(scrubberSettings.getRemoveElementsIfNoExportablePublicRefElementsToRemove().contains("Definition")){
                         if(starting instanceof GinasSubstanceDefinitionAccess) {
                             GinasSubstanceDefinitionAccess definitionAccess = (GinasSubstanceDefinitionAccess)starting;
                             GinasAccessReferenceControlled defining= definitionAccess.getDefinitionElement();
@@ -218,7 +220,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     	}
     	
     	//remove all definitions if this setting is true
-    	if(isDefinitionScrubbed[0] && scrubberSettings.isRemoveScrubbedDefinitionalElementsEntirely()) {
+    	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely()) {
     		starting.properties.stream()
 					    		.filter(Property::isDefining)
 					    		.forEach(p->{
@@ -233,16 +235,16 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     			});
     		}    		
     	}
-    	if(isDefinitionScrubbed[0] && scrubberSettings.isSetScrubbedDefinitionalElementsIncomplete()) {
+    	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete()) {
     		starting.definitionLevel=SubstanceDefinitionLevel.INCOMPLETE;
     	}
     	
-       	if(isDefinitionScrubbed[0] && scrubberSettings.isConvertScrubbedDefinitionsToConcepts()) {
+       	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts()) {
     		starting.substanceClass=SubstanceClass.concept;
     	}
        	
-       	if(isDefinitionScrubbed[0] && scrubberSettings.getAddNoteToScrubbedDefinitions()!=null) {
-       		Note nn=starting.addNote(scrubberSettings.getAddNoteToScrubbedDefinitions());
+       	if(isDefinitionScrubbed[0] && scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions()!=null) {
+       		Note nn=starting.addNote(scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions());
        		nn.setAccess(toKeep);
        	}
         
@@ -252,24 +254,24 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     private Substance scrubApprovalId(Substance substance) {
         String approvalId = substance.getApprovalID();
         log.trace("in scrubApprovalId, approvalId: {}", approvalId);
-        if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCodeSystem()!= null
-                && this.scrubberSettings.getApprovalIdCodeSystem().length()>0
-                && this.scrubberSettings.isCopyApprovalIdToCode()) {
-            Optional<Code> code=substance.codes.stream().filter(c->c.codeSystem.equals(this.scrubberSettings.getApprovalIdCodeSystem())).findFirst();
+        if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCleanupApprovalIdCodeSystem()!= null
+                && this.scrubberSettings.getApprovalIdCleanupApprovalIdCodeSystem().length()>0
+                && this.scrubberSettings.isApprovalIdCleanupCopyApprovalIdToCode()) {
+            Optional<Code> code=substance.codes.stream().filter(c->c.codeSystem.equals(this.scrubberSettings.getApprovalIdCleanupApprovalIdCodeSystem())).findFirst();
             if( code.isPresent()) {
                 log.trace("code already present");
                 code.get().setCode(approvalId);
             }else{
                 log.trace("will create code");
                 Code approvalIdCode= new Code();
-                approvalIdCode.codeSystem=scrubberSettings.getApprovalIdCodeSystem();
+                approvalIdCode.codeSystem=scrubberSettings.getApprovalIdCleanupApprovalIdCodeSystem();
                 approvalIdCode.code=approvalId;
                 approvalIdCode.type="PRIMARY";
                 substance.addCode(approvalIdCode);
             }
         }
 
-        if(scrubberSettings.isRemoveApprovalId()){
+        if(scrubberSettings.isApprovalIdCleanupRemoveApprovalId()){
             substance.approvalID=null;
         }
         return substance;
@@ -301,8 +303,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         		dc.delete("$..lastEditedBy");
         		dc.delete("$..createdBy");
         		dc.delete("$..approvedBy");
-        	}else if(scrubberSettings.getNewAuditorValue()!=null) {
-        		String newAuditor = scrubberSettings.getNewAuditorValue();
+        	}else if(scrubberSettings.getAuditInformationCleanupNewAuditorValue()!=null) {
+        		String newAuditor = scrubberSettings.getAuditInformationCleanupNewAuditorValue();
         		
         		dc.set("$..lastEditedBy", newAuditor);
         		dc.set("$..createdBy", newAuditor);
@@ -373,17 +375,17 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         String switchName=nameParts[nameParts.length-1].toUpperCase(Locale.ROOT);
         switch (switchName){
             case "NAME" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NAMES.toString());
+                return approximateNames.contains("Names");
             case "CODE" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.CODES.toString());
+                return approximateNames.contains("Codes");
             case "NOTE":
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.NOTES.toString());
+                return approximateNames.contains("Notes");
             case "RELATIONSHIP" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.RELATIONSHIPS.toString());
+                return approximateNames.contains("Relationships");
             case "PROPERTY" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.PROPERTIES.toString());
+                return approximateNames.contains("Properties");
             case "MODIFICATION" :
-                return approximateNames.contains(BasicSubstanceScrubberParameters.RemoveableElements.MODIFICATIONS.toString());
+                return approximateNames.contains("Modifications");
         }
         return false;
     }
@@ -605,7 +607,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             }
             if(scrubberSettings.isChangeAllStatuses() ) {
                 //even null works
-                snew.status=scrubberSettings.getNewStatusValue();
+                snew.status=scrubberSettings.getChangeAllStatusesNewStatusValue();
             }
             log.trace("successful completion of scrub");
             return Optional.ofNullable(snew);

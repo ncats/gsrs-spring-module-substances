@@ -1,5 +1,6 @@
 package gsrs.module.substance.scrubbers.basic;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,12 +8,10 @@ import javax.annotation.Generated;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.fasterxml.jackson.annotation.JsonValue;
 
 
 /**
@@ -22,46 +21,48 @@ import com.fasterxml.jackson.annotation.JsonValue;
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
-        "removeableElements",
         "removeDates",
         "deidentifyAuditUser",
-        "accessGroupsToInclude",
-        "removeElementsIfNoExportablePublicRef",
-        "elementsToRemove",
         "removeAllLocked",
-        "removeBasedOnStatus",
+        "removeAllLockedAccessGroupsToInclude",
+        "removeAllLockedRemoveElementsIfNoExportablePublicRef",
+        "removeElementsIfNoExportablePublicRefElementsToRemove",
         "removeCodesBySystem",
-        "codeSystemsToRemove",
-        "codeSystemsToKeep",
+        "removeCodesBySystemCodeSystemsToRemove",
+        "removeCodesBySystemCodeSystemsToKeep",
         "removeReferencesByCriteria",
-        "referenceTypesToRemove",
-        "citationPatternsToRemove",
-        "excludeReferenceByPattern",
+        "removeReferencesByCriteriaReferenceTypesToRemove",
+        "removeReferencesByCriteriaCitationPatternsToRemove",
+        "removeReferencesByCriteriaExcludeReferenceByPattern",
         "substanceReferenceCleanup",
-        "removeReferencesToFilteredSubstances",
-        "removeReferencesToSubstancesNonExportedDefinitions",
+        "substanceReferenceCleanupRemoveReferencesToFilteredSubstances",
+        "substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions",
         "removeNotes",
         "removeChangeReason",
         "approvalIdCleanup",
-        "removeApprovalId",
-        "copyApprovalIdToCode",
-        "approvalIdCodeSystem",
+        "approvalIdCleanupRemoveApprovalId",
+        "approvalIdCleanupCopyApprovalIdToCode",
+        "approvalIdCleanupApprovalIdCodeSystem",
         "regenerateUUIDs",
         "changeAllStatuses",
-        "newStatusValue",
-        "AuditInformationCleanup",
-        "newAuditorValue",
+        "changeAllStatusesNewStatusValue",
+        "auditInformationCleanup",
+        "auditInformationCleanupNewAuditorValue",
         "scrubbedDefinitionHandling",
-        "removeScrubbedDefinitionalElementsEntirely",
-        "setScrubbedDefinitionalElementsIncomplete",
-        "convertScrubbedDefinitionsToConcepts",
-        "addNoteToScrubbedDefinitions"
+        "removeBasedOnStatus",
+        "scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely",
+        "scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete",
+        "scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts",
+        "scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions",
+        "scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions",
+        "scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely",
+        "scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete",
+        "scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts",
+        "scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions"
 })
 @Generated("jsonschema2pojo")
-public class BasicSubstanceScrubberParameters {
+public class BasicSubstanceScrubberParameters implements Serializable {
 
-    @JsonProperty("removeableElements")
-    private BasicSubstanceScrubberParameters.RemoveableElements removeableElements;
     /**
      * Remove Date
      * <p>
@@ -74,47 +75,30 @@ public class BasicSubstanceScrubberParameters {
      */
     @JsonProperty("deidentifyAuditUser")
     private boolean deidentifyAuditUser;
-    
-    /**
-     * Remove records based on status
-     * <p>
-     */
-    @JsonProperty("removeBasedOnStatus")
-    private boolean removeBasedOnStatus;
-    
-    
-    /**
-     * Access Groups to Include
-     * <p>
-     */
-    @JsonProperty("accessGroupsToInclude")
-    private List<String> accessGroupsToInclude = null;
-    
-    /**
-     * Statuses to Include
-     * <p>
-     */
-    @JsonProperty("statusesToInclude")
-    private List<String> statusesToInclude;
-    
-    /**
-     * Remove Elements if no exportable selected public domain reference
-     * <p>
-     */
-    @JsonProperty("removeElementsIfNoExportablePublicRef")
-    private boolean removeElementsIfNoExportablePublicRef;
-    /**
-     * Elements to remove
-     * <p>
-     */
-    @JsonProperty("elementsToRemove")
-    private List<String> elementsToRemove = null;
     /**
      * Remove all Locked
      * <p>
      */
     @JsonProperty("removeAllLocked")
     private boolean removeAllLocked;
+    /**
+     * Access Groups to Include
+     * <p>
+     */
+    @JsonProperty("removeAllLockedAccessGroupsToInclude")
+    private List<String> removeAllLockedAccessGroupsToInclude = null;
+    /**
+     * Remove Elements if no exportable selected public domain reference
+     * <p>
+     */
+    @JsonProperty("removeAllLockedRemoveElementsIfNoExportablePublicRef")
+    private boolean removeAllLockedRemoveElementsIfNoExportablePublicRef;
+    /**
+     * Elements to remove
+     * <p>
+     */
+    @JsonProperty("removeElementsIfNoExportablePublicRefElementsToRemove")
+    private List<String> removeElementsIfNoExportablePublicRefElementsToRemove = null;
     /**
      * Remove Codes by System
      * <p>
@@ -125,14 +109,14 @@ public class BasicSubstanceScrubberParameters {
      * Code Systems to Remove
      * <p>
      */
-    @JsonProperty("codeSystemsToRemove")
-    private List<String> codeSystemsToRemove = null;
+    @JsonProperty("removeCodesBySystemCodeSystemsToRemove")
+    private List<String> removeCodesBySystemCodeSystemsToRemove = null;
     /**
      * Code Systems to Keep
      * <p>
      */
-    @JsonProperty("codeSystemsToKeep")
-    private List<String> codeSystemsToKeep = null;
+    @JsonProperty("removeCodesBySystemCodeSystemsToKeep")
+    private List<String> removeCodesBySystemCodeSystemsToKeep = null;
     /**
      * Remove References by Criteria
      * <p>
@@ -143,20 +127,20 @@ public class BasicSubstanceScrubberParameters {
      * Reference Types to Remove
      * <p>
      */
-    @JsonProperty("referenceTypesToRemove")
-    private List<String> referenceTypesToRemove = null;
+    @JsonProperty("removeReferencesByCriteriaReferenceTypesToRemove")
+    private List<String> removeReferencesByCriteriaReferenceTypesToRemove = null;
     /**
      * Citation Patterns to Remove
      * <p>
      */
-    @JsonProperty("citationPatternsToRemove")
-    private String citationPatternsToRemove;
+    @JsonProperty("removeReferencesByCriteriaCitationPatternsToRemove")
+    private String removeReferencesByCriteriaCitationPatternsToRemove;
     /**
      * Exclude Reference by Pattern
      * <p>
      */
-    @JsonProperty("excludeReferenceByPattern")
-    private boolean excludeReferenceByPattern;
+    @JsonProperty("removeReferencesByCriteriaExcludeReferenceByPattern")
+    private boolean removeReferencesByCriteriaExcludeReferenceByPattern;
     /**
      * Substance Reference Cleanup
      * <p>
@@ -167,14 +151,14 @@ public class BasicSubstanceScrubberParameters {
      * Remove References to Filtered Substances
      * <p>
      */
-    @JsonProperty("removeReferencesToFilteredSubstances")
-    private boolean removeReferencesToFilteredSubstances;
+    @JsonProperty("substanceReferenceCleanupRemoveReferencesToFilteredSubstances")
+    private boolean substanceReferenceCleanupRemoveReferencesToFilteredSubstances;
     /**
      * Remove References to Substances Non-Exported Definitions
      * <p>
      */
-    @JsonProperty("removeReferencesToSubstancesNonExportedDefinitions")
-    private boolean removeReferencesToSubstancesNonExportedDefinitions;
+    @JsonProperty("substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions")
+    private boolean substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions;
     /**
      * Remove Notes
      * <p>
@@ -197,20 +181,20 @@ public class BasicSubstanceScrubberParameters {
      * Remove Approval Id
      * <p>
      */
-    @JsonProperty("removeApprovalId")
-    private boolean removeApprovalId;
+    @JsonProperty("approvalIdCleanupRemoveApprovalId")
+    private boolean approvalIdCleanupRemoveApprovalId;
     /**
      * Copy Approval Id to code if code not already present
      * <p>
      */
-    @JsonProperty("copyApprovalIdToCode")
-    private boolean copyApprovalIdToCode;
+    @JsonProperty("approvalIdCleanupCopyApprovalIdToCode")
+    private boolean approvalIdCleanupCopyApprovalIdToCode;
     /**
      * Remove Approval Id
      * <p>
      */
-    @JsonProperty("approvalIdCodeSystem")
-    private String approvalIdCodeSystem;
+    @JsonProperty("approvalIdCleanupApprovalIdCodeSystem")
+    private String approvalIdCleanupApprovalIdCodeSystem;
     /**
      * Regenerate UUIDs
      * <p>
@@ -227,20 +211,20 @@ public class BasicSubstanceScrubberParameters {
      * New Status Value
      * <p>
      */
-    @JsonProperty("newStatusValue")
-    private String newStatusValue;
+    @JsonProperty("changeAllStatusesNewStatusValue")
+    private String changeAllStatusesNewStatusValue;
     /**
      * Audit Information clean-up
      * <p>
      */
-    @JsonProperty("AuditInformationCleanup")
+    @JsonProperty("auditInformationCleanup")
     private boolean auditInformationCleanup;
     /**
      * New Auditor Value
      * <p>
      */
-    @JsonProperty("newAuditorValue")
-    private String newAuditorValue;
+    @JsonProperty("auditInformationCleanupNewAuditorValue")
+    private String auditInformationCleanupNewAuditorValue;
     /**
      * Scrubbed Definition Handling
      * <p>
@@ -248,42 +232,68 @@ public class BasicSubstanceScrubberParameters {
     @JsonProperty("scrubbedDefinitionHandling")
     private boolean scrubbedDefinitionHandling;
     /**
+     * Delete records based on status
+     * <p>
+     */
+    @JsonProperty("removeBasedOnStatus")
+    private boolean removeBasedOnStatus;
+    /**
      * Remove partially/fully scrubbed definitional records entirely
      * <p>
      */
-    @JsonProperty("removeScrubbedDefinitionalElementsEntirely")
-    private boolean removeScrubbedDefinitionalElementsEntirely;
+    @JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely")
+    private boolean scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely;
     /**
      * Set partially/fully scrubbed definitional records to definitional level "Incomplete"
      * <p>
      */
-    @JsonProperty("setScrubbedDefinitionalElementsIncomplete")
-    private boolean setScrubbedDefinitionalElementsIncomplete;
+    @JsonProperty("scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete")
+    private boolean scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete;
     /**
      * Convert partially/fully scrubbed definitional records to "Concepts"
      * <p>
      */
-    @JsonProperty("convertScrubbedDefinitionsToConcepts")
-    private boolean convertScrubbedDefinitionsToConcepts;
+    @JsonProperty("scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts")
+    private boolean scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts;
     /**
      * add a note to partially/fully scrubbed definitional records
      * <p>
      */
-    @JsonProperty("addNoteToScrubbedDefinitions")
-    private String addNoteToScrubbedDefinitions;
+    @JsonProperty("scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions")
+    private String scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions;
+    /**
+     * Treat partially scrubbed definitions with same settings
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions")
+    private boolean scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions;
+    /**
+     * Remove PARTIALLY scrubbed definitional records entirely
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely")
+    private boolean scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely;
+    /**
+     * Set PARTIALLY scrubbed definitional records to definitional level "Incomplete"
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete")
+    private boolean scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete;
+    /**
+     * Convert PARTIALLY scrubbed definitional records to "Concepts"
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts")
+    private boolean scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts;
+    /**
+     * add a note to PARTIALLY scrubbed definitional records
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions")
+    private String scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
-	
-
-    @JsonProperty("removeableElements")
-    public BasicSubstanceScrubberParameters.RemoveableElements getRemoveableElements() {
-        return removeableElements;
-    }
-
-    @JsonProperty("removeableElements")
-    public void setRemoveableElements(BasicSubstanceScrubberParameters.RemoveableElements removeableElements) {
-        this.removeableElements = removeableElements;
-    }
+    private final static long serialVersionUID = 3609250262371132167L;
 
     /**
      * Remove Date
@@ -322,79 +332,6 @@ public class BasicSubstanceScrubberParameters {
     }
 
     /**
-     * Access Groups to Include
-     * <p>
-     */
-    @JsonProperty("accessGroupsToInclude")
-    public List<String> getAccessGroupsToInclude() {
-        return accessGroupsToInclude;
-    }
-
-    /**
-     * Access Groups to Include
-     * <p>
-     */
-    @JsonProperty("accessGroupsToInclude")
-    public void setAccessGroupsToInclude(List<String> accessGroupsToInclude) {
-        this.accessGroupsToInclude = accessGroupsToInclude;
-    }
-    
-    /**
-     * Access Groups to Include
-     * <p>
-     */
-    @JsonProperty("statusesToInclude")
-    public List<String> getStatusesToInclude() {
-        return statusesToInclude;
-    }
-
-    /**
-     * Access Groups to Include
-     * <p>
-     */
-    @JsonProperty("statusesToInclude")
-    public void setStatusesToInclude(List<String> statusesToInclude) {
-        this.statusesToInclude = statusesToInclude;
-    }
-
-
-    /**
-     * Remove Elements if no exportable selected public domain reference
-     * <p>
-     */
-    @JsonProperty("removeElementsIfNoExportablePublicRef")
-    public boolean isRemoveElementsIfNoExportablePublicRef() {
-        return removeElementsIfNoExportablePublicRef;
-    }
-
-    /**
-     * Remove Elements if no exportable selected public domain reference
-     * <p>
-     */
-    @JsonProperty("removeElementsIfNoExportablePublicRef")
-    public void setRemoveElementsIfNoExportablePublicRef(boolean removeElementsIfNoExportablePublicRef) {
-        this.removeElementsIfNoExportablePublicRef = removeElementsIfNoExportablePublicRef;
-    }
-
-    /**
-     * Elements to remove
-     * <p>
-     */
-    @JsonProperty("elementsToRemove")
-    public List<String> getElementsToRemove() {
-        return elementsToRemove;
-    }
-
-    /**
-     * Elements to remove
-     * <p>
-     */
-    @JsonProperty("elementsToRemove")
-    public void setElementsToRemove(List<String> elementsToRemove) {
-        this.elementsToRemove = elementsToRemove;
-    }
-   
-    /**
      * Remove all Locked
      * <p>
      */
@@ -411,29 +348,60 @@ public class BasicSubstanceScrubberParameters {
     public void setRemoveAllLocked(boolean removeAllLocked) {
         this.removeAllLocked = removeAllLocked;
     }
-    
-
-    
-
 
     /**
-     * Remove based on status
+     * Access Groups to Include
      * <p>
      */
-    @JsonProperty("removeBasedOnStatus")
-    public boolean isRemoveBasedOnStatus() {
-        return removeBasedOnStatus;
+    @JsonProperty("removeAllLockedAccessGroupsToInclude")
+    public List<String> getRemoveAllLockedAccessGroupsToInclude() {
+        return removeAllLockedAccessGroupsToInclude;
     }
 
     /**
-     * Remove based on status
+     * Access Groups to Include
      * <p>
      */
-    @JsonProperty("removeBasedOnStatus")
-    public void setRemoveBasedOnStatus(boolean removeBasedOnStatus) {
-        this.removeBasedOnStatus = removeBasedOnStatus;
+    @JsonProperty("removeAllLockedAccessGroupsToInclude")
+    public void setRemoveAllLockedAccessGroupsToInclude(List<String> removeAllLockedAccessGroupsToInclude) {
+        this.removeAllLockedAccessGroupsToInclude = removeAllLockedAccessGroupsToInclude;
     }
 
+    /**
+     * Remove Elements if no exportable selected public domain reference
+     * <p>
+     */
+    @JsonProperty("removeAllLockedRemoveElementsIfNoExportablePublicRef")
+    public boolean isRemoveAllLockedRemoveElementsIfNoExportablePublicRef() {
+        return removeAllLockedRemoveElementsIfNoExportablePublicRef;
+    }
+
+    /**
+     * Remove Elements if no exportable selected public domain reference
+     * <p>
+     */
+    @JsonProperty("removeAllLockedRemoveElementsIfNoExportablePublicRef")
+    public void setRemoveAllLockedRemoveElementsIfNoExportablePublicRef(boolean removeAllLockedRemoveElementsIfNoExportablePublicRef) {
+        this.removeAllLockedRemoveElementsIfNoExportablePublicRef = removeAllLockedRemoveElementsIfNoExportablePublicRef;
+    }
+
+    /**
+     * Elements to remove
+     * <p>
+     */
+    @JsonProperty("removeElementsIfNoExportablePublicRefElementsToRemove")
+    public List<String> getRemoveElementsIfNoExportablePublicRefElementsToRemove() {
+        return removeElementsIfNoExportablePublicRefElementsToRemove;
+    }
+
+    /**
+     * Elements to remove
+     * <p>
+     */
+    @JsonProperty("removeElementsIfNoExportablePublicRefElementsToRemove")
+    public void setRemoveElementsIfNoExportablePublicRefElementsToRemove(List<String> removeElementsIfNoExportablePublicRefElementsToRemove) {
+        this.removeElementsIfNoExportablePublicRefElementsToRemove = removeElementsIfNoExportablePublicRefElementsToRemove;
+    }
 
     /**
      * Remove Codes by System
@@ -457,36 +425,36 @@ public class BasicSubstanceScrubberParameters {
      * Code Systems to Remove
      * <p>
      */
-    @JsonProperty("codeSystemsToRemove")
-    public List<String> getCodeSystemsToRemove() {
-        return codeSystemsToRemove;
+    @JsonProperty("removeCodesBySystemCodeSystemsToRemove")
+    public List<String> getRemoveCodesBySystemCodeSystemsToRemove() {
+        return removeCodesBySystemCodeSystemsToRemove;
     }
 
     /**
      * Code Systems to Remove
      * <p>
      */
-    @JsonProperty("codeSystemsToRemove")
-    public void setCodeSystemsToRemove(List<String> codeSystemsToRemove) {
-        this.codeSystemsToRemove = codeSystemsToRemove;
+    @JsonProperty("removeCodesBySystemCodeSystemsToRemove")
+    public void setRemoveCodesBySystemCodeSystemsToRemove(List<String> removeCodesBySystemCodeSystemsToRemove) {
+        this.removeCodesBySystemCodeSystemsToRemove = removeCodesBySystemCodeSystemsToRemove;
     }
 
     /**
      * Code Systems to Keep
      * <p>
      */
-    @JsonProperty("codeSystemsToKeep")
-    public List<String> getCodeSystemsToKeep() {
-        return codeSystemsToKeep;
+    @JsonProperty("removeCodesBySystemCodeSystemsToKeep")
+    public List<String> getRemoveCodesBySystemCodeSystemsToKeep() {
+        return removeCodesBySystemCodeSystemsToKeep;
     }
 
     /**
      * Code Systems to Keep
      * <p>
      */
-    @JsonProperty("codeSystemsToKeep")
-    public void setCodeSystemsToKeep(List<String> codeSystemsToKeep) {
-        this.codeSystemsToKeep = codeSystemsToKeep;
+    @JsonProperty("removeCodesBySystemCodeSystemsToKeep")
+    public void setRemoveCodesBySystemCodeSystemsToKeep(List<String> removeCodesBySystemCodeSystemsToKeep) {
+        this.removeCodesBySystemCodeSystemsToKeep = removeCodesBySystemCodeSystemsToKeep;
     }
 
     /**
@@ -511,54 +479,54 @@ public class BasicSubstanceScrubberParameters {
      * Reference Types to Remove
      * <p>
      */
-    @JsonProperty("referenceTypesToRemove")
-    public List<String> getReferenceTypesToRemove() {
-        return referenceTypesToRemove;
+    @JsonProperty("removeReferencesByCriteriaReferenceTypesToRemove")
+    public List<String> getRemoveReferencesByCriteriaReferenceTypesToRemove() {
+        return removeReferencesByCriteriaReferenceTypesToRemove;
     }
 
     /**
      * Reference Types to Remove
      * <p>
      */
-    @JsonProperty("referenceTypesToRemove")
-    public void setReferenceTypesToRemove(List<String> referenceTypesToRemove) {
-        this.referenceTypesToRemove = referenceTypesToRemove;
+    @JsonProperty("removeReferencesByCriteriaReferenceTypesToRemove")
+    public void setRemoveReferencesByCriteriaReferenceTypesToRemove(List<String> removeReferencesByCriteriaReferenceTypesToRemove) {
+        this.removeReferencesByCriteriaReferenceTypesToRemove = removeReferencesByCriteriaReferenceTypesToRemove;
     }
 
     /**
      * Citation Patterns to Remove
      * <p>
      */
-    @JsonProperty("citationPatternsToRemove")
-    public String getCitationPatternsToRemove() {
-        return citationPatternsToRemove;
+    @JsonProperty("removeReferencesByCriteriaCitationPatternsToRemove")
+    public String getRemoveReferencesByCriteriaCitationPatternsToRemove() {
+        return removeReferencesByCriteriaCitationPatternsToRemove;
     }
 
     /**
      * Citation Patterns to Remove
      * <p>
      */
-    @JsonProperty("citationPatternsToRemove")
-    public void setCitationPatternsToRemove(String citationPatternsToRemove) {
-        this.citationPatternsToRemove = citationPatternsToRemove;
+    @JsonProperty("removeReferencesByCriteriaCitationPatternsToRemove")
+    public void setRemoveReferencesByCriteriaCitationPatternsToRemove(String removeReferencesByCriteriaCitationPatternsToRemove) {
+        this.removeReferencesByCriteriaCitationPatternsToRemove = removeReferencesByCriteriaCitationPatternsToRemove;
     }
 
     /**
      * Exclude Reference by Pattern
      * <p>
      */
-    @JsonProperty("excludeReferenceByPattern")
-    public boolean isExcludeReferenceByPattern() {
-        return excludeReferenceByPattern;
+    @JsonProperty("removeReferencesByCriteriaExcludeReferenceByPattern")
+    public boolean isRemoveReferencesByCriteriaExcludeReferenceByPattern() {
+        return removeReferencesByCriteriaExcludeReferenceByPattern;
     }
 
     /**
      * Exclude Reference by Pattern
      * <p>
      */
-    @JsonProperty("excludeReferenceByPattern")
-    public void setExcludeReferenceByPattern(boolean excludeReferenceByPattern) {
-        this.excludeReferenceByPattern = excludeReferenceByPattern;
+    @JsonProperty("removeReferencesByCriteriaExcludeReferenceByPattern")
+    public void setRemoveReferencesByCriteriaExcludeReferenceByPattern(boolean removeReferencesByCriteriaExcludeReferenceByPattern) {
+        this.removeReferencesByCriteriaExcludeReferenceByPattern = removeReferencesByCriteriaExcludeReferenceByPattern;
     }
 
     /**
@@ -583,36 +551,36 @@ public class BasicSubstanceScrubberParameters {
      * Remove References to Filtered Substances
      * <p>
      */
-    @JsonProperty("removeReferencesToFilteredSubstances")
-    public boolean isRemoveReferencesToFilteredSubstances() {
-        return removeReferencesToFilteredSubstances;
+    @JsonProperty("substanceReferenceCleanupRemoveReferencesToFilteredSubstances")
+    public boolean isSubstanceReferenceCleanupRemoveReferencesToFilteredSubstances() {
+        return substanceReferenceCleanupRemoveReferencesToFilteredSubstances;
     }
 
     /**
      * Remove References to Filtered Substances
      * <p>
      */
-    @JsonProperty("removeReferencesToFilteredSubstances")
-    public void setRemoveReferencesToFilteredSubstances(boolean removeReferencesToFilteredSubstances) {
-        this.removeReferencesToFilteredSubstances = removeReferencesToFilteredSubstances;
+    @JsonProperty("substanceReferenceCleanupRemoveReferencesToFilteredSubstances")
+    public void setSubstanceReferenceCleanupRemoveReferencesToFilteredSubstances(boolean substanceReferenceCleanupRemoveReferencesToFilteredSubstances) {
+        this.substanceReferenceCleanupRemoveReferencesToFilteredSubstances = substanceReferenceCleanupRemoveReferencesToFilteredSubstances;
     }
 
     /**
      * Remove References to Substances Non-Exported Definitions
      * <p>
      */
-    @JsonProperty("removeReferencesToSubstancesNonExportedDefinitions")
-    public boolean isRemoveReferencesToSubstancesNonExportedDefinitions() {
-        return removeReferencesToSubstancesNonExportedDefinitions;
+    @JsonProperty("substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions")
+    public boolean isSubstanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions() {
+        return substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions;
     }
 
     /**
      * Remove References to Substances Non-Exported Definitions
      * <p>
      */
-    @JsonProperty("removeReferencesToSubstancesNonExportedDefinitions")
-    public void setRemoveReferencesToSubstancesNonExportedDefinitions(boolean removeReferencesToSubstancesNonExportedDefinitions) {
-        this.removeReferencesToSubstancesNonExportedDefinitions = removeReferencesToSubstancesNonExportedDefinitions;
+    @JsonProperty("substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions")
+    public void setSubstanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions(boolean substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions) {
+        this.substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions = substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions;
     }
 
     /**
@@ -673,54 +641,54 @@ public class BasicSubstanceScrubberParameters {
      * Remove Approval Id
      * <p>
      */
-    @JsonProperty("removeApprovalId")
-    public boolean isRemoveApprovalId() {
-        return removeApprovalId;
+    @JsonProperty("approvalIdCleanupRemoveApprovalId")
+    public boolean isApprovalIdCleanupRemoveApprovalId() {
+        return approvalIdCleanupRemoveApprovalId;
     }
 
     /**
      * Remove Approval Id
      * <p>
      */
-    @JsonProperty("removeApprovalId")
-    public void setRemoveApprovalId(boolean removeApprovalId) {
-        this.removeApprovalId = removeApprovalId;
+    @JsonProperty("approvalIdCleanupRemoveApprovalId")
+    public void setApprovalIdCleanupRemoveApprovalId(boolean approvalIdCleanupRemoveApprovalId) {
+        this.approvalIdCleanupRemoveApprovalId = approvalIdCleanupRemoveApprovalId;
     }
 
     /**
      * Copy Approval Id to code if code not already present
      * <p>
      */
-    @JsonProperty("copyApprovalIdToCode")
-    public boolean isCopyApprovalIdToCode() {
-        return copyApprovalIdToCode;
+    @JsonProperty("approvalIdCleanupCopyApprovalIdToCode")
+    public boolean isApprovalIdCleanupCopyApprovalIdToCode() {
+        return approvalIdCleanupCopyApprovalIdToCode;
     }
 
     /**
      * Copy Approval Id to code if code not already present
      * <p>
      */
-    @JsonProperty("copyApprovalIdToCode")
-    public void setCopyApprovalIdToCode(boolean copyApprovalIdToCode) {
-        this.copyApprovalIdToCode = copyApprovalIdToCode;
+    @JsonProperty("approvalIdCleanupCopyApprovalIdToCode")
+    public void setApprovalIdCleanupCopyApprovalIdToCode(boolean approvalIdCleanupCopyApprovalIdToCode) {
+        this.approvalIdCleanupCopyApprovalIdToCode = approvalIdCleanupCopyApprovalIdToCode;
     }
 
     /**
      * Remove Approval Id
      * <p>
      */
-    @JsonProperty("approvalIdCodeSystem")
-    public String getApprovalIdCodeSystem() {
-        return approvalIdCodeSystem;
+    @JsonProperty("approvalIdCleanupApprovalIdCodeSystem")
+    public String getApprovalIdCleanupApprovalIdCodeSystem() {
+        return approvalIdCleanupApprovalIdCodeSystem;
     }
 
     /**
      * Remove Approval Id
      * <p>
      */
-    @JsonProperty("approvalIdCodeSystem")
-    public void setApprovalIdCodeSystem(String approvalIdCodeSystem) {
-        this.approvalIdCodeSystem = approvalIdCodeSystem;
+    @JsonProperty("approvalIdCleanupApprovalIdCodeSystem")
+    public void setApprovalIdCleanupApprovalIdCodeSystem(String approvalIdCleanupApprovalIdCodeSystem) {
+        this.approvalIdCleanupApprovalIdCodeSystem = approvalIdCleanupApprovalIdCodeSystem;
     }
 
     /**
@@ -763,25 +731,25 @@ public class BasicSubstanceScrubberParameters {
      * New Status Value
      * <p>
      */
-    @JsonProperty("newStatusValue")
-    public String getNewStatusValue() {
-        return newStatusValue;
+    @JsonProperty("changeAllStatusesNewStatusValue")
+    public String getChangeAllStatusesNewStatusValue() {
+        return changeAllStatusesNewStatusValue;
     }
 
     /**
      * New Status Value
      * <p>
      */
-    @JsonProperty("newStatusValue")
-    public void setNewStatusValue(String newStatusValue) {
-        this.newStatusValue = newStatusValue;
+    @JsonProperty("changeAllStatusesNewStatusValue")
+    public void setChangeAllStatusesNewStatusValue(String changeAllStatusesNewStatusValue) {
+        this.changeAllStatusesNewStatusValue = changeAllStatusesNewStatusValue;
     }
 
     /**
      * Audit Information clean-up
      * <p>
      */
-    @JsonProperty("AuditInformationCleanup")
+    @JsonProperty("auditInformationCleanup")
     public boolean isAuditInformationCleanup() {
         return auditInformationCleanup;
     }
@@ -790,7 +758,7 @@ public class BasicSubstanceScrubberParameters {
      * Audit Information clean-up
      * <p>
      */
-    @JsonProperty("AuditInformationCleanup")
+    @JsonProperty("auditInformationCleanup")
     public void setAuditInformationCleanup(boolean auditInformationCleanup) {
         this.auditInformationCleanup = auditInformationCleanup;
     }
@@ -799,18 +767,18 @@ public class BasicSubstanceScrubberParameters {
      * New Auditor Value
      * <p>
      */
-    @JsonProperty("newAuditorValue")
-    public String getNewAuditorValue() {
-        return newAuditorValue;
+    @JsonProperty("auditInformationCleanupNewAuditorValue")
+    public String getAuditInformationCleanupNewAuditorValue() {
+        return auditInformationCleanupNewAuditorValue;
     }
 
     /**
      * New Auditor Value
      * <p>
      */
-    @JsonProperty("newAuditorValue")
-    public void setNewAuditorValue(String newAuditorValue) {
-        this.newAuditorValue = newAuditorValue;
+    @JsonProperty("auditInformationCleanupNewAuditorValue")
+    public void setAuditInformationCleanupNewAuditorValue(String auditInformationCleanupNewAuditorValue) {
+        this.auditInformationCleanupNewAuditorValue = auditInformationCleanupNewAuditorValue;
     }
 
     /**
@@ -832,75 +800,183 @@ public class BasicSubstanceScrubberParameters {
     }
 
     /**
-     * Remove partially/fully scrubbed definitional records entirely
+     * Delete records based on status
      * <p>
      */
-    @JsonProperty("removeScrubbedDefinitionalElementsEntirely")
-    public boolean isRemoveScrubbedDefinitionalElementsEntirely() {
-        return removeScrubbedDefinitionalElementsEntirely;
+    @JsonProperty("removeBasedOnStatus")
+    public boolean isRemoveBasedOnStatus() {
+        return removeBasedOnStatus;
+    }
+
+    /**
+     * Delete records based on status
+     * <p>
+     */
+    @JsonProperty("removeBasedOnStatus")
+    public void setRemoveBasedOnStatus(boolean removeBasedOnStatus) {
+        this.removeBasedOnStatus = removeBasedOnStatus;
     }
 
     /**
      * Remove partially/fully scrubbed definitional records entirely
      * <p>
      */
-    @JsonProperty("removeScrubbedDefinitionalElementsEntirely")
-    public void setRemoveScrubbedDefinitionalElementsEntirely(boolean removeScrubbedDefinitionalElementsEntirely) {
-        this.removeScrubbedDefinitionalElementsEntirely = removeScrubbedDefinitionalElementsEntirely;
+    @JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely")
+    public boolean isScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely() {
+        return scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely;
+    }
+
+    /**
+     * Remove partially/fully scrubbed definitional records entirely
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely")
+    public void setScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely(boolean scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely) {
+        this.scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely = scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely;
     }
 
     /**
      * Set partially/fully scrubbed definitional records to definitional level "Incomplete"
      * <p>
      */
-    @JsonProperty("setScrubbedDefinitionalElementsIncomplete")
-    public boolean isSetScrubbedDefinitionalElementsIncomplete() {
-        return setScrubbedDefinitionalElementsIncomplete;
+    @JsonProperty("scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete")
+    public boolean isScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete() {
+        return scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete;
     }
 
     /**
      * Set partially/fully scrubbed definitional records to definitional level "Incomplete"
      * <p>
      */
-    @JsonProperty("setScrubbedDefinitionalElementsIncomplete")
-    public void setSetScrubbedDefinitionalElementsIncomplete(boolean setScrubbedDefinitionalElementsIncomplete) {
-        this.setScrubbedDefinitionalElementsIncomplete = setScrubbedDefinitionalElementsIncomplete;
+    @JsonProperty("scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete")
+    public void setScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete(boolean scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete) {
+        this.scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete = scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete;
     }
 
     /**
      * Convert partially/fully scrubbed definitional records to "Concepts"
      * <p>
      */
-    @JsonProperty("convertScrubbedDefinitionsToConcepts")
-    public boolean isConvertScrubbedDefinitionsToConcepts() {
-        return convertScrubbedDefinitionsToConcepts;
+    @JsonProperty("scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts")
+    public boolean isScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts() {
+        return scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts;
     }
 
     /**
      * Convert partially/fully scrubbed definitional records to "Concepts"
      * <p>
      */
-    @JsonProperty("convertScrubbedDefinitionsToConcepts")
-    public void setConvertScrubbedDefinitionsToConcepts(boolean convertScrubbedDefinitionsToConcepts) {
-        this.convertScrubbedDefinitionsToConcepts = convertScrubbedDefinitionsToConcepts;
+    @JsonProperty("scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts")
+    public void setScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts(boolean scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts) {
+        this.scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts = scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts;
     }
 
     /**
      * add a note to partially/fully scrubbed definitional records
      * <p>
      */
-    @JsonProperty("addNoteToScrubbedDefinitions")
-    public String getAddNoteToScrubbedDefinitions() {
-        return addNoteToScrubbedDefinitions;
+    @JsonProperty("scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions")
+    public String getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions() {
+        return scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions;
     }
 
     /**
      * add a note to partially/fully scrubbed definitional records
      * <p>
      */
-    @JsonProperty("addNoteToScrubbedDefinitions")
-    public void setAddNoteToScrubbedDefinitions(String addNoteToScrubbedDefinitions) {
-        this.addNoteToScrubbedDefinitions = addNoteToScrubbedDefinitions;
+    @JsonProperty("scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions")
+    public void setScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions(String scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions) {
+        this.scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions = scrubbedDefinitionHandlingAddNoteToScrubbedDefinitions;
+    }
+
+    /**
+     * Treat partially scrubbed definitions with same settings
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions")
+    public boolean isScrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions() {
+        return scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions;
+    }
+
+    /**
+     * Treat partially scrubbed definitions with same settings
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions")
+    public void setScrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions(boolean scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions) {
+        this.scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions = scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions;
+    }
+
+    /**
+     * Remove PARTIALLY scrubbed definitional records entirely
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely")
+    public boolean isScrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely() {
+        return scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely;
+    }
+
+    /**
+     * Remove PARTIALLY scrubbed definitional records entirely
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely")
+    public void setScrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely(boolean scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely) {
+        this.scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely = scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely;
+    }
+
+    /**
+     * Set PARTIALLY scrubbed definitional records to definitional level "Incomplete"
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete")
+    public boolean isScrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete() {
+        return scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete;
+    }
+
+    /**
+     * Set PARTIALLY scrubbed definitional records to definitional level "Incomplete"
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete")
+    public void setScrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete(boolean scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete) {
+        this.scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete = scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete;
+    }
+
+    /**
+     * Convert PARTIALLY scrubbed definitional records to "Concepts"
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts")
+    public boolean isScrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts() {
+        return scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts;
+    }
+
+    /**
+     * Convert PARTIALLY scrubbed definitional records to "Concepts"
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts")
+    public void setScrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts(boolean scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts) {
+        this.scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts = scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts;
+    }
+
+    /**
+     * add a note to PARTIALLY scrubbed definitional records
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions")
+    public String getScrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions() {
+        return scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions;
+    }
+
+    /**
+     * add a note to PARTIALLY scrubbed definitional records
+     * <p>
+     */
+    @JsonProperty("scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions")
+    public void setScrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions(String scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions) {
+        this.scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions = scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions;
     }
 
     @JsonAnyGetter
@@ -911,51 +987,6 @@ public class BasicSubstanceScrubberParameters {
     @JsonAnySetter
     public void setAdditionalProperty(String name, Object value) {
         this.additionalProperties.put(name, value);
-    }
-
-    @Generated("jsonschema2pojo")
-    public enum RemoveableElements {
-
-        NAMES("Names"),
-        CODES("Codes"),
-        DEFINITION("Definition"),
-        NOTES("Notes"),
-        RELATIONSHIPS("Relationships"),
-        PROPERTIES("Properties"),
-        MODIFICATIONS("Modifications");
-        private final String value;
-        private final static Map<String, BasicSubstanceScrubberParameters.RemoveableElements> CONSTANTS = new HashMap<String, BasicSubstanceScrubberParameters.RemoveableElements>();
-
-        static {
-            for (BasicSubstanceScrubberParameters.RemoveableElements c : values()) {
-                CONSTANTS.put(c.value, c);
-            }
-        }
-
-        RemoveableElements(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return this.value;
-        }
-
-        @JsonValue
-        public String value() {
-            return this.value;
-        }
-
-        @JsonCreator
-        public static BasicSubstanceScrubberParameters.RemoveableElements fromValue(String value) {
-            BasicSubstanceScrubberParameters.RemoveableElements constant = CONSTANTS.get(value);
-            if (constant == null) {
-                throw new IllegalArgumentException(value);
-            } else {
-                return constant;
-            }
-        }
-
     }
 
 }

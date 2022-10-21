@@ -65,13 +65,13 @@ public class ExportConfigTest {
     @Test
     public void testScrubberSchema() throws JsonProcessingException {
         BasicSubstanceScrubberParameters schema = new BasicSubstanceScrubberParameters();
-        schema.setAccessGroupsToInclude( Arrays.asList( "Center for top-secret research"));
-        schema.setCodeSystemsToKeep(Arrays.asList("CAS", "ChemSpider"));
-        schema.setApprovalIdCodeSystem("Approval ID");
+        schema.setRemoveAllLockedAccessGroupsToInclude( Arrays.asList( "Center for top-secret research"));
+        schema.setRemoveCodesBySystemCodeSystemsToKeep(Arrays.asList("CAS", "ChemSpider"));
+        schema.setApprovalIdCleanupApprovalIdCodeSystem("Approval ID");
         schema.setChangeAllStatuses(false);
         schema.setDeidentifyAuditUser(false);
         schema.setRemoveReferencesByCriteria(true);
-        schema.setReferenceTypesToRemove( Arrays.asList("IND", "NDA"));
+        schema.setRemoveReferencesByCriteriaReferenceTypesToRemove( Arrays.asList("IND", "NDA"));
         ObjectMapper objectMapper = new ObjectMapper();
         String schemaString = objectMapper.writeValueAsString(schema);
         System.out.printf("schemaString: %s", schemaString);

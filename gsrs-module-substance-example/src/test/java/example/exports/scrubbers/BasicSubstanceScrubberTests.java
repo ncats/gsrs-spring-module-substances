@@ -10,7 +10,6 @@ import ix.core.models.Group;
 import ix.core.models.Keyword;
 import ix.core.models.Principal;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
-import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -79,14 +78,14 @@ public class BasicSubstanceScrubberTests {
         chemical.codes.add(cas);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
-        scrubberSettings.setCodeSystemsToRemove(Collections.singletonList("BDNUM"));
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList("BDNUM"));
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
@@ -161,14 +160,14 @@ public class BasicSubstanceScrubberTests {
         chemical.codes.add(cas);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude(Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude(Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(false);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
-        scrubberSettings.setCodeSystemsToRemove(Collections.singletonList("BDNUM"));
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList("BDNUM"));
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
@@ -250,17 +249,17 @@ public class BasicSubstanceScrubberTests {
         chemical.codes.add(cas);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
-        scrubberSettings.setCodeSystemsToRemove(Collections.singletonList("BDNUM"));
-        scrubberSettings.setRemoveElementsIfNoExportablePublicRef(true);
-        scrubberSettings.setElementsToRemove(Collections.singletonList(BasicSubstanceScrubberParameters.RemoveableElements.NAMES.toString()));
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList("BDNUM"));
+        scrubberSettings.setRemoveAllLockedRemoveElementsIfNoExportablePublicRef(true);
 
+        scrubberSettings.setRemoveElementsIfNoExportablePublicRefElementsToRemove(Collections.singletonList("Names"));
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
         String reasonToChange = "change is inevitable";
@@ -310,16 +309,16 @@ public class BasicSubstanceScrubberTests {
         chemical.codes.add(cas);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
-        scrubberSettings.setCodeSystemsToRemove(Collections.singletonList("BDNUM"));
-        scrubberSettings.setRemoveElementsIfNoExportablePublicRef(true);
-        scrubberSettings.setElementsToRemove(Collections.singletonList(BasicSubstanceScrubberParameters.RemoveableElements.DEFINITION.toString()));
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList("BDNUM"));
+        scrubberSettings.setRemoveAllLockedRemoveElementsIfNoExportablePublicRef(true);
+        scrubberSettings.setRemoveElementsIfNoExportablePublicRefElementsToRemove(Collections.singletonList("Definition"));
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
@@ -423,14 +422,14 @@ public class BasicSubstanceScrubberTests {
                 .build();
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
-        scrubberSettings.setCodeSystemsToRemove(Arrays.asList("BDNUM", "CAS"));
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Arrays.asList("BDNUM", "CAS"));
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         ProteinSubstance cleanedProtein= (ProteinSubstance) scrubber.scrub(proteinSubstance).get();
@@ -469,14 +468,14 @@ public class BasicSubstanceScrubberTests {
                 .build();
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
-        scrubberSettings.setCodeSystemsToKeep(Collections.singletonList("UNIPROT"));
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToKeep(Collections.singletonList("UNIPROT"));
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         ProteinSubstance cleanedProtein= (ProteinSubstance) scrubber.scrub(proteinSubstance).get();
@@ -520,7 +519,7 @@ public class BasicSubstanceScrubberTests {
 
         proteinSubstance.createdBy=user1;
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -571,14 +570,14 @@ public class BasicSubstanceScrubberTests {
 
         proteinSubstance.createdBy=user1;
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setAuditInformationCleanup(true);
-        scrubberSettings.setNewAuditorValue(newUserName);
+        scrubberSettings.setAuditInformationCleanupNewAuditorValue(newUserName);
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         ProteinSubstance cleanedProtein= (ProteinSubstance) scrubber.scrub(proteinSubstance).get();
@@ -643,17 +642,17 @@ public class BasicSubstanceScrubberTests {
         chemical.addReference(publicRef2);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
-        scrubberSettings.setCodeSystemsToRemove(Collections.singletonList("BDNUM"));
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList("BDNUM"));
         scrubberSettings.setSubstanceReferenceCleanup(true);
         scrubberSettings.setRemoveReferencesByCriteria(true);
-        scrubberSettings.setReferenceTypesToRemove(Collections.singletonList("Wikipedia"));
+        scrubberSettings.setRemoveReferencesByCriteriaReferenceTypesToRemove(Collections.singletonList("Wikipedia"));
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
@@ -729,7 +728,7 @@ public class BasicSubstanceScrubberTests {
         chemical.addReference(publicRef2);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
@@ -737,8 +736,8 @@ public class BasicSubstanceScrubberTests {
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setSubstanceReferenceCleanup(true);
         scrubberSettings.setRemoveReferencesByCriteria(true);
-        scrubberSettings.setExcludeReferenceByPattern(true);
-        scrubberSettings.setCitationPatternsToRemove(".*GARDENS.*\nnevermore");
+        scrubberSettings.setRemoveReferencesByCriteriaExcludeReferenceByPattern(true);
+        scrubberSettings.setRemoveReferencesByCriteriaCitationPatternsToRemove(".*GARDENS.*\nnevermore");
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
@@ -803,13 +802,13 @@ public class BasicSubstanceScrubberTests {
         chemical.addReference(publicRef2);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(true);
-        scrubberSettings.setRemoveApprovalId(true);
+        scrubberSettings.setApprovalIdCleanupRemoveApprovalId(true);
         scrubberSettings.setSubstanceReferenceCleanup(false);
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
@@ -872,16 +871,16 @@ public class BasicSubstanceScrubberTests {
         chemical.addReference(publicRef2);
 
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setAccessGroupsToInclude( Collections.singletonList("WHO"));
+        scrubberSettings.setRemoveAllLockedAccessGroupsToInclude( Collections.singletonList("WHO"));
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setRemoveNotes(true);
         scrubberSettings.setRemoveChangeReason(false);
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(true);
-        scrubberSettings.setRemoveApprovalId(true);
+        scrubberSettings.setApprovalIdCleanupRemoveApprovalId(true);
         scrubberSettings.setSubstanceReferenceCleanup(false);
-        scrubberSettings.setCopyApprovalIdToCode(true);
-        scrubberSettings.setApprovalIdCodeSystem(approvalIDCodeSystem);
+        scrubberSettings.setApprovalIdCleanupCopyApprovalIdToCode(true);
+        scrubberSettings.setApprovalIdCleanupApprovalIdCodeSystem(approvalIDCodeSystem);
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
@@ -1124,7 +1123,7 @@ public class BasicSubstanceScrubberTests {
         scrubberSettings.setSubstanceReferenceCleanup(false);
         scrubberSettings.setRegenerateUUIDs(true);
         scrubberSettings.setChangeAllStatuses(true);
-        scrubberSettings.setNewStatusValue("pending");
+        scrubberSettings.setChangeAllStatusesNewStatusValue("pending");
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
@@ -1191,7 +1190,7 @@ public class BasicSubstanceScrubberTests {
         scrubberSettings.setSubstanceReferenceCleanup(false);
         scrubberSettings.setRegenerateUUIDs(true);
         scrubberSettings.setChangeAllStatuses(false);
-        scrubberSettings.setNewStatusValue("pending");
+        scrubberSettings.setChangeAllStatusesNewStatusValue("pending");
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");
