@@ -47,6 +47,31 @@
         ]
       }
     },
+    "statusesToInclude": {
+      "comments": "Records with any of the following record status attributes will be kept",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "approved",
+          "alternative",
+          "approved subconcept",
+          "pending subconcept",
+          "pending",
+          "failed",
+          "concept"
+        ]
+      },
+      "title": "Statuses to include",
+      "visibleIf": {
+        "removeBasedOnStatus": [
+          true
+        ]
+      },
+      "widget": {
+        "id": "multi-select"
+      }
+    },
     "removeElementsIfNoExportablePublicRefElementsToRemove": {
       "comments": "elements to remove when the substance has no public references",
       "type": "array",

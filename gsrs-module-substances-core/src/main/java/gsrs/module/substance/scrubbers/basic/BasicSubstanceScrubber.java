@@ -39,10 +39,67 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     private Set<String> codeSystemsToKeep;
     private BasicSubstanceScrubberParameters scrubberSettings;
 
+    private static Set<Group> toDelete = new HashSet<>();
+    private static Set<Group> toKeep = new HashSet<>();
+
     enum RECORD_PUB_STATUS {
         FULLY_PUBLIC,
         DEFINITION_PROTECTED,
         FULLY_PROTECTED
+    }
+
+    enum MISSING_SUBSTANCE_REFERENCE_ACTION {
+        KEEP_REFERENCE(DEFINITION_LEVEL_ACTION.FULL_DEFINITION),
+        REMOVE_PARENT_SUBSTANCE_ENTIRELY(DEFINITION_LEVEL_ACTION.FULL_DEFINITION),
+        DEIDENTIFY_SUBSTANCE_REFERENCE(DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION),   					  //potentially affects definition
+        REMOVE_ONLY_SUBSTANCE_REFERENCE(DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION),  					  //potentially affects definition
+        REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY(DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION),   //potentially affects definition
+        REMOVE_DEFINITION_ENTIRELY(DEFINITION_LEVEL_ACTION.EMTPY_DEFINITION);                             //potentially affects definition
+
+        DEFINITION_LEVEL_ACTION definitionalAction;
+
+        MISSING_SUBSTANCE_REFERENCE_ACTION(DEFINITION_LEVEL_ACTION action){
+            this.definitionalAction = action;
+        }
+
+        public void act(Substance substance, SubstanceReference thing, GinasAccessControlled parent){
+            switch(this){
+                case KEEP_REFERENCE:
+                    break;
+                case REMOVE_PARENT_SUBSTANCE_ENTIRELY:
+                    markForDelete(substance);
+                    break;
+                case DEIDENTIFY_SUBSTANCE_REFERENCE:
+                    deidentifySubstanceReference(thing);
+                    break;
+                case REMOVE_ONLY_SUBSTANCE_REFERENCE:
+                    markForDelete(thing);
+                    break;
+                case REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY:
+                    markSubstanceReferenceForDelete(parent, thing);
+                    break;
+                case REMOVE_DEFINITION_ENTIRELY:
+                    markSubstanceReferenceForDelete(parent, thing);
+                    //this needs more actions to happen elsewhere to handle the deleted definition
+                    break;
+            }
+        }
+    }
+    enum DEFINITION_LEVEL_ACTION {
+        FULL_DEFINITION(2),
+        PARTIAL_DEFINITION(1),
+        EMTPY_DEFINITION(0);
+        int priority;
+        DEFINITION_LEVEL_ACTION(int priority){
+            this.priority=priority;
+        }
+        public DEFINITION_LEVEL_ACTION combine(DEFINITION_LEVEL_ACTION action2){
+            if(this.priority<action2.priority){
+                return this;
+            }else{
+                return action2;
+            }
+        }
     }
 
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
@@ -67,7 +124,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
     }
-    
+
     private void forEachObjectWithAccess(Substance s, Consumer<GinasAccessControlled> consumer) {
     	StreamUtil.with(s.getAllChildrenCapableOfHavingReferences().stream().map(n->(GinasAccessControlled)n))
     			  .and(s.references.stream().map(n->n))
@@ -76,13 +133,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     			  .distinct()
     			  .forEach(consumer::accept);
     }
-    
+
     private void forEachObjectWithReferences(Substance s, Consumer<GinasAccessReferenceControlled> consumer) {
     	StreamUtil.with(s.getAllChildrenCapableOfHavingReferences().stream())
     			  .stream()
     			  .forEach(consumer::accept);
     }
-    
+
     //TODO remove all private access things
     //As transformer
     //1. Remove all things which have $..access!=[]
@@ -95,14 +152,14 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     private void removeStaleReferences(Substance s) {
     	Set<UUID> references = s.references.stream().map(r->r.uuid).collect(Collectors.toSet());
-    	
+
     	forEachObjectWithReferences(s, (o)->{
     		Set<UUID> refs= o.getReferencesAsUUIDs()
     						    .stream()
     						    .filter(uu->references.contains(uu))
     						    .collect(Collectors.toSet());
     		o.setReferenceUuids(refs);
-    		
+
     	});
     }
 
@@ -155,16 +212,16 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     	toDelete.add(new Group(TO_DELETE));
     	Set<Group> toKeep = new HashSet<>();
     	toKeep.add(new Group(TO_FORCE_KEEP));
-    	
+
     	boolean[] isDefinitionScrubbed = new boolean[] {false};
     	GinasAccessReferenceControlled mainDefinition = null;
-    	
+
     	if(starting instanceof GinasSubstanceDefinitionAccess) {
     		GinasSubstanceDefinitionAccess def = (GinasSubstanceDefinitionAccess)starting;
     		mainDefinition=def.getDefinitionElement();
     	}
-    	GinasAccessReferenceControlled finalMainDefinition = mainDefinition;    	
-    	
+    	GinasAccessReferenceControlled finalMainDefinition = mainDefinition;
+
     	if(scrubberSettings.isRemoveAllLocked()) {
     		forEachObjectWithAccess(starting, (bm)->{
     			log.trace("examining object {}", bm.getClass().getName());
@@ -172,7 +229,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     			Set<String> accessSet = b.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
     			//If it's not empty, remove everything UNLESS
     			if(!accessSet.isEmpty()) {
-    				
+
     				accessSet.retainAll(groupsToInclude);
     				// There's something in the inclusion list
     				if(!accessSet.isEmpty()) {
@@ -218,7 +275,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 });
             }
     	}
-    	
+
     	//remove all definitions if this setting is true
     	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely()) {
     		starting.properties.stream()
@@ -226,28 +283,28 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 					    		.forEach(p->{
 					    			p.setAccess(toDelete);
 					    		});
-    		
+
     		starting.modifications.setAccess(toDelete);
     		if(starting instanceof ChemicalSubstance) {
     			ChemicalSubstance chem = (ChemicalSubstance)starting;
     			chem.moieties.forEach(m->{
     				m.setAccess(toDelete);
     			});
-    		}    		
+    		}
     	}
     	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete()) {
     		starting.definitionLevel=SubstanceDefinitionLevel.INCOMPLETE;
     	}
-    	
+
        	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts()) {
     		starting.substanceClass=SubstanceClass.concept;
     	}
-       	
+
        	if(isDefinitionScrubbed[0] && scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions()!=null) {
        		Note nn=starting.addNote(scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions());
        		nn.setAccess(toKeep);
        	}
-        
+
         return starting;
     }
 
@@ -305,13 +362,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         		dc.delete("$..approvedBy");
         	}else if(scrubberSettings.getAuditInformationCleanupNewAuditorValue()!=null) {
         		String newAuditor = scrubberSettings.getAuditInformationCleanupNewAuditorValue();
-        		
+
         		dc.set("$..lastEditedBy", newAuditor);
         		dc.set("$..createdBy", newAuditor);
         		dc.set("$..approvedBy", newAuditor);
         	}
         }
-        
+
         if(scrubberSettings.isRemoveCodesBySystem() && (!codeSystemsToRemove.isEmpty() || !codeSystemsToKeep.isEmpty())){
             Predicate codeSystemPredicate = context -> {
                 Map code=context.item(Map.class);
@@ -336,7 +393,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
 
         dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-        
+
         return dc.jsonString();
     }
 
@@ -399,11 +456,11 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         });
         substance.getAllChildrenCapableOfHavingReferences().stream()
                 .forEach(c-> {
-                	
+
                 	//change reference uuids and references to those uuids
                 	Set<UUID> newRefUuids = c.getReferencesAsUUIDs().stream().map(u->oldToNewUUIDMap.getOrDefault(u, null)).filter(u->u!=null).collect(Collectors.toSet());
                 	c.setReferenceUuids(newRefUuids);
-                	
+
                     if (c instanceof GinasCommonData) {
                         ((GinasCommonData) c).uuid = oldToNewUUIDMap.computeIfAbsent(((GinasCommonData) c).uuid, (k)->UUID.randomUUID());
                     }else if(c instanceof Structure) {
@@ -424,7 +481,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     		if(!this.statusesToInclude.contains(status)) {
     			return true;
     		}
-    		
+
         }
         if(scrubberSettings.isRemoveAllLocked()) {
             Set<String> accessSet = starting.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
@@ -519,10 +576,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                         //do  C2 stuff here
                     	//for now considered the same as fully public
                     	return;
-                    	
+
                     case FULLY_PROTECTED:
                         //do  C3 stuff here
-                    	
+
                     	return;
 
                 }
@@ -566,11 +623,55 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return substance.status;
     }
 
+    private static void markForDelete(GinasAccessControlled b){
+        b.setAccess(toDelete);
+    }
+
+    private static SubstanceReference deidentifySubstanceReference(SubstanceReference sref){
+        //SubstanceReference sref = new SubstanceReference();
+        sref.refPname = "UNSPECIFIED_SUBSTANCE";
+        sref.substanceClass = "mention";
+        sref.approvalID=null;
+        //sref.refuuid=sref.refuuid;
+        return sref;
+    }
+
+    public static void markSubstanceReferenceForDelete(GinasAccessControlled parent, SubstanceReference sref){
+        boolean deleteParent=true;
+
+        //these are cases where it's okay to JUST delete the substance reference
+        if(parent instanceof StructurallyDiverse
+                || parent instanceof Parameter
+                || parent instanceof Property
+                || parent instanceof Mixture
+                || parent instanceof PolymerClassification
+        ){
+            deleteParent=false;
+        }else if(parent instanceof Relationship){
+            Relationship rel=(Relationship)parent;
+            if(rel.mediatorSubstance == sref){
+                deleteParent=false;
+            }
+        }
+        if(deleteParent){
+            markForDelete(parent);
+        }else{
+            markForDelete(sref);
+        }
+
+
+    }
+
+    private static boolean isMarkedForDelete(GinasAccessControlled s){
+        Set<String> accessSet = s.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
+        return accessSet.contains(TO_DELETE);
+    }
+
     @SneakyThrows
     @Override
     public Optional<Substance> scrub(Substance substance) {
         log.trace("starting in scrub");
-       
+
         String substanceJson;
         try {
         	//just a force thing to fetch if needed
@@ -590,7 +691,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         try {
         	 //TODO: confirm if this forces as a concept. It should not,
             // but we need to check.
-            Substance snew = SubstanceBuilder.from(substanceJson).build();            
+            Substance snew = SubstanceBuilder.from(substanceJson).build();
             scrubAccess(snew);
             substanceJson = snew.toFullJsonNode().toString();
             String cleanJson= restrictedJSONSimple(substanceJson);

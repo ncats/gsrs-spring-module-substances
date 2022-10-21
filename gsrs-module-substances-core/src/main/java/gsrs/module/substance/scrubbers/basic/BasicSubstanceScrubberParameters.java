@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "removeAllLocked",
         "removeAllLockedAccessGroupsToInclude",
         "removeAllLockedRemoveElementsIfNoExportablePublicRef",
+        "statusesToInclude",
         "removeElementsIfNoExportablePublicRefElementsToRemove",
         "removeCodesBySystem",
         "removeCodesBySystemCodeSystemsToRemove",
@@ -93,6 +94,12 @@ public class BasicSubstanceScrubberParameters implements Serializable {
      */
     @JsonProperty("removeAllLockedRemoveElementsIfNoExportablePublicRef")
     private boolean removeAllLockedRemoveElementsIfNoExportablePublicRef;
+    /**
+     * Statuses to include
+     * <p>
+     */
+    @JsonProperty("statusesToInclude")
+    private List<StatusesToInclude> statusesToInclude = null;
     /**
      * Elements to remove
      * <p>
@@ -293,7 +300,7 @@ public class BasicSubstanceScrubberParameters implements Serializable {
     private String scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
-    private final static long serialVersionUID = 3609250262371132167L;
+    private final static long serialVersionUID = 8826671833754141447L;
 
     /**
      * Remove Date
@@ -383,6 +390,24 @@ public class BasicSubstanceScrubberParameters implements Serializable {
     @JsonProperty("removeAllLockedRemoveElementsIfNoExportablePublicRef")
     public void setRemoveAllLockedRemoveElementsIfNoExportablePublicRef(boolean removeAllLockedRemoveElementsIfNoExportablePublicRef) {
         this.removeAllLockedRemoveElementsIfNoExportablePublicRef = removeAllLockedRemoveElementsIfNoExportablePublicRef;
+    }
+
+    /**
+     * Statuses to include
+     * <p>
+     */
+    @JsonProperty("statusesToInclude")
+    public List<StatusesToInclude> getStatusesToInclude() {
+        return statusesToInclude;
+    }
+
+    /**
+     * Statuses to include
+     * <p>
+     */
+    @JsonProperty("statusesToInclude")
+    public void setStatusesToInclude(List<StatusesToInclude> statusesToInclude) {
+        this.statusesToInclude = statusesToInclude;
     }
 
     /**
