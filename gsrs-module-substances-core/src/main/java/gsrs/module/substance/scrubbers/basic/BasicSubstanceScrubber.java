@@ -1,7 +1,17 @@
 package gsrs.module.substance.scrubbers.basic;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -17,10 +27,24 @@ import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.RecordScrubber;
 import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.*;
-import ix.ginas.models.v1.*;
+import ix.ginas.models.GinasAccessControlled;
+import ix.ginas.models.GinasAccessReferenceControlled;
+import ix.ginas.models.GinasCommonData;
+import ix.ginas.models.GinasSubstanceDefinitionAccess;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Mixture;
+import ix.ginas.models.v1.Note;
+import ix.ginas.models.v1.Parameter;
+import ix.ginas.models.v1.PolymerClassification;
+import ix.ginas.models.v1.Property;
+import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Relationship;
+import ix.ginas.models.v1.StructurallyDiverse;
+import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
+import ix.ginas.models.v1.SubstanceReference;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
@@ -39,6 +63,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     private Set<String> codeSystemsToKeep;
     private BasicSubstanceScrubberParameters scrubberSettings;
 
+    private MISSING_SUBSTANCE_REFERENCE_ACTION definitionalDependencyAction = MISSING_SUBSTANCE_REFERENCE_ACTION.KEEP_REFERENCE;
+    private MISSING_SUBSTANCE_REFERENCE_ACTION relationalDependencyAction   = MISSING_SUBSTANCE_REFERENCE_ACTION.KEEP_REFERENCE;
+    private MISSING_SUBSTANCE_REFERENCE_ACTION hierarchicalDependencyAction = MISSING_SUBSTANCE_REFERENCE_ACTION.KEEP_REFERENCE;
+    
     private static Set<Group> toDelete = new HashSet<>();
     private static Set<Group> toKeep = new HashSet<>();
 
@@ -54,7 +82,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         DEIDENTIFY_SUBSTANCE_REFERENCE(DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION),   					  //potentially affects definition
         REMOVE_ONLY_SUBSTANCE_REFERENCE(DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION),  					  //potentially affects definition
         REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY(DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION),   //potentially affects definition
-        REMOVE_DEFINITION_ENTIRELY(DEFINITION_LEVEL_ACTION.EMTPY_DEFINITION);                             //potentially affects definition
+        REMOVE_DEFINITION_ENTIRELY(DEFINITION_LEVEL_ACTION.EMPTY_DEFINITION);                             //potentially affects definition
 
         DEFINITION_LEVEL_ACTION definitionalAction;
 
@@ -88,7 +116,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     enum DEFINITION_LEVEL_ACTION {
         FULL_DEFINITION(2),
         PARTIAL_DEFINITION(1),
-        EMTPY_DEFINITION(0);
+        EMPTY_DEFINITION(0);
         int priority;
         DEFINITION_LEVEL_ACTION(int priority){
             this.priority=priority;
@@ -123,6 +151,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 .map(String::trim)
                 .filter(t->t.length()>0)
                 .collect(Collectors.toSet());
+        
+        
+    	toDelete.add(new Group(TO_DELETE));
+    	toKeep.add(new Group(TO_FORCE_KEEP));
     }
 
     private void forEachObjectWithAccess(Substance s, Consumer<GinasAccessControlled> consumer) {
@@ -208,10 +240,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     }
 
     private Substance scrubAccess(Substance starting) throws IOException {
-    	Set<Group> toDelete = new HashSet<>();
-    	toDelete.add(new Group(TO_DELETE));
-    	Set<Group> toKeep = new HashSet<>();
-    	toKeep.add(new Group(TO_FORCE_KEEP));
+    	
 
     	boolean[] isDefinitionScrubbed = new boolean[] {false};
     	GinasAccessReferenceControlled mainDefinition = null;
@@ -276,38 +305,67 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             }
     	}
 
-    	//remove all definitions if this setting is true
-    	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely()) {
-    		starting.properties.stream()
-					    		.filter(Property::isDefining)
-					    		.forEach(p->{
-					    			p.setAccess(toDelete);
-					    		});
-
-    		starting.modifications.setAccess(toDelete);
-    		if(starting instanceof ChemicalSubstance) {
-    			ChemicalSubstance chem = (ChemicalSubstance)starting;
-    			chem.moieties.forEach(m->{
-    				m.setAccess(toDelete);
-    			});
-    		}
+    	if(isDefinitionScrubbed[0]){
+    		return scrubDefinition(starting, DEFINITION_LEVEL_ACTION.EMPTY_DEFINITION).orElse(null);
     	}
-    	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete()) {
-    		starting.definitionLevel=SubstanceDefinitionLevel.INCOMPLETE;
-    	}
-
-       	if(isDefinitionScrubbed[0] && scrubberSettings.isScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts()) {
-    		starting.substanceClass=SubstanceClass.concept;
-    	}
-
-       	if(isDefinitionScrubbed[0] && scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions()!=null) {
-       		Note nn=starting.addNote(scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions());
-       		nn.setAccess(toKeep);
-       	}
-
         return starting;
     }
 
+    private Optional<Substance> scrubDefinition(Substance starting, DEFINITION_LEVEL_ACTION action){
+
+    	if(action==DEFINITION_LEVEL_ACTION.FULL_DEFINITION){
+    		return Optional.of(starting);
+    	}
+    	
+    	boolean removeScrubbedDefinitionalElementsEntirely=false;
+    	boolean setScrubbedDefinitionalElementsIncomplete=false;
+    	boolean convertScrubbedDefinitionsToConcepts=false;
+    	String addNoteToScrubbedDefinitions=null;
+    	
+    	if(action==DEFINITION_LEVEL_ACTION.EMPTY_DEFINITION || (action==DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION && scrubberSettings.isScrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions())){
+    		removeScrubbedDefinitionalElementsEntirely=scrubberSettings.isScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely();
+    		setScrubbedDefinitionalElementsIncomplete=scrubberSettings.isScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete();
+    		convertScrubbedDefinitionsToConcepts=scrubberSettings.isScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts();
+    		addNoteToScrubbedDefinitions=scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions();
+    	}else if (action==DEFINITION_LEVEL_ACTION.PARTIAL_DEFINITION){
+    		removeScrubbedDefinitionalElementsEntirely=scrubberSettings.isScrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely();
+    		setScrubbedDefinitionalElementsIncomplete=scrubberSettings.isScrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete();
+    		convertScrubbedDefinitionsToConcepts=scrubberSettings.isScrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts();
+    		addNoteToScrubbedDefinitions=scrubberSettings.getScrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions();
+    	}
+    	
+    	
+    	//remove all potential elements of definitions if this setting is true
+    	if(removeScrubbedDefinitionalElementsEntirely) {
+    		starting.properties.stream()
+					    		.filter(Property::isDefining)
+					    		.forEach(p->{
+					    			markForDelete(p);
+					    		});
+    		
+    		markForDelete(starting.modifications);
+    		if(starting instanceof ChemicalSubstance) {
+    			ChemicalSubstance chem = (ChemicalSubstance)starting;
+    			chem.moieties.forEach(m->{
+    				markForDelete(m);
+    			});
+    		}    		
+    	}
+    	if(setScrubbedDefinitionalElementsIncomplete) {
+    		starting.definitionLevel=SubstanceDefinitionLevel.INCOMPLETE;
+    	}
+    	
+       	if(convertScrubbedDefinitionsToConcepts) {
+    		starting.substanceClass=SubstanceClass.concept;
+    	}
+       	
+       	if(addNoteToScrubbedDefinitions!=null) {
+       		Note nn=starting.addNote(addNoteToScrubbedDefinitions);
+       		nn.setAccess(toKeep);
+       	}
+       	return Optional.ofNullable(starting);
+    }
+    
     private Substance scrubApprovalId(Substance substance) {
         String approvalId = substance.getApprovalID();
         log.trace("in scrubApprovalId, approvalId: {}", approvalId);
@@ -564,8 +622,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     take an input substance and mutate it in a way that handles substance refs that may be publishable.
      */
     public Optional<Substance> scrubBasedOnDefDefs(Substance substance) {
-        Optional<Substance> returnSubstance = Optional.of(substance);
-        substance.getDependsOnSubstanceReferences().forEach(thing->{
+        DEFINITION_LEVEL_ACTION[] dAction = new DEFINITION_LEVEL_ACTION[]{DEFINITION_LEVEL_ACTION.FULL_DEFINITION};
+        
+        
+        substance.getDependsOnSubstanceReferencesAndParents().forEach(tt->{
+        	SubstanceReference thing = tt.v();
+        	GinasAccessControlled parent = tt.k();
+        	
             RECORD_PUB_STATUS status;
             try {
                 status=getPublishable(thing);
@@ -576,37 +639,53 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                         //do  C2 stuff here
                     	//for now considered the same as fully public
                     	return;
-
+                    	
                     case FULLY_PROTECTED:
                         //do  C3 stuff here
-
+                    	
+                    	dAction[0]=dAction[0].combine(definitionalDependencyAction.definitionalAction);
+                    	definitionalDependencyAction.act(substance, thing, parent);
                     	return;
 
                 }
-            }
-            catch(Exception ex) {
+            }catch(Exception ex) {
                 log.trace("Error computing publishable of substance", ex);
             }
-
         });
-        //todo: add getAllSubstanceReferences to Substance.java
-        // return 2 things:
-        //   return substance refs... 2 kinds. Incidental to parent.  Just a compnoent
-        //     those that are 'only' part.
-        //     relationship means nothing with null substance ref
-        //     mixture component means nothing with null substance ref
-        //      monomers, ssg1 constituents: means nothing
-        //      treat parent object like it's nothing...
-        ///     don't remove
-        //     str modification may be interesting w/o ref?
-        //      properties may contain substance refs.  Without substance ref, the property is useful anyhow
-        //      mixture parent; str div; polymer parent; hybrid paternal/maternal/
-        //      todo: create a table with all types of substance refs.
-        //      return a tuple<parent object, substance ref>
-        //
-        //substance.getAllSubstanceReferences()
-        return returnSubstance;
+        
+        if(isMarkedForDelete(substance))return Optional.empty();
+		scrubDefinition(substance, dAction[0]);
+		
+		DEFINITION_LEVEL_ACTION[] dAction2 = new DEFINITION_LEVEL_ACTION[]{DEFINITION_LEVEL_ACTION.FULL_DEFINITION};
+        
+		substance.getNonDefiningSubstanceReferencesAndParents().forEach(tt->{
+        	SubstanceReference thing = tt.v();
+        	GinasAccessControlled parent = tt.k();
+        	
+            RECORD_PUB_STATUS status;
+            try {
+                status=getPublishable(thing);
+                switch(status){
+                    case FULLY_PUBLIC: 
+                    	return;
+                    case DEFINITION_PROTECTED:
+                    	return;
+                    case FULLY_PROTECTED:
+                    	dAction2[0]=dAction2[0].combine(relationalDependencyAction.definitionalAction);
+                    	relationalDependencyAction.act(substance, thing, parent);
+                    	return;
+                }
+            }catch(Exception ex) {
+                log.trace("Error computing publishable of substance", ex);
+            }
+        });
+		
+		if(isMarkedForDelete(substance))return Optional.empty();
+		scrubDefinition(substance, dAction2[0]);
+		
+        return Optional.of(substance);
     }
+
 
     private static String getStatusForSubstance(Substance substance){
         if(substance.substanceClass.equals(SubstanceClass.concept)){
