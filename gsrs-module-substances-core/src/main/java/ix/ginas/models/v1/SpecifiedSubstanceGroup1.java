@@ -17,63 +17,22 @@ public class SpecifiedSubstanceGroup1 extends GinasCommonSubData {
     })
 	public List<SpecifiedSubstanceComponent> constituents;
 	
-//	@OneToOne(cascade=CascadeType.ALL)
-//	public SubstanceReference parentSubstance;
-
-//	public SubstanceReference getParentSubstance() {
-//		return parentSubstance;
-//	}
-//
-//	public void setParentSubstance(SubstanceReference parentSubstance) {
-//		this.parentSubstance = parentSubstance;
-//	}
-	
 	public int size(){
 		return constituents.size();
 	}
-/*
-	public void setFromMap(Map m) {
-		super.setFromMap(m);
-		components = toDataHolderList(
-				(List<Map>) m.get("components"),
-				new DataHolderFactory<gov.nih.ncats.informatics.ginas.shared.model.v1.Component>() {
-					@Override
-					public gov.nih.ncats.informatics.ginas.shared.model.v1.Component make() {
-						return new gov.nih.ncats.informatics.ginas.shared.model.v1.Component();
-					}
-				});
-		parentSubstance = toDataHolder(
-				m.get("parentSubstance"),
-				new DataHolderFactory<gov.nih.ncats.informatics.ginas.shared.model.v1.SubstanceReference>() {
-					@Override
-					public gov.nih.ncats.informatics.ginas.shared.model.v1.SubstanceReference make() {
-						return new gov.nih.ncats.informatics.ginas.shared.model.v1.SubstanceReference();
-					}
-				});
-	}
 
 	@Override
-	public Map addAttributes(Map m) {
-		super.addAttributes(m);
+	@JsonIgnore
+	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
+		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
 
-		m.put("components", toMapList(components));
-		if (parentSubstance != null)
-			m.put("parentSubstance", parentSubstance.toMap());
-		return m;
-	}*/
+		if (this.constituents != null) {
+			for (SpecifiedSubstanceComponent s : this.constituents) {
+				temp.addAll(s.getAllChildrenAndSelfCapableOfHavingReferences());
+			}
+		}
 
-	 @Override
-	   	@JsonIgnore
-	   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
-	   		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
-
-	   		if(this.constituents!=null){
-	   			for(SpecifiedSubstanceComponent s : this.constituents){
-	   				temp.addAll(s.getAllChildrenAndSelfCapableOfHavingReferences());
-	   			}
-	   		}
-
-	   		return temp;
-	   	}
+		return temp;
+	}
 
 }

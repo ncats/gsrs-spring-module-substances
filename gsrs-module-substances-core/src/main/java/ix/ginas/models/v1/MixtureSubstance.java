@@ -1,12 +1,23 @@
 package ix.ginas.models.v1;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.persistence.CascadeType;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.Inheritance;
+import javax.persistence.OneToOne;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import gov.nih.ncats.common.Tuple;
+import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.*;
-import java.util.*;
 
 @Entity
 @Inheritance
@@ -19,46 +30,42 @@ public class MixtureSubstance extends Substance implements GinasSubstanceDefinit
 	public Mixture mixture;
 	public static String MixtureDefinitionPrefix = "mixture.definition";
 
-	public MixtureSubstance()
-	{
+	public MixtureSubstance(){
 		super(SubstanceClass.mixture);
 	}
+	
 
-	@JsonIgnore
-	public List<SubstanceReference> getDependsOnSubstanceReferences()
-	{
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getDependsOnSubstanceReferencesAndParents(){
 
-		List<SubstanceReference> sref = new ArrayList<SubstanceReference>();
-		sref.addAll(super.getDependsOnSubstanceReferences());
-		for (Component c : mixture.getMixture())
-		{
-			sref.add(c.substance);
+        List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
+        srefs.addAll(super.getDependsOnSubstanceReferencesAndParents());
+        for (Component c : mixture.getMixture()){
+			srefs.add(Tuple.of(c,c.substance));
 		}
+        if(mixture.parentSubstance!=null){
+        	srefs.add(Tuple.of(mixture,mixture.parentSubstance));
+		}
+        return srefs;
+        
+    }
+    
 
-		return sref;
+	@Override
+	@JsonIgnore
+	public List<SubstanceReference> getDependsOnSubstanceReferences() {
+		return getDependsOnSubstanceReferencesAndParents().stream().map(t->t.v()).collect(Collectors.toList());
 	}
-//TODO katzelda Feb 2021 : delete handled in controller
-//	@Override
-//	public void delete()
-//	{
-//		super.delete();
-//		for (Component c : mixture.components)
-//		{
-//			c.delete();
-//		}
-//
-//	}
+	
 
 	@JsonIgnore
-	public GinasAccessReferenceControlled getDefinitionElement()
-	{
+	public GinasAccessReferenceControlled getDefinitionElement(){
 		return mixture;
 	}
 
 	@Override
 	@JsonIgnore
-	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences()
-	{
+	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences(){
 		List<GinasAccessReferenceControlled> temp = super.getAllChildrenCapableOfHavingReferences();
 		if (this.mixture != null)
 		{

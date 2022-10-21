@@ -1,16 +1,27 @@
 package ix.ginas.models.v1;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import javax.persistence.CascadeType;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.Inheritance;
+import javax.persistence.OneToOne;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.models.Indexable;
 import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
+import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.persistence.*;
-import java.util.*;
 
 @Entity
 @Inheritance
@@ -62,17 +73,43 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
 
 	@Override
 	@JsonIgnore
-	public List<SubstanceReference> getDependsOnSubstanceReferences() {
-		List<SubstanceReference> sref = new ArrayList<SubstanceReference>();
-		sref.addAll(super.getDependsOnSubstanceReferences());
-		if(polymer.monomers!=null) {
+	public List<Tuple<GinasAccessControlled,SubstanceReference>> getNonDefiningSubstanceReferencesAndParents(){
+		 List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
+	     srefs.addAll(super.getNonDefiningSubstanceReferencesAndParents());
+	     if(polymer.monomers!=null) {
+				polymer.monomers.forEach(s -> {
+					if (!s.defining && s.monomerSubstance!=null) {
+						srefs.add(Tuple.of(s,s.monomerSubstance));
+					}
+				});
+		 }
+	     return srefs;
+	}
+
+	@Override
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getDependsOnSubstanceReferencesAndParents(){
+        List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
+        srefs.addAll(super.getDependsOnSubstanceReferencesAndParents());
+        if(polymer.monomers!=null) {
 			polymer.monomers.forEach(s -> {
 				if (s.defining) {
-					sref.add(s.monomerSubstance);
+					srefs.add(Tuple.of(s,s.monomerSubstance));
 				}
 			});
 		}
-		return sref;
+        if(this.polymer.classification.parentSubstance !=null){
+        	srefs.add(Tuple.of(this.polymer.classification,this.polymer.classification.parentSubstance));
+        }
+        return srefs;
+    }
+    
+
+	@Override
+	@JsonIgnore
+	public List<SubstanceReference> getDependsOnSubstanceReferences() {
+		
+		return getDependsOnSubstanceReferencesAndParents().stream().map(t->t.v()).collect(Collectors.toList());
 	}
 
 

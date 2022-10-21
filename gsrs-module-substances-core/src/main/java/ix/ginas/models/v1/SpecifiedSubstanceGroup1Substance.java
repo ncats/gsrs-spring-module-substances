@@ -1,13 +1,21 @@
 package ix.ginas.models.v1;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.Inheritance;
+import javax.persistence.OneToOne;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import gov.nih.ncats.common.Tuple;
+import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
 @Inheritance
@@ -36,6 +44,17 @@ public class SpecifiedSubstanceGroup1Substance extends Substance implements Gina
    		return temp;
    	}
 
+    @Override
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getDependsOnSubstanceReferencesAndParents(){
+        List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
+        srefs.addAll(super.getDependsOnSubstanceReferencesAndParents());
+        for (Component c : specifiedSubstance.constituents){
+			srefs.add(Tuple.of(c,c.substance));
+		}
+        return srefs;
+    }
+    
 	@Override
 	@JsonIgnore
 	public List<SubstanceReference> getDependsOnSubstanceReferences()

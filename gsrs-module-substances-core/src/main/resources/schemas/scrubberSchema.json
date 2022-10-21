@@ -185,20 +185,36 @@
       "type": "boolean",
       "title": "Substance Reference Cleanup"
     },
-    "substanceReferenceCleanupRemoveReferencesToFilteredSubstances": {
-      "comments": "When true, when a substance is removed, remove any references to it",
-      "type": "boolean",
-      "title": "Remove References to Filtered Substances",
+    "substanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences": {
+      "comments": "Define what happens when a referenced substance that's part of a definition would be filtered out by the scrubber.",
+      "type": "string",
+      "title": "What action should be taken when a definition depends on a referenced substance which would be scrubbed out?",
+      "enum":[
+	"KEEP_REFERENCE",
+	"REMOVE_PARENT_SUBSTANCE_ENTIRELY",
+	"DEIDENTIFY_SUBSTANCE_REFERENCE",
+	"REMOVE_ONLY_SUBSTANCE_REFERENCE",
+	"REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY",
+	"REMOVE_DEFINITION_ENTIRELY"
+      ],
       "visibleIf": {
         "substanceReferenceCleanup": [
           true
         ]
       }
     },
-    "substanceReferenceCleanupRemoveReferencesToSubstancesNonExportedDefinitions": {
-      "comments": "When true, when a substance's definition is removed, remove any references to it",
-      "type": "boolean",
-      "title": "Remove References to Substances Non-Exported Definitions",
+    "substanceReferenceCleanupActionForRelationalScrubbedSubstanceReferences": {
+      "comments": "Define what happens when a referenced substance that's NOT part of a definition (e.g. relationship) would be filtered out by the scrubber.",
+      "type": "string",
+      "title": "What action should be taken when a record references a scrubbed-out substance in a non-defining way (e.g. relationships)?",
+      "enum":[
+	"KEEP_REFERENCE",
+	"REMOVE_PARENT_SUBSTANCE_ENTIRELY",
+	"DEIDENTIFY_SUBSTANCE_REFERENCE",
+	"REMOVE_ONLY_SUBSTANCE_REFERENCE",
+	"REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY",
+	"REMOVE_DEFINITION_ENTIRELY"
+      ],
       "visibleIf": {
         "substanceReferenceCleanup": [
           true
@@ -285,14 +301,14 @@
         ]
       }
     },
-    "scrubbedDefinitionHandling": {
-      "comments": "apply some additional scrubbing to definitions that had parts removed",
-      "title": "Scrubbed Definition Handling",
-      "type": "boolean"
-    },
     "removeBasedOnStatus": {
       "comments": "Delete records if they have a certain status value",
       "title": "Delete records based on status",
+      "type": "boolean"
+    },
+    "scrubbedDefinitionHandling": {
+      "comments": "apply some additional scrubbing to definitions that had parts removed",
+      "title": "Scrubbed Definition Handling",
       "type": "boolean"
     },
     "scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely": {
@@ -335,6 +351,7 @@
         ]
       }
     },
+    
     "scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions": {
       "comments": "Treat partially scrubbed definitions with the same settings as fully scrubbed definitions",
       "title": "Treat partially scrubbed definitions with same settings",

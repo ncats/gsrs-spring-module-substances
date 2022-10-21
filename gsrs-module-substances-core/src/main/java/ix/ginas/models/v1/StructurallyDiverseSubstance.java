@@ -1,12 +1,21 @@
 package ix.ginas.models.v1;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.persistence.CascadeType;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.Inheritance;
+import javax.persistence.OneToOne;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import gov.nih.ncats.common.Tuple;
+import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.persistence.*;
-import java.util.*;
 
 @Entity
 @Inheritance
@@ -37,7 +46,23 @@ public class StructurallyDiverseSubstance extends Substance implements GinasSubs
 		}
 		return temp;
 	}
-
+    @Override
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getDependsOnSubstanceReferencesAndParents(){
+        List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
+        srefs.addAll(super.getDependsOnSubstanceReferencesAndParents());
+        if(structurallyDiverse.parentSubstance !=null ) {
+            srefs.add(Tuple.of(structurallyDiverse,structurallyDiverse.parentSubstance));
+        }
+        if(structurallyDiverse.hybridSpeciesMaternalOrganism != null) {
+        	srefs.add(Tuple.of(structurallyDiverse,structurallyDiverse.hybridSpeciesMaternalOrganism));
+        }
+        if(structurallyDiverse.hybridSpeciesPaternalOrganism !=null) {
+        	srefs.add(Tuple.of(structurallyDiverse,structurallyDiverse.hybridSpeciesPaternalOrganism));
+        }
+        return srefs;
+    }
+    
     @Override
     @JsonIgnore
     public List<SubstanceReference> getDependsOnSubstanceReferences(){
