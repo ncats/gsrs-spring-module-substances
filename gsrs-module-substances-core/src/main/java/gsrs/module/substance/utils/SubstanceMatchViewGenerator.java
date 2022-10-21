@@ -13,13 +13,17 @@ import ix.ginas.models.v1.Substance;
 public class SubstanceMatchViewGenerator implements MatchViewGenerator{
 	
 	private String displayCodeName;
+	private String idName;
 	
 	public SubstanceMatchViewGenerator(){
 		displayCodeName = "UNII";
+		idName = "uuid";
+		
 	}
 	
-	public SubstanceMatchViewGenerator(String dcn){
+	public SubstanceMatchViewGenerator(String dcn, String idn){
 		displayCodeName = dcn;
+		idName = idn;
 	}
 	
 	@Override
@@ -35,6 +39,7 @@ public class SubstanceMatchViewGenerator implements MatchViewGenerator{
 				}
 				//todo: evaluate whether to use substance summary 
 				builder.displayCodeName(displayCodeName);
+				builder.idName(idName);
 				builder.displayCode(s.approvalID);
 				
 			} catch (Exception e) {
