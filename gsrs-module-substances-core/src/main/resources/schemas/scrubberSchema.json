@@ -51,7 +51,8 @@
       "comments": "elements to remove when the substance has no public references",
       "type": "array",
       "items": {
-        "options": [
+        "type":"string",
+        "enum": [
           "Names",
           "Codes",
           "Definition",
@@ -292,7 +293,7 @@
       "type": "array",
       "items": {
         "type": "string",
-        "options": [
+        "enum": [
           "approved",
           "alternative",
           "approved subconcept",
