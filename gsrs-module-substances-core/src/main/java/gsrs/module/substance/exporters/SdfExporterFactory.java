@@ -49,9 +49,23 @@ public class SdfExporterFactory implements ExporterFactory {
     @Override
     public JsonNode getSchema() {
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
-        parameters.put(NAME_PARAMETERS, "boolean");
-        parameters.put(CODE_PARAMETERS, "boolean");
-        parameters.put("approvalIDName", "string");
+        ObjectNode nameNode = JsonNodeFactory.instance.objectNode();
+        nameNode.put("type", "boolean");
+        nameNode.put("title", "Include Names?");
+        nameNode.put("comments", "Add Substance names to output?");
+        parameters.set(NAME_PARAMETERS, nameNode);
+
+        ObjectNode codeNode = JsonNodeFactory.instance.objectNode();
+        codeNode.put("type", "boolean");
+        codeNode.put("title", "Include Codes?");
+        codeNode.put("comments", "Add Substance codes to output?");
+        parameters.set(CODE_PARAMETERS, codeNode);
+
+        ObjectNode approvalIDNameNode = JsonNodeFactory.instance.objectNode();
+        approvalIDNameNode.put("type", "string");
+        approvalIDNameNode.put("title", "Label for Approval ID in file");
+        approvalIDNameNode.put("comments", "Header for Approval ID in file");
+        parameters.set("approvalIDName", approvalIDNameNode);
         return generateSchemaNode("SDF File Exporter Parameters", parameters);
     }
 

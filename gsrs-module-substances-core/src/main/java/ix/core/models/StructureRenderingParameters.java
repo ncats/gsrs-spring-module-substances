@@ -1,11 +1,13 @@
 package ix.core.models;
 
 import lombok.Data;
+import lombok.ToString;
 
 /*
 parameters for one rendering af a chemical structure
  */
 @Data
+@ToString
 public class StructureRenderingParameters {
     private Integer minHeight;
     private Integer minWidth;

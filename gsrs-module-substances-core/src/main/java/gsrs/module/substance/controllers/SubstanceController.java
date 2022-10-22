@@ -1208,7 +1208,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         structureRenderingParameters.setMinHeight(minHeight);
         structureRenderingParameters.setMaxWidth(maxWidth);
         structureRenderingParameters.setMinWidth(minWidth);
-        ByteWrapper bdat = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,TypedCallable.of(()->{
+        ByteWrapper bdat = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
             byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput),
                     format, size, damaps, null, stereo, standardize, structureRenderingParameters);
             return ByteWrapper.of(b);
