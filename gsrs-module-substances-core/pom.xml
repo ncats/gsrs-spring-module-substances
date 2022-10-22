@@ -211,11 +211,6 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
-        <dependency>
-            <groupId>org.apache.cxf</groupId>
-            <artifactId>cxf-rt-rs-security-jose</artifactId>
-            <version>3.5.3</version>
-        </dependency>
         <!-- Needed for Resolver -->
         <dependency>
             <groupId>uk.ac.cam.ch.opsin</groupId>
