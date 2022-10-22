@@ -377,5 +377,11 @@ public class HtmlStdNameStandardizerTest {
         Assertions.assertEquals(expected, actual);
     }
 
-
+    @Test
+    public void testHtmlCodes() {
+        String input ="2>1 & 4<7 &quot;&zwnj;';'&zwnj;&quot;";
+        String expected = "2>1 & 4<7 \"';'\"";
+        String actual = standardizer.standardize(input).getResult();
+        Assertions.assertEquals(expected, actual);
+    }
 }

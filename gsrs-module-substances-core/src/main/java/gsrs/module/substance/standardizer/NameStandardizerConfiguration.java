@@ -48,7 +48,7 @@ public class NameStandardizerConfiguration {
 
     @Bean
     public NameStandardizer stdNameStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
-        List<String> search = Arrays.asList("\u2190", "\u2192", "\u00B1", "\\×", "\u00B9", "\u00B2",
+        List<String> search = Arrays.asList("&amp;", "&larr;", "&rarr;", "&lt;", "&gt;", "\u2190", "\u2192", "\u00B1", "\\×", "\u00B9", "\u00B2",
             "\u00B3", "\u2070", "\u2071", "\u2072", "\u2073", "\u2074", "\u2075", "\u2076", "\u2077",
             "\u2078", "\u2079", "\u207A", "\u207B", "\u2080", "\u2081", "\u2082", "\u2083", "\u2084", "\u2085",
             "\u2086", "\u2087", "\u2088", "\u2089", "\u208A", "\u208B", "ʟ", "ᴅ", "[\u200B\u200C\u200D\u2060\uFEFF]",
@@ -68,8 +68,8 @@ public class NameStandardizerConfiguration {
             "\u0392", "\u0393", "\u0394", "\u0395", "\u0396", "\u0397", "\u0398", "\u0399", "\u039A",
             "\u039B", "\u039C", "\u039D", "\u039E", "\u039F", "\u03A0", "\u03A1", "\u03A3", "\u03A4",
             "\u03A5", "\u03A6", "\u03A7", "\u03A8", "\u03A9", "<i>", "</i>", "</sup><sup>", "</sub><sub>",
-            "<sup>", "</sup>", "<sub>", "</sub>");
-        List<String> replace = Arrays.asList("<-", "->", "+/-", "X", "1", "2", "3", "0", "1", "2",
+            "<sup>", "</sup>", "<sub>", "</sub>", "&zwnj;", "&quot;");
+        List<String> replace = Arrays.asList("&", "<-", "->","<", ">", "<-", "->", "+/-", "X", "1", "2", "3", "0", "1", "2",
             "3", "4", "5", "6", "7", "8", "9", "+", "-", "0" , "1", "2", "3", "4", "5", "6",
             "7", "8", "9", "+", "-", "L", "D", "", "'", "\"", "-", "!", "#", "%", "*", ",",
             "/", ":", "?", "[", "\\", "]", "^", "_", "`", "(", "|", "||", "~", "<", "<=", ">",
@@ -82,7 +82,7 @@ public class NameStandardizerConfiguration {
             ".EPSILON.", ".ZETA.", ".ETA.", ".THETA.", ".IOTA.", ".KAPPA.", ".LAMBDA.",
             ".MU.", ".NU.", ".XI.", ".OMICRON.", ".PI.", ".RHO.", ".SIGMA.",
             ".TAU.", ".UPSILON.", ".PHI.", ".CHI.", ".PSI.", ".OMEGA.", "", "", "", "",
-            "SUP(", ")", "SUB(", ")");
+            "SUP(", ")", "SUB(", ")", "", "\"");
         Map<String, Object> parameters = new HashMap<String, Object>();
         parameters.put("search", (Map<Integer, String>) search.stream().collect(Collectors.toMap(e->search.indexOf(e), e->e)));
         final Iterator<Integer> iter = IntStream.range(0, replace.size()).iterator();
