@@ -47,36 +47,12 @@
         ]
       }
     },
-    "statusesToInclude": {
-      "comments": "Records with any of the following record status attributes will be kept",
-      "type": "array",
-      "items": {
-        "type": "string",
-        "enum": [
-          "approved",
-          "alternative",
-          "approved subconcept",
-          "pending subconcept",
-          "pending",
-          "failed",
-          "concept"
-        ]
-      },
-      "title": "Statuses to include",
-      "visibleIf": {
-        "removeBasedOnStatus": [
-          true
-        ]
-      },
-      "widget": {
-        "id": "multi-select"
-      }
-    },
     "removeElementsIfNoExportablePublicRefElementsToRemove": {
       "comments": "elements to remove when the substance has no public references",
       "type": "array",
       "items": {
-        "options": [
+        "type":"string",
+        "enum": [
           "Names",
           "Codes",
           "Definition",
@@ -88,7 +64,7 @@
       },
       "title": "Elements to remove",
       "visibleIf": {
-        "removeElementsIfNoExportablePublicRef": [
+        "removeAllLockedRemoveElementsIfNoExportablePublicRef": [
           true
         ]
       },
@@ -201,6 +177,9 @@
         "substanceReferenceCleanup": [
           true
         ]
+      },
+      "widget":{
+      	"id":"select"
       }
     },
     "substanceReferenceCleanupActionForRelationalScrubbedSubstanceReferences": {
@@ -219,6 +198,9 @@
         "substanceReferenceCleanup": [
           true
         ]
+      },
+      "widget":{
+      	"id":"select"
       }
     },
     "removeNotes": {
@@ -259,7 +241,7 @@
     "approvalIdCleanupApprovalIdCodeSystem": {
       "comments": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
       "type": "string",
-      "title": "Remove Approval Id",
+      "title": "Copy ApprovalID to code with following Code System (if not already present)",
       "visibleIf": {
         "approvalIdCleanup": [
           true
@@ -305,6 +287,31 @@
       "comments": "Delete records if they have a certain status value",
       "title": "Delete records based on status",
       "type": "boolean"
+    },
+    "statusesToInclude": {
+      "comments": "Records with any of the following record status attributes will be kept",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "approved",
+          "alternative",
+          "approved subconcept",
+          "pending subconcept",
+          "pending",
+          "failed",
+          "concept"
+        ]
+      },
+      "title": "Statuses to include",
+      "visibleIf": {
+        "removeBasedOnStatus": [
+          true
+        ]
+      },
+      "widget": {
+        "id": "multi-select"
+      }
     },
     "scrubbedDefinitionHandling": {
       "comments": "apply some additional scrubbing to definitions that had parts removed",
