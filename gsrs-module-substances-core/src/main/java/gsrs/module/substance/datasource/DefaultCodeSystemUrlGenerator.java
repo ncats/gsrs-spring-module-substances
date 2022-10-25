@@ -3,17 +3,22 @@ package gsrs.module.substance.datasource;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 
 import gsrs.module.substance.processors.CodeSystemUrlGenerator;
 import ix.ginas.models.v1.Code;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.UrlResource;
 
 @Slf4j
 public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, CodeSystemUrlGenerator {
@@ -22,8 +27,22 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
     private final Map<String, CodeSystemMeta> map = new LinkedHashMap<>();
 
     @JsonCreator
-    public DefaultCodeSystemUrlGenerator(@JsonProperty("codeSystems") Map<String, Map<String, String>> tree) throws IOException {
-        for (Map<String, String> entry : tree.values()) {
+    public DefaultCodeSystemUrlGenerator(@JsonProperty("codeSystems") Map<String, Map<String, String>> codeSystems,
+                                         @JsonProperty("filename") String filename) throws IOException {
+        if (filename != null) {
+            if (!filename.contains(":")) {
+                filename = "classpath:" + filename;
+            }
+            codeSystems = new LinkedHashMap<String, Map<String, String>>();
+            try (InputStream is = new UrlResource(filename).getInputStream();) {
+                ObjectMapper mapper = new ObjectMapper();
+                for (JsonNode item : mapper.readTree(is)) {
+                    Map<String, String> itemMap = mapper.convertValue(item, new TypeReference<Map<String, String>>(){});
+                    codeSystems.put(itemMap.get("codeSystem"), itemMap);
+                }
+            }
+        }
+        for (Map<String, String> entry : codeSystems.values()) {
             CodeSystemMeta csmap = new CodeSystemMeta(entry.get("codeSystem"), entry.get("url"));
             map.put(csmap.codeSystem.toLowerCase(), csmap);
         }

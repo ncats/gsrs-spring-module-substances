@@ -34,7 +34,7 @@ public class DefaultCodeSystemUrlGeneratorTest {
         configEntry.put("url", codeUrlForTest);
         Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
         configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
         Map map = generator.getMap();
 
         assertTrue(map.size() >0);
@@ -50,7 +50,7 @@ public class DefaultCodeSystemUrlGeneratorTest {
         configEntry.put("url", codeUrlForTest);
         Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
         configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
         CodeSystemMeta meta = generator.fetch(codeSystemForTest);
 
         assertNotNull(meta);
@@ -68,7 +68,7 @@ public class DefaultCodeSystemUrlGeneratorTest {
         configEntry.put("url", codeUrlForTest);
         Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
         configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
         Code code = new Code();
         code.code = codeValueForTest;
         code.codeSystem = codeSystemForTest;
@@ -89,7 +89,7 @@ public class DefaultCodeSystemUrlGeneratorTest {
         configEntry.put("url", codeUrlForTest);
         Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
         configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
         Code code = new Code();
         code.code = codeValueForTest;
         code.codeSystem = codeSystemForTest;
@@ -112,7 +112,7 @@ public class DefaultCodeSystemUrlGeneratorTest {
         configEntry.put("url", codeUrlForTest);
         Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
         configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
         Code code = new Code();
         code.code = codeValueForTest;
         code.codeSystem = codeSystemForTest;
