@@ -23,10 +23,11 @@ import java.util.*;
 public class BasicSubstanceScrubberTests {
 
     @Test
-    public void testScrubSubstance1() {
+    public void testScrubSubstanceSpecificCodeRemoved() {
+        //verify that expected code is removed
         String currentSmiles="C1CCCCCCCC1";
         ChemicalSubstance chemical = SubstanceTestUtil.makeChemicalSubstance(currentSmiles);
-        chemical.names.clear();//remove any bogus names
+        chemical.names.clear();//remove bogus name added by makeChemicalSubstance
 
         Name name1 = new Name();
         name1.name = "SECRET NAME 1";
@@ -86,6 +87,12 @@ public class BasicSubstanceScrubberTests {
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setRemoveCodesBySystem(true);
         scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList("BDNUM"));
+        scrubberSettings.setRemoveAllLockedRemoveElementsIfNoExportablePublicRef(false);
+        scrubberSettings.setAuditInformationCleanup(false);
+        scrubberSettings.setSubstanceReferenceCleanup(false);
+        scrubberSettings.setApprovalIdCleanup(false);
+        scrubberSettings.setRegenerateUUIDs(false);
+        scrubberSettings.setChangeAllStatuses(false);
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         chemical.addNote("This is a note");

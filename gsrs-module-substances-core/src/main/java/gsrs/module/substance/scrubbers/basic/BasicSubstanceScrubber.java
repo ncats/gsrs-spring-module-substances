@@ -344,8 +344,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 					    		.forEach(p->{
 					    			markForDelete(p);
 					    		});
-    		
-    		markForDelete(starting.modifications);
+
+            if(starting.hasModifications()) {
+                markForDelete(starting.modifications);
+            }
     		if(starting instanceof ChemicalSubstance) {
     			ChemicalSubstance chem = (ChemicalSubstance)starting;
     			chem.moieties.forEach(m->{
@@ -626,7 +628,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     public Optional<Substance> scrubBasedOnDefDefs(Substance substance) {
         DEFINITION_LEVEL_ACTION[] dAction = new DEFINITION_LEVEL_ACTION[]{DEFINITION_LEVEL_ACTION.FULL_DEFINITION};
         
-        
         substance.getDependsOnSubstanceReferencesAndParents().forEach(tt->{
         	SubstanceReference thing = tt.v();
         	GinasAccessControlled parent = tt.k();
@@ -653,7 +654,12 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 log.trace("Error computing publishable of substance", ex);
             }
         });
-        
+
+        //now look at the top-level status
+        if(scrubberSettings.getRemoveBasedOnStatus() && scrubberSettings.getStatusesToInclude()!= null
+                && !scrubberSettings.getStatusesToInclude().contains(substance.status)) {
+            markForDelete(substance);
+        }
         if(isMarkedForDelete(substance))return Optional.empty();
 		scrubDefinition(substance, dAction[0]);
 		
@@ -791,7 +797,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 snew.status=scrubberSettings.getChangeAllStatusesNewStatusValue();
             }
             log.trace("successful completion of scrub");
-            return Optional.ofNullable(snew);
+            return scrubBasedOnDefDefs(snew);
         }
         catch (Exception ex) {
             log.warn("error processing record; Will return empty", ex);

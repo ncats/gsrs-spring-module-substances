@@ -55,7 +55,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeDates")
-	public Boolean removeDates;
+	public Boolean removeDates = false;
 	/**
 	 * Deidentify Audit User
 	 * <p>
@@ -63,7 +63,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("deidentifyAuditUser")
-	public Boolean deidentifyAuditUser;
+	public Boolean deidentifyAuditUser= false;
 	/**
 	 * Remove all Locked
 	 * <p>
@@ -71,7 +71,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeAllLocked")
-	public Boolean removeAllLocked;
+	public Boolean removeAllLocked= false;
 	/**
 	 * Access Groups to Include
 	 * <p>
@@ -87,7 +87,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeAllLockedRemoveElementsIfNoExportablePublicRef")
-	public Boolean removeAllLockedRemoveElementsIfNoExportablePublicRef;
+	public Boolean removeAllLockedRemoveElementsIfNoExportablePublicRef= false;
 	/**
 	 * Statuses to include
 	 * <p>
@@ -111,7 +111,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeCodesBySystem")
-	public Boolean removeCodesBySystem;
+	public Boolean removeCodesBySystem = false;
 	/**
 	 * Code Systems to Remove
 	 * <p>
@@ -135,7 +135,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeReferencesByCriteria")
-	public Boolean removeReferencesByCriteria;
+	public Boolean removeReferencesByCriteria = false;
 	/**
 	 * Reference Types to Remove
 	 * <p>
@@ -159,7 +159,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeReferencesByCriteriaExcludeReferenceByPattern")
-	public Boolean removeReferencesByCriteriaExcludeReferenceByPattern;
+	public Boolean removeReferencesByCriteriaExcludeReferenceByPattern = false;
 	/**
 	 * Substance Reference Cleanup
 	 * <p>
@@ -167,7 +167,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("substanceReferenceCleanup")
-	public Boolean substanceReferenceCleanup;
+	public Boolean substanceReferenceCleanup = false;
 	/**
 	 * What action should be taken when a definition depends on a referenced
 	 * substance which would be scrubbed out?
@@ -193,7 +193,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeNotes")
-	public Boolean removeNotes;
+	public Boolean removeNotes = false;
 	/**
 	 * Remove Change Reason
 	 * <p>
@@ -201,7 +201,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeChangeReason")
-	public Boolean removeChangeReason;
+	public Boolean removeChangeReason = false;
 	/**
 	 * Approval Id clean-up
 	 * <p>
@@ -209,7 +209,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("approvalIdCleanup")
-	public Boolean approvalIdCleanup;
+	public Boolean approvalIdCleanup = false;
 	/**
 	 * Remove Approval Id
 	 * <p>
@@ -217,7 +217,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("approvalIdCleanupRemoveApprovalId")
-	public Boolean approvalIdCleanupRemoveApprovalId;
+	public Boolean approvalIdCleanupRemoveApprovalId = false;
 	/**
 	 * Copy Approval Id to code if code not already present
 	 * <p>
@@ -225,7 +225,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("approvalIdCleanupCopyApprovalIdToCode")
-	public Boolean approvalIdCleanupCopyApprovalIdToCode;
+	public Boolean approvalIdCleanupCopyApprovalIdToCode = false;
 	/**
 	 * Remove Approval Id
 	 * <p>
@@ -241,7 +241,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("regenerateUUIDs")
-	public Boolean regenerateUUIDs;
+	public Boolean regenerateUUIDs = false;
 	/**
 	 * Change All Statuses
 	 * <p>
@@ -249,7 +249,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("changeAllStatuses")
-	public Boolean changeAllStatuses;
+	public Boolean changeAllStatuses = false;
 	/**
 	 * New Status Value
 	 * <p>
@@ -265,7 +265,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("auditInformationCleanup")
-	public Boolean auditInformationCleanup;
+	public Boolean auditInformationCleanup = false;
 	/**
 	 * New Auditor Value
 	 * <p>
@@ -281,7 +281,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("removeBasedOnStatus")
-	public Boolean removeBasedOnStatus;
+	public Boolean removeBasedOnStatus = false;
 	/**
 	 * Scrubbed Definition Handling
 	 * <p>
@@ -289,7 +289,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandling")
-	public Boolean scrubbedDefinitionHandling;
+	public Boolean scrubbedDefinitionHandling = false;
 	/**
 	 * Remove partially/fully scrubbed definitional records entirely
 	 * <p>
@@ -297,7 +297,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely")
-	public Boolean scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely;
+	public Boolean scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely = false;
 	/**
 	 * Set partially/fully scrubbed definitional records to definitional level
 	 * "Incomplete"
@@ -306,7 +306,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete")
-	public Boolean scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete;
+	public Boolean scrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete = false;
 	/**
 	 * Convert partially/fully scrubbed definitional records to "Concepts"
 	 * <p>
@@ -314,7 +314,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts")
-	public Boolean scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts;
+	public Boolean scrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts = false;
 	/**
 	 * add a note to partially/fully scrubbed definitional records
 	 * <p>
@@ -330,7 +330,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions")
-	public Boolean scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions;
+	public Boolean scrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions = false;
 	/**
 	 * Remove PARTIALLY scrubbed definitional records entirely
 	 * <p>
@@ -338,7 +338,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely")
-	public Boolean scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely;
+	public Boolean scrubbedDefinitionHandlingRemoveScrubbedPartialDefinitionalElementsEntirely = false;
 	/**
 	 * Set PARTIALLY scrubbed definitional records to definitional level
 	 * "Incomplete"
@@ -347,7 +347,7 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete")
-	public Boolean scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete;
+	public Boolean scrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete = false;
 	/**
 	 * Convert PARTIALLY scrubbed definitional records to "Concepts"
 	 * <p>
@@ -355,10 +355,10 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 */
 	@JsonProperty("scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts")
-	public Boolean scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts;
+	public Boolean scrubbedDefinitionHandlingConvertScrubbedPartialDefinitionsToConcepts = false;
 	/**
 	 * add a note to PARTIALLY scrubbed definitional records
-	 * <p>
+	 * d
 	 *
 	 *
 	 */
