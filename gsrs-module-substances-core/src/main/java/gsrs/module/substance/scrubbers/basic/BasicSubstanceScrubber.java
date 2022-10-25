@@ -157,6 +157,16 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         
     	toDelete.add(new Group(TO_DELETE));
     	toKeep.add(new Group(TO_FORCE_KEEP));
+        try {
+            definitionalDependencyAction = MISSING_SUBSTANCE_REFERENCE_ACTION.valueOf(scrubberSettings.getSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences());
+        } catch (Exception ex){
+            definitionalDependencyAction = MISSING_SUBSTANCE_REFERENCE_ACTION.KEEP_REFERENCE;
+        }
+        try {
+            relationalDependencyAction = MISSING_SUBSTANCE_REFERENCE_ACTION.valueOf(scrubberSettings.getSubstanceReferenceCleanupActionForRelationalScrubbedSubstanceReferences());
+        } catch (Exception ex){
+            relationalDependencyAction = MISSING_SUBSTANCE_REFERENCE_ACTION.REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY;
+        }
     }
 
     private void forEachObjectWithAccess(Substance s, Consumer<GinasAccessControlled> consumer) {
