@@ -225,7 +225,7 @@ public class ScrubberTestsSpecific {
     @Test
     /*
     Substance has 2 codes; one 'locked' one open.
-    Expect to remove anly the locked code
+    Expect to remove only the locked code
      */
     public void testDoNotRemoveLockedCodeWhenGroupAllowed(){
 
@@ -266,7 +266,8 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
-    public void TestStructureHandling(){
+    public void TestStructureHandling1(){
+        // make sure structure and moieties get removed
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("N(CC)(CC)CC");
         Name openName = new Name();
@@ -291,6 +292,67 @@ public class ScrubberTestsSpecific {
         ChemicalSubstance scrubbedChem = (ChemicalSubstance) scrubber.scrub(chemicalSubstance).get();
         Assertions.assertNull( scrubbedChem.getStructure());
         Assertions.assertEquals(0, scrubbedChem.getMoieties().size());
+    }
+
+    @Test
+    public void TestStructureHandling2(){
+        // make sure def level gets changed
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("N(CC)(CC)CC");
+        Name openName = new Name();
+        openName.name="triethyl amine";
+        openName.languages.add(new Keyword("e"));
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+        openName.addReference(publicReference);
+        builder.addName(openName);
+        ChemicalSubstance chemicalSubstance = builder.build();
+        chemicalSubstance.definitionLevel = Substance.SubstanceDefinitionLevel.COMPLETE;
+        chemicalSubstance.getStructure().setAccess(Collections.singleton( new Group("confidential")));
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+        scrubberSettings.setScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete(true);
+        scrubberSettings.setScrubbedDefinitionHandling(true);
+        scrubberSettings.setScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely(true);
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        ChemicalSubstance scrubbedChem = (ChemicalSubstance) scrubber.scrub(chemicalSubstance).get();
+        Assertions.assertNull( scrubbedChem.getStructure());
+        Assertions.assertEquals(Substance.SubstanceDefinitionLevel.INCOMPLETE, scrubbedChem.definitionLevel);
+    }
+
+    @Test
+    public void TestStructureHandling3(){
+        // make sure note gets added
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("N(CC)(CC)CC");
+        Name openName = new Name();
+        openName.name="triethyl amine";
+        openName.languages.add(new Keyword("e"));
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+        openName.addReference(publicReference);
+        builder.addName(openName);
+        ChemicalSubstance chemicalSubstance = builder.build();
+        chemicalSubstance.definitionLevel = Substance.SubstanceDefinitionLevel.COMPLETE;
+        chemicalSubstance.getStructure().setAccess(Collections.singleton( new Group("confidential")));
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+        scrubberSettings.setScrubbedDefinitionHandling(true);
+        scrubberSettings.setScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely(true);
+        String note ="Something has been removed";
+        scrubberSettings.setScrubbedDefinitionHandlingAddNoteToScrubbedDefinitions(note);
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        ChemicalSubstance scrubbedChem = (ChemicalSubstance) scrubber.scrub(chemicalSubstance).get();
+        Assertions.assertNull( scrubbedChem.getStructure());
+        Assertions.assertTrue(scrubbedChem.notes.stream().anyMatch(n->n.note.equals(note)));
     }
 
     /*
@@ -737,12 +799,14 @@ public class ScrubberTestsSpecific {
 
     @Test
     public void testMixtureProcessing(){
+        Map<UUID, Substance> internalRegistry = new HashMap<>();
         ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
         chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
             .addName("ethylpropylamine")
                 .generateNewUUID()
             .setStatus("approved");
         ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
+        internalRegistry.put(component1.uuid, component1);
 
         ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
         chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
@@ -751,38 +815,7 @@ public class ScrubberTestsSpecific {
                 .generateNewUUID()
                 .setAccess(Collections.singleton(new Group("protected")));
         ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
-
-        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
-        MixtureSubstance mixture1= mixtureSubstanceBuilder
-                .addName("Amines")
-                .generateNewUUID()
-                .setStatus("approved")
-                .addComponents("MUST_BE_PRESENT", component1)
-                .build();
-        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setRemoveBasedOnStatus(true);
-        scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
-        RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
-        MixtureSubstance scrubbedMixture = (MixtureSubstance) scrubber.scrub(mixture1).get();
-        Assertions.assertEquals(1, scrubbedMixture.mixture.components.size());
-    }
-
-    @Test
-    public void testMixtureProcessing2(){
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
-                .addName("ethylpropylamine")
-                .generateNewUUID()
-                .setStatus("approved");
-        ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
-
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
-                .addName("dipropylamine")
-                .setStatus("approved")
-                .generateNewUUID()
-                .setAccess(Collections.singleton(new Group("protected")));
-        ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
+        internalRegistry.put(component2.uuid, component2);
 
         MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
         MixtureSubstance mixture1= mixtureSubstanceBuilder
@@ -792,11 +825,66 @@ public class ScrubberTestsSpecific {
                 .addComponents("MUST_BE_PRESENT", component1)
                 .addComponents("MUST_BE_PRESENT", component2)
                 .build();
+        internalRegistry.put(mixture1.uuid, mixture1);
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        //scrubberSettings.setRemoveBasedOnStatus(true);
+        scrubberSettings.setRemoveAllLocked(true);
+        scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
+        //scrubberSettings.setStatusesToInclude(Collections.singletonList("approved"));
+        RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        ((BasicSubstanceScrubber)scrubber).setResolver((sref)->{
+            if(sref.refuuid!=null && sref.refuuid.length()>0 && internalRegistry.containsKey(UUID.fromString(sref.refuuid))){
+                System.out.println("using mocked resolver");
+                return internalRegistry.get(UUID.fromString(sref.refuuid));
+            }
+            return new Substance();
+        });
+        MixtureSubstance scrubbedMixture = (MixtureSubstance) scrubber.scrub(mixture1).get();
+        Assertions.assertEquals(1, scrubbedMixture.mixture.components.size());
+    }
+
+    @Test
+    public void testMixtureProcessing2(){
+        Map<UUID, Substance> internalRegistry = new HashMap<>();
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
+                .addName("ethylpropylamine")
+                .generateNewUUID()
+                .setStatus("approved");
+        ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
+        internalRegistry.put(component1.uuid, component1);
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
+                .addName("dipropylamine")
+                .setStatus("approved")
+                .generateNewUUID()
+                .setAccess(Collections.singleton(new Group("protected")));
+        ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
+        internalRegistry.put(component2.uuid, component2);
+
+        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
+        MixtureSubstance mixture1= mixtureSubstanceBuilder
+                .addName("Amines")
+                .generateNewUUID()
+                .setStatus("approved")
+                .addComponents("MUST_BE_PRESENT", component1)
+                .addComponents("MUST_BE_PRESENT", component2)
+                .build();
+        internalRegistry.put(mixture1.uuid, mixture1);
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveBasedOnStatus(true);
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("DEIDENTIFY_SUBSTANCE_REFERENCE");
+        scrubberSettings.setStatusesToInclude(Collections.singletonList("approved"));
         RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        ((BasicSubstanceScrubber)scrubber).setResolver((sref)->{
+            if(sref.refuuid!=null && sref.refuuid.length()>0 && internalRegistry.containsKey(UUID.fromString(sref.refuuid))){
+                System.out.println("using mocked resolver");
+                return internalRegistry.get(UUID.fromString(sref.refuuid));
+            }
+            return new Substance();
+        });
         MixtureSubstance scrubbedMixture = (MixtureSubstance) scrubber.scrub(mixture1).get();
         Assertions.assertEquals(2, scrubbedMixture.mixture.components.size());
         String deidentifiedSubstanceName ="UNSPECIFIED_SUBSTANCE";
@@ -826,6 +914,7 @@ public class ScrubberTestsSpecific {
                 .generateNewUUID()
                 .setStatus("approved")
                 .addComponents("MUST_BE_PRESENT", component1)
+                .addComponents("MUST_BE_PRESENT", component2)
                 .build();
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveBasedOnStatus(true);
@@ -838,12 +927,14 @@ public class ScrubberTestsSpecific {
 
     @Test
     public void testMixtureProcessing4(){
+        Map<UUID, Substance> internalRegistry = new HashMap<>();
         ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
         chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
                 .addName("ethylpropylamine")
                 .generateNewUUID()
                 .setStatus("approved");
         ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
+        internalRegistry.put(component1.uuid, component1);
 
         ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
         chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
@@ -852,6 +943,7 @@ public class ScrubberTestsSpecific {
                 .generateNewUUID()
                 .setAccess(Collections.singleton(new Group("protected")));
         ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
+        internalRegistry.put(component2.uuid, component2);
 
         MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
         MixtureSubstance mixture1= mixtureSubstanceBuilder
@@ -859,15 +951,181 @@ public class ScrubberTestsSpecific {
                 .generateNewUUID()
                 .setStatus("approved")
                 .addComponents("MUST_BE_PRESENT", component1)
+                .addComponents("MUST_BE_PRESENT", component2)
                 .build();
+        internalRegistry.put(mixture1.uuid, mixture1);
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveBasedOnStatus(true);
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_ONLY_SUBSTANCE_REFERENCE");
-        RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        scrubberSettings.setStatusesToInclude(Arrays.asList("approved", "accepted"));
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        scrubber.setResolver((sref)->{
+            //this is where you can mock whatever you want it to do
+            if(sref.refuuid!=null && sref.refuuid.length()>0 && internalRegistry.containsKey(UUID.fromString(sref.refuuid))){
+                System.out.println("using mocked resolver");
+                return internalRegistry.get(UUID.fromString(sref.refuuid));
+            }
+            return new Substance();
+        });
         MixtureSubstance scrubbedMixture = (MixtureSubstance) scrubber.scrub(mixture1).get();
         Assertions.assertEquals(2, scrubbedMixture.mixture.components.size());
         Assertions.assertEquals(1, scrubbedMixture.mixture.components.stream().filter(c->c.substance==null).count());
+    }
+
+    @Test
+    public void testMixtureProcessing5(){
+        Map<UUID, Substance> internalRegistry = new HashMap<>();
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
+                .addName("ethylpropylamine")
+                .generateNewUUID()
+                .setStatus("approved");
+        ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
+        internalRegistry.put(component1.uuid, component1);
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
+                .addName("dipropylamine")
+                .setStatus("approved")
+                .generateNewUUID()
+                .setAccess(Collections.singleton(new Group("protected")));
+        ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
+        internalRegistry.put(component2.uuid, component2);
+
+        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
+        MixtureSubstance mixture1= mixtureSubstanceBuilder
+                .addName("Amines")
+                .generateNewUUID()
+                .setStatus("approved")
+                .addComponents("MUST_BE_PRESENT", component1)
+                .addComponents("MUST_BE_PRESENT", component2)
+                .build();
+        internalRegistry.put(mixture1.uuid, mixture1);
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+        scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
+        scrubberSettings.setScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete(false);
+        scrubberSettings.setScrubbedDefinitionHandling(true);
+        scrubberSettings.setScrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions(false);
+        scrubberSettings.setScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely(true);
+        scrubberSettings.setScrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete(true);
+
+        RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        ((BasicSubstanceScrubber)scrubber).setResolver((sref)->{
+            if(sref.refuuid!=null && sref.refuuid.length()>0 && internalRegistry.containsKey(UUID.fromString(sref.refuuid))){
+                System.out.println("using mocked resolver");
+                return internalRegistry.get(UUID.fromString(sref.refuuid));
+            }
+            return new Substance();
+        });
+        MixtureSubstance scrubbedMixture = (MixtureSubstance) scrubber.scrub(mixture1).get();
+        Assertions.assertEquals(Substance.SubstanceDefinitionLevel.INCOMPLETE, scrubbedMixture.definitionLevel);
+        Assertions.assertNotNull(scrubbedMixture.mixture);
+    }
+
+    @Test
+    public void testMixtureProcessing6() {
+        Map<UUID, Substance> internalRegistry = new HashMap<>();
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
+                .addName("ethylpropylamine")
+                .generateNewUUID()
+                .setStatus("approved");
+        ChemicalSubstance component1 = chemicalSubstanceBuilder1.build();
+        internalRegistry.put(component1.uuid, component1);
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
+                .addName("dipropylamine")
+                .setStatus("approved")
+                .generateNewUUID()
+                .setAccess(Collections.singleton(new Group("protected")));
+        ChemicalSubstance component2 = chemicalSubstanceBuilder2.build();
+        internalRegistry.put(component2.uuid, component2);
+
+        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
+        MixtureSubstance mixture1 = mixtureSubstanceBuilder
+                .addName("Amines")
+                .generateNewUUID()
+                .setStatus("approved")
+                .addComponents("MUST_BE_PRESENT", component1)
+                .addComponents("MUST_BE_PRESENT", component2)
+                .build();
+        internalRegistry.put(mixture1.uuid, mixture1);
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+        scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
+        scrubberSettings.setScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete(false);
+        scrubberSettings.setScrubbedDefinitionHandling(true);
+        scrubberSettings.setScrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions(true);
+        scrubberSettings.setScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely(true);
+        scrubberSettings.setScrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete(true);
+        scrubberSettings.setScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts(true);
+
+        RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        ((BasicSubstanceScrubber) scrubber).setResolver((sref) -> {
+            if (sref.refuuid != null && sref.refuuid.length() > 0 && internalRegistry.containsKey(UUID.fromString(sref.refuuid))) {
+                System.out.println("using mocked resolver");
+                return internalRegistry.get(UUID.fromString(sref.refuuid));
+            }
+            return new Substance();
+        });
+        Substance scrubbedSubstance = scrubber.scrub(mixture1).get();
+        Assertions.assertEquals(Substance.SubstanceClass.concept, scrubbedSubstance.substanceClass);
+    }
+
+
+    @Test
+    public void testMixtureProcessing7() {
+        Map<UUID, Substance> internalRegistry = new HashMap<>();
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
+                .addName("ethylpropylamine")
+                .generateNewUUID()
+                .setStatus("approved");
+        ChemicalSubstance component1 = chemicalSubstanceBuilder1.build();
+        internalRegistry.put(component1.uuid, component1);
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
+                .addName("dipropylamine")
+                .setStatus("approved")
+                .generateNewUUID()
+                .setAccess(Collections.singleton(new Group("protected")));
+        ChemicalSubstance component2 = chemicalSubstanceBuilder2.build();
+        internalRegistry.put(component2.uuid, component2);
+
+        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
+        MixtureSubstance mixture1 = mixtureSubstanceBuilder
+                .addName("Amines")
+                .generateNewUUID()
+                .setStatus("approved")
+                .addComponents("MUST_BE_PRESENT", component1)
+                .addComponents("MUST_BE_PRESENT", component2)
+                .build();
+        internalRegistry.put(mixture1.uuid, mixture1);
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+        scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
+        scrubberSettings.setScrubbedDefinitionHandlingSetScrubbedDefinitionalElementsIncomplete(false);
+        scrubberSettings.setScrubbedDefinitionHandling(true);
+        scrubberSettings.setScrubbedDefinitionHandlingTreatPartialDefinitionsAsMissingDefinitions(false);
+        scrubberSettings.setScrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely(true);
+        scrubberSettings.setScrubbedDefinitionHandlingSetScrubbedPartialDefinitionalElementsIncomplete(true);
+        scrubberSettings.setScrubbedDefinitionHandlingConvertScrubbedDefinitionsToConcepts(false);
+
+        RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        ((BasicSubstanceScrubber) scrubber).setResolver((sref) -> {
+            if (sref.refuuid != null && sref.refuuid.length() > 0 && internalRegistry.containsKey(UUID.fromString(sref.refuuid))) {
+                System.out.println("using mocked resolver");
+                return internalRegistry.get(UUID.fromString(sref.refuuid));
+            }
+            return new Substance();
+        });
+        MixtureSubstance scrubbedSubstance = (MixtureSubstance) scrubber.scrub(mixture1).get();
+        Assertions.assertEquals(Substance.SubstanceDefinitionLevel.INCOMPLETE, scrubbedSubstance.definitionLevel);
+        Assertions.assertNotNull(scrubbedSubstance.mixture);
     }
 
     private NucleicAcidSubstance createApprovedNA(String newApprovalId) {

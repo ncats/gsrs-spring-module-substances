@@ -132,6 +132,18 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
     }
 
+    public interface SubstanceReferenceResolver {
+        Substance resolve(SubstanceReference sref) throws Exception;
+    }
+
+    public class DefaultSubstanceReferenceResolver implements SubstanceReferenceResolver {
+        public Substance resolve(SubstanceReference sref) throws Exception {
+            log.trace("default resolve");
+            return (Substance) EntityFetcher.of(sref.getKeyForReferencedSubstance()).call();
+        }
+
+    }
+
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
         this.scrubberSettings = scrubberSettings;
 
@@ -169,6 +181,9 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
     }
 
+    public void setResolver( SubstanceReferenceResolver newResolver) {
+        this.resolver= newResolver;
+    }
     private void forEachObjectWithAccess(Substance s, Consumer<GinasAccessControlled> consumer) {
     	StreamUtil.with(s.getAllChildrenCapableOfHavingReferences().stream().map(n->(GinasAccessControlled)n))
     			  .and(s.references.stream().map(n->n))
@@ -183,6 +198,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     			  .stream()
     			  .forEach(consumer::accept);
     }
+
+    private SubstanceReferenceResolver resolver = (SubstanceReferenceResolver) new DefaultSubstanceReferenceResolver();
 
     //TODO remove all private access things
     //As transformer
@@ -618,7 +635,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     }
 
     public RECORD_PUB_STATUS getPublishable(SubstanceReference sref) throws Exception {
-        Substance rsub = (Substance) EntityFetcher.of(sref.getKeyForReferencedSubstance()).call();;
+        Substance rsub =this.resolver.resolve(sref);
 
         if(rsub==null){
             return RECORD_PUB_STATUS.FULLY_PROTECTED;
@@ -789,7 +806,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             // but we need to check.
             Substance snew = SubstanceBuilder.from(substanceJson).build();
             scrubAccess(snew);
+            Optional<Substance> scrubbedDefs=scrubBasedOnDefDefs(snew);
+            if( !scrubbedDefs.isPresent()) {
+                return scrubbedDefs;
+            }
+            snew=scrubbedDefs.get();
             substanceJson = snew.toFullJsonNode().toString();
+
             String cleanJson= restrictedJSONSimple(substanceJson);
             snew = SubstanceBuilder.from(cleanJson).build();
             if(scrubberSettings.getSubstanceReferenceCleanup()) {
@@ -807,7 +830,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 snew.status=scrubberSettings.getChangeAllStatusesNewStatusValue();
             }
             log.trace("successful completion of scrub");
-            return scrubBasedOnDefDefs(snew);
+            return Optional.of(snew);
         }
         catch (Exception ex) {
             log.warn("error processing record; Will return empty", ex);
