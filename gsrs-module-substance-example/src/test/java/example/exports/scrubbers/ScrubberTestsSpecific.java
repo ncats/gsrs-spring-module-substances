@@ -295,7 +295,7 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
-    public void TestStructureHandling2(){
+    public void TestStructureMadeNull(){
         // make sure def level gets changed
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("N(CC)(CC)CC");
@@ -325,7 +325,7 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
-    public void TestStructureHandling3(){
+    public void TestStructureMadeNullAndNoteAdded(){
         // make sure note gets added
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("N(CC)(CC)CC");
@@ -459,7 +459,7 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
-    public void testSet1(){
+    public void testSubstanceSetProcessing1(){
         /*
         5 substances with different statuses.
         Scrub based on a set of allowed status values
@@ -539,7 +539,7 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
-    public void testSet2(){
+    public void testSubstanceSetProcessing2(){
         /*
         5 substances with different statuses.
         Scrub based on a set of allowed status values
@@ -619,7 +619,7 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
-    public void testSet3(){
+    public void testSubstanceSetProcessing3(){
         /*
         5 substances with different statuses.
         Scrub based on a set of allowed status values
@@ -699,7 +699,7 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
-    public void testSet4(){
+    public void testSubstanceSetProcessing4(){
         /*
         5 substances with different statuses.
         Scrub based on a set of allowed status values
@@ -893,29 +893,8 @@ public class ScrubberTestsSpecific {
 
     @Test
     public void testMixtureProcessing3(){
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
-                .addName("ethylpropylamine")
-                .generateNewUUID()
-                .setStatus("approved");
-        ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
-
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
-                .addName("dipropylamine")
-                .setStatus("approved")
-                .generateNewUUID()
-                .setAccess(Collections.singleton(new Group("protected")));
-        ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
-
-        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
-        MixtureSubstance mixture1= mixtureSubstanceBuilder
-                .addName("Amines")
-                .generateNewUUID()
-                .setStatus("approved")
-                .addComponents("MUST_BE_PRESENT", component1)
-                .addComponents("MUST_BE_PRESENT", component2)
-                .build();
+        Map<UUID, Substance> internalRegistry=new HashMap<>();
+        MixtureSubstance mixture1= buildMixtureSet(internalRegistry);
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveBasedOnStatus(true);
         scrubberSettings.setRemoveAllLocked(true);
@@ -928,32 +907,7 @@ public class ScrubberTestsSpecific {
     @Test
     public void testMixtureProcessing4(){
         Map<UUID, Substance> internalRegistry = new HashMap<>();
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
-                .addName("ethylpropylamine")
-                .generateNewUUID()
-                .setStatus("approved");
-        ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
-        internalRegistry.put(component1.uuid, component1);
-
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
-                .addName("dipropylamine")
-                .setStatus("approved")
-                .generateNewUUID()
-                .setAccess(Collections.singleton(new Group("protected")));
-        ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
-        internalRegistry.put(component2.uuid, component2);
-
-        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
-        MixtureSubstance mixture1= mixtureSubstanceBuilder
-                .addName("Amines")
-                .generateNewUUID()
-                .setStatus("approved")
-                .addComponents("MUST_BE_PRESENT", component1)
-                .addComponents("MUST_BE_PRESENT", component2)
-                .build();
-        internalRegistry.put(mixture1.uuid, mixture1);
+        MixtureSubstance mixture1= buildMixtureSet(internalRegistry);
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveBasedOnStatus(true);
         scrubberSettings.setRemoveAllLocked(true);
@@ -976,32 +930,8 @@ public class ScrubberTestsSpecific {
     @Test
     public void testMixtureProcessing5(){
         Map<UUID, Substance> internalRegistry = new HashMap<>();
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
-                .addName("ethylpropylamine")
-                .generateNewUUID()
-                .setStatus("approved");
-        ChemicalSubstance component1= chemicalSubstanceBuilder1.build();
-        internalRegistry.put(component1.uuid, component1);
+        MixtureSubstance mixture1= buildMixtureSet(internalRegistry);
 
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
-                .addName("dipropylamine")
-                .setStatus("approved")
-                .generateNewUUID()
-                .setAccess(Collections.singleton(new Group("protected")));
-        ChemicalSubstance component2= chemicalSubstanceBuilder2.build();
-        internalRegistry.put(component2.uuid, component2);
-
-        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
-        MixtureSubstance mixture1= mixtureSubstanceBuilder
-                .addName("Amines")
-                .generateNewUUID()
-                .setStatus("approved")
-                .addComponents("MUST_BE_PRESENT", component1)
-                .addComponents("MUST_BE_PRESENT", component2)
-                .build();
-        internalRegistry.put(mixture1.uuid, mixture1);
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
@@ -1027,32 +957,8 @@ public class ScrubberTestsSpecific {
     @Test
     public void testMixtureProcessing6() {
         Map<UUID, Substance> internalRegistry = new HashMap<>();
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
-                .addName("ethylpropylamine")
-                .generateNewUUID()
-                .setStatus("approved");
-        ChemicalSubstance component1 = chemicalSubstanceBuilder1.build();
-        internalRegistry.put(component1.uuid, component1);
+        MixtureSubstance mixture1= buildMixtureSet(internalRegistry);
 
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
-                .addName("dipropylamine")
-                .setStatus("approved")
-                .generateNewUUID()
-                .setAccess(Collections.singleton(new Group("protected")));
-        ChemicalSubstance component2 = chemicalSubstanceBuilder2.build();
-        internalRegistry.put(component2.uuid, component2);
-
-        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
-        MixtureSubstance mixture1 = mixtureSubstanceBuilder
-                .addName("Amines")
-                .generateNewUUID()
-                .setStatus("approved")
-                .addComponents("MUST_BE_PRESENT", component1)
-                .addComponents("MUST_BE_PRESENT", component2)
-                .build();
-        internalRegistry.put(mixture1.uuid, mixture1);
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
@@ -1079,32 +985,7 @@ public class ScrubberTestsSpecific {
     @Test
     public void testMixtureProcessing7() {
         Map<UUID, Substance> internalRegistry = new HashMap<>();
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
-                .addName("ethylpropylamine")
-                .generateNewUUID()
-                .setStatus("approved");
-        ChemicalSubstance component1 = chemicalSubstanceBuilder1.build();
-        internalRegistry.put(component1.uuid, component1);
-
-        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
-        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
-                .addName("dipropylamine")
-                .setStatus("approved")
-                .generateNewUUID()
-                .setAccess(Collections.singleton(new Group("protected")));
-        ChemicalSubstance component2 = chemicalSubstanceBuilder2.build();
-        internalRegistry.put(component2.uuid, component2);
-
-        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
-        MixtureSubstance mixture1 = mixtureSubstanceBuilder
-                .addName("Amines")
-                .generateNewUUID()
-                .setStatus("approved")
-                .addComponents("MUST_BE_PRESENT", component1)
-                .addComponents("MUST_BE_PRESENT", component2)
-                .build();
-        internalRegistry.put(mixture1.uuid, mixture1);
+        MixtureSubstance mixture1= buildMixtureSet(internalRegistry);
         BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
         scrubberSettings.setRemoveAllLocked(true);
         scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_SUBSTANCE_REFERENCE_AND_PARENT_IF_NECESSARY");
@@ -1135,5 +1016,35 @@ public class ScrubberTestsSpecific {
         Principal approver = new Principal("mitch@contoso.com");
         builder.setApproval(approver, new Date(), newApprovalId);
         return builder.build();
+    }
+
+    private MixtureSubstance buildMixtureSet(Map<UUID, Substance> registry){
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder1.setStructureWithDefaultReference("CCCNCC")
+                .addName("ethylpropylamine")
+                .generateNewUUID()
+                .setStatus("approved");
+        ChemicalSubstance component1 = chemicalSubstanceBuilder1.build();
+        registry.put(component1.uuid, component1);
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder2.setStructureWithDefaultReference("CCCNCCC")
+                .addName("dipropylamine")
+                .setStatus("approved")
+                .generateNewUUID()
+                .setAccess(Collections.singleton(new Group("protected")));
+        ChemicalSubstance component2 = chemicalSubstanceBuilder2.build();
+        registry.put(component2.uuid, component2);
+
+        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
+        MixtureSubstance mixture1 = mixtureSubstanceBuilder
+                .addName("Amines")
+                .generateNewUUID()
+                .setStatus("approved")
+                .addComponents("MUST_BE_PRESENT", component1)
+                .addComponents("MUST_BE_PRESENT", component2)
+                .build();
+        registry.put(mixture1.uuid, mixture1);
+        return mixture1;
     }
 }
