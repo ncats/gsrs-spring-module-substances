@@ -1,6 +1,7 @@
 package gsrs.module.substance.controllers;
 
 import java.awt.Dimension;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -27,6 +28,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import ix.core.models.StructureRenderingParameters;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -1132,13 +1134,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @GetGsrsRestApiMapping({"/render({ID})", "/render/{ID}"})
     public Object render(@PathVariable("ID") String idOrSmiles,
                          @RequestParam(value = "format", required = false, defaultValue = "svg") String format,
-                         //default stereo to empty string which spring returns as null Boolean object
+                         //basic stereo to empty string which spring returns as null Boolean object
                          @RequestParam(value = "version", required = false) String version,
                          @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                          @RequestParam(value = "context", required = false) String contextId,
                          @RequestParam(value = "size", required = false, defaultValue = "150") int size,
+                         @RequestParam(value = "minWidth", required = false) Integer minWidth,
+                         @RequestParam(value = "maxWidth", required = false) Integer maxWidth,
+                         @RequestParam(value = "minHeight", required = false) Integer minHeight,
+                         @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
+                         @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
+
         int[] amaps = null;
         StructureToRender s2r=null;
 
@@ -1154,7 +1162,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
-                //if we're here, we have a substance but nothing to render return default for substance type
+                //if we're here, we have a substance but nothing to render return basic for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey());
             }
             input = s2r.getInput();
@@ -1187,8 +1195,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String dinput = input;
         int[] damaps = amaps;
         StructureToRender effectivelyFinalS2r = s2r;
-        ByteWrapper bdat = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,TypedCallable.of(()->{
-            byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);
+        StructureRenderingParameters structureRenderingParameters = new StructureRenderingParameters();
+        structureRenderingParameters.setBondLength(bondLength);
+        structureRenderingParameters.setMaxHeight(maxHeight);
+        structureRenderingParameters.setMinHeight(minHeight);
+        structureRenderingParameters.setMaxWidth(maxWidth);
+        structureRenderingParameters.setMinWidth(minWidth);
+        ByteWrapper bdat = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
+            byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput),
+                    format, size, damaps, null, stereo, standardize, structureRenderingParameters);
             return ByteWrapper.of(b);
         }, ByteWrapper.class));
 
@@ -1198,7 +1213,32 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(bdat.dat, headers, HttpStatus.OK);
 
     }
-    
+    private static void renderInner(ChemicalRenderer renderer, Chemical chem, int minWidth, int maxWidth, int minHeight, int maxHeight,
+                                    double bondLength, String format, ByteArrayOutputStream bos)
+            throws IOException {
+        log.trace(String.format("in renderInner, minWidth: %d, maxWidth: %d minHeight: %d, maxHeight: %d, bondLength: %f\n",
+                minWidth, maxWidth, minHeight, maxHeight, bondLength));
+        Rectangle2D.Double rect = renderer.getApproximateBoundsFor(chem, maxWidth, minWidth, maxHeight, minHeight, bondLength);
+        int width = (int) Math.round(rect.getWidth());
+        int height = (int) Math.round(rect.getHeight());
+
+        if (format.equals("svg")) {
+            SVGGraphics2D svg = new SVGGraphics2D
+                    (bos, new Dimension(width, height));
+            try {
+                svg.startExport();
+                renderer.render(svg, chem, 0, 0, width, height, false);
+                svg.endExport();
+            } finally {
+                svg.dispose();
+            }
+        }else {
+            BufferedImage bi = renderer.createImage(chem, width, height, false);
+            log.trace("rendering using height: " + height + " and width: " + width);
+            ImageIO.write(bi, format, bos);
+        }
+    }
+
     private static class ByteWrapper{
         byte[] dat;
         public static ByteWrapper of(byte[] dat) {
@@ -1285,7 +1325,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     public byte[] renderChemical (Structure struc, Chemical chem, String format,
-                                  int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize)
+                                  int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize,
+                                  StructureRenderingParameters parameters)
             throws Exception {
 
         try {
@@ -1293,28 +1334,27 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             RendererOptions rendererOptions = fullRendererOptions.getOptions();
 
-            if(struc !=null && newDisplay ==null){
-               newDisplay = computeDisplayMap(struc, size, chem);
+            if (struc != null && newDisplay == null) {
+                newDisplay = computeDisplayMap(struc, size, chem);
             }
             if (newDisplay != null) {
                 rendererOptions.changeSettings(newDisplay);
             }
 
 
-
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
 
 //		boolean highlight=false;
-            if(amap!=null && amap.length>0){
+            if (amap != null && amap.length > 0) {
                 Atom[] atoms = chem.atoms().toArray(i -> new Atom[i]);
                 for (int i = 0; i < Math.min(atoms.length, amap.length); ++i) {
                     atoms[i].setAtomToAtomMap(amap[i]);
-                    if(amap[i]!=0){
+                    if (amap[i] != 0) {
                         rendererOptions.withSubstructureHighlight();
                     }
                 }
-            }else{
+            } else {
                 if (chem.atoms().filter(Atom::hasAtomToAtomMap)
                         .findAny().isPresent()) {
                     rendererOptions.withSubstructureHighlight();
@@ -1323,10 +1363,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }
             preProcessChemical(chem, rendererOptions);
 
-            if(Chem.isProblem(chem)){
+            if (Chem.isProblem(chem)) {
                 rendererOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, false);
 
-            }else{
+            } else {
                 if (size > 250 /*&& !highlight*/) {
                     //katzelda March 21 2019
                     //after talking to Tyler we should just always
@@ -1360,43 +1400,49 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             rendererOptions.captionBottom(c -> c.getProperty("BOTTOM_TEXT"));
 
 
-
             Chem.fixMetals(chem);
 
-            if(Boolean.TRUE.equals(standardize)){
+            if (Boolean.TRUE.equals(standardize)) {
                 chem.kekulize();
                 chem.makeHydrogensImplicit();
             }
             ChemicalRenderer renderer = new ChemicalRenderer(rendererOptions);
 
-            if(!fullRendererOptions.isShowShadow()) {
+            if (!fullRendererOptions.isShowShadow()) {
                 renderer.setShadowVisible(false);
             }
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream ();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-            if (format.equals("svg")) {
-                SVGGraphics2D svg = new SVGGraphics2D
-                        (bos, new Dimension(size, size));
-                try {
-                    svg.startExport();
-                    renderer.render(svg, chem, 0, 0, size, size, false);
-                    svg.endExport();
-                } finally {
-                    svg.dispose();
-                }
+            if (parameters != null && parameters.hasValuesForAll()) {
+                log.trace("using latest rendering");
+                //ChemicalRenderer renderer, Chemical chem, int minWidth, int maxWidth, int minHeight, int maxHeight,
+                //                                    double bondLength, String format, ByteArrayOutputStream bos
+                renderInner(renderer, chem, parameters.getMinWidth(), parameters.getMaxWidth(), parameters.getMinHeight(), parameters.getMaxHeight(),
+                        parameters.getBondLength(), format, bos);
             }else {
-                BufferedImage bi = renderer.createImage(chem, size);
-                ImageIO.write(bi, format, bos);
+                log.trace("using legacy rendering");
+                if (format.equals("svg")) {
+                    SVGGraphics2D svg = new SVGGraphics2D
+                            (bos, new Dimension(size, size));
+                    try {
+                        svg.startExport();
+                        renderer.render(svg, chem, 0, 0, size, size, false);
+                        svg.endExport();
+                    } finally {
+                        svg.dispose();
+                    }
+                } else {
+                    BufferedImage bi = renderer.createImage(chem, size);
+                    ImageIO.write(bi, format, bos);
+                }
             }
-
             return bos.toByteArray();
         }catch(Exception e){
             e.printStackTrace();
             throw e;
         }
     }
-
 
     private static void preProcessChemical(Chemical c,  RendererOptions renderOptions){
 	    
@@ -1587,7 +1633,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Map<String, Boolean> newDisplay = computeDisplayMap(struc, size, c);
 
 
-        return renderChemical (struc, c, format, size, amap,newDisplay,stereo, structure);
+        return renderChemical (struc, c, format, size, amap,newDisplay,stereo, structure, null);
     }
 
     private Map<String, Boolean> computeDisplayMap(Structure struc, int size, Chemical c) {
