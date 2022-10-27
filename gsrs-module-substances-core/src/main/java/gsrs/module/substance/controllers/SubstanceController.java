@@ -1714,12 +1714,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         publicDataSettings.setExpanderSettings(JsonNodeFactory.instance.objectNode());
         ObjectNode scrubberNode=JsonNodeFactory.instance.objectNode();
         scrubberNode.put("removeAllLocked", true);
+        scrubberNode.set("removeAllLockedAccessGroupsToInclude", JsonNodeFactory.instance.arrayNode());
         publicDataSettings.setScrubberSettings(scrubberNode);
         publicDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
         publicDataSettings.setExporterKey("PUBLIC_DATA_ONLY");
         publicDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
         Text publicItems = new Text("settings", mapper.writeValueAsString(publicDataSettings));
-        publicItems.id=0l;
+        publicItems.id=-1l;
         items.add(publicItems);
         return items;
     }

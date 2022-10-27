@@ -18,7 +18,6 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -126,7 +125,6 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         SpecificExporterSettings config =  SpecificExporterSettings.builder()
                 .exporterKey(expConfKey)
                 .exporterSettings(exporterSettings)
-                .generalSettings(generalSettings)
                 .configurationKey("Advanced SDFiles " + UUID.randomUUID().toString().substring(0, 10))
                 .build();
         try {

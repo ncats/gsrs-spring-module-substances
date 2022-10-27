@@ -61,6 +61,71 @@ public class ScrubberTestsSpecific {
     }
 
     @Test
+    public void testRemoveLockedSubstance(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+        Name lockedName = new Name();
+        lockedName.name= "Locked";
+        lockedName.languages.add(new Keyword("en"));
+        lockedName.setAccess(Collections.singleton(new Group("protected")));
+
+        lockedName.addReference(publicReference);
+        substanceBuilder.addName(lockedName);
+        Name openName = new Name();
+        openName.name="Ouvert";
+        openName.languages.add(new Keyword("fr"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+        substanceBuilder.setAccess(Collections.singleton(new Group("protected")));
+        Substance testConcept = substanceBuilder.build();
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Assertions.assertTrue(cleaned.isEmpty());
+    }
+
+    @Test
+    public void testDoNotRemoveUnlockedSubstance(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+        Name lockedName = new Name();
+        lockedName.name= "Locked";
+        lockedName.languages.add(new Keyword("en"));
+        lockedName.setAccess(Collections.singleton(new Group("protected")));
+
+        lockedName.addReference(publicReference);
+        substanceBuilder.addName(lockedName);
+        Name openName = new Name();
+        openName.name="Ouvert";
+        openName.languages.add(new Keyword("fr"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+        Substance testConcept = substanceBuilder.build();
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Assertions.assertTrue(cleaned.isPresent());
+    }
+
+    @Test
     /*
     Substance has 2 names; one 'locked' one open.
     setting turns off removal of locked

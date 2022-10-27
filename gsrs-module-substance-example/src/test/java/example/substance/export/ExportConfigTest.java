@@ -32,11 +32,9 @@ public class ExportConfigTest {
                 .removeApprovalId(true)
                 .setAllAuditorsToAbstractUser(true)
                 .build();
-        JsonNode generalSettings = objectMapper.valueToTree(generalExportSettings);
-        SpecificExporterSettings settings =  SpecificExporterSettings.builder()
+        SpecificExporterSettings settings = SpecificExporterSettings.builder()
                 .exporterKey("SDF")
                 .exporterSettings(exporterSettings)
-                .generalSettings(generalSettings)
                 .configurationKey("Basic SDFiles")
                 .configurationId("1892")
                 .build();

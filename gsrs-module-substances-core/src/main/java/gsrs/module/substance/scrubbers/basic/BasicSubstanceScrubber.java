@@ -798,6 +798,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         	 //TODO: confirm if this forces as a concept. It should not,
             // but we need to check.
             Substance snew = SubstanceBuilder.from(substanceJson).build();
+            //hack 27 October 2022 MAM
+            snew.setAccess(substance.getAccess());
             scrubAccess(snew);
             Optional<Substance> scrubbedDefs=scrubBasedOnDefDefs(snew);
             if( !scrubbedDefs.isPresent()) {
