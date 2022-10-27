@@ -284,8 +284,8 @@
       }
     },
     "removeBasedOnStatus": {
-      "comments": "Delete records if they have a certain status value",
-      "title": "Delete records based on status",
+      "comments": "Remove records if they have a certain status value",
+      "title": "Remove records based on status",
       "type": "boolean"
     },
     "statusesToInclude": {

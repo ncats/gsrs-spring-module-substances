@@ -138,10 +138,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     public class DefaultSubstanceReferenceResolver implements SubstanceReferenceResolver {
         public Substance resolve(SubstanceReference sref) throws Exception {
-            log.trace("default resolve");
             return (Substance) EntityFetcher.of(sref.getKeyForReferencedSubstance()).call();
         }
-
     }
 
     public BasicSubstanceScrubber(BasicSubstanceScrubberParameters scrubberSettings){
@@ -789,18 +787,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         try {
         	//just a force thing to fetch if needed
             substanceJson = substance.toFullJsonNode().toString();
-//            msub=substance;
-            log.trace("before");
-            //log.trace(substanceJson);
         } catch (Exception ex){
             log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
             Optional<Substance> substanceRefetch = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);
-//            msub=substanceRefetch.orElse(null);
             substanceJson = substanceRefetch.get().toFullJsonNode().toString();
         }
 
-        log.trace("got json");
         try {
         	 //TODO: confirm if this forces as a concept. It should not,
             // but we need to check.

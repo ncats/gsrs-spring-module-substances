@@ -28,11 +28,15 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gsrs.module.substance.expanders.basic.BasicRecordExpanderFactory;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import ix.core.models.StructureRenderingParameters;
+import ix.core.models.Text;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
+import ix.ginas.exporters.SpecificExporterSettings;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -342,9 +346,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Override
     protected Stream<Substance> filterStream(Stream<Substance> stream,boolean publicOnly, Map<String, String> parameters) {
+        /* as of v. 3.0.3, public/private data selection is handled via the RecordScrubber
         if(publicOnly){
             return stream.filter(s-> s.getAccess().isEmpty());
-        }
+        }*/
         return stream;
     }
 
@@ -1150,10 +1155,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
-        log.trace("in render endpoint.  minWidth: {}", minWidth);
-        queryParameters.keySet().forEach(k->{
-            log.trace("key: {}; value: {}", k, queryParameters.get(k));
-        });
+
         int[] amaps = null;
         StructureToRender s2r=null;
 
@@ -1691,4 +1693,35 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public RecordExpanderFactory<Substance> getExpanderFactory(){
         return new BasicRecordExpanderFactory();
     }
+
+    @Override
+    public List<Text> getHardcodedConfigs() throws JsonProcessingException {
+        List<Text> items = new ArrayList<>();
+
+        ObjectMapper mapper = new ObjectMapper();
+        SpecificExporterSettings allDataSettings = new SpecificExporterSettings();
+        allDataSettings.setExpanderSettings(JsonNodeFactory.instance.objectNode());
+        allDataSettings.setScrubberSettings(JsonNodeFactory.instance.objectNode());
+        allDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
+        allDataSettings.setExporterKey("ALL_DATA");
+        allDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
+        Text allItems = new Text("settings", mapper.writeValueAsString(allDataSettings));
+        allItems.id=0l;
+        items.add(allItems);
+
+
+        SpecificExporterSettings publicDataSettings = new SpecificExporterSettings();
+        publicDataSettings.setExpanderSettings(JsonNodeFactory.instance.objectNode());
+        ObjectNode scrubberNode=JsonNodeFactory.instance.objectNode();
+        scrubberNode.put("removeAllLocked", true);
+        publicDataSettings.setScrubberSettings(scrubberNode);
+        publicDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
+        publicDataSettings.setExporterKey("PUBLIC_DATA_ONLY");
+        publicDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
+        Text publicItems = new Text("settings", mapper.writeValueAsString(publicDataSettings));
+        publicItems.id=0l;
+        items.add(publicItems);
+        return items;
     }
+}
+
