@@ -565,7 +565,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
             attributes.addAttribute("sync", true);
         }
-        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+        return new ModelAndView("/api/v1/substances/structureSearch");
     }
 
     @GetGsrsRestApiMapping("/structureSearch")
@@ -665,7 +665,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             // do a text search for that hash value?
             // This technically breaks things, but is probably okay for now
             //
-            return new ModelAndView("redirect:/api/v1/substances/search");
+            return new ModelAndView("/api/v1/substances/search");
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
@@ -814,7 +814,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
             attributes.addAttribute("sync", true);
         }
-        return new ModelAndView("redirect:/api/v1/substances/sequenceSearch");
+        return new ModelAndView("/api/v1/substances/sequenceSearch");
 
     }
     static String getOrderedKey (SearchResultContext context, SearchRequest request) {
