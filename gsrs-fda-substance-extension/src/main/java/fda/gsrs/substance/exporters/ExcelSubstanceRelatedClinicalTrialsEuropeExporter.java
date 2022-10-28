@@ -89,6 +89,8 @@ public class ExcelSubstanceRelatedClinicalTrialsEuropeExporter implements Export
 			this.publicOnly = publicOnly;
 		}
 
+		private String username;
+
 		@Override
 		public OutputFormat getFormat() {
 			return format;
@@ -97,6 +99,14 @@ public class ExcelSubstanceRelatedClinicalTrialsEuropeExporter implements Export
 		@Override
 		public boolean publicOnly() {
 			return publicOnly;
+		}
+
+		public void setUsername(String user){
+			this.username=user;
+		}
+
+		public String getUsername(){
+			return this.username;
 		}
 	}
 }
