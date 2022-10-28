@@ -1,5 +1,16 @@
 package gsrs.module.substance.datasource;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.core.io.UrlResource;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -7,22 +18,22 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
 import gsrs.module.substance.processors.CodeSystemUrlGenerator;
 import ix.ginas.models.v1.Code;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.UrlResource;
 
 @Slf4j
 public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, CodeSystemUrlGenerator {
 
+	// This ensures that the url is parsable from classpath protocol even
+	// if there's no registered handler for classpath
+	private static URL getUrl(String fname) throws MalformedURLException {
+		if(fname.startsWith("classpath:")) {
+			return DefaultCodeSystemUrlGenerator.class.getClassLoader().getResource(fname.split(":")[1]);	
+		}
+		return new URL(fname);
+	}
+	
     @JsonIgnore
     private final Map<String, CodeSystemMeta> map = new LinkedHashMap<>();
 
@@ -34,7 +45,7 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
                 filename = "classpath:" + filename;
             }
             codeSystems = new LinkedHashMap<String, Map<String, String>>();
-            try (InputStream is = new UrlResource(filename).getInputStream();) {
+            try (InputStream is = new UrlResource(getUrl(filename)).getInputStream();) {
                 ObjectMapper mapper = new ObjectMapper();
                 for (JsonNode item : mapper.readTree(is)) {
                     Map<String, String> itemMap = mapper.convertValue(item, new TypeReference<Map<String, String>>(){});
