@@ -143,7 +143,7 @@
         ]
       },
       "widget": {
-        "id": "multi-select"
+        "id": "textarea"
       }
     },
     "removeReferencesByCriteriaExcludeReferenceByPattern": {
