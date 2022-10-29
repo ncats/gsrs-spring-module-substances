@@ -280,7 +280,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     	if(scrubberSettings.getRemoveAllLocked()) {
     		forEachObjectWithAccess(starting, (bm)->{
-    			log.trace("examining object {}", bm.getClass().getName());
+    			//log.trace("examining object {}", bm.getClass().getName());
     			GinasAccessControlled b=bm;
     			Set<String> accessSet = b.getAccess().stream().map(g->g.name).collect(Collectors.toSet());
     			//If it's not empty, remove everything UNLESS
@@ -443,7 +443,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             dc.delete("$..created");
         }
         if(scrubberSettings.getAuditInformationCleanup()) {
-        	if(scrubberSettings.getDeidentifyAuditUser()) {
+        	if(scrubberSettings.getAuditInformationCleanupDeidentifyAuditUser()) {
         		dc.delete("$..lastEditedBy");
         		dc.delete("$..createdBy");
         		dc.delete("$..approvedBy");

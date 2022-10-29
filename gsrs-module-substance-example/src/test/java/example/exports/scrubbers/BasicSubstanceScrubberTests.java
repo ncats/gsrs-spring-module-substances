@@ -533,7 +533,7 @@ public class BasicSubstanceScrubberTests {
         scrubberSettings.setRemoveDates(false);
         scrubberSettings.setApprovalIdCleanup(false);
         scrubberSettings.setAuditInformationCleanup(true);
-        scrubberSettings.setDeidentifyAuditUser(true);
+        scrubberSettings.setAuditInformationCleanupDeidentifyAuditUser(true);
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         ProteinSubstance cleanedProtein= (ProteinSubstance) scrubber.scrub(proteinSubstance).get();

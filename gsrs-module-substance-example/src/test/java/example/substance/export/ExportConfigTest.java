@@ -67,7 +67,7 @@ public class ExportConfigTest {
         schema.setRemoveCodesBySystemCodeSystemsToKeep(Arrays.asList("CAS", "ChemSpider"));
         schema.setApprovalIdCleanupApprovalIdCodeSystem("Approval ID");
         schema.setChangeAllStatuses(false);
-        schema.setDeidentifyAuditUser(false);
+        schema.setAuditInformationCleanupDeidentifyAuditUser(false);
         schema.setRemoveReferencesByCriteria(true);
         schema.setRemoveReferencesByCriteriaReferenceTypesToRemove( Arrays.asList("IND", "NDA"));
         ObjectMapper objectMapper = new ObjectMapper();

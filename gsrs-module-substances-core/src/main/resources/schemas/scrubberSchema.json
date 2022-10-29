@@ -10,11 +10,6 @@
       "type": "boolean",
       "title": "Remove Date"
     },
-    "deidentifyAuditUser": {
-      "comments": "When true, remove users listed as creator or modifier of records and subrecords",
-      "type": "boolean",
-      "title": "Deidentify Audit User"
-    },
     "removeAllLocked": {
       "comments": "When true, remove any data element that is marked as non-public",
       "title": "Remove all Locked",
@@ -273,12 +268,22 @@
       "type": "boolean",
       "title": "Audit Information clean-up"
     },
+    "auditInformationCleanupDeidentifyAuditUser": {
+      "comments": "When true, remove users listed as creator or modifier of records and subrecords",
+      "type": "boolean",
+      "title": "Deidentify Audit User",
+      "visibleIf": {
+        "auditInformationCleanup": [
+          true
+        ]
+      }
+    },
     "auditInformationCleanupNewAuditorValue": {
       "comments": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
       "title": "New Auditor Value",
       "type": "string",
       "visibleIf": {
-        "AuditInformationCleanup": [
+        "auditInformationCleanup": [
           true
         ]
       }

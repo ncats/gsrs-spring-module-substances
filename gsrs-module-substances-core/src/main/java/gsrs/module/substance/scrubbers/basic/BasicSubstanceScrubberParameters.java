@@ -23,7 +23,7 @@ import lombok.Data;
  *
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({ "removeDates", "deidentifyAuditUser", "removeAllLocked", "removeAllLockedAccessGroupsToInclude",
+@JsonPropertyOrder({ "removeDates", "auditInformationCleanupDeidentifyAuditUser", "removeAllLocked", "removeAllLockedAccessGroupsToInclude",
 		"removeAllLockedRemoveElementsIfNoExportablePublicRef", "statusesToInclude",
 		"removeElementsIfNoExportablePublicRefElementsToRemove", "removeCodesBySystem",
 		"removeCodesBySystemCodeSystemsToRemove", "removeCodesBySystemCodeSystemsToKeep", "removeReferencesByCriteria",
@@ -62,8 +62,8 @@ public class BasicSubstanceScrubberParameters {
 	 *
 	 *
 	 */
-	@JsonProperty("deidentifyAuditUser")
-	public Boolean deidentifyAuditUser= false;
+	@JsonProperty("auditInformationCleanupDeidentifyAuditUser")
+	public Boolean auditInformationCleanupDeidentifyAuditUser = false;
 	/**
 	 * Remove all Locked
 	 * <p>
