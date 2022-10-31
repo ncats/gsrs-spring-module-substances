@@ -1,7 +1,20 @@
 package example.exports.exporters;
 
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gsrs.module.substance.exporters.SdfExporter;
 import gsrs.module.substance.exporters.SdfExporterFactory;
 import ix.ginas.exporters.DefaultParameters;
@@ -10,13 +23,6 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
 
 /*
 This class exercises a small set of options for the SDF exporter
@@ -33,7 +39,7 @@ public class SdfExporterTest {
     @Test
     public void testExportCodesAndNames() throws IOException {
         ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream(4096);
-        File outputFile = new File("d:\\temp\\test1.sdf");
+        File outputFile = File.createTempFile("temp", "sdf");
         if(outputFile.exists()) {
             outputFile.delete();
             log.trace("file existed and was deleted");
@@ -47,10 +53,7 @@ public class SdfExporterTest {
         DefaultParameters parameters = new DefaultParameters(outputFormat,false, details);
         SdfExporter exporter= (SdfExporter) factory.createNewExporter(outputStream, parameters );
         exporter.export(createSubstanceWithNamesAndCodes());
-//        outputStream.flush();
-//        outputStream.close();
-//        fos.flush();
-//        fos.close();
+        exporter.close();
         Assertions.assertTrue(outputFile.exists());
         String fileData= Files.readString(outputFile.toPath());
         System.out.println("fileData: " + fileData);
@@ -61,7 +64,7 @@ public class SdfExporterTest {
     @Test
     public void testExportCodesNoNames() throws IOException {
         ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream(4096);
-        File outputFile = new File("d:\\temp\\test1.sdf");
+        File outputFile = File.createTempFile("temp", "sdf");
         if(outputFile.exists()) {
             outputFile.delete();
             log.trace("file existed and was deleted");
@@ -76,10 +79,7 @@ public class SdfExporterTest {
 
         SdfExporter exporter= (SdfExporter) factory.createNewExporter(outputStream, parameters );
         exporter.export(createSubstanceWithNamesAndCodes());
-        outputStream.flush();
-
-        outputStream.close();
-        fos.close();
+        exporter.close();
         Assertions.assertTrue(outputFile.exists());
         String fileData= Files.readString(outputFile.toPath());
         System.out.println("fileData: " + fileData);
@@ -90,7 +90,7 @@ public class SdfExporterTest {
     @Test
     public void testExportNamesNoCodes() throws IOException {
         ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream(4096);
-        File outputFile = new File("d:\\temp\\test1.sdf");
+        File outputFile = File.createTempFile("temp", "sdf");
         if(outputFile.exists()) {
             outputFile.delete();
             log.trace("file existed and was deleted");
@@ -105,10 +105,7 @@ public class SdfExporterTest {
 
         SdfExporter exporter= (SdfExporter) factory.createNewExporter(outputStream, parameters );
         exporter.export(createSubstanceWithNamesAndCodes());
-        outputStream.flush();
-
-        outputStream.close();
-        fos.close();
+        exporter.close();
         Assertions.assertTrue(outputFile.exists());
         String fileData= Files.readString(outputFile.toPath());
         System.out.println("fileData: " + fileData);
@@ -119,7 +116,7 @@ public class SdfExporterTest {
     @Test
     public void testExportNoCodesNoNames() throws IOException {
         ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream(4096);
-        File outputFile = new File("d:\\temp\\test1.sdf");
+        File outputFile = File.createTempFile("temp", "sdf");
         if(outputFile.exists()) {
             outputFile.delete();
             log.trace("file existed and was deleted");
@@ -134,10 +131,9 @@ public class SdfExporterTest {
 
         SdfExporter exporter= (SdfExporter) factory.createNewExporter(outputStream, parameters );
         exporter.export(createSubstanceWithNamesAndCodes());
-        outputStream.flush();
-        outputStream.close();
-        fos.flush();
-        fos.close();
+        exporter.close();
+        
+        
         Assertions.assertTrue(outputFile.exists());
         String fileData= Files.readString(outputFile.toPath());
         System.out.println("fileData: " + fileData);
