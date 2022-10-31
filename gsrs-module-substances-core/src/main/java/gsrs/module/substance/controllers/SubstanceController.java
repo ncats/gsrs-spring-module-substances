@@ -1694,8 +1694,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new BasicRecordExpanderFactory();
     }
 
-    @Override
-    public List<Text> getHardcodedConfigs() throws JsonProcessingException {
+    
+    public List<Text> getHardcodedConfigsBackup() throws JsonProcessingException {
         List<Text> items = new ArrayList<>();
 
         ObjectMapper mapper = new ObjectMapper();

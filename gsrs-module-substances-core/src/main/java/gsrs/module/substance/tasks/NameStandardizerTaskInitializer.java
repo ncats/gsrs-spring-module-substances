@@ -1,5 +1,26 @@
 package gsrs.module.substance.tasks;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.config.FilePathParserUtils;
 import gsrs.module.substance.repository.NameRepository;
@@ -13,19 +34,6 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.ginas.models.v1.Name;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import java.io.*;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Data
@@ -33,8 +41,13 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
     private String regenerateNameValue = "";
     private Boolean forceRecalculationOfAll =false;
+    
+    @JsonIgnore
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+    @JsonIgnore
     private DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH-mm-ss");
+    
+    
     private String outputPath;
     private String name = "nameStandardizationReport";
     private String STANDARD_FILE_ENCODING ="UTF-8";
@@ -53,6 +66,23 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+
+    @JsonProperty("formatter")
+    public void setFormat(String format) {
+        if(format !=null){
+            formatter = DateTimeFormatter.ofPattern(format);
+        }
+    }
+    
+
+    @JsonProperty("formatterTime")
+    public void setFormatTime(String format) {
+        if(format !=null){
+        	formatterTime = DateTimeFormatter.ofPattern(format);
+        }
+    }
+    
+    
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
 
