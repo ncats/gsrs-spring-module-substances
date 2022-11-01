@@ -1,5 +1,38 @@
 package ix.ginas.models.v1;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.DiscriminatorValue;
+import javax.persistence.Entity;
+import javax.persistence.Index;
+import javax.persistence.Inheritance;
+import javax.persistence.InheritanceType;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
+import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OneToOne;
+import javax.persistence.OrderBy;
+import javax.persistence.PrePersist;
+import javax.persistence.PreUpdate;
+import javax.persistence.Table;
+import javax.persistence.Transient;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -8,27 +41,38 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.ChemicalBuilder;
 import ix.core.EntityMapperOptions;
-import ix.core.models.*;
+import ix.core.models.Backup;
+import ix.core.models.BeanViews;
+import ix.core.models.ChangeReason;
+import ix.core.models.DataValidated;
+import ix.core.models.DataVersion;
+import ix.core.models.Group;
+import ix.core.models.Indexable;
+import ix.core.models.IndexableRoot;
+import ix.core.models.Keyword;
+import ix.core.models.Principal;
+import ix.core.models.Structure;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.GinasProcessingMessage.Link;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.ValidationMessageHolder;
-import ix.ginas.models.serialization.*;
+import ix.ginas.models.serialization.GsrsDateDeserializer;
+import ix.ginas.models.serialization.KeywordDeserializer;
+import ix.ginas.models.serialization.KeywordListSerializer;
+import ix.ginas.models.serialization.PrincipalDeserializer;
+import ix.ginas.models.serialization.PrincipalSerializer;
 import ix.ginas.models.utils.JSONEntity;
 import lombok.extern.slf4j.Slf4j;
-
-import javax.persistence.*;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @Backup
 @JSONEntity(name = "substance", title = "Substance")
@@ -367,7 +411,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
     /**
      * Get the structure of this Substance
-     * to Render.  By default returns `Optional.empty()`
+     * to Render.  By basic returns `Optional.empty()`
      * override this method.
      * @return
      */
@@ -826,17 +870,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         }
         return null;
     }
-    //TODO katzelda Feb 2021: commented out and will be added ino business layer later
-    //TODO: should be somewhere else
-//    public void addImportReference(ProcessingJob p) {
-//        Reference r = new Reference();
-//        r.docType = Substance.DOC_TYPE_BATCH_IMPORT;
-//        r.citation = p.payload.name;
-//        r.documentDate = TimeUtil.getCurrentDate();
-//        String processingKey=p.getKeyMatching(GinasRecordProcessorPlugin.class.getName());
-//        r.id=processingKey;
-//        this.references.add(r);
-//    }
+    
     public Note addPropertyNote(String note, String property){
         Note n = new Note();
         n.note=note;
@@ -889,7 +923,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         n.note=note;
 
         this.notes.add(n);
-        this.setIsDirty("references");
+        this.setIsDirty("notes");
         return n;
     }
 
@@ -990,25 +1024,82 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     }
 
     @JsonIgnore
-    public List<SubstanceReference> getDependsOnSubstanceReferences(){
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getDependsOnSubstanceReferencesAndParents(){
 
-        List<SubstanceReference> srefs=new ArrayList<SubstanceReference>();
+        List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
         Modifications m=this.getModifications();
         if(m!=null){
             if(m.agentModifications!=null){
                 for(AgentModification am:m.agentModifications){
                     if(am.agentSubstance!=null)
-                        srefs.add(am.agentSubstance);
+                        srefs.add(Tuple.of(am,am.agentSubstance));
                 }
             }
             if(m.structuralModifications!=null){
                 for(StructuralModification sm:m.structuralModifications){
                     if(sm.molecularFragment!=null)
-                        srefs.add(sm.molecularFragment);
+                        srefs.add(Tuple.of(sm,sm.molecularFragment));
                 }
             }
         }
+
+        if(properties!=null && !properties.isEmpty()) {
+            properties.forEach(p->{
+                if(p.isDefining()){
+                    if(p.getReferencedSubstance()!=null) {
+                        srefs.add(Tuple.of(p,p.getReferencedSubstance()));
+                    }
+                    p.getParameters()
+                     .stream()
+                     .filter(par->par.referencedSubstance!=null)
+                     .forEach(par->{
+                    	 srefs.add(Tuple.of(par,par.referencedSubstance));
+                     });
+                    
+                }
+            });
+        }
         return srefs;
+        
+    }
+    
+
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getNonDefiningSubstanceReferencesAndParents(){
+        List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
+        if(properties!=null && !properties.isEmpty()) {
+            properties.forEach(p->{
+                if(!p.isDefining()){
+                    if(p.getReferencedSubstance()!=null) {
+                        srefs.add(Tuple.of(p,p.getReferencedSubstance()));
+                    }
+                    p.getParameters()
+                     .stream()
+                     .filter(par->par.referencedSubstance!=null)
+                     .forEach(par->{
+                    	 srefs.add(Tuple.of(par,par.referencedSubstance));
+                     });
+                    
+                }
+            });
+        }
+        if(relationships!=null) {
+        	relationships.forEach(r->{
+        		if(r.relatedSubstance!=null){
+        			srefs.add(Tuple.of(r,r.relatedSubstance));
+        		}
+        		if(r.mediatorSubstance!=null){
+        			srefs.add(Tuple.of(r,r.mediatorSubstance));
+        		}
+            });
+        }
+        return srefs;
+    }
+    
+    @JsonIgnore
+    public List<SubstanceReference> getDependsOnSubstanceReferences(){
+
+        return getDependsOnSubstanceReferencesAndParents().stream().map(t->t.v()).collect(Collectors.toList());
     }
 
 
@@ -1272,7 +1363,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
     /**
      * Create a new {@link Chemical} object for this Substance.
-     * By default, this will create an empty Chemical, subclasses
+     * By basic, this will create an empty Chemical, subclasses
      * that are actually Chemicals should override this method
      * to return something meaningful.
      *

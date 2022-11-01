@@ -89,7 +89,7 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
 //				return ACCEPT_APPLY_ALL_MARK_FAILED();
 //			case "ACCEPT_APPLY_ALL_NOTE_FAILED":
 //				return ACCEPT_APPLY_ALL_NOTE_FAILED();
-//			default:
+//			basic:
 //				throw new IllegalArgumentException("No strategy known with name:\"" + value + "\"");
 //		}
 //

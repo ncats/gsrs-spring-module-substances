@@ -233,7 +233,7 @@ public class ProteinUtils
         for (Subunit su : ps.protein.subunits) {
             total += getSubunitWeight(su, unknownRes);
         }
-        log.trace(String.format("default MW: %.2f", total));
+        log.trace(String.format("basic MW: %.2f", total));
         if (ps.hasModifications() && ps.modifications.structuralModifications.size() > 0) {
             log.trace("considering structuralModifications");
             double waterMW = 18.0;//https://tripod.nih.gov/ginas/app/substances?q=water
@@ -321,7 +321,7 @@ public class ProteinUtils
         }
 
         double disulfideContribution = getDisulfideContribution(ps.protein);
-        log.trace(String.format("default MW: %.2f; default formula: %s; disulfideContribution: %.2f",
+        log.trace(String.format("basic MW: %.2f; basic formula: %s; disulfideContribution: %.2f",
                 total, makeFormulaFromMap(formulaCounts), disulfideContribution));
         total -= disulfideContribution;
         if (ps.hasModifications() && ps.modifications.structuralModifications.size() > 0) {

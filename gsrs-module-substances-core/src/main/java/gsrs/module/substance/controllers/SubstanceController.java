@@ -1,6 +1,7 @@
 package gsrs.module.substance.controllers;
 
 import java.awt.Dimension;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -48,9 +49,11 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.nih.ncats.common.io.IOUtil;
@@ -73,12 +76,14 @@ import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
+import gsrs.module.substance.expanders.basic.BasicRecordExpanderFactory;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructuralUnitRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.SubunitRepository;
+import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
@@ -96,11 +101,16 @@ import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
 import ix.core.models.Structure;
+import ix.core.models.StructureRenderingParameters;
+import ix.core.models.Text;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResultContext;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
+import ix.ginas.exporters.RecordExpanderFactory;
+import ix.ginas.exporters.RecordScrubberFactory;
+import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -326,9 +336,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Override
     protected Stream<Substance> filterStream(Stream<Substance> stream,boolean publicOnly, Map<String, String> parameters) {
+        /* as of v. 3.0.3, public/private data selection is handled via the RecordScrubber
         if(publicOnly){
             return stream.filter(s-> s.getAccess().isEmpty());
-        }
+        }*/
         return stream;
     }
 
@@ -823,7 +834,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 .reduce(SimpleStandardizer::and).orElse(null);
 
         String mode = Optional.ofNullable(queryParameters.get("mode"))
-                .orElse("default");
+                .orElse("basic");
 
         boolean isQuery="query".equalsIgnoreCase(mode);
 
@@ -1010,13 +1021,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @GetGsrsRestApiMapping({"/render({ID})", "/render/{ID}"})
     public Object render(@PathVariable("ID") String idOrSmiles,
                          @RequestParam(value = "format", required = false, defaultValue = "svg") String format,
-                         //default stereo to empty string which spring returns as null Boolean object
+                         //basic stereo to empty string which spring returns as null Boolean object
                          @RequestParam(value = "version", required = false) String version,
                          @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                          @RequestParam(value = "context", required = false) String contextId,
                          @RequestParam(value = "size", required = false, defaultValue = "150") int size,
+                         @RequestParam(value = "minWidth", required = false) Integer minWidth,
+                         @RequestParam(value = "maxWidth", required = false) Integer maxWidth,
+                         @RequestParam(value = "minHeight", required = false) Integer minHeight,
+                         @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
+                         @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
+
         int[] amaps = null;
         StructureToRender s2r=null;
 
@@ -1032,7 +1049,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
-                //if we're here, we have a substance but nothing to render return default for substance type
+                //if we're here, we have a substance but nothing to render return basic for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey());
             }
             input = s2r.getInput();
@@ -1065,8 +1082,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String dinput = input;
         int[] damaps = amaps;
         StructureToRender effectivelyFinalS2r = s2r;
-        ByteWrapper bdat = gsrscache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version ,TypedCallable.of(()->{
-            byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput), format, size, damaps, null, stereo, standardize);
+        StructureRenderingParameters structureRenderingParameters = new StructureRenderingParameters();
+        structureRenderingParameters.setBondLength(bondLength);
+        structureRenderingParameters.setMaxHeight(maxHeight);
+        structureRenderingParameters.setMinHeight(minHeight);
+        structureRenderingParameters.setMaxWidth(maxWidth);
+        structureRenderingParameters.setMinWidth(minWidth);
+        ByteWrapper bdat = gsrscache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
+            byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput),
+                    format, size, damaps, null, stereo, standardize, structureRenderingParameters);
+
             return ByteWrapper.of(b);
         }, ByteWrapper.class));
 
@@ -1076,7 +1101,31 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(bdat.dat, headers, HttpStatus.OK);
 
     }
-    
+    private static void renderInner(ChemicalRenderer renderer, Chemical chem, int minWidth, int maxWidth, int minHeight, int maxHeight,
+                                    double bondLength, String format, ByteArrayOutputStream bos)
+            throws IOException {
+        log.trace(String.format("in renderInner, minWidth: %d, maxWidth: %d minHeight: %d, maxHeight: %d, bondLength: %f\n",
+                minWidth, maxWidth, minHeight, maxHeight, bondLength));
+        Rectangle2D.Double rect = renderer.getApproximateBoundsFor(chem, maxWidth, minWidth, maxHeight, minHeight, bondLength);
+        int width = (int) Math.round(rect.getWidth());
+        int height = (int) Math.round(rect.getHeight());
+
+        if (format.equals("svg")) {
+            SVGGraphics2D svg = new SVGGraphics2D
+                    (bos, new Dimension(width, height));
+            try {
+                svg.startExport();
+                renderer.render(svg, chem, 0, 0, width, height, false);
+                svg.endExport();
+            } finally {
+                svg.dispose();
+            }
+        }else {
+            BufferedImage bi = renderer.createImage(chem, width, height, false);
+            log.trace("rendering using height: " + height + " and width: " + width);
+            ImageIO.write(bi, format, bos);
+        }
+    }
     private static class ByteWrapper{
         byte[] dat;
         public static ByteWrapper of(byte[] dat) {
@@ -1163,7 +1212,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     public byte[] renderChemical (Structure struc, Chemical chem, String format,
-                                  int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize)
+                                  int size, int[] amap, Map<String, Boolean> newDisplay, Boolean drawStereo, Boolean standardize,
+                                  StructureRenderingParameters parameters)
             throws Exception {
 
         try {
@@ -1171,28 +1221,27 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             RendererOptions rendererOptions = fullRendererOptions.getOptions();
 
-            if(struc !=null && newDisplay ==null){
-               newDisplay = computeDisplayMap(struc, size, chem);
+            if (struc != null && newDisplay == null) {
+                newDisplay = computeDisplayMap(struc, size, chem);
             }
             if (newDisplay != null) {
                 rendererOptions.changeSettings(newDisplay);
             }
 
 
-
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
 
 //		boolean highlight=false;
-            if(amap!=null && amap.length>0){
+            if (amap != null && amap.length > 0) {
                 Atom[] atoms = chem.atoms().toArray(i -> new Atom[i]);
                 for (int i = 0; i < Math.min(atoms.length, amap.length); ++i) {
                     atoms[i].setAtomToAtomMap(amap[i]);
-                    if(amap[i]!=0){
+                    if (amap[i] != 0) {
                         rendererOptions.withSubstructureHighlight();
                     }
                 }
-            }else{
+            } else {
                 if (chem.atoms().filter(Atom::hasAtomToAtomMap)
                         .findAny().isPresent()) {
                     rendererOptions.withSubstructureHighlight();
@@ -1201,10 +1250,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }
             preProcessChemical(chem, rendererOptions);
 
-            if(Chem.isProblem(chem)){
+            if (Chem.isProblem(chem)) {
                 rendererOptions.setDrawOption(RendererOptions.DrawOptions.DRAW_STEREO_LABELS, false);
 
-            }else{
+            } else {
                 if (size > 250 /*&& !highlight*/) {
                     //katzelda March 21 2019
                     //after talking to Tyler we should just always
@@ -1238,22 +1287,29 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             rendererOptions.captionBottom(c -> c.getProperty("BOTTOM_TEXT"));
 
 
-
             Chem.fixMetals(chem);
 
-            if(Boolean.TRUE.equals(standardize)){
+            if (Boolean.TRUE.equals(standardize)) {
                 chem.kekulize();
                 chem.makeHydrogensImplicit();
             }
             ChemicalRenderer renderer = new ChemicalRenderer(rendererOptions);
 
-            if(!fullRendererOptions.isShowShadow()) {
+            if (!fullRendererOptions.isShowShadow()) {
                 renderer.setShadowVisible(false);
             }
 
-            ByteArrayOutputStream bos = new ByteArrayOutputStream ();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
-            if (format.equals("svg")) {
+            if (parameters != null && parameters.hasValuesForAll()) {
+                log.trace("using latest rendering");
+                //ChemicalRenderer renderer, Chemical chem, int minWidth, int maxWidth, int minHeight, int maxHeight,
+                //                                    double bondLength, String format, ByteArrayOutputStream bos
+                renderInner(renderer, chem, parameters.getMinWidth(), parameters.getMaxWidth(), parameters.getMinHeight(), parameters.getMaxHeight(),
+                        parameters.getBondLength(), format, bos);
+            }else {
+                log.trace("using legacy rendering");
+                if (format.equals("svg")) {
                 SVGGraphics2D svg = new SVGGraphics2D
                         (bos, new Dimension(size, size));
                 try {
@@ -1263,11 +1319,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 } finally {
                     svg.dispose();
                 }
-            }else {
+            } else {
                 BufferedImage bi = renderer.createImage(chem, size);
                 ImageIO.write(bi, format, bos);
             }
-
+        }
             return bos.toByteArray();
         }catch(Exception e){
             e.printStackTrace();
@@ -1465,7 +1521,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Map<String, Boolean> newDisplay = computeDisplayMap(struc, size, c);
 
 
-        return renderChemical (struc, c, format, size, amap,newDisplay,stereo, structure);
+        return renderChemical (struc, c, format, size, amap,newDisplay,stereo, structure, null);
     }
 
     private Map<String, Boolean> computeDisplayMap(Structure struc, int size, Chemical c) {
@@ -1506,4 +1562,46 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return newDisplay;
     }
 
+
+    @Override
+    public RecordScrubberFactory<Substance> getScrubberFactory(){
+        return new BasicSubstanceScrubberFactory();
     }
+
+    @Override
+    public RecordExpanderFactory<Substance> getExpanderFactory(){
+        return new BasicRecordExpanderFactory();
+    }
+
+    
+    public List<Text> getHardcodedConfigsBackup() throws JsonProcessingException {
+        List<Text> items = new ArrayList<>();
+
+        ObjectMapper mapper = new ObjectMapper();
+        SpecificExporterSettings allDataSettings = new SpecificExporterSettings();
+        allDataSettings.setExpanderSettings(JsonNodeFactory.instance.objectNode());
+        allDataSettings.setScrubberSettings(JsonNodeFactory.instance.objectNode());
+        allDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
+        allDataSettings.setExporterKey("ALL_DATA");
+        allDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
+        Text allItems = new Text("settings", mapper.writeValueAsString(allDataSettings));
+        allItems.id=0l;
+        items.add(allItems);
+
+
+        SpecificExporterSettings publicDataSettings = new SpecificExporterSettings();
+        publicDataSettings.setExpanderSettings(JsonNodeFactory.instance.objectNode());
+        ObjectNode scrubberNode=JsonNodeFactory.instance.objectNode();
+        scrubberNode.put("removeAllLocked", true);
+        scrubberNode.set("removeAllLockedAccessGroupsToInclude", JsonNodeFactory.instance.arrayNode());
+        publicDataSettings.setScrubberSettings(scrubberNode);
+        publicDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
+        publicDataSettings.setExporterKey("PUBLIC_DATA_ONLY");
+        publicDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
+        Text publicItems = new Text("settings", mapper.writeValueAsString(publicDataSettings));
+        publicItems.id=-1l;
+        items.add(publicItems);
+        return items;
+    }
+}
+

@@ -86,6 +86,8 @@ public class ExcelSubstanceRelatedApplicationsExporter implements Exporter<Subst
 			this.publicOnly = publicOnly;
 		}
 
+		String username;
+
 		@Override
 		public OutputFormat getFormat() {
 			return format;
@@ -94,6 +96,16 @@ public class ExcelSubstanceRelatedApplicationsExporter implements Exporter<Subst
 		@Override
 		public boolean publicOnly() {
 			return publicOnly;
+		}
+
+		@Override
+		public String getUsername() {
+			return this.username;
+		}
+
+		@Override
+		public void setUsername(String username) {
+			this.username=username;
 		}
 	}
 }

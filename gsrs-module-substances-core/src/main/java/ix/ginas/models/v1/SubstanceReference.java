@@ -2,16 +2,14 @@ package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.models.Indexable;
+import ix.core.util.EntityUtils;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.SubstanceReferenceEntityListener;
 import ix.ginas.models.utils.JSONEntity;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 
 @Entity
 @Table(name="ix_ginas_substanceref", indexes = {@Index(name = "sub_ref_index", columnList = "refuuid")})
@@ -188,4 +186,9 @@ public class SubstanceReference extends GinasCommonSubData {
 		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
 		return temp;
 	}
+
+    @JsonIgnore
+    public EntityUtils.Key getKeyForReferencedSubstance(){
+        return EntityUtils.Key.of(Substance.class, UUID.fromString(refuuid));
+    }
 }
