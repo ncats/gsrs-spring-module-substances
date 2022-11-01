@@ -49,10 +49,10 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
     public LegacySubstanceJSONBulkLoadTest(){
         super(false);
     }
-    @Transactional
-    @Test
-    @WithMockUser(username = "admin", roles = "Admin")
-    @Timeout(value = 10, unit = TimeUnit.MINUTES) //this will fail and kill the test if it takes more than 1 min
+//    @Transactional
+//    @Test
+//    @WithMockUser(username = "admin", roles = "Admin")
+//    @Timeout(value = 10, unit = TimeUnit.MINUTES) //this will fail and kill the test if it takes more than 1 min
     public void loadGsrsFile() throws IOException, InterruptedException {
 
         AtomicLong startCount = new AtomicLong();
