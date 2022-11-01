@@ -11,6 +11,8 @@ import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
+import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
+import ix.core.search.bulk.BulkSearchService;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
@@ -37,7 +39,8 @@ import org.springframework.context.annotation.Import;
         ProcessingJobController.class, ProcessingJobEntityService.class,
         //used by bulk loader
         ConsoleFilterService.class,
-
+        BulkSearchService.class,
+        SubstanceMatchViewGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class
