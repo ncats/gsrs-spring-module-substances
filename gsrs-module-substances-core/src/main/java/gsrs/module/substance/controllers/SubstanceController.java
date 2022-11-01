@@ -835,7 +835,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
     }
 
-    private void updateSearchContextGenerator(SearchResultContext resultContext, Map<String,String> queryParameters) {
+    protected void updateSearchContextGenerator(SearchResultContext resultContext, Map<String,String> queryParameters) {
         String oldURL = resultContext.getGeneratingUrl();
         if(oldURL!=null && !oldURL.contains("?")) {
             //we have to manually set the actual request uri here as it's the only place we know it!!
