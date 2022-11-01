@@ -19,8 +19,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -28,20 +26,10 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import gsrs.module.substance.expanders.basic.BasicRecordExpanderFactory;
-import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
-import ix.core.models.StructureRenderingParameters;
-import ix.core.models.Text;
-import ix.ginas.exporters.RecordExpanderFactory;
-import ix.ginas.exporters.RecordScrubberFactory;
-import ix.ginas.exporters.SpecificExporterSettings;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -61,9 +49,11 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gov.nih.ncats.common.io.IOUtil;
@@ -76,27 +66,28 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.cache.GsrsCache;
 import gsrs.controller.EtagLegacySearchEntityController;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.IdHelpers;
 import gsrs.controller.PostGsrsRestApiMapping;
-import gsrs.controller.hateoas.GsrsLinkUtil;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
+import gsrs.module.substance.expanders.basic.BasicRecordExpanderFactory;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructuralUnitRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.SubunitRepository;
+import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
@@ -110,13 +101,16 @@ import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Payload;
 import ix.core.models.Structure;
+import ix.core.models.StructureRenderingParameters;
+import ix.core.models.Text;
 import ix.core.search.SearchOptions;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
+import ix.ginas.exporters.RecordExpanderFactory;
+import ix.ginas.exporters.RecordScrubberFactory;
+import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -126,7 +120,6 @@ import ix.ginas.models.v1.Subunit;
 import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
-import ix.utils.CallableUtil;
 import ix.utils.CallableUtil.TypedCallable;
 import ix.utils.UUIDUtil;
 import ix.utils.Util;
@@ -142,8 +135,11 @@ import lombok.extern.slf4j.Slf4j;
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
-
-    @Override
+	
+	@Autowired 
+	private SubstanceMatchViewGenerator matchViewGenerator;
+	
+	@Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
 
         so= super.instrumentSearchOptions(so);
@@ -300,12 +296,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private PayloadService payloadService;
 
     @Autowired
-    private GsrsCache ixCache;
-
-    @Autowired
-    private EntityLinks entityLinks;
-
-    @Autowired
     private SubunitRepository subunitRepository;
 
     @Autowired
@@ -404,7 +394,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     private List<SubstanceHierarchyFinder.TreeNode2> makeJsonTreeForAPI(Substance sub) {
-
+    	
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.setReadOnly(true);
@@ -691,12 +681,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	//TODO: need to add support for qText in the "focused" version of
 	// all structure searches. This may require some deeper changes.
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
-        return substanceFactoryDetailedSearch(focused, sync);
+        return entityFactoryDetailedSearch(focused, sync);
     }
 
     private Optional<Structure> parseStructureQuery(String q, boolean store) throws IOException {
         if(UUIDUtil.isUUID(q)){
-            Optional<Structure> opt = GsrsSubstanceControllerUtil.getTempObject(ixCache, q, Structure.class);
+            Optional<Structure> opt = GsrsSubstanceControllerUtil.getTempObject(gsrscache, q, Structure.class);
             if(opt.isPresent()){
                 return opt;
             }
@@ -711,7 +701,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             if(struc.id ==null){
                 struc.id = UUID.randomUUID();
             }
-            ixCache.setRaw(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
+            gsrscache.setRaw(struc.id.toString(), EntityUtils.EntityWrapper.of(struc).toInternalJson());
         }
         return Optional.of(struc);
     }
@@ -733,7 +723,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             HttpServletRequest httpServletRequest) throws IOException, ExecutionException, InterruptedException {
 
 //        Optional<String> hashKey = getKeyForCurrentRequest(httpServletRequest);
-//        //TODO use hashKey to store in ixcache
+//        //TODO use hashKey to store in gsrscache
 
         Optional<Subunit> subunit = convertQueryStringToSequence(q, false);
         if(!subunit.isPresent()){
@@ -758,14 +748,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         updateSearchContextGenerator(resultContext, queryParameters);
 
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
-        return substanceFactoryDetailedSearch(focused, sync);
+        return entityFactoryDetailedSearch(focused, sync);
     }
 
     private Optional<Subunit> convertQueryStringToSequence(@RequestParam(required = false) String q, boolean store) {
 
         if(UUIDUtil.isUUID(q)){
             //query is a uuid of a subunit look it up
-            Optional<Subunit> opt = GsrsSubstanceControllerUtil.getTempObject(ixCache, q, Subunit.class);
+            Optional<Subunit> opt = GsrsSubstanceControllerUtil.getTempObject(gsrscache, q, Subunit.class);
             if(opt.isPresent()){
                 return opt;
             }else{
@@ -777,7 +767,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         sub.uuid = UUID.randomUUID();
         sub.sequence = q;
         if(store){
-            ixCache.setRaw(sub.uuid.toString(), EntityUtils.EntityWrapper.of(sub).toInternalJson());
+            gsrscache.setRaw(sub.uuid.toString(), EntityUtils.EntityWrapper.of(sub).toInternalJson());
 
         }
         return Optional.of(sub);
@@ -828,118 +818,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ModelAndView("/api/v1/substances/sequenceSearch");
 
     }
-    static String getOrderedKey (SearchResultContext context, SearchRequest request) {
-        return "fetchResult/"+context.getId() + "/" + request.getOrderedSetSha1();
-    }
-    static String getKey (SearchResultContext context, SearchRequest request) {
-        return "fetchResult/"+context.getId() + "/" + request.getDefiningSetSha1();
-    }
-
-    protected void updateSearchContextGenerator(SearchResultContext resultContext, Map<String,String> queryParameters) {
-        String oldURL = resultContext.getGeneratingUrl();
-        if(oldURL!=null && !oldURL.contains("?")) {
-            //we have to manually set the actual request uri here as it's the only place we know it!!
-            //for some reason the spring boot methods to get the current quest  URI don't include the parameters
-            //so we have to append them manually here from our controller
-            StringBuilder queryParamBuilder = new StringBuilder();
-            queryParameters.forEach((k,v)->{
-                if(queryParamBuilder.length()==0){
-                    queryParamBuilder.append("?");
-                }else{
-                    queryParamBuilder.append("&");
-                }
-                queryParamBuilder.append(k).append("=").append(v);
-            });
-            resultContext.setGeneratingUrl(oldURL + queryParamBuilder);
-        }
-    }
-
-    public ResponseEntity<Object> substanceFactoryDetailedSearch(SearchResultContext context, boolean sync) throws InterruptedException, ExecutionException {
-        context.setAdapter((srequest, ctx) -> {
-            try {
-                // TODO: technically this shouldn't be needed,
-                // but something is getting lost in translation between 2.X and 3.0
-                // and it's leading to some results coming back which are not substances.
-                // This is particularly strange since there is an explicit subset which IS
-                // all substances given.
-                srequest.getOptions().setKind(Substance.class);
-                SearchResult sr = getResultFor(ctx, srequest,true);
-
-                List<Substance> rlist = new ArrayList<Substance>();
-
-                sr.copyTo(rlist, srequest.getOptions().getSkip(), srequest.getOptions().getTop(), true); // synchronous
-                for (Substance s : rlist) {
-                    s.setMatchContextProperty(ixCache.getMatchingContextByContextID(ctx.getId(), EntityUtils.EntityWrapper.of(s).getKey()));
-                }
-                return sr;
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new IllegalStateException("Error fetching search result", e);
-            }
-        });
-
-
-        if (sync) {
-            try {
-                context.getDeterminedFuture().get(1, TimeUnit.MINUTES);
-                HttpHeaders headers = new HttpHeaders();
-
-                //TODO this should actually forward to "status(<key>)/results", but it's currently status/<key>/results
-                headers.add("Location", GsrsLinkUtil.adapt(context.getKey(),entityLinks.linkFor(SearchResultContext.class).slash(context.getKey()).slash("results").withSelfRel())
-                        .toUri().toString() );
-                return new ResponseEntity<>(headers,HttpStatus.FOUND);
-            } catch (TimeoutException e) {
-                log.warn("Structure search timed out!", e);
-            }
-        }
-        return new ResponseEntity<>(context, HttpStatus.OK);
-    }
-
-    public SearchResult getResultFor(SearchResultContext ctx, SearchRequest req, boolean preserveOrder)
-            throws IOException, Exception{
-
-        final String key = (preserveOrder)? getOrderedKey(ctx,req):getKey (ctx, req);
-
-        CallableUtil.TypedCallable<SearchResult> tc = CallableUtil.TypedCallable.of(() -> {
-            Collection results = ctx.getResults();
-            SearchRequest request = new SearchRequest.Builder()
-                    .subset(results)
-                    .options(req.getOptions())
-                    .skip(0)
-                    .top(results.size())
-                    .query(req.getQuery())
-                    .build();
-            request=instrumentSearchRequest(request);
-
-            SearchResult searchResult =null;
-
-            if (results.isEmpty()) {
-                searchResult= SearchResult.createEmptyBuilder(req.getOptions())
-                        .build();
-            }else{
-                //katzelda : run it through the text indexer for the facets?
-//                searchResult = SearchFactory.search (request);
-                searchResult = legacySearchService.search(request.getQuery(), request.getOptions(), request.getSubset());
-                log.debug("Cache misses: "
-                        +key+" size="+results.size()
-                        +" class="+searchResult);
-            }
-
-            // make an alias for the context.id to this search
-            // result
-            searchResult.setKey(ctx.getId());
-            return searchResult;
-        }, SearchResult.class);
-
-        if(ctx.isDetermined()) {
-            return ixCache.getOrElse(key, tc);
-        }else {
-            return tc.call();
-        }
-    }
-
-
-
 
     @PostGsrsRestApiMapping("/interpretStructure")
     public ResponseEntity<Object> interpretStructure(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
@@ -1028,7 +906,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if (s.id == null){
             s.id = UUID.randomUUID();
         }
-        ixCache.setRaw(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
+        gsrscache.setRaw(s.id.toString(), EntityFactory.EntityMapper.INTERNAL_ENTITY_MAPPER().toJson(s));
 
     }
 
@@ -1082,7 +960,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         boolean history = (version!=null);
 
         //check cache?
-        Optional<Structure> opStructure = (history)?Optional.empty():GsrsSubstanceControllerUtil.getTempObject(ixCache, idOrSmiles, Structure.class);
+        Optional<Structure> opStructure = (history)?Optional.empty():GsrsSubstanceControllerUtil.getTempObject(gsrscache, idOrSmiles, Structure.class);
         if(!opStructure.isPresent()) {
             UUID uuid = UUID.fromString(idOrSmiles);
             Key skey = Key.of(Substance.class, uuid);
@@ -1162,7 +1040,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String input=null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
 //            input, null)
-            s2r= ixCache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
+            s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
                 return getSubstanceAndStructure(idOrSmiles,version);
             });
 
@@ -1194,7 +1072,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
             } else if (s2r.getSubstanceKey() != null) {
                 Key k = s2r.getSubstanceKey();
-                Map<String,Object> props = ixCache.getMatchingContextByContextID(contextId, k);
+                Map<String,Object> props = gsrscache.getMatchingContextByContextID(contextId, k);
                 amaps = (int[]) props.getOrDefault("atomMaps", null);
             }
         }
@@ -1210,9 +1088,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         structureRenderingParameters.setMinHeight(minHeight);
         structureRenderingParameters.setMaxWidth(maxWidth);
         structureRenderingParameters.setMinWidth(minWidth);
-        ByteWrapper bdat = ixCache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
+        ByteWrapper bdat = gsrscache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
             byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput),
                     format, size, damaps, null, stereo, standardize, structureRenderingParameters);
+
             return ByteWrapper.of(b);
         }, ByteWrapper.class));
 
@@ -1455,7 +1334,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     private static void preProcessChemical(Chemical c,  RendererOptions renderOptions){
 	    
-        log.info("processing chemical");
+//        log.info("processing chemical");
         if(c!=null){
 
 

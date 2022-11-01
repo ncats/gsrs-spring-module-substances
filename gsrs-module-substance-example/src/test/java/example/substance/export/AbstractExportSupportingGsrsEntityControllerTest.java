@@ -70,7 +70,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
             ranSetup=true;
         }
         //create 2 configurations with identical keys
-        String madeUpKey = "Made Up Key";
+        String madeUpKey = "Made Up Key" +UUID.randomUUID().toString();
         String config1 = createBogusConfig(madeUpKey);
         Map<String, String> params = new HashMap<>();
         ResponseEntity response = controller.handleExportConfigSave(config1, params);
