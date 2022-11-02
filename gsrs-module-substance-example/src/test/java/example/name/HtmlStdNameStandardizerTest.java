@@ -182,6 +182,9 @@ public class HtmlStdNameStandardizerTest {
         Assertions.assertEquals(expected, actual);
     }
 
+    /*
+    This unit test fails within IntelliJ but passes at the command line
+     */
     @Test
     public void testNkfdNormalization() {
         String input = "𝐸₃éé👍!";
