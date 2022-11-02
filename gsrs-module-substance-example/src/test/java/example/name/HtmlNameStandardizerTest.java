@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
 import gsrs.module.substance.standardizer.NameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.ReplacementNote;
