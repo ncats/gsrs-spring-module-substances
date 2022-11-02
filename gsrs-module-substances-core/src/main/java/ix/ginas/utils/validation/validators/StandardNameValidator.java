@@ -3,16 +3,15 @@ package ix.ginas.utils.validation.validators;
 import java.util.HashMap;
 import java.util.Map;
 
-import gsrs.module.substance.utils.FDAFullNameStandardizer;
-import gsrs.module.substance.utils.FDAMinimumNameStandardizer;
-import gsrs.module.substance.utils.NameStandardizer;
-import gsrs.module.substance.utils.ReplacementResult;
+import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *
@@ -21,14 +20,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
+    @Autowired
+    private NameStandardizer nameStandardizer;
+
+    @Autowired
+    private NameStandardizer stdNameStandardizer;
+
     public enum InvalidStdNameBehavior {
         warn,
         error
     }
-
-    private NameStandardizer inPlaceStandardizer = new FDAMinimumNameStandardizer();
-    private NameStandardizer fullStandardizer = new FDAFullNameStandardizer();
-    
 
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
@@ -37,8 +38,10 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
-        if(inPlaceStandardizer!=null)validateInPlace(objnew, objold, callback);
-        if(fullStandardizer!=null)validateFull(objnew, objold, callback);
+        log.debug("nameStandardizer class=" + nameStandardizer.getClass().getName());
+        if(nameStandardizer!=null)validateInPlace(objnew, objold, callback);
+        log.debug("stdNameStandardizer class=" + stdNameStandardizer.getClass().getName());
+        if(stdNameStandardizer!=null)validateFull(objnew, objold, callback);
     }
 
     // validateFull does a more comprehensive set of standardizations for the standard name field.
@@ -104,7 +107,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             boolean warnedAboutThisNameStandardization = false;
 
             if (oldName != null) {
-                oldStdNameCalc = fullStandardizer.standardize(oldName.name).getResult();
+                oldStdNameCalc = stdNameStandardizer.standardize(oldName.name).getResult();
                 oldStdNameGiven = oldName.stdName;
                 oldRegularName = oldName.name;
             }
@@ -119,12 +122,12 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             }
 
             if (name.stdName == null) {
-                name.stdName = fullStandardizer.standardize(name.name).getResult();
+                name.stdName = stdNameStandardizer.standardize(name.name).getResult();
                 log.debug("set (previously null) stdName to " + name.stdName);
             }
             else {
                 log.trace("stdName: " + name.stdName);
-                if (!fullStandardizer.isStandardized(name.stdName)) {
+                if (!stdNameStandardizer.isStandardized(name.stdName)) {
                     warnedAboutThisNameStandardization =true;
                     String message = String.format("Standardized name does not meet standards.  This name may contain one or more non-allowed character: '%s'",
                             name.stdName);
@@ -135,7 +138,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                     }
                 }
                 log.trace("warningOnMismatch: " + warningOnMismatch);
-                String newlyStandardizedName = fullStandardizer.standardize(name.name).getResult();
+                String newlyStandardizedName = stdNameStandardizer.standardize(name.name).getResult();
 
                 if (!newlyStandardizedName.equals(name.stdName)) {
                     if (name.stdName.equals(oldStdNameGiven)) {
@@ -205,7 +208,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
         s.names.forEach(n -> {
 
-            ReplacementResult minimallyStandardizedName = inPlaceStandardizer.standardize(n.name);
+            ReplacementResult minimallyStandardizedName = nameStandardizer.standardize(n.name);
             String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
                     minimallyStandardizedName.getResult());
             log.trace(debugMessage);
@@ -234,14 +237,6 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
     public void setRegenerateNameValue(String regenerateNameValue) {
         this.regenerateNameValue = regenerateNameValue;
-    }
-    
-    
-    public void setInPlaceNameStandardizerClass(String standardizer) throws Exception{
-        inPlaceStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
-    }
-    public void setFullNameStandardizerClass(String standardizer) throws Exception {
-        fullStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
     }
 
     public InvalidStdNameBehavior isErrorOnInvalidStdName() {

@@ -25,8 +25,8 @@ import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.config.FilePathParserUtils;
 import gsrs.module.substance.repository.NameRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.utils.FDAFullNameStandardizer;
-import gsrs.module.substance.utils.NameStandardizer;
+import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizer;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
@@ -51,7 +51,6 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private String outputPath;
     private String name = "nameStandardizationReport";
     private String STANDARD_FILE_ENCODING ="UTF-8";
-    private NameStandardizer nameStandardizer = new FDAFullNameStandardizer();
     private String description;
 
     @Autowired
@@ -66,6 +65,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+    @Autowired
+    private NameStandardizer stdNameStandardizer;
 
     @JsonProperty("formatter")
     public void setFormat(String format) {
@@ -91,7 +92,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         File pfile = abfile.getParentFile();
 
         pfile.mkdirs();
-        log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.nameStandardizer.getClass().getName(),
+        log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.stdNameStandardizer.getClass().getName(),
                 this.forceRecalculationOfAll);
         l.message("Initializing standardization");
         log.trace("Initializing standardization");
@@ -145,8 +146,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
     }
 
-    public void setNameStandardizerClassName(String nameStandardizerClassName) throws Exception {
-        this.nameStandardizer = (NameStandardizer) Class.forName(nameStandardizerClassName).getDeclaredConstructor().newInstance();
+    public void setNameStandardizerClassName(String stdNameStandardizerClassName) throws Exception {
+        this.stdNameStandardizer = (NameStandardizer) Class.forName(stdNameStandardizerClassName).getDeclaredConstructor().newInstance();
     }
 
     /**
@@ -171,7 +172,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 log.trace("in StandardNameValidator, Name '{}'; stand.  name: '{}'", name.getName(), name.stdName);
 
                 String prevStdName = name.stdName;
-                String newlyStdName =this.nameStandardizer.standardize(name.getName()).getResult();
+                String newlyStdName =this.stdNameStandardizer.standardize(name.getName()).getResult();
                 if (!newlyStdName.equals(prevStdName)) {
                     printStream.format( "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
                             prevStdName, newlyStdName, name.getName(), prevStdName, newlyStdName);

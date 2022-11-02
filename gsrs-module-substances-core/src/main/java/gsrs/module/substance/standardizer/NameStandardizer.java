@@ -1,17 +1,4 @@
-package gsrs.module.substance.utils;
-
-import java.text.Normalizer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import gsrs.module.substance.services.ConsoleFilterService;
-import ix.ginas.utils.validation.validators.tags.TagUtilities;
-import lombok.extern.slf4j.Slf4j;
+package gsrs.module.substance.standardizer;
 
 /**
  *
