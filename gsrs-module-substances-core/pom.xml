@@ -250,6 +250,11 @@
             <version>0.4.0</version>
             <type>pom</type>
         </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-core-entities</artifactId>
+            <version>3.0.3-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 </project>
