@@ -52,6 +52,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     Optional<SubstanceSummary> findSummaryByUuid(UUID uuid);
 
     List<SubstanceSummary> findByNames_NameIgnoreCase(String name);
+    List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
+
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
@@ -153,4 +155,10 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     
     @Query("select s from Substance s")
     public Stream<Substance> streamAll();
+
+    @Query("select s.id from Substance s")
+    List<UUID> getAllIds();
+
+    @Query("select s.id from Substance s where dtype='CHE'")
+    List<UUID> getAllChemicalIds();
 }

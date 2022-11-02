@@ -7,7 +7,7 @@ import java.io.InputStream;
 public interface RecordExtractorFactory<K> {
     /**
      * Get the Name for this Extractor.
-     * By default, the name is the RecordExtractor instance's class name.
+     * By basic, the name is the RecordExtractor instance's class name.
      * @return the name as a String can not be null.
      *
      */

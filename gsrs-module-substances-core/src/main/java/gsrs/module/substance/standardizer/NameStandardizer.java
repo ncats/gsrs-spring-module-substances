@@ -14,7 +14,7 @@ public interface NameStandardizer {
    public ReplacementResult standardize(String input);
    
    /**
-    * Checks if the supplied name string is already in-line with standardization rules. The default implementation
+    * Checks if the supplied name string is already in-line with standardization rules. The basic implementation
     * simply runs {@link #standardize(String)} and compares the result with the input string. If the input and
     * standardized output are the same, this method returns true.
     * @param input The string to test

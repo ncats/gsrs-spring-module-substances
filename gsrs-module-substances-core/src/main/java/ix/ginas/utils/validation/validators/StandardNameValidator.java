@@ -43,6 +43,11 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
         log.debug("stdNameStandardizer class=" + stdNameStandardizer.getClass().getName());
         if(stdNameStandardizer!=null)validateFull(objnew, objold, callback);
     }
+
+    // validateFull does a more comprehensive set of standardizations for the standard name field.
+    // validateInPlace does a minimal replacement of 'awful' characters - for  the main 'name' field.
+
+
     public void validateFull(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         Map<String, Name> oldNames = new HashMap<>();
@@ -138,7 +143,7 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                 if (!newlyStandardizedName.equals(name.stdName)) {
                     if (name.stdName.equals(oldStdNameGiven)) {
                         if (oldStdNameGiven.equals(oldStdNameCalc)) {
-                            //The old name was default standardized, so the new name should be too
+                            //The old name was basic standardized, so the new name should be too
                             //no need to warn.
                             name.stdName = newlyStandardizedName;
                             log.debug("set (previously standardized) stdName to " + name.stdName);
