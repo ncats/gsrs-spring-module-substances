@@ -114,7 +114,7 @@ public class BulkSearchTests extends AbstractSubstanceJpaFullStackEntityTest {
 		SearchResultContext searchContent = bulkSearchService.search(gsrsRepository, request, options, indexer, generator);
 		
 		searchContent.getDeterminedFuture().get();			
-		assertEquals(searchContent.getResultsAsList().size(),12);
+		assertEquals(searchContent.getResultsAsList().size(),9);
 			
 		
 		BulkQuerySummary summary = (BulkQuerySummary)cache.getRaw("BulkSearchSummary/"+request.computeKey(false));
