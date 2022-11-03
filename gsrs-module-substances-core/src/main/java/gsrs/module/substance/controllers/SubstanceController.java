@@ -558,15 +558,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
-	
+
         attributes.addAttribute("q", structure.get().id.toString());
-	if(qText!=null){
-		attributes.addAttribute("qText", qText);
-	}
-        if(sync) {
-            attributes.addAttribute("sync", true);
+        if(qText!=null){
+        	attributes.addAttribute("qText", qText);
         }
-        return new ModelAndView("/api/v1/substances/structureSearch");
+        if(sync) {
+        	attributes.addAttribute("sync", true);
+        }
+        //TODO: find a way to make this not be a redirect. If we remove redirect now
+        // it will actually map back to the POST, which is circular. Keeping redirect
+        // somehow forces a GET version
+        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
     }
 
     @GetGsrsRestApiMapping("/structureSearch")
@@ -815,8 +818,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
             attributes.addAttribute("sync", true);
         }
-        return new ModelAndView("/api/v1/substances/sequenceSearch");
-
+        //TODO: find a way to make this not be a redirect. If we remove redirect now
+        // it will actually map back to the POST, which is circular. Keeping redirect
+        // somehow forces a GET version
+        return new ModelAndView("redirect:/api/v1/substances/sequenceSearch");
     }
 
     @PostGsrsRestApiMapping("/interpretStructure")
