@@ -666,10 +666,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 attributes.asMap().putIfAbsent("order", ss);
             });
             
-            // do a text search for that hash value?
-            // This technically breaks things, but is probably okay for now
+            //TODO: find a way to make this not be a redirect. If we remove redirect now
+            // it will actually get rid of the extra parameters, and result in a null search
             //
-            return new ModelAndView("/api/v1/substances/search");
+            return new ModelAndView("redirect:/api/v1/substances/search");
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
