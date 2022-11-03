@@ -25,8 +25,8 @@ import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.config.FilePathParserUtils;
 import gsrs.module.substance.repository.NameRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
@@ -65,7 +65,10 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
-    @Autowired
+
+	@Autowired
+	private NameStandardizerConfiguration nameStdConfig;
+	
     private NameStandardizer stdNameStandardizer;
 
     @JsonProperty("formatter")
@@ -83,10 +86,21 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
     }
     
+    private void initIfNeeded() {
+    	try {
+	    	if(stdNameStandardizer==null) {
+	    		if(nameStdConfig!=null) {
+	    			stdNameStandardizer=nameStdConfig.stdNameStandardizer();
+	    		}
+	    	}
+    	}catch(Exception e) {
+    		log.warn("trouble instantiating name standardizer", e);
+    	}
+    }
     
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
-
+    	initIfNeeded();
         File writeFile = getOutputFile();
         File abfile = writeFile.getAbsoluteFile();
         File pfile = abfile.getParentFile();
@@ -166,6 +180,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     }
 
     private boolean standardizeName(Name name, PrintStream printStream){
+    	initIfNeeded();
         //log.trace("starting in standardizeName");
         Boolean nameChanged = false;
         try {

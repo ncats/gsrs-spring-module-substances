@@ -1,5 +1,15 @@
 package example.substance.validation;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+
+import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
+import gsrs.module.substance.standardizer.FDAMinimumNameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
@@ -9,8 +19,6 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.StandardNameValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
 
 /**
  *
@@ -19,6 +27,30 @@ import org.junit.jupiter.api.Test;
 @Slf4j
 public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
 
+    @TestConfiguration
+    static class Testconfig{
+        @Bean
+        public NameStandardizerConfiguration nameStandardizerConfig() {
+        	NameStandardizerConfiguration cfg= new NameStandardizerConfiguration() {
+
+				@Override
+				public NameStandardizer nameStandardizer() throws InstantiationException, IllegalAccessException,
+						NoSuchMethodException, ClassNotFoundException {
+					return new FDAMinimumNameStandardizer();
+				}
+
+				@Override
+				public NameStandardizer stdNameStandardizer() throws InstantiationException, IllegalAccessException,
+						NoSuchMethodException, ClassNotFoundException {
+					return new FDAFullNameStandardizer();
+				}
+        		
+        	};
+        	
+            return cfg;
+        }
+    }
+    
     @Test
     public void testStandardNameValidation1() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
@@ -29,6 +61,7 @@ public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("CCO")
                 .build();
         StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         ValidationResponse<Substance> response = validator.validate(chemical, null);
         response.getValidationMessages().forEach(vm->{
             log.trace( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
@@ -50,6 +83,7 @@ public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("c1([Cl])c([Cl])cccc1")
                 .build();
         StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         ValidationResponse<Substance> response = validator.validate(chemical, null);
         response.getValidationMessages().forEach(vm->{
             log.trace( String.format("type: %s; message: %s", vm.getMessageType(), vm.getMessage()));
@@ -71,6 +105,7 @@ public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("c1([Cl])c([Cl])cccc1")
                 .build();
         StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         validator.setBehaviorOnInvalidStdName("warn");
         ValidationResponse<Substance> response = validator.validate(chemical, null);
         response.getValidationMessages().forEach(vm->{
@@ -93,6 +128,7 @@ public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("c1([Cl])c([Cl])cccc1")
                 .build();
         StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         validator.setBehaviorOnInvalidStdName("error");
         ValidationResponse<Substance> response = validator.validate(chemical, null);
         response.getValidationMessages().forEach(vm->{
@@ -115,6 +151,7 @@ public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("c1([Cl])c([Cl])cccc1")
                 .build();
         StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         Exception ex=null;
         try {
             validator.setBehaviorOnInvalidStdName("nonsense");

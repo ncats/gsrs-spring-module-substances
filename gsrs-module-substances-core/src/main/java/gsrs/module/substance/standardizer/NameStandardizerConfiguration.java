@@ -27,7 +27,6 @@ public class NameStandardizerConfiguration {
     private Map<String, Object> name;
     private Map<String, Object> stdname;
 
-    @Bean
     public NameStandardizer nameStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
         List<String> search = Arrays.asList("[\u00AD\u2010\u2011\u2012\u2013\u2014\u2212\u2015]",
             "\\s{2,}", "\u00B9", "\u00B2", "\u00B3", "&lt;-", "-&gt;", "&lt;=", "=&gt;", "\\+\\/-", "<\\/sup><sup>", "<\\/sub><sub>",
@@ -46,7 +45,6 @@ public class NameStandardizerConfiguration {
         return buildStandardizer(name, parameters);
     }
 
-    @Bean
     public NameStandardizer stdNameStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
         List<String> search = Arrays.asList("&amp;", "&larr;", "&rarr;", "&lt;", "&gt;", "\u2190", "\u2192", "\u00B1", "\\×", "\u00B9", "\u00B2",
             "\u00B3", "\u2070", "\u2071", "\u2072", "\u2073", "\u2074", "\u2075", "\u2076", "\u2077",

@@ -1,6 +1,17 @@
 package example.substance.validation;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+
+import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
+import gsrs.module.substance.standardizer.FDAMinimumNameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.services.GroupService;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
@@ -11,9 +22,6 @@ import ix.ginas.utils.GinasProcessingStrategy;
 import ix.ginas.utils.validation.strategy.AcceptApplyAllProcessingStrategy;
 import ix.ginas.utils.validation.validators.BasicNameValidator;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *
@@ -25,6 +33,32 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
     @Autowired
     private GroupService groupService;
 
+    
+
+    @TestConfiguration
+    static class Testconfig{
+        @Bean
+        public NameStandardizerConfiguration nameStandardizerConfig() {
+        	NameStandardizerConfiguration cfg= new NameStandardizerConfiguration() {
+
+				@Override
+				public NameStandardizer nameStandardizer() throws InstantiationException, IllegalAccessException,
+						NoSuchMethodException, ClassNotFoundException {
+					return new FDAMinimumNameStandardizer();
+				}
+
+				@Override
+				public NameStandardizer stdNameStandardizer() throws InstantiationException, IllegalAccessException,
+						NoSuchMethodException, ClassNotFoundException {
+					return new FDAFullNameStandardizer();
+				}
+        		
+        	};
+        	
+            return cfg;
+        }
+    }
+    
     @Test
     public void testValidation() {
         String basicName = "ethanol";
@@ -33,6 +67,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("CCO")
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         ValidationResponse<Substance> response = validator.validate(chemical, null);
         Assertions.assertEquals(0, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains("minimally standardized to")).count());
@@ -46,6 +81,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("CCO")
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         ValidationResponse<Substance> response = validator.validate(chemical, null);
         Assertions.assertEquals(0, response.getValidationMessages().stream()
                 .filter(m -> m.getMessage().contains("minimally standardized to")).count());
@@ -60,6 +96,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("CCO")
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponse<Substance> response2 = new ValidationResponse<>();
         ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(chemical,
@@ -81,6 +118,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("CCCC(=O)O")
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponse<Substance> response2 = new ValidationResponse<>();
         ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(chemical,
@@ -102,6 +140,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("CCCC(=O)O")
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponse<Substance> response2 = new ValidationResponse<>();
         ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(chemical,

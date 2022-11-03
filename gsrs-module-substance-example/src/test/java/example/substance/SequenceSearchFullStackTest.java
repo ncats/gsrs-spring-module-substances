@@ -84,8 +84,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
 
         public void flush() {
-            // TODO Auto-generated method stub
-            for(Runner r: runs) {
+            for(Runner r: runs.stream().collect(Collectors.toList())) {
                 r.run();
             }
             runs.clear();

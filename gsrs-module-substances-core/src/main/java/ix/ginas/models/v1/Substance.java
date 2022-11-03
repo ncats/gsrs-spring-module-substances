@@ -1436,19 +1436,21 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         List<String> validationTypes = new ArrayList<String>();
         String vprefix="[Validation]";
         for(Note n: this.notes){
-            if(n.note.startsWith(vprefix)){
-                String vtype = n.note.substring(vprefix.length()).split(":")[0];
-                validationTypes.add(vtype);
-                if(n.note.contains("duplicate") && n.note.contains("name")){
-                    validationTypes.add("Name Collision");
-                }
-                if(n.note.contains("duplicate") && n.note.contains("code")){
-                    validationTypes.add("Code Collision");
-                }
-                if(n.note.contains("duplicate") && n.note.contains("structure")){
-                    validationTypes.add("Structure Collision");
-                }
-            }
+        	if(n!=null && n.note!=null) {
+	            if(n.note.startsWith(vprefix)){
+	                String vtype = n.note.substring(vprefix.length()).split(":")[0];
+	                validationTypes.add(vtype);
+	                if(n.note.contains("duplicate") && n.note.contains("name")){
+	                    validationTypes.add("Name Collision");
+	                }
+	                if(n.note.contains("duplicate") && n.note.contains("code")){
+	                    validationTypes.add("Code Collision");
+	                }
+	                if(n.note.contains("duplicate") && n.note.contains("structure")){
+	                    validationTypes.add("Structure Collision");
+	                }
+	            }
+        	}
 
         }
         return validationTypes;

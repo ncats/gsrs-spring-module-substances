@@ -5,9 +5,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -55,7 +57,7 @@ public class SdfExporterTest {
         exporter.export(createSubstanceWithNamesAndCodes());
         exporter.close();
         Assertions.assertTrue(outputFile.exists());
-        String fileData= Files.readString(outputFile.toPath());
+        String fileData= Files.lines(outputFile.toPath(),StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
         System.out.println("fileData: " + fileData);
         Assertions.assertTrue(fileData.contains("50-00-0"));
         Assertions.assertTrue(substanceNames.stream().allMatch(s->fileData.contains(s)));
@@ -81,7 +83,7 @@ public class SdfExporterTest {
         exporter.export(createSubstanceWithNamesAndCodes());
         exporter.close();
         Assertions.assertTrue(outputFile.exists());
-        String fileData= Files.readString(outputFile.toPath());
+        String fileData= Files.lines(outputFile.toPath(), StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
         System.out.println("fileData: " + fileData);
         Assertions.assertTrue(fileData.contains("50-00-0"));
         Assertions.assertFalse(fileData.contains("<NAME"));
@@ -107,7 +109,7 @@ public class SdfExporterTest {
         exporter.export(createSubstanceWithNamesAndCodes());
         exporter.close();
         Assertions.assertTrue(outputFile.exists());
-        String fileData= Files.readString(outputFile.toPath());
+        String fileData= Files.lines(outputFile.toPath(),StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
         System.out.println("fileData: " + fileData);
         Assertions.assertFalse(fileData.contains("50-00-0"));
         Assertions.assertTrue(substanceNames.stream().allMatch(s->fileData.contains(s)));
@@ -135,7 +137,7 @@ public class SdfExporterTest {
         
         
         Assertions.assertTrue(outputFile.exists());
-        String fileData= Files.readString(outputFile.toPath());
+        String fileData= Files.lines(outputFile.toPath(),StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
         System.out.println("fileData: " + fileData);
         Assertions.assertFalse(fileData.contains("50-00-0"));
         Assertions.assertFalse(fileData.contains("<NAME"));

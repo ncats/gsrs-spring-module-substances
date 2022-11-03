@@ -1,6 +1,11 @@
 package gsrs.module.substance.utils;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.*;
 import org.jsoup.parser.Parser;
@@ -14,7 +19,7 @@ import org.jsoup.select.NodeVisitor;
  * Created by epuzanov on 7/25/22.
  */
 public final class HtmlUtil {
-    private static final Set<String> safetags = Set.of("i", "small", "sub", "sup");
+    private static final Set<String> safetags = Stream.of("i", "small", "sub", "sup").collect(Collectors.toSet());
     private static class TruncateVisitor implements NodeVisitor {
         private int maxLen = 0;
         private Element dst;
@@ -92,7 +97,7 @@ public final class HtmlUtil {
     }
 
     public static String clean(String content, String charset) {
-        Safelist sl = Safelist.none().addTags(safetags.toArray(String[]::new));
+        Safelist sl = Safelist.none().addTags(safetags.toArray(new String[safetags.size()]));
         Document.OutputSettings settings = new Document.OutputSettings();
         settings.prettyPrint(false);
         settings.charset(charset);
@@ -102,7 +107,7 @@ public final class HtmlUtil {
     }
 
     public static boolean isValid(String content) {
-        Safelist sl = Safelist.none().addTags(safetags.toArray(String[]::new));
+        Safelist sl = Safelist.none().addTags(safetags.toArray(new String[safetags.size()]));
         return Jsoup.isValid(content, sl);
     }
 }
