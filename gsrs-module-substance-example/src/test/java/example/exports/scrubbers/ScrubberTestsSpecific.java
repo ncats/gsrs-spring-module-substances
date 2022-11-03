@@ -90,7 +90,7 @@ public class ScrubberTestsSpecific {
 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         Optional<Substance> cleaned = scrubber.scrub(testConcept);
-        Assertions.assertTrue(cleaned.isEmpty());
+        Assertions.assertTrue(!cleaned.isPresent());
     }
 
     @Test
@@ -476,7 +476,7 @@ public class ScrubberTestsSpecific {
         Assertions.assertNotNull(scrubbedSubstance);
 
         Optional<Substance> scrubbedSubconcept = scrubber.scrub(subconcept);
-        Assertions.assertTrue(scrubbedSubconcept.isEmpty());
+        Assertions.assertTrue(!scrubbedSubconcept.isPresent());
     }
 
     @Test
@@ -858,7 +858,7 @@ public class ScrubberTestsSpecific {
         scrubberSettings.setStatusesToInclude(Collections.singletonList("approved"));
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         Optional<Substance> scrubbedSubstance = scrubber.scrub(pendingNA);
-        Assertions.assertTrue(scrubbedSubstance.isEmpty());
+        Assertions.assertTrue(!scrubbedSubstance.isPresent());
 
     }
 
@@ -966,7 +966,7 @@ public class ScrubberTestsSpecific {
         scrubberSettings.setSubstanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences("REMOVE_PARENT_SUBSTANCE_ENTIRELY");
         RecordScrubber<Substance> scrubber = new BasicSubstanceScrubber(scrubberSettings);
         Optional<Substance> scrubbedMixture = scrubber.scrub(mixture1);
-        Assertions.assertTrue(scrubbedMixture.isEmpty());
+        Assertions.assertTrue(!scrubbedMixture.isPresent());
     }
 
     @Test
