@@ -68,7 +68,14 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
 	@JsonIgnore
 	@Indexable(indexed = false, structure = true)
 	public String getStructureMolfile() {
-		return polymer.idealizedStructure.molfile;
+		if(polymer!=null) {
+			if(polymer.idealizedStructure!=null && polymer.idealizedStructure.molfile!=null) {
+				return polymer.idealizedStructure.molfile;	
+			}else if(polymer.displayStructure!=null && polymer.displayStructure.molfile!=null) {
+				return polymer.displayStructure.molfile;	
+			}
+		}
+		return null;		
 	}
 
 	@Override
