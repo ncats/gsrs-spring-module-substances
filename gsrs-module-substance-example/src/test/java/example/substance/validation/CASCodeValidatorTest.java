@@ -45,7 +45,7 @@ public class CASCodeValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void CasValidationTest() throws Exception {
-        //by default, as of 19 October 2021, STN ref checking is off
+        //by basic, as of 19 October 2021, STN ref checking is off
         ChemicalSubstance chemical = buildChemicalWithCasNoStn();
         ValidationResponse response = substanceEntityService.validateEntity(chemical.toFullJsonNode());
         Stream<ValidationMessage> s1 = response.getValidationMessages().stream();

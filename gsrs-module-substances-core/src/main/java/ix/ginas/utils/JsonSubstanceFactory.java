@@ -3,6 +3,8 @@ package ix.ginas.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import com.fasterxml.jackson.databind.node.MissingNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
@@ -92,10 +94,14 @@ public class JsonSubstanceFactory {
                 switch (type) {
                     case chemical:
 
-                        ObjectNode structure = (ObjectNode)tree.at("/structure");
-                        fixStereoOnStructure(structure);
-                        for(JsonNode moiety: tree.at("/moieties")){
-                            fixStereoOnStructure((ObjectNode)moiety);
+                        if( !(tree.at("/structure") instanceof MissingNode)) {
+                            ObjectNode structure = (ObjectNode) tree.at("/structure");
+                            fixStereoOnStructure(structure);
+                        }
+                        if( !(tree.at("/moieties") instanceof MissingNode)) {
+                            for (JsonNode moiety : tree.at("/moieties")) {
+                                fixStereoOnStructure((ObjectNode) moiety);
+                            }
                         }
 
                         sub = mapper.treeToValue(tree, ChemicalSubstance.class);

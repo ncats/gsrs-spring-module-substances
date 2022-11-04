@@ -76,6 +76,8 @@ import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
+import ix.core.search.bulk.BulkSearchService;
+import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
@@ -136,6 +138,18 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         public BackupService backupService(){
             return new BackupService();
         }
+        
+//        @Bean
+//        @Primary
+//    	TextIndexerFactory textIndexerFactory() {
+//        	return new TextIndexerFactory();
+//        }	
+//    	
+//        @Bean
+//        @Primary
+//    	BulkSearchService bulkSearchService() {
+//        	return new BulkSearchService();
+//        }
 
         @Bean
         @ConditionalOnMissingBean

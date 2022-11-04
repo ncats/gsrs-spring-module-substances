@@ -27,10 +27,10 @@ public class AmountSerializerModifier extends BeanSerializerModifier {
     @Override
     public JsonSerializer<?> modifySerializer(
             SerializationConfig config, BeanDescription beanDesc, JsonSerializer<?> serializer) {
-        //We want to delegate amount serialization to the default jackson serailizer
+        //We want to delegate amount serialization to the basic jackson serailizer
         //unless it meets our new empty criteria.
         // This is a hack to prevent stackoverflow infinite looping
-        //when Amount class gets added we grab the old default serailizer
+        //when Amount class gets added we grab the old basic serailizer
         //and pass it to our custom serializer so it can delegate to the old seralizer
         //if the Amount should be serialized.
         if (beanDesc.getBeanClass().equals(Amount.class)) {

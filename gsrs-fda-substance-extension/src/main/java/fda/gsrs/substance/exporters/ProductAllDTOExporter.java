@@ -314,7 +314,7 @@ public class ProductAllDTOExporter implements Exporter<ProductMainAllDTO> {
     }
 
     /**
-     * Builder class that makes a SpreadsheetExporter.  By default, the default columns are used
+     * Builder class that makes a SpreadsheetExporter.  By basic, the basic columns are used
      * but these may be modified using the add/remove column methods.
      */
     public static class Builder {

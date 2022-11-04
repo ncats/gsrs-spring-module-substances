@@ -1,4 +1,6 @@
-package gsrs.module.substance.utils;
+package gsrs.module.substance.standardizer;
+
+import gsrs.module.substance.utils.NameUtilities;
 
 /**
  *
