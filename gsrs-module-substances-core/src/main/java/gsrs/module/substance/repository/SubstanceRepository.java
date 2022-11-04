@@ -30,20 +30,23 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         if(substanceReference ==null){
             return null;
         }
+
+        //Older Substance data did not have a refuuid as all references were based on approval id
+        //so we need to check for null here
+        if(substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid)) {
+            return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
+        }
         if(substanceReference.approvalID !=null) {
             Substance s = findByApprovalID(substanceReference.approvalID);
             if (s != null) {
                 return s;
             }
         }
-        //Older Substance data did not have a refuuid as all references were based on approval id
-        //so we need to check for null here
-        if(substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid)) {
-            return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
-        }
 
         return null;
     }
+    
+    
     @Query("select s from Substance s where s.approvalID= ?1")
     Substance findByApprovalID(String approvalID);
     @Query("select s from Substance s where s.approvalID= ?1")

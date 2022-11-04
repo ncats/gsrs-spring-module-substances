@@ -60,6 +60,7 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
         }
         try {
             String inchi = orig.toInchi().getInchi();
+            
             Chemical chem= Inchi.toChemical(inchi);
             //some inchi->chemical flavors have very bad clean functions and don't compute stereo or coords correctly
             //which can lead to wrong molecules so do a double check that we get the right inchi back

@@ -9,6 +9,7 @@ import gsrs.cache.GsrsCache;
 import gsrs.legacy.GsrsSearchService;
 import gsrs.module.substance.repository.*;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.EntityFetcher;
 import ix.ginas.models.utils.RelationshipUtil;
 import ix.ginas.models.v1.*;
 import lombok.AllArgsConstructor;
@@ -650,7 +651,7 @@ public class SubstanceHierarchyFinder {
 		return s.relationships
 				 .stream()
 				 .filter(r->type.equals(r.type))
-				 .map(r->Tuple.of(r.type,substanceRepository.findBySubstanceReference(r.relatedSubstance))) //lazy-load issue
+				 .map(r->Tuple.of(r.type,(Substance)(EntityFetcher.of(r.relatedSubstance.getKeyForReferencedSubstance()).getIfPossible().orElse(null)))) //lazy-load issue
 				 .filter(rs->rs.v()!=null)
 				 .collect(Collectors.toList());
 	}
