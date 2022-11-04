@@ -540,8 +540,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SubstanceStructureSearchService.StructureSearchType.parseType(s)).ifPresent(c->rb.type(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
-        
-	String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
+
+        String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
@@ -552,23 +552,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(!structure.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), "query structure not found : " + sanitizedRequest.getQueryStructure());
         }
-        httpRequest.setAttribute(
-                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
 
 
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
-        attributes.addAttribute("q", structure.get().id.toString());
+        //attributes.addAttribute("q", structure.get().id.toString());
         if(qText!=null){
         	attributes.addAttribute("qText", qText);
         }
         if(sync) {
         	attributes.addAttribute("sync", true);
         }
-        
-        
         Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
         return structureSearchGet(
         		attributes.getAttribute("q").toString(),
@@ -583,11 +579,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 qmap,
                 httpRequest,
                 attributes);
-        
-        //TODO: find a way to make this not be a redirect. If we remove redirect now
-        // it will actually map back to the POST, which is circular. Keeping redirect
-        // somehow forces a GET version
-//        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
     }
 
     @GetGsrsRestApiMapping("/structureSearch")
@@ -656,9 +647,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
         if(hash !=null){
-//            httpServletRequest.setAttribute( 
-//                    View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
-
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
             // Search for the hash and also add the qText (Query parameters).
@@ -687,11 +675,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             //TODO: find a way to make this not be a redirect. If we remove redirect now
             // it will actually get rid of the extra parameters, and result in a null search
             //
-            return searchV1(Optional.of(hash), 
-            		Optional.of(sanitizedRequest.getTop()), 
-            		Optional.of(sanitizedRequest.getSkip()),
-            		Optional.of(sanitizedRequest.getFdim()), httpServletRequest, qmap);
-//            return new ModelAndView("redirect:/api/v1/substances/search");
+            return searchV1(Optional.of(hash),
+                            Optional.of(sanitizedRequest.getTop()),
+                            Optional.of(sanitizedRequest.getSkip()),
+                            Optional.of(sanitizedRequest.getFdim()), httpServletRequest, qmap);
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
@@ -830,9 +817,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), request.getQ());
         }
 
-        httpRequest.setAttribute(
-                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
-
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
         SanitizedSequenceSearchRequest rr=request.sanitize();
         attributes.mergeAttributes(rr.toMap());
@@ -840,25 +824,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
             attributes.addAttribute("sync", true);
         }
-        //TODO: find a way to make this not be a redirect. If we remove redirect now
-        // it will actually map back to the POST, which is circular. Keeping redirect
-        // somehow forces a GET version
         Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
         return sequenceSearchGet(
         		attributes.getAttribute("q").toString(),
         		Optional.ofNullable(attributes.getAttribute("type")).map(s->s.toString()).orElse(null),
         		Optional.ofNullable(rr.getCutoff()).orElse(0.8),
-                rr.getTop(),
-                rr.getSkip(),
-                rr.getFdim(),
-                rr.getField(),
-                Optional.ofNullable(attributes.getAttribute("searchType")).map(s->s.toString()).orElse("GLOBAL"),
-                Optional.ofNullable(attributes.getAttribute("seqType")).map(s->s.toString()).orElse("Protein"),
-                Optional.ofNullable(attributes.getAttribute("sync")).map(s->(boolean)("true".equalsIgnoreCase(s.toString()))).orElse(false),
-                qmap,
-                httpRequest);
-        
-//        return new ModelAndView("/api/v1/substances/sequenceSearch", attributes.asMap());
+                        rr.getTop(),
+                        rr.getSkip(),
+                        rr.getFdim(),
+                        rr.getField(),
+                        Optional.ofNullable(attributes.getAttribute("searchType")).map(s->s.toString()).orElse("GLOBAL"),
+                        Optional.ofNullable(attributes.getAttribute("seqType")).map(s->s.toString()).orElse("Protein"),
+                        Optional.ofNullable(attributes.getAttribute("sync")).map(s->(boolean)("true".equalsIgnoreCase(s.toString()))).orElse(false),
+                        qmap,
+                        httpRequest);
     }
 
     @PostGsrsRestApiMapping("/interpretStructure")
