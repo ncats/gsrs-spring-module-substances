@@ -5,7 +5,11 @@ size: large
 #  directories:
  #   - $HOME/.m2
 #this overrides the basic maven install which is run as part of the install phase we will run our mvn in script
-install: true
+install: 
+  git clone https://github.com/ncats/gsrs-spring-starter.git
+  cd gsrs-spring-starter
+  ./mvnw clean install -DskipTests
+  true
 script:
   - ./installExtraJars.sh
   - ./mvnw -U clean install -DskipTests
