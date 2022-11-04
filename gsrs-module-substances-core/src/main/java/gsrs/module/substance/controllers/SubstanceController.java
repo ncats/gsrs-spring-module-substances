@@ -566,10 +566,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
         	attributes.addAttribute("sync", true);
         }
-        //TODO: find a way to make this not be a redirect. If we remove redirect now
-        // it will actually map back to the POST, which is circular. Keeping redirect
-        // somehow forces a GET version
-        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+        return new ModelAndView("/api/v1/substances/structureSearch", attributes.asMap());
     }
 
     @GetGsrsRestApiMapping("/structureSearch")
@@ -665,11 +662,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             Optional.ofNullable(httpServletRequest.getParameterValues("order")).ifPresent(ss->{
                 attributes.asMap().putIfAbsent("order", ss);
             });
-            
-            //TODO: find a way to make this not be a redirect. If we remove redirect now
-            // it will actually get rid of the extra parameters, and result in a null search
-            //
-            return new ModelAndView("redirect:/api/v1/substances/search");
+            return new ModelAndView("/api/v1/substances/search", attributes.asMap());
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
@@ -818,10 +811,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
             attributes.addAttribute("sync", true);
         }
-        //TODO: find a way to make this not be a redirect. If we remove redirect now
-        // it will actually map back to the POST, which is circular. Keeping redirect
-        // somehow forces a GET version
-        return new ModelAndView("redirect:/api/v1/substances/sequenceSearch");
+        return new ModelAndView("/api/v1/substances/sequenceSearch", attributes.asMap());
     }
 
     @PostGsrsRestApiMapping("/interpretStructure")
