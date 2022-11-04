@@ -540,8 +540,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SubstanceStructureSearchService.StructureSearchType.parseType(s)).ifPresent(c->rb.type(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
-        
-	String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
+
+        String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
@@ -552,25 +552,24 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(!structure.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), "query structure not found : " + sanitizedRequest.getQueryStructure());
         }
-        httpRequest.setAttribute(
-                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
 
 
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
-        attributes.addAttribute("q", structure.get().id.toString());
+        //attributes.addAttribute("q", structure.get().id.toString());
         if(qText!=null){
         	attributes.addAttribute("qText", qText);
         }
         if(sync) {
         	attributes.addAttribute("sync", true);
         }
-        //TODO: find a way to make this not be a redirect. If we remove redirect now
-        // it will actually map back to the POST, which is circular. Keeping redirect
-        // somehow forces a GET version
-        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+        Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(s->s.getKey(), s->s.getValue().toString()));
+        return searchV1(Optional.of(structure.get().id.toString()),
+                        Optional.of(sanitizedRequest.getTop()),
+                        Optional.of(sanitizedRequest.getSkip()),
+                        Optional.of(sanitizedRequest.getFdim()), httpRequest, qmap);
     }
 
     @GetGsrsRestApiMapping("/structureSearch")
@@ -639,9 +638,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
         if(hash !=null){
-//            httpServletRequest.setAttribute( 
-//                    View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
-
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
             // Search for the hash and also add the qText (Query parameters).
@@ -670,11 +666,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             //TODO: find a way to make this not be a redirect. If we remove redirect now
             // it will actually get rid of the extra parameters, and result in a null search
             //
-            return searchV1(Optional.of(hash), 
-            		Optional.of(sanitizedRequest.getTop()), 
-            		Optional.of(sanitizedRequest.getSkip()),
-            		Optional.of(sanitizedRequest.getFdim()), httpServletRequest, qmap);
-//            return new ModelAndView("redirect:/api/v1/substances/search");
+            return searchV1(Optional.of(hash),
+                            Optional.of(sanitizedRequest.getTop()),
+                            Optional.of(sanitizedRequest.getSkip()),
+                            Optional.of(sanitizedRequest.getFdim()), httpServletRequest, qmap);
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
@@ -813,9 +808,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), request.getQ());
         }
 
-        httpRequest.setAttribute(
-                View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
-
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
         SanitizedSequenceSearchRequest rr=request.sanitize();
         attributes.mergeAttributes(rr.toMap());
@@ -823,10 +815,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
             attributes.addAttribute("sync", true);
         }
-        //TODO: find a way to make this not be a redirect. If we remove redirect now
-        // it will actually map back to the POST, which is circular. Keeping redirect
-        // somehow forces a GET version
-        return new ModelAndView("redirect:/api/v1/substances/sequenceSearch");
+        Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(s->s.getKey(), s->s.getValue().toString()));
+        return sequenceSearchGet(Optional.of(querySequence.get().uuid.toString()),
+                                Optional.of(rr.getType()),
+                                Optional.of(rr.getCutoff()),
+                                Optional.of(rr.getTop()),
+                                Optional.of(rr.getSkip()),
+                                Optional.of(rr.getFdim()),
+                                Optional.of(rr.getField()),
+                                Optional.of("GLOBAL"),
+                                Optional.of(rr.getSeqType()),
+                                Optional.of(sync),
+                                Optional.of(qmap),
+                                httpRequest);
     }
 
     @PostGsrsRestApiMapping("/interpretStructure")
