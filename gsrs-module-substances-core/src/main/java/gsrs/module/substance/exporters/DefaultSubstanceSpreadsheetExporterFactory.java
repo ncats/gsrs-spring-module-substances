@@ -208,7 +208,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                          }
                      }
                      Structure.Stereo ster = chemicalSubstance.getStereochemistry();
-                     if (!ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
+                     if (ster!=null && !ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
                          return;
                      }
 
