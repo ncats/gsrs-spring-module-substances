@@ -20,6 +20,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
@@ -638,8 +639,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
         if(hash !=null){
-            httpServletRequest.setAttribute(
-                    View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
+//            httpServletRequest.setAttribute( 
+//                    View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.FOUND);
 
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
@@ -665,11 +666,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             Optional.ofNullable(httpServletRequest.getParameterValues("order")).ifPresent(ss->{
                 attributes.asMap().putIfAbsent("order", ss);
             });
-            
+            Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
             //TODO: find a way to make this not be a redirect. If we remove redirect now
             // it will actually get rid of the extra parameters, and result in a null search
             //
-            return new ModelAndView("redirect:/api/v1/substances/search");
+            return searchV1(Optional.of(hash), 
+            		Optional.of(sanitizedRequest.getTop()), 
+            		Optional.of(sanitizedRequest.getSkip()),
+            		Optional.of(sanitizedRequest.getFdim()), httpServletRequest, qmap);
+//            return new ModelAndView("redirect:/api/v1/substances/search");
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
