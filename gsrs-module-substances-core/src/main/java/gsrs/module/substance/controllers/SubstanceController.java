@@ -1093,7 +1093,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
             } else if (s2r.getSubstanceKey() != null) {
                 Key k = s2r.getSubstanceKey();
-                Map<String,Object> props = gsrscache.getMatchingContextByContextID(contextId, k);
+                Map<String,Object> props = gsrscache.getMatchingContextByContextID(contextId, k.toRootKey());
                 amaps = (int[]) props.getOrDefault("atomMaps", null);
             }
         }
