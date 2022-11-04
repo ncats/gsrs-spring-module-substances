@@ -528,7 +528,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public Object structureSearchPost(
             @RequestParam MultiValueMap<String,String> body,
             HttpServletRequest httpRequest,
-            RedirectAttributes attributes) throws IOException, ExecutionException, InterruptedException {
+            RedirectAttributes attributes) throws Exception {
 
         SubstanceStructureSearchService.SearchRequest.SearchRequestBuilder rb = SubstanceStructureSearchService.SearchRequest.builder();
 
@@ -567,10 +567,27 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(sync) {
         	attributes.addAttribute("sync", true);
         }
+        
+        
+        Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
+        return structureSearchGet(
+        		attributes.getAttribute("q").toString(),
+        		sanitizedRequest.getType().toString(),
+        		Optional.ofNullable(sanitizedRequest.getCutoff()).orElse(0.9),
+        		sanitizedRequest.getTop(),
+        		sanitizedRequest.getSkip(),
+        		sanitizedRequest.getFdim(),
+        		sanitizedRequest.getField(),
+                Optional.ofNullable(attributes.getAttribute("sync")).map(s->(boolean)("true".equalsIgnoreCase(s.toString()))).orElse(false),
+        		Optional.ofNullable(attributes.getAttribute("qText")).map(s->s.toString()).orElse(null),
+                qmap,
+                httpRequest,
+                attributes);
+        
         //TODO: find a way to make this not be a redirect. If we remove redirect now
         // it will actually map back to the POST, which is circular. Keeping redirect
         // somehow forces a GET version
-        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
+//        return new ModelAndView("redirect:/api/v1/substances/structureSearch");
     }
 
     @GetGsrsRestApiMapping("/structureSearch")
@@ -826,7 +843,22 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         //TODO: find a way to make this not be a redirect. If we remove redirect now
         // it will actually map back to the POST, which is circular. Keeping redirect
         // somehow forces a GET version
-        return new ModelAndView("redirect:/api/v1/substances/sequenceSearch");
+        Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
+        return sequenceSearchGet(
+        		attributes.getAttribute("q").toString(),
+        		Optional.ofNullable(attributes.getAttribute("type")).map(s->s.toString()).orElse(null),
+        		Optional.ofNullable(rr.getCutoff()).orElse(0.8),
+                rr.getTop(),
+                rr.getSkip(),
+                rr.getFdim(),
+                rr.getField(),
+                Optional.ofNullable(attributes.getAttribute("searchType")).map(s->s.toString()).orElse("GLOBAL"),
+                Optional.ofNullable(attributes.getAttribute("seqType")).map(s->s.toString()).orElse("Protein"),
+                Optional.ofNullable(attributes.getAttribute("sync")).map(s->(boolean)("true".equalsIgnoreCase(s.toString()))).orElse(false),
+                qmap,
+                httpRequest);
+        
+//        return new ModelAndView("/api/v1/substances/sequenceSearch", attributes.asMap());
     }
 
     @PostGsrsRestApiMapping("/interpretStructure")
