@@ -1,6 +1,5 @@
 package gov.nih.ncats;
 
-import gov.nih.ncats.bases.AbstractSubstanceJpaEntityTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
@@ -15,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import validators.DEAValidator;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 
 import java.io.IOException;
 import java.util.Map;

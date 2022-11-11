@@ -116,7 +116,7 @@ public class PolymerDecode {
 	 *
 	 *
 	 *
-	 * By default now, this will make components which are always connected have
+	 * By basic now, this will make components which are always connected have
 	 * the same R-group number
 	 *
 	 * We don't want this to be true in the future. Instead, we'd like for each
@@ -194,7 +194,7 @@ public class PolymerDecode {
 //					case ChemicalGroup.TYPE_MONOMER:
 //					case ChemicalGroup.TYPE_DATA:
 //						break;
-//					default:
+//					basic:
 				Set<Integer> amapSet = sg.getAtoms()
 						.map(Atom::getAtomToAtomMap)
 						.filter(OptionalInt::isPresent)
@@ -283,7 +283,7 @@ public class PolymerDecode {
 								newca.setAtomToAtomMap(attachType);
 								newca.setRGroup(attachType);
 								newca.setAlias("_R" + newca.getRGroupIndex().getAsInt());
-								newca.setAtomicNumber(RGROUP_PLACEHOLDER); //helium by default
+								newca.setAtomicNumber(RGROUP_PLACEHOLDER); //helium by basic
 								String prev2 = sub.getProperty("madeAttach");
 								if(prev2==null || prev2.equals("")){
 									prev2="";
@@ -403,7 +403,7 @@ public class PolymerDecode {
 						ca.setRGroup(attachType);
 
 						ca.setAlias("_R" + ca.getRGroupIndex().getAsInt());
-						ca.setAtomicNumber(PolymerDecode.RGROUP_PLACEHOLDER); //helium by default
+						ca.setAtomicNumber(PolymerDecode.RGROUP_PLACEHOLDER); //helium by basic
 //						System.out.println("Q:" + ca.getAtomicNumber() + " for count:" + connectcount);
 						String rgroups = m3.getProperty("rgroups");
 						if(rgroups==null || rgroups.equals("")){
@@ -432,7 +432,7 @@ public class PolymerDecode {
 					ca.setAtomToAtomMap(gg);
 					ca.setRGroup(gg);
 					ca.setAlias("_R" + ca.getRGroupIndex().getAsInt());
-					ca.setAtomicNumber(RGROUP_PLACEHOLDER); //helium by default
+					ca.setAtomicNumber(RGROUP_PLACEHOLDER); //helium by basic
 					String rgroups = m3.getProperty("rgroups");
 					if(rgroups==null || rgroups.equals("")){
 						rgroups="";
@@ -603,7 +603,7 @@ public class PolymerDecode {
 
 					ca.setRGroup(rnew);
 					ca.setAlias("_R" + ca.getRGroupIndex().getAsInt());
-					ca.setAtomicNumber(RGROUP_PLACEHOLDER); //helium by default
+					ca.setAtomicNumber(RGROUP_PLACEHOLDER); //helium by basic
 					//katzelda 7/2019 : commented out setting it 2x
 //						ca.setAtomMap(rnew);
 					ca.setAtomToAtomMap(rnew);

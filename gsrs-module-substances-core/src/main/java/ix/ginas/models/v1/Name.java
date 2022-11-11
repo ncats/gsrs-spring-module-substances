@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import gsrs.module.substance.utils.HtmlUtil;
 import ix.core.SingleParent;
 import ix.core.models.*;
 import ix.ginas.models.CommonDataElementOfCollection;
@@ -21,7 +22,7 @@ import java.util.*;
 
 @JSONEntity(title = "Name", isFinal = true)
 @Entity
-@Table(name="ix_ginas_name")
+@Table(name="ix_ginas_name", indexes = {@Index(name = "name_index", columnList = "name")})
 @SingleParent
 @IndexableRoot
 public class Name extends CommonDataElementOfCollection {
@@ -114,7 +115,7 @@ public class Name extends CommonDataElementOfCollection {
 	}
 
     @JSONEntity(title = "Name", isRequired = true)
-    @Column(nullable=false)
+    @Column(nullable=false, length=1024)
     @Indexable(name="Name", suggest=true)
     public String name;
 
@@ -125,8 +126,9 @@ public class Name extends CommonDataElementOfCollection {
     
     @Lob
     @Basic(fetch= FetchType.EAGER)
-    @JsonView(BeanViews.JsonDiff.class)
-    public String stdName;
+    //@JsonView(BeanViews.JsonDiff.class)  commenting this out to make the stdName field easier to see
+	@Indexable(name="Standardized Name", suggest=true)
+	public String stdName;
     
     
     @JSONEntity(title = "Name Type", format = JSONConstants.CV_NAME_TYPE, values = "JSONConstants.ENUM_NAMETYPE")
@@ -190,40 +192,20 @@ public class Name extends CommonDataElementOfCollection {
 	}
 
     private void tidyName () {
-        if (name.getBytes().length > 255) {
+        if (name.length() > 1023) {
             fullName = name;
-            name = truncateString(name,254);
-            
+            name = HtmlUtil.truncate(name, 1023);
         }
     }
-    
-    private static String truncateString(String s, int maxBytes){
-    	byte[] b = (s+"   ").getBytes();
-    	if(maxBytes>=b.length){
-    		return s;
-    	}
-    	boolean lastComplete=false;
-    	for(int i=maxBytes;i>=0;i--){
-    		if(lastComplete)
-    			return new String(Arrays.copyOf(b, i));
-    		if((b[i] & 0x80) ==0){
-    			return new String(Arrays.copyOf(b, i));
-    		}
-    		if(b[i]==-79){
-    			lastComplete=true;
-    		}
-    	}
-    	
-    	return "";
-    }
-    
+
     public void addLocator(Substance sub, String loc){
     	Reference r = new Reference();
     	r.docType=Name.SRS_LOCATOR;
     	r.citation=this.name + " [" + loc + "]";
     	r.publicDomain=true;
     	this.addReference(r,sub);
-    	sub.addTagString(loc);
+		// Turning this off; TagsValidator should do this work.
+    	// 	sub.addTagString(loc);
     }
     
     /**

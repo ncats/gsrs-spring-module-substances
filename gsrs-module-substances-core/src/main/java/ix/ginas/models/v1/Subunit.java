@@ -19,7 +19,7 @@ import java.util.List;
 @Entity
 @Table(name="ix_ginas_subunit")
 @SingleParent
-@IndexableRoot //TP Note: there isn't a default controller for this, but the way indexing works
+@IndexableRoot //TP Note: there isn't a basic controller for this, but the way indexing works
                // for sequences actually indexes at the subunit level instead of the substance level,
                // so we need reindexing events to trigger for this
 public class Subunit extends GinasCommonSubData implements SequenceEntity {

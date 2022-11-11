@@ -28,8 +28,8 @@ public class FDANameExporter implements Exporter<Substance> {
         this.showPrivates =showPrivates;
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tPublic or Private\tThis is a\tUNII\tBDNUM\tDISPLAY_TERM\tPARENT_BDUM\tPARENT_DISPLAY_TERM");
-//        bw.write("BDNUM\tName\tType\tIs Public\tPriority BDNUM\tUNII\tDisplay Name");
+        bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tUNII\tBDNUM\tDISPLAY_NAME\tUTF8_DISPLAY_NAME\tPARENT_BDUM\tPARENT_DISPLAY_NAME\tUTF8_PARENT_DISPLAY_NAME");
+
         bw.newLine();
     }
 
@@ -98,7 +98,20 @@ public class FDANameExporter implements Exporter<Substance> {
         String approvalID = bestParent.getApprovalID();
         String parentBdnum = getBdnum(bestParent);
         
+        
         String pt=bestParent.getDisplayName()
+        		            .map(n->n.stdName)
+        		            .orElse("");
+        
+        String ptUTF8=bestParent.getDisplayName()
+        		            .map(n->n.getName())
+        		            .orElse("");
+        
+        String ipt=ing.getDisplayName()
+        		            .map(n->n.stdName)
+        		            .orElse("");
+        
+        String iptUTF8=ing.getDisplayName()
         		            .map(n->n.getName())
         		            .orElse("");
         
@@ -113,17 +126,17 @@ public class FDANameExporter implements Exporter<Substance> {
             String thisIsA  =  ing.isSubstanceVariant()? "SUB_CONCEPT->SUBSTANCE" : "parent/substance";
 
             String str = n.uuid +"\t" +bestParent.uuid +"\t" + n.type+"\t"
-            		   + n.name + "\t" 
-
+            		   + n.stdName + "\t" 
+                       + n.name + "\t" 
                        + (isPublic?"Public":"Private") + "\t"
                     + thisIsA +"\t"//this is a ? parent/substance ? what goes here
                     + approvalID + "\t" + bdnum + "\t"
-                    +ing.getDisplayName()
-                    .map(name->name.getName())
-                    .orElse("") +"\t"
-                       + parentBdnum+"\t"
-
-                       + pt;
+                    + ipt +"\t"
+                    + iptUTF8 +"\t"
+                    + parentBdnum+"\t"
+                    + pt + "\t"
+                    + ptUTF8
+                  ;
             bw.write(str);
             bw.newLine();
         }

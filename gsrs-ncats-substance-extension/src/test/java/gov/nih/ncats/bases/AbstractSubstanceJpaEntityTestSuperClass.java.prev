@@ -1,7 +1,53 @@
+<<<<<<< HEAD:gsrs-ncats-substance-extension/src/test/java/gov/nih/ncats/bases/AbstractSubstanceJpaEntityTestSuperClass.java
 package gov.nih.ncats.bases;
+=======
+package gsrs.substances.tests;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import javax.persistence.EntityManager;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
+import org.quartz.impl.StdSchedulerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.test.util.TestPropertyValues;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.io.Resource;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+>>>>>>> master:gsrs-module-substances-tests/src/main/java/gsrs/substances/tests/AbstractSubstanceJpaEntityTestSuperClass.java
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gov.nih.ncats.common.io.InputStreamSupplier;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.yield.Yield;
@@ -12,12 +58,17 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.payload.LegacyPayloadConfiguration;
+import gsrs.payload.LegacyPayloadService;
 import gsrs.payload.PayloadController;
 import gsrs.repository.ETagRepository;
 import gsrs.repository.EditRepository;
+import gsrs.repository.FileDataRepository;
 import gsrs.repository.GroupRepository;
+import gsrs.repository.PayloadRepository;
 import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
 import gsrs.services.BackupService;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.TestEntityProcessorFactory;
@@ -29,9 +80,12 @@ import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
+import ix.core.search.bulk.BulkSearchService;
+import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
+<<<<<<< HEAD:gsrs-ncats-substance-extension/src/test/java/gov/nih/ncats/bases/AbstractSubstanceJpaEntityTestSuperClass.java
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Scheduler;
@@ -71,6 +125,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
+=======
+>>>>>>> master:gsrs-module-substances-tests/src/main/java/gsrs/substances/tests/AbstractSubstanceJpaEntityTestSuperClass.java
 /**
  * Parent Super-class of that should be used to
  * test Substances interacting with a test database.
@@ -88,6 +144,12 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @TestConfiguration
 //    @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
     public static class TestConfig{
+
+        @Bean
+        @Primary
+        PayloadService payloadService(PayloadRepository payloadRepository, LegacyPayloadConfiguration configuration, FileDataRepository fileDataRepository) throws IOException {
+            return new LegacyPayloadService(payloadRepository, configuration, fileDataRepository);
+        } 
         @Bean
         @Primary
         TestGsrsValidatorFactory gsrsValidatorFactory(){
@@ -122,6 +184,18 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         public BackupService backupService(){
             return new BackupService();
         }
+        
+//        @Bean
+//        @Primary
+//    	TextIndexerFactory textIndexerFactory() {
+//        	return new TextIndexerFactory();
+//        }	
+//    	
+//        @Bean
+//        @Primary
+//    	BulkSearchService bulkSearchService() {
+//        	return new BulkSearchService();
+//        }
 
         @Bean
         @ConditionalOnMissingBean
@@ -209,7 +283,6 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected GroupRepository groupRepository;
 
-    protected Principal admin;
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
@@ -240,18 +313,30 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     protected abstract EntityManagerFacade getEntityManagerFacade();
 
     private EntityManagerFacade entityManagerFacade;
+
+    private final boolean createAdminUserOnInit;
+    public AbstractSubstanceJpaEntityTestSuperClass(){
+        this(true);
+    }
+    public AbstractSubstanceJpaEntityTestSuperClass(boolean createAdminUserOnInit){
+        this.createAdminUserOnInit = createAdminUserOnInit;
+    }
+
     @BeforeEach
     public void init(){
         entityManagerFacade = getEntityManagerFacade();
-        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-        transactionTemplate.executeWithoutResult(s-> {
-            admin = createUser("admin", Role.values());
+        if(createAdminUserOnInit) {
+            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+//        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            transactionTemplate.executeWithoutResult(s -> {
 
-            //some  integration tests will make validation messages which will get assigned an "admin" access group
-            Group g = groupRepository.saveAndFlush(new Group("admin"));
+                createUser("admin", Role.values());
 
-        });
+                //some  integration tests will make validation messages which will get assigned an "admin" access group
+                groupRepository.saveAndFlush(new Group("admin"));
 
+            });
+        }
     }
 
     protected Principal createUser(String username, Role... roles){
@@ -322,9 +407,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRED);
         List<GsrsEntityService.CreationResult<Substance>> list = new ArrayList<>();
-
-        yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses)
-        .forEach(json->{
+        
+        
+        try(Stream<JsonNode> stream1 =yieldSubstancesFromGsrsFile(gsrsFile, substanceClasses).stream()){
+          
+        stream1.forEach(json->{
             list.add(transactionTemplate.execute(status ->{
                 try {
                     GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json,true);
@@ -338,6 +425,9 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
                 }
             }));
         });
+        }catch(Exception e) {
+            e.printStackTrace();
+        }
 
 
         return list;

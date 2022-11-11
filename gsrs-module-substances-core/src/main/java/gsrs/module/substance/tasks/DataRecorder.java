@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DataRecorder extends ScheduledTaskInitializer {
 
-    private static final int DEFAULT_NUM_RECORDS= 10; // with default cron of very 30 sec this makes last 5 mins snapshots
+    private static final int DEFAULT_NUM_RECORDS= 10; // with basic cron of very 30 sec this makes last 5 mins snapshots
    
 //    private String logFileString = new File("logs/dataRecorder.log");
     

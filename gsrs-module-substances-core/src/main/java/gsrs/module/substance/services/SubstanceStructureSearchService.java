@@ -351,7 +351,8 @@ public class SubstanceStructureSearchService {
                 }
                 matchingContext.put("similarity", similarity);
                 EntityUtils.EntityWrapper<?> ew = EntityUtils.EntityWrapper.of(chem);
-                gsrsCache.setMatchingContext(this.getContext().getId(), ew.getKey(), matchingContext);
+                
+                gsrsCache.setMatchingContext(this.getContext().getId(), ew.getKey().toRootKey(), matchingContext);
                 return chem;
             }
             return null;

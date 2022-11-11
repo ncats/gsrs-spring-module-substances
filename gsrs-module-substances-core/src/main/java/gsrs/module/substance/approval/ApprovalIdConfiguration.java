@@ -35,7 +35,7 @@ public class ApprovalIdConfiguration {
     @ConditionalOnMissingBean
     public SubstanceApprovalIdGenerator substanceApprovalIdGenerator(){
         if(generatorClass ==null){
-            //no generator specified use default
+            //no generator specified use basic
             return new DefaultApprovalIDGenerator("GID", 8,true, "GID-");
         }
         ObjectMapper mapper = new ObjectMapper();
