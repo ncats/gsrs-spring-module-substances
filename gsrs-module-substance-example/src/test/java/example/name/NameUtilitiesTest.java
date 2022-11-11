@@ -3,14 +3,12 @@ package example.name;
 import java.util.ArrayList;
 import java.util.List;
 
+import gsrs.module.substance.standardizer.ReplacementNote;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import gsrs.module.substance.utils.FDAFullNameStandardizer;
-import gsrs.module.substance.utils.NameStandardizer;
 import gsrs.module.substance.utils.NameUtilities;
-import gsrs.module.substance.utils.ReplacementNote;
-import gsrs.module.substance.utils.ReplacementResult;
+import gsrs.module.substance.standardizer.ReplacementResult;
 import lombok.extern.slf4j.Slf4j;
 
 /**
