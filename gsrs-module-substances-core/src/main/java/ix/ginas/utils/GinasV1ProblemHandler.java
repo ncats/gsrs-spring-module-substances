@@ -34,24 +34,8 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
 
             try {
                 boolean parsed = true;
-                if ("hash".equals(property)) {
-                    Structure struc = (Structure)bean;
-                    //Logger.debug("value: "+parser.getText());
-                    struc.properties.add(new Keyword
-                                         (Structure.H_LyChI_L4,
-                                          parser.getText()));
-                }
-//                else if ("references".equals(property)) {
-//                    //Logger.debug(property+": "+bean.getClass());
-//                    if (bean instanceof Structure) {
-//                        Structure struc = (Structure)bean;
-//                        parseReferences (parser, struc.properties);
-//                    }
-//                    else {
-//                        parsed = false;
-//                    }
-//                }
-                else if ("count".equals(property)) {
+                //removed hard-coded 'hash' -> 'lychi4'
+                if ("count".equals(property)) {
                     if (bean instanceof Structure) {
                         // need to handle this.
                         parser.skipChildren();
