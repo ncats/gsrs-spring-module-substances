@@ -209,14 +209,14 @@
       "title": "Remove change reason"
     },
     "approvalIdCleanup": {
-      "comments": "When true, apply additional criteria to the approvalID field",
+      "comments": "When true, apply additional criteria to the approval ID field",
       "type": "boolean",
-      "title": "Approval id clean-up"
+      "title": "Approval ID clean-up"
     },
     "approvalIdCleanupRemoveApprovalId": {
       "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
       "type": "boolean",
-      "title": "Remove approval id",
+      "title": "Remove approval ID",
       "visibleIf": {
         "approvalIdCleanup": [
           true
@@ -226,7 +226,7 @@
     "approvalIdCleanupCopyApprovalIdToCode": {
       "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
       "type": "boolean",
-      "title": "Copy approval id to code if code not already present",
+      "title": "Copy approval ID to code if code not already present",
       "visibleIf": {
         "approvalIdCleanup": [
           true
@@ -236,7 +236,7 @@
     "approvalIdCleanupApprovalIdCodeSystem": {
       "comments": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
       "type": "string",
-      "title": "Copy approval id to code with following code system (if not already present)",
+      "title": "Copy approval ID to code with following code system (if not already present)",
       "visibleIf": {
         "approvalIdCleanup": [
           true
