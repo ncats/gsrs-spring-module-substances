@@ -8,11 +8,11 @@
     "removeDates": {
       "comments": "When true, remove all date fields from output",
       "type": "boolean",
-      "title": "Remove Date"
+      "title": "Remove dates"
     },
     "removeAllLocked": {
       "comments": "When true, remove any data element that is marked as non-public",
-      "title": "Remove all Locked",
+      "title": "Remove all locked",
       "type": "boolean"
     },
     "removeAllLockedAccessGroupsToInclude": {
@@ -21,7 +21,7 @@
       "items": {
         "type": "string"
       },
-      "title": "Access Groups to Include",
+      "title": "Access groups to include",
       "visibleIf": {
         "removeAllLocked": [
           true
@@ -35,7 +35,7 @@
     "removeAllLockedRemoveElementsIfNoExportablePublicRef": {
       "comments": "elements to remove when they have no public references",
       "type": "boolean",
-      "title": "Remove Elements if no exportable selected public domain reference",
+      "title": "Remove elements if no exportable selected public domain reference",
       "visibleIf": {
         "removeAllLocked": [
           true
@@ -69,7 +69,7 @@
     },
     "removeCodesBySystem": {
       "comments": "When true, remove any Codes whose CodeSystem is on the list",
-      "title": "Remove Codes by System",
+      "title": "Remove codes by system",
       "type": "boolean"
     },
     "removeCodesBySystemCodeSystemsToRemove": {
@@ -78,7 +78,7 @@
       "items": {
         "type": "string"
       },
-      "title": "Code Systems to Remove",
+      "title": "Code systems to remove",
       "visibleIf": {
         "removeCodesBySystem": [
           true
@@ -95,7 +95,7 @@
       "items": {
         "type": "string"
       },
-      "title": "Code Systems to Keep",
+      "title": "Code systems to keep",
       "visibleIf": {
         "removeCodesBySystem": [
           true
@@ -108,7 +108,7 @@
     },
     "removeReferencesByCriteria": {
       "comments": "When true, remove any References that meet specified criteria",
-      "title": "Remove References by Criteria",
+      "title": "Remove references by criteria",
       "type": "boolean"
     },
     "removeReferencesByCriteriaReferenceTypesToRemove": {
@@ -117,7 +117,7 @@
       "items": {
         "type": "string"
       },
-      "title": "Reference Types to Remove",
+      "title": "Reference types to remove",
       "visibleIf": {
         "removeReferencesByCriteria": [
           true
@@ -131,7 +131,7 @@
     "removeReferencesByCriteriaCitationPatternsToRemove": {
       "comments": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
       "type": "string",
-      "title": "Citation Patterns to Remove",
+      "title": "Citation patterns to remove",
       "visibleIf": {
         "removeReferencesByCriteria": [
           true
@@ -143,7 +143,7 @@
     },
     "removeReferencesByCriteriaExcludeReferenceByPattern": {
       "comments": "Remove References by looking at citationPatternsToRemove",
-      "title": "Exclude Reference by Pattern",
+      "title": "Exclude reference by pattern",
       "type": "boolean",
       "visibleIf": {
         "removeReferencesByCriteria": [
@@ -154,7 +154,7 @@
     "substanceReferenceCleanup": {
       "comments": "When true, next criteria are used to process substance references",
       "type": "boolean",
-      "title": "Substance Reference Cleanup"
+      "title": "Substance reference cleanup"
     },
     "substanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences": {
       "comments": "Define what happens when a referenced substance that's part of a definition would be filtered out by the scrubber.",
@@ -201,22 +201,22 @@
     "removeNotes": {
       "comments": "When true, remove all Notes",
       "type": "boolean",
-      "title": "Remove Notes"
+      "title": "Remove notes"
     },
     "removeChangeReason": {
       "comments": "When true, delete the 'Change Reason' field",
       "type": "boolean",
-      "title": "Remove Change Reason"
+      "title": "Remove change reason"
     },
     "approvalIdCleanup": {
-      "comments": "When true, apply additional criteria to the approvalID field",
+      "comments": "When true, apply additional criteria to the approval ID field",
       "type": "boolean",
-      "title": "Approval Id clean-up"
+      "title": "Approval ID clean-up"
     },
     "approvalIdCleanupRemoveApprovalId": {
       "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
       "type": "boolean",
-      "title": "Remove Approval Id",
+      "title": "Remove approval ID",
       "visibleIf": {
         "approvalIdCleanup": [
           true
@@ -226,7 +226,7 @@
     "approvalIdCleanupCopyApprovalIdToCode": {
       "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
       "type": "boolean",
-      "title": "Copy Approval Id to code if code not already present",
+      "title": "Copy approval ID to code if code not already present",
       "visibleIf": {
         "approvalIdCleanup": [
           true
@@ -236,7 +236,7 @@
     "approvalIdCleanupApprovalIdCodeSystem": {
       "comments": "When this parameter has a value, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code of this specified system",
       "type": "string",
-      "title": "Copy ApprovalID to code with following Code System (if not already present)",
+      "title": "Copy approval ID to code with following code system (if not already present)",
       "visibleIf": {
         "approvalIdCleanup": [
           true
@@ -251,12 +251,12 @@
     "changeAllStatuses": {
       "comments": "When true, all status value in the object being exported will be given a value",
       "type": "boolean",
-      "title": "Change All Statuses"
+      "title": "Change all statuses"
     },
     "changeAllStatusesNewStatusValue": {
       "comments": "new string value to assign to all individual status fields throughout the object",
       "type": "string",
-      "title": "New Status Value",
+      "title": "New status value",
       "visibleIf": {
         "changeAllStatuses": [
           true
@@ -266,12 +266,12 @@
     "auditInformationCleanup": {
       "comments": "When true, apply succeeding criteria to audit fields",
       "type": "boolean",
-      "title": "Audit Information clean-up"
+      "title": "Audit information clean-up"
     },
     "auditInformationCleanupDeidentifyAuditUser": {
       "comments": "When true, remove users listed as creator or modifier of records and subrecords",
       "type": "boolean",
-      "title": "Deidentify Audit User",
+      "title": "Deidentify audit user",
       "visibleIf": {
         "auditInformationCleanup": [
           true
@@ -280,7 +280,7 @@
     },
     "auditInformationCleanupNewAuditorValue": {
       "comments": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
-      "title": "New Auditor Value",
+      "title": "New auditor value",
       "type": "string",
       "visibleIf": {
         "auditInformationCleanup": [
@@ -320,7 +320,7 @@
     },
     "scrubbedDefinitionHandling": {
       "comments": "apply some additional scrubbing to definitions that had parts removed",
-      "title": "Scrubbed Definition Handling",
+      "title": "Scrubbed definition handling",
       "type": "boolean"
     },
     "scrubbedDefinitionHandlingRemoveScrubbedDefinitionalElementsEntirely": {
