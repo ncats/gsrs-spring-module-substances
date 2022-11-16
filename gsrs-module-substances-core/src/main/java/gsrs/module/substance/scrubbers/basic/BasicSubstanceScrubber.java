@@ -786,12 +786,12 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         String substanceJson;
         try {
         	//just a force thing to fetch if needed
-            substanceJson = substance.toFullJsonNode().toString();
+            substanceJson = substance.toInternalJsonNode().toString();
         } catch (Exception ex){
             log.error("Error retrieving substance; using alternative method");
             EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, substance.uuid);
             Optional<Substance> substanceRefetch = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);
-            substanceJson = substanceRefetch.get().toFullJsonNode().toString();
+            substanceJson = substanceRefetch.get().toInternalJsonNode().toString();
         }
 
         try {
@@ -806,7 +806,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 return scrubbedDefs;
             }
             snew=scrubbedDefs.get();
-            substanceJson = snew.toFullJsonNode().toString();
+            substanceJson = snew.toInternalJsonNode().toString();
 
             String cleanJson= restrictedJSONSimple(substanceJson);
             snew = SubstanceBuilder.from(cleanJson).build();

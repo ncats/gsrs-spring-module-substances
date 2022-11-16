@@ -11,6 +11,7 @@ import ix.core.models.Keyword;
 import ix.core.models.Principal;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.models.v1.*;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,6 +21,7 @@ import java.util.*;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@Slf4j
 public class BasicSubstanceScrubberTests {
 
     @Test
@@ -109,6 +111,56 @@ public class BasicSubstanceScrubberTests {
         Assertions.assertNotNull(cleanedChemical.created);
         Assertions.assertTrue(cleanedChemical.codes.stream().noneMatch(c->c.codeSystem.equals("BDNUM")));
         Assertions.assertTrue(cleanedChemical.codes.stream().anyMatch(c->c.codeSystem.equals("CAS")));
+    }
+
+    @Test
+    public void testScrubSubstanceStdNamePreserved() {
+        log.trace("in testScrubSubstanceStdNamePreserved");
+        //verify that an stdName is preserved
+        String currentSmiles="C1CCCCCCCC1";
+        ChemicalSubstance chemical = SubstanceTestUtil.makeChemicalSubstance(currentSmiles);
+        chemical.names.clear();//remove bogus name added by makeChemicalSubstance
+
+        String publicStdName= "PUBLIC NAME";
+        Name namePublic = new Name();
+        namePublic.name = "public name";
+        namePublic.stdName= publicStdName;
+        namePublic.setAccess(new HashSet<Group>());
+        chemical.names.add(namePublic);
+        chemical.created = new Date();
+
+        Code bogusBdnum = new Code();
+        bogusBdnum.type="PRIMARY";
+        bogusBdnum.codeSystem="BDNUM";
+        bogusBdnum.code="AA1234567890";
+        chemical.codes.add(bogusBdnum);
+
+        Code cas= new Code();
+        cas.codeSystem="CAS";
+        cas.type="PRIMARY";
+        cas.code="293-55-0";
+        chemical.codes.add(cas);
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveAllLocked(true);
+        scrubberSettings.setRemoveChangeReason(false);
+        scrubberSettings.setRemoveDates(false);
+        scrubberSettings.setApprovalIdCleanup(false);
+        scrubberSettings.setRemoveAllLockedRemoveElementsIfNoExportablePublicRef(false);
+        scrubberSettings.setAuditInformationCleanup(false);
+        scrubberSettings.setSubstanceReferenceCleanup(false);
+        scrubberSettings.setApprovalIdCleanup(false);
+        scrubberSettings.setRegenerateUUIDs(false);
+        scrubberSettings.setChangeAllStatuses(false);
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        chemical.addNote("This is a note");
+        String reasonToChange = "change is inevitable";
+        chemical.changeReason = reasonToChange;
+        Optional<Substance> cleaned = scrubber.scrub(chemical);
+        ChemicalSubstance cleanedChemical = (ChemicalSubstance) cleaned.get();
+        Assertions.assertEquals(publicStdName, cleanedChemical.names.get(0).stdName);
+        log.trace("completed");
     }
 
     @Test
@@ -1237,11 +1289,9 @@ public class BasicSubstanceScrubberTests {
         child.structurallyDiverse=childCore;
         child.structurallyDiverse=childCore;
 
-
         Assertions.assertEquals(parentUuid.toString(), child.structurallyDiverse.parentSubstance.refuuid);
     }
     
-
     private void predicateUsageAssertionHelper(List<?> predicate) {
         System.out.println(predicate.toString());
     }

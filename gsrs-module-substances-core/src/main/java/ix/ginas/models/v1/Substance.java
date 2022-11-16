@@ -116,6 +116,16 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return EntityWrapper.of(this).toFullJsonNode();
     }
 
+    /**
+     * Represent this Substance as internal JsonNode -- this includes ALL data fields that would be used and stored in backup table
+     * In practice, the fullJsonNode was enough for most use case.  However, as stdName (which was removed from fullJsonNode) has become more common.
+     *
+     * @apiNote This is identical to {@code  return EntityWrapper.of(this).toInternalJsonNode();}
+     * @return The JsonNode representation of this Substance.
+     */
+    public JsonNode toInternalJsonNode(){
+        return EntityWrapper.of(this).toInternalJsonNode();
+    }
     @Override
     public String toString() {
         return "Substance{" +

@@ -126,7 +126,7 @@ public class Name extends CommonDataElementOfCollection {
     
     @Lob
     @Basic(fetch= FetchType.EAGER)
-    @JsonView(BeanViews.JsonDiff.class)
+    //@JsonView(BeanViews.JsonDiff.class)  commenting this out to make the stdName field easier to see
 	@Indexable(name="Standardized Name", suggest=true)
 	public String stdName;
     

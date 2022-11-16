@@ -17,7 +17,7 @@ import java.util.Set;
  */
 public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
-    OutputFormat format = new OutputFormat("names.tsv", "Names File");
+    OutputFormat format = new OutputFormat("names.txt", "Names Report (txt) File");
     @Autowired
     private SubstanceRepository substanceRepository;
 
