@@ -19,7 +19,7 @@ import java.util.zip.GZIPOutputStream;
  */
 public class JsonExporterFactory implements ExporterFactory {
 
-    OutputFormat format = new OutputFormat("gsrs", "Json Export (gsrs) File");
+    OutputFormat format = new OutputFormat("gsrs", "GSRS bulk, gzipped JSON (.gsrs)");
 
     @Override
     public boolean supports(Parameters params) {
