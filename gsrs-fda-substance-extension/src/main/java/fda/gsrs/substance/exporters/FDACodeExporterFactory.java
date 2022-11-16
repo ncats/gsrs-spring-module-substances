@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public class FDACodeExporterFactory implements ExporterFactory<Substance>{
 
-    OutputFormat format = new OutputFormat("codes.txt", "Codes Report (txt) File");
+    OutputFormat format = new OutputFormat("codes.txt", "Codes only, tab-delimited (.txt)");
 
     @Override
     public boolean supports(ExporterFactory.Parameters params) {
