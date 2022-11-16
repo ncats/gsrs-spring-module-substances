@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public class FDACodeExporterFactory implements ExporterFactory<Substance>{
 
-    OutputFormat format = new OutputFormat("codes.tsv", "Codes File");
+    OutputFormat format = new OutputFormat("codes.txt", "Codes Report (txt) File");
 
     @Override
     public boolean supports(ExporterFactory.Parameters params) {
