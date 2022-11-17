@@ -6,17 +6,17 @@
   "type": "object",
   "properties": {
     "removeDates": {
-      "comments": "When true, remove all date fields from output",
+      "comments": "When selected, remove all date fields from output",
       "type": "boolean",
       "title": "Remove dates"
     },
     "removeAllLocked": {
-      "comments": "When true, remove any data element that is marked as non-public",
+      "comments": "When selected, remove any data element that is marked as non-public",
       "title": "Remove all locked",
       "type": "boolean"
     },
     "removeAllLockedAccessGroupsToInclude": {
-      "comments": "names of access groups to that will NOT be removed ",
+      "comments": "Names of access groups to that will NOT be removed ",
       "type": "array",
       "items": {
         "type": "string"
@@ -43,7 +43,7 @@
       }
     },
     "removeElementsIfNoExportablePublicRefElementsToRemove": {
-      "comments": "elements to remove when the substance has no public references",
+      "comments": "Elements to remove when the substance has no public references",
       "type": "array",
       "items": {
         "type":"string",
@@ -68,7 +68,7 @@
       }
     },
     "removeCodesBySystem": {
-      "comments": "When true, remove any Codes whose CodeSystem is on the list",
+      "comments": "When selected, remove any Codes whose CodeSystem is on the list",
       "title": "Remove codes by system",
       "type": "boolean"
     },
@@ -107,7 +107,7 @@
       "CVDomain": "CODE_SYSTEM"
     },
     "removeReferencesByCriteria": {
-      "comments": "When true, remove any References that meet specified criteria",
+      "comments": "When selected, remove any References that meet specified criteria",
       "title": "Remove references by criteria",
       "type": "boolean"
     },
@@ -152,7 +152,7 @@
       }
     },
     "substanceReferenceCleanup": {
-      "comments": "When true, next criteria are used to process substance references",
+      "comments": "When selected, next criteria are used to process substance references",
       "type": "boolean",
       "title": "Substance reference cleanup"
     },
@@ -199,22 +199,22 @@
       }
     },
     "removeNotes": {
-      "comments": "When true, remove all Notes",
+      "comments": "When selected, remove all Notes",
       "type": "boolean",
       "title": "Remove notes"
     },
     "removeChangeReason": {
-      "comments": "When true, delete the 'Change Reason' field",
+      "comments": "When selected, delete the 'Change Reason' field",
       "type": "boolean",
       "title": "Remove change reason"
     },
     "approvalIdCleanup": {
-      "comments": "When true, apply additional criteria to the approval ID field",
+      "comments": "When selected, apply additional criteria to the approval ID field",
       "type": "boolean",
       "title": "Approval ID clean-up"
     },
     "approvalIdCleanupRemoveApprovalId": {
-      "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
+      "comments": "When selected, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
       "type": "boolean",
       "title": "Remove approval ID",
       "visibleIf": {
@@ -224,7 +224,7 @@
       }
     },
     "approvalIdCleanupCopyApprovalIdToCode": {
-      "comments": "When true, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
+      "comments": "When selected, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
       "type": "boolean",
       "title": "Copy approval ID to code if code not already present",
       "visibleIf": {
@@ -244,17 +244,17 @@
       }
     },
     "regenerateUUIDs": {
-      "comments": "When true, all UUIDs in the object being exported will be given a newly-generated value",
+      "comments": "When selected, all UUIDs in the object being exported will be given a newly-generated value",
       "type": "boolean",
       "title": "Regenerate UUIDs"
     },
     "changeAllStatuses": {
-      "comments": "When true, all status value in the object being exported will be given a value",
+      "comments": "When selected, all status value in the object being exported will be given a value",
       "type": "boolean",
       "title": "Change all statuses"
     },
     "changeAllStatusesNewStatusValue": {
-      "comments": "new string value to assign to all individual status fields throughout the object",
+      "comments": "New string value to assign to all individual status fields throughout the object",
       "type": "string",
       "title": "New status value",
       "visibleIf": {
@@ -264,12 +264,12 @@
       }
     },
     "auditInformationCleanup": {
-      "comments": "When true, apply succeeding criteria to audit fields",
+      "comments": "When selected, apply succeeding criteria to audit fields",
       "type": "boolean",
       "title": "Audit information clean-up"
     },
     "auditInformationCleanupDeidentifyAuditUser": {
-      "comments": "When true, remove users listed as creator or modifier of records and subrecords",
+      "comments": "When selected, remove users listed as creator or modifier of records and subrecords",
       "type": "boolean",
       "title": "Deidentify audit user",
       "visibleIf": {
