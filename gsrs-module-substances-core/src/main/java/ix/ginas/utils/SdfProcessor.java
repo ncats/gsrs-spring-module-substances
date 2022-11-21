@@ -44,8 +44,8 @@ public class SdfProcessor implements SubstanceProcessor<Chemical, ChemicalSubsta
 
                     }
                 }
-                //default to english if nothing set?
-                //TODO should we default to the default locale language ?
+                //basic to english if nothing set?
+                //TODO should we basic to the basic locale language ?
                 if(name.languages.isEmpty()){
                     name.addLanguage(Locale.getDefault().getLanguage());
                 }

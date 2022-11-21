@@ -261,7 +261,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                  }
              });
 
-            ixCache.setMatchingContext(this.getContext().getId(), key, added);
+            ixCache.setMatchingContext(this.getContext().getId(), key.toRootKey(), added);
         }
     }
 

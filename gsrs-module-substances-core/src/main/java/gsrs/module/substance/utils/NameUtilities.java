@@ -10,6 +10,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import gsrs.module.substance.services.ConsoleFilterService;
+import gsrs.module.substance.standardizer.ReplacementNote;
+import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
 

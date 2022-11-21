@@ -16,7 +16,7 @@ import java.util.Set;
  */
 public class SRSLegacyDictionaryExporterFactory implements ExporterFactory<Substance> {
 
-    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("dic", "Legacy SRS Dictionary File"));
+    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("dic", "Legacy SRS dictionary (.dic)"));
    
     @Override
     public boolean supports(Parameters params) {

@@ -1,6 +1,32 @@
 package example.substance.datasearch;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.fasterxml.jackson.databind.JsonNode;
+
 import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
@@ -15,6 +41,7 @@ import gsrs.validator.ValidatorConfig;
 import ix.core.chem.StructureProcessor;
 import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
+import ix.core.search.text.TextIndexerFactory;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
@@ -22,25 +49,6 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  *
@@ -55,6 +63,10 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     private SubstanceLegacySearchService searchService;
+    
+    @Autowired
+    private TextIndexerFactory textIndexerFactory;
+    
 
     @Autowired
     private DefinitionalElementFactory definitionalElementFactory;
@@ -88,7 +100,8 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Test
     public void testSearchByName() {
-
+    	System.out.println(textIndexerFactory.toString());
+    	
         String name1 = "THIOFLAVIN S2";
         String idForName = "e92bc4ad-250a-4eef-8cd7-0b0b1e3b6cf0";
 
@@ -250,7 +263,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         List<String> expectedIds = Arrays.asList("302cedcc-895f-421c-acf4-1348bbdb31f4", "79dbcc59-e887-40d1-a0e3-074379b755e4",
                 "deb33005-e87e-4e7f-9704-d5b4c80d3023", "5b611b0d-b798-45ed-ba02-6f0a2f85986b",
                 "306d24b9-a6b8-4091-8024-02f9ec24b705", "90e9191d-1a81-4a53-b7ee-560bf9e68109");
-        Collections.sort(expectedIds);//use default sort order
+        Collections.sort(expectedIds);//use basic sort order
 
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -262,7 +275,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
-                .sorted() //use default sort order
+                .sorted() //use basic sort order
                 .collect(Collectors.toList());
 
         assertEquals(actualIds, expectedIds);
@@ -273,7 +286,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
         String codeSystem1 = "DRUG BANK";
         String substanceClass = "protein";
         List<String> expectedIds = Arrays.asList("044e6d9c-37c0-42ac-848e-2e41937216b1", "deb33005-e87e-4e7f-9704-d5b4c80d3023");
-        Collections.sort(expectedIds);//use default sort order
+        Collections.sort(expectedIds);//use basic sort order
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
@@ -285,7 +298,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
         List<String> actualIds = substances.stream()
                 .map(s -> s.uuid.toString())
-                .sorted() //use default sort order
+                .sorted() //use basic sort order
                 .collect(Collectors.toList());
         assertEquals(actualIds, expectedIds);
     }

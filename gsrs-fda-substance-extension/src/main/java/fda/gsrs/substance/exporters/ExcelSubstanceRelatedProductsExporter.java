@@ -90,6 +90,8 @@ public class ExcelSubstanceRelatedProductsExporter implements Exporter<Substance
 			this.publicOnly = publicOnly;
 		}
 
+		private String username;
+
 		@Override
 		public OutputFormat getFormat() {
 			return format;
@@ -98,6 +100,16 @@ public class ExcelSubstanceRelatedProductsExporter implements Exporter<Substance
 		@Override
 		public boolean publicOnly() {
 			return publicOnly;
+		}
+
+		@Override
+		public String getUsername() {
+			return this.username;
+		}
+
+		@Override
+		public void setUsername(String username) {
+			this.username=username;
 		}
 	}
 }

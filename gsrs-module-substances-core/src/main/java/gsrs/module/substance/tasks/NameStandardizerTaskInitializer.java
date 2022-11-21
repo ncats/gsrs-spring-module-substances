@@ -1,25 +1,10 @@
 package gsrs.module.substance.tasks;
 
-import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
-import gsrs.config.FilePathParserUtils;
-import gsrs.module.substance.repository.NameRepository;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.utils.FDAFullNameStandardizer;
-import gsrs.module.substance.utils.NameStandardizer;
-import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.security.AdminService;
-import gsrs.springUtils.StaticContextAccessor;
-import ix.ginas.models.v1.Name;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -27,18 +12,45 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
+import gsrs.config.FilePathParserUtils;
+import gsrs.module.substance.repository.NameRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.standardizer.NameStandardizer;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
+import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.security.AdminService;
+import gsrs.springUtils.StaticContextAccessor;
+import ix.ginas.models.v1.Name;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Data
 public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
     private String regenerateNameValue = "";
     private Boolean forceRecalculationOfAll =false;
+    
+    @JsonIgnore
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+    @JsonIgnore
     private DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH-mm-ss");
+    
+    
     private String outputPath;
     private String name = "nameStandardizationReport";
     private String STANDARD_FILE_ENCODING ="UTF-8";
-    private NameStandardizer nameStandardizer = new FDAFullNameStandardizer();
     private String description;
 
     @Autowired
@@ -53,15 +65,48 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+
+	@Autowired
+	private NameStandardizerConfiguration nameStdConfig;
+	
+    private NameStandardizer stdNameStandardizer;
+
+    @JsonProperty("formatter")
+    public void setFormat(String format) {
+        if(format !=null){
+            formatter = DateTimeFormatter.ofPattern(format);
+        }
+    }
+    
+
+    @JsonProperty("formatterTime")
+    public void setFormatTime(String format) {
+        if(format !=null){
+        	formatterTime = DateTimeFormatter.ofPattern(format);
+        }
+    }
+    
+    private void initIfNeeded() {
+    	try {
+	    	if(stdNameStandardizer==null) {
+	    		if(nameStdConfig!=null) {
+	    			stdNameStandardizer=nameStdConfig.stdNameStandardizer();
+	    		}
+	    	}
+    	}catch(Exception e) {
+    		log.warn("trouble instantiating name standardizer", e);
+    	}
+    }
+    
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
-
+    	initIfNeeded();
         File writeFile = getOutputFile();
         File abfile = writeFile.getAbsoluteFile();
         File pfile = abfile.getParentFile();
 
         pfile.mkdirs();
-        log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.nameStandardizer.getClass().getName(),
+        log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.stdNameStandardizer.getClass().getName(),
                 this.forceRecalculationOfAll);
         l.message("Initializing standardization");
         log.trace("Initializing standardization");
@@ -115,8 +160,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
     }
 
-    public void setNameStandardizerClassName(String nameStandardizerClassName) throws Exception {
-        this.nameStandardizer = (NameStandardizer) Class.forName(nameStandardizerClassName).getDeclaredConstructor().newInstance();
+    public void setNameStandardizerClassName(String stdNameStandardizerClassName) throws Exception {
+        this.stdNameStandardizer = (NameStandardizer) Class.forName(stdNameStandardizerClassName).getDeclaredConstructor().newInstance();
     }
 
     /**
@@ -135,13 +180,14 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     }
 
     private boolean standardizeName(Name name, PrintStream printStream){
+    	initIfNeeded();
         //log.trace("starting in standardizeName");
         Boolean nameChanged = false;
         try {
                 log.trace("in StandardNameValidator, Name '{}'; stand.  name: '{}'", name.getName(), name.stdName);
 
                 String prevStdName = name.stdName;
-                String newlyStdName =this.nameStandardizer.standardize(name.getName()).getResult();
+                String newlyStdName =this.stdNameStandardizer.standardize(name.getName()).getResult();
                 if (!newlyStdName.equals(prevStdName)) {
                     printStream.format( "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
                             prevStdName, newlyStdName, name.getName(), prevStdName, newlyStdName);

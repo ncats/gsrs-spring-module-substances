@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.0.2-SNAPSHOT</version>
+        <version>3.0.3-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -110,7 +110,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>applications-api</artifactId>
-    <version>0.1.2-SNAPSHOT</version>
+            <version>3.0.3-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -139,7 +139,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>products-api</artifactId>
-    <version>0.1.2-SNAPSHOT</version>
+            <version>3.0.3-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -164,11 +164,11 @@
             </exclusions>
         </dependency>
 
-        <!-- clinical-trials-api APPLICATION DEPENDENCIES FOR EXPORT -->
+        <!-- clinical-trials-api CLINICAL TRIAL DEPENDENCIES FOR EXPORT -->
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>clinical-trials-api</artifactId>
-            <version>0.2.3-SNAPSHOT</version>
+            <version>3.0.3-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>

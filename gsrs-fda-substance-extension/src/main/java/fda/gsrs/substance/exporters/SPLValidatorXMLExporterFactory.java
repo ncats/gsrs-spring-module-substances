@@ -15,7 +15,7 @@ import java.util.Set;
  */
 public class SPLValidatorXMLExporterFactory implements ExporterFactory<Substance> {
 
-    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("spl.xml", "SPL term validation (xml) File"));
+    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("spl.xml", "SPL term validation (.xml)"));
    
     @Override
     public boolean supports(Parameters params) {

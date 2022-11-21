@@ -1,15 +1,10 @@
 package gsrs.module.substance.tasks;
 
-import gsrs.config.FilePathParserUtils;
-import gsrs.scheduledTasks.ScheduledTaskInitializer;
-import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
-import gsrs.springUtils.StaticContextAccessor;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
-import javax.sql.DataSource;
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,6 +12,19 @@ import java.sql.Statement;
 import java.time.format.DateTimeFormatter;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import javax.sql.DataSource;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import gsrs.config.FilePathParserUtils;
+import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
+import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
+import gsrs.springUtils.StaticContextAccessor;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Used to schedule output of certain reports, using defined SQL queries in the
@@ -33,12 +41,29 @@ public class SQLReportScheduledTaskInitializer
     private String name = "sqlReport";
     private String sql;
     private String outputPath;
+    @JsonIgnore
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+    @JsonIgnore
     private DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HHmmss");
     private String dataSourceQualifier;
 
     private Lock lock = new ReentrantLock();
 
+    
+    @JsonProperty("formatter")
+    public void setFormat(String format) {
+        if(format !=null){
+            formatter = DateTimeFormatter.ofPattern(format);
+        }
+    }
+    
+
+    @JsonProperty("formatterTime")
+    public void setFormatTime(String format) {
+        if(format !=null){
+        	formatterTime = DateTimeFormatter.ofPattern(format);
+        }
+    }
     
     /**
      * Returns the File used to output the report

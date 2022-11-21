@@ -18,6 +18,7 @@ import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 
@@ -28,6 +29,7 @@ import java.util.function.Supplier;
 /**
  * Created by katzelda on 5/14/18.
  */
+@Slf4j
 public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 	@Autowired
     private StructureProcessor structureProcessor;
@@ -43,6 +45,10 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
 	private boolean allow0AtomStructures = false;
 
+    private boolean allowV3000Molfiles = false;
+
+    private final String V3000_MOLFILE_MARKER = "M  V30";
+    private final String V3000_MOLFILE_MARKER2 = "V3000";
 
     public ReferenceRepository getReferenceRepository() {
         return referenceRepository;
@@ -71,7 +77,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-
+        log.trace("starting in validate");
         ChemicalSubstance cs = (ChemicalSubstance)s;
 
         if (cs.getStructure() == null) {
@@ -87,6 +93,19 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                     "Chemical substance must have a chemical structure with one or more atoms"));
             return;
         }
+
+        if( !allowV3000Molfiles) {
+            //for some reason, when this is run from a unit test with CDK as the molwitch implementation, the original
+            // V3000 molfile appears in the SMILES field
+            if( (cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER) && cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER2))
+                || (cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER) && cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER2))) {
+                log.info("V3000 molfile detected");
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                        "GSRS does not currently support V3000 molfiles. Use another program to convert the structure to an earlier format."));
+                return;
+            }
+        }
+
         String payload = cs.getStructure().molfile;
         if (payload != null) {
 
@@ -366,5 +385,14 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 	public void setAllow0AtomStructures(boolean allow0AtomStructures) {
 		this.allow0AtomStructures = allow0AtomStructures;
 	}
+
+    public boolean isAllowV3000Molfiles() {
+        return allowV3000Molfiles;
+    }
+
+    public void setAllowV3000Molfiles(boolean allowV3000Molfiles) {
+        this.allowV3000Molfiles = allowV3000Molfiles;
+    }
+
 
 }

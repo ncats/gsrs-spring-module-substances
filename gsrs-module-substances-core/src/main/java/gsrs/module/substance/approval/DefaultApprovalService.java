@@ -50,7 +50,7 @@ public class DefaultApprovalService implements ApprovalService{
     /**
      * Perform any additional Validation checks before allowing the Substance to be approved.
      *
-     * @implNote By default, this method does nothing, clients may choose to override this method
+     * @implNote By basic, this method does nothing, clients may choose to override this method
      * to add custom checks beyond what is done by {@link #defaultApprovalValidation(Substance, String)}.
      *
      * @param s The Substance to be approved.
@@ -58,12 +58,12 @@ public class DefaultApprovalService implements ApprovalService{
      * @throws ApprovalException if there is any reason not to approve this Substance.
      */
     protected void extraApprovalValidation(Substance s, String usernameOfApprover) throws ApprovalException{
-        //default to no-op
+        //basic to no-op
     }
 
     /**
      * Default validation checks before allowing a Substance to be approved.  While not
-     * recommended, clients may choose to override this method to change the default validation.
+     * recommended, clients may choose to override this method to change the basic validation.
      * The recommended way clients should modify the validation is by overriding
      * {@link #extraApprovalValidation(Substance, String)} to add additional checks
      * which are performed AFTER this method is successfully invoked.
