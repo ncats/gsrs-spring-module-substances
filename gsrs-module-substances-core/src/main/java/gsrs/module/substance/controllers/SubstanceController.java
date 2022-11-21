@@ -1072,8 +1072,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
                 //if we're here, we have a substance but nothing to render return default for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey(), format);
-                //if we're here, we have a substance but nothing to render return basic for substance type
-                return getDefaultImageForKey(s2r.getSubstanceKey());
             }
             input = s2r.getInput();
         }else {
