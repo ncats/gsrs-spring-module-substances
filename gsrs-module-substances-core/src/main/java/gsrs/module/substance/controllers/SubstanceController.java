@@ -1070,6 +1070,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
+                //if we're here, we have a substance but nothing to render return default for substance type
+                return getDefaultImageForKey(s2r.getSubstanceKey(), format);
                 //if we're here, we have a substance but nothing to render return basic for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey());
             }
@@ -1160,44 +1162,48 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
     @Deprecated
-    private Object getDefaultImageFor(Substance s) throws IOException {
-        return getDefaultImageForKey(s.fetchKey());
+    private Object getDefaultImageFor(Substance s, String format) throws IOException {
+        return getDefaultImageForKey(s.fetchKey(), format);
     }
 
-    private Object getDefaultImageForKey(Key skey) throws IOException {
+    private Object getDefaultImageForKey(Key skey, String format) throws IOException {
         String placeholderFile = "polymer.svg";
 
+        if (format != null) {
+            format = format.toLowerCase();
+        }
+        
         if (skey != null) {
             switch (skey.getKind()) {
                 case "ix.ginas.models.v1.ChemicalSubstance":
-                    placeholderFile = "chemical.svg";
+                    placeholderFile = "chemical." + format;
                     break;
                 case "ix.ginas.models.v1.ProteinSubstance":
-                    placeholderFile = "protein.svg";
+                    placeholderFile = "protein." + format;
                     break;
                 case "ix.ginas.models.v1.MixtureSubstance":
-                    placeholderFile = "mixture.svg";
+                    placeholderFile = "mixture." + format;
                     break;
                 case "ix.ginas.models.v1.PolymerSubstance":
                     placeholderFile = "polymer.svg";
                     break;
                 case "ix.ginas.models.v1.StructurallyDiverseSubstance":
-                    placeholderFile = "structurally-diverse.svg";
+                    placeholderFile = "structurally-diverse." + format;
                     break;
                 case "ix.ginas.models.v1.Substance":
-                    placeholderFile = "concept.svg";
+                    placeholderFile = "concept." + format;
                     break;
                 case "ix.ginas.models.v1.NucleicAcidSubstance":
-                    placeholderFile = "nucleic-acid.svg";
+                    placeholderFile = "nucleic-acid." + format;
                     break;
                 case "ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance":
-                    placeholderFile = "g1ss.svg";
+                    placeholderFile = "g1ss." + format;
                     break;
                 default:
-                    placeholderFile = "concept.svg";
+                    placeholderFile = "concept." + format;
             }
         } else {
-            placeholderFile = "noimage.svg";
+            placeholderFile = "noimage." + format;
         }
 
         HttpHeaders headers = new HttpHeaders();
