@@ -36,7 +36,11 @@ public class SubstanceSpreadsheetExporter implements Exporter<Substance> {
 
         int j=0;
         for(ColumnValueRecipe<Substance> recipe : recipeMap){
-            j+= recipe.writeValuesFor(row, j, s);
+            try{
+                j+= recipe.writeValuesFor(row, j, s);
+            }catch(Exception e){
+                log.warn("WARNING: trouble exporting column " + j + " for substance record '" + s.uuid + "'", e);
+            }
         }
     }
 
