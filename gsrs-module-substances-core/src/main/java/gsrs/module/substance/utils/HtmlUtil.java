@@ -82,18 +82,25 @@ public final class HtmlUtil {
         Document srcDoc = Parser.parseBodyFragment(s, "");
         srcDoc.outputSettings().prettyPrint(false);
 
+        int maxLength = len-3; //for final ...
+        
         Document dstDoc = Document.createShell(srcDoc.baseUri());
         dstDoc.outputSettings().prettyPrint(false);
         dstDoc.outputSettings().charset("UTF-8");
         Element dst = dstDoc.body();
-        NodeVisitor v = new TruncateVisitor(dst, len - 3);
+        NodeVisitor v = new TruncateVisitor(dst,maxLength);
 
         try {
             NodeTraversor t = new NodeTraversor();
             t.traverse(v, srcDoc.body());
         } catch (IllegalStateException ex) {}
 
-        return dst.html() + "...";
+        String htmlReturn = dst.html();
+        if(htmlReturn.length()>= (maxLength)){
+            return htmlReturn + "...";
+        }else{
+            return htmlReturn;
+        }
     }
 
     public static String clean(String content, String charset) {
