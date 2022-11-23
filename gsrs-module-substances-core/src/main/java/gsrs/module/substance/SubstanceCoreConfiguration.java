@@ -31,6 +31,7 @@ import org.springframework.context.annotation.Import;
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
         LegacyGinasAppController.class, NameStandardizerConfiguration.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
+        SubstanceDataConfiguration.class,
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
