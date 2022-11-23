@@ -17,6 +17,11 @@ public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Subst
     }
 
     @Override
+    public String getAdapterKey() {
+        return "DelimitedText";
+    }
+
+    @Override
     public List<String> getSupportedFileExtensions() {
         return Arrays.asList("csv", "txt", "tsv");
     }

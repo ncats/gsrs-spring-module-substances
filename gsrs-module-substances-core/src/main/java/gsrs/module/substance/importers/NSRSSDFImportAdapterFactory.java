@@ -29,6 +29,12 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
         return "NSRS SDF Adapter";
     }
 
+    @Override
+    public String getAdapterKey() {
+        return "SDF-NSRS";
+    }
+
+
     //private String adapterConfigInit;
 
     protected List<Map<String, Object>> defaultImportActions;

@@ -9,8 +9,10 @@ import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinderConfig;
 import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.*;
+import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
+import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.payload.LegacyPayloadService;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import ix.core.search.text.TextIndexerFactory;
@@ -32,6 +34,7 @@ import gsrs.holdingarea.service.ImportMetadataLegacySearchService;
         SubstanceEntityServiceImpl.class, RelationEventListener.class,
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
         LegacyGinasAppController.class,
+        NameStandardizerConfiguration.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
@@ -42,7 +45,7 @@ import gsrs.holdingarea.service.ImportMetadataLegacySearchService;
         ProcessingJobController.class, ProcessingJobEntityService.class,
         //used by bulk loader
         ConsoleFilterService.class,
-
+        SubstanceMatchViewGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,

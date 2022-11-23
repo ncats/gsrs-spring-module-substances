@@ -230,6 +230,11 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     }
 
     @Override
+    public String getAdapterKey() {
+        return "SDF";
+    }
+
+    @Override
     public List<String> getSupportedFileExtensions() {
         return Arrays.asList("sdf", "sd");
     }
