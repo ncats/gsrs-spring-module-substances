@@ -478,7 +478,7 @@ public class SubstanceHierarchyFinder {
 				return ssg.specifiedSubstance
 					.constituents
 					.stream()
-					.map(c->Tuple.of("G1SS:" + c.role,substanceRepository.findBySubstanceReference(c.substance)))
+					.map(c->Tuple.of("G1SS:" + c.role,fetchSubReferenceFull(c.substance).orElse(null)))
 					.filter(rs->rs.v()!=null)
 					.collect(Collectors.toList());
 				 
@@ -490,6 +490,9 @@ public class SubstanceHierarchyFinder {
 			return specifiedSubstanceGroup1Repository.findBySpecifiedSubstance_Constituents_Substance_Refuuid(s.uuid.toString())
 
 					 .stream()
+					 .map(ss->(SpecifiedSubstanceGroup1Substance)ensureFull(ss).orElse(null))
+					 .filter(ss->ss!=null)
+					 
 					 .map(sg->Tuple.of(sg.specifiedSubstance
 							             .constituents
 							             .stream()
@@ -537,7 +540,7 @@ public class SubstanceHierarchyFinder {
 				return ssg.mixture
 						.components
 						.stream()
-						.map(c->Tuple.of("Mixture Component" + c,substanceRepository.findBySubstanceReference(c.substance)))
+						.map(c->Tuple.of("Mixture Component" + c,fetchSubReferenceFull(c.substance).orElse(null)))
 						.filter(rs->rs.v()!=null)
 						.collect(Collectors.toList());
 
@@ -547,8 +550,10 @@ public class SubstanceHierarchyFinder {
 		@Override
 		public List<Tuple<String, Substance>> findChildren(Substance s) {
 			return mixtureSubstanceRepository.findByMixture_Components_Substance_Refuuid(s.uuid.toString())
-
+					
 					.stream()
+					.map(ss->(MixtureSubstance)ensureFull(ss).orElse(null))
+					.filter(ss->ss!=null)
 					.map(ms -> Tuple.of("EXISTS IN MIXTURE",
 							ms))
 					.map(Tuple.vmap(sub -> (Substance) sub))
@@ -574,7 +579,7 @@ public class SubstanceHierarchyFinder {
 			if(s instanceof StructurallyDiverseSubstance){
 				StructurallyDiverseSubstance ssg=(StructurallyDiverseSubstance)s;
 				return Optional.ofNullable(ssg.structurallyDiverse.parentSubstance)
-					.map(c->Tuple.of("Source Parent",substanceRepository.findBySubstanceReference(c)))
+					.map(c->Tuple.of("Source Parent",fetchSubReferenceFull(c).orElse(null)))
 					.filter(rs->rs.v()!=null)
 					.map(c->Stream.of(c).collect(Collectors.toList()))
 					.orElse(new ArrayList<>());
@@ -587,6 +592,8 @@ public class SubstanceHierarchyFinder {
 			return structurallyDiverseRepository.findByStructurallyDiverse_ParentSubstance_Refuuid(s.uuid.toString())
 
 					 .stream()
+					 .map(ss->(Substance)ensureFull(ss).orElse(null))
+					 .filter(ss->ss!=null)
 					 .map(sg->Tuple.of("Source Child",
 							             sg
 							 ))
@@ -637,8 +644,10 @@ public class SubstanceHierarchyFinder {
 			
 			return relationshipRepository.findByTypeAndRelatedSubstance_Refuuid(this.fetchableDirection, parentUUID)
 				   .stream()
-
-				   .map(r->Tuple.of(reverseName,r.fetchOwner()))
+				   
+				   
+				   .map(r->Tuple.of(reverseName,ensureFull(r.fetchOwner()).orElse(null)))
+				   .filter(t->t.v()!=null)
 				   .map(t->Tuple.of(t.k() + "_" + t.v().uuid, t))
 				   .map(t->t.withKEquality())
 				   .distinct()
@@ -647,11 +656,26 @@ public class SubstanceHierarchyFinder {
 		}
 	}
 	
+	
+	private static Optional<Substance> fetchSubReferenceFull(SubstanceReference sr){
+		return EntityFetcher
+				.of(sr.getKeyForReferencedSubstance())
+				.getIfPossible()
+				.map(o->(Substance)o);
+	}
+	
+	private static Optional<Substance> ensureFull(Substance s){
+		return EntityFetcher
+				.of(s.fetchKey())
+				.getIfPossible()
+				.map(o->(Substance)o);
+	}
+	
 	private static List<Tuple<String, Substance>> findDirectRelated(SubstanceRepository substanceRepository, Substance s, String type){
 		return s.relationships
 				 .stream()
 				 .filter(r->type.equals(r.type))
-				 .map(r->Tuple.of(r.type,(Substance)(EntityFetcher.of(r.relatedSubstance.getKeyForReferencedSubstance()).getIfPossible().orElse(null)))) //lazy-load issue
+				 .map(r->Tuple.of(r.type,fetchSubReferenceFull(r.relatedSubstance).orElse(null))) //lazy-load issue
 				 .filter(rs->rs.v()!=null)
 				 .collect(Collectors.toList());
 	}
