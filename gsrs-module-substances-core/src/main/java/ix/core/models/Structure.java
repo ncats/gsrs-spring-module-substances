@@ -274,9 +274,10 @@ public class Structure extends BaseModel {
     @JsonView(BeanViews.JsonDiff.class)
     @JsonDeserialize(contentUsing=AbstractValueDeserializer.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-    @JoinTable(name="ix_core_structure_property", inverseJoinColumns = {
-            @JoinColumn(name="ix_core_value_id")
-    })
+    @JoinTable(name="ix_core_structure_property",
+        inverseJoinColumns = {@JoinColumn(name="ix_core_value_id")},
+        indexes = {@Index(name="property_structure_id_index", columnList="ix_core_structure_id")}
+    )
     public List<Value> properties = new ArrayList<Value>();
 
     @ManyToMany(cascade = CascadeType.ALL)
