@@ -276,7 +276,9 @@ public class Structure extends BaseModel {
     @EntityMapperOptions(linkoutInCompactView = true)
     @JoinTable(name="ix_core_structure_property",
         inverseJoinColumns = {@JoinColumn(name="ix_core_value_id")},
-        indexes = {@Index(name="property_structure_id_index", columnList="ix_core_structure_id")}
+        indexes = {
+            @Index(name="property_structure_id_index", columnList="ix_core_structure_id"),
+            @Index(name="property_value_id_index", columnList="ix_core_value_id")}
     )
     public List<Value> properties = new ArrayList<Value>();
 
