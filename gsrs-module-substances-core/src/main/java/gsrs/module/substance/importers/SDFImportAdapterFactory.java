@@ -95,12 +95,23 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         return inp;
     }
 
+    /*
+    simplified overload that uses the identity function as an encoder
+     */
     public static String resolveParameter(SDRecordContext rec, String inp) {
         return resolveParameter(rec, inp, s -> s);
     }
 
+    /*
+    Gets value for 3 special fields:
+    1) molfiles -- the structure field of an SD file record
+    2) name within molfile
+    3) UUID, coded as [[[UUID_1]]]
+    as well as regular SD file properties
+    Passes the result through an encoder function before returning
+     */
     public static String resolveParameter(SDRecordContext rec, String inp, Function<String, String> encoder) {
-        log.trace("in resolveParameter, inp: {}, encode: {}", inp, encoder.toString());
+        log.trace("in resolveParameter, inp: {}", inp);
         inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
             if (p.equals("molfile")) return Optional.ofNullable(rec.getStructure()).map(encoder);
             if (p.equals("molfile_name")) return Optional.ofNullable(rec.getMolfileName()).map(encoder);

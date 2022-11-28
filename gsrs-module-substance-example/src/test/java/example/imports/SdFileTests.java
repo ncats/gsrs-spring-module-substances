@@ -13,6 +13,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.imports.ImportAdapter;
@@ -22,14 +23,10 @@ import gsrs.module.substance.controllers.SubstanceController;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
-import gsrs.payload.PayloadController;
-import gsrs.repository.PayloadRepository;
-import gsrs.service.PayloadService;
-import ix.core.models.Payload;
-import org.junit.Assert;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -43,13 +40,12 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
-@SpringBootTest
+//@SpringBootTest
 @SpringBootConfiguration
 @Slf4j
 @TestPropertySource(properties = {
@@ -57,10 +53,10 @@ import org.springframework.web.multipart.MultipartFile;
                 "code_import:'gsrs.module.substance.importers.importActionFactories.CodeExtractorActionFactory'," +
                 "common_name:'gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory'}",
 })
-@RunWith(value = SpringJUnit4ClassRunner.class)
-@EnableAutoConfiguration
-
-public class SdFileTests {
+//@RunWith(value = SpringJUnit4ClassRunner.class)
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+//@EnableAutoConfiguration
+public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
 
     List<ImportAdapterFactory<Substance>> factories = Arrays.asList(new SDFImportAdapterFactory());
     private CachedSupplier<List<ImportAdapterFactory<Substance>>> importAdapterFactories
@@ -253,6 +249,7 @@ public class SdFileTests {
         SubstanceController controller = new SubstanceController();
         Map<String, String> queryParameters = new HashMap<>();
         queryParameters.put("adapter", "NSRS SDF Adapter");
+        queryParameters.put("entityType", "ix.ginas.model.v1.ChemicalSubstance");
         MultipartFile file = new MultipartFile() {
             @Override
             public String getName() {
@@ -297,7 +294,6 @@ public class SdFileTests {
         };
 
         ResponseEntity<Object> responseEntity= controller.handleImport(file, queryParameters);
-
         Assertions.assertNotNull(responseEntity.getBody());
     }
 

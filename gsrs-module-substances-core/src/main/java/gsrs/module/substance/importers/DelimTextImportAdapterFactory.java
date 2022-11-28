@@ -11,6 +11,9 @@ import java.util.Arrays;
 import java.util.List;
 
 public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Substance> {
+
+    private String fieldDelimiter;
+
     @Override
     public String getAdapterName() {
         return "Delimited Text Adapter";
@@ -28,6 +31,7 @@ public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Subst
 
     @Override
     public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
+
         return null;
     }
 
@@ -84,5 +88,13 @@ public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Subst
     @Override
     public void setEntityServiceClass(Class newClass) {
 
+    }
+
+    public void setFieldDelimiter(String newDelimiter){
+        this.fieldDelimiter=newDelimiter;
+    }
+
+    public String getFieldDelimiter() {
+        return this.fieldDelimiter;
     }
 }
