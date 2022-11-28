@@ -108,6 +108,10 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	@Override
 	public void preUpdate(Relationship obj) {
 	    if(!enabled.get().get()) return;
+	    
+	    if(!obj.isAutomaticInvertible()) {
+	    	remove(obj);
+	    }
 
 	    TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
 	    transactionTemplate.executeWithoutResult( stauts -> {
@@ -121,22 +125,26 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	}
 
+	private void remove(Relationship obj) {
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult( stauts -> {
+            RemoveInverseRelationshipEvent.RemoveInverseRelationshipEventBuilder builder = RemoveInverseRelationshipEvent.builder();
+            builder.relationshipIdThatWasRemoved(obj.getOrGenerateUUID());
+            builder.relationshipTypeThatWasRemoved(obj.type);
+            builder.substanceRefIdOfRemovedRelationship(obj.fetchOwner().getOrGenerateUUID().toString());
+            builder.relatedSubstanceRefId(obj.relatedSubstance.refuuid);
+            builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
+            eventPublisher.publishEvent(builder.build());
+        });
+
+	}
+	
 	@Override
 	public void preRemove(Relationship obj) {
 	    if(!enabled.get().get()) return;
 	    if (obj.isAutomaticInvertible()) {
-
-	        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-	        transactionTemplate.executeWithoutResult( stauts -> {
-	            RemoveInverseRelationshipEvent.RemoveInverseRelationshipEventBuilder builder = RemoveInverseRelationshipEvent.builder();
-	            builder.relationshipIdThatWasRemoved(obj.getOrGenerateUUID());
-	            builder.relationshipTypeThatWasRemoved(obj.type);
-	            builder.substanceRefIdOfRemovedRelationship(obj.fetchOwner().getOrGenerateUUID().toString());
-	            builder.relatedSubstanceRefId(obj.relatedSubstance.refuuid);
-	            builder.relationshipOriginatorIdToRemove(UUID.fromString(obj.originatorUuid));
-	            eventPublisher.publishEvent(builder.build());
-	        });
-
+	    	remove(obj);
 	    }
 	}
 	
