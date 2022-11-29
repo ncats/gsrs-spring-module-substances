@@ -179,15 +179,15 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
         });
     }
     public Substance checkStdNameForDuplicateInOtherRecordsViaIndexer(Substance s, String stdName) {
-        
-        try {
-        	Optional<Substance> substance = findOneIndexedSubstanceByStdNameExcludingUuid(stdName, s.getOrGenerateUUID());
-            return substance.orElse(null);
-        } catch (Exception e) {
-            // Should we throw it?
-            log.error("Problem checking for duplicate standard name.", e);
-        }
-        return null;
+
+    	try {
+    		Optional<Substance> substance = findOneIndexedSubstanceByStdNameExcludingUuid(stdName, s.getOrGenerateUUID());
+    		return substance.orElse(null);
+    	} catch (Exception e) {
+    		// Should we throw it?
+    		log.error("Problem checking for duplicate standard name.", e);
+    	}
+    	return null;
     }
 
     public List<Substance> findIndexedSubstancesByStdName(String stdName) {
