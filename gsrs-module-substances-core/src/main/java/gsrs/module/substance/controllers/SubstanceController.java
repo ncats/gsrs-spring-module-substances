@@ -136,22 +136,22 @@ import lombok.extern.slf4j.Slf4j;
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
-
-    @Autowired
-    private SubstanceMatchViewGenerator matchViewGenerator;
-
-    @Override
+	
+	@Autowired 
+	private SubstanceMatchViewGenerator matchViewGenerator;
+	
+	@Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
 
         so= super.instrumentSearchOptions(so);
         so.addDateRangeFacet("root_lastEdited");
         so.addDateRangeFacet("root_approved");
         so.addDateRangeFacet("root_created");
-
+        
         if (gsrsFactoryConfiguration != null) {
             Optional<Map<String, Object>> conf = gsrsFactoryConfiguration
                     .getSearchSettingsFor(SubstanceEntityServiceImpl.CONTEXT);
-
+            
             String restrict = conf
                     .map(cc -> cc.get("restrictDefaultToIdentifiers"))
                     .filter(bb -> bb != null).map(bb -> bb.toString())
@@ -160,7 +160,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 so.setDefaultField(TextIndexer.FULL_IDENTIFIER_FIELD);
             }
         }
-
+        
 
         return so;
     }
@@ -270,7 +270,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
     @Autowired
     private SubstanceSequenceSearchService substanceSequenceSearchService;
-
+    
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
@@ -347,8 +347,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public static Optional<HttpServletRequest> getCurrentHttpRequest() {
         return
                 Optional.ofNullable(
-                                RequestContextHolder.getRequestAttributes()
-                        )
+                        RequestContextHolder.getRequestAttributes()
+                )
                         .filter(ServletRequestAttributes.class::isInstance)
                         .map(ServletRequestAttributes.class::cast)
                         .map(ServletRequestAttributes::getRequest);
@@ -395,7 +395,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     private List<SubstanceHierarchyFinder.TreeNode2> makeJsonTreeForAPI(Substance sub) {
-
+    	
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         transactionTemplate.setReadOnly(true);
@@ -560,22 +560,22 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         //attributes.addAttribute("q", structure.get().id.toString());
         if(qText!=null){
-            attributes.addAttribute("qText", qText);
+        	attributes.addAttribute("qText", qText);
         }
         if(sync) {
-            attributes.addAttribute("sync", true);
+        	attributes.addAttribute("sync", true);
         }
         Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
         return structureSearchGet(
-                attributes.getAttribute("q").toString(),
-                sanitizedRequest.getType().toString(),
-                Optional.ofNullable(sanitizedRequest.getCutoff()).orElse(0.9),
-                sanitizedRequest.getTop(),
-                sanitizedRequest.getSkip(),
-                sanitizedRequest.getFdim(),
-                sanitizedRequest.getField(),
+        		attributes.getAttribute("q").toString(),
+        		sanitizedRequest.getType().toString(),
+        		Optional.ofNullable(sanitizedRequest.getCutoff()).orElse(0.9),
+        		sanitizedRequest.getTop(),
+        		sanitizedRequest.getSkip(),
+        		sanitizedRequest.getFdim(),
+        		sanitizedRequest.getField(),
                 Optional.ofNullable(attributes.getAttribute("sync")).map(s->(boolean)("true".equalsIgnoreCase(s.toString()))).orElse(false),
-                Optional.ofNullable(attributes.getAttribute("qText")).map(s->s.toString()).orElse(null),
+        		Optional.ofNullable(attributes.getAttribute("qText")).map(s->s.toString()).orElse(null),
                 qmap,
                 httpRequest,
                 attributes);
@@ -604,7 +604,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         Structure structure = structureOp.get();
 
-
+        
         String cleaned = CtTableCleaner.clean(structure.molfile);
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
@@ -676,9 +676,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             // it will actually get rid of the extra parameters, and result in a null search
             //
             return searchV1(Optional.of(hash),
-                    Optional.of(sanitizedRequest.getTop()),
-                    Optional.of(sanitizedRequest.getSkip()),
-                    Optional.of(sanitizedRequest.getFdim()), httpServletRequest, qmap);
+                            Optional.of(sanitizedRequest.getTop()),
+                            Optional.of(sanitizedRequest.getSkip()),
+                            Optional.of(sanitizedRequest.getFdim()), httpServletRequest, qmap);
         }
         SearchResultContext resultContext=null;
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE
@@ -690,8 +690,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         updateSearchContextGenerator(resultContext, queryParameters);
 
         //TODO move to service
-        //TODO: need to add support for qText in the "focused" version of
-        // all structure searches. This may require some deeper changes.
+	//TODO: need to add support for qText in the "focused" version of
+	// all structure searches. This may require some deeper changes.
         SearchResultContext focused = resultContext.getFocused(sanitizedRequest.getTop(), sanitizedRequest.getSkip(), sanitizedRequest.getFdim(), sanitizedRequest.getField());
         return entityFactoryDetailedSearch(focused, sync);
     }
@@ -826,18 +826,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
         return sequenceSearchGet(
-                attributes.getAttribute("q").toString(),
-                Optional.ofNullable(attributes.getAttribute("type")).map(s->s.toString()).orElse(null),
-                Optional.ofNullable(rr.getCutoff()).orElse(0.8),
-                rr.getTop(),
-                rr.getSkip(),
-                rr.getFdim(),
-                rr.getField(),
-                Optional.ofNullable(attributes.getAttribute("searchType")).map(s->s.toString()).orElse("GLOBAL"),
-                Optional.ofNullable(attributes.getAttribute("seqType")).map(s->s.toString()).orElse("Protein"),
-                Optional.ofNullable(attributes.getAttribute("sync")).map(s->(boolean)("true".equalsIgnoreCase(s.toString()))).orElse(false),
-                qmap,
-                httpRequest);
+        		attributes.getAttribute("q").toString(),
+        		Optional.ofNullable(attributes.getAttribute("type")).map(s->s.toString()).orElse(null),
+        		Optional.ofNullable(rr.getCutoff()).orElse(0.8),
+                        rr.getTop(),
+                        rr.getSkip(),
+                        rr.getFdim(),
+                        rr.getField(),
+                        Optional.ofNullable(attributes.getAttribute("searchType")).map(s->s.toString()).orElse("GLOBAL"),
+                        Optional.ofNullable(attributes.getAttribute("seqType")).map(s->s.toString()).orElse("Protein"),
+                        Optional.ofNullable(attributes.getAttribute("sync")).map(s->(boolean)("true".equalsIgnoreCase(s.toString()))).orElse(false),
+                        qmap,
+                        httpRequest);
     }
 
     @PostGsrsRestApiMapping("/interpretStructure")
@@ -999,7 +999,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         }
                     }
                 }else {
-                    //TODO: needs to support history, which requires finding the
+                    //TODO: needs to support history, which requires finding the 
                     // parent record
                     Optional<Unit> unit = structuralUnitRepository.findById(uuid);
                     if(unit.isPresent()) {
@@ -1070,8 +1070,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
-                //if we're here, we have a substance but nothing to render return basic for substance type
-                return getDefaultImageForKey(s2r.getSubstanceKey());
+                //if we're here, we have a substance but nothing to render return default for substance type
+                return getDefaultImageForKey(s2r.getSubstanceKey(), format);
             }
             input = s2r.getInput();
         }else {
@@ -1154,50 +1154,54 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             bw.dat=dat;
             return bw;
         }
-
+        
     }
 
 
 
     @Deprecated
-    private Object getDefaultImageFor(Substance s) throws IOException {
-        return getDefaultImageForKey(s.fetchKey());
+    private Object getDefaultImageFor(Substance s, String format) throws IOException {
+        return getDefaultImageForKey(s.fetchKey(), format);
     }
 
-    private Object getDefaultImageForKey(Key skey) throws IOException {
+    private Object getDefaultImageForKey(Key skey, String format) throws IOException {
         String placeholderFile = "polymer.svg";
 
+        if (format != null) {
+            format = format.toLowerCase();
+        }
+        
         if (skey != null) {
             switch (skey.getKind()) {
                 case "ix.ginas.models.v1.ChemicalSubstance":
-                    placeholderFile = "chemical.svg";
+                    placeholderFile = "chemical." + format;
                     break;
                 case "ix.ginas.models.v1.ProteinSubstance":
-                    placeholderFile = "protein.svg";
+                    placeholderFile = "protein." + format;
                     break;
                 case "ix.ginas.models.v1.MixtureSubstance":
-                    placeholderFile = "mixture.svg";
+                    placeholderFile = "mixture." + format;
                     break;
                 case "ix.ginas.models.v1.PolymerSubstance":
                     placeholderFile = "polymer.svg";
                     break;
                 case "ix.ginas.models.v1.StructurallyDiverseSubstance":
-                    placeholderFile = "structurally-diverse.svg";
+                    placeholderFile = "structurally-diverse." + format;
                     break;
                 case "ix.ginas.models.v1.Substance":
-                    placeholderFile = "concept.svg";
+                    placeholderFile = "concept." + format;
                     break;
                 case "ix.ginas.models.v1.NucleicAcidSubstance":
-                    placeholderFile = "nucleic-acid.svg";
+                    placeholderFile = "nucleic-acid." + format;
                     break;
                 case "ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance":
-                    placeholderFile = "g1ss.svg";
+                    placeholderFile = "g1ss." + format;
                     break;
                 default:
-                    placeholderFile = "concept.svg";
+                    placeholderFile = "concept." + format;
             }
         } else {
-            placeholderFile = "noimage.svg";
+            placeholderFile = "noimage." + format;
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -1331,20 +1335,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }else {
                 log.trace("using legacy rendering");
                 if (format.equals("svg")) {
-                    SVGGraphics2D svg = new SVGGraphics2D
-                            (bos, new Dimension(size, size));
-                    try {
-                        svg.startExport();
-                        renderer.render(svg, chem, 0, 0, size, size, false);
-                        svg.endExport();
-                    } finally {
-                        svg.dispose();
-                    }
-                } else {
-                    BufferedImage bi = renderer.createImage(chem, size);
-                    ImageIO.write(bi, format, bos);
+                SVGGraphics2D svg = new SVGGraphics2D
+                        (bos, new Dimension(size, size));
+                try {
+                    svg.startExport();
+                    renderer.render(svg, chem, 0, 0, size, size, false);
+                    svg.endExport();
+                } finally {
+                    svg.dispose();
                 }
+            } else {
+                BufferedImage bi = renderer.createImage(chem, size);
+                ImageIO.write(bi, format, bos);
             }
+        }
             return bos.toByteArray();
         }catch(Exception e){
             e.printStackTrace();
@@ -1354,7 +1358,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
     private static void preProcessChemical(Chemical c,  RendererOptions renderOptions){
-
+	    
 //        log.info("processing chemical");
         if(c!=null){
 
@@ -1594,7 +1598,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new BasicRecordExpanderFactory();
     }
 
-
+    
     public List<Text> getHardcodedConfigsBackup() throws JsonProcessingException {
         List<Text> items = new ArrayList<>();
 
@@ -1625,3 +1629,4 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 }
+

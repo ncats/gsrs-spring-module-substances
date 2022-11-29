@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class SdfExporterFactory implements ExporterFactory {
 
     private static final char NAME_PROP_SEPARATOR = '|';
-    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("sdf", "SD (sdf) File"));
+    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("sdf", "Chemical Structures, SD File (.sdf)"));
     private String approvalIDName ="APPROVAL_ID";
     public static final String NAME_PARAMETERS ="addNames";
     public static final String CODE_PARAMETERS ="addCodes";

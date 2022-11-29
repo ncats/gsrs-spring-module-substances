@@ -1,16 +1,20 @@
 package example.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import example.GsrsModuleSubstanceApplication;
-import gov.nih.ncats.molwitch.Chemical;
-import gsrs.module.substance.controllers.SubstanceController;
-import gsrs.module.substance.processors.RelationEventListener;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import ix.core.chem.InchiStandardizer;
-import ix.core.chem.StructureStandardizer;
-import ix.core.models.Structure;
-import ix.ginas.modelBuilders.SubstanceBuilder;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,15 +29,18 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import example.GsrsModuleSubstanceApplication;
+import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.controllers.SubstanceController;
+import gsrs.module.substance.processors.RelationEventListener;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.core.chem.InchiStandardizer;
+import ix.core.chem.StructureStandardizer;
+import ix.core.models.Structure;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
@@ -106,8 +113,8 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
         @Override
         public Model addAllAttributes(Map<String, ?> attributes) {
-
-            return null;
+        	 this.attributes.putAll(attributes);
+            return this;
         }
 
         @Override
@@ -125,7 +132,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         @Override
         public Map<String, Object> asMap() {
 
-            return null;
+            return attributes;
         }
 
         @Override
@@ -193,6 +200,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
         HttpServletRequest  mockedRequest = Mockito.mock(HttpServletRequest.class);
         Mockito.when(mockedRequest.getRequestURI()).thenReturn("http://mock");
+        Mockito.when(mockedRequest.getRequestURL()).thenReturn(new StringBuffer("http://mock"));
         
       
         
@@ -236,9 +244,8 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
         HttpServletRequest  mockedRequest = Mockito.mock(HttpServletRequest.class);
         Mockito.when(mockedRequest.getRequestURI()).thenReturn("http://mock");
-        
-      
-        
+        Mockito.when(mockedRequest.getRequestURL()).thenReturn(new StringBuffer("http://mock"));
+                
         
         MockRedirectAttributes mockAtt = new MockRedirectAttributes();
         

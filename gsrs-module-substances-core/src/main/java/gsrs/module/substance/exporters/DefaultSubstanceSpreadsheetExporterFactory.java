@@ -143,15 +143,8 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                      Optional<Name> opName = ((Substance)s).getDisplayName();
                      boolean wroteName = false;
                      if(opName.isPresent()) {
-                         if(pubOnly && opName.get().getAccess().isEmpty()) {
-                             cell.writeString(opName.get().stdName);
-                             wroteName=true;
-                         }else if(!pubOnly){
-                             cell.writeString(opName.get().stdName);
-                             wroteName=true;
-                         }else{
-                             //no public display name, do nothing
-                         }
+                            cell.writeString(opName.get().stdName);
+                            wroteName=true;
                      }
                      if(!wroteName) {
                          //TODO: Something based on what comes back
@@ -180,18 +173,12 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(Substance.class,DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
                  if (s instanceof ChemicalSubstance) {
                      ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     if(pubOnly) {
-                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
-                     cell.writeString(chemicalSubstance.getStructure().formula);
+                     Optional.ofNullable(chemicalSubstance.getStructure())
+                             .ifPresent(ss->{
+                                cell.writeString(ss.formula);
+                             });
+                     
                  } else if (s instanceof PolymerSubstance) {
-                     if(pubOnly) {
-                         if(!((PolymerSubstance) s).getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
                      //TODO: there's a property that should be the fallback for this  
                      // for proteins, polymers, etc
                      cell.writeString("");
@@ -202,16 +189,12 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(Substance.class,DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
                  if (s instanceof ChemicalSubstance) {
                      ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     if(pubOnly) {
-                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
                      Structure.Stereo ster = chemicalSubstance.getStereochemistry();
                      if (ster!=null && !ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
                          return;
                      }
-
+                    
+                    
                      try {
                          Chemical chem = s.toChemical();
                          cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(chem))
@@ -228,12 +211,11 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              DEFAULT_RECIPE_MAP.put(DefaultColumns.SMILES, createRestrictableRecipe(DefaultColumns.SMILES, (s,pubOnly, cell) -> {
                  if (s instanceof ChemicalSubstance) {
                      ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     if(pubOnly) {
-                         if(!chemicalSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
-                     cell.writeString(chemicalSubstance.getStructure().smiles);
+                    
+                     Optional.ofNullable(chemicalSubstance.getStructure())
+                             .ifPresent(ss->{
+                                cell.writeString(ss.smiles);
+                             });
                  }
              }));
           
@@ -244,22 +226,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
                 
              DEFAULT_RECIPE_MAP.put(DefaultColumns.NAME, createRestrictableRecipe(Substance.class,DefaultColumns.NAME, (s, pubOnly,cell) -> {
-                 if(pubOnly) {
-                     Optional<Name> opName = s.getDisplayName();
-                     boolean wroteName = false;
-                     if(opName.isPresent()) {
-                         if(opName.get().getAccess().isEmpty()) {
-                             cell.writeString(opName.get().getName());
-                             wroteName=true;
-                         }
-                     }
-                     if(!wroteName) {
-                         //TODO: Something based on what comes back
-                     }
-                     
-                 }else {
-                     cell.writeString(s.getName());
-                 }
+                 cell.writeString(s.getName());                 
              }).replaceColumnName(DefaultColumns.NAME.name(), "UTF8_DISPLAY_NAME"));
                          
              
@@ -271,17 +238,11 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
              DEFAULT_RECIPE_MAP.put(DefaultColumns.PROTEIN_SEQUENCE, createRestrictableRecipe(DefaultColumns.PROTEIN_SEQUENCE, (s,pubOnly, cell) -> {
                  if (s instanceof ProteinSubstance) {
                      ProteinSubstance proteinSubstance = (ProteinSubstance) s;
-                     if(pubOnly) {
-                         if(!proteinSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
+                     if(proteinSubstance.protein==null)return;
                      List<Subunit> subunits = proteinSubstance.protein.getSubunits();
+                     if(subunits==null)return;
                      StringBuilder sb = new StringBuilder();
                      for (Subunit su : subunits) {
-                         if(pubOnly && !su.getAccess().isEmpty()) {
-                             continue;
-                         }
                          if (sb.length() != 0) {
                              sb.append("|");
                          }
@@ -295,19 +256,12 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                  //TODO: perhaps put a limit on this? 4000 chars?
                   if (s instanceof NucleicAcidSubstance) {
                      NucleicAcidSubstance nucleicAcidSubstance = (NucleicAcidSubstance) s;
-                     if(pubOnly) {
-                         if(!nucleicAcidSubstance.getDefinitionElement().getAccess().isEmpty()) {
-                             return;
-                         }
-                     }
+                     if(nucleicAcidSubstance.nucleicAcid==null)return;
                      List<Subunit> subunits = nucleicAcidSubstance.nucleicAcid.getSubunits();
-
+                     if(subunits==null)return;
                      StringBuilder sb = new StringBuilder();
 
                      for (Subunit su : subunits) {
-                         if(pubOnly && !su.getAccess().isEmpty()) {
-                             continue;
-                         }
                          if (sb.length() != 0) {
                              sb.append("|");
                          }
