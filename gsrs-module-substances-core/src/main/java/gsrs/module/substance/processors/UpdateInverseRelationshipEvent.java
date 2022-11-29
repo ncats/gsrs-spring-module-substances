@@ -35,14 +35,12 @@ public class UpdateInverseRelationshipEvent {
      * @return
      */
     public TryToCreateInverseRelationshipEvent toCreateEvent() {
-        
-        
         return TryToCreateInverseRelationshipEvent.builder()
          .creationMode(CreationMode.CREATE_IF_MISSING)
          .relationshipIdToInvert(relationshipIdThatWasUpdated)
          .originatorUUID(originatorUUID)
-         .toSubstance(substanceIdToUpdate)
          .fromSubstance(substanceIdToUpdate)
+         .toSubstance(substanceIdThatWasUpdated)
          .build();
     }
 }

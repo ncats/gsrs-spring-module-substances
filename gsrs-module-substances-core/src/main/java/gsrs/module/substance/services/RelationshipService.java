@@ -1,6 +1,20 @@
 package gsrs.module.substance.services;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
+
 import gov.nih.ncats.common.Tuple;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.EntityPersistAdapter;
@@ -20,15 +34,9 @@ import ix.ginas.models.utils.RelationshipUtil;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
+@Slf4j
 @Service
 public class RelationshipService {
     @Autowired
@@ -120,23 +128,29 @@ public class RelationshipService {
 
     //TODO: This needs tests, it is unlikely to work as consistently as desired
     private Optional<String> findOldType(UpdateInverseRelationshipEvent event, Substance owner) {
-        Edit edit = editRepository.findByRefidAndVersion(owner.uuid.toString(), Integer.toString(Integer.parseInt(owner.version)-1)).get(0);
+        
         try {
-            Relationship oldRelationship = SubstanceBuilder.from(edit.newValue).build()
+        	Edit edit = editRepository.findFirstByKeyOrderByCreatedDesc(owner.fetchKey()).orElse(null);
+        	Relationship oldRelationship = SubstanceBuilder.from(edit.newValue).build()
                     .relationships.stream()
                     .filter(r-> r.uuid.equals(event.getRelationshipIdThatWasUpdated()))
                     .findAny()
                     .get();
             return Optional.of(oldRelationship.type);
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             return Optional.empty();
         }
     }
 
     public void updateInverseRelationshipFor(UpdateInverseRelationshipEvent event){
-        Optional<Relationship> opt = findReverseRelationship(event);
+        Optional<Relationship> opt=Optional.empty();
+        try {
+            opt = findReverseRelationship(event);
+        }catch(Exception e) {
+            log.warn("Trouble finding inverted relationship", e);
+        }
         if(!opt.isPresent()) {
+            createNewInverseRelationshipFor(event.toCreateEvent());
             return;
         }
         Relationship r1 = opt.get();
