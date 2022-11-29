@@ -205,12 +205,12 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
     }
     
     private String prepareQuery(String stdName) {
-    	 String query = "root_names_stdName:\"^" + stdName
-    			 .replace("\"", "") //eliminate any internal quotes
-    	         .replace("*", "?").replace("~","?")  //replace special lucene chars with single-char wildcard
-    	         									  // TODO: this isn't perfect, but does a pretty good job
-    			 + "$\"";
-    	 return query;
+        String query = "root_names_stdName:\"^" + stdName
+                .replace("\"", "") //eliminate any internal quotes
+    	        .replace("*", "?").replace("~","?")  //replace special lucene chars with single-char wildcard
+                                                     // TODO: this isn't perfect, but does a pretty good job
+                + "$\"";
+        return query;
     }
 
     public Optional<Substance> findOneIndexedSubstanceByStdNameExcludingUuid(String stdName, UUID excludeUuid) {
