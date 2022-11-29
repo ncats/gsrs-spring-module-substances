@@ -178,36 +178,11 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
 
         });
     }
-    /*
     public Substance checkStdNameForDuplicateInOtherRecordsViaIndexer(Substance s, String stdName) {
-        List<Substance> substances = findIndexedSubstancesByStdName(stdName);
+        
         try {
-            if (substances!=null && !substances.isEmpty()) {
-                Substance s2 = null;
-                Iterator<Substance> it = substances.iterator();
-                while (it.hasNext()) {
-                    s2 = it.next();
-                    if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
-                        return s2;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Should we throw it?
-            log.error("Problem checking for duplicate standard name.", e);
-        }
-        return null;
-    }
-*/
-    public Substance checkStdNameForDuplicateInOtherRecordsViaIndexer(Substance s, String stdName) {
-        List<Substance> substances = findOneIndexedSubstanceByStdNameExcludingUuid(stdName, s.getOrGenerateUUID());
-        try {
-            if (substances!=null && !substances.isEmpty()) {
-                Substance s2 = null;
-                Iterator<Substance> it = substances.iterator();
-                s2 = it.next();
-                return s2;
-            }
+        	Optional<Substance> substance = findOneIndexedSubstanceByStdNameExcludingUuid(stdName, s.getOrGenerateUUID());
+            return substance.orElse(null);
         } catch (Exception e) {
             // Should we throw it?
             log.error("Problem checking for duplicate standard name.", e);
@@ -217,32 +192,42 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
 
     public List<Substance> findIndexedSubstancesByStdName(String stdName) {
         Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
-        String query = "root_names_stdName:\"^" + stdName + "$\"";
+        String query = prepareQuery(stdName);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
-                .query("root_names_stdName:\"^" + stdName + "$\"")
+                .simpleSearchOnly(true)
+                .query(query)
                 .top(Integer.MAX_VALUE)
                 .build();
         List<Substance> substances = getSearchList(request);
         return substances;
     }
+    
+    private String prepareQuery(String stdName) {
+    	 String query = "root_names_stdName:\"^" + stdName
+    			 .replace("\"", "") //eliminate any internal quotes
+    	         .replace("*", "?").replace("~","?")  //replace special lucene chars with single-char wildcard
+    	         									  // TODO: this isn't perfect, but does a pretty good job
+    			 + "$\"";
+    	 return query;
+    }
 
-    public List<Substance> findOneIndexedSubstanceByStdNameExcludingUuid(String stdName, UUID excludeUuid) {
+    public Optional<Substance> findOneIndexedSubstanceByStdNameExcludingUuid(String stdName, UUID excludeUuid) {
         // This one allows you to exclude a specific uuid, that way we only
         // need to build a search result list with one substance.
         Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
         Objects.requireNonNull(excludeUuid, "Parameter 'excludeUuid' must not be null");
-        String query = "root_names_stdName:\"^" + stdName + "$\"";
+        String query = prepareQuery(stdName);
         query += " AND NOT " + "root_uuid:\"^" + excludeUuid + "$\"";
         SearchRequest request = new SearchRequest.Builder()
-        .kind(Substance.class)
-        .fdim(0)
-        .query(query)
-        .top(1)
-        .build();
-        List<Substance> substances = getSearchList(request);
-        return substances;
+	        .kind(Substance.class)
+	        .simpleSearchOnly(true) //this avoids doing all the extra facets/etc
+	        .fdim(0)
+	        .query(query)
+	        .top(1)
+	        .build();
+        return getSearchList(request).stream().findFirst();
     }
 
     /**
