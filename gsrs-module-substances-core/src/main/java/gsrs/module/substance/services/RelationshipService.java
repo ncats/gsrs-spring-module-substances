@@ -127,10 +127,28 @@ public class RelationshipService {
     }
 
     //TODO: This needs tests, it is unlikely to work as consistently as desired
+    // TP 2022-11-29: Indeed this method was found to be the source of certain rare bugs.
+    //                The main issue was that this method previously only looked at the version-1 version
+    //                of the record, but sometimes the last saved version of a record isn't the immediately
+    //                preceding version. It now looks at the most recent edit, and will return an empty
+    //                optional if none is found.
+    // However, it's still unclear what would happen if this is called after a record is created during the
+    // first edit. Still need some tests for various cases. The reason this hasn't been extremely important is
+    // that this code is called only when relationships are incomplete/out-of-sync for some reason.
+    //
+    //
+    /**
+     * Finds the previous type of the relationship in question based on the last saved edit. Returns empty
+     * optional if none is found.
+     * @param event
+     * @param owner
+     * @return
+     */
     private Optional<String> findOldType(UpdateInverseRelationshipEvent event, Substance owner) {
         
         try {
         	Edit edit = editRepository.findFirstByKeyOrderByCreatedDesc(owner.fetchKey()).orElse(null);
+        	if(edit==null)return Optional.empty();
         	Relationship oldRelationship = SubstanceBuilder.from(edit.newValue).build()
                     .relationships.stream()
                     .filter(r-> r.uuid.equals(event.getRelationshipIdThatWasUpdated()))
@@ -150,6 +168,11 @@ public class RelationshipService {
             log.warn("Trouble finding inverted relationship", e);
         }
         if(!opt.isPresent()) {
+        	//if no suitable inverted form is found to be updated, chances are that
+        	//there was no suitable inverse yet. This can happen if the data was loaded
+        	//in a particular order sometimes, or more likely when a non-invertible
+        	//relationship is changed to be invertible. In such cases we need to treat
+        	//this update event like it's a creation event and make the inverse
             createNewInverseRelationshipFor(event.toCreateEvent());
             return;
         }
@@ -165,15 +188,19 @@ public class RelationshipService {
                 //can this happen?
                 return Optional.empty();
             }
-            //Relationship removed
+            //If the inverted relationship points to the wrong substance that means the target
+            //has been changed. Instead of updating the relationship, then, we need to delete
+            //it and add another equivalent relationship on a different record.
             if(!osub2.uuid.toString().equals(updatedInverseRelationship.relatedSubstance.refuuid)) {
-                //relationship removed
+                //remove the previous relationship
                 RelationshipProcessor.doWithoutEventTracking(()->{
                     relationshipRepository.delete(toUpdate);    
                 });
                 osub2.removeRelationship(toUpdate);
                 osub2.forceUpdate();
                 Substance osub3=substanceRepository.saveAndFlush(osub2);
+                //trigger new creation event as if this had been a new relationship just
+                //created
                 createNewInverseRelationshipFor(event.toCreateEvent());
                 return Optional.of(osub3);
             }

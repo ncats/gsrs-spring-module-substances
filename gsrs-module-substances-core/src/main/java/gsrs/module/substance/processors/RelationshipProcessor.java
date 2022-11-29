@@ -109,6 +109,11 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	public void preUpdate(Relationship obj) {
 	    if(!enabled.get().get()) return;
 	    
+	    //if this is a one-way relationship, then
+	    //we need to remove any potentially previous inverted form
+	    //from the other record. Eventually we need to remove
+	    //the concept of a one-way relationship as it's confusing and
+	    //causes some complicated flows with very few advantages
 	    if(!obj.isAutomaticInvertible()) {
 	    	remove(obj);
 	    }
@@ -125,6 +130,12 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	}
 
+	/**
+	 * Initiate a direct pre-remove event without checking whether the relationship is invertible,
+	 * etc. This triggers a {@link RemoveInverseRelationshipEvent} and publishes it.
+	 * 
+	 * @param obj the Relationship object to trigger the pre-remove event.
+	 */
 	private void remove(Relationship obj) {
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
@@ -140,10 +151,12 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 
 	}
 	
+	
 	@Override
 	public void preRemove(Relationship obj) {
 	    if(!enabled.get().get()) return;
 	    if (obj.isAutomaticInvertible()) {
+	    	//direct call only when the relationship is invertible
 	    	remove(obj);
 	    }
 	}
