@@ -982,6 +982,7 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("3", sub1Fetched.version);
         assertEquals(1, sub1Fetched.relationships.size());
+        assertEquals(uuid3.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid.toString());
         
         sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("3", sub2Fetched.version);
@@ -990,6 +991,7 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         sub3Fetched = substanceEntityService.get(uuid3).get();
         assertEquals("2", sub3Fetched.version);
         assertEquals(1, sub3Fetched.relationships.size());
+        assertEquals(uuid1.toString(), sub3Fetched.relationships.get(0).relatedSubstance.refuuid.toString());
     }
     /*
      * 5. Changing the substance class of a record should preserve old relationships
