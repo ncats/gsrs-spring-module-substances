@@ -1,27 +1,14 @@
 package example.substance.validation;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import gsrs.cache.GsrsCache;
-import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.service.GsrsEntityService;
-import ix.core.models.Keyword;
-import com.fasterxml.jackson.databind.JsonNode;
-import example.GsrsModuleSubstanceApplication;
-import gsrs.module.substance.controllers.SubstanceLegacySearchService;
-import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
-import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.TestGsrsValidatorFactory;
-import gsrs.startertests.TestIndexValueMakerFactory;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
-import ix.core.chem.StructureProcessor;
-import ix.core.validator.ValidationResponse;
-import ix.ginas.models.EmbeddedKeywordList;
-import ix.ginas.models.v1.Name;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.validators.StandardNameDuplicateValidator;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,10 +16,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import java.io.IOException;
-import java.util.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static org.junit.jupiter.api.Assertions.*;
+import example.GsrsModuleSubstanceApplication;
+import gsrs.cache.GsrsCache;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.service.GsrsEntityService;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.startertests.TestIndexValueMakerFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.validator.DefaultValidatorConfig;
+import gsrs.validator.ValidatorConfig;
+import ix.core.models.Keyword;
+import ix.core.validator.ValidationResponse;
+import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.EmbeddedKeywordList;
+import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.validators.StandardNameDuplicateValidator;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
@@ -53,28 +57,17 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         @Autowired
         private GsrsCache cache;
 
-        private String fileName = "rep18.gsrs";
-
+        
         @BeforeEach
         public void clearIndexers() throws IOException {
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-                {
-                        ValidatorConfig config = new DefaultValidatorConfig();
-                        config.setNewObjClass(Substance.class);
-                        factory.addValidator("substances", config);
-                }
-                        // File dataFile = new ClassPathResource(fileName).getFile();
-                        // loadGsrsFile(dataFile);
+        	ValidatorConfig config = new DefaultValidatorConfig();
+        	config.setNewObjClass(Substance.class);
+        	factory.addValidator("substances", config);
         }
 
         @Test
         public void testCheckStdNameForDuplicateInOtherRecordsViaIndexer() {
-                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
-                validator.setTransactionManager(transactionManager);
-                validator.setSearchService(searchService);
-                validator.setSubstanceRepository(substanceRepository);
+                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
 
                 String template = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
 
@@ -112,8 +105,8 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 Substance otherSubstance1 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
                 assertEquals(otherSubstance1.getUuid(), s1.getUuid());
 
-                List<Substance> substances2 = validator.findOneIndexedSubstanceByStdNameExcludingUuid(stdName1_b, s1.getUuid());
-                assertEquals(substances2.size(), 1);
+                Optional<Substance> substances2 = validator.findOneIndexedSubstanceByStdNameExcludingUuid(stdName1_b, s1.getUuid());
+                assertTrue(substances2.isPresent());
                 Substance otherSubstance2 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
                 assertEquals(otherSubstance2.getUuid(), s1.getUuid());
 
@@ -134,10 +127,8 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         @Test
         public void testStdNameDuplicateInOtherRecordViaIndexer() {
-                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
-                validator.setTransactionManager(transactionManager);
-                validator.setSearchService(searchService);
-                validator.setSubstanceRepository(substanceRepository);
+                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                
                 validator.setCheckDuplicateInOtherRecord(true);
                 validator.setOnDuplicateInOtherRecordShowError(true);
 
@@ -177,7 +168,101 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 anyMatch(vm->vm.getMessageType().toString().equals("ERROR") && vm.getMessage().contains(validator.getDUPLICATE_IN_OTHER_RECORD_MESSAGE_TEST_FRAGMENT()));
                 Assertions.assertTrue(found);
         }
+        
 
+        @Test
+        public void testStdNameDuplicateInOtherRecordViaIndexerWhenNameHasWildcard() {
+                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                
+                validator.setCheckDuplicateInOtherRecord(true);
+                validator.setOnDuplicateInOtherRecordShowError(true);
+
+                
+                UUID uuid1 = UUID.randomUUID();
+                UUID uuid2 = UUID.randomUUID();
+                
+                SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
+                		.addName("TEST* ABC", n->n.stdName="TEST* ABC")
+                		.setUUID(uuid1);
+                assertCreated(substanceBuilder1.buildJson());
+                
+                SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
+                		.addName("TEST2* ABC", n->n.stdName="TEST2* ABC")
+                		.setUUID(uuid2);
+                assertCreated(substanceBuilder2.buildJson());
+                
+              
+                assertEquals(substanceRepository.count(), 2);
+
+                ValidationResponse<Substance> response = validator.validate(substanceBuilder1.build(), null);
+
+                boolean found = response.getValidationMessages().stream().
+                anyMatch(vm->vm.getMessageType().toString().equals("ERROR"));
+                Assertions.assertFalse(found);
+        }
+
+
+        @Test
+        public void testStdNameDuplicateInOtherRecordViaIndexerWhenNameHasWildcardDuplicate() {
+                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                
+                validator.setCheckDuplicateInOtherRecord(true);
+                validator.setOnDuplicateInOtherRecordShowError(true);
+
+                
+                UUID uuid1 = UUID.randomUUID();
+                UUID uuid2 = UUID.randomUUID();
+                
+                SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
+                		.addName("TEST* ABC", n->n.stdName="TEST* ABC")
+                		.setUUID(uuid1);
+                assertCreated(substanceBuilder1.buildJson());
+                
+                SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
+                		.addName("TEST2* ABC", n->n.stdName="TEST* ABC")
+                		.setUUID(uuid2);
+                assertCreated(substanceBuilder2.buildJson());
+                
+              
+                assertEquals(substanceRepository.count(), 2);
+
+                ValidationResponse<Substance> response = validator.validate(substanceBuilder1.build(), null);
+
+                boolean found = response.getValidationMessages().stream().
+                anyMatch(vm->vm.getMessageType().toString().equals("ERROR"));
+                Assertions.assertTrue(found);
+        }
+        
+        @Test
+        public void testStdNameDuplicateInOtherRecordViaIndexerWhenNameHasWildcardDuplicateQuestionMark() {
+                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                
+                validator.setCheckDuplicateInOtherRecord(true);
+                validator.setOnDuplicateInOtherRecordShowError(true);
+
+                
+                UUID uuid1 = UUID.randomUUID();
+                UUID uuid2 = UUID.randomUUID();
+                
+                SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
+                		.addName("TEST* ABC", n->n.stdName="TEST? ABC")
+                		.setUUID(uuid1);
+                assertCreated(substanceBuilder1.buildJson());
+                
+                SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
+                		.addName("TEST2* ABC", n->n.stdName="TEST? ABC")
+                		.setUUID(uuid2);
+                assertCreated(substanceBuilder2.buildJson());
+                
+              
+                assertEquals(substanceRepository.count(), 2);
+
+                ValidationResponse<Substance> response = validator.validate(substanceBuilder1.build(), null);
+
+                boolean found = response.getValidationMessages().stream().
+                anyMatch(vm->vm.getMessageType().toString().equals("ERROR"));
+                Assertions.assertTrue(found);
+        }
 
         public Substance loadSubstanceFromJsonString(String jsonText) {
                 Substance substance = null;
@@ -201,14 +286,10 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         @Test
         public void testDuplicateInSameRecordShowWarning() {
                 boolean showError = false;
-                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
                 validator.setCheckDuplicateInSameRecord(true);
 //                validator.setCheckDuplicateInOtherRecord(false);
                 validator.setOnDuplicateInSameRecordShowError(showError);
-                validator.setSubstanceRepository(substanceRepository);
-                validator.setTransactionManager(transactionManager);
-                validator.setSearchService(searchService);
-                validator.setCache(cache);
                 Substance s1 = new Substance();
                 Name name1 = new Name();
                 name1.name ="TestSame1";
@@ -240,14 +321,10 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         @Test
         public void testDuplicateInSameRecordShowError() {
                 boolean showError = true;
-                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
                 validator.setCheckDuplicateInSameRecord(true);
 //                validator.setCheckDuplicateInOtherRecord(false);
                 validator.setOnDuplicateInSameRecordShowError(showError);
-                validator.setSubstanceRepository(substanceRepository);
-                validator.setTransactionManager(transactionManager);
-                validator.setSearchService(searchService);
-                validator.setCache(cache);
                 Substance s1 = new Substance();
                 Name name1 = new Name();
                 name1.name ="TestSame1";
