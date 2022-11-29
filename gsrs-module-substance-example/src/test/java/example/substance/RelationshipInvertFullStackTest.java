@@ -153,6 +153,8 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         assertEquals(1, fetchedSubstance1.relationships.size());
     }
     
+    
+    
 
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipShouldResultInBirectionalRelationship()   throws Exception {
@@ -399,6 +401,145 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         assertEquals(bat_foo, sub2Fetched.relationships.get(0).type);
     }
 
+    
+
+    @Test
+    public void add2SubstancesWithNoRelationshipThenAddRelationshipThenChangeRelationshipTypeToNonInvertibleShouldResultInOneDirectionalRelationship()   throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        String foo_bar = "foo->bar";
+        String bar_foo = "bar->foo";
+        
+        String one_way = "ACTIVE MOIETY";
+        
+        
+        new SubstanceBuilder()
+                .addName("sub1")
+                .setUUID(uuid1)
+                .buildJsonAnd(this::assertCreatedAPI);
+        new SubstanceBuilder()
+            .addName("sub2")
+            .setUUID(uuid2)
+            .buildJsonAnd(this::assertCreatedAPI);
+       
+       
+
+        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+        assertEquals("1", sub1Fetched.version);
+        
+        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
+        assertEquals("1", sub2Fetched.version);
+        
+        
+        sub1Fetched.toBuilder()
+                    .addRelationshipTo(sub2Fetched, foo_bar)
+                    .buildJsonAnd(this::assertUpdatedAPI);
+        
+        
+        sub1Fetched = substanceEntityService.get(uuid1).get();
+        assertEquals("2", sub1Fetched.version);
+        
+        sub2Fetched = substanceEntityService.get(uuid2).get();
+        assertEquals("2", sub2Fetched.version);
+        
+        assertEquals(1, sub1Fetched.relationships.size());
+        assertEquals(1, sub2Fetched.relationships.size());
+        
+        assertEquals(uuid2.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(foo_bar, sub1Fetched.relationships.get(0).type);
+        
+        
+        assertEquals(uuid1.toString(), sub2Fetched.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
+        
+        sub1Fetched.toBuilder()
+        .andThen(s->{
+            Relationship rel = s.relationships.get(0);
+            
+            rel.type=one_way;
+        })
+        .buildJsonAnd(this::assertUpdatedAPI);
+        
+        sub1Fetched = substanceEntityService.get(uuid1).get();
+        assertEquals("3", sub1Fetched.version);
+
+        assertEquals(uuid2.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(one_way, sub1Fetched.relationships.get(0).type);
+        
+        sub2Fetched = substanceEntityService.get(uuid2).get();
+        assertEquals("3", sub2Fetched.version);
+        assertEquals(0, sub2Fetched.relationships.size());
+        
+    }
+    
+
+    @Test
+    public void add2SubstancesWithNoRelationshipThenAddNonInvertibleRelationshipThenChangeRelationshipTypeToInvertibleShouldResultInBiDirectionalRelationship()   throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        String foo_bar = "foo->bar";
+        String bar_foo = "bar->foo";
+        
+        String one_way = "ACTIVE MOIETY";
+        
+        
+        new SubstanceBuilder()
+                .addName("sub1")
+                .setUUID(uuid1)
+                .buildJsonAnd(this::assertCreatedAPI);
+        new SubstanceBuilder()
+            .addName("sub2")
+            .setUUID(uuid2)
+            .buildJsonAnd(this::assertCreatedAPI);
+       
+       
+
+        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+        assertEquals("1", sub1Fetched.version);
+        
+        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
+        assertEquals("1", sub2Fetched.version);
+        
+        
+        sub1Fetched.toBuilder()
+                    .addRelationshipTo(sub2Fetched, one_way)
+                    .buildJsonAnd(this::assertUpdatedAPI);
+        
+        
+        sub1Fetched = substanceEntityService.get(uuid1).get();
+        assertEquals("2", sub1Fetched.version);
+        
+        sub2Fetched = substanceEntityService.get(uuid2).get();
+        assertEquals("1", sub2Fetched.version);
+        
+        assertEquals(1, sub1Fetched.relationships.size());
+        assertEquals(0, sub2Fetched.relationships.size());
+        
+        assertEquals(uuid2.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(one_way, sub1Fetched.relationships.get(0).type);
+        
+        
+        sub1Fetched.toBuilder()
+        .andThen(s->{
+            Relationship rel = s.relationships.get(0);
+            
+            rel.type=foo_bar;
+        })
+        .buildJsonAnd(this::assertUpdatedAPI);
+        
+        sub1Fetched = substanceEntityService.get(uuid1).get();
+        assertEquals("3", sub1Fetched.version);
+
+        assertEquals(uuid2.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(foo_bar, sub1Fetched.relationships.get(0).type);
+        
+        sub2Fetched = substanceEntityService.get(uuid2).get();
+        assertEquals("2", sub2Fetched.version);
+        assertEquals(1, sub2Fetched.relationships.size());
+        assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
+        assertEquals(uuid1.toString(), sub2Fetched.relationships.get(0).relatedSubstance.refuuid);
+    }
+    
     
 
     @Test
@@ -841,6 +982,7 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("3", sub1Fetched.version);
         assertEquals(1, sub1Fetched.relationships.size());
+        assertEquals(uuid3.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid.toString());
         
         sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("3", sub2Fetched.version);
@@ -849,6 +991,7 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         sub3Fetched = substanceEntityService.get(uuid3).get();
         assertEquals("2", sub3Fetched.version);
         assertEquals(1, sub3Fetched.relationships.size());
+        assertEquals(uuid1.toString(), sub3Fetched.relationships.get(0).relatedSubstance.refuuid.toString());
     }
     /*
      * 5. Changing the substance class of a record should preserve old relationships
