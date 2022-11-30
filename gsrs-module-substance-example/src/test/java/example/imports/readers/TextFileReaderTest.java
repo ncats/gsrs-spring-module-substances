@@ -24,7 +24,7 @@ public class TextFileReaderTest {
         Assertions.assertTrue(textFile.exists());
         FileInputStream fileInputStream = new FileInputStream(textFile);
         TextFileReader reader = new TextFileReader();
-        Stream<DefaultPropertyBasedRecordContext> dataRecordContextStream =reader.readFile(fileInputStream, "\t");
+        Stream<DefaultPropertyBasedRecordContext> dataRecordContextStream =reader.readFile(fileInputStream, "\t",false);
         fileInputStream.close();
         long expectedRecordCount =35;
         List<DefaultPropertyBasedRecordContext> data = dataRecordContextStream.collect(Collectors.toList());
@@ -32,7 +32,26 @@ public class TextFileReaderTest {
         Assertions.assertEquals(expectedRecordCount, actual);
         String uuid="84d0336c-d9a6-4394-8d42-c2afdbcd93b5";
         String expectedApprovalId="7HMD7M29RI";
-        DefaultPropertyBasedRecordContext selectedDataItem = data.stream().filter(d->d.getProperty("UUID").equals(uuid)).findFirst().get();
-        Assertions.assertEquals(expectedApprovalId, selectedDataItem.getProperty("APPROVAL_ID"));
+        DefaultPropertyBasedRecordContext selectedDataItem = data.stream().filter(d->d.getProperty("UUID").get().equals(uuid)).findFirst().get();
+        Assertions.assertEquals(expectedApprovalId, selectedDataItem.getProperty("APPROVAL_ID").get());
+    }
+
+    @Test
+    public void testRead2() throws IOException {
+        String fileName = "testText/export-inn-proteins-plus.csv";
+        File textFile = (new ClassPathResource(fileName)).getFile();
+        Assertions.assertTrue(textFile.exists());
+        FileInputStream fileInputStream = new FileInputStream(textFile);
+        TextFileReader reader = new TextFileReader();
+        Stream<DefaultPropertyBasedRecordContext> dataRecordContextStream =reader.readFile(fileInputStream, ",", true);
+        fileInputStream.close();
+        long expectedRecordCount =125;
+        List<DefaultPropertyBasedRecordContext> data = dataRecordContextStream.collect(Collectors.toList());
+        long actual = data.size();
+        Assertions.assertEquals(expectedRecordCount, actual);
+        String uuid="543a3b27-f51e-477b-8a87-dabf509517ed";
+        String expectedRn="1186098-83-8";
+        DefaultPropertyBasedRecordContext selectedDataItem = data.stream().filter(d->d.getProperty("UUID").get().equals(uuid)).findFirst().get();
+        Assertions.assertEquals(expectedRn, selectedDataItem.getProperty("RN").get());
     }
 }
