@@ -14,6 +14,12 @@ public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Subst
 
     private String fieldDelimiter;
 
+    private Class holdingAreaService;
+
+    private List<Class> entityServices;
+
+    private Class entityServiceClass;
+
     @Override
     public String getAdapterName() {
         return "Delimited Text Adapter";
@@ -52,32 +58,32 @@ public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Subst
 
     @Override
     public Class getHoldingAreaService() {
-        return null;
+        return this.holdingAreaService;
     }
 
     @Override
     public void setHoldingAreaService(Class holdingService) {
-
+        this.holdingAreaService=holdingService;
     }
 
     @Override
     public Class getHoldingAreaEntityService() {
-        return null;
+        return this.entityServiceClass;
     }
 
     @Override
     public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
-
+        this.entityServiceClass=holdingAreaEntityService;
     }
 
     @Override
     public List<Class> getEntityServices() {
-        return null;
+        return this.entityServices;
     }
 
     @Override
     public void setEntityServices(List<Class> services) {
-
+        this.entityServices=services;
     }
 
     @Override

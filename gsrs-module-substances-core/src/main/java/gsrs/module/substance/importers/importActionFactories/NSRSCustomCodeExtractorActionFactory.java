@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataexchange.model.*;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
@@ -42,7 +43,7 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
      within NSRS
      */
     @Override
-    public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         MappingActionFactoryMetadata metaData = getMetadata();
         return (sub, sdRec) -> {
 

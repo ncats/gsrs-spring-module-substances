@@ -2,7 +2,7 @@ package gsrs.module.substance.importers.importActionFactories;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingActionFactory;
-import gsrs.module.substance.importers.model.SDRecordContext;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public abstract class BaseActionFactory implements MappingActionFactory<Substance, SDRecordContext> {
+public abstract class BaseActionFactory implements MappingActionFactory<Substance, PropertyBasedDataRecordContext> {
 
     Map<String, Object> parameters = new HashMap<>();
 

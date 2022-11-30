@@ -4,6 +4,7 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Property;
@@ -18,7 +19,7 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 
 @Slf4j
 public class PropertyExtractorActionFactory extends BaseActionFactory {
-    public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
         Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\-(\\d+\\.?\\d+)(.+)");
         Pattern variationPattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+) (.+)");

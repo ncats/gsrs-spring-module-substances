@@ -3,6 +3,7 @@ package example.imports;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.PropertyExtractorActionFactory;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
@@ -54,7 +55,7 @@ public class SdfAdapterFactoryTest {
         absParameters.put("propertyType", "physical");
 
         PropertyExtractorActionFactory factory = new PropertyExtractorActionFactory();
-        MappingAction<Substance, SDRecordContext> mappingAction = factory.create(absParameters);
+        MappingAction<Substance, PropertyBasedDataRecordContext> mappingAction = factory.create(absParameters);
         ChemicalSubstance chemicalSubstance = new ChemicalSubstance();
         mappingAction.act(chemicalSubstance, record);
         chemicalSubstance.properties.forEach(p->log.trace("property: {}, amt: {}", p.getName(), p.getValue().toString()));
@@ -122,6 +123,11 @@ public class SdfAdapterFactoryTest {
         public List<String> getProperties() {
             return Arrays.asList("cas.rn", "cas.index.name", "molecular.formula", "molecular.weight", "melting.point.experimental",
                     "boiling.point.predicted", "density.predicted", "pka.predicted");
+        }
+
+        @Override
+        public Map<String, String> getSpecialPropertyMap() {
+            return null;
         }
 
         @Override

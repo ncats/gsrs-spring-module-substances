@@ -7,7 +7,12 @@ import java.util.stream.Collectors;
 
 public class ChemicalBackedSDRecordContext implements SDRecordContext {
     private Chemical c;
-    private Map<String, String> specialProps = new HashMap<>();
+
+    /*
+    specialProperties is a Map under the direct control of this class, in addition to the properties Map within the
+    Chemical object, which is immutable and shared with other consumers of Molwitch.
+     */
+    private Map<String, String> specialProperties = new HashMap<>();
 
     public ChemicalBackedSDRecordContext(Chemical c) {
         this.c = c;
@@ -33,15 +38,8 @@ public class ChemicalBackedSDRecordContext implements SDRecordContext {
     }
 
     @Override
-    public Optional<String> resolveSpecial(String name) {
-
-        if (name.startsWith("UUID_")) {
-            String ret = specialProps.computeIfAbsent(name, k -> {
-                return UUID.randomUUID().toString();
-            });
-            return Optional.ofNullable(ret);
-        }
-        return Optional.empty();
+    public Map<String, String> getSpecialPropertyMap() {
+        return this.specialProperties;
     }
 
     @Override

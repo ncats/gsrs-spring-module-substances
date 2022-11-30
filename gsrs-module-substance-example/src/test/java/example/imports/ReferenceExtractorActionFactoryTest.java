@@ -4,6 +4,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -37,7 +38,7 @@ public class ReferenceExtractorActionFactoryTest {
 
         chemicalSubstance.setStructure(structure);
         ReferenceExtractorActionFactory factory= new ReferenceExtractorActionFactory();
-        MappingAction<Substance, SDRecordContext> action= factory.create(inputParams);
+        MappingAction<Substance, PropertyBasedDataRecordContext> action= factory.create(inputParams);
         action.act(chemicalSubstance, ctx);
         Reference reference = chemicalSubstance.references.get(0);
         Assertions.assertTrue(reference.isPublicDomain());

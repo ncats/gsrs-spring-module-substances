@@ -12,6 +12,7 @@ import gsrs.imports.*;
 import gsrs.module.substance.importers.NSRSSDFImportAdapterFactory;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.models.v1.Substance;
@@ -62,7 +63,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         factory.initialize();
         JsonNode dataNode = buildDataNode();
 
-        List<MappingAction<Substance, SDRecordContext>> mappingActions= factory.getMappingActions(dataNode);
+        List<MappingAction<Substance, PropertyBasedDataRecordContext>> mappingActions= factory.getMappingActions(dataNode);
         Assertions.assertTrue(mappingActions.size()>0);
         System.out.println("class: " + mappingActions.get(0).getClass().getName());
 

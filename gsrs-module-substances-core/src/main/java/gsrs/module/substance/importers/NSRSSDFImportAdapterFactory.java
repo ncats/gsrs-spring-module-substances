@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.importActionFactories.*;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
@@ -42,7 +43,7 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
     @SneakyThrows
     @Override
     public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
-        List<MappingAction<Substance, SDRecordContext>> actions = getMappingActions(adapterSettings);
+        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
         ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }

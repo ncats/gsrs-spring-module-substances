@@ -6,6 +6,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
@@ -24,7 +25,7 @@ class NSRSCASExtractorActionFactoryTest {
         abstractParams.put("CASNumber", "50-00-0");
         abstractParams.put("codeType","PRIMARY");
         NSRSCASExtractorActionFactory nsrscasExtractorActionFactory = new NSRSCASExtractorActionFactory();
-        MappingAction<Substance, SDRecordContext> action = nsrscasExtractorActionFactory.create(abstractParams);
+        MappingAction<Substance, PropertyBasedDataRecordContext> action = nsrscasExtractorActionFactory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C=O");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 

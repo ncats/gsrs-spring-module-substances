@@ -9,6 +9,7 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.imports.*;
 import gsrs.module.substance.importers.importActionFactories.*;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.models.v1.Substance;
@@ -42,7 +43,10 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     protected List<ActionConfigImpl> fileImportActions;
 
     private Class holdingAreaService;
-    private Class entityService;
+
+    private List<Class> entityServices;
+
+    private Class entityServiceClass;
 
     public SDFImportAdapterFactory() {
     }
@@ -110,13 +114,16 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     as well as regular SD file properties
     Passes the result through an encoder function before returning
      */
-    public static String resolveParameter(SDRecordContext rec, String inp, Function<String, String> encoder) {
+    public static String resolveParameter(PropertyBasedDataRecordContext rec, String inp, Function<String, String> encoder) {
         log.trace("in resolveParameter, inp: {}", inp);
-        inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
-            if (p.equals("molfile")) return Optional.ofNullable(rec.getStructure()).map(encoder);
-            if (p.equals("molfile_name")) return Optional.ofNullable(rec.getMolfileName()).map(encoder);
-            return rec.getProperty(p).map(encoder);
-        });
+        if(rec instanceof SDRecordContext) {
+            SDRecordContext sdRec = (SDRecordContext)rec;
+            inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
+                if (p.equals("molfile")) return Optional.ofNullable(sdRec.getStructure()).map(encoder);
+                if (p.equals("molfile_name")) return Optional.ofNullable(sdRec.getMolfileName()).map(encoder);
+                return rec.getProperty(p).map(encoder);
+            });
+        }
         inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p).map(encoder));
         return inp;
     }
@@ -130,7 +137,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     with values found in the record.
     todo: add a table of example input/output values
      */
-    public static Map<String, Object> resolveParametersMap(SDRecordContext rec, Map<String, Object> inputMap)
+    public static Map<String, Object> resolveParametersMap(PropertyBasedDataRecordContext rec, Map<String, Object> inputMap)
         throws Exception{
         log.trace("in resolveParametersMap. rec properties: ");
         rec.getProperties().forEach(p->log.trace("property: {}; value: {}", p, rec.getProperty(p)));
@@ -153,7 +160,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     }
 
 
-    protected Map<String, MappingActionFactory<Substance, SDRecordContext>> registry = new ConcurrentHashMap<>();
+    protected Map<String, MappingActionFactory<Substance, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
 
     @Override
     public void initialize(){
@@ -165,10 +172,10 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             fileImportActions.forEach(fia->{
                 String actionName =fia.getActionName();
                 Class actionClass =fia.getActionClass();
-                MappingActionFactory<Substance, SDRecordContext> mappingActionFactory;
+                MappingActionFactory<Substance, PropertyBasedDataRecordContext> mappingActionFactory;
                 try {
                     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                    mappingActionFactory = (MappingActionFactory<Substance, SDRecordContext>) mapper.convertValue(fia,
+                    mappingActionFactory = (MappingActionFactory<Substance, PropertyBasedDataRecordContext>) mapper.convertValue(fia,
                             actionClass);
 
                     if(!fia.getParameters().isEmpty()) {
@@ -197,8 +204,8 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
 
-    public List<MappingAction<Substance, SDRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
-        List<MappingAction<Substance, SDRecordContext>> actions = new ArrayList<>();
+    public List<MappingAction<Substance, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
+        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
@@ -206,10 +213,10 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
             log.trace("about to call convertValue");
             Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
             log.trace("Finished call to convertValue");
-            MappingAction<Substance, SDRecordContext> action =null;
+            MappingAction<Substance, PropertyBasedDataRecordContext> action =null;
             try {
                 log.trace("looking for action {}; registry size: {}", actionName, registry.size());
-                MappingActionFactory<Substance, SDRecordContext> mappingActionFactory=registry.get(actionName);
+                MappingActionFactory<Substance, PropertyBasedDataRecordContext> mappingActionFactory=registry.get(actionName);
                 if( mappingActionFactory instanceof BaseActionFactory && this.statistics != null) {
                     ((BaseActionFactory) mappingActionFactory).setAdapterSchema(this.statistics.getAdapterSchema());
                     log.trace("called setAdapterSchema");
@@ -254,7 +261,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     @Override
     public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
-        List<MappingAction<Substance, SDRecordContext>> actions = getMappingActions(adapterSettings);
+        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
         ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }
@@ -316,32 +323,32 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
 
     @Override
     public Class getHoldingAreaEntityService() {
-        return null;
+        return this.holdingAreaService;
     }
 
     @Override
     public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
-
+        this.holdingAreaService=holdingAreaEntityService;
     }
 
     @Override
     public List<Class> getEntityServices() {
-        return null;
+        return this.entityServices;
     }
 
     @Override
     public void setEntityServices(List<Class> services) {
-
+        this.entityServices=services;
     }
 
     @Override
     public Class getEntityServiceClass() {
-        return entityService;
+        return this.entityServiceClass;
     }
 
     @Override
     public void setEntityServiceClass(Class newClass) {
-        entityService=newClass;
+        this.entityServiceClass=newClass;
     }
 
     public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {

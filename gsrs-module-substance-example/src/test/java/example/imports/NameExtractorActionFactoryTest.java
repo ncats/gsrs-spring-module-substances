@@ -4,6 +4,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -35,7 +36,7 @@ public class NameExtractorActionFactoryTest {
         structure.smiles=smilesForDiclofenac;
 
         chemicalSubstance.setStructure(structure);
-        MappingAction<Substance, SDRecordContext> action= nameExtractorActionFactory.create(inputParams);
+        MappingAction<Substance, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
         action.act(chemicalSubstance, ctx);
         Name newlyCreatedName = chemicalSubstance.names.get(0);
         Assertions.assertEquals(nameDiclofenac, newlyCreatedName.name);
@@ -62,7 +63,7 @@ public class NameExtractorActionFactoryTest {
         structure.smiles=smilesForDiclofenac;
 
         chemicalSubstance.setStructure(structure);
-        MappingAction<Substance, SDRecordContext> action= nameExtractorActionFactory.create(inputParams);
+        MappingAction<Substance, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
         action.act(chemicalSubstance, ctx);
         Name newlyCreatedName = chemicalSubstance.names.get(0);
         Assertions.assertTrue(newlyCreatedName.isDisplayName());
@@ -88,7 +89,7 @@ public class NameExtractorActionFactoryTest {
         structure.smiles=smilesForDiclofenac;
 
         chemicalSubstance.setStructure(structure);
-        MappingAction<Substance, SDRecordContext> action= nameExtractorActionFactory.create(inputParams);
+        MappingAction<Substance, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
         action.act(chemicalSubstance, ctx);
         Name newlyCreatedName = chemicalSubstance.names.get(0);
         newlyCreatedName.getReferences().stream().anyMatch(r->  r.term.length()>100);

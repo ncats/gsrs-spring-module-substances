@@ -4,6 +4,7 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
@@ -22,7 +23,7 @@ public class NSRSCASExtractorActionFactory extends BaseActionFactory {
     private final String DEFAULT_URL = "https://commonchemistry.cas.org/detail?cas_rn=";
 
     @Override
-    public MappingAction<Substance, SDRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         MappingActionFactoryMetadata metaData = getMetadata();
         return (sub, sdRec) -> {
             //resolveParametersMap leaves most things unchanged. molfile undergo conversion to structures

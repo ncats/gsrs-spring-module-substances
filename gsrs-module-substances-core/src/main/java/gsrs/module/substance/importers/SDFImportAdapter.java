@@ -5,6 +5,7 @@ import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
@@ -19,11 +20,11 @@ import java.util.stream.Stream;
 @Slf4j
 public class SDFImportAdapter implements ImportAdapter<Substance> {
 
-    List<MappingAction<Substance, SDRecordContext>> actions;
+    List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions;
 
     private String fileEncoding;
     
-    public SDFImportAdapter(List<MappingAction<Substance, SDRecordContext>> actions){
+    public SDFImportAdapter(List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions){
         this.actions = actions;
     }
     
@@ -40,7 +41,7 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
     	  .map(sd->{
                //TODO: perhaps a builder instead?
                Substance s = new ChemicalSubstance();
-               for(MappingAction<Substance, SDRecordContext> action: actions){
+               for(MappingAction<Substance, PropertyBasedDataRecordContext> action: actions){
                    try {
                        log.trace("Before action, substance has {} names and {} codes", s.names.size(), s.codes.size());
                        s=action.act(s, sd);
