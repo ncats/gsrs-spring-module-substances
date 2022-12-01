@@ -1,18 +1,31 @@
 package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import gsrs.dataexchange.model.MappingAction;
+import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
+import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
+import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.models.v1.Substance;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Substance> {
+@Slf4j
+public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     private String fieldDelimiter;
+
+    private boolean trimQuotesFromInput = false;
+
+    private String inputFileName;
 
     private Class holdingAreaService;
 
@@ -35,10 +48,13 @@ public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Subst
         return Arrays.asList("csv", "txt", "tsv");
     }
 
+    @SneakyThrows
     @Override
     public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
-
-        return null;
+        log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
+        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
+        DelimTextImportAdapter importAdapter = new DelimTextImportAdapter (actions);
+        return importAdapter;
     }
 
     @Override
@@ -48,12 +64,12 @@ public class DelimTextImportAdapterFactory implements ImportAdapterFactory<Subst
 
     @Override
     public void setFileName(String fileName) {
-
+        inputFileName=fileName;
     }
 
     @Override
     public String getFileName() {
-        return null;
+        return this.inputFileName;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package gsrs.module.substance.importers.importActionFactories;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.models.GinasAccessControlled;
@@ -17,7 +18,7 @@ public abstract class BaseActionFactory implements MappingActionFactory<Substanc
 
     Map<String, Object> parameters = new HashMap<>();
 
-    private JsonNode adapterSchema;
+    private JsonNode adapterSchema = JsonNodeFactory.instance.objectNode();
 
     private static void assignReferences(GinasAccessReferenceControlled object, Object referenceList) {
         List<String> refs = (List<String>) referenceList;

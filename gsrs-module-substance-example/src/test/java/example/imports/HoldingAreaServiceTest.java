@@ -6,14 +6,12 @@ import gsrs.holdingarea.service.DefaultHoldingAreaService;
 import gsrs.holdingarea.service.HoldingAreaService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
-import ix.core.chem.StructureProcessor;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -47,7 +45,7 @@ public class HoldingAreaServiceTest  extends AbstractSubstanceJpaEntityTest {
             Assertions.fail("Error locating testing method!");
         }
         testMethod.setAccessible(true);
-        //create a basic substance
+        //create a chemical substance with as little data as possible
         UUID uuid1 = UUID.randomUUID();
         ChemicalSubstance chem= new ChemicalSubstanceBuilder()
                 .setStructureWithDefaultReference("CCCC")
@@ -55,9 +53,9 @@ public class HoldingAreaServiceTest  extends AbstractSubstanceJpaEntityTest {
                 .setUUID(uuid1)
                 .build();
         List<MatchableKeyValueTuple> matchables = (List<MatchableKeyValueTuple>) testMethod.invoke(holdingAreaService, chem);
-        System.out.println("matchables: ");
-        matchables.forEach(m-> System.out.printf("key: %s; value: %s; layer: %d\n", m.getKey(), m.getValue(), m.getLayer()));
-        Assertions.assertTrue(matchables.stream().anyMatch(m->m.getKey().equalsIgnoreCase("Definitional Hash")
-            && m.getValue().equals("structure.properties.hash1->IJDNQMDRQITEOD@1")));
+        log.trace("(matchables)");
+        matchables.forEach(m-> log.trace("key: '{}'; value: '{}'; layer: {}\n", m.getKey(), m.getValue(), m.getLayer()));
+        Assertions.assertTrue(matchables.stream().anyMatch(m->m.getKey().equalsIgnoreCase("Definitional Hash - Layer 1")
+            && m.getValue().equals("f2f9c75f73c90d8e8f8d7701fef83e1beda60182")));
     }
 }

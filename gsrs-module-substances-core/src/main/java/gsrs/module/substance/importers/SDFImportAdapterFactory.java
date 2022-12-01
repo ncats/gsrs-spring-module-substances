@@ -20,7 +20,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -28,7 +27,7 @@ import java.util.stream.Collectors;
 
 @SpringBootConfiguration
 @Slf4j
-public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> {
+public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     public final static String SIMPLE_REF = "UUID_1";
     public final static String SIMPLE_REFERENCE_ACTION = "public_reference";
     public final static String ACTION_NAME = "actionName";
@@ -60,6 +59,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     public static final Pattern SPECIAL_RESOLVE = Pattern.compile("\\[\\[([^\\]]*)\\]\\]");
 
     private String originalFileName;
+
     private ImportAdapterStatistics statistics;
 
     public List<ActionConfigImpl> getFileImportActions() {
@@ -160,7 +160,6 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
     }
 
 
-    protected Map<String, MappingActionFactory<Substance, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
 
     @Override
     public void initialize(){
@@ -204,41 +203,7 @@ public class SDFImportAdapterFactory implements ImportAdapterFactory<Substance> 
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
 
-    public List<MappingAction<Substance, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
-        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
-        adapterSettings.get("actions").forEach(js -> {
-            String actionName = js.get("actionName").asText();
-            JsonNode actionParameters = js.get("actionParameters");
-            ObjectMapper mapper = new ObjectMapper();
-            log.trace("about to call convertValue");
-            Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
-            log.trace("Finished call to convertValue");
-            MappingAction<Substance, PropertyBasedDataRecordContext> action =null;
-            try {
-                log.trace("looking for action {}; registry size: {}", actionName, registry.size());
-                MappingActionFactory<Substance, PropertyBasedDataRecordContext> mappingActionFactory=registry.get(actionName);
-                if( mappingActionFactory instanceof BaseActionFactory && this.statistics != null) {
-                    ((BaseActionFactory) mappingActionFactory).setAdapterSchema(this.statistics.getAdapterSchema());
-                    log.trace("called setAdapterSchema");
-                }
-                log.trace("mappingActionFactory: " + mappingActionFactory);
-                if( mappingActionFactory!=null ) {
-                    action=mappingActionFactory.create(params);
-                    actions.add(action);
-                }
-                else {
-                    log.error("No action found for "+ actionName);
-                }
-            }
-            catch (Exception ex) {
-                log.error("Error in getMappingActions: " + ex.getMessage());
-                ex.printStackTrace();
-            }
 
-
-        });
-        return actions;
-    }
 
     //** TYLER ADDING SPECIAL END
 

@@ -38,6 +38,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         oneAdapter.put("adapterName", "NSRS SDF Adapter");
         oneAdapter.put("extensions", Arrays.asList("sdf", "sd"));
         oneAdapter.put("parameters", buildConfigParameters());
+        oneAdapter.put("holdingAreaServiceClass", gsrs.holdingarea.service.DefaultHoldingAreaService.class);
         List<Map<String, Object>> adapters = new ArrayList<>();
         adapters.add(oneAdapter);
         adapterConfig.put(substanceContext, adapters);

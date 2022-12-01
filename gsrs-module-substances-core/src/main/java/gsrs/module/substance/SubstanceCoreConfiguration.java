@@ -47,7 +47,8 @@ import gsrs.holdingarea.service.ImportMetadataLegacySearchService;
         SubstanceMatchViewGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
-        GsrsProcessingStrategyFactory.class
+        GsrsProcessingStrategyFactory.class,
+        ImportMetadataLegacySearchService.class
 })
 public class SubstanceCoreConfiguration {
 
