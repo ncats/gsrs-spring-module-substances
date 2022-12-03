@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://gsrs.ncats.nih.gov/#/export.scrubber.schema.json",
   "title": "Scrubber Parameters",
-  "description": "Factors that control the behavior of a Java class that removes private parts of a data object before the object is shared",
+  "description": "Factors that control the behavior of a Java class that removes non-public parts of a data object before the object is shared",
   "type": "object",
   "properties": {
     "removeDates": {
@@ -16,7 +16,7 @@
       "type": "boolean"
     },
     "removeAllLockedAccessGroupsToInclude": {
-      "comments": "Names of access groups to that will NOT be removed ",
+      "comments": "Names of access groups that will NOT be removed ",
       "type": "array",
       "items": {
         "type": "string"
@@ -33,7 +33,7 @@
       "CVDomain": "ACCESS_GROUP"
     },
     "removeAllLockedRemoveElementsIfNoExportablePublicRef": {
-      "comments": "elements to remove when they have no public references",
+      "comments": "Elements to remove when they have no public references",
       "type": "boolean",
       "title": "Remove elements if no exportable selected public domain reference",
       "visibleIf": {
@@ -68,7 +68,7 @@
       }
     },
     "removeCodesBySystem": {
-      "comments": "When selected, remove any Codes whose CodeSystem is on the list",
+      "comments": "When selected, remove any codes whose code system is on the list",
       "title": "Remove codes by system",
       "type": "boolean"
     },
@@ -90,7 +90,7 @@
       "CVDomain": "CODE_SYSTEM"
     },
     "removeCodesBySystemCodeSystemsToKeep": {
-      "comments": "Code Systems to keep",
+      "comments": "Code systems to keep",
       "type": "array",
       "items": {
         "type": "string"
@@ -107,12 +107,12 @@
       "CVDomain": "CODE_SYSTEM"
     },
     "removeReferencesByCriteria": {
-      "comments": "When selected, remove any References that meet specified criteria",
+      "comments": "When selected, remove any references that meet specified criteria",
       "title": "Remove references by criteria",
       "type": "boolean"
     },
     "removeReferencesByCriteriaReferenceTypesToRemove": {
-      "comments": "Document Types to look at. When a Reference is of that document type, remove it",
+      "comments": "Document types to look at. When a reference is of that document type, remove it",
       "type": "array",
       "items": {
         "type": "string"
@@ -129,7 +129,7 @@
       "CVDomain": "DOCUMENT_TYPE"
     },
     "removeReferencesByCriteriaCitationPatternsToRemove": {
-      "comments": "Patterns (RegExes) to apply to Reference citation.  When a citation matches, remove the Reference",
+      "comments": "Patterns (RegExes) to apply to reference citation.  When a citation matches, remove the reference",
       "type": "string",
       "title": "Citation patterns to remove",
       "visibleIf": {
@@ -142,7 +142,7 @@
       }
     },
     "removeReferencesByCriteriaExcludeReferenceByPattern": {
-      "comments": "Remove References by looking at citationPatternsToRemove",
+      "comments": "Remove references by looking at citationPatternsToRemove",
       "title": "Exclude reference by pattern",
       "type": "boolean",
       "visibleIf": {
@@ -199,7 +199,7 @@
       }
     },
     "removeNotes": {
-      "comments": "When selected, remove all Notes",
+      "comments": "When selected, remove all notes",
       "type": "boolean",
       "title": "Remove notes"
     },
@@ -209,12 +209,12 @@
       "title": "Remove change reason"
     },
     "approvalIdCleanup": {
-      "comments": "When selected, apply additional criteria to the approval ID field",
+      "comments": "Apply additional criteria to the approval ID field",
       "type": "boolean",
       "title": "Approval ID clean-up"
     },
     "approvalIdCleanupRemoveApprovalId": {
-      "comments": "When selected, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
+      "comments": "The record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is removed",
       "type": "boolean",
       "title": "Remove approval ID",
       "visibleIf": {
@@ -224,7 +224,7 @@
       }
     },
     "approvalIdCleanupCopyApprovalIdToCode": {
-      "comments": "When selected, the record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
+      "comments": "The record's approval ID (system-generated identifier created when the substance is verified by a second registrar) is copied to a code",
       "type": "boolean",
       "title": "Copy approval ID to code if code not already present",
       "visibleIf": {
@@ -244,12 +244,12 @@
       }
     },
     "regenerateUUIDs": {
-      "comments": "When selected, all UUIDs in the object being exported will be given a newly-generated value",
+      "comments": "All UUIDs in the object being exported will be given a newly-generated value",
       "type": "boolean",
       "title": "Regenerate UUIDs"
     },
     "changeAllStatuses": {
-      "comments": "When selected, all status value in the object being exported will be given a value",
+      "comments": "All status value in the object being exported will be given a value",
       "type": "boolean",
       "title": "Change all statuses"
     },
@@ -264,12 +264,12 @@
       }
     },
     "auditInformationCleanup": {
-      "comments": "When selected, apply succeeding criteria to audit fields",
+      "comments": "Apply succeeding criteria to audit fields",
       "type": "boolean",
       "title": "Audit information clean-up"
     },
     "auditInformationCleanupDeidentifyAuditUser": {
-      "comments": "When selected, remove users listed as creator or modifier of records and subrecords",
+      "comments": "Remove users listed as creator or modifier of records and subrecords",
       "type": "boolean",
       "title": "Deidentify audit user",
       "visibleIf": {
@@ -279,7 +279,7 @@
       }
     },
     "auditInformationCleanupNewAuditorValue": {
-      "comments": "new string value to assign to all auditor (creator/modifier) fields throughout the object",
+      "comments": "New string value to assign to all auditor (creator/modifier) fields throughout the object",
       "title": "New auditor value",
       "type": "string",
       "visibleIf": {
@@ -319,7 +319,7 @@
       }
     },
     "scrubbedDefinitionHandling": {
-      "comments": "apply some additional scrubbing to definitions that had parts removed",
+      "comments": "Apply some additional scrubbing to definitions that had parts removed",
       "title": "Scrubbed definition handling",
       "type": "boolean"
     },
