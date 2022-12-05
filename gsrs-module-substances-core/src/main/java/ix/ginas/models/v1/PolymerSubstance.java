@@ -85,7 +85,7 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
 	     srefs.addAll(super.getNonDefiningSubstanceReferencesAndParents());
 	     if(polymer.monomers!=null) {
 				polymer.monomers.forEach(s -> {
-					if (!s.defining && s.monomerSubstance!=null) {
+					if (s!=null && !s.defining && s.monomerSubstance!=null) {
 						srefs.add(Tuple.of(s,s.monomerSubstance));
 					}
 				});
