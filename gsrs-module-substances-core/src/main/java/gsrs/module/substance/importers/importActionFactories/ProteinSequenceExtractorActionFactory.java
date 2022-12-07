@@ -40,8 +40,7 @@ public class ProteinSequenceExtractorActionFactory extends BaseActionFactory {
             log.trace("params: ");
             params.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
 
-            String sequenceFieldName =(String) params.get("sequenceFieldName");
-            String sequenceRaw =dataRec.getProperty(sequenceFieldName).get();
+            String sequenceRaw = (String) params.get("proteinSequence");
             if(subunitDelimiter!=null && subunitDelimiter.length()>0) {
                 String[] sequences= sequenceRaw.split(subunitDelimiter);
                 for(int s=0; s<sequences.length; s++){

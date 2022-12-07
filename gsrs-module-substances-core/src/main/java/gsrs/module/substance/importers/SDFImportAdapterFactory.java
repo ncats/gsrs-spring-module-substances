@@ -116,6 +116,8 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
                 if (p.equals("molfile_name")) return Optional.ofNullable(sdRec.getMolfileName()).map(encoder);
                 return rec.getProperty(p).map(encoder);
             });
+        } else {
+            inp= replacePattern(inp, SDF_RESOLVE, (p)->rec.getProperty(p).map(encoder));
         }
         inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p).map(encoder));
         return inp;

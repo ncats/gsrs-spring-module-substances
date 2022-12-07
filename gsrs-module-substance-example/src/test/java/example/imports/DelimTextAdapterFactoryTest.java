@@ -175,6 +175,7 @@ public class DelimTextAdapterFactoryTest {
         nameNode.set("actionName", nameActionNameNode);
         ObjectNode adapter2Parameters = JsonNodeFactory.instance.objectNode();
         adapter2Parameters.put("name","{{DISPLAY_NAME}}");
+        adapter2Parameters.put("displayName", true);
         nameNode.set("actionParameters", adapter2Parameters);
         actionListNode.add(nameNode);
         
@@ -198,6 +199,9 @@ public class DelimTextAdapterFactoryTest {
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
                 .map(p->((ProteinSubstanceBuilder)p).build())
                 .collect(Collectors.toList());
+        Assertions.assertTrue(proteinSubstances.stream().allMatch(p->p.protein.subunits.get(0).sequence.length()>0));
+        Assertions.assertTrue(proteinSubstances.stream().allMatch(p->p.names.get(0).name.length()>0));
         Assertions.assertEquals(3, proteinSubstances.size());
+
     }
 }
