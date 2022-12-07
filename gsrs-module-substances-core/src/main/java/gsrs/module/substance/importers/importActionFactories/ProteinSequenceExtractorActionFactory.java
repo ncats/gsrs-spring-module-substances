@@ -5,9 +5,8 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import ix.ginas.models.v1.Protein;
-import ix.ginas.models.v1.ProteinSubstance;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.models.v1.Subunit;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -25,15 +24,16 @@ public class ProteinSequenceExtractorActionFactory extends BaseActionFactory {
     private String subunitDelimiter;
 
     @Override
-    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
         return (sub, dataRec) -> {
-            if(! (sub instanceof ProteinSubstance)) {
+            if(! (sub  instanceof ProteinSubstanceBuilder)) {
                 log.error("Error in create: substance is not a protein");
                 return sub;
             }
-            ProteinSubstance proteinSubstance = (ProteinSubstance)sub;
-            proteinSubstance.protein = new Protein();
+            ProteinSubstanceBuilder proteinSubstance = (ProteinSubstanceBuilder) sub;
+            //sub.setProtein(new Protein());
+            //proteinSubstance.protein = ;
             log.trace("lambda");
             abstractParams.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
             Map<String, Object> params = resolveParametersMap(dataRec, abstractParams);
@@ -48,20 +48,20 @@ public class ProteinSequenceExtractorActionFactory extends BaseActionFactory {
                     Subunit subunit= new Subunit();
                     subunit.sequence=sequences[s];
                     subunit.subunitIndex=(s+1);//a guess
-                    proteinSubstance.protein.subunits.add(subunit);
+                    proteinSubstance.addSubUnit(subunit).build().toBuilder();
                     log.trace("Added subunit with sequence {}", sequences[s]);
                 }
             }  else {
                 Subunit subunit= new Subunit();
                 subunit.sequence=sequenceRaw;
                 subunit.subunitIndex=1;//a guess
-                proteinSubstance.protein.subunits.add(subunit);
+                proteinSubstance.addSubUnit(subunit).build().toBuilder();
                 log.trace("Added subunit with sequence {}", sequenceRaw);
             }
             //doBasicsImports(c, params); -- not relevant to proteins?
             //TODO: consider more params
 
-            return sub;
+            return proteinSubstance;
         };
 
     }

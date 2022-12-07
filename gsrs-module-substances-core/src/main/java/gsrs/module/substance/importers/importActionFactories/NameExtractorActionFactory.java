@@ -5,10 +5,9 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.core.models.Keyword;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Name;
-import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -21,11 +20,10 @@ public class NameExtractorActionFactory extends BaseActionFactory {
     private static final String DEFAULT_LANGUAGE = "en";
     private static final String DEFAULT_NAME_TYPE = "cn";
     @Override
-    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
         return (sub, sdRec) -> {
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
-
             boolean splitNames = Boolean.parseBoolean(params.getOrDefault("split_names", "true").toString());
 
             String suppliedName = (String) params.get("name");
@@ -39,7 +37,7 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                     //check for duplicates
                     sn = sn.trim();
                     String finalSn = sn; //weird limitation of lambdas in Java
-                    if(sub.names.stream().anyMatch(n->n.name.equals(finalSn))){
+                    if(sub.build().names.stream().anyMatch(n->n.name.equals(finalSn))){
                         log.info(String.format("duplicate name '%s' skipped", sn));
                         continue;
                     }
@@ -50,11 +48,11 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                     n.displayName=isDisplayName;
                     doBasicsImports(n, params);
                     //TODO: more params
-                    sub.names.add(n);
+                    sub.addName(n);
                 }
             } else {
                 String finalSn = suppliedName; //weird limitation of lambdas in Java
-                if(sub.names.stream().anyMatch(n->n.name.equals(finalSn))){
+                if(sub.build().names.stream().anyMatch(n->n.name.equals(finalSn))){
                     log.info(String.format("duplicate name '%s' skipped", suppliedName));
                 }
                 else {
@@ -62,7 +60,7 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                     n.setName(suppliedName.trim());
                     n.type=nameType;
                     doBasicsImports(n, params);
-                    sub.names.add(n);
+                    sub.addName(n);
                 }
             }
             return sub;

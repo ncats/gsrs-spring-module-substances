@@ -4,17 +4,17 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
-import ix.ginas.models.v1.Substance;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-public abstract class BaseActionFactory implements MappingActionFactory<Substance, PropertyBasedDataRecordContext> {
+public abstract class BaseActionFactory implements MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> {
 
     Map<String, Object> parameters = new HashMap<>();
 

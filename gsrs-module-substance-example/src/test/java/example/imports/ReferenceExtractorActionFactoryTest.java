@@ -5,11 +5,11 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Reference;
-import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -38,9 +38,11 @@ public class ReferenceExtractorActionFactoryTest {
 
         chemicalSubstance.setStructure(structure);
         ReferenceExtractorActionFactory factory= new ReferenceExtractorActionFactory();
-        MappingAction<Substance, PropertyBasedDataRecordContext> action= factory.create(inputParams);
-        action.act(chemicalSubstance, ctx);
-        Reference reference = chemicalSubstance.references.get(0);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action= factory.create(inputParams);
+        SubstanceBuilder builder= chemicalSubstance.toBuilder();
+        action.act(builder, ctx);
+        ChemicalSubstance newChem = builder.asChemical().build();
+        Reference reference = newChem.references.get(0);
         Assertions.assertTrue(reference.isPublicDomain());
         Assertions.assertEquals(tagForRelease, reference.tags.get(0).getValue());
     }

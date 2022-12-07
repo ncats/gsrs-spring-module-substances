@@ -1,3 +1,4 @@
+
 package gsrs.module.substance.importers.importActionFactories;
 
 import gov.nih.ncats.molwitch.Chemical;
@@ -6,7 +7,8 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
-import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -65,12 +67,13 @@ class NSRSCustomCodeExtractorActionFactoryTest {
 
         factory.setFields(casFields);
 
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("CC(=O)C");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        ChemicalSubstance test = new ChemicalSubstance();
-        Substance newChem =action.act(test, record);
+        //ChemicalSubstance test = new ChemicalSubstance();
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Substance newChem =action.act(builder, record).build();
         Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals("CAS")
                 && c.code.equals(acetoneCas)
                 && c.url.equals("https://commonchemistry.cas.org/detail?cas_rn="+acetoneCas)));
@@ -122,12 +125,13 @@ class NSRSCustomCodeExtractorActionFactoryTest {
         fields.add(supplierCodeUrlField);
         factory.setFields(fields);
 
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(=CC=C1)C(=C1)CCC(C)=O");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        ChemicalSubstance test = new ChemicalSubstance();
-        Substance newChem =action.act(test, record);
+        //ChemicalSubstance test = new ChemicalSubstance();
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Substance newChem =action.act(builder, record).build();
         Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals(supplierCodeSystem)
                 && c.code.equals(supplierName)
                 && c.url.equals("https://www.selleckchem.com/")));
@@ -169,12 +173,13 @@ class NSRSCustomCodeExtractorActionFactoryTest {
 
         factory.setFields(saltCodeFields);
 
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(NCC1)C(N=C2)=C(N2)1.Cl");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        ChemicalSubstance test = new ChemicalSubstance();
-        Substance newChem =action.act(test, record);
+        //ChemicalSubstance test = new ChemicalSubstance();
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Substance newChem =action.act(builder, record).build();
         Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals(saltCodeCodeSystem) && c.code.equals(saltCodeValue)));
     }
 
@@ -214,12 +219,13 @@ class NSRSCustomCodeExtractorActionFactoryTest {
 
         factory.setFields(saltEquivFields);
 
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(NCC1)C(N=C2)=C(N2)1.Cl");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        ChemicalSubstance test = new ChemicalSubstance();
-        Substance newChem =action.act(test, record);
+        //ChemicalSubstance test = new ChemicalSubstance();
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Substance newChem =action.act(builder, record).build();
         Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals(saltEquivalentCodeSystem) && c.code.equals(saltEquivalentValue)
             && c.type.equals("PRIMARY")));
     }
@@ -260,12 +266,13 @@ class NSRSCustomCodeExtractorActionFactoryTest {
 
         factory.setFields(supplierIdFields);
 
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(=CC=C1)C(=C1)CCC(C)=O");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        ChemicalSubstance test = new ChemicalSubstance();
-        Substance newChem =action.act(test, record);
+        //ChemicalSubstance test = new ChemicalSubstance();
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Substance newChem =action.act(builder, record).build();
         Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals(supplierIdCodeSystem) && c.code.equals(supplierId)));
     }
 
@@ -304,12 +311,13 @@ class NSRSCustomCodeExtractorActionFactoryTest {
 
         factory.setFields(supplierIdFields);
 
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(=CC=C1)C(=C1)CCC(C)=O");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        ChemicalSubstance test = new ChemicalSubstance();
-        Substance newChem =action.act(test, record);
+        //ChemicalSubstance test = new ChemicalSubstance();
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Substance newChem =action.act(builder, record).build();
         Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals(supplierIdCodeSystem) && c.code.equals(supplierId)));
     }
 
@@ -355,12 +363,12 @@ class NSRSCustomCodeExtractorActionFactoryTest {
         Map<String, Object> abstractParams = new HashMap<>();
         abstractParams.put("code", "FALSE");
 
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = factory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C(=CC=C1)C(=C1)CCC(C)=O");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        ChemicalSubstance test = new ChemicalSubstance();
-        Substance newChem =action.act(test, record);
+        SubstanceBuilder test = new SubstanceBuilder();
+        Substance newChem =action.act(test, record).build();
         Assertions.assertTrue(newChem.codes.stream().anyMatch(c->c.codeSystem.equals("internal_external") && c.code.equalsIgnoreCase("FALSE")));
     }
 

@@ -5,10 +5,11 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Name;
-import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -30,14 +31,15 @@ public class NameExtractorActionFactoryTest {
         inputParams.put("nameType", "bn");
         inputParams.put("lang", "en");
 
-        ChemicalSubstance chemicalSubstance = new ChemicalSubstance();
+        ChemicalSubstanceBuilder chemicalSubstance = new ChemicalSubstanceBuilder();
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.smiles=smilesForDiclofenac;
 
         chemicalSubstance.setStructure(structure);
-        MappingAction<Substance, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
         action.act(chemicalSubstance, ctx);
-        Name newlyCreatedName = chemicalSubstance.names.get(0);
+        ChemicalSubstance newChem = chemicalSubstance.build();
+        Name newlyCreatedName = newChem.names.get(0);
         Assertions.assertEquals(nameDiclofenac, newlyCreatedName.name);
         Assertions.assertEquals("en",newlyCreatedName.languages.get(0).getValue());
         Assertions.assertEquals("bn", newlyCreatedName.type);
@@ -57,14 +59,15 @@ public class NameExtractorActionFactoryTest {
         inputParams.put("lang", "en");
         inputParams.put("displayName", true);
 
-        ChemicalSubstance chemicalSubstance = new ChemicalSubstance();
+        ChemicalSubstanceBuilder chemicalSubstance = new ChemicalSubstanceBuilder();
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.smiles=smilesForDiclofenac;
 
         chemicalSubstance.setStructure(structure);
-        MappingAction<Substance, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
         action.act(chemicalSubstance, ctx);
-        Name newlyCreatedName = chemicalSubstance.names.get(0);
+        ChemicalSubstance newChem = chemicalSubstance.build();
+        Name newlyCreatedName = newChem.names.get(0);
         Assertions.assertTrue(newlyCreatedName.isDisplayName());
     }
 
@@ -83,14 +86,15 @@ public class NameExtractorActionFactoryTest {
         String[] refs = {"[[UUID_1]]"};
         inputParams.put("referenceUUIDs", refs);
 
-        ChemicalSubstance chemicalSubstance = new ChemicalSubstance();
+        ChemicalSubstanceBuilder chemicalSubstance = new ChemicalSubstanceBuilder();
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.smiles=smilesForDiclofenac;
 
         chemicalSubstance.setStructure(structure);
-        MappingAction<Substance, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
         action.act(chemicalSubstance, ctx);
-        Name newlyCreatedName = chemicalSubstance.names.get(0);
+        ChemicalSubstance newChem = chemicalSubstance.build();
+        Name newlyCreatedName = newChem.names.get(0);
         newlyCreatedName.getReferences().stream().anyMatch(r->  r.term.length()>100);
     }
 }

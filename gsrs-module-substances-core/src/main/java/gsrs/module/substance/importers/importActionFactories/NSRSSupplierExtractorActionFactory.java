@@ -5,9 +5,8 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.Substance;
 
 import java.util.Map;
 
@@ -25,7 +24,7 @@ Use NSRSCustomCodeExtractorActionFactory instead
     Many, many substances may share the same Supplier.
      */
     @Override
-    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         MappingActionFactoryMetadata metaData = getMetadata();
         return (sub, sdRec) -> {
 

@@ -142,11 +142,11 @@ public class SubstanceBulkLoadService {
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
         synchronized (jobLock) {
             if(stats==null ) {
-                log.info("skipping save because stats is null");
+                //log.info("skipping save because stats is null");
                 return null;
             }
             if(!stats._isDone()) {
-                log.info("skipping save of job in process");
+                //log.info("skipping save of job in process");
                 return null;
             }
             TransactionTemplate tx = new TransactionTemplate(transactionManager);

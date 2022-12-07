@@ -5,9 +5,8 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Note;
-import ix.ginas.models.v1.Substance;
 
 import java.util.Map;
 
@@ -35,7 +34,7 @@ public class NotesExtractorActionFactory extends BaseActionFactory {
                 .build();
     }
 
-    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) {
+    public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) {
         return (sub, sdRec) -> {
             Map<String, Object> params = null;
             try {
@@ -47,7 +46,7 @@ public class NotesExtractorActionFactory extends BaseActionFactory {
             n.note = (String) params.get("note");
             doBasicsImports(n, params);
             //TODO: more params
-            sub.notes.add(n);
+            sub.build().notes.add(n);
             return sub;
         };
     }

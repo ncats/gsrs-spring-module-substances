@@ -1,15 +1,17 @@
 package gsrs.module.substance.importers.importActionFactories;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
+import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -19,11 +21,15 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<Substance> {
+public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<AbstractSubstanceBuilder> {
+
+    public final static String SIMPLE_REFERENCE_ACTION = "public_reference";
 
     protected ImportAdapterStatistics statistics;
 
-    protected Map<String, MappingActionFactory<Substance, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
+    protected Map<String, MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
+
+    protected List<ActionConfigImpl> fileImportActions;
 
     @Override
     public String getAdapterName() {
@@ -41,7 +47,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
     }
 
     @Override
-    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<AbstractSubstanceBuilder> createAdapter(JsonNode adapterSettings) {
         return null;
     }
 
@@ -100,20 +106,19 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     }
 
-    public List<MappingAction<Substance, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
-        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
+    public List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
             ObjectMapper mapper = new ObjectMapper();
             log.trace("about to call convertValue");
-            Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {
-            });
+            Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
             log.trace("Finished call to convertValue");
-            MappingAction<Substance, PropertyBasedDataRecordContext> action = null;
+            MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = null;
             try {
                 log.trace("looking for action {}; registry size: {}", actionName, registry.size());
-                MappingActionFactory<Substance, PropertyBasedDataRecordContext> mappingActionFactory = registry.get(actionName);
+                MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingActionFactory = registry.get(actionName);
                 if (mappingActionFactory instanceof BaseActionFactory && statistics != null) {
                     ((BaseActionFactory) mappingActionFactory).setAdapterSchema(statistics.getAdapterSchema());
                     log.trace("called setAdapterSchema");
@@ -131,6 +136,46 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
             }
         });
         return actions;
+    }
+
+    protected void defaultInitialize(){}
+
+
+    public void setFileImportActions(List<ActionConfigImpl> fileImportActions) {
+        log.trace("setFileImportActions");
+        this.fileImportActions = fileImportActions;
+    }
+
+    @Override
+    public void initialize(){
+        log.trace("fileImportActions: " + fileImportActions);
+        registry.clear();
+        if(fileImportActions !=null && fileImportActions.size() >0) {
+            log.trace("config-specific init");
+            ObjectMapper mapper = new ObjectMapper();
+            fileImportActions.forEach(fia->{
+                String actionName =fia.getActionName();
+                Class actionClass =fia.getActionClass();
+                MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingActionFactory;
+                try {
+                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    mappingActionFactory = (MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>) mapper.convertValue(fia,
+                            actionClass);
+
+                    if(!fia.getParameters().isEmpty()) {
+                        mappingActionFactory.setParameters(fia.getParameters());
+                        mappingActionFactory.implementParameters();
+                    }
+                } catch (Exception e) {
+                    log.error("Error parsing parameter metadata", e);
+                    throw new RuntimeException(e);
+                }
+                registry.put(actionName, mappingActionFactory);
+            });
+        }
+        else {
+            defaultInitialize();
+        }
     }
 
 }

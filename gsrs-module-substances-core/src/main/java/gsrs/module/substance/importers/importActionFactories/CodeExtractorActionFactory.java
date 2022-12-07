@@ -5,8 +5,8 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -16,7 +16,7 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 @Slf4j
 public class CodeExtractorActionFactory extends BaseActionFactory {
     @Override
-    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
         return (sub, sdRec) -> {
             log.trace("lambda");
@@ -55,6 +55,5 @@ public class CodeExtractorActionFactory extends BaseActionFactory {
                         .build())
                 .build();
     }
-
 
 }

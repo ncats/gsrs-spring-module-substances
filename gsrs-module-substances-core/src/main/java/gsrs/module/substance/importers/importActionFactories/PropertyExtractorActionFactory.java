@@ -5,11 +5,11 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Property;
-import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -19,7 +19,7 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 
 @Slf4j
 public class PropertyExtractorActionFactory extends BaseActionFactory {
-    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+    public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
         Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\-(\\d+\\.?\\d+)(.+)");
         Pattern variationPattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+) (.+)");
@@ -116,7 +116,7 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
             });
             //TODO: more params
             if( propertyComplete(p)) {
-                sub.properties.add(p);
+                sub.addProperty(p);
             } else {
                 log.warn("Skipping incomplete property");
             }

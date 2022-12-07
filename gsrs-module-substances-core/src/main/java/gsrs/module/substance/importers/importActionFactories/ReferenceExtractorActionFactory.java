@@ -6,19 +6,21 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
 import gsrs.dataexchange.model.MappingParameter;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.core.models.Keyword;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Reference;
-import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
 @Slf4j
 public class ReferenceExtractorActionFactory extends BaseActionFactory {
-    public MappingAction<Substance, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) {
+    public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) {
         return (sub, sdRec) -> {
             log.trace("in create");
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);

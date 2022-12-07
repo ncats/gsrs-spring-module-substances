@@ -13,15 +13,15 @@ import gsrs.module.substance.importers.NSRSSDFImportAdapterFactory;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.URLDecoder;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -51,8 +51,8 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         ObjectMapper mapper = new ObjectMapper();
         System.out.println("config: " + mapper.writeValueAsString(adapterConfig));
 
-        List<ImportAdapterFactory<Substance>> adapterFactories = factoryFactory.newFactory(substanceContext,
-                Substance.class);
+        List<ImportAdapterFactory<SubstanceBuilder>> adapterFactories = factoryFactory.newFactory(substanceContext,
+                SubstanceBuilder.class);
         Assertions.assertEquals(1, adapterFactories.size());
     }
 
@@ -64,7 +64,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         factory.initialize();
         JsonNode dataNode = buildDataNode();
 
-        List<MappingAction<Substance, PropertyBasedDataRecordContext>> mappingActions= factory.getMappingActions(dataNode);
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> mappingActions= factory.getMappingActions(dataNode);
         Assertions.assertTrue(mappingActions.size()>0);
         System.out.println("class: " + mappingActions.get(0).getClass().getName());
 

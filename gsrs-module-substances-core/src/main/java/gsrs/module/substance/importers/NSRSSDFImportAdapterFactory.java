@@ -3,10 +3,12 @@ package gsrs.module.substance.importers;
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
-import gsrs.module.substance.importers.importActionFactories.*;
+import gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory;
+import gsrs.module.substance.importers.importActionFactories.NSRSSampleNameExtractorActionFactory;
+import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory;
+import gsrs.module.substance.importers.importActionFactories.StructureExtractorActionFactory;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringBootConfiguration;
@@ -42,8 +44,8 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
 
     @SneakyThrows
     @Override
-    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
-        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
+    public ImportAdapter<AbstractSubstanceBuilder> createAdapter(JsonNode adapterSettings) {
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
         ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }

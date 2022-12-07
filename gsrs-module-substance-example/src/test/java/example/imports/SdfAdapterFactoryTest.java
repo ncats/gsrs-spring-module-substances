@@ -5,6 +5,8 @@ import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.PropertyExtractorActionFactory;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -55,9 +57,11 @@ public class SdfAdapterFactoryTest {
         absParameters.put("propertyType", "physical");
 
         PropertyExtractorActionFactory factory = new PropertyExtractorActionFactory();
-        MappingAction<Substance, PropertyBasedDataRecordContext> mappingAction = factory.create(absParameters);
-        ChemicalSubstance chemicalSubstance = new ChemicalSubstance();
-        mappingAction.act(chemicalSubstance, record);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingAction = factory.create(absParameters);
+        //ChemicalSubstance chemicalSubstance = new ChemicalSubstance();
+        SubstanceBuilder builder = new SubstanceBuilder();
+        mappingAction.act(builder, record);
+        ChemicalSubstance chemicalSubstance = builder.asChemical().build();
         chemicalSubstance.properties.forEach(p->log.trace("property: {}, amt: {}", p.getName(), p.getValue().toString()));
         Assertions.assertEquals(1, chemicalSubstance.properties.size());
         Assertions.assertEquals("°C", chemicalSubstance.properties.get(0).getValue().units);

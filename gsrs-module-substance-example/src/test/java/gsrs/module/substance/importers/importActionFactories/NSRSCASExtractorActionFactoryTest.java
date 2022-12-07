@@ -8,6 +8,8 @@ import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -25,12 +27,12 @@ class NSRSCASExtractorActionFactoryTest {
         abstractParams.put("CASNumber", "50-00-0");
         abstractParams.put("codeType","PRIMARY");
         NSRSCASExtractorActionFactory nsrscasExtractorActionFactory = new NSRSCASExtractorActionFactory();
-        MappingAction<Substance, PropertyBasedDataRecordContext> action = nsrscasExtractorActionFactory.create(abstractParams);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = nsrscasExtractorActionFactory.create(abstractParams);
         Chemical chem = Chemical.createFromSmilesAndComputeCoordinates("C=O");
         SDRecordContext record = new ChemicalBackedSDRecordContext(chem);
 
-        Substance test = new Substance();
-        Substance newChem =action.act(test, record);
+        SubstanceBuilder test = new SubstanceBuilder();
+        Substance newChem =action.act(test, record).build();
         Assertions.assertTrue(newChem.getCodes().stream().anyMatch(c->c.codeSystem.equals("CAS") && c.code.equals("50-00-0")));
     }
 

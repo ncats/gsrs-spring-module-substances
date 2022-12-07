@@ -5,8 +5,7 @@ import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.model.DefaultPropertyBasedRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.readers.TextFileReader;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -14,45 +13,84 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 @Slf4j
-public class DelimTextImportAdapter implements ImportAdapter<Substance> {
+public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBuilder> {
 
     private String fileEncoding;
     private boolean removeQuotes=false;
 
     private String substanceTypeColumn = "SUBSTANCE_TYPE";
 
-    //todo: assign real values
-    private List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
+    private String expectedSubstanceClass;
 
-    public DelimTextImportAdapter(List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions) {
+    private String lineValueDelimiter = ",";
+
+    //todo: assign real values
+    private List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
+
+    public DelimTextImportAdapter(List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions,
+                                  Map<String, Object> parameters) {
         this.actions=actions;
+        if (parameters.get("substanceClass") != null) {
+            this.expectedSubstanceClass = (String) parameters.get("substanceClass");
+        }
+        if( parameters.get("lineDelimiter") !=null){
+            this.lineValueDelimiter=(String) parameters.get("lineValueDelimiter");
+        }
+        if(parameters.get("removeQuotes") !=null) {
+            this.removeQuotes = (Boolean) parameters.get("removeQuotes");
+        }
     }
 
     @Override
-    public Stream<Substance> parse(InputStream is, String fileEncoding) {
+    public Stream<AbstractSubstanceBuilder> parse(InputStream is, String fileEncoding) {
         log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
         TextFileReader reader = new TextFileReader();
         try {
-            Stream<DefaultPropertyBasedRecordContext> contextStream = reader.readFile(is, fileEncoding, removeQuotes);
+            Stream<DefaultPropertyBasedRecordContext> contextStream = reader.readFile(is, lineValueDelimiter, removeQuotes);
             return contextStream
-                    .map(sd->{
-                        //TODO: perhaps a builder instead?
-                        Substance s = new Substance();
-                        for(MappingAction<Substance, PropertyBasedDataRecordContext> action: actions){
+                    .map(r->{
+
+                        AbstractSubstanceBuilder s;
+                        switch(expectedSubstanceClass) {
+                            case "Chemical":
+                                s= new ChemicalSubstanceBuilder();
+                                break;
+                            case "Protein":
+                                s= new ProteinSubstanceBuilder();
+                                break;
+                            case "NucleicAcid" :
+                                s = new NucleicAcidSubstanceBuilder();
+                                break;
+                            case "Mixture" :
+                                s = new MixtureSubstanceBuilder();
+                                break;
+                            case "StructurallyDiverse" :
+                                s = new StructurallyDiverseSubstanceBuilder();
+                                break;
+                            case "Polymer" :
+                                s = new PolymerSubstanceBuilder();
+                                break;
+                            case "SpecifiedSubstanceGroup1":
+                                s = new SpecifiedSubstanceGroup1SubstanceBuilder();
+                                break;
+                            default:
+                                 s = new SubstanceBuilder();
+                        }
+
+                        for(MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action: actions){
                             try {
-                                log.trace("Before action, substance has {} names and {} codes", s.names.size(), s.codes.size());
-                                s=action.act(s, sd);
-                                log.trace("After action, substance has {} names and {} codes", s.names.size(), s.codes.size());
+                                s=  action.act(s, r);
                             } catch (Exception e) {
                                 log.error(e.getMessage());
                                 e.printStackTrace();
                             }
                         }
-                        log.trace("created substance has {} names and {} codes", s.names.size(), s.codes.size());
-                        log.trace(s.toFullJsonNode().toPrettyString());
+                        //log.trace("created substance has {} names and {} codes", s.names.size(), s.codes.size());
+                        //log.trace(s.toFullJsonNode().toPrettyString());
                         return s;
                     });
 

@@ -6,9 +6,8 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import gsrs.module.substance.importers.model.SDRecordContext;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,19 +17,19 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @Slf4j
-public class SDFImportAdapter implements ImportAdapter<Substance> {
+public class SDFImportAdapter implements ImportAdapter<AbstractSubstanceBuilder> {
 
-    List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions;
+    List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions;
 
     private String fileEncoding;
     
-    public SDFImportAdapter(List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions){
+    public SDFImportAdapter(List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions){
         this.actions = actions;
     }
     
     @SneakyThrows
     @Override
-    public Stream<Substance> parse(InputStream is, String encoding) {
+    public Stream<AbstractSubstanceBuilder> parse(InputStream is, String encoding) {
         log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
         ChemicalReader cr = ChemicalReaderFactory.newReader(is, encoding);
     	
@@ -39,20 +38,19 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
               return new ChemicalBackedSDRecordContext(c);
           })
     	  .map(sd->{
-               //TODO: perhaps a builder instead?
-               Substance s = new ChemicalSubstance();
-               for(MappingAction<Substance, PropertyBasedDataRecordContext> action: actions){
+               ChemicalSubstanceBuilder s = new ChemicalSubstanceBuilder();
+               for(MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action: actions){
                    try {
-                       log.trace("Before action, substance has {} names and {} codes", s.names.size(), s.codes.size());
-                       s=action.act(s, sd);
-                       log.trace("After action, substance has {} names and {} codes", s.names.size(), s.codes.size());
+                       //log.trace("Before action, substance has {} names and {} codes", s.names.size(), s.codes.size());
+                       s= (ChemicalSubstanceBuilder) action.act(s, sd);
+                       //log.trace("After action, substance has {} names and {} codes", s.names.size(), s.codes.size());
                    } catch (Exception e) {
                        log.error(e.getMessage());
                        e.printStackTrace();
                   }
                }
-               log.trace("created substance has {} names and {} codes", s.names.size(), s.codes.size());
-               log.trace(s.toFullJsonNode().toPrettyString());
+               //log.trace("created substance has {} names and {} codes", s.names.size(), s.codes.size());
+               //log.trace(s.toFullJsonNode().toPrettyString());
               return s;
           });
     }

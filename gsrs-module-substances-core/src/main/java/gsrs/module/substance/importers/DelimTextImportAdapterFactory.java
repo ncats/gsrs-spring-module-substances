@@ -1,14 +1,14 @@
 package gsrs.module.substance.importers;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataexchange.model.MappingAction;
-import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.imports.ImportAdapter;
-import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
-import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
+import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,7 +16,6 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
@@ -50,11 +49,32 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @SneakyThrows
     @Override
-    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<AbstractSubstanceBuilder> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
-        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
-        DelimTextImportAdapter importAdapter = new DelimTextImportAdapter (actions);
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
+        Map<String, Object> initializationParameters = null;
+        if(adapterSettings.hasNonNull("parameters")) {
+            log.trace("adapterSettings has parameters");
+            ObjectMapper mapper = new ObjectMapper();
+            initializationParameters =mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {});
+        }
+
+        DelimTextImportAdapter importAdapter = new DelimTextImportAdapter(actions, initializationParameters);
         return importAdapter;
+    }
+
+    /*
+    Actions that will be available when config does not contain any actions
+     */
+    @Override
+    protected void defaultInitialize() {
+        log.trace("using default actions");
+        registry.put("common_name", new NameExtractorActionFactory());
+        registry.put("code_import", new CodeExtractorActionFactory());
+        registry.put("note_import", new NotesExtractorActionFactory());
+        registry.put("property_import", new PropertyExtractorActionFactory());
+        registry.put("protein_import", new ProteinSequenceExtractorActionFactory());
+        registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
 
     @Override

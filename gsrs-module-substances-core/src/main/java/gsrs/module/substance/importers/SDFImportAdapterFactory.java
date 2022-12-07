@@ -1,18 +1,19 @@
 package gsrs.module.substance.importers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
-import gsrs.dataexchange.model.MappingActionFactory;
-import gsrs.imports.*;
+import gsrs.imports.ActionConfigImpl;
+import gsrs.imports.ImportAdapter;
+import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringBootConfiguration;
@@ -29,7 +30,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     public final static String SIMPLE_REF = "UUID_1";
-    public final static String SIMPLE_REFERENCE_ACTION = "public_reference";
     public final static String ACTION_NAME = "actionName";
     public final static String ACTION_PARAMETERS = "actionParameters";
     public final static String CATALOG_REFERENCE = "CATALOG";
@@ -38,8 +38,6 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     public final static String SDF_FIELD_LIST = "SDF Fields";
 
     private Map<String, NCATSFileUtils.InputFieldStatistics> fileFieldStatisticsMap;
-
-    protected List<ActionConfigImpl> fileImportActions;
 
     private Class holdingAreaService;
 
@@ -64,11 +62,6 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     public List<ActionConfigImpl> getFileImportActions() {
         return fileImportActions;
-    }
-
-    public void setFileImportActions(List<ActionConfigImpl> fileImportActions) {
-        log.trace("setFileImportActions");
-        this.fileImportActions = fileImportActions;
     }
 
     private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
@@ -159,40 +152,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         }
     }
 
-
-
     @Override
-    public void initialize(){
-        log.trace("fileImportActions: " + fileImportActions);
-        registry.clear();
-        if(fileImportActions !=null && fileImportActions.size() >0) {
-            log.trace("config-specific init");
-            ObjectMapper mapper = new ObjectMapper();
-            fileImportActions.forEach(fia->{
-                String actionName =fia.getActionName();
-                Class actionClass =fia.getActionClass();
-                MappingActionFactory<Substance, PropertyBasedDataRecordContext> mappingActionFactory;
-                try {
-                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-                    mappingActionFactory = (MappingActionFactory<Substance, PropertyBasedDataRecordContext>) mapper.convertValue(fia,
-                            actionClass);
-
-                    if(!fia.getParameters().isEmpty()) {
-                        mappingActionFactory.setParameters(fia.getParameters());
-                        mappingActionFactory.implementParameters();
-                    }
-                } catch (Exception e) {
-                    log.error("Error parsing parameter metadata", e);
-                    throw new RuntimeException(e);
-                }
-                registry.put(actionName, mappingActionFactory);
-            });
-        }
-        else {
-            defaultInitialize();
-        }
-    }
-
     protected void defaultInitialize() {
         log.trace("using default actions");
         registry.put("common_name", new NameExtractorActionFactory());
@@ -202,8 +162,6 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         registry.put("property_import", new PropertyExtractorActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
-
-
 
     //** TYLER ADDING SPECIAL END
 
@@ -224,9 +182,9 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     @SneakyThrows
     @Override
-    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<AbstractSubstanceBuilder> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
-        List<MappingAction<Substance, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
         ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;
     }
