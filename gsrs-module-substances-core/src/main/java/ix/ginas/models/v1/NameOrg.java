@@ -14,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 @Entity
-@Table(name="ix_ginas_nameorg")
+@Table(name="ix_ginas_nameorg", indexes = {@Index(name = "nameorg_owner_index", columnList = "owner_uuid")})
 @JSONEntity(name = "nameOrg", title = "Naming Org", isFinal = true)
 @SingleParent
 public class NameOrg extends GinasCommonSubData {
