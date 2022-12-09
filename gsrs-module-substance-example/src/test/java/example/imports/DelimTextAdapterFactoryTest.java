@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.CodeProcessorFieldImpl;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.DelimTextImportAdapter;
 import gsrs.module.substance.importers.DelimTextImportAdapterFactory;
+import gsrs.module.substance.importers.importActionFactories.CodeExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
@@ -106,7 +108,49 @@ public class DelimTextAdapterFactoryTest {
 
         ImportAdapter<AbstractSubstanceBuilder> importAdapter= factory.createAdapter(adapterSettings);
         Assertions.assertTrue(importAdapter instanceof DelimTextImportAdapter);
-        DelimTextImportAdapter delimTextImportAdapter = (DelimTextImportAdapter) importAdapter;
+    }
+
+    @Test
+    public void testConstructor1() throws NoSuchFieldException, IllegalAccessException {
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actionSet = new ArrayList<>();
+        String requiredClass="Chemical";
+        Map<String, Object> parameterSet = new HashMap<>();
+        parameterSet.put("substanceClass", requiredClass);
+        parameterSet.put("","");
+        //parameterSet.put("","");
+        DelimTextImportAdapter delimTextImportAdapter = new DelimTextImportAdapter(actionSet, parameterSet);
+        Field substanceClassField= DelimTextImportAdapter.class.getDeclaredField("expectedSubstanceClass");
+        substanceClassField.setAccessible(true);
+        String receivedClass= (String) substanceClassField.get(delimTextImportAdapter);
+        Assertions.assertEquals(requiredClass, receivedClass);
+    }
+
+    @Test
+    public void testConstructor2() throws NoSuchFieldException, IllegalAccessException {
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actionSet = new ArrayList<>();
+        String requiredDelim="$%$";
+        Map<String, Object> parameterSet = new HashMap<>();
+        parameterSet.put("lineDelimiter", requiredDelim);
+        parameterSet.put("","");
+        DelimTextImportAdapter delimTextImportAdapter = new DelimTextImportAdapter(actionSet, parameterSet);
+        Field delimField= DelimTextImportAdapter.class.getDeclaredField("lineValueDelimiter");
+        delimField.setAccessible(true);
+        String receivedClass= (String) delimField.get(delimTextImportAdapter);
+        Assertions.assertEquals(requiredDelim, receivedClass);
+    }
+
+    @Test
+    public void testConstructor3() throws NoSuchFieldException, IllegalAccessException {
+        List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actionSet = new ArrayList<>();
+        Boolean removeQuotesValue=true;
+        Map<String, Object> parameterSet = new HashMap<>();
+        parameterSet.put("removeQuotes", removeQuotesValue);
+        parameterSet.put("","");
+        DelimTextImportAdapter delimTextImportAdapter = new DelimTextImportAdapter(actionSet, parameterSet);
+        Field removeQuotesField= DelimTextImportAdapter.class.getDeclaredField("removeQuotes");
+        removeQuotesField.setAccessible(true);
+        Boolean receivedRemoveQuotes= (Boolean) removeQuotesField.get(delimTextImportAdapter);
+        Assertions.assertEquals(removeQuotesValue, receivedRemoveQuotes);
     }
 
     /*
@@ -130,7 +174,8 @@ public class DelimTextAdapterFactoryTest {
         fields.add(codeProcessorField);
         proteinActionConfig.setFields(fields);
         Map<String, Object> actionParameters = new HashMap<>();
-        actionParameters.put("substanceClass", ProteinSubstance.class);
+        //actionParameters.put("substanceClass", "Protein");
+        actionParameters.put("subunitDelimiter", "\\|");
         proteinActionConfig.setParameters(actionParameters);
         simpleConfig.add(proteinActionConfig);
 
@@ -157,6 +202,38 @@ public class DelimTextAdapterFactoryTest {
         nameActionConfig.setFields(fieldsName);
         simpleConfig.add(nameActionConfig);
 
+        ActionConfigImpl rnCodeActionConfig = new ActionConfigImpl();
+        rnCodeActionConfig.setActionClass(CodeExtractorActionFactory.class);
+        rnCodeActionConfig.setActionName("cas_code");
+        List<CodeProcessorFieldImpl> fieldsRn = new ArrayList<>();
+        CodeProcessorFieldImpl rnField = new CodeProcessorFieldImpl();
+        rnField.setFieldName("code");
+        rnField.setRequired(true);
+        rnField.setFieldLabel("Code");
+        rnField.setFieldType(String.class);
+        rnField.setExpectedToChange(true);
+        fieldsRn.add(rnField);
+
+        CodeProcessorFieldImpl rnTypeField = new CodeProcessorFieldImpl();
+        rnTypeField.setFieldName("codeType");
+        rnTypeField.setRequired(false);
+        rnTypeField.setFieldLabel("Code Type");
+        rnTypeField.setFieldType(String.class);
+        rnTypeField.setExpectedToChange(false);
+        rnTypeField.setDefaultValue("PRIMARY");
+        fieldsRn.add(rnTypeField);
+
+        CodeProcessorFieldImpl rnSystemField = new CodeProcessorFieldImpl();
+        rnSystemField.setFieldName("codeSystem");
+        rnSystemField.setRequired(true);
+        rnSystemField.setFieldLabel("Code System");
+        rnSystemField.setFieldType(String.class);
+        rnSystemField.setExpectedToChange(false);
+        rnSystemField.setDefaultValue("CAS");
+        fieldsRn.add(rnSystemField);
+        rnCodeActionConfig.setFields(fieldsRn);
+        simpleConfig.add(rnCodeActionConfig);
+        
         DelimTextImportAdapterFactory factory = new DelimTextImportAdapterFactory();
         factory.setFileImportActions(simpleConfig);
         factory.initialize();
@@ -178,7 +255,16 @@ public class DelimTextAdapterFactoryTest {
         adapter2Parameters.put("displayName", true);
         nameNode.set("actionParameters", adapter2Parameters);
         actionListNode.add(nameNode);
-        
+
+        ObjectNode rnNode = JsonNodeFactory.instance.objectNode();
+        TextNode rnActionNameNode = JsonNodeFactory.instance.textNode("cas_code");
+        rnNode.set("actionName", rnActionNameNode);
+        ObjectNode adapterRn = JsonNodeFactory.instance.objectNode();
+        adapterRn.put("code","{{RN}}");
+        adapterRn.put("codeSystem","CAS");
+        rnNode.set("actionParameters", adapterRn);
+        actionListNode.add(rnNode);
+
         ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
         adapterSettings.set("actions", actionListNode);
         ObjectNode generalParameters = JsonNodeFactory.instance.objectNode();
@@ -199,9 +285,11 @@ public class DelimTextAdapterFactoryTest {
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
                 .map(p->((ProteinSubstanceBuilder)p).build())
                 .collect(Collectors.toList());
-        Assertions.assertTrue(proteinSubstances.stream().allMatch(p->p.protein.subunits.get(0).sequence.length()>0));
-        Assertions.assertTrue(proteinSubstances.stream().allMatch(p->p.names.get(0).name.length()>0));
+        Assertions.assertTrue(proteinSubstances.stream().anyMatch(p->p.names.get(0).name.equals("ASPARTOCIN")
+                && p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CYINNCPLG"))
+                && p.codes.get(0).code.equals("4117-65-1")));
+        Assertions.assertTrue(proteinSubstances.stream().anyMatch(p->p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CYGRKKRRQRRR")) &&
+                p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CSFNSYELGSL"))));
         Assertions.assertEquals(3, proteinSubstances.size());
-
     }
 }

@@ -19,7 +19,6 @@ import java.util.stream.Stream;
 @Slf4j
 public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBuilder> {
 
-    private String fileEncoding;
     private boolean removeQuotes=false;
 
     private String substanceTypeColumn = "SUBSTANCE_TYPE";
@@ -34,11 +33,15 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
     public DelimTextImportAdapter(List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions,
                                   Map<String, Object> parameters) {
         this.actions=actions;
+        if( parameters==null) {
+            log.warn("no 'parameters' provided in constructor. Using default values");
+            return;
+        }
         if (parameters.get("substanceClass") != null) {
             this.expectedSubstanceClass = (String) parameters.get("substanceClass");
         }
         if( parameters.get("lineDelimiter") !=null){
-            this.lineValueDelimiter=(String) parameters.get("lineValueDelimiter");
+            this.lineValueDelimiter=(String) parameters.get("lineDelimiter");
         }
         if(parameters.get("removeQuotes") !=null) {
             this.removeQuotes = (Boolean) parameters.get("removeQuotes");

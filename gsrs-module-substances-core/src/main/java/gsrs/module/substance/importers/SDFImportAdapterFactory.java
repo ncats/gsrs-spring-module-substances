@@ -148,7 +148,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
             newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
             return newMap;
         } catch (Exception ex) {
-            log.error("Error in resolveParametersMap: " + ex.getMessage());
+            log.error("Error in resolveParametersMap ",  ex);
             throw ex;
             //ex.printStackTrace();
         }

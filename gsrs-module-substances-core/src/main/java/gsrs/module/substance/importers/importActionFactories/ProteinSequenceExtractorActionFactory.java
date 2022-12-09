@@ -70,9 +70,9 @@ public class ProteinSequenceExtractorActionFactory extends BaseActionFactory {
         MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
         return builder.setLabel("Create Protein Sequence")
                 .addParameterField(MappingParameter.builder()
-                        .setFieldName("sequenceFieldName")
+                        .setFieldName("proteinSequence")
                         .setValueType(String.class)
-                        .setLabel("Sequence Field")
+                        .setLabel("Protein Sequence")
                         .setDefaultValue("PROTEIN_SEQUENCE")
                         .setRequired(true)
                         .build())
