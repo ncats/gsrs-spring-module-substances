@@ -8,12 +8,14 @@ import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+@Slf4j
 public abstract class BaseActionFactory implements MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> {
 
     Map<String, Object> parameters = new HashMap<>();
@@ -21,9 +23,18 @@ public abstract class BaseActionFactory implements MappingActionFactory<Abstract
     private JsonNode adapterSchema = JsonNodeFactory.instance.objectNode();
 
     private static void assignReferences(GinasAccessReferenceControlled object, Object referenceList) {
-        List<String> refs = (List<String>) referenceList;
-        if (refs != null) {
-            refs.forEach(r -> object.addReference(r));
+        if( referenceList == null) {
+            //todo: make this an info
+            log.warn("in assignReferences, referenceList is null");
+            return;
+        }
+        if( referenceList.getClass().getName().equals("java.lang.String")){
+            object.addReference((String)referenceList);
+        } else {
+            List<String> refs = (List<String>) referenceList;
+            if (refs != null) {
+                refs.forEach(r -> object.addReference(r));
+            }
         }
     }
 

@@ -1,5 +1,7 @@
 package example.imports;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -253,6 +255,7 @@ public class DelimTextAdapterFactoryTest {
         ObjectNode adapter2Parameters = JsonNodeFactory.instance.objectNode();
         adapter2Parameters.put("name","{{DISPLAY_NAME}}");
         adapter2Parameters.put("displayName", true);
+        adapter2Parameters.put("referenceUUIDs", "[[UUID_1]]");
         nameNode.set("actionParameters", adapter2Parameters);
         actionListNode.add(nameNode);
 
@@ -262,9 +265,21 @@ public class DelimTextAdapterFactoryTest {
         ObjectNode adapterRn = JsonNodeFactory.instance.objectNode();
         adapterRn.put("code","{{RN}}");
         adapterRn.put("codeSystem","CAS");
+        adapterRn.put("codeType","PRIMARY");
         rnNode.set("actionParameters", adapterRn);
         actionListNode.add(rnNode);
 
+        ObjectNode refNode = JsonNodeFactory.instance.objectNode();
+        TextNode refActionNameNode = JsonNodeFactory.instance.textNode("public_reference");
+        refNode.set("actionName", refActionNameNode);
+        ObjectNode adapterRef = JsonNodeFactory.instance.objectNode();
+        adapterRef.put("docType","CATALOG");
+        adapterRef.put("citation","INSERT REFERENCE CITATION HERE");
+        adapterRef.put("referenceID", "INSERT REFERENCE ID HERE");
+        adapterRef.put("uuid", "[[UUID_1]]");
+        refNode.set("actionParameters", adapterRef);
+        actionListNode.add(refNode);
+        
         ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
         adapterSettings.set("actions", actionListNode);
         ObjectNode generalParameters = JsonNodeFactory.instance.objectNode();
@@ -287,9 +302,21 @@ public class DelimTextAdapterFactoryTest {
                 .collect(Collectors.toList());
         Assertions.assertTrue(proteinSubstances.stream().anyMatch(p->p.names.get(0).name.equals("ASPARTOCIN")
                 && p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CYINNCPLG"))
-                && p.codes.get(0).code.equals("4117-65-1")));
+                && p.codes.get(0).code.equals("4117-65-1") && p.codes.get(0).type.equals("PRIMARY")));
         Assertions.assertTrue(proteinSubstances.stream().anyMatch(p->p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CYGRKKRRQRRR")) &&
                 p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CSFNSYELGSL"))));
         Assertions.assertEquals(3, proteinSubstances.size());
+    }
+
+    @Test
+    public void basicSerializationTest() {
+        Map<String, String> exampleData = new HashMap<>();
+        exampleData.put("key1", "value one");
+        exampleData.put("key2", "value two");
+        exampleData.put("key3", "THREE");
+        ObjectMapper mapper = new ObjectMapper();
+        JsonNode jsonNode = mapper.valueToTree(exampleData);
+        ObjectNode node = (ObjectNode)jsonNode;
+        Assertions.assertTrue( exampleData.keySet().stream().allMatch(k-> exampleData.get(k).equals(node.get(k).asText())));
     }
 }

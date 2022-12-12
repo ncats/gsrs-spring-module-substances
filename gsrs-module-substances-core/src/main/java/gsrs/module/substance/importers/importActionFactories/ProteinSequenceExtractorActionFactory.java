@@ -19,8 +19,6 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 @Data
 public class ProteinSequenceExtractorActionFactory extends BaseActionFactory {
 
-    private String sequenceField;
-
     private String subunitDelimiter;
 
     @Override
@@ -89,9 +87,7 @@ public class ProteinSequenceExtractorActionFactory extends BaseActionFactory {
     @Override
     public void implementParameters() {
         if( this.parameters != null && !this.parameters.isEmpty()) {
-            if( parameters.get("sequenceFieldName") != null ) {
-                this.sequenceField = (String) parameters.get("sequenceFieldName");
-            }
+
             if(parameters.get("subunitDelimiter") !=null) {
                 this.subunitDelimiter = (String) parameters.get("subunitDelimiter");
             }

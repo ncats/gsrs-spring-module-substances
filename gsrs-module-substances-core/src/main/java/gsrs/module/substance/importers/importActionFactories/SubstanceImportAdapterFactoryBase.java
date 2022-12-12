@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.imports.ActionConfigImpl;
@@ -15,9 +18,7 @@ import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -30,6 +31,16 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
     protected Map<String, MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
 
     protected List<ActionConfigImpl> fileImportActions;
+
+    public final static String ACTION_NAME = "actionName";
+
+    public final static String ACTION_PARAMETERS = "actionParameters";
+
+    public final static String SIMPLE_REF = "UUID_1";
+
+    public final static String CATALOG_REFERENCE = "CATALOG";
+    public final static String REFERENCE_INSTRUCTION = "INSERT REFERENCE CITATION HERE";
+    public final static String REFERENCE_ID_INSTRUCTION = "INSERT REFERENCE ID HERE";
 
     @Override
     public String getAdapterName() {
@@ -106,6 +117,11 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
 
     }
 
+    @Override
+    public void setInputParameters(JsonNode parameters) {
+
+    }
+
     public List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
@@ -176,6 +192,80 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
         else {
             defaultInitialize();
         }
+    }
+
+
+    public ObjectNode createNameMap(String nameField, String nameType, String language) {
+        log.trace("in createNameMap");
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        if (nameType == null || nameType.length() == 0) {
+            nameType = "cn";
+        }
+        if(language==null || language.length()==0) {
+            language="en";
+        }
+        mapNode.put("name", String.format("{{%s}}", nameField));
+        mapNode.put("nameType", nameType);
+        mapNode.put("lang", language);
+        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
+        refs.add(String.format("[[%s]]", SIMPLE_REF));
+        mapNode.set("referenceUUIDs", refs);
+        return mapNode;
+    }
+
+    public ObjectNode createPropertyMap(String fieldName) {
+        log.trace("in createPropertyMap");
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("name", fieldName);
+        mapNode.put("propertyType", "chemical|physical");
+        mapNode.put("valueRange", String.format("{{%s}}", fieldName));
+        mapNode.put("valueUnits", "");
+        return mapNode;
+    }
+
+    public ObjectNode createMolfileMap() {
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("molfile", "{{molfile}}");
+        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
+        refs.add(String.format("[[%s]]", SIMPLE_REF));
+        mapNode.set("referenceUUIDs", refs);
+        return mapNode;
+    }
+
+    public ObjectNode createCodeMap(String codeSystem, String codeType) {
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        if (codeType == null || codeType.length() == 0) {
+            codeType = "PRIMARY";
+        }
+        mapNode.put("codeSystem", codeSystem);
+        mapNode.put("code", String.format("{{%s}}", codeSystem));
+        mapNode.put("codeType", codeType);
+        return mapNode;
+    }
+
+    protected boolean looksLikeProperty(String fieldName) {
+        List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka");
+        return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
+    }
+
+    protected JsonNode createDefaultReferenceReferenceNode() {
+        ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
+        parameters.add(String.format("[[%s]]", SIMPLE_REF));
+        return parameters;
+    }
+
+    protected JsonNode createDefaultReferenceNode() {
+        ObjectNode referenceNode = JsonNodeFactory.instance.objectNode();
+        referenceNode.put(ACTION_NAME, SIMPLE_REFERENCE_ACTION);
+
+        ObjectNode parameters = JsonNodeFactory.instance.objectNode();
+        parameters.put("docType", CATALOG_REFERENCE);
+        parameters.put("citation", REFERENCE_INSTRUCTION);
+        parameters.put("referenceID", REFERENCE_ID_INSTRUCTION);
+        parameters.put("uuid", String.format("[[%s]]", SIMPLE_REF));
+        referenceNode.set(ACTION_PARAMETERS, parameters);
+
+        return referenceNode;
     }
 
 }

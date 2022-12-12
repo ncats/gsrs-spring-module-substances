@@ -27,6 +27,8 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
 
     private String lineValueDelimiter = ",";
 
+    private List<String> fileFields;
+
     //todo: assign real values
     private List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
 
@@ -46,6 +48,10 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
         if(parameters.get("removeQuotes") !=null) {
             this.removeQuotes = (Boolean) parameters.get("removeQuotes");
         }
+        if(parameters.get("fileFields") != null) {
+            this.fileFields = new ArrayList<>();
+            fileFields.addAll((List<String>)parameters.get("fileFields"));
+        }
     }
 
     @Override
@@ -53,7 +59,7 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
         log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
         TextFileReader reader = new TextFileReader();
         try {
-            Stream<DefaultPropertyBasedRecordContext> contextStream = reader.readFile(is, lineValueDelimiter, removeQuotes);
+            Stream<DefaultPropertyBasedRecordContext> contextStream = reader.readFile(is, lineValueDelimiter, removeQuotes, fileFields);
             return contextStream
                     .map(r->{
 

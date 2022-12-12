@@ -3,19 +3,23 @@ package gsrs.module.substance.importers;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import gsrs.module.substance.importers.readers.TextFileReader;
+import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Slf4j
 public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
@@ -31,6 +35,12 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
     private List<Class> entityServices;
 
     private Class entityServiceClass;
+
+    private List<String> fields;
+
+    private  int linesToSkip;
+
+    public final static String FIELD_LIST = "Fields";
 
     @Override
     public String getAdapterName() {
@@ -58,7 +68,6 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
             ObjectMapper mapper = new ObjectMapper();
             initializationParameters =mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {});
         }
-
         DelimTextImportAdapter importAdapter = new DelimTextImportAdapter(actions, initializationParameters);
         return importAdapter;
     }
@@ -79,7 +88,65 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public ImportAdapterStatistics predictSettings(InputStream is) {
+        log.trace("in predictSettings");
+        Set<String> fields = null;
+        try {
+            if(registry == null || registry.isEmpty()) {
+                log.trace("predictSettings will call initialize");
+                initialize();
+            }
+            /*
+            intended logic 28 April 2022:
+            steps:
+            1: calculate summary statistics based on sd file input
+            2: look through all steps in registry for any step marked as 'prediction steps' (todo: find better term) (aka default steps)
+                    e.g., peak loading for NSRS.  this becomes a PROPERTY but we don't show them that configuration thing to select from because that would be a
+                        distraction. more obscure case: an SD file property called 'melting point' that gets mapped to a property
+             */
+            TextFileReader textFileReader = new TextFileReader();
+            Map<String, NCATSFileUtils.InputFieldStatistics>stats=
+                    textFileReader.getFileStatistics(is, this.fieldDelimiter, this.trimQuotesFromInput, null, 10, 0);
+            ImportAdapterStatistics statistics =
+                    new ImportAdapterStatistics();
+            fields =stats.keySet();
+            ObjectNode node = JsonNodeFactory.instance.objectNode();
+            node.putPOJO(FIELD_LIST, fields);
+            node.put("fileName", getFileName());
+            statistics.setAdapterSchema(node);
+            statistics.setAdapterSettings(createDefaultFileImport(stats));
+            this.statistics=statistics;
+            return statistics;
+        } catch (IOException ex) {
+            log.error("error reading list of fields from SD file: " + ex.getMessage());
+        }
         return null;
+    }
+
+    public JsonNode createDefaultFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
+        log.trace("in createDefaultSdfFileImport");
+        Set<String> fieldNames =map.keySet();
+        ObjectNode topLevelReturn = JsonNodeFactory.instance.objectNode();
+        ArrayNode result = JsonNodeFactory.instance.arrayNode();
+        fieldNames.forEach(f -> {
+            ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
+            if (f.toUpperCase(Locale.ROOT).contains("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
+                actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
+                ObjectNode mapNode = createNameMap(f, null, null);
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+            } else if(looksLikeProperty(f)) {
+                actionNode.put(ACTION_NAME, "property_import");
+                ObjectNode mapNode = createPropertyMap(f);
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+            } else {
+                actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
+                ObjectNode mapNode = createCodeMap(f, "PRIMARY");
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+            }
+            result.add(actionNode);
+        });
+        result.add(createDefaultReferenceNode());
+        topLevelReturn.set("actions", result);
+        return topLevelReturn;
     }
 
     @Override
@@ -132,11 +199,35 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     }
 
+    @Override
+    public void setInputParameters(JsonNode parameters) {
+        log.trace("in setInputParameters");
+        if( parameters.hasNonNull("delimiter")) {
+            log.trace("delimiter: {}", parameters.get("setInputParameters"));
+            setFieldDelimiter(parameters.get("delimiter").asText());
+        }
+        if(parameters.hasNonNull("linesToSkip")){
+            log.trace("linesToSkip: {}", parameters.get("linesToSkip"));
+            setLinesToSkip(parameters.get("linesToSkip").asInt());
+        }
+        if(parameters.hasNonNull("trimQuotesFromInput")){
+            log.trace("trimQuotesFromInput:  {}",parameters.get("trimQuotesFromInput"));
+            trimQuotesFromInput=parameters.get("trimQuotesFromInput").asBoolean();
+        }
+    }
     public void setFieldDelimiter(String newDelimiter){
         this.fieldDelimiter=newDelimiter;
     }
 
     public String getFieldDelimiter() {
         return this.fieldDelimiter;
+    }
+
+    public int getLinesToSkip() {
+        return linesToSkip;
+    }
+
+    public void setLinesToSkip(int linesToSkip) {
+        this.linesToSkip = linesToSkip;
     }
 }

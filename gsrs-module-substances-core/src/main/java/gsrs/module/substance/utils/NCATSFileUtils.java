@@ -159,4 +159,46 @@ TODO: consider other data types like:
         }
         return retMap;
     }
+
+    public static Map<String, InputFieldStatistics> getTextFieldStatistics(InputStream istream , int maxExamples,
+                                                                           List<String> fieldNames, int linesToSkip) throws IOException {
+        Map<String, InputFieldStatistics> retMap = new LinkedHashMap<>();
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, "UTF-8"))) {
+            String fieldName=null;
+            String value="";
+            boolean inValue=false;
+            List<String> fields = new ArrayList<>();
+            if( fieldNames!=null && fieldNames.size()>0) {
+                fields.addAll(fieldNames);
+            }
+            while (br.ready()) {
+                String line = br.readLine();
+                Matcher matcher = sdFileFieldPattern.matcher(line);
+                Matcher endmatcher = endRecordPattern.matcher(line);
+                if(matcher.find()) {
+                    if(inValue){
+                        InputFieldStatistics fs=retMap.computeIfAbsent(fieldName, k-> new InputFieldStatistics(k, maxExamples));
+                        fs.add(value.trim());
+                    }
+                    fieldName = matcher.group(1);
+                    log.trace("processing field name: " + fieldName);
+                    inValue=true;
+                    value="";
+                }else if(endmatcher.find()) {
+                    if(inValue){
+                        InputFieldStatistics fs=retMap.computeIfAbsent(fieldName, k-> new InputFieldStatistics(k, maxExamples));
+                        fs.add(value.trim());
+                    }
+                    inValue=false;
+                }else{
+                    if(inValue){
+                        value=value + line + "\n";
+                    }
+                }
+            }
+        }
+        return retMap;
+    }
+
 }

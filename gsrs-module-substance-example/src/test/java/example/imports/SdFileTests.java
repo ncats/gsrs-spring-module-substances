@@ -139,7 +139,6 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         });
     }
 
-
     @Test
    public void parseUUIDTest() throws IOException {
         SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();

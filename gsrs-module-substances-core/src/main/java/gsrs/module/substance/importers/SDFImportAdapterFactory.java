@@ -29,12 +29,6 @@ import java.util.stream.Collectors;
 @SpringBootConfiguration
 @Slf4j
 public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
-    public final static String SIMPLE_REF = "UUID_1";
-    public final static String ACTION_NAME = "actionName";
-    public final static String ACTION_PARAMETERS = "actionParameters";
-    public final static String CATALOG_REFERENCE = "CATALOG";
-    public final static String REFERENCE_INSTRUCTION = "INSERT REFERENCE CITATION HERE";
-    public final static String REFERENCE_ID_INSTRUCTION = "INSERT REFERENCE ID HERE";
     public final static String SDF_FIELD_LIST = "SDF Fields";
 
     private Map<String, NCATSFileUtils.InputFieldStatistics> fileFieldStatisticsMap;
@@ -308,30 +302,6 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         return topLevelReturn;
     }
 
-    private boolean looksLikeProperty(String fieldName) {
-        List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka");
-        return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
-    }
-
-    private JsonNode createDefaultReferenceReferenceNode() {
-        ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
-        parameters.add(String.format("[[%s]]", SIMPLE_REF));
-        return parameters;
-    }
-
-    private JsonNode createDefaultReferenceNode() {
-        ObjectNode referenceNode = JsonNodeFactory.instance.objectNode();
-        referenceNode.put(ACTION_NAME, SIMPLE_REFERENCE_ACTION);
-
-        ObjectNode parameters = JsonNodeFactory.instance.objectNode();
-        parameters.put("docType", CATALOG_REFERENCE);
-        parameters.put("citation", REFERENCE_INSTRUCTION);
-        parameters.put("referenceID", REFERENCE_ID_INSTRUCTION);
-        parameters.put("uuid", String.format("[[%s]]", SIMPLE_REF));
-        referenceNode.set(ACTION_PARAMETERS, parameters);
-
-        return referenceNode;
-    }
 
     public Map<String, NCATSFileUtils.InputFieldStatistics> getFieldsForFile(InputStream input) throws IOException {
         log.trace("starting in fieldsForSDF");
@@ -341,54 +311,5 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         log.trace("total fields: " + fileFieldStatisticsMap.keySet().size());
         return fieldStatisticsMap;
     }
-
-    public ObjectNode createCodeMap(String codeSystem, String codeType) {
-        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
-        if (codeType == null || codeType.length() == 0) {
-            codeType = "PRIMARY";
-        }
-        mapNode.put("codeSystem", codeSystem);
-        mapNode.put("code", String.format("{{%s}}", codeSystem));
-        mapNode.put("codeType", codeType);
-        return mapNode;
-    }
-
-    public ObjectNode createNameMap(String nameField, String nameType, String language) {
-        log.trace("in createNameMap");
-        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
-        if (nameType == null || nameType.length() == 0) {
-            nameType = "cn";
-        }
-        if(language==null || language.length()==0) {
-            language="en";
-        }
-        mapNode.put("name", String.format("{{%s}}", nameField));
-        mapNode.put("nameType", nameType);
-        mapNode.put("lang", language);
-        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
-        refs.add(String.format("[[%s]]", SIMPLE_REF));
-        mapNode.set("referenceUUIDs", refs);
-        return mapNode;
-    }
-
-    public ObjectNode createPropertyMap(String fieldName) {
-        log.trace("in createPropertyMap");
-        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
-        mapNode.put("name", fieldName);
-        mapNode.put("propertyType", "chemical|physical");
-        mapNode.put("valueRange", String.format("{{%s}}", fieldName));
-        mapNode.put("valueUnits", "");
-        return mapNode;
-    }
-
-    public ObjectNode createMolfileMap() {
-        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
-        mapNode.put("molfile", "{{molfile}}");
-        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
-        refs.add(String.format("[[%s]]", SIMPLE_REF));
-        mapNode.set("referenceUUIDs", refs);
-        return mapNode;
-    }
-
 
 }
