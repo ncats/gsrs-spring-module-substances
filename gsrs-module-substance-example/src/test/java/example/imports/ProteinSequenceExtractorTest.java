@@ -1,17 +1,25 @@
 package example.imports;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import gsrs.dataexchange.model.MappingAction;
+import gsrs.module.substance.importers.DelimTextImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtractorActionFactory;
 import gsrs.module.substance.importers.model.DefaultPropertyBasedRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 public class ProteinSequenceExtractorTest {
 
     @Test
@@ -23,9 +31,9 @@ public class ProteinSequenceExtractorTest {
 
         DefaultPropertyBasedRecordContext ctx = new DefaultPropertyBasedRecordContext();
 
-        ctx.setProperty("proteinSequence", sequence);
+        ctx.setProperty("proteinSequenceInFile", sequence);
         Map<String, Object> inputParams = new HashMap<>();
-        inputParams.put("sequenceFieldName", "proteinSequence");
+        inputParams.put("proteinSequence", "{{proteinSequenceInFile}}");
         inputParams.put("subunitDelimiter", "\\|");
 
         MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action= proteinSequenceExtractorActionFactory.create(inputParams);
@@ -34,4 +42,29 @@ public class ProteinSequenceExtractorTest {
         Assertions.assertEquals(sequence, sequenceFromProtein);
     }
 
+    @Test
+    public void testProteinMap() {
+        Map<String, NCATSFileUtils.InputFieldStatistics>  inputFieldStatisticsMap = new HashMap<>();
+        String sequenceFieldName = "protein_sequence";
+        NCATSFileUtils.InputFieldStatistics statistics = new NCATSFileUtils.InputFieldStatistics(sequenceFieldName, 100);
+        inputFieldStatisticsMap.put(sequenceFieldName, statistics);
+        DelimTextImportAdapterFactory factory = new DelimTextImportAdapterFactory();
+        JsonNode processed = factory.createDefaultFileImport(inputFieldStatisticsMap);
+        ObjectNode objectNode = (ObjectNode) processed;
+        log.trace("processed: {}", processed.toPrettyString() );
+        Assertions.assertEquals(1, processed.size());
+
+        ArrayNode actions = (ArrayNode) objectNode.get("actions");
+        boolean[] foundCreateAction = new boolean[1];
+        foundCreateAction[0] = false;
+        actions.forEach(n -> {
+            if( n instanceof ObjectNode) {
+                ObjectNode text = (ObjectNode) n;
+                if(text.hasNonNull("actionName") && text.get("actionName").asText().equals("protein_import")) {
+                    foundCreateAction[0]=true;
+                }
+            }
+        });
+        Assertions.assertTrue(foundCreateAction[0]);
+    }
 }
