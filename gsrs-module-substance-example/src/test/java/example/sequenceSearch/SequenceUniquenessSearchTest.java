@@ -88,7 +88,7 @@ public class SequenceUniquenessSearchTest extends AbstractSubstanceJpaFullStackE
 
     @Test
     public void proteinAfterTest() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        //we expect the search to fail
+       
         String sequence = "DRXYIHP";
         List<Tuple<ProteinSubstance, Subunit>> results = executeSimpleExactProteinSubunitSearch(sequence, Substance.class);
         Assertions.assertEquals(1, results.size());
