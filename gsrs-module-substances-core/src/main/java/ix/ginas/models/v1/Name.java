@@ -4,7 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import gsrs.module.substance.SubstanceDataConfiguration;
 import gsrs.module.substance.utils.HtmlUtil;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.SingleParent;
 import ix.core.models.*;
 import ix.ginas.models.CommonDataElementOfCollection;
@@ -22,11 +25,13 @@ import java.util.*;
 
 @JSONEntity(title = "Name", isFinal = true)
 @Entity
-@Table(name="ix_ginas_name", indexes = {@Index(name = "name_index", columnList = "name")})
+@Table(name="ix_ginas_name", indexes = {@Index(name = "name_index", columnList = "name"),
+                                        @Index(name = "name_owner_index", columnList = "owner_uuid")})
 @SingleParent
 @IndexableRoot
 public class Name extends CommonDataElementOfCollection {
-
+	
+	
 	public static enum Sorter implements  Comparator<Name> {
 
 		/**
@@ -177,25 +182,28 @@ public class Name extends CommonDataElementOfCollection {
     }
 
     public String getName () {
-        return fullName != null ? fullName : name;
+    	return fullName != null ? fullName : name;
     }
 
     @PreUpdate
-	private void preUpdate(){
+    private void preUpdate(){
+    	
     	tidyName();
-		updateImmutables();
-	}
+    	updateImmutables();
+    }
 
-	@PrePersist
-	private void prePersist(){
-		tidyName();
-	}
+    @PrePersist
+    private void prePersist(){
+    	tidyName();
+    }
 
     private void tidyName () {
-        if (name.length() > 1023) {
-            fullName = name;
-            name = HtmlUtil.truncate(name, 1023);
-        }
+    	int clen= SubstanceDataConfiguration.INSTANCE().getNameColumnLength();
+    	
+    	if (name.length() > clen) {
+    		fullName = name;
+    		name = HtmlUtil.truncate(name, clen);
+    	}
     }
 
     public void addLocator(Substance sub, String loc){

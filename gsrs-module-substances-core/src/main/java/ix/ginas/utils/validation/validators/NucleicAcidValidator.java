@@ -141,7 +141,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
     public List<Tuple<NucleicAcidSubstance, Subunit>> executeSimpleExactNucleicAcidSubunitSearch(Subunit su) throws InterruptedException, ExecutionException, TimeoutException, IOException {
         String q = "root_nucleicAcid_subunits_sequence:" + su.sequence;
         SearchRequest request = new SearchRequest.Builder()
-                .kind(NucleicAcidSubstance.class)
+                .kind(Substance.class)
                 .fdim(0)
                 .query(q)
                 .top(Integer.MAX_VALUE)

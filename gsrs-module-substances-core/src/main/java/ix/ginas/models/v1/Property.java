@@ -13,7 +13,7 @@ import java.util.List;
 
 @JSONEntity(title = "Property", isFinal = true)
 @Entity
-@Table(name = "ix_ginas_property")
+@Table(name = "ix_ginas_property", indexes = {@Index(name = "property_owner_index", columnList = "owner_uuid")})
 public class Property extends CommonDataElementOfCollection {
 
     @ManyToOne(cascade = CascadeType.PERSIST)

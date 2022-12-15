@@ -77,7 +77,8 @@ import lombok.extern.slf4j.Slf4j;
 @Backup
 @JSONEntity(name = "substance", title = "Substance")
 @Entity
-@Table(name = "ix_ginas_substance",indexes = {@Index(name = "sub_approval_index", columnList = "approval_id")})
+@Table(name = "ix_ginas_substance",indexes = {@Index(name = "sub_approval_index", columnList = "approval_id"),
+                                            @Index(name = "sub_dtype_index", columnList = "dtype")})
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @DiscriminatorValue("SUB")
 @Slf4j

@@ -34,6 +34,7 @@ import gsrs.holdingarea.service.ImportMetadataLegacySearchService;
         LegacyGinasAppController.class,
         NameStandardizerConfiguration.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
+        SubstanceDataConfiguration.class,
         StructureResolverController.class, ChemicalDuplicateFinder.class,
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,

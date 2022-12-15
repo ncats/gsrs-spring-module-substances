@@ -26,7 +26,7 @@ import java.util.UUID;
 @JsonDeserialize(using = MoietyDeserializer.class)
 @JSONEntity(name = "moiety", title = "Moiety")
 @Entity
-@Table(name = "ix_ginas_moiety")
+@Table(name = "ix_ginas_moiety", indexes = {@Index(name = "moiety_owner_index", columnList = "owner_uuid")})
 @SingleParent
 //@JsonIgnoreProperties({ "id" })
 public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
