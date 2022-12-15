@@ -9,6 +9,7 @@ import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorA
 import gsrs.module.substance.importers.importActionFactories.StructureExtractorActionFactory;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringBootConfiguration;
@@ -44,7 +45,7 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
 
     @SneakyThrows
     @Override
-    public ImportAdapter<AbstractSubstanceBuilder> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
         ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
         return sDFImportAdapter;

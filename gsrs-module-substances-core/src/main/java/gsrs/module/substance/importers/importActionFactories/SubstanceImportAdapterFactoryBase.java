@@ -16,6 +16,7 @@ import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -26,7 +27,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Slf4j
-public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<AbstractSubstanceBuilder> {
+public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<Substance> {
 
     public final static String SIMPLE_REFERENCE_ACTION = "public_reference";
 
@@ -66,7 +67,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
     }
 
     @Override
-    public ImportAdapter<AbstractSubstanceBuilder> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         return null;
     }
 

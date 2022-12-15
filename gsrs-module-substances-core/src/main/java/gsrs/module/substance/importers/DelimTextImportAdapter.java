@@ -6,6 +6,7 @@ import gsrs.module.substance.importers.model.DefaultPropertyBasedRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.readers.TextFileReader;
 import ix.ginas.modelBuilders.*;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -17,13 +18,13 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 @Slf4j
-public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBuilder> {
+public class DelimTextImportAdapter implements ImportAdapter<Substance> {
 
     private boolean removeQuotes=false;
 
     private String substanceTypeColumn = "SUBSTANCE_TYPE";
 
-    private String substanceClassName;
+    private String substanceClassName = "concept";
 
     private String lineValueDelimiter = ",";
 
@@ -49,19 +50,39 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
             this.lineValueDelimiter=(String) parameters.get("lineValueDelimiter");
         }
         if(parameters.get("removeQuotes") !=null) {
-            this.removeQuotes = (Boolean) parameters.get("removeQuotes");
+            try {
+                Object rawValue = parameters.get("removeQuotes");
+                if( rawValue instanceof String){
+                    this.removeQuotes = Boolean.parseBoolean( (String)rawValue);
+                } else if( rawValue instanceof Boolean) {
+                    this.removeQuotes = (Boolean)rawValue;
+                }
+            }
+            catch (Exception ex){
+                log.warn("Error creating boolean from {}", parameters.get("removeQuotes"));
+            }
         }
         if(parameters.get("fileFields") != null) {
             this.fileFields = new ArrayList<>();
             fileFields.addAll((List<String>)parameters.get("fileFields"));
         }
         if(parameters.get("linesToSkip") !=null) {
-            this.linesToSkip= (Integer) parameters.get("linesToSkip");
+            try {
+                Object rawValue=parameters.get("linesToSkip");
+                if(rawValue instanceof String) {
+                    this.linesToSkip = Integer.parseInt((String) rawValue);
+                } else if( rawValue instanceof Integer){
+                    this.linesToSkip = (Integer) rawValue;
+                }
+            }
+            catch(ClassCastException | NumberFormatException e){
+                log.warn("Error creating Integer from {}", parameters.get("linesToSkip"));
+            }
         }
     }
 
     @Override
-    public Stream<AbstractSubstanceBuilder> parse(InputStream is, String fileEncoding) {
+    public Stream<Substance> parse(InputStream is, String fileEncoding) {
         log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
         TextFileReader reader = new TextFileReader();
         try {
@@ -106,7 +127,7 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
                         }
                         //log.trace("created substance has {} names and {} codes", s.names.size(), s.codes.size());
                         //log.trace(s.toFullJsonNode().toPrettyString());
-                        return s;
+                        return s.build();
                     });
 
         } catch (IOException e) {

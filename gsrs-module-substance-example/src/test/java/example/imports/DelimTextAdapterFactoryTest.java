@@ -20,8 +20,8 @@ import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtr
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
-import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -107,7 +107,7 @@ public class DelimTextAdapterFactoryTest {
         ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
         adapterSettings.set("actions", actionListNode);
 
-        ImportAdapter<AbstractSubstanceBuilder> importAdapter= factory.createAdapter(adapterSettings);
+        ImportAdapter<Substance> importAdapter= factory.createAdapter(adapterSettings);
         Assertions.assertTrue(importAdapter instanceof DelimTextImportAdapter);
     }
 
@@ -116,11 +116,11 @@ public class DelimTextAdapterFactoryTest {
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actionSet = new ArrayList<>();
         String requiredClass="Chemical";
         Map<String, Object> parameterSet = new HashMap<>();
-        parameterSet.put("substanceClass", requiredClass);
+        parameterSet.put("substanceClassName", requiredClass);
         parameterSet.put("","");
         //parameterSet.put("","");
         DelimTextImportAdapter delimTextImportAdapter = new DelimTextImportAdapter(actionSet, parameterSet);
-        Field substanceClassField= DelimTextImportAdapter.class.getDeclaredField("expectedSubstanceClass");
+        Field substanceClassField= DelimTextImportAdapter.class.getDeclaredField("substanceClassName");
         substanceClassField.setAccessible(true);
         String receivedClass= (String) substanceClassField.get(delimTextImportAdapter);
         Assertions.assertEquals(requiredClass, receivedClass);
@@ -131,7 +131,7 @@ public class DelimTextAdapterFactoryTest {
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actionSet = new ArrayList<>();
         String requiredDelim="$%$";
         Map<String, Object> parameterSet = new HashMap<>();
-        parameterSet.put("lineDelimiter", requiredDelim);
+        parameterSet.put("lineValueDelimiter", requiredDelim);
         parameterSet.put("","");
         DelimTextImportAdapter delimTextImportAdapter = new DelimTextImportAdapter(actionSet, parameterSet);
         Field delimField= DelimTextImportAdapter.class.getDeclaredField("lineValueDelimiter");
@@ -146,7 +146,7 @@ public class DelimTextAdapterFactoryTest {
         Boolean removeQuotesValue=true;
         Map<String, Object> parameterSet = new HashMap<>();
         parameterSet.put("removeQuotes", removeQuotesValue);
-        parameterSet.put("","");
+        //parameterSet.put("","");
         DelimTextImportAdapter delimTextImportAdapter = new DelimTextImportAdapter(actionSet, parameterSet);
         Field removeQuotesField= DelimTextImportAdapter.class.getDeclaredField("removeQuotes");
         removeQuotesField.setAccessible(true);
@@ -282,11 +282,11 @@ public class DelimTextAdapterFactoryTest {
         ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
         adapterSettings.set("actions", actionListNode);
         ObjectNode generalParameters = JsonNodeFactory.instance.objectNode();
-        generalParameters.put("substanceClass", "Protein");
+        generalParameters.put("substanceClassName", "Protein");
         generalParameters.put("removeQuotes", true);
         adapterSettings.set("parameters", generalParameters);
 
-        ImportAdapter<AbstractSubstanceBuilder> importAdapter= factory.createAdapter(adapterSettings);
+        ImportAdapter<Substance> importAdapter= factory.createAdapter(adapterSettings);
         Assertions.assertTrue(importAdapter instanceof DelimTextImportAdapter);
         DelimTextImportAdapter delimTextImportAdapter = (DelimTextImportAdapter) importAdapter;
 
@@ -295,9 +295,9 @@ public class DelimTextAdapterFactoryTest {
         log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
         InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
         String fileEncoding = "UTF-8";
-        Stream<AbstractSubstanceBuilder> substanceBuilderStream= delimTextImportAdapter.parse(fis, fileEncoding);
+        Stream<Substance> substanceBuilderStream= delimTextImportAdapter.parse(fis, fileEncoding);
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
-                .map(p->((ProteinSubstanceBuilder)p).build())
+                .map(p->((ProteinSubstance)p))
                 .collect(Collectors.toList());
         Assertions.assertTrue(proteinSubstances.stream().anyMatch(p->p.names.get(0).name.equals("ASPARTOCIN")
                 && p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CYINNCPLG"))
@@ -339,15 +339,15 @@ public class DelimTextAdapterFactoryTest {
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
         log.trace(adapter.toPrettyString());
-        ImportAdapter<AbstractSubstanceBuilder> importAdapter = factory.createAdapter(adapter);
-        Stream<AbstractSubstanceBuilder> substanceStream = importAdapter.parse(fis, Charset.defaultCharset().name());
+        ImportAdapter<Substance> importAdapter = factory.createAdapter(adapter);
+        Stream<Substance> substanceStream = importAdapter.parse(fis, Charset.defaultCharset().name());
         substanceStream.forEach(s -> {
             log.trace("full substance: ");
-            String fullSubstanceJson =s.build().toFullJsonNode().toPrettyString();
+            String fullSubstanceJson =s.toFullJsonNode().toPrettyString();
             log.trace(fullSubstanceJson);
             System.out.println(fullSubstanceJson);
-            Assertions.assertTrue(s.build().substanceClass.toString().contains("protein"));
-            Assertions.assertTrue(s.build().codes.stream().noneMatch(c->c.code.length()==0));
+            Assertions.assertTrue(s.substanceClass.toString().contains("protein"));
+            Assertions.assertTrue(s.codes.stream().noneMatch(c->c.code.length()==0));
             //Assertions.assertTrue( s.build().pro);
         });
     }

@@ -14,7 +14,9 @@ import gsrs.module.substance.utils.NCATSFileUtils;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +47,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
 
-    List<ImportAdapterFactory<AbstractSubstanceBuilder>> factories = Arrays.asList(new SDFImportAdapterFactory());
-    private CachedSupplier<List<ImportAdapterFactory<AbstractSubstanceBuilder>>> importAdapterFactories
+    List<ImportAdapterFactory<Substance>> factories = Arrays.asList(new SDFImportAdapterFactory());
+    private CachedSupplier<List<ImportAdapterFactory<Substance>>> importAdapterFactories
             = CachedSupplier.of(() -> factories);
 
     @Autowired
@@ -102,16 +104,16 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
         log.trace(adapter.toPrettyString());
-        ImportAdapter<AbstractSubstanceBuilder> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
+        ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         InputStream fisRead = new FileInputStream(dataFile.getAbsoluteFile());
-        Stream<AbstractSubstanceBuilder> substanceStream = importAdapter.parse(fisRead, Charset.defaultCharset().name());
+        Stream<Substance> substanceStream = importAdapter.parse(fisRead, Charset.defaultCharset().name());
         substanceStream.forEach(s -> {
             //Assertions.assertTrue(s.build().substanceClass.toString().contains("chemical"));
-            Assertions.assertTrue(s.build().names.size()>=1);
-            Assertions.assertTrue( s.build().codes.size()>=1);
+            Assertions.assertTrue(s.names.size()>=1);
+            Assertions.assertTrue( s.codes.size()>=1);
 
             log.trace("full substance: ");
-            log.trace(s.build().toFullJsonNode().toPrettyString());
+            log.trace(s.toFullJsonNode().toPrettyString());
         });
         fisRead.close();
     }
@@ -128,14 +130,14 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
         log.trace(adapter.toPrettyString());
-        ImportAdapter<AbstractSubstanceBuilder> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
+        ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         bais = new ByteArrayInputStream(c.toSd().getBytes());
-        Stream<AbstractSubstanceBuilder> substanceStream = importAdapter.parse(bais, Charset.defaultCharset().name());
+        Stream<Substance> substanceStream = importAdapter.parse(bais, Charset.defaultCharset().name());
         substanceStream.forEach(s -> {
             log.trace("full substance: ");
-            log.trace(s.build().toFullJsonNode().toPrettyString());
-            Assertions.assertTrue(s.build().substanceClass.toString().contains("chemical"));
-            Assertions.assertEquals(5, s.build().names.size());
+            log.trace(s.toFullJsonNode().toPrettyString());
+            Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
+            Assertions.assertEquals(5, s.names.size());
         });
     }
 
@@ -148,7 +150,7 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         Chemical c = Chemical.parse("CCCCCCCC");
 
         ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
+        val res1_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
         String res1_again = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
         String res2_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax2);
         assertEquals(res1_first, res1_again);

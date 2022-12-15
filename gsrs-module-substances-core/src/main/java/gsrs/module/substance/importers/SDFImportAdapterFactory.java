@@ -13,6 +13,7 @@ import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringBootConfiguration;
@@ -86,7 +87,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     @SneakyThrows
     @Override
-    public ImportAdapter<AbstractSubstanceBuilder> createAdapter(JsonNode adapterSettings) {
+    public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
         ImportAdapter sDFImportAdapter = new SDFImportAdapter(actions);
