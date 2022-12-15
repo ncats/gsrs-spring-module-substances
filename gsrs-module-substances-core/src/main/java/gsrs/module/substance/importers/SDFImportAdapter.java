@@ -8,6 +8,7 @@ import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,7 +18,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 @Slf4j
-public class SDFImportAdapter implements ImportAdapter<AbstractSubstanceBuilder> {
+public class SDFImportAdapter implements ImportAdapter<Substance> {
 
     List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions;
 
@@ -29,7 +30,7 @@ public class SDFImportAdapter implements ImportAdapter<AbstractSubstanceBuilder>
     
     @SneakyThrows
     @Override
-    public Stream<AbstractSubstanceBuilder> parse(InputStream is, String encoding) {
+    public Stream<Substance> parse(InputStream is, String encoding) {
         log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
         ChemicalReader cr = ChemicalReaderFactory.newReader(is, encoding);
     	
@@ -51,7 +52,7 @@ public class SDFImportAdapter implements ImportAdapter<AbstractSubstanceBuilder>
                }
                //log.trace("created substance has {} names and {} codes", s.names.size(), s.codes.size());
                //log.trace(s.toFullJsonNode().toPrettyString());
-              return s;
+              return s.build();
           });
     }
 

@@ -108,7 +108,7 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         InputStream fisRead = new FileInputStream(dataFile.getAbsoluteFile());
         Stream<Substance> substanceStream = importAdapter.parse(fisRead, Charset.defaultCharset().name());
         substanceStream.forEach(s -> {
-            //Assertions.assertTrue(s.build().substanceClass.toString().contains("chemical"));
+            Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
             Assertions.assertTrue(s.names.size()>=1);
             Assertions.assertTrue( s.codes.size()>=1);
 
