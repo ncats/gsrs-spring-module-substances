@@ -11,6 +11,7 @@ import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.CodeProcessorFieldImpl;
 import gsrs.imports.ImportAdapter;
+import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.DelimTextImportAdapter;
 import gsrs.module.substance.importers.DelimTextImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.CodeExtractorActionFactory;
@@ -26,11 +27,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Field;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -319,4 +318,38 @@ public class DelimTextAdapterFactoryTest {
         ObjectNode node = (ObjectNode)jsonNode;
         Assertions.assertTrue( exampleData.keySet().stream().allMatch(k-> exampleData.get(k).equals(node.get(k).asText())));
     }
+
+    @Test
+    public void createSubstanceStreamTest() throws IOException {
+        DelimTextImportAdapterFactory factory = new DelimTextImportAdapterFactory();
+        factory.initialize();
+        String fileName = "testText/3proteins.csv";
+        File dataFile = new ClassPathResource(fileName).getFile();
+        log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
+        InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
+        String fileEncoding = "UTF-8";
+        ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
+        adapterSettings.put("lineValueDelimiter", ",");
+        adapterSettings.put("removeQuotes", true);
+        adapterSettings.put("substanceClassName", "Protein");
+        adapterSettings.put("linesToSkip", 0);
+        factory.setInputParameters(adapterSettings);
+        ImportAdapterStatistics settings = factory.predictSettings(fis);
+        fis = new FileInputStream(dataFile.getAbsoluteFile());
+        JsonNode adapter = settings.getAdapterSettings();
+        log.trace("adapter: ");
+        log.trace(adapter.toPrettyString());
+        ImportAdapter<AbstractSubstanceBuilder> importAdapter = factory.createAdapter(adapter);
+        Stream<AbstractSubstanceBuilder> substanceStream = importAdapter.parse(fis, Charset.defaultCharset().name());
+        substanceStream.forEach(s -> {
+            log.trace("full substance: ");
+            String fullSubstanceJson =s.build().toFullJsonNode().toPrettyString();
+            log.trace(fullSubstanceJson);
+            System.out.println(fullSubstanceJson);
+            Assertions.assertTrue(s.build().substanceClass.toString().contains("protein"));
+            Assertions.assertTrue(s.build().codes.stream().noneMatch(c->c.code.length()==0));
+            //Assertions.assertTrue( s.build().pro);
+        });
+    }
+
 }

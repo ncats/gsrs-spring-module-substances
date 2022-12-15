@@ -10,6 +10,7 @@ import ix.ginas.models.v1.Code;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
+import java.util.regex.Matcher;
 
 import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
@@ -20,11 +21,17 @@ public class CodeExtractorActionFactory extends BaseActionFactory {
         log.trace("in create");
         return (sub, sdRec) -> {
             log.trace("lambda");
-            abstractParams.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
+            //abstractParams.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             log.trace("params: ");
-            params.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
-            Code c = new Code((String) params.get("codeSystem"), (String) params.get("code"));
+            //params.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
+            String codeValue =(String) params.get("code");
+            Matcher m = SubstanceImportAdapterFactoryBase.SDF_RESOLVE.matcher(codeValue);
+            if( codeValue== null || codeValue.length()==0 || (m.find() && codeValue.equals(abstractParams.get("code") ))) {
+                log.info("skipping blank code");
+                return sub;
+            }
+            Code c = new Code((String) params.get("codeSystem"), codeValue);
             c.type = (String) params.get("codeType");
             doBasicsImports(c, params);
             //TODO: consider more params

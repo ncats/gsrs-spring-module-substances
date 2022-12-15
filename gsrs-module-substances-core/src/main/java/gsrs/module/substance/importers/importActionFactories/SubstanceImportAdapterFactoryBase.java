@@ -14,17 +14,25 @@ import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<AbstractSubstanceBuilder> {
 
     public final static String SIMPLE_REFERENCE_ACTION = "public_reference";
+
+    //** TYLER ADDING SPECIAL START
+    public static final Pattern SDF_RESOLVE = Pattern.compile("\\{\\{([^\\}]*)\\}\\}");
+    public static final Pattern SPECIAL_RESOLVE = Pattern.compile("\\[\\[([^\\]]*)\\]\\]");
 
     protected ImportAdapterStatistics statistics;
 
@@ -128,9 +136,9 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get("actionParameters");
             ObjectMapper mapper = new ObjectMapper();
-            log.trace("about to call convertValue");
+            //log.trace("about to call convertValue");
             Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
-            log.trace("Finished call to convertValue");
+            //log.trace("Finished call to convertValue");
             MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = null;
             try {
                 log.trace("looking for action {}; registry size: {}", actionName, registry.size());
@@ -232,6 +240,12 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
         return mapNode;
     }
 
+    public ObjectNode createProteinSequenceMap(String sequenceFieldName) {
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("proteinSequence", "{{" + sequenceFieldName+ "}}");
+        return mapNode;
+    }
+
     public ObjectNode createCodeMap(String codeSystem, String codeType) {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         if (codeType == null || codeType.length() == 0) {
@@ -243,9 +257,17 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
         return mapNode;
     }
 
+
     protected boolean looksLikeProperty(String fieldName) {
-        List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka");
+        List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka", "logp", "logd");
         return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
+    }
+
+    protected boolean looksLikeProteinSequence(String fieldName) {
+        if(fieldName.toUpperCase().contains("PROTEIN") && fieldName.toUpperCase().contains("SEQUENCE")){
+            return true;
+        }
+        return false;
     }
 
     protected JsonNode createDefaultReferenceReferenceNode() {
@@ -266,6 +288,92 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<A
         referenceNode.set(ACTION_PARAMETERS, parameters);
 
         return referenceNode;
+    }
+
+    /*
+simplified overload that uses the identity function as an encoder
+ */
+    public static String resolveParameter(SDRecordContext rec, String inp) {
+        return resolveParameter(rec, inp, s -> s);
+    }
+
+    private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
+        Matcher m = p.matcher(inp);
+        StringBuilder newString = new StringBuilder();
+        int start = 0;
+        boolean foundValue=false;
+        while (m.find()) {
+            int ss = m.start(0);
+            newString.append(inp.substring(start, ss));
+            start = m.end(0);
+            String prop = m.group(1);
+            log.trace("prop: {} from inp: {}", prop, inp);
+            Optional<String> value = resolver.apply(prop);
+            if (value.isPresent()) {
+                newString.append(value.get());
+                log.trace("We have value: " + value.get());
+                foundValue= true;
+            }
+            else {
+                log.trace("no value");
+            }
+        }
+        if( foundValue) {
+            newString.append(inp.substring(start));
+            return newString.toString();
+        }
+        return inp;
+    }
+
+    /*
+    Gets value for 3 special fields:
+    1) molfiles -- the structure field of an SD file record
+    2) name within molfile
+    3) UUID, coded as [[[UUID_1]]]
+    as well as regular SD file properties
+    Passes the result through an encoder function before returning
+     */
+    public static String resolveParameter(PropertyBasedDataRecordContext rec, String inp, Function<String, String> encoder) {
+        log.trace("in resolveParameter, inp: {}", inp);
+        if(rec instanceof SDRecordContext) {
+            SDRecordContext sdRec = (SDRecordContext)rec;
+            inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
+                if (p.equals("molfile")) return Optional.ofNullable(sdRec.getStructure()).map(encoder);
+                if (p.equals("molfile_name")) return Optional.ofNullable(sdRec.getMolfileName()).map(encoder);
+                return rec.getProperty(p).map(encoder);
+            });
+        } else {
+            inp= replacePattern(inp, SDF_RESOLVE, (p)-> rec.getProperty(p).map(encoder));
+        }
+        inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p).map(encoder));
+        return inp;
+    }
+
+    /*
+Adapts the abstract supplied parameters (inputMap) to real record-based parameters by replacing variable names
+with values found in the record.
+todo: add a table of example input/output values
+ */
+    public static Map<String, Object> resolveParametersMap(PropertyBasedDataRecordContext rec, Map<String, Object> inputMap)
+            throws Exception{
+        log.trace("in resolveParametersMap. rec properties: ");
+        rec.getProperties().forEach(p->log.trace("property: {}; value: {}", p, rec.getProperty(p)));
+        inputMap.keySet().forEach(k->log.trace("key: {}, val: {}", k, inputMap.get(k)));
+        ObjectMapper om = new ObjectMapper();
+        Map<String, Object> newMap;
+        JsonNode jsn = om.valueToTree(inputMap);
+        String json = resolveParameter(rec, jsn.toString(), s -> {
+            String m = om.valueToTree(s).toString();
+            return m.substring(1, m.length() - 1);
+        });
+        try {
+            newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
+            return newMap;
+        } catch (Exception ex) {
+            log.error("Error in resolveParametersMap ",  ex);
+            throw ex;
+            //ex.printStackTrace();
+        }
     }
 
 }

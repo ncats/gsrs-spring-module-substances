@@ -23,9 +23,11 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
 
     private String substanceTypeColumn = "SUBSTANCE_TYPE";
 
-    private String expectedSubstanceClass;
+    private String substanceClassName;
 
     private String lineValueDelimiter = ",";
+
+    private int linesToSkip=0;
 
     private List<String> fileFields;
 
@@ -39,11 +41,12 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
             log.warn("no 'parameters' provided in constructor. Using default values");
             return;
         }
-        if (parameters.get("substanceClass") != null) {
-            this.expectedSubstanceClass = (String) parameters.get("substanceClass");
+        if (parameters.get("substanceClassName") != null) {
+            this.substanceClassName = (String) parameters.get("substanceClassName");
+            log.trace("got substanceClassName: {}", substanceClassName);
         }
-        if( parameters.get("lineDelimiter") !=null){
-            this.lineValueDelimiter=(String) parameters.get("lineDelimiter");
+        if( parameters.get("lineValueDelimiter") !=null){
+            this.lineValueDelimiter=(String) parameters.get("lineValueDelimiter");
         }
         if(parameters.get("removeQuotes") !=null) {
             this.removeQuotes = (Boolean) parameters.get("removeQuotes");
@@ -51,6 +54,9 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
         if(parameters.get("fileFields") != null) {
             this.fileFields = new ArrayList<>();
             fileFields.addAll((List<String>)parameters.get("fileFields"));
+        }
+        if(parameters.get("linesToSkip") !=null) {
+            this.linesToSkip= (Integer) parameters.get("linesToSkip");
         }
     }
 
@@ -64,7 +70,7 @@ public class DelimTextImportAdapter implements ImportAdapter<AbstractSubstanceBu
                     .map(r->{
 
                         AbstractSubstanceBuilder s;
-                        switch(expectedSubstanceClass) {
+                        switch(substanceClassName) {
                             case "Chemical":
                                 s= new ChemicalSubstanceBuilder();
                                 break;

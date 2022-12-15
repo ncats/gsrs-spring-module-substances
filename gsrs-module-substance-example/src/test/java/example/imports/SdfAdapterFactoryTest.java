@@ -1,14 +1,13 @@
 package example.imports;
 
 import gsrs.dataexchange.model.MappingAction;
-import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.PropertyExtractorActionFactory;
+import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
 import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,7 @@ public class SdfAdapterFactoryTest {
         meta.put("codeSystem", "cas.rn");
         meta.put("code", "{{cas.rn}}");
         meta.put("codeType", "PRIMARY");
-        Map<String, Object> resolved= SDFImportAdapterFactory.resolveParametersMap(record, meta);
+        Map<String, Object> resolved= SubstanceImportAdapterFactoryBase.resolveParametersMap(record, meta);
         String expected="134523-00-5";
         Assertions.assertEquals(expected, (String) resolved.get("code"));
     }
@@ -39,7 +38,7 @@ public class SdfAdapterFactoryTest {
         meta.put("name", "boiling.point.predicted");
         meta.put("valueRange", "{{boiling.point.predicted}}");
         meta.put("propertyType", "physical");
-        Map<String, Object> resolved= SDFImportAdapterFactory.resolveParametersMap(record, meta);
+        Map<String, Object> resolved= SubstanceImportAdapterFactoryBase.resolveParametersMap(record, meta);
         Assertions.assertEquals(3, resolved.size());
         Assertions.assertEquals("722.2±60.0 °C    Press: 760 Torr", resolved.get("valueRange"));
     }
@@ -58,7 +57,6 @@ public class SdfAdapterFactoryTest {
 
         PropertyExtractorActionFactory factory = new PropertyExtractorActionFactory();
         MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingAction = factory.create(absParameters);
-        //ChemicalSubstance chemicalSubstance = new ChemicalSubstance();
         SubstanceBuilder builder = new SubstanceBuilder();
         mappingAction.act(builder, record);
         ChemicalSubstance chemicalSubstance = builder.asChemical().build();

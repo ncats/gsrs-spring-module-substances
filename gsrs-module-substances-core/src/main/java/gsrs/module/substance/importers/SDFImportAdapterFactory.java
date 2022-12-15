@@ -1,7 +1,6 @@
 package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -21,9 +20,6 @@ import org.springframework.boot.SpringBootConfiguration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
-import java.util.function.Function;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @SpringBootConfiguration
@@ -46,10 +42,6 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     //** ADDING ABSTRACT LAYERS END
 
-    //** TYLER ADDING SPECIAL START
-    public static final Pattern SDF_RESOLVE = Pattern.compile("\\{\\{([^\\}]*)\\}\\}");
-    public static final Pattern SPECIAL_RESOLVE = Pattern.compile("\\[\\[([^\\]]*)\\]\\]");
-
     private String originalFileName;
 
     private ImportAdapterStatistics statistics;
@@ -58,95 +50,11 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         return fileImportActions;
     }
 
-    private static String replacePattern(String inp, Pattern p, Function<String, Optional<String>> resolver) {
-        Matcher m = p.matcher(inp);
-        StringBuilder newString = new StringBuilder();
-        int start = 0;
-        boolean foundValue=false;
-        while (m.find()) {
-            int ss = m.start(0);
-            newString.append(inp.substring(start, ss));
-            start = m.end(0);
-            String prop = m.group(1);
-            log.trace("prop: {} from inp: {}", prop, inp);
-            Optional<String> value = resolver.apply(prop);
-            if (value.isPresent()) {
-                newString.append(value.get());
-                log.trace("We have value: " + value.get());
-                foundValue= true;
-            }
-            else {
-                log.trace("no value");
-            }
-        }
-        if( foundValue) {
-            newString.append(inp.substring(start));
-            return newString.toString();
-        }
-        return inp;
-    }
-
-    /*
-    simplified overload that uses the identity function as an encoder
-     */
-    public static String resolveParameter(SDRecordContext rec, String inp) {
-        return resolveParameter(rec, inp, s -> s);
-    }
-
-    /*
-    Gets value for 3 special fields:
-    1) molfiles -- the structure field of an SD file record
-    2) name within molfile
-    3) UUID, coded as [[[UUID_1]]]
-    as well as regular SD file properties
-    Passes the result through an encoder function before returning
-     */
-    public static String resolveParameter(PropertyBasedDataRecordContext rec, String inp, Function<String, String> encoder) {
-        log.trace("in resolveParameter, inp: {}", inp);
-        if(rec instanceof SDRecordContext) {
-            SDRecordContext sdRec = (SDRecordContext)rec;
-            inp = replacePattern(inp, SDF_RESOLVE, (p) -> {
-                if (p.equals("molfile")) return Optional.ofNullable(sdRec.getStructure()).map(encoder);
-                if (p.equals("molfile_name")) return Optional.ofNullable(sdRec.getMolfileName()).map(encoder);
-                return rec.getProperty(p).map(encoder);
-            });
-        } else {
-            inp= replacePattern(inp, SDF_RESOLVE, (p)->rec.getProperty(p).map(encoder));
-        }
-        inp = replacePattern(inp, SPECIAL_RESOLVE, (p) -> rec.resolveSpecial(p).map(encoder));
-        return inp;
-    }
 
     public static List<String> resolveParameters(SDRecordContext rec, List<String> inputList) {
         return inputList.stream().map(s -> resolveParameter(rec, s)).collect(Collectors.toList());
     }
 
-    /*
-    Adapts the abstract supplied parameters (inputMap) to real record-based parameters by replacing variable names
-    with values found in the record.
-    todo: add a table of example input/output values
-     */
-    public static Map<String, Object> resolveParametersMap(PropertyBasedDataRecordContext rec, Map<String, Object> inputMap)
-        throws Exception{
-        log.trace("in resolveParametersMap. rec properties: ");
-        rec.getProperties().forEach(p->log.trace("property: {}; value: {}", p, rec.getProperty(p)));
-        inputMap.keySet().forEach(k->log.trace("key: {}, val: {}", k, inputMap.get(k)));
-        ObjectMapper om = new ObjectMapper();
-        Map<String, Object> newMap;
-        JsonNode jsn = om.valueToTree(inputMap);
-        String json = resolveParameter(rec, jsn.toString(), s -> {
-            String m = om.valueToTree(s).toString();
-            return m.substring(1, m.length() - 1);
-        });
-        try {
-            newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
-            return newMap;
-        } catch (Exception ex) {
-            log.error("Error in resolveParametersMap ",  ex);
-            throw ex;
-            //ex.printStackTrace();
-        }
-    }
 
     @Override
     protected void defaultInitialize() {

@@ -24,9 +24,9 @@ import java.util.*;
 @Slf4j
 public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
-    private String fieldDelimiter;
+    private String lineValueDelimiter;
 
-    private boolean trimQuotesFromInput = false;
+    private boolean removeQuotes = false;
 
     private String inputFileName;
 
@@ -41,6 +41,8 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
     private  int linesToSkip;
 
     public final static String FIELD_LIST = "Fields";
+
+    public String substanceClassName;
 
     @Override
     public String getAdapterName() {
@@ -67,7 +69,18 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
             log.trace("adapterSettings has parameters");
             ObjectMapper mapper = new ObjectMapper();
             initializationParameters =mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {});
+        } else {
+            log.trace("adapterSettings has NO parameters");
+            initializationParameters = new HashMap<>();
+            if(this.lineValueDelimiter !=null) {
+                initializationParameters.put("lineValueDelimiter", this.lineValueDelimiter);
+            }
+            initializationParameters.put("linesToSkip", this.linesToSkip);
+            initializationParameters.put("removeQuotes", this.removeQuotes);
+            initializationParameters.put("substanceClassName", this.substanceClassName);
+            log.trace("created map");
         }
+        log.trace("initializationParameters: " + initializationParameters);
         DelimTextImportAdapter importAdapter = new DelimTextImportAdapter(actions, initializationParameters);
         return importAdapter;
     }
@@ -105,7 +118,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
              */
             TextFileReader textFileReader = new TextFileReader();
             Map<String, NCATSFileUtils.InputFieldStatistics>stats=
-                    textFileReader.getFileStatistics(is, this.fieldDelimiter, this.trimQuotesFromInput, null, 10, 0);
+                    textFileReader.getFileStatistics(is, this.lineValueDelimiter, this.removeQuotes, null, 10, 0);
             ImportAdapterStatistics statistics =
                     new ImportAdapterStatistics();
             fields =stats.keySet();
@@ -136,6 +149,10 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
             } else if(looksLikeProperty(f)) {
                 actionNode.put(ACTION_NAME, "property_import");
                 ObjectNode mapNode = createPropertyMap(f);
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+            } else if(looksLikeProteinSequence(f)){
+                actionNode.put(ACTION_NAME, "protein_import");
+                ObjectNode mapNode = createProteinSequenceMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
@@ -191,36 +208,43 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public Class getEntityServiceClass() {
-        return null;
+        return this.entityServiceClass;
     }
+
 
     @Override
     public void setEntityServiceClass(Class newClass) {
-
+        this.entityServiceClass=newClass;
     }
 
     @Override
     public void setInputParameters(JsonNode parameters) {
         log.trace("in setInputParameters");
-        if( parameters.hasNonNull("delimiter")) {
-            log.trace("delimiter: {}", parameters.get("setInputParameters"));
-            setFieldDelimiter(parameters.get("delimiter").asText());
+        if( parameters.hasNonNull("lineValueDelimiter")) {
+            log.trace("lineValueDelimiter: {}", parameters.get("setInputParameters"));
+            setLineValueDelimiter(parameters.get("lineValueDelimiter").asText());
         }
         if(parameters.hasNonNull("linesToSkip")){
             log.trace("linesToSkip: {}", parameters.get("linesToSkip"));
             setLinesToSkip(parameters.get("linesToSkip").asInt());
         }
-        if(parameters.hasNonNull("trimQuotesFromInput")){
-            log.trace("trimQuotesFromInput:  {}",parameters.get("trimQuotesFromInput"));
-            trimQuotesFromInput=parameters.get("trimQuotesFromInput").asBoolean();
+        if(parameters.hasNonNull("removeQuotes")){
+            log.trace("removeQuotes:  {}",parameters.get("removeQuotes"));
+            removeQuotes =parameters.get("removeQuotes").asBoolean();
+        }
+
+        if(parameters.hasNonNull("substanceClassName")) {
+            log.trace("substanceClassName: {}", parameters.get("substanceClassName").asText());
+            this.substanceClassName = (String) parameters.get("substanceClassName").asText();
         }
     }
-    public void setFieldDelimiter(String newDelimiter){
-        this.fieldDelimiter=newDelimiter;
+
+    public void setLineValueDelimiter(String newDelimiter){
+        this.lineValueDelimiter =newDelimiter;
     }
 
-    public String getFieldDelimiter() {
-        return this.fieldDelimiter;
+    public String getLineValueDelimiter() {
+        return this.lineValueDelimiter;
     }
 
     public int getLinesToSkip() {

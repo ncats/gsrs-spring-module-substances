@@ -33,6 +33,9 @@ public class TextFileReader {
             for(int i =0; i< fields.size(); i++) {
                 try {
                     String currentValue=values.get(i);
+                    if( currentValue !=null && trimQuotes&& currentValue.length()==2){
+                        currentValue=null;
+                    }
                     if( currentValue!=null && trimQuotes && currentValue.length()>2) {
                         currentValue = currentValue.substring(1, currentValue.length()-1);
                     }
