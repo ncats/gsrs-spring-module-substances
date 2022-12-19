@@ -82,7 +82,7 @@ public class Code extends CommonDataElementOfCollection{
     
     
     public Code () {}
-    
+
 
     public Code(String codeSystem, String code) {
 		this.codeSystem=codeSystem;
