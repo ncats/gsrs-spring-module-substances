@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
+import ix.utils.UUIDUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,15 +45,19 @@ public interface GinasAccessReferenceControlled extends GinasAccessControlled {
 	@JsonIgnore
 	public default Set<UUID> getReferencesAsUUIDs(){
 		return this.getReferences().stream()
-				                   .map(new Function<Keyword,UUID>(){
+				.map(new Function<Keyword,UUID>(){
 
-										@Override
-										public UUID apply(Keyword t) {
-											return UUID.fromString(t.term);
-										}
+					@Override
+					public UUID apply(Keyword t) {
+						if(UUIDUtil.isUUID(t.term)) {
+							return UUID.fromString(t.term);
+						}
+						return null;
+					}
 
-				                   })
-				                   .collect(Collectors.toSet());
+				})
+				.filter(u->u!=null)
+				.collect(Collectors.toSet());
 	}
 
 }
