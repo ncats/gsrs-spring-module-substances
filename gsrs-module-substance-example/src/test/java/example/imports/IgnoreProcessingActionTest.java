@@ -1,10 +1,9 @@
 package example.imports;
 
+import gsrs.dataexchange.processing_actions.IgnoreProcessingAction;
 import gsrs.dataexchange.processing_actions.ReplaceProcessingAction;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -12,10 +11,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-public class ReplaceProcessingActionTest {
+public class IgnoreProcessingActionTest {
 
     @Test
-    public void simpleReplacementTest() throws Exception {
+    public void simpleIgnoreTest() throws Exception {
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
         builder.addName("putrecine");
@@ -33,10 +32,11 @@ public class ReplaceProcessingActionTest {
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = (p)-> buildMessage.append(p);
 
-        ReplaceProcessingAction action = new ReplaceProcessingAction();
+        IgnoreProcessingAction action = new IgnoreProcessingAction();
         ChemicalSubstance selected = (ChemicalSubstance) action.process(chemical1, chemical2, parms, logger);
-        Assertions.assertEquals(chemical1.getStructure().smiles, selected.getStructure().smiles);
-        Assertions.assertNotEquals(chemical2.getStructure().smiles, selected.getStructure().smiles);
+        Assertions.assertEquals(chemical2.getStructure().smiles, selected.getStructure().smiles);
+        Assertions.assertNotEquals(chemical1.getStructure().smiles, selected.getStructure().smiles);
         Assertions.assertEquals("Starting in process",  buildMessage.toString());
     }
+
 }

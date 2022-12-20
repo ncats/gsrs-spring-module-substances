@@ -27,6 +27,8 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.controller.*;
+import gsrs.dataexchange.model.ProcessingAction;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -67,11 +69,6 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
@@ -1627,6 +1624,43 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         publicItems.id=-1l;
         items.add(publicItems);
         return items;
+    }
+
+
+    /*
+    temporary test endpoint.
+    TODO: remove?
+     */
+    @GetGsrsRestApiMapping("/substanceMerge")
+    public ResponseEntity<Object> substanceProcessGet(
+            @RequestParam(required = true) String sourceSubstanceUuid,
+            @RequestParam(required = true) String baseSubstanceUuid,
+            @RequestParam Map<String, String> queryParameters,
+            HttpServletRequest httpServletRequest,
+            RedirectAttributes attributes) throws Exception {
+
+        log.trace("going to retrieve substances for source ({}) and base ({})", sourceSubstanceUuid, baseSubstanceUuid);
+        Key sourceKey = Key.of(Substance.class, UUID.fromString(sourceSubstanceUuid));
+        Key baseKey  = Key.of(Substance.class, UUID.fromString(baseSubstanceUuid));
+        Substance source = (Substance) EntityFetcher.of(sourceKey).call();
+        Substance base = (Substance) EntityFetcher.of(baseKey).call();
+        log.trace("retrieved substances");
+        Map<String, Object> mergeOptions = new HashMap<>();
+        queryParameters.keySet().forEach(p -> {
+            if (p.startsWith("Merge")) {
+                mergeOptions.put(p, queryParameters.get(p));
+            }
+        });
+        log.trace("going to instantiate MergeProcessingAction");
+        Class processingActionClass= Class.forName("gsrs.dataexchange.processing_actions.MergeProcessingAction");
+        ProcessingAction<Substance> action = (ProcessingAction<Substance>) processingActionClass.newInstance();
+        StringBuilder sb = new StringBuilder();
+        log.trace("going to call process");
+        Substance merged = action.process(base, source, mergeOptions, sb::append);
+        merged.setUuid(UUID.randomUUID());
+        log.trace("ready to return.  Logging:");
+        log.trace(sb.toString());
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(merged, queryParameters), HttpStatus.OK);
     }
 }
 

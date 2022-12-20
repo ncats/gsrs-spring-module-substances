@@ -2,6 +2,7 @@ package example.imports;
 
 import gsrs.dataexchange.processing_actions.MergeProcessingAction;
 import ix.core.models.Keyword;
+import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.NucleicAcidSubstanceBuilder;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
@@ -9,7 +10,10 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -39,6 +43,51 @@ public class MergeProcessingActionTest {
         ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
         builder2.setStructureWithDefaultReference("OCCCCO");
         builder2.addName("1,4-BUTANEDIOL");
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("MergeNames", "true");
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = (p)-> buildMessage.append(p);
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        Assertions.assertEquals(4,output.names.size());
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+                n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
+    }
+
+    /*
+    The same name has been added to 2 substances; automatic filtering prevents it from being added twice to the output
+     */
+    @Test
+    public void testMergeNamesDuplicates() throws Exception {
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCN");
+        Name name1 = new Name();
+        name1.name="putrecine";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        builder.addName(name1);
+
+        Name name2 = new Name();
+        name2.name="1,4 diaminobutane";
+        name2.languages.add(new Keyword("de"));
+        name2.displayName=false;
+        builder.addName(name2);
+        builder.addName("Stuff");
+        builder.addCode("CHEMBL", "CHEMBL46257");
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
+        Name name2Clone =eics.fromJson(name2.toJson());
+        builder2.addName(name2Clone);
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
@@ -377,6 +426,26 @@ public class MergeProcessingActionTest {
         System.out.printf("message: %s; type: %s", buildMessage.toString(), output.substanceClass);
 
         Assertions.assertEquals(2, output.properties.size());
+    }
+
+    @Test
+    public void mergeMods1Test() throws IOException {
+        File proteinFile =new ClassPathResource("testJSON/YYD6UT8T47.json").getFile();
+        ProteinSubstanceBuilder builder =SubstanceBuilder.from(proteinFile);
+        ProteinSubstance proteinSubstanceSource= builder.build();
+        ProteinSubstance proteinSubstanceTarget= builder.build();
+        proteinSubstanceTarget.modifications.structuralModifications.clear();
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = (p)-> buildMessage.append(p);
+        MergeProcessingAction action = new MergeProcessingAction();
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("MergeModifications", true);
+        parms.put("MergeStructuralModifications", true);
+
+        Substance output = action.process( proteinSubstanceSource, proteinSubstanceTarget, parms, logger);
+        System.out.printf("message: %s; type: %s", buildMessage.toString(), output.substanceClass);
+        Assertions.assertEquals(proteinSubstanceSource.getModifications().structuralModifications.size(), output.getModifications().structuralModifications.size());
     }
 
     @Test

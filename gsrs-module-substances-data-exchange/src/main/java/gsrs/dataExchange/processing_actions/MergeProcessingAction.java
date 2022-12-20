@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -17,6 +18,9 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){
         SubstanceBuilder builder = existing.toBuilder();
         ObjectMapper mapper= new ObjectMapper();
+
+        Objects.requireNonNull(source, "Must have a non-null source Substance to merge");
+        Objects.requireNonNull(existing, "Must have a non-null existing Substance to merge");
 
         if(hasTrueValue(parameters, "MergeReferences")){
             source.references.forEach(r->{
@@ -99,6 +103,76 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
                 }
             });
+        }
+
+        if(hasTrueValue(parameters, "MergeNotes")){
+            source.notes.forEach(n-> {
+                if( hasTrueValue(parameters, "NoteUniqueness") &&
+                        (existing.notes.stream().anyMatch(en->en.note.equals(n.note)))){
+                    processLog.accept(String.format("note %s was already present;", n.note));
+                }else{
+                    EntityUtils.EntityInfo<Note> eics= EntityUtils.getEntityInfoFor(Note.class);
+                    try {
+                        Note newNote=eics.fromJson(n.toJson());
+                        builder.addNote(newNote);
+                        processLog.accept(String.format("Adding note;"));
+                    } catch (IOException e) {
+                        log.error("Error copying note", e);
+                        processLog.accept(String.format("Error adding note %s;", n.note));
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+        if(hasTrueValue(parameters, "MergeModifications")) {
+            if(hasTrueValue(parameters, "MergeStructuralModifications")){
+                source.modifications.structuralModifications.forEach(sm->{
+                    //simple-minded copy here to start
+                    //TODO: evaluate how accurate/useful this is
+                    EntityUtils.EntityInfo<StructuralModification> structuralModificationEntityInfo =EntityUtils.getEntityInfoFor(StructuralModification.class);
+                    try {
+                        StructuralModification newStructuralModification = structuralModificationEntityInfo.fromJson(sm.toJson());
+                        builder.addStructuralModification(newStructuralModification);
+
+                    } catch (IOException e){
+                        log.error("Error copying StructuralModification", e);
+                        processLog.accept(String.format("Error adding StructuralModification %s;", sm));
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            if(hasTrueValue(parameters, "MergeAgentModifications")){
+                source.modifications.agentModifications.forEach(am->{
+                    //simple-minded copy here to start
+                    //TODO: evaluate how accurate/useful this is
+                    EntityUtils.EntityInfo<AgentModification> agentModificationEntityInfo =EntityUtils.getEntityInfoFor(AgentModification.class);
+                    try {
+                        AgentModification newAgentModification = agentModificationEntityInfo.fromJson(am.toJson());
+                        builder.addAgentModification(newAgentModification);
+                    } catch (IOException e){
+                        log.error("Error copying AgentModification", e);
+                        processLog.accept(String.format("Error adding AgentModification %s;", am));
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+
+            if(hasTrueValue(parameters, "MergePhysicalModifications")){
+                source.modifications.physicalModifications.forEach(pm->{
+                    //simple-minded copy here to start
+                    //TODO: evaluate how accurate/useful this is
+                    EntityUtils.EntityInfo<PhysicalModification> physicalModificationEntityInfo =EntityUtils.getEntityInfoFor(PhysicalModification.class);
+                    try {
+                        PhysicalModification newPhysicalModification = physicalModificationEntityInfo.fromJson(pm.toJson());
+                        builder.addPhysicalModification(newPhysicalModification);
+                    } catch (IOException e){
+                        log.error("Error copying PhysicalModification", e);
+                        processLog.accept(String.format("Error adding PhysicalModification %s;", pm));
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
         }
         return builder.build();
     }
