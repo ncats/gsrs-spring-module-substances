@@ -115,7 +115,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     try {
                         Note newNote=eics.fromJson(n.toJson());
                         builder.addNote(newNote);
-                        processLog.accept(String.format("Adding note;"));
+                        processLog.accept("Adding note;");
                     } catch (IOException e) {
                         log.error("Error copying note", e);
                         processLog.accept(String.format("Error adding note %s;", n.note));
@@ -174,6 +174,29 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 });
             }
         }
+
+        if(hasTrueValue(parameters, "MergeRelationships")){
+            source.relationships.forEach(n-> {
+                if( hasTrueValue(parameters, "RelationshipUniqueness")
+                        && existing.relationships.stream().anyMatch(en->en.type.equals(n.type) && en.relatedSubstance.refuuid.equals(n.relatedSubstance.refuuid))){
+                    processLog.accept(String.format("Relationship of type %s to substance %s was already present;", n.type, n.relatedSubstance.refuuid));
+                }else{
+                    EntityUtils.EntityInfo<Relationship> eics= EntityUtils.getEntityInfoFor(Relationship.class);
+
+                    try {
+                        Relationship newRel = eics.fromJson(n.toJson());
+                        builder.addRelationship(newRel);
+                        processLog.accept(String.format("Adding Relationship of type %s to substances %s;", newRel.type,
+                                newRel.relatedSubstance.refuuid));
+                    } catch (IOException e) {
+                        log.error("error copying name", e);
+                        processLog.accept(String.format("Error adding Relationship %s;", n.type));
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+
         return builder.build();
     }
 }

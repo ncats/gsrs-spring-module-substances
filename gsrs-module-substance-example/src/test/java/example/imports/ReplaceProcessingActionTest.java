@@ -3,8 +3,6 @@ package example.imports;
 import gsrs.dataexchange.processing_actions.ReplaceProcessingAction;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+/*
+Action represents user intention to replace what's in the DB with the new matching record
+ */
 public class ReplaceProcessingActionTest {
 
     @Test

@@ -45,6 +45,8 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     public String substanceClassName;
 
+    private String description="Importer for various types of text/delimited files";
+
     @Override
     public String getAdapterName() {
         return "Delimited Text Adapter";
@@ -254,5 +256,15 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     public void setLinesToSkip(int linesToSkip) {
         this.linesToSkip = linesToSkip;
+    }
+
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

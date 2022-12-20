@@ -131,6 +131,16 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     }
 
+    @Override
+    public String getDescription() {
+        return "Generalized file importer. (this message is expected NOT to appear!)";
+    }
+
+    @Override
+    public void setDescription(String description) {
+        log.info("general setDescription method called");
+    }
+
     public List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {

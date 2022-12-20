@@ -36,6 +36,8 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     private Class entityServiceClass;
 
+    private String description="SD file importer for all";
+
     public SDFImportAdapterFactory() {
     }
     //** ADDING ABSTRACT LAYERS START
@@ -221,4 +223,13 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         return fieldStatisticsMap;
     }
 
+    @Override
+    public String getDescription() {
+        return description;
+    }
+
+    @Override
+    public void setDescription(String description) {
+        this.description = description;
+    }
 }
