@@ -16,10 +16,7 @@ import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 @SpringBootConfiguration
@@ -28,6 +25,9 @@ import java.util.Map;
 @Slf4j
 
 public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
+
+    private List<String> extensions = Arrays.asList("sdfile1", "sdf", "sdd");
+
     @Override
     public String getAdapterName() {
         return "NSRS SDF Adapter";
@@ -254,6 +254,16 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
              */
         //registry.put("property_import", new PropertyExtractorActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
+    }
+
+    @Override
+    public List<String> getSupportedFileExtensions() {
+        return this.extensions;
+    }
+
+    @Override
+    public void setSupportedFileExtensions(List<String> extensions) {
+        this.extensions=extensions;
     }
 
 }

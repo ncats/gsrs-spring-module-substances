@@ -41,6 +41,8 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     private  int linesToSkip;
 
+    private List<String> extensions = Arrays.asList("csv", "txt", "tsv");
+
     public final static String FIELD_LIST = "Fields";
 
     public String substanceClassName;
@@ -59,8 +61,14 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public List<String> getSupportedFileExtensions() {
-        return Arrays.asList("csv", "txt", "tsv");
+        return this.extensions;
     }
+
+    @Override
+    public void setSupportedFileExtensions(List<String> extensions) {
+        this.extensions=extensions;
+    }
+
 
     @SneakyThrows
     @Override

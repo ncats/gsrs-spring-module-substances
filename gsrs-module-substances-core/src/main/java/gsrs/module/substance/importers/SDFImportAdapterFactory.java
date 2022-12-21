@@ -53,6 +53,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         return fileImportActions;
     }
 
+    private List<String> extensions =Arrays.asList("sdf", "sd");
 
     public static List<String> resolveParameters(SDRecordContext rec, List<String> inputList) {
         return inputList.stream().map(s -> resolveParameter(rec, s)).collect(Collectors.toList());
@@ -84,7 +85,12 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     @Override
     public List<String> getSupportedFileExtensions() {
-        return Arrays.asList("sdf", "sd");
+        return this.extensions;
+    }
+
+    @Override
+    public void setSupportedFileExtensions(List<String> extensions) {
+        this.extensions=extensions;
     }
 
     @SneakyThrows

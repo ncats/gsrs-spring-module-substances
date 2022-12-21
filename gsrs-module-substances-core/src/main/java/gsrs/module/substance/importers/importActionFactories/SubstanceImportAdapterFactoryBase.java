@@ -67,6 +67,11 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
     }
 
     @Override
+    public void setSupportedFileExtensions(List<String> extensions) {
+
+    }
+
+    @Override
     public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         return null;
     }
