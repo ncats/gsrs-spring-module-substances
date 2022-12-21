@@ -75,7 +75,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         DefaultImportAdapterFactoryConfig config = new DefaultImportAdapterFactoryConfig();
         config.setImportAdapterFactoryClass(NSRSSDFImportAdapterFactory.class);
         config.setAdapterName("Test adapter");
-        config.setExtensions(Arrays.asList("sd", "pdf"));
+        config.setSupportedFileExtensions(Arrays.asList("sd", "pdf"));
 
         ObjectMapper mapper = new ObjectMapper();
         String configString =mapper.writeValueAsString(config);

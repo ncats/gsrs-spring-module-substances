@@ -195,20 +195,24 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         ObjectNode structureNode = JsonNodeFactory.instance.objectNode();
         structureNode.put(ACTION_NAME, "structure_and_moieties");
         structureNode.set(ACTION_PARAMETERS, createMolfileMap());
+        structureNode.put("label", "Import Structure Action");
 
         result.add(structureNode);
         fieldNames.forEach(f -> {
             ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
             if (f.toUpperCase(Locale.ROOT).contains("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
                 actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
+                actionNode.put("label", "Create Name Action");
                 ObjectNode mapNode = createNameMap(f, null, null);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else if(looksLikeProperty(f)) {
                 actionNode.put(ACTION_NAME, "property_import");
+                actionNode.put("label", "Create Property Action");
                 ObjectNode mapNode = createPropertyMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
+                actionNode.put("label", "Create Code Action");
                 ObjectNode mapNode = createCodeMap(f, "PRIMARY");
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             }

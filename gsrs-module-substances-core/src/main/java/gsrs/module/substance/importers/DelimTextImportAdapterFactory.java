@@ -156,18 +156,22 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
             if (f.toUpperCase(Locale.ROOT).contains("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
                 actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
                 ObjectNode mapNode = createNameMap(f, null, null);
+                actionNode.put("label", "Create Name Action");
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else if(looksLikeProperty(f)) {
                 actionNode.put(ACTION_NAME, "property_import");
+                actionNode.put("label", "Create Property Action");
                 ObjectNode mapNode = createPropertyMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else if(looksLikeProteinSequence(f)){
                 actionNode.put(ACTION_NAME, "protein_import");
                 ObjectNode mapNode = createProteinSequenceMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
+                actionNode.put("label", "Create Protein Subunit");
             } else {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
                 ObjectNode mapNode = createCodeMap(f, "PRIMARY");
+                actionNode.put("label", "Create Code Action");
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             }
             result.add(actionNode);
