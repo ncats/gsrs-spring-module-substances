@@ -17,6 +17,34 @@
     </properties>
 
     <build>
+<plugins>
+       <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <inherited>true</inherited>
+            <configuration>
+                <argLine>-Xmx3500m</argLine>
+           </configuration>
+        </plugin>
+    <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+            <source>8</source>
+            <target>8</target>
+        </configuration>
+    </plugin>
+</plugins>
+	    <!--
+<plugins><plugin>
+<groupId>org.apache.maven.plugins</groupId>
+<artifactId>maven-surefire-plugin</artifactId>
+        <version>2.19</version>
+        <configuration>
+            <argLine>-Xmx3524m</argLine>
+        </configuration>
+	</plugin></plugins>
+-->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -33,15 +61,8 @@
                 </excludes>
             </resource>
         </resources>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                </configuration>
-            </plugin>
-        </plugins>
     </build>
+
 
 
     <dependencies>
@@ -130,8 +151,9 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-starter-tests</artifactId>
             <version>${gsrs.version}</version>
-            <!--scope>test</scope-->
+            <scope>test</scope>
         </dependency>
+
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-controlled-vocabulary-api</artifactId>
@@ -142,11 +164,11 @@
             <artifactId>gsrs-controlled-vocabulary</artifactId>
             <version>${gsrs.version}</version>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
             <version>${gsrs.version}</version>
-        </dependency>
+        </dependency-->
 
         <dependency>
             <groupId>com.h2database</groupId>
@@ -228,6 +250,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+            <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
             <exclusions>
@@ -253,6 +280,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+	
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc8</artifactId>
@@ -268,12 +296,39 @@
             <artifactId>log4j-core</artifactId>
             <version>${log4j2.version}</version>
         </dependency>
+         <dependency>
+            <groupId>io.burt</groupId>
+            <artifactId>jmespath</artifactId>
+            <version>0.4.0</version>
+            <type>pom</type>
+        </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-data-exchange</artifactId>
             <version>3.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
+        <!--dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-core</artifactId>
+            <version>3.1-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency-->
 
+        <!--dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.13.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.13.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.13.3</version>
+        </dependency-->
     </dependencies>
 </project>

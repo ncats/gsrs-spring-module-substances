@@ -1647,7 +1647,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         log.trace("retrieved substances");
         Map<String, Object> mergeOptions = new HashMap<>();
         queryParameters.keySet().forEach(p -> {
-            if (p.startsWith("Merge")) {
+            if (p.startsWith("Merge") || p.equals("RelationshipUniqueness")) {
                 mergeOptions.put(p, queryParameters.get(p));
             }
         });
