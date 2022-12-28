@@ -88,10 +88,16 @@ public class JsonSubstanceFactory {
                 switch (type) {
                     case chemical:
 
-                        ObjectNode structure = (ObjectNode)tree.at("/structure");
-                        fixStereoOnStructure(structure);
-                        for(JsonNode moiety: tree.at("/moieties")){
-                            fixStereoOnStructure((ObjectNode)moiety);
+                        //these checks on 'hasNonNull' added 28 December 2022 to prevent run time exceptions
+                        //todo: discuss w/ Tyler in earlier 2023
+                        if(tree.hasNonNull("structure")) {
+                            ObjectNode structure = (ObjectNode) tree.at("/structure");
+                            fixStereoOnStructure(structure);
+                        }
+                        if(tree.hasNonNull("moieties")) {
+                            for (JsonNode moiety : tree.at("/moieties")) {
+                                fixStereoOnStructure((ObjectNode) moiety);
+                            }
                         }
 
                         sub = mapper.treeToValue(tree, ChemicalSubstance.class);
