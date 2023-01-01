@@ -116,7 +116,10 @@ public class JoseCryptoServiceConfiguration {
     }
 
     public JsonWebKey getKey(String keyId) {
-        return jsonWebKeys.getKey(keyId);
+        if (keyId != null) {
+            return jsonWebKeys.getKey(keyId);
+        }
+        return null;
     }
 
     public static JoseCryptoServiceConfiguration INSTANCE() {

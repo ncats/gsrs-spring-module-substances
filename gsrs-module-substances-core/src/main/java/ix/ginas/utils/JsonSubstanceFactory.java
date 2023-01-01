@@ -15,6 +15,7 @@ import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.v1.*;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
 
@@ -77,6 +78,7 @@ public class JsonSubstanceFactory {
     public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 
         fixReferences(tree);
+        removeEmptyObjects(tree);
         JsonNode subclass = tree.get("substanceClass");
         ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
 
@@ -184,19 +186,47 @@ public class JsonSubstanceFactory {
         ArrayNode references = (ArrayNode)tree.at("/references");
         for (int i = 0; i < references.size(); i++) {
             ObjectNode ref = (ObjectNode) references.get(i);
-            if (!ref.has("uuid")) {
+            if (!ref.has("uuid") && ref.size() > 0) {
                 ref.set("uuid", new TextNode(UUID.randomUUID().toString()));
             }
         }
         for (JsonNode refsNode: tree.findValues("references")) {
             if (refsNode.isArray()) {
                 ArrayNode refs = (ArrayNode) refsNode;
-                for (int i = 0; i < refs.size(); i++) {
+                for (int i = refs.size(); i-- > 0;) {
                     JsonNode ref = refs.get(i);
                     if (ref.isTextual() && ref.asText("").chars().allMatch(Character::isDigit)) {
-                        refs.set(i, references.get(ref.asInt()).get("uuid"));
+                        if (references.get(ref.asInt()).has("uuid")) {
+                            refs.set(i, references.get(ref.asInt()).get("uuid"));
+                        } else {
+                            ((ArrayNode) refs).remove(i);
+                        }
                     }
                 }
+            }
+        }
+    }
+
+    private static void removeEmptyObjects(JsonNode node) {
+        if (node.isObject()) {
+            Iterator<String> it = node.fieldNames();
+            while (it.hasNext()) {
+                String key = it.next();
+                JsonNode n = node.get(key);
+                if (n.isObject() && n.size() == 0) {
+                    ((ObjectNode) node).remove(key);
+                    continue;
+                }
+                removeEmptyObjects(n);
+            }
+        } else if (node.isArray()) {
+            for (int i = node.size(); i-- > 0;) {
+                JsonNode n = node.get(i);
+                if (n.isObject() && n.size() == 0) {
+                    ((ArrayNode) node).remove(i);
+                    continue;
+                }
+                removeEmptyObjects(n);
             }
         }
     }

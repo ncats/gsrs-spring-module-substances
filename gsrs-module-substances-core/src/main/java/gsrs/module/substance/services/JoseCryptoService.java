@@ -89,7 +89,12 @@ public class JoseCryptoService {
         try {
             JwsHeaders headers = jwsConsumer.getJwsHeaders();
             if (config.getStrictVerification() || config.getPreserveMetadata()) {
-                verified = jwsConsumer.verifySignatureWith(config.getKey(headers.getKeyId()), headers.getSignatureAlgorithm());
+                JsonWebKey key = config.getKey(headers.getKeyId());
+                if (key != null) {
+                    verified = jwsConsumer.verifySignatureWith(key, headers.getSignatureAlgorithm());
+                } else {
+                    verified = false;
+                }
             }
             if (config.getStrictVerification() && ! verified ) {
                 return null;
