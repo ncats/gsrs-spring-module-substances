@@ -9,7 +9,7 @@ import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.importActionFactories.*;
-import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;

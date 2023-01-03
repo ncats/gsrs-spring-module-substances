@@ -3,7 +3,7 @@ package gsrs.module.substance.importers.importActionFactories;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gsrs.dataexchange.model.MappingActionFactory;
-import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.GinasAccessControlled;
 import ix.ginas.models.GinasAccessReferenceControlled;

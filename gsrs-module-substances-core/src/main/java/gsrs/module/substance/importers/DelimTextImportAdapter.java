@@ -1,9 +1,9 @@
 package gsrs.module.substance.importers;
 
 import gsrs.dataexchange.model.MappingAction;
+import gsrs.importer.DefaultPropertyBasedRecordContext;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
-import gsrs.module.substance.importers.model.DefaultPropertyBasedRecordContext;
-import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.readers.TextFileReader;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.Substance;

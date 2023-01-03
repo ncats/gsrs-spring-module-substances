@@ -5,7 +5,7 @@ import gov.nih.ncats.molwitch.Chemical;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
-import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;

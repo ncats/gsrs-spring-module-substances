@@ -2,12 +2,12 @@ package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingAction;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.NSRSSampleNameExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.StructureExtractorActionFactory;
-import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;

@@ -1,6 +1,6 @@
 package example.imports.readers;
 
-import gsrs.module.substance.importers.model.DefaultPropertyBasedRecordContext;
+import gsrs.importer.DefaultPropertyBasedRecordContext;
 import gsrs.module.substance.importers.readers.TextFileReader;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;

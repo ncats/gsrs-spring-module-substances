@@ -1,6 +1,6 @@
 package gsrs.module.substance.importers.readers;
 
-import gsrs.module.substance.importers.model.DefaultPropertyBasedRecordContext;
+import gsrs.importer.DefaultPropertyBasedRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
 import lombok.extern.slf4j.Slf4j;
 

@@ -3,7 +3,7 @@ package example.imports;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.module.substance.importers.importActionFactories.PropertyExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
-import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;

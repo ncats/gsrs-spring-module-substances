@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.CodeProcessorFieldImpl;
 import gsrs.imports.ImportAdapter;
@@ -18,7 +19,6 @@ import gsrs.module.substance.importers.importActionFactories.CodeExtractorAction
 import gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
-import gsrs.module.substance.importers.model.PropertyBasedDataRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
