@@ -12,6 +12,7 @@ import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.module.substance.utils.NCATSFileUtils;
+import ix.ginas.importers.InputFieldStatistics;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
@@ -28,7 +29,7 @@ import java.util.stream.Collectors;
 public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     public final static String SDF_FIELD_LIST = "SDF Fields";
 
-    private Map<String, NCATSFileUtils.InputFieldStatistics> fileFieldStatisticsMap;
+    private Map<String, InputFieldStatistics> fileFieldStatisticsMap;
 
     private Class holdingAreaService;
 
@@ -103,7 +104,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     }
 
     @Override
-    public ImportAdapterStatistics predictSettings(InputStream is) {
+    public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
         log.trace("in predictSettings");
         Set<String> fields = null;
         try {
@@ -118,7 +119,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
                     e.g., peak loading for NSRS.  this becomes a PROPERTY but we don't show them that configuration thing to select from because that would be a
                         distraction. more obscure case: an SD file property called 'melting point' that gets mapped to a property
              */
-            Map<String, NCATSFileUtils.InputFieldStatistics>stats= getFieldsForFile(is);
+            Map<String, InputFieldStatistics>stats= getFieldsForFile(is);
             ImportAdapterStatistics statistics =
                     new ImportAdapterStatistics();
             fields =stats.keySet();
@@ -187,7 +188,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         this.entityServiceClass=newClass;
     }
 
-    public JsonNode createDefaultSdfFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
+    public JsonNode createDefaultSdfFileImport(Map<String, InputFieldStatistics> map) {
         log.trace("in createDefaultSdfFileImport");
         Set<String> fieldNames =map.keySet();
         ObjectNode topLevelReturn = JsonNodeFactory.instance.objectNode();
@@ -224,9 +225,9 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     }
 
 
-    public Map<String, NCATSFileUtils.InputFieldStatistics> getFieldsForFile(InputStream input) throws IOException {
+    public Map<String, InputFieldStatistics> getFieldsForFile(InputStream input) throws IOException {
         log.trace("starting in fieldsForSDF");
-        Map<String, NCATSFileUtils.InputFieldStatistics> fieldStatisticsMap =
+        Map<String, InputFieldStatistics> fieldStatisticsMap =
                 NCATSFileUtils.getSDFieldStatistics(input);
         fileFieldStatisticsMap = fieldStatisticsMap;
         log.trace("total fields: " + fileFieldStatisticsMap.keySet().size());

@@ -1,6 +1,8 @@
 package example.imports;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.Chemical;
@@ -9,11 +11,11 @@ import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.controllers.SubstanceController;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
+import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
-import gsrs.module.substance.utils.NCATSFileUtils;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.importers.InputFieldStatistics;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -47,8 +49,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
 
-    List<ImportAdapterFactory<Substance>> factories = Arrays.asList(new SDFImportAdapterFactory());
-    private CachedSupplier<List<ImportAdapterFactory<Substance>>> importAdapterFactories
+    List<ImportAdapterFactory<Substance>> factories = Collections.singletonList(new SDFImportAdapterFactory());
+    private final CachedSupplier<List<ImportAdapterFactory<Substance>>> importAdapterFactories
             = CachedSupplier.of(() -> factories);
 
     @Autowired
@@ -59,7 +61,7 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         SDFImportAdapterFactory importAdapterFactory = new SDFImportAdapterFactory();
 
         List<String> fieldNames = Arrays.asList("CAS", "select_name", "alpha code");
-        Map<String, NCATSFileUtils.InputFieldStatistics> map = new HashMap<>();
+        Map<String, InputFieldStatistics> map = new HashMap<>();
         fieldNames.forEach(fn -> map.put(fn, null));
         JsonNode importInfo = importAdapterFactory.createDefaultSdfFileImport(map);
         String json = importInfo.toPrettyString();
@@ -78,7 +80,7 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
 
         InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
         SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
-        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis);
+        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis, null);
         fis.close();
 
         JsonNode adapter = settings.getAdapterSettings();
@@ -98,7 +100,7 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
         InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
         SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
-        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis);
+        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis, null);
 
         fis.close();
         JsonNode adapter = settings.getAdapterSettings();
@@ -106,7 +108,9 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace(adapter.toPrettyString());
         ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         InputStream fisRead = new FileInputStream(dataFile.getAbsoluteFile());
-        Stream<Substance> substanceStream = importAdapter.parse(fisRead, Charset.defaultCharset().name());
+        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
+        settingsNode.put("Encoding", Charset.defaultCharset().name());
+        Stream<Substance> substanceStream = importAdapter.parse(fisRead, settingsNode);
         substanceStream.forEach(s -> {
             Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
             Assertions.assertTrue(s.names.size()>=1);
@@ -126,13 +130,15 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         c.setProperty("NAME", "NAME_0\r\n\r\nNAME_1\r\nNAME_2\r\nIBUPROFEN\r\nNAME_3");
         ByteArrayInputStream bais = new ByteArrayInputStream(c.toSd().getBytes());
         sDFImportAdapterFactory.initialize();
-        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(bais);
+        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(bais, null);
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
         log.trace(adapter.toPrettyString());
         ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
         bais = new ByteArrayInputStream(c.toSd().getBytes());
-        Stream<Substance> substanceStream = importAdapter.parse(bais, Charset.defaultCharset().name());
+        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
+        settingsNode.put("Encoding", Charset.defaultCharset().name());
+        Stream<Substance> substanceStream = importAdapter.parse(bais, settingsNode);
         substanceStream.forEach(s -> {
             log.trace("full substance: ");
             log.trace(s.toFullJsonNode().toPrettyString());
@@ -150,7 +156,7 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         Chemical c = Chemical.parse("CCCCCCCC");
 
         ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        val res1_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
+        val res1_first = SubstanceImportAdapterFactoryBase.resolveParameter(ctx, uuidSyntax1);
         String res1_again = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
         String res2_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax2);
         assertEquals(res1_first, res1_again);

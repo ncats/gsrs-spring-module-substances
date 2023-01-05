@@ -1,10 +1,11 @@
 package gsrs.module.substance.importers;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.DefaultPropertyBasedRecordContext;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
-import gsrs.module.substance.importers.readers.TextFileReader;
+import ix.ginas.importers.TextFileReader;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -24,16 +25,16 @@ public class DelimTextImportAdapter implements ImportAdapter<Substance> {
 
     private String substanceTypeColumn = "SUBSTANCE_TYPE";
 
-    private String substanceClassName = "concept";
+    protected String substanceClassName = "concept";
 
     private String lineValueDelimiter = ",";
 
     private int linesToSkip=0;
 
-    private List<String> fileFields;
+    protected List<String> fileFields;
 
     //todo: assign real values
-    private List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
+    protected List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
 
     public DelimTextImportAdapter(List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions,
                                   Map<String, Object> parameters) {
@@ -82,7 +83,7 @@ public class DelimTextImportAdapter implements ImportAdapter<Substance> {
     }
 
     @Override
-    public Stream<Substance> parse(InputStream is, String fileEncoding) {
+    public Stream<Substance> parse(InputStream is, ObjectNode settings) {
         log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
         TextFileReader reader = new TextFileReader();
         try {

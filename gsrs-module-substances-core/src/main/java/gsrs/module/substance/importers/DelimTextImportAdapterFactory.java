@@ -11,14 +11,12 @@ import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.importActionFactories.*;
-import gsrs.module.substance.importers.readers.TextFileReader;
-import gsrs.module.substance.utils.NCATSFileUtils;
+import ix.ginas.importers.InputFieldStatistics;
+import ix.ginas.importers.TextFileReader;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -31,15 +29,15 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     private String inputFileName;
 
-    private Class holdingAreaService;
+    protected Class holdingAreaService;
 
-    private List<Class> entityServices;
+    protected List<Class> entityServices;
 
     private Class entityServiceClass;
 
     private List<String> fields;
 
-    private  int linesToSkip;
+    private int linesToSkip;
 
     private List<String> extensions = Arrays.asList("csv", "txt", "tsv");
 
@@ -47,7 +45,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     public String substanceClassName;
 
-    private String description="Importer for various types of text/delimited files";
+    private String description = "Importer for various types of text/delimited files";
 
     @Override
     public String getAdapterName() {
@@ -66,7 +64,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public void setSupportedFileExtensions(List<String> extensions) {
-        this.extensions=extensions;
+        this.extensions = extensions;
     }
 
 
@@ -76,14 +74,15 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = getMappingActions(adapterSettings);
         Map<String, Object> initializationParameters = null;
-        if(adapterSettings.hasNonNull("parameters")) {
+        if (adapterSettings.hasNonNull("parameters")) {
             log.trace("adapterSettings has parameters");
             ObjectMapper mapper = new ObjectMapper();
-            initializationParameters =mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {});
+            initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {
+            });
         } else {
             log.trace("adapterSettings has NO parameters");
             initializationParameters = new HashMap<>();
-            if(this.lineValueDelimiter !=null) {
+            if (this.lineValueDelimiter != null) {
                 initializationParameters.put("lineValueDelimiter", this.lineValueDelimiter);
             }
             initializationParameters.put("linesToSkip", this.linesToSkip);
@@ -111,14 +110,13 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
     }
 
     @Override
-    public ImportAdapterStatistics predictSettings(InputStream is) {
+    public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
         log.trace("in predictSettings");
         Set<String> fields = null;
-        try {
-            if(registry == null || registry.isEmpty()) {
-                log.trace("predictSettings will call initialize");
-                initialize();
-            }
+        if (registry == null || registry.isEmpty()) {
+            log.trace("predictSettings will call initialize");
+            initialize();
+        }
             /*
             intended logic 28 April 2022:
             steps:
@@ -127,28 +125,24 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
                     e.g., peak loading for NSRS.  this becomes a PROPERTY but we don't show them that configuration thing to select from because that would be a
                         distraction. more obscure case: an SD file property called 'melting point' that gets mapped to a property
              */
-            TextFileReader textFileReader = new TextFileReader();
-            Map<String, NCATSFileUtils.InputFieldStatistics>stats=
-                    textFileReader.getFileStatistics(is, this.lineValueDelimiter, this.removeQuotes, null, 10, 0);
-            ImportAdapterStatistics statistics =
-                    new ImportAdapterStatistics();
-            fields =stats.keySet();
-            ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.putPOJO(FIELD_LIST, fields);
-            node.put("fileName", getFileName());
-            statistics.setAdapterSchema(node);
-            statistics.setAdapterSettings(createDefaultFileImport(stats));
-            this.statistics=statistics;
-            return statistics;
-        } catch (IOException ex) {
-            log.error("error reading list of fields from SD file: " + ex.getMessage());
-        }
-        return null;
+        TextFileReader textFileReader = new TextFileReader();
+        Map<String, InputFieldStatistics> stats =
+                textFileReader.getFileStatistics(is, this.lineValueDelimiter, this.removeQuotes, null, 10, 0);
+        ImportAdapterStatistics statistics =
+                new ImportAdapterStatistics();
+        fields = stats.keySet();
+        ObjectNode node = JsonNodeFactory.instance.objectNode();
+        node.putPOJO(FIELD_LIST, fields);
+        node.put("fileName", getFileName());
+        statistics.setAdapterSchema(node);
+        statistics.setAdapterSettings(createDefaultFileImport(stats));
+        this.statistics = statistics;
+        return statistics;
     }
 
-    public JsonNode createDefaultFileImport(Map<String, NCATSFileUtils.InputFieldStatistics> map) {
+    public JsonNode createDefaultFileImport(Map<String, InputFieldStatistics> map) {
         log.trace("in createDefaultSdfFileImport");
-        Set<String> fieldNames =map.keySet();
+        Set<String> fieldNames = map.keySet();
         ObjectNode topLevelReturn = JsonNodeFactory.instance.objectNode();
         ArrayNode result = JsonNodeFactory.instance.arrayNode();
         fieldNames.forEach(f -> {
@@ -158,12 +152,12 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
                 ObjectNode mapNode = createNameMap(f, null, null);
                 actionNode.put("label", "Create Name Action");
                 actionNode.set(ACTION_PARAMETERS, mapNode);
-            } else if(looksLikeProperty(f)) {
+            } else if (looksLikeProperty(f)) {
                 actionNode.put(ACTION_NAME, "property_import");
                 actionNode.put("label", "Create Property Action");
                 ObjectNode mapNode = createPropertyMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
-            } else if(looksLikeProteinSequence(f)){
+            } else if (looksLikeProteinSequence(f)) {
                 actionNode.put(ACTION_NAME, "protein_import");
                 ObjectNode mapNode = createProteinSequenceMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
@@ -183,7 +177,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public void setFileName(String fileName) {
-        inputFileName=fileName;
+        inputFileName = fileName;
     }
 
     @Override
@@ -198,7 +192,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public void setHoldingAreaService(Class holdingService) {
-        this.holdingAreaService=holdingService;
+        this.holdingAreaService = holdingService;
     }
 
     @Override
@@ -208,7 +202,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
-        this.entityServiceClass=holdingAreaEntityService;
+        this.entityServiceClass = holdingAreaEntityService;
     }
 
     @Override
@@ -218,7 +212,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public void setEntityServices(List<Class> services) {
-        this.entityServices=services;
+        this.entityServices = services;
     }
 
     @Override
@@ -229,33 +223,33 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public void setEntityServiceClass(Class newClass) {
-        this.entityServiceClass=newClass;
+        this.entityServiceClass = newClass;
     }
 
     @Override
     public void setInputParameters(JsonNode parameters) {
         log.trace("in setInputParameters");
-        if( parameters.hasNonNull("lineValueDelimiter")) {
+        if (parameters.hasNonNull("lineValueDelimiter")) {
             log.trace("lineValueDelimiter: {}", parameters.get("setInputParameters"));
             setLineValueDelimiter(parameters.get("lineValueDelimiter").asText());
         }
-        if(parameters.hasNonNull("linesToSkip")){
+        if (parameters.hasNonNull("linesToSkip")) {
             log.trace("linesToSkip: {}", parameters.get("linesToSkip"));
             setLinesToSkip(parameters.get("linesToSkip").asInt());
         }
-        if(parameters.hasNonNull("removeQuotes")){
-            log.trace("removeQuotes:  {}",parameters.get("removeQuotes"));
-            removeQuotes =parameters.get("removeQuotes").asBoolean();
+        if (parameters.hasNonNull("removeQuotes")) {
+            log.trace("removeQuotes:  {}", parameters.get("removeQuotes"));
+            removeQuotes = parameters.get("removeQuotes").asBoolean();
         }
 
-        if(parameters.hasNonNull("substanceClassName")) {
+        if (parameters.hasNonNull("substanceClassName")) {
             log.trace("substanceClassName: {}", parameters.get("substanceClassName").asText());
-            this.substanceClassName = (String) parameters.get("substanceClassName").asText();
+            this.substanceClassName = parameters.get("substanceClassName").asText();
         }
     }
 
-    public void setLineValueDelimiter(String newDelimiter){
-        this.lineValueDelimiter =newDelimiter;
+    public void setLineValueDelimiter(String newDelimiter) {
+        this.lineValueDelimiter = newDelimiter;
     }
 
     public String getLineValueDelimiter() {

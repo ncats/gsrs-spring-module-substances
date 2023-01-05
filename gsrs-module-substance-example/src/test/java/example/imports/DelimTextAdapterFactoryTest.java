@@ -30,6 +30,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -293,9 +294,11 @@ public class DelimTextAdapterFactoryTest {
         String fileName = "testText/3proteins.csv";
         File dataFile = new ClassPathResource(fileName).getFile();
         log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
-        InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
+        InputStream fis = Files.newInputStream(dataFile.getAbsoluteFile().toPath());
         String fileEncoding = "UTF-8";
-        Stream<Substance> substanceBuilderStream= delimTextImportAdapter.parse(fis, fileEncoding);
+        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
+        settingsNode.put("Encoding", fileEncoding);
+        Stream<Substance> substanceBuilderStream= delimTextImportAdapter.parse(fis, settingsNode);
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
                 .map(p->((ProteinSubstance)p))
                 .collect(Collectors.toList());
@@ -326,7 +329,7 @@ public class DelimTextAdapterFactoryTest {
         String fileName = "testText/3proteins.csv";
         File dataFile = new ClassPathResource(fileName).getFile();
         log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
-        InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
+        InputStream fis = Files.newInputStream(dataFile.getAbsoluteFile().toPath());
         String fileEncoding = "UTF-8";
         ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
         adapterSettings.put("lineValueDelimiter", ",");
@@ -334,13 +337,15 @@ public class DelimTextAdapterFactoryTest {
         adapterSettings.put("substanceClassName", "Protein");
         adapterSettings.put("linesToSkip", 0);
         factory.setInputParameters(adapterSettings);
-        ImportAdapterStatistics settings = factory.predictSettings(fis);
+        ImportAdapterStatistics settings = factory.predictSettings(fis, null);
         fis = new FileInputStream(dataFile.getAbsoluteFile());
         JsonNode adapter = settings.getAdapterSettings();
         log.trace("adapter: ");
         log.trace(adapter.toPrettyString());
         ImportAdapter<Substance> importAdapter = factory.createAdapter(adapter);
-        Stream<Substance> substanceStream = importAdapter.parse(fis, Charset.defaultCharset().name());
+        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
+        settingsNode.put("Encoding", Charset.defaultCharset().name());
+        Stream<Substance> substanceStream = importAdapter.parse(fis, settingsNode);
         substanceStream.forEach(s -> {
             log.trace("full substance: ");
             String fullSubstanceJson =s.toFullJsonNode().toPrettyString();

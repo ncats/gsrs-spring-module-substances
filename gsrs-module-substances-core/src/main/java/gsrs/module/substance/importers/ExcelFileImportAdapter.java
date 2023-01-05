@@ -1,28 +1,25 @@
 package gsrs.module.substance.importers;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.DefaultPropertyBasedRecordContext;
 import gsrs.importer.PropertyBasedDataRecordContext;
-import ix.ginas.exporters.ExcelSpreadsheetReader;
+import ix.ginas.importers.ExcelSpreadsheetReader;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
 @Slf4j
 public class ExcelFileImportAdapter extends DelimTextImportAdapter {
-    private String sheetName;
-    private List<String> fieldNames;
+    private String dataSheetName;
+
     private Integer fieldRow=0;
 
-    private List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
-
-    private String substanceClassName="substance";
     public ExcelFileImportAdapter(List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions, Map<String, Object> parameters) {
 
         super(actions, parameters);
@@ -31,23 +28,23 @@ public class ExcelFileImportAdapter extends DelimTextImportAdapter {
             log.trace("got substanceClassName: {}", substanceClassName);
         }
 
-        if (parameters.get("sheetName") != null) {
-            this.sheetName = (String) parameters.get("sheetName");
-            log.trace("got sheetName: {}", sheetName);
+        if (parameters.get("dataSheetName") != null) {
+            this.dataSheetName = (String) parameters.get("dataSheetName");
+            log.trace("got sheetName: {}", dataSheetName);
         }
 
-        if(parameters.get("fieldNames") !=null) {
-            this.fieldNames=(List<String>)parameters.get("fieldNames");
-        }
         if(parameters.get("fieldRow")!= null){
             this.fieldRow= (Integer) parameters.get("fieldRow");
         }
     }
 
     @Override
-    public Stream<Substance> parse(InputStream is, String sheetName) {
+    public Stream<Substance> parse(InputStream is, ObjectNode settings) {
         ExcelSpreadsheetReader reader = new ExcelSpreadsheetReader(is);
-        Stream<DefaultPropertyBasedRecordContext> contextStream = reader.readSheet(sheetName, null, 0);
+        String sheetWithData = settings == null || !settings.hasNonNull("dataSheetName") ? this.dataSheetName
+                : settings.get("dataSheetName").textValue();
+        log.trace("using sheetWithData {}", sheetWithData);
+        Stream<DefaultPropertyBasedRecordContext> contextStream = reader.readSheet(sheetWithData, null, fieldRow);
         return contextStream
                 .map(r -> {
 

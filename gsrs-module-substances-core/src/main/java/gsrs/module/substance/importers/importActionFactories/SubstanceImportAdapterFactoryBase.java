@@ -77,7 +77,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
     }
 
     @Override
-    public ImportAdapterStatistics predictSettings(InputStream is) {
+    public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
         return null;
     }
 

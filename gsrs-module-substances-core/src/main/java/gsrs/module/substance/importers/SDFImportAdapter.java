@@ -1,5 +1,6 @@
 package gsrs.module.substance.importers;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.io.ChemicalReader;
 import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.dataexchange.model.MappingAction;
@@ -30,8 +31,14 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
     
     @SneakyThrows
     @Override
-    public Stream<Substance> parse(InputStream is, String encoding) {
-        log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
+    public Stream<Substance> parse(InputStream is, ObjectNode settings) {
+        log.trace("Charset.defaultCharset: {}", Charset.defaultCharset().name());
+        String encoding;
+        if(!settings.hasNonNull("Encoding")) {
+            encoding =Charset.defaultCharset().name();
+        } else {
+            encoding=settings.get("Encoding").textValue();
+        }
         ChemicalReader cr = ChemicalReaderFactory.newReader(is, encoding);
     	
         return cr.stream()

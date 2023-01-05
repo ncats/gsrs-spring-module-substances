@@ -8,7 +8,7 @@ import gsrs.importer.DefaultPropertyBasedRecordContext;
 import gsrs.module.substance.importers.DelimTextImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtractorActionFactory;
 import gsrs.importer.PropertyBasedDataRecordContext;
-import gsrs.module.substance.utils.NCATSFileUtils;
+import ix.ginas.importers.InputFieldStatistics;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ public class ProteinSequenceExtractorTest {
     public void testCreateSubunit() throws Exception {
         ProteinSequenceExtractorActionFactory proteinSequenceExtractorActionFactory = new ProteinSequenceExtractorActionFactory();
         String sequence="MLAAMGSLAAALWAVVHPRTLLLGTVAFLLAADFLKRRRPKNYPPGPWRLPFLGNFFLVDFEQSHLEVQLFVKKYGNLFSLELGDISAVLITGLPLIKEALIHMDQNFGNRPVTPMREHIFKKNGLIMSSGQAWKEQRRFTLTALRNFGLGKKSLEERIQEEAQHLTEAIKEENGQPFDPHFKINNAVSNIICSITFGERFEYQDSWFQQLLKLLDEVTYLEASKTCQLYNVFPWIMKFLPGPHQTLFSNWKKLKLFVSHMIDKHRKDWNPAETRDFIDAYLKEMSKHTGNPTSSFHEENLICSTLDLFFAGTETTSTTLRWALLYMALYPEIQEKVQAEIDRVIGQGQQPSTAARESMPYTNAVIHEVQRMGNIIPLNVPREVTVDTTLAGYHLPKGTMILTNLTALHRDPTEWATPDTFNPDHFLENGQFKKREAFMPFSIGKRACLGEQLARTELFIFFTSLMQKFTFRPPNNEKLSLKFRMGITISPVSHRLCAVPQV";
-        String name= "HUMAN CYTOCHROME P450 2J2 (OXIDIZED)";
+        //String name= "HUMAN CYTOCHROME P450 2J2 (OXIDIZED)";
         ProteinSubstanceBuilder proteinSubstance = new ProteinSubstanceBuilder();
 
         DefaultPropertyBasedRecordContext ctx = new DefaultPropertyBasedRecordContext();
@@ -43,9 +43,9 @@ public class ProteinSequenceExtractorTest {
 
     @Test
     public void testProteinMap() {
-        Map<String, NCATSFileUtils.InputFieldStatistics>  inputFieldStatisticsMap = new HashMap<>();
+        Map<String, InputFieldStatistics>  inputFieldStatisticsMap = new HashMap<>();
         String sequenceFieldName = "protein_sequence";
-        NCATSFileUtils.InputFieldStatistics statistics = new NCATSFileUtils.InputFieldStatistics(sequenceFieldName, 100);
+        InputFieldStatistics statistics = new InputFieldStatistics(sequenceFieldName, 100);
         inputFieldStatisticsMap.put(sequenceFieldName, statistics);
         DelimTextImportAdapterFactory factory = new DelimTextImportAdapterFactory();
         JsonNode processed = factory.createDefaultFileImport(inputFieldStatisticsMap);
@@ -55,7 +55,6 @@ public class ProteinSequenceExtractorTest {
 
         ArrayNode actions = (ArrayNode) objectNode.get("actions");
         boolean[] foundCreateAction = new boolean[1];
-        foundCreateAction[0] = false;
         actions.forEach(n -> {
             if( n instanceof ObjectNode) {
                 ObjectNode text = (ObjectNode) n;

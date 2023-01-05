@@ -1,5 +1,6 @@
 package gsrs.module.substance.utils;
 
+import ix.ginas.importers.InputFieldStatistics;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -18,7 +19,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.io.IOException;
 
 import lombok.Data;
@@ -34,26 +34,6 @@ public class NCATSFileUtils {
     private static final Pattern sdFileFieldPattern = Pattern.compile("> +<(.*)>");
     private static final Pattern endRecordPattern = Pattern.compile("\\$\\$\\$\\$");
 
-    @Data
-    public static class InputFieldStatistics {
-        private final int maxExamples;
-        private String field;
-        private List<String> examples= new ArrayList<>();        
-        
-        public InputFieldStatistics(String f){
-            this.field=f;
-            this.maxExamples=MAX_READS;
-        }
-        public InputFieldStatistics(String f, int max){
-            this.field=f;
-            this.maxExamples=max;
-        }
-        public InputFieldStatistics add(String val){
-            if(examples.size()<maxExamples){
-                examples.add(val);
-            }
-            return this;
-        }
 /* Some ideas to help suggest best imports
 TODO: consider other data types like:
 1. Numeric
@@ -74,7 +54,7 @@ TODO: consider other data types like:
 */
         
        
-    }
+
 
     /*
     Read all lines of an SD file and compile a list of unique field names.
