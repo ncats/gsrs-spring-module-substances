@@ -13,6 +13,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.swing.text.html.HTML;
@@ -23,6 +24,7 @@ import java.util.regex.Pattern;
 /**
  * Created by katzelda on 5/11/18.
  */
+@Slf4j
 public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
     @Autowired
@@ -31,6 +33,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private SubstanceRepository substanceRepository;
     // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
     boolean extractLocators = false;
+
+    private boolean duplicateNameIsError = false;
     public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
         List<Replacer> repList = new ArrayList<>();
         repList.add(new Replacer("^(\\s+)","" ).message("Name \"$0\" has leading whitespace which was removed"));
@@ -248,12 +252,23 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 //				System.out.println("language for " + n + "  = " + language);
                 Set<String> names = nameSetByLanguage.computeIfAbsent(language, k->new HashSet<>());
                 if(!names.add(uppercasedName)){
-                    GinasProcessingMessage mes = GinasProcessingMessage
-                            .ERROR_MESSAGE(
-                                    "Name '"
-                                            + name
-                                            + "' is a duplicate name in the record.")
-                            .markPossibleDuplicate();
+                    GinasProcessingMessage mes;
+                    log.trace("duplicateNameIsError: {}", duplicateNameIsError);
+                    if (duplicateNameIsError) {
+                        mes = GinasProcessingMessage
+                                .ERROR_MESSAGE(
+                                        "Name '"
+                                                + name
+                                                + "' is a duplicate name in the record.")
+                                .markPossibleDuplicate();
+                    } else {
+                        mes = GinasProcessingMessage
+                                .WARNING_MESSAGE(
+                                        "Name '"
+                                                + name
+                                                + "' is a duplicate name in the record.")
+                                .markPossibleDuplicate();
+                    }
                     callback.addMessage(mes);
                 }
 
@@ -293,4 +308,11 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
     }
 
+    public boolean isDuplicateNameIsError() {
+        return duplicateNameIsError;
+    }
+
+    public void setDuplicateNameIsError(boolean duplicateNameIsError) {
+        this.duplicateNameIsError = duplicateNameIsError;
+    }
 }
