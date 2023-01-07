@@ -144,7 +144,6 @@ Confirm ability to read data
         referenceActionConfig.setFields(fieldsRef);
         simpleConfig.add(referenceActionConfig);
 
-        
         ExcelFileImportAdapterFactory factory = new ExcelFileImportAdapterFactory();
         factory.setFileImportActions(simpleConfig);
         factory.initialize();

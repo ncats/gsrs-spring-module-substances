@@ -254,7 +254,7 @@ public class SubstanceBulkLoadService {
                     ProcessingJob job = tx2.execute(s -> {
                         ProcessingJob innerJob=processingJobRepository.findById(pp.jobId).get();
                         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
-                        log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
+                        //log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
                         return innerJob;
                     });
 
