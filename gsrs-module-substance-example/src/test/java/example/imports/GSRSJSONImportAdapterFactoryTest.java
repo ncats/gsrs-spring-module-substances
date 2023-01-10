@@ -3,7 +3,7 @@ package example.imports;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.importers.GSRSJSONImportAdapter;
-import gsrs.module.substance.importers.utils.GSRSJSONImportAdapterFactory;
+import gsrs.module.substance.importers.GSRSJSONImportAdapterFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;

@@ -1,8 +1,7 @@
-package gsrs.module.substance.importers.utils;
+package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.imports.ImportAdapter;
-import gsrs.module.substance.importers.GSRSJSONImportAdapter;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +13,8 @@ import java.util.List;
 public class GSRSJSONImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     private String description = "Importer for the GSRS-specific JSON file used by GSRS since version 2";
+
+    protected Class holdingAreaService;
 
     @Override
     public String getAdapterName() {
@@ -43,4 +44,15 @@ public class GSRSJSONImportAdapterFactory extends SubstanceImportAdapterFactoryB
         GSRSJSONImportAdapter importAdapter = new GSRSJSONImportAdapter();
         return importAdapter;
     }
+
+    @Override
+    public Class getHoldingAreaService() {
+        return this.holdingAreaService;
+    }
+
+    @Override
+    public void setHoldingAreaService(Class holdingService) {
+        this.holdingAreaService = holdingService;
+    }
+
 }
