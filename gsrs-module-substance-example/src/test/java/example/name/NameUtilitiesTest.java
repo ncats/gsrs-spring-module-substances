@@ -421,7 +421,6 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, result.getResult());
     }
 
-
     @Test
     public void testReplaceSingleOrMultipleLinefeedWithSpace() {
         String inputName =" \r\n \n\r howdy partner\n\r\r\n";
@@ -472,4 +471,19 @@ public class NameUtilitiesTest {
         String actual=result.getResult();
         Assertions.assertEquals(expected, actual);
     }
+
+    @Test
+    public void TestFullyStandardizeNameWithDashFollowedByLinefeedsRealExample() {
+        String input = "human serum albumin (residues 1-585) fusion protein with\n" +
+        "    human somatotropin (growth hormone) (residues 586-\n" +
+        "    776), produced in yeast cells (Saccharomyces cerevisiae)\n" +
+        "    growth hormone derivative";
+        String expected = "human serum albumin (residues 1-585) fusion protein with human somatotropin (growth hormone) (residues 586-776), produced in yeast cells (Saccharomyces cerevisiae) growth hormone derivative";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+
 }

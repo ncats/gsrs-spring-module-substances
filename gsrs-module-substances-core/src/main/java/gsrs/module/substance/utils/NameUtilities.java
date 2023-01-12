@@ -43,7 +43,7 @@ public class NameUtilities {
     private static final Pattern PATTERN_LEADING_WHITE_SPACE = Pattern.compile("^\\s+");
     private static final Pattern PATTERN_TRAILING_WHITE_SPACE = Pattern.compile("\\s+$");
     // decide what should happen if there are 0 or more spaces between dash and linefeed?
-    private static final Pattern PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS = Pattern.compile("(?<=[\\-])[ \\t]*[\\r\\n]+");
+    private static final Pattern PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS = Pattern.compile("(?<=[\\-])[ \\t]*[\\r\\n]+[\\s]*");
     private static final Pattern PATTERN_SINGLE_OR_MULTIPLE_LINEFEED = Pattern.compile("[\\r\\n]+");
 
     private static final Pattern PATTERN_ZERO_WIDTH = Pattern.compile("[\u200B\u200C\u200D\u2060\uFEFF]");
