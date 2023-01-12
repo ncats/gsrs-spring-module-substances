@@ -405,5 +405,46 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, result.getResult());
     }
 
+    @Test
+    public void testReplaceSingleOrMultipleLinefeedWithSpace() {
+        String inputName =" \r\n \n\r howdy partner\n\r\r\n";
+        String expected = "     howdy partner "; // 5 leading spaces; 1 trailing
+        ReplacementResult result= NameUtilities.getInstance().replaceSingleOrMultipleLinefeedWithSpace(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void testRemoveLeadingWhitespace() {
+        String inputName =" \r\n \t \n\r howdy partner \n\r\r   \t \n";
+        String expected ="howdy partner \n\r\r   \t \n";
+        ReplacementResult result= NameUtilities.getInstance().removeLeadingWhitespace(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void testRemoveTrailingWhitespace() {
+        String inputName =" \r\n \t \n\r howdy partner \n\r\r   \t \n";
+        String expected =" \r\n \t \n\r howdy partner";
+        ReplacementResult result= NameUtilities.getInstance().removeTrailingWhitespace(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void TestfullyStandardizeNameWithLinefeeds() {
+        String input = " \tCopied   from pdf \r\n in à hurry ";
+        String expected = "COPIED FROM PDF IN A HURRY";
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestMinimallyStandardizeNameWithLinefeeds() {
+        String input = " \tCopied   from pdf \r\n in à hurry ";
+        String expected = "Copied from pdf in à hurry";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
 
 }

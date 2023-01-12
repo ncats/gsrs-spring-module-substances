@@ -40,6 +40,11 @@ public class NameUtilities {
     private static final Pattern UNPRINTABLES_PATTERN = Pattern.compile("\\p{C}");
     //private static final String NON_ASCII_REPLACEMENT = "?";
     private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
+    private static final Pattern PATTERN_LEADING_WHITE_SPACE = Pattern.compile("^\\s+");
+    private static final Pattern PATTERN_TRAILING_WHITE_SPACE = Pattern.compile("\\s+$");
+    private static final Pattern PATTERN_SINGLE_OR_MULTIPLE_LINEFEED = Pattern.compile("[\\r\\n]+");
+
+
     private static final Pattern PATTERN_ZERO_WIDTH = Pattern.compile("[\u200B\u200C\u200D\u2060\uFEFF]");
     
     private static final Pattern PATTERN_CASE0 = Pattern.compile("[\u00B4\u02B9\u02BC\u02C8\u0301\u2018\u2019\u201B\u2032\u2034\u2037]");
@@ -90,8 +95,13 @@ public class NameUtilities {
         if (input == null || input.length() == 0) {
             return new ReplacementResult(input, new ArrayList<>());
         }
-        ReplacementResult replacementResult = removeSerialSpaces(input);
+        // must replace linefeed first because the replaceUnprintables method will replace with blank ''
+        // we want to replace linefeed(s) with a space, the case would be somebody pasting from a pdf.
+        ReplacementResult replacementResult = replaceSingleOrMultipleLinefeedWithSpace(input);
+        replacementResult.update(removeSerialSpaces(replacementResult.getResult()));
         replacementResult.update(replaceUnprintables(replacementResult.getResult()));
+        replacementResult.update(removeLeadingWhitespace(replacementResult.getResult()));
+        replacementResult.update(removeTrailingWhitespace(replacementResult.getResult()));
         return replacementResult;
     }
 
@@ -133,7 +143,11 @@ public class NameUtilities {
         if(namePart==null) {
             namePart=input.trim();
         }
-        ReplacementResult initialResult = replaceUnprintables(namePart);
+        // must replace linefeed first because the replaceUnprintables method will replace with blank ''
+        // we want to replace linefeed(s) with a space, the case would be somebody pasting from a pdf.
+        ReplacementResult initialResult = replaceSingleOrMultipleLinefeedWithSpace(namePart);
+        initialResult.update(replaceUnprintables(initialResult.getResult()));
+        initialResult.update(removeSerialSpaces(initialResult.getResult()));
 
         ReplacementResult resultForSpecifics = initialResult.update(makeSpecificReplacements(initialResult.getResult()));
         String workingString = resultForSpecifics.getResult();
@@ -142,6 +156,8 @@ public class NameUtilities {
         results.update(zeroWidthRemovalResult);
         workingString = nkfdNormalizations(results.getResult());
         results.update(removeSerialSpaces(workingString));
+        results.update(removeLeadingWhitespace(results.getResult()));
+        results.update(removeTrailingWhitespace(results.getResult()));
         results.setResult(results.getResult().toUpperCase() +suffix);
         return results;
     }
@@ -167,6 +183,71 @@ public class NameUtilities {
         }
         return defaultResult;
     }
+
+    /**
+     * Replace single or multiple linefeed with a single space
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult replaceSingleOrMultipleLinefeedWithSpace(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+
+        Matcher matcher = PATTERN_SINGLE_OR_MULTIPLE_LINEFEED.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(" "), notes);
+        }
+        return defaultResult;
+    }
+
+    /**
+     * Remove leading whitespace
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult removeLeadingWhitespace(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+        Matcher matcher = PATTERN_LEADING_WHITE_SPACE.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(""), notes);
+        }
+        return defaultResult;
+    }
+
+    /**
+     * Remove trailing whitespace
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult removeTrailingWhitespace(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+        Matcher matcher = PATTERN_TRAILING_WHITE_SPACE.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(""), notes);
+        }
+        return defaultResult;
+    }
+
 
     private void initReplacers() {
         replacers.add(new Replacer("\\×", "X"));
