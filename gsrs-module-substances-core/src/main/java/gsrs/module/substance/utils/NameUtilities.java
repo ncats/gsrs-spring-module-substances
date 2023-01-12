@@ -42,8 +42,9 @@ public class NameUtilities {
     private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
     private static final Pattern PATTERN_LEADING_WHITE_SPACE = Pattern.compile("^\\s+");
     private static final Pattern PATTERN_TRAILING_WHITE_SPACE = Pattern.compile("\\s+$");
+    // decide what should happen if there are 0 or more spaces between dash and linefeed?
+    private static final Pattern PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS = Pattern.compile("(?<=[\\-])[ \\t]*[\\r\\n]+");
     private static final Pattern PATTERN_SINGLE_OR_MULTIPLE_LINEFEED = Pattern.compile("[\\r\\n]+");
-
 
     private static final Pattern PATTERN_ZERO_WIDTH = Pattern.compile("[\u200B\u200C\u200D\u2060\uFEFF]");
     
@@ -95,9 +96,10 @@ public class NameUtilities {
         if (input == null || input.length() == 0) {
             return new ReplacementResult(input, new ArrayList<>());
         }
-        // must replace linefeed first because the replaceUnprintables method will replace with blank ''
-        // we want to replace linefeed(s) with a space, the case would be somebody pasting from a pdf.
-        ReplacementResult replacementResult = replaceSingleOrMultipleLinefeedWithSpace(input);
+        // 1 replace linefeed preceded by (e.g. dash) with blank; but leave the dash.
+        // 2 replace remaining linefeed with space before replaceUnprintables, which will replace with blank ''
+        ReplacementResult replacementResult = replaceSingleLinefeedPrecededByCertainCharactersWithBlank(input);
+        replacementResult.update(replaceSingleOrMultipleLinefeedWithSpace(replacementResult.getResult()));
         replacementResult.update(removeSerialSpaces(replacementResult.getResult()));
         replacementResult.update(replaceUnprintables(replacementResult.getResult()));
         replacementResult.update(removeLeadingWhitespace(replacementResult.getResult()));
@@ -143,9 +145,11 @@ public class NameUtilities {
         if(namePart==null) {
             namePart=input.trim();
         }
-        // must replace linefeed first because the replaceUnprintables method will replace with blank ''
-        // we want to replace linefeed(s) with a space, the case would be somebody pasting from a pdf.
-        ReplacementResult initialResult = replaceSingleOrMultipleLinefeedWithSpace(namePart);
+
+        // 1 replace linefeed preceded by (e.g. dash) with blank; but leave the dash.
+        // 2 replace remaining linefeed with space before replaceUnprintables, which will replace with blank ''
+        ReplacementResult initialResult = replaceSingleLinefeedPrecededByCertainCharactersWithBlank(namePart);
+        initialResult.update(replaceSingleOrMultipleLinefeedWithSpace(initialResult.getResult()));
         initialResult.update(replaceUnprintables(initialResult.getResult()));
         initialResult.update(removeSerialSpaces(initialResult.getResult()));
 
@@ -175,6 +179,27 @@ public class NameUtilities {
         }
 
         Matcher matcher = UNPRINTABLES_PATTERN.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(""), notes);
+        }
+        return defaultResult;
+    }
+
+    /**
+     * Replace single linefeed preceded with certain characters with blank, for example '-\r\n' ==> '-'
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult replaceSingleLinefeedPrecededByCertainCharactersWithBlank(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+        Matcher matcher = PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS.matcher(source);
         if (matcher.find()) {
             ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
             List<ReplacementNote> notes = new ArrayList<>();

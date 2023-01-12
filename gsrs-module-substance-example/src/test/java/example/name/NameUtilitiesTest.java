@@ -406,6 +406,23 @@ public class NameUtilitiesTest {
     }
 
     @Test
+    public void testReplaceSingleLinefeedPrecededByCertainCharactersWithBlank1() {
+        String inputName ="howdy-\r\npartner-\r\n\r\nnice day-\nfor a walk";
+        String expected ="howdy-partner-nice day-for a walk";
+        ReplacementResult result= NameUtilities.getInstance().replaceSingleLinefeedPrecededByCertainCharactersWithBlank(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void testReplaceSingleLinefeedPrecededByCertainCharactersWithBlank2() {
+        String inputName ="howdy-\r\n\r\npartner\r\n\r\nnice day-\nfor a walk";
+        String expected ="howdy-partner\r\n\r\nnice day-for a walk";
+        ReplacementResult result= NameUtilities.getInstance().replaceSingleLinefeedPrecededByCertainCharactersWithBlank(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+
+    @Test
     public void testReplaceSingleOrMultipleLinefeedWithSpace() {
         String inputName =" \r\n \n\r howdy partner\n\r\r\n";
         String expected = "     howdy partner "; // 5 leading spaces; 1 trailing
@@ -431,7 +448,7 @@ public class NameUtilitiesTest {
 
     @Test
     public void TestfullyStandardizeNameWithLinefeeds() {
-        String input = " \tCopied   from pdf \r\n in à hurry ";
+        String input = " \tCopied   from pdf \r\n     in à hurry ";
         String expected = "COPIED FROM PDF IN A HURRY";
         ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
         String actual=result.getResult();
@@ -440,11 +457,19 @@ public class NameUtilitiesTest {
 
     @Test
     public void TestMinimallyStandardizeNameWithLinefeeds() {
-        String input = " \tCopied   from pdf \r\n in à hurry ";
+        String input = " \tCopied   from pdf \r\n     in à hurry ";
         String expected = "Copied from pdf in à hurry";
         ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
         String actual=result.getResult();
         Assertions.assertEquals(expected, actual);
     }
 
+    @Test
+    public void TestMinimallyStandardizeNameWithLinefeedsPreceededByDash() {
+        String input = " \tCopied   from pdf-\r\nin-\nà\r\nhurry ";
+        String expected = "Copied from pdf-in-à hurry";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
 }
