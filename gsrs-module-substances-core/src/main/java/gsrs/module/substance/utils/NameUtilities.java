@@ -195,7 +195,6 @@ public class NameUtilities {
         if (source == null || source.length() == 0) {
             return defaultResult;
         }
-
         Matcher matcher = PATTERN_SINGLE_OR_MULTIPLE_LINEFEED.matcher(source);
         if (matcher.find()) {
             ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
