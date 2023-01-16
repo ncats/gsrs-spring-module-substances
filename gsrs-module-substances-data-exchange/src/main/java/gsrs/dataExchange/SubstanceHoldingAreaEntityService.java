@@ -59,6 +59,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
             Objects.requireNonNull(structureProcessor, "A structure processor is required to handle a chemical substances!");
             log.trace("chemical substance in extractKVM");
             ChemicalSubstance chemicalSubstance = (ChemicalSubstance) substance;
+            Objects.requireNonNull(chemicalSubstance.getStructure(), "A chemical substance must have a structure");
             log.trace("going to instrument structure");
             Structure structure = structureProcessor.instrument(chemicalSubstance.getStructure().toChemical(), true);
             chemicalSubstance.getStructure().updateStructureFields(structure);

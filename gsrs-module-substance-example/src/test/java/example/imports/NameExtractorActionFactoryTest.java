@@ -72,6 +72,44 @@ public class NameExtractorActionFactoryTest {
     }
 
     @Test
+    public void testCreateDisplayNameAndNonDisplayName() throws Exception {
+        NameExtractorActionFactory nameExtractorActionFactory = new NameExtractorActionFactory();
+        String smilesForDiclofenac="O=C(O)Cc1ccccc1Nc2c(Cl)cccc2Cl";
+        String nameDiclofenac= "diclofenac display";
+        String nameDiclofenacNotDisplay= "diclofenac non-display";
+        Chemical c = Chemical.parse(smilesForDiclofenac);
+
+        ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("name", nameDiclofenac);
+        inputParams.put("nameType", "bn");
+        inputParams.put("lang", "en");
+        inputParams.put("displayName", true);
+
+        ChemicalSubstanceBuilder chemicalSubstance = new ChemicalSubstanceBuilder();
+        GinasChemicalStructure structure = new GinasChemicalStructure();
+        structure.smiles=smilesForDiclofenac;
+
+        chemicalSubstance.setStructure(structure);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action= nameExtractorActionFactory.create(inputParams);
+
+        Map<String, Object> inputParams2 = new HashMap<>();
+        inputParams2.put("name", nameDiclofenacNotDisplay);
+        inputParams2.put("nameType", "bn");
+        inputParams2.put("lang", "en");
+        inputParams2.put("displayName", false);
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action2= nameExtractorActionFactory.create(inputParams2);
+        action.act(chemicalSubstance, ctx);
+        action2.act(chemicalSubstance, ctx);
+        ChemicalSubstance newChem = chemicalSubstance.build();
+        Name newlyCreatedName = newChem.names.stream().filter(n->n.name.equals(nameDiclofenac)).findFirst().get();
+        Assertions.assertTrue(newlyCreatedName.isDisplayName());
+
+        Name newlyCreatedName2 = newChem.names.stream().filter(n->n.name.equals(nameDiclofenacNotDisplay)).findFirst().get();
+        Assertions.assertFalse(newlyCreatedName2.isDisplayName());
+    }
+
+    @Test
     public void testCreateNameWithRefs() throws Exception {
         NameExtractorActionFactory nameExtractorActionFactory = new NameExtractorActionFactory();
         String smilesForDiclofenac="O=C(O)Cc1ccccc1Nc2c(Cl)cccc2Cl";

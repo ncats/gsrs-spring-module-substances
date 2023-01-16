@@ -231,6 +231,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         mapNode.put("name", String.format("{{%s}}", nameField));
         mapNode.put("nameType", nameType);
         mapNode.put("lang", language);
+        mapNode.put("displayName", false);
         ArrayNode refs = JsonNodeFactory.instance.arrayNode();
         refs.add(String.format("[[%s]]", SIMPLE_REF));
         mapNode.set("referenceUUIDs", refs);

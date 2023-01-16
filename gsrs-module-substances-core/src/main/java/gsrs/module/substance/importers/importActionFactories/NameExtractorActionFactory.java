@@ -81,9 +81,15 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                         .setDefaultValue("cn")
                         .build())
                 .addParameterField(MappingParameter.builder()
-                        .setFieldName("nameLang")
+                        .setFieldName("nameType")
                         .setValueType(String.class)
-                        .setDefaultValue("en")
+                        .setDefaultValue("cn")
+                        .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("displayName")
+                        .setValueType(Boolean.class)
+                        .setDefaultValue(false)
+                        .setRequired(false)
                         .build())
                 .build();
     }
