@@ -48,7 +48,7 @@ import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-public class JoseCryptoService {
+public class JoseCryptoService implements CryptoService {
 
     private static final JoseCryptoServiceConfiguration config = JoseCryptoServiceConfiguration.INSTANCE();
     private static CachedSupplier<JoseCryptoService> _instanceSupplier = CachedSupplier.of(()->{
@@ -61,11 +61,17 @@ public class JoseCryptoService {
         return instance;
     });
 
-    public static JoseCryptoService INSTANCE() {
-        return _instanceSupplier.get();
+    public static CryptoService INSTANCE() {
+        return (CryptoService) _instanceSupplier.get();
     }
 
-    public static String sign(String str, Map<String, Object> metadata) {
+    @Override
+    public boolean isReady() {
+        return config == null ? false : true;
+    }
+
+    @Override
+    public String sign(String str, Map<String, Object> metadata) {
         if (config.getPrivateKeyId() == null) {
             return "";
         }
@@ -81,7 +87,8 @@ public class JoseCryptoService {
         return str;
     }
 
-    public static JsonNode verify(String jwsCompactStr) {
+    @Override
+    public JsonNode verify(String jwsCompactStr) {
         boolean verified = true;
         ObjectMapper mapper = new ObjectMapper();
         JsonNode result = null;
@@ -101,9 +108,16 @@ public class JoseCryptoService {
             }
             result = mapper.readTree(jwsConsumer.getDecodedJwsPayloadBytes());
             if (config.getPreserveMetadata()) {
+                ObjectNode metadata = JsonNodeFactory.instance.objectNode();
                 Map<String, Object> hm = headers.asMap();
-                StringBuilder citation = new StringBuilder("Exported on ")
-                    .append(config.getDateFormat().format(new Date(Long.valueOf(hm.getOrDefault("dat", new Date().getTime()).toString()))))
+                StringBuilder txt = new StringBuilder("Exported");
+                if (hm.containsKey("dat")) {
+                    metadata.set("documentDate", JsonNodeFactory.instance.numberNode(Long.valueOf(headers.getHeader("dat").toString())));
+                    txt = txt
+                        .append(" on ")
+                        .append(config.getDateFormat().format(new Date(Long.valueOf(hm.getOrDefault("dat", new Date().getTime()).toString()))));
+                }
+                txt = txt
                     .append(" by ")
                     .append(hm.getOrDefault("usr", "unknown"))
                     .append(" from ")
@@ -113,23 +127,19 @@ public class JoseCryptoService {
                     .append(" (SRS schema version:")
                     .append(hm.getOrDefault("ver", "unknown"))
                     .append(")");
-                ObjectNode ref = JsonNodeFactory.instance.objectNode();
-                ref.set("docType", JsonNodeFactory.instance.textNode("SYSTEM"));
-                ref.set("citation", JsonNodeFactory.instance.textNode(citation.toString()));
+                metadata.set("txt", JsonNodeFactory.instance.textNode(txt.toString()));
                 if (hm.containsKey("ori")) {
-                    ref.set("url", JsonNodeFactory.instance.textNode(headers.getHeader("ori").toString()));
+                    metadata.set("url", JsonNodeFactory.instance.textNode(headers.getHeader("ori").toString()));
                 }
-                if (hm.containsKey("dat")) {
-                    ref.set("documentDate", JsonNodeFactory.instance.numberNode(Long.valueOf(headers.getHeader("dat").toString())));
-                }
-                ((ObjectNode) result).put("_metadata", ref);
+                ((ObjectNode) result).put("_metadata", metadata);
             }
         } catch (Exception e) {
         }
         return result;
     }
 
-    public static void encrypt(ObjectNode node) {
+    @Override
+    public void encrypt(ObjectNode node, List<String> recipients) {
         JsonWebKey key;
         KeyEncryptionProvider keyEncryption;
         ObjectMapper mapper = new ObjectMapper();
@@ -142,15 +152,11 @@ public class JoseCryptoService {
         ContentEncryptionProvider contentEncryption = JweUtils.getContentEncryptionProvider(config.getContentAlgorithm(), true);
         List<JweEncryptionProvider> jweProviders = new LinkedList<JweEncryptionProvider>();
         List<JweHeaders> perRecipientHeades = new LinkedList<JweHeaders>();
-        JsonWebKey privateKey = config.getPrivateKey();
-        if (config.getPrivateKeyId() != null && node.get("access").findValue(config.getPrivateKeyId()) == null) {
-            keyEncryption = JweUtils.getKeyEncryptionProvider(privateKey, config.getKeyAlgorithm());
-            jweProviders.add(new JweEncryption(keyEncryption, contentEncryption));
-            perRecipientHeades.add(new JweHeaders(config.getPrivateKeyId()));
+        if (config.getPrivateKeyId() != null && !recipients.contains(config.getPrivateKeyId())) {
+            recipients.add(config.getPrivateKeyId());
         }
-        Iterator<JsonNode> it = node.get("access").elements();
-        while (it.hasNext()) {
-            key = config.getKey(it.next().asText());
+        for (String keyId : recipients) {
+            key = config.getKey(keyId);
             if (key != null) {
                 keyEncryption = JweUtils.getKeyEncryptionProvider(key, config.getKeyAlgorithm());
                 jweProviders.add(new JweEncryption(keyEncryption, contentEncryption));
@@ -174,7 +180,8 @@ public class JoseCryptoService {
         }
     }
 
-    public static void decrypt(ObjectNode node) {
+    @Override
+    public void decrypt(ObjectNode node) {
         JweJsonConsumer consumer = new JweJsonConsumer(node.toString());
         node.removeAll();
         if (config.getPrivateKeyId() == null) {
@@ -198,42 +205,6 @@ public class JoseCryptoService {
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> field = fields.next();
             node.set(field.getKey(), field.getValue());
-        }
-    }
-
-    public static void protect(JsonNode node) {
-        if (node.isObject()) {
-            Iterator<String> it = node.fieldNames();
-            while (it.hasNext()) {
-                String key = it.next();
-                protect(node.get(key));
-            }
-            if (node.has("access") && node.get("access").has(0)) {
-                encrypt((ObjectNode)node);
-            }
-        } else if (node.isArray()) {
-            Iterator<JsonNode> it = node.elements();
-            while (it.hasNext()) {
-                protect(it.next());
-            }
-        }
-    }
-
-    public static void unprotect(JsonNode node) {
-        if (node.isObject()) {
-            if (node.has("ciphertext")) {
-                decrypt((ObjectNode)node);
-            }
-            Iterator<String> it = node.fieldNames();
-            while (it.hasNext()) {
-                String key = it.next();
-                unprotect(node.get(key));
-            }
-        } else if (node.isArray()) {
-            Iterator<JsonNode> it = node.elements();
-            while (it.hasNext()) {
-                unprotect(it.next());
-            }
         }
     }
 }

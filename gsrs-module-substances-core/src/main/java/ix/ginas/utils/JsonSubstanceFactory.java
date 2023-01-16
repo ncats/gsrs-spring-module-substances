@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.json.JsonEntityUtil;
+import gsrs.module.substance.services.CryptoService;
+import gsrs.module.substance.services.JoseCryptoService;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
@@ -23,6 +25,8 @@ import java.util.UUID;
  * Created by katzelda on 9/7/16.
  */
 public class JsonSubstanceFactory {
+
+    private static final CryptoService cryptoService = JoseCryptoService.INSTANCE();
 
     public static Substance makeSubstance(JsonNode tree){
         Substance s= internalMakeSubstance(tree, null);
@@ -77,8 +81,13 @@ public class JsonSubstanceFactory {
     }
     public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 
-        fixReferences(tree);
-        removeEmptyObjects(tree);
+        if (cryptoService.isReady()) {
+            unprotect(tree);
+            fixReferences(tree);
+            removeEmptyObjects(tree);
+            extractMetadata(tree);
+        }
+
         JsonNode subclass = tree.get("substanceClass");
         ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
 
@@ -179,6 +188,41 @@ public class JsonSubstanceFactory {
 
             }
             structure.put("stereochemistry", "UNKNOWN");
+        }
+    }
+
+    private static void unprotect(JsonNode node) {
+        if (node.isObject()) {
+            if (node.has("ciphertext")) {
+                cryptoService.decrypt((ObjectNode)node);
+            }
+            Iterator<String> it = node.fieldNames();
+            while (it.hasNext()) {
+                String key = it.next();
+                unprotect(node.get(key));
+            }
+        } else if (node.isArray()) {
+            Iterator<JsonNode> it = node.elements();
+            while (it.hasNext()) {
+                unprotect(it.next());
+            }
+        }
+    }
+
+    private static void extractMetadata(JsonNode tree) {
+        JsonNode metadata = ((ObjectNode) tree).remove("_metadata");
+        if (metadata != null) {
+            ObjectNode ref = new ObjectMapper().createObjectNode();
+            ref.set("uuid", new TextNode(UUID.randomUUID().toString()));
+            ref.set("docType", new TextNode("SYSTEM"));
+            ref.set("citation", metadata.get("txt"));
+            if (metadata.hasNonNull("ori")) {
+                ref.set("url", metadata.get("ori"));
+            }
+            if (metadata.hasNonNull("dat")) {
+                ref.set("documentDate", metadata.get("dat"));
+            }
+            ((ArrayNode) tree.get("references")).add(ref);
         }
     }
 

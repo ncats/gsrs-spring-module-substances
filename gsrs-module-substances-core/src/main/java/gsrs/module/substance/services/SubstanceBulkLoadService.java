@@ -560,7 +560,7 @@ public class SubstanceBulkLoadService {
 
 
         private static final Pattern TOKEN_SPLIT_PATTERN = Pattern.compile("\t");
-        private static final JoseCryptoService joseCryptoService = JoseCryptoService.INSTANCE();
+        private static final CryptoService cryptoService = JoseCryptoService.INSTANCE();
 
         public GinasDumpExtractor(InputStream is) {
 
@@ -597,21 +597,11 @@ public class SubstanceBulkLoadService {
                         continue;
                     }
 
-                    if (toks[2].startsWith("{")) {
-                        return mapper.readTree(toks[2]);
+                    if (!toks[2].startsWith("{")) {
+                        return cryptoService.verify(toks[2]);
                     }
 
-                    // GSRS portable format processing
-                    JsonNode tree = joseCryptoService.verify(toks[2]);
-                    if(tree == null){
-                        continue;
-                    }
-                    JsonNode metadata = ((ObjectNode) tree).remove("_metadata");
-                    joseCryptoService.unprotect(tree);
-                    if (metadata != null) {
-                        ((ArrayNode) tree.get("references")).add(metadata);
-                    }
-                    return tree;
+                    return mapper.readTree(toks[2]);
                 } catch (Exception e) {
                     e.printStackTrace();
                     throw e;

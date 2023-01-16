@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 
 import gsrs.buildInfo.BuildInfoFetcher;
+import gsrs.module.substance.services.CryptoService;
 import gsrs.module.substance.services.JoseCryptoService;
 import ix.core.controllers.EntityFactory;
 import ix.ginas.exporters.Exporter;
@@ -22,6 +23,7 @@ import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -36,7 +38,7 @@ public class JsonPortableExporter implements Exporter<Substance> {
     @Autowired
     private BuildInfoFetcher buildInfoFetcher;
 
-    private static final JoseCryptoService joseCryptoService = JoseCryptoService.INSTANCE();
+    private static final CryptoService cryptoService = JoseCryptoService.INSTANCE();
 
     private final BufferedWriter out;
     private static final String LEADING_HEADER= "\t\t";
@@ -75,11 +77,11 @@ public class JsonPortableExporter implements Exporter<Substance> {
         deleteValidationNotes((ObjectNode) tree);
         uuidToIndex(tree);
         scrub(tree);
-        joseCryptoService.protect(tree);
+        protect(tree);
         if (tree.size() == 0) {
             return null;
         }
-        return joseCryptoService.sign(tree.toString(), metadata);
+        return cryptoService.sign(tree.toString(), metadata);
     }
 
     private Map<String, Object> buildMetadata(JsonNode tree) {
@@ -141,6 +143,27 @@ public class JsonPortableExporter implements Exporter<Substance> {
     private void scrub(JsonNode node) {
         for (JsonNode n: node.findParents("created")) {
             ((ObjectNode) n).remove(fieldsToRemove);
+        }
+    }
+
+    private static void protect(JsonNode node) {
+        if (node.isObject()) {
+            Iterator<String> it = node.fieldNames();
+            while (it.hasNext()) {
+                protect(node.get(it.next()));
+            }
+            if (node.has("access") && node.get("access").size() > 0) {
+                List<String> recipients = new ArrayList<String>();
+                for (JsonNode recipient : node.get("access")) {
+                    recipients.add(recipient.asText());
+                }
+                cryptoService.encrypt((ObjectNode)node, recipients);
+            }
+        } else if (node.isArray()) {
+            Iterator<JsonNode> it = node.elements();
+            while (it.hasNext()) {
+                protect(it.next());
+            }
         }
     }
 }
