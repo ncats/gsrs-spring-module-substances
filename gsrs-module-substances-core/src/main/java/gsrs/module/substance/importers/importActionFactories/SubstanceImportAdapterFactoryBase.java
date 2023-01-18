@@ -43,6 +43,8 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     public final static String ACTION_NAME = "actionName";
 
+    public final static String FILE_FIELD ="fileField";
+
     public final static String ACTION_PARAMETERS = "actionParameters";
 
     public final static String SIMPLE_REF = "UUID_1";
@@ -263,6 +265,12 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
+    public ObjectNode createNucleicAcidMap(String sequenceFieldName) {
+        ObjectNode mapNode= JsonNodeFactory.instance.objectNode();
+        mapNode.put("nucleicAcidSequence", "{{" + sequenceFieldName+ "}}");
+        return mapNode;
+    }
+
     public ObjectNode createCodeMap(String codeSystem, String codeType) {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         if (codeType == null || codeType.length() == 0) {
@@ -287,6 +295,12 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return false;
     }
 
+    protected boolean looksLikeNucleicAcidSequence(String fieldName) {
+        if(fieldName.toUpperCase().contains("NUCLEIC") && fieldName.toUpperCase().contains("ACID") && fieldName.toUpperCase().contains("SEQUENCE")){
+            return true;
+        }
+        return false;
+    }
     protected JsonNode createDefaultReferenceReferenceNode() {
         ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
         parameters.add(String.format("[[%s]]", SIMPLE_REF));
@@ -389,7 +403,6 @@ todo: add a table of example input/output values
         } catch (Exception ex) {
             log.error("Error in resolveParametersMap ",  ex);
             throw ex;
-            //ex.printStackTrace();
         }
     }
 

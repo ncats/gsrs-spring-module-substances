@@ -147,6 +147,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
         ArrayNode result = JsonNodeFactory.instance.arrayNode();
         fieldNames.forEach(f -> {
             ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
+            actionNode.put(FILE_FIELD, f);
             if (f.toUpperCase(Locale.ROOT).contains("NAME") || f.toUpperCase(Locale.ROOT).contains("SYNONYM")) {
                 actionNode.put(ACTION_NAME, "common_name");// +createCleanFieldName(f));
                 ObjectNode mapNode = createNameMap(f, null, null);
@@ -162,7 +163,13 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
                 ObjectNode mapNode = createProteinSequenceMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
                 actionNode.put("label", "Create Protein Subunit");
-            } else {
+            } else if( looksLikeNucleicAcidSequence(f)){
+                actionNode.put(ACTION_NAME, "nucleic_acid_import");
+                ObjectNode mapNode = createNucleicAcidMap(f);
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+                actionNode.put("label", "Create Simple Nucleic Acid");
+            }
+            else {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
                 ObjectNode mapNode = createCodeMap(f, "PRIMARY");
                 actionNode.put("label", "Create Code Action");
