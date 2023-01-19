@@ -2,6 +2,10 @@ package example.imports;
 
 import example.GsrsModuleSubstanceApplication;
 import gsrs.dataexchange.processing_actions.MergeProcessingAction;
+import gsrs.legacy.structureIndexer.StructureIndexerService;
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.services.PrincipalServiceImpl;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
@@ -11,18 +15,47 @@ import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEntityTest {
+
+    @Autowired
+    private StructureIndexerService indexer;
+
+    @Autowired
+    private SubstanceEntityService substanceEntityService;
+
+    @Autowired
+    private PrincipalServiceImpl principalService;
+
+    @Autowired
+    private SubstanceRepository substanceRepository;
+
+    @Autowired
+    private PlatformTransactionManager platformTransactionManager;
+
+    @BeforeEach
+    public void clearIndexers() throws IOException {
+        indexer.removeAll();
+        principalService.clearCache();
+    }
 
     @Test
     public void testMergeNames() throws Exception {
@@ -47,6 +80,49 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
         builder2.setStructureWithDefaultReference("OCCCCO");
         builder2.addName("1,4-BUTANEDIOL");
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("MergeNames", "true");
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        Assertions.assertEquals(4,output.names.size());
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+                n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
+    }
+
+    @Test
+    public void testMergeNamesHTML() throws Exception {
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCN");
+        Name name1 = new Name();
+        name1.name="putrecine";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        builder.addName(name1);
+
+        Name name2 = new Name();
+        name2.name="1,4 <i>interesting</i> diaminobutane";
+        name2.languages.add(new Keyword("de"));
+        name2.displayName=false;
+        builder.addName(name2);
+        builder.addName("Stuff");
+        builder.addCode("CHEMBL", "CHEMBL46257");
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        Name nameHtml2 = new Name();
+        nameHtml2.name="1,4-<i>idea</i> BUTANEDIOL";
+        nameHtml2.displayName=true;
+        nameHtml2.languages.add(new Keyword("en"));
+        builder2.addName(nameHtml2);
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
@@ -205,6 +281,47 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Assertions.assertTrue( proteinSource.references.stream().allMatch(r-> output.references.stream().anyMatch(r2-> r2.docType.equals(r.docType) && r2.citation.equals(r.citation))));
     }
 
+    @Test
+    public void testMergeReferencesWithUrl() throws Exception {
+
+        ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
+        Reference ref1 = new Reference();
+        ref1.citation="A0JP26";
+        ref1.docType="Uniprot";
+        ref1.uploadedFile ="https://www.uniprot.org/uniprotkb/A0JP26/entry";
+        Subunit newUnit=new Subunit();
+        newUnit.sequence="MVAEVCSMPAASAVKKPFDLRSKMGKWCHHRFPCCRGSGKSNMGTSGDHDDSFMKTLRSKMGKCCHHCFPCCRGSGTSNVGTSGDHDNSFMKTLRSKMGKWCCHCFPCCRGSGKSNVGTWGDYDDSAFMEPRYHVRREDLDKLHRAAWWGKVPRKDLIVMLRDTDMNKRDKQKRTALHLASANGNSEVVQLLLDRRCQLNVLDNKKRTALIKAVQCQEDECVLMLLEHGADGNIQDEYGNTALHYAIYNEDKLMAKALLLYGADIESKNKCGLTPLLLGVHEQKQQVVKFLIKKKANLNALDRYGRTALILAVCCGSASIVNLLLEQNVDVSSQDLSGQTAREYAVSSHHHVICELLSDYKEKQMLKISSENSNPEQDLKLTSEEESQRLKVSENSQPEKMSQEPEINKDCDREVEEEIKKHGSNPVGLPENLTNGASAGNGDDGLIPQRKSRKPENQQFPDTENEEYHSDEQNDTQKQLSEEQNTGISQDEILTNKQKQIEVAEKEMNSKLSLSHKKEEDLLRENSMLREEIAMLRLELDETKHQNQLRENKILEEIESVKEKLLKAIQLNEEALTKTSI";
+        builderSource.addSubUnit(newUnit);
+
+        Name newName = new Name("POTE ankyrin domain family member B3");
+        newName.addReference(ref1);
+        builderSource.addName(newName);
+        Code code1= new Code("Uniprot", "A0JP26");
+        builderSource.addCode(code1);
+        builderSource.addReference(ref1);
+        ProteinSubstance proteinSource= builderSource.build();
+
+        ProteinSubstanceBuilder builderExisting= new ProteinSubstanceBuilder();
+        Subunit newUnit2=new Subunit();
+        newUnit2.sequence="MVAEVCSMPAASAVKKPFDLRSKMGKWCHHRFPCCRGSGKSNMGTSGDHDDSFMKTLRSKMGKCCHHCF";
+        builderExisting.addSubUnit(newUnit2);
+        builderExisting.addName("POTE ankyrin domain family member B Three");
+        Reference ref2 = new Reference();
+        ref2.citation="A0JP26";
+        ref2.docType="Uniprot";
+        ref2.uploadedFile ="https://www.uniprot.org/uniprotkb/A0JP26/entry";
+        builderExisting.addReference(ref2);
+        ProteinSubstance proteinExisting = builderExisting.build();
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("MergeReferences", true);
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( proteinSource, proteinExisting, parms, logger);
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        Assertions.assertTrue( proteinSource.references.stream().allMatch(r-> output.references.stream().anyMatch(r2-> r2.docType.equals(r.docType) && r2.citation.equals(r.citation))));
+    }
     @Test
     public void testMergeReferencesNegative() throws Exception {
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();

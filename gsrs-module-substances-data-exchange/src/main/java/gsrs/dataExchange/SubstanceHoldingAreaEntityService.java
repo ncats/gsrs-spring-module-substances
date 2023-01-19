@@ -6,19 +6,24 @@ import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
+import ix.core.EntityFetcher;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.text.IndexValueMaker;
+import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.boot.jaxb.hbm.spi.EntityInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 @Slf4j
 public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityService<Substance> {
@@ -81,5 +86,17 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     @Override
     public Substance persistEntity(Substance substance) {
         return repository.saveAndFlush(substance);
+    }
+
+    @Override
+    public Substance retrieveEntity(String entityId) {
+        Substance substance = null;
+        try {
+            substance = (Substance) EntityFetcher.of(EntityUtils.Key.of(Substance.class, UUID.fromString(entityId))).call();
+        } catch (Exception e) {
+            log.error("Error retrieving substance", e);
+            throw new RuntimeException(e);
+        }
+        return substance;
     }
 }
