@@ -161,5 +161,4 @@ public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
         }
         Assertions.assertNotNull(ex,"Must throw an exception when setting an invalid value");
     }
-
 }
