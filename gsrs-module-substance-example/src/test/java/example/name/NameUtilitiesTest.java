@@ -485,5 +485,25 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, actual);
     }
 
+    @Test
+    public void TestFullyStandardizeNameContainingHtml1() {
+        String input = "<body>Feeling a <a href='/'>little</a>:\n<i>hyper</i></body>";
+        String expected = "Feeling a little: hyper";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestFullyStandardizeNameContainingHtml2() {
+        String input = "<body>Feeling a <a href='/'>little</a>-\n<i>hyper</i></body>";
+        String expected = "Feeling a little-hyper";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
 
 }

@@ -2,18 +2,17 @@ package gsrs.module.substance.utils;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import gsrs.module.substance.services.ConsoleFilterService;
 import gsrs.module.substance.standardizer.ReplacementNote;
 import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
+import gsrs.module.substance.utils.HtmlUtil;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -42,8 +41,11 @@ public class NameUtilities {
     private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
     private static final Pattern PATTERN_LEADING_WHITE_SPACE = Pattern.compile("^\\s+");
     private static final Pattern PATTERN_TRAILING_WHITE_SPACE = Pattern.compile("\\s+$");
-    // decide what should happen if there are 0 or more spaces between dash and linefeed?
+
+    // Example1 "Hello-\n\n  Dolly" ==> "Hello-Dolly"
+    // Example2 "Hello-   \n\n  Dolly" ==> "Hello-Dolly"
     private static final Pattern PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS = Pattern.compile("(?<=[\\-])[ \\t]*[\\r\\n]+[\\s]*");
+
     private static final Pattern PATTERN_SINGLE_OR_MULTIPLE_LINEFEED = Pattern.compile("[\\r\\n]+");
 
     private static final Pattern PATTERN_ZERO_WIDTH = Pattern.compile("[\u200B\u200C\u200D\u2060\uFEFF]");
@@ -125,6 +127,41 @@ public class NameUtilities {
     }
 
     /**
+     * Remove html from a string, then convert to text.
+     *
+     * @param input text data
+     * @return text data
+     */
+    public static String simpleCleanHtmlToText(String input) {
+        String cleaned = input;
+        if (input != null && input.length() != 0) {
+            cleaned = HtmlUtil.cleanToText(input, "UTF-8");
+        }
+        return cleaned;
+    }
+
+
+    /**
+     * Remove html from a string, then convert to text.
+     *
+     * @param input text data
+     * @return text data + messages about some of the replacements
+     */
+    public static ReplacementResult cleanHtmlToText(String input) {
+        List<ReplacementNote> notes = new ArrayList<>();
+        ReplacementResult result = new ReplacementResult(input, notes);
+        if (input != null && input.length() != 0) {
+            String cleaned = HtmlUtil.cleanToText(input, "UTF-8");
+            int start = StringUtils.indexOfDifference(input, cleaned);
+            if (start > -1) {
+                notes.add(new ReplacementNote(start, ""));
+                result.setResult(cleaned);
+            }
+        }
+        return result;
+    }
+
+    /**
      * modify a text string so that it contains only standard ASCII characters.
      * This method is designed for chemical names.
      *
@@ -145,10 +182,12 @@ public class NameUtilities {
         if(namePart==null) {
             namePart=input.trim();
         }
+        ReplacementResult initialResult = cleanHtmlToText(namePart);
 
         // 1 replace linefeed preceded by (e.g. dash) with blank; but leave the dash.
         // 2 replace remaining linefeed with space before replaceUnprintables, which will replace with blank ''
-        ReplacementResult initialResult = replaceSingleLinefeedPrecededByCertainCharactersWithBlank(namePart);
+        initialResult.update(replaceSingleLinefeedPrecededByCertainCharactersWithBlank(initialResult.getResult()));
+
         initialResult.update(replaceSingleOrMultipleLinefeedWithSpace(initialResult.getResult()));
         initialResult.update(replaceUnprintables(initialResult.getResult()));
         initialResult.update(removeSerialSpaces(initialResult.getResult()));
