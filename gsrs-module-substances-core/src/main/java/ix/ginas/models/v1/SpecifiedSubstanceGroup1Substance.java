@@ -49,8 +49,10 @@ public class SpecifiedSubstanceGroup1Substance extends Substance implements Gina
     public List<Tuple<GinasAccessControlled,SubstanceReference>> getDependsOnSubstanceReferencesAndParents(){
         List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
         srefs.addAll(super.getDependsOnSubstanceReferencesAndParents());
-        for (Component c : specifiedSubstance.constituents){
-			srefs.add(Tuple.of(c,c.substance));
+		if(specifiedSubstance!= null && specifiedSubstance.constituents!=null) {
+			for (Component c : specifiedSubstance.constituents) {
+				srefs.add(Tuple.of(c, c.substance));
+			}
 		}
         return srefs;
     }
