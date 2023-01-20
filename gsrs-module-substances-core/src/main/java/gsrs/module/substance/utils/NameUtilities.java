@@ -130,21 +130,6 @@ public class NameUtilities {
      * Remove html from a string, then convert to text.
      *
      * @param input text data
-     * @return text data
-     */
-    public static String simpleCleanHtmlToText(String input) {
-        String cleaned = input;
-        if (input != null && input.length() != 0) {
-            cleaned = HtmlUtil.cleanToText(input, "UTF-8");
-        }
-        return cleaned;
-    }
-
-
-    /**
-     * Remove html from a string, then convert to text.
-     *
-     * @param input text data
      * @return text data + messages about some of the replacements
      */
     public static ReplacementResult cleanHtmlToText(String input) {
