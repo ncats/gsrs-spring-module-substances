@@ -20,17 +20,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
@@ -96,8 +91,98 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
                 n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
     }
 
+
     @Test
-    public void testMergeNamesHTML() throws Exception {
+    public void testMergeNamesIncludeReferences() throws Exception {
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCN");
+        Name name1 = new Name();
+        name1.name="putrecine";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        Reference substanceOneReference = new Reference();
+        substanceOneReference.docType="CATALOG";
+        substanceOneReference.citation="Value specific to substance 1";
+        name1.addReference(substanceOneReference);
+        builder.addName(name1);
+        builder.addReference(substanceOneReference);
+
+        Name name2 = new Name();
+        name2.name="1,4 diaminobutane";
+        name2.languages.add(new Keyword("de"));
+        name2.displayName=false;
+        builder.addName(name2);
+        builder.addName("Stuff");
+        builder.addCode("CHEMBL", "CHEMBL46257");
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("MergeNames", "true");
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        Assertions.assertEquals(4,output.names.size());
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+                n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
+        Assertions.assertTrue(output.references.stream().anyMatch(r->r.citation.equals(substanceOneReference.citation) && r.docType.equals(substanceOneReference.docType)));
+    }
+
+    @Test
+    public void testMergeNamesIncludeReferencesWhenBlocked() throws Exception {
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCN");
+        Name name1 = new Name();
+        name1.name="putrecine";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        Reference substanceOneReference = new Reference();
+        substanceOneReference.docType="CATALOG";
+        substanceOneReference.citation="Value specific to substance 1";
+        name1.addReference(substanceOneReference);
+        builder.addName(name1);
+        builder.addReference(substanceOneReference);
+
+        Name name2 = new Name();
+        name2.name="1,4 diaminobutane";
+        name2.languages.add(new Keyword("de"));
+        name2.displayName=false;
+        builder.addName(name2);
+        builder.addName("Stuff");
+        builder.addCode("CHEMBL", "CHEMBL46257");
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("MergeNames", "true");
+        parms.put("SkipLevelingReferences", "true");
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        Assertions.assertEquals(4,output.names.size());
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+                n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
+        Assertions.assertFalse(output.references.stream().anyMatch(r->r.citation.equals(substanceOneReference.citation) && r.docType.equals(substanceOneReference.docType)));
+    }
+
+    @Test
+    public void testMergeNamesHTML() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -185,7 +270,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeCodes() throws Exception {
+    public void testMergeCodes() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -215,7 +300,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
 
     @Test
-    public void testMergeNamesAndCodes() throws Exception {
+    public void testMergeNamesAndCodes() {
 
         SubstanceBuilder builder= new SubstanceBuilder();
         builder.addName("putrecine");
@@ -246,7 +331,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeReferences() throws Exception {
+    public void testMergeReferences() {
 
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -282,7 +367,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeReferencesWithUrl() throws Exception {
+    public void testMergeReferencesWithUrl() {
 
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -323,7 +408,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Assertions.assertTrue( proteinSource.references.stream().allMatch(r-> output.references.stream().anyMatch(r2-> r2.docType.equals(r.docType) && r2.citation.equals(r.citation))));
     }
     @Test
-    public void testMergeReferencesNegative() throws Exception {
+    public void testMergeReferencesNegative() {
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="A0JP26";
@@ -358,7 +443,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeProperty1() throws Exception {
+    public void testMergeProperty1() {
 
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -412,7 +497,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     2 properties in source; will be copied based on setting
      */
     @Test
-    public void testMergeProperty2() throws Exception {
+    public void testMergeProperty2() {
 
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -466,7 +551,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     2 properties have the same name (different value) - setting does not block duplicates
      */
     @Test
-    public void testMergeProperty3() throws Exception {
+    public void testMergeProperty3() {
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -524,7 +609,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     2 properties have the same name (different value) - setting blocks duplicates
      */
     @Test
-    public void testMergeProperty4() throws Exception {
+    public void testMergeProperty4() {
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -584,7 +669,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeRelationships() throws Exception {
+    public void testMergeRelationships() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -652,7 +737,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeRelationshipNegative() throws Exception {
+    public void testMergeRelationshipNegative() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -716,7 +801,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNotes() throws Exception {
+    public void testMergeNotes() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -779,7 +864,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNotesNegative() throws Exception {
+    public void testMergeNotesNegative() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";

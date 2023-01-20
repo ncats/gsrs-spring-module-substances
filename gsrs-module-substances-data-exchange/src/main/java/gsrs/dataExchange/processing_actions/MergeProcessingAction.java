@@ -8,20 +8,21 @@ import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
 public class MergeProcessingAction implements ProcessingAction<Substance> {
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){
+        log.trace("about to call existing.toBuilder() on existing: {}", existing.getUuid());
         SubstanceBuilder builder = existing.toBuilder();
         ObjectMapper mapper= new ObjectMapper();
 
         Objects.requireNonNull(source, "Must have a non-null source Substance to merge");
         Objects.requireNonNull(existing, "Must have a non-null existing Substance to merge");
 
+        List<String> referencesToCopy = new ArrayList<>();//UUIDs
         if(hasTrueValue(parameters, "MergeReferences")){
             source.references.forEach(r->{
                 if( existing.references.stream().anyMatch(r2->r2.docType!=null && r2.docType.equals(r.docType) && r2.citation!=null
@@ -42,7 +43,6 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
         
-        //todo: handle references within objects
         if(hasTrueValue(parameters, "MergeNames")){
             source.names.forEach(n-> {
                 if( existing.names.stream().anyMatch(en->en.name.equals(n.name))){
@@ -53,6 +53,13 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     try {
                         newName = eics.fromJson(n.toJson());
                         builder.addName( newName);
+                        newName.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
+
                         processLog.accept(String.format("Adding Name %s;", n.name));
                     } catch (IOException e) {
                         log.error("error copying name", e);
@@ -73,6 +80,13 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Code newCode=eics.fromJson(c.toJson());
                         builder.addCode( newCode);
                         processLog.accept(String.format("Adding code %s;", c.code));
+                        newCode.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
+
                     } catch (IOException e) {
                         log.error("Error copying code", e);
                         processLog.accept(String.format("Error adding code %s of system %s;", c.code, c.codeSystem));
@@ -95,6 +109,13 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Property newproperty=eics.fromJson(p.toJson());
                         builder.addProperty( newproperty);
                         processLog.accept(String.format("Adding property %s;", p.getName()));
+                        newproperty.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
+
                     } catch (IOException e) {
                         log.error("Error copying property", e);
                         processLog.accept(String.format("Error adding property %s;", p.getName()));
@@ -116,6 +137,12 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Note newNote=eics.fromJson(n.toJson());
                         builder.addNote(newNote);
                         processLog.accept("Adding note;");
+                        newNote.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
                     } catch (IOException e) {
                         log.error("Error copying note", e);
                         processLog.accept(String.format("Error adding note %s;", n.note));
@@ -133,6 +160,12 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     try {
                         StructuralModification newStructuralModification = structuralModificationEntityInfo.fromJson(sm.toJson());
                         builder.addStructuralModification(newStructuralModification);
+                        newStructuralModification.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
 
                     } catch (IOException e){
                         log.error("Error copying StructuralModification", e);
@@ -150,6 +183,12 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     try {
                         AgentModification newAgentModification = agentModificationEntityInfo.fromJson(am.toJson());
                         builder.addAgentModification(newAgentModification);
+                        newAgentModification.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
                     } catch (IOException e){
                         log.error("Error copying AgentModification", e);
                         processLog.accept(String.format("Error adding AgentModification %s;", am));
@@ -166,6 +205,12 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     try {
                         PhysicalModification newPhysicalModification = physicalModificationEntityInfo.fromJson(pm.toJson());
                         builder.addPhysicalModification(newPhysicalModification);
+                        newPhysicalModification.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
                     } catch (IOException e){
                         log.error("Error copying PhysicalModification", e);
                         processLog.accept(String.format("Error adding PhysicalModification %s;", pm));
@@ -188,6 +233,12 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         builder.addRelationship(newRel);
                         processLog.accept(String.format("Adding Relationship of type %s to substances %s;", newRel.type,
                                 newRel.relatedSubstance.refuuid));
+                        newRel.getReferences().forEach(ref->{
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
+                                referencesToCopy.add(ref.getValue());
+                            }
+                        });
                     } catch (IOException e) {
                         log.error("error copying name", e);
                         processLog.accept(String.format("Error adding Relationship %s;", n.type));
@@ -197,6 +248,22 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
 
+        if(!hasTrueValue(parameters, "SkipLevelingReferences")) {
+            EntityUtils.EntityInfo<Reference> eicsRefs = EntityUtils.getEntityInfoFor(Reference.class);
+            for (String refUuid : referencesToCopy) {
+                if (builder.build().references.stream().noneMatch(r -> r.getUuid().toString().equals(refUuid))) {
+                    Reference sourceRef = source.references.stream().filter(r -> r.getUuid().toString().equals(refUuid)).findFirst().get();
+                    try {
+                        Reference newReference = eicsRefs.fromJson(mapper.writeValueAsString(sourceRef));
+                        builder.addReference(newReference);
+                        processLog.accept(String.format("Appending Reference %s;", refUuid));
+                    } catch (IOException ex) {
+                        log.error("Error copying reference {}", refUuid);
+                        processLog.accept(String.format("Error copying reference %s. Error: %s", refUuid, ex.getMessage()));
+                    }
+                }
+            }
+        }
         return builder.build();
     }
 }
