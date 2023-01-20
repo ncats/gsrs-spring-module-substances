@@ -22,7 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 @DiscriminatorValue("SSI")
 @Slf4j
 public class SpecifiedSubstanceGroup1Substance extends Substance implements GinasSubstanceDefinitionAccess{
-	@OneToOne(cascade= CascadeType.ALL)
+    @OneToOne(cascade= CascadeType.ALL)
     public SpecifiedSubstanceGroup1 specifiedSubstance;
 
     public SpecifiedSubstanceGroup1Substance() {
@@ -35,14 +35,14 @@ public class SpecifiedSubstanceGroup1Substance extends Substance implements Gina
     }
 
     @Override
-   	@JsonIgnore
-   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences(){
-   		List<GinasAccessReferenceControlled> temp = super.getAllChildrenCapableOfHavingReferences();
-   		if(this.specifiedSubstance!=null){
-   			temp.addAll(this.specifiedSubstance.getAllChildrenAndSelfCapableOfHavingReferences());
-   		}
-   		return temp;
-   	}
+    @JsonIgnore
+    public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences(){
+        List<GinasAccessReferenceControlled> temp = super.getAllChildrenCapableOfHavingReferences();
+        if(this.specifiedSubstance!=null){
+            temp.addAll(this.specifiedSubstance.getAllChildrenAndSelfCapableOfHavingReferences());
+        }
+        return temp;
+    }
 
     @Override
     @JsonIgnore
@@ -57,16 +57,16 @@ public class SpecifiedSubstanceGroup1Substance extends Substance implements Gina
         return srefs;
     }
     
-	@Override
-	@JsonIgnore
-	public List<SubstanceReference> getDependsOnSubstanceReferences()
-	{
-		List<SubstanceReference> sref = new ArrayList<SubstanceReference>();
-		sref.addAll(super.getDependsOnSubstanceReferences());
-		for (Component c : specifiedSubstance.constituents)
-		{
-			sref.add(c.substance);
-		}
-		return sref;
-	}
+    @Override
+    @JsonIgnore
+    public List<SubstanceReference> getDependsOnSubstanceReferences(){
+        List<SubstanceReference> sref = new ArrayList<SubstanceReference>();
+        sref.addAll(super.getDependsOnSubstanceReferences());
+        if(specifiedSubstance!= null && specifiedSubstance.constituents!=null) {
+            for (Component c : specifiedSubstance.constituents){
+                sref.add(c.substance);
+            }
+        }
+        return sref;
+    }
 }
