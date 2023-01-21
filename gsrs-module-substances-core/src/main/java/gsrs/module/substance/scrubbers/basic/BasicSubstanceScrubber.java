@@ -423,7 +423,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
     private Substance scrubUUID(Substance substance) {
         UUID topLevelUuid = substance.getOrGenerateUUID();
-        log.trace("in scrubUUID, approvalId: {}", topLevelUuid);
+        log.trace("in scrubUUID, topLevelUuid: {}", topLevelUuid);
 
         if(topLevelUuid!=null && this.scrubberSettings.getUUIDCleanupUUIDCodeSystem()!= null
                 && this.scrubberSettings.getUUIDCleanupUUIDCodeSystem().length()>0

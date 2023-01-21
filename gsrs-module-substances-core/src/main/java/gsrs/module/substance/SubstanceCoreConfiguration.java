@@ -2,6 +2,7 @@ package gsrs.module.substance;
 
 import gsrs.controller.EditController2;
 import gsrs.controller.EditEntityService;
+import gsrs.indexer.ComponentScanIndexValueMakerFactory;
 import gsrs.module.substance.approval.ApprovalIdConfiguration;
 import gsrs.module.substance.controllers.*;
 import gsrs.module.substance.exporters.SubstanceSpreadsheetExporterConfiguration;
@@ -49,7 +50,8 @@ import gsrs.holdingarea.service.ImportMetadataLegacySearchService;
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,
-        ImportMetadataLegacySearchService.class
+        ImportMetadataLegacySearchService.class,
+        ComponentScanIndexValueMakerFactory.class
 })
 public class SubstanceCoreConfiguration {
 
