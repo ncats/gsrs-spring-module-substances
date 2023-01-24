@@ -12,6 +12,7 @@ import java.io.OutputStreamWriter;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public class FDARelationshipExporter implements Exporter<Substance> {
 
@@ -91,7 +92,6 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         String ptUTF8=bestParent.getDisplayName()
         		            .map(n->n.getName())
         		            .orElse("");
-
         String parentUuid = bestParent.getUuid().toString();
         String parentSubstanceClass = bestParent.substanceClass.toString();
         String parentSubstancePublicOrPrivate = (bestParent.getAccess().isEmpty()) ? "Public" : "Private";
@@ -103,23 +103,26 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         for ( Relationship relationship : relationships) {
             String type = relationship.getDisplayType();
             String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private";
-            String relatedUuid = relationship.relatedSubstance.refuuid.toString();
+            String relatedUuid = relationship.relatedSubstance.refuuid;
             // Sql script used discriminator value for this? but not sure how to get that in Java.
             String relatedSubstanceType = (relationship.relatedSubstance.substanceClass==null)? "": relationship.relatedSubstance.substanceClass.toString();
             String relatedSubstancePublicOrPrivate = (relationship.relatedSubstance.getAccess().isEmpty()) ? "Public" : "Private";
-            Optional<Substance> fullRelatedSubstance = substanceRepository.findById(relationship.relatedSubstance.getUuid());
+            Optional<Substance> fullRelatedSubstance = substanceRepository.findById(UUID.fromString(relatedUuid));
+//             Substance wrappedSubstance = relationship.relatedSubstance.wrappedSubstance;
+
+
             String relatedUnii = "";
             String relatedBdnum = "";
             String relatedDisplayName = "";
             relatedUnii = relationship.relatedSubstance.approvalID;
             relatedDisplayName = relationship.relatedSubstance.refPname;
-            // relatedBdnum = getBdnum(fullRelatedSubstance.get());
 
-            if(fullRelatedSubstance.isPresent()) {
+            // if(fullRelatedSubstance.isPresent()) {
                 // relatedUnii = fullRelatedSubstance.get().getApprovalID();
                 // relatedBdnum = getBdnum(fullRelatedSubstance.get());
+                // relatedBdnum = getBdnum(wrappedSubstance);
                 // relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n->n.getName()).orElse("");
-            }
+            // }
             String relationshipCreatedBy = relationship.createdBy.username;
             Date relationshipLastEdited = relationship.getLastEdited();
             String relationshipLastEditedBy = relationship.lastEditedBy.username;
