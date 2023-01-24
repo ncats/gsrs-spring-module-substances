@@ -87,8 +87,9 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
-        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && /*n.displayName== n2.displayName &&*/
                 n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
+        Assertions.assertTrue(output instanceof ChemicalSubstance);
     }
 
 
@@ -104,6 +105,8 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Reference substanceOneReference = new Reference();
         substanceOneReference.docType="CATALOG";
         substanceOneReference.citation="Value specific to substance 1";
+        substanceOneReference.publicDomain= true;
+        substanceOneReference.tags.add(new Keyword("PUBLIC_DOMAIN_RELEASE"));
         name1.addReference(substanceOneReference);
         builder.addName(name1);
         builder.addReference(substanceOneReference);
@@ -112,6 +115,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         name2.name="1,4 diaminobutane";
         name2.languages.add(new Keyword("de"));
         name2.displayName=false;
+        name2.addReference(substanceOneReference);
         builder.addName(name2);
         builder.addName("Stuff");
         builder.addCode("CHEMBL", "CHEMBL46257");
@@ -131,9 +135,12 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
-        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) /*&& n.displayName== n2.displayName*/ &&
                 n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
-        Assertions.assertTrue(output.references.stream().anyMatch(r->r.citation.equals(substanceOneReference.citation) && r.docType.equals(substanceOneReference.docType)));
+        Assertions.assertTrue(output.references.stream().anyMatch(r->r.citation.equals(substanceOneReference.citation)
+                && r.docType.equals(substanceOneReference.docType)
+                &&r.publicDomain));
+        Assertions.assertTrue(output.names.stream().allMatch(n->n.getReferences().stream().allMatch(nr-> output.references.stream().anyMatch(ref->nr.getValue().equals(ref.getUuid().toString())))));
     }
 
     @Test
@@ -176,7 +183,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
-        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && /*n.displayName== n2.displayName &&*/
                 n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
         Assertions.assertFalse(output.references.stream().anyMatch(r->r.citation.equals(substanceOneReference.citation) && r.docType.equals(substanceOneReference.docType)));
     }
@@ -220,7 +227,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
-        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && /*n.displayName== n2.displayName &&*/
                 n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
     }
 
@@ -265,7 +272,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
-        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && n.displayName== n2.displayName &&
+        Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && /*n.displayName== n2.displayName &&*/
                 n.languages.stream().allMatch(l1-> n2.languages.stream().anyMatch(l2->l1.term.equals(l2.term))))));
     }
 
@@ -298,6 +305,59 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Assertions.assertTrue( chemical1.codes.stream().allMatch(c-> output.codes.stream().anyMatch(c2->c2.code.equals(c.code)&& c2.codeSystem.equals(c.codeSystem))));
     }
 
+
+    @Test
+    public void testMergeCodesWithReferences() {
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCN");
+
+        builder.addName("putrecine");
+        Reference codeReference = new Reference();
+        codeReference.docType="WEBSITE";
+        codeReference.citation="wikipedia";
+        codeReference.publicDomain=true;
+        Code chemblCode= new Code("CHEMBL", "CHEMBL46257");
+        chemblCode.addReference(codeReference);
+        builder.addCode(chemblCode);
+        Code chebiCode= new Code("CHEBI", "CHEBI46257");
+        chebiCode.addReference(codeReference);
+        builder.addCode(chebiCode);
+        builder.addReference(codeReference);
+        Code casCodeNoRef=new Code("CAS", "BOGUS");
+        builder.addCode(casCodeNoRef);
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("MergeCodes", "true");
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        Assertions.assertEquals(4,output.codes.size());
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        Assertions.assertTrue( chemical1.codes.stream().allMatch(c-> output.codes.stream().anyMatch(c2->c2.code.equals(c.code)&& c2.codeSystem.equals(c.codeSystem))));
+        output.codes.forEach(c->{
+            System.out.printf("code: %s system: %s total refs: %d\n", c.code, c.codeSystem, c.getReferences().size());
+            c.getReferences().forEach(r->{
+                System.out.printf("ref: %s\n", r.term);
+                if(output.references.stream().noneMatch(ref->ref.uuid.toString().equalsIgnoreCase(r.term))) {
+                    System.out.println("no match!");
+                } else {
+                    System.out.println("match");
+                }
+            });
+        });
+        Assertions.assertTrue(output.codes.stream().allMatch(c-> c.getReferences().isEmpty() || c.getReferences().stream().anyMatch(cr->output.references.stream().anyMatch(ref->ref.uuid.toString().equalsIgnoreCase(cr.term)))));
+        Assertions.assertTrue(output.codes.stream().filter(c->c.codeSystem==casCodeNoRef.codeSystem && c.code.equals(casCodeNoRef.code)).allMatch(c2->c2.getReferences().isEmpty()));
+    }
 
     @Test
     public void testMergeNamesAndCodes() {

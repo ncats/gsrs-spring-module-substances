@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
+import gsrs.indexer.ComponentScanIndexValueMakerFactory;
 import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.service.GsrsEntityService;
+import gsrs.startertests.TestIndexValueMakerFactory;
 import ix.core.EntityFetcher;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
@@ -16,10 +18,8 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.boot.jaxb.hbm.spi.EntityInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.security.Key;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +35,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     private StructureProcessor structureProcessor;
 
     @Autowired
-    private SubstanceRepository repository;
+    private ComponentScanIndexValueMakerFactory factory;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -50,7 +50,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     @Override
     public ValidationResponse<Substance> validate(Substance substance) {
         try {
-            ValidationResponse response = substanceEntityService.validateEntity((substance).toFullJsonNode());
+            ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode());
             return response;
         }catch (Exception ex) {
             log.error("Error validating substance", ex);
@@ -80,19 +80,33 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
 
     @Override
     public IndexValueMaker<Substance> createIVM(Substance substance) {
+        //todo: check implementation
+        return factory.createIndexValueMakerFor(substance);
+    }
+
+    @Override
+    public GsrsEntityService.UpdateResult<Substance> persistEntity(Substance substance) {
+        //temporary debug
+        log.trace("saving substance {} version {} total names: {}", substance.getUuid(), substance.version, substance.names.size());
+        try {
+            GsrsEntityService.UpdateResult<Substance>result= substanceEntityService.updateEntity(substance.toFullJsonNode());
+            log.trace("result of save {}", result.getStatus());
+            result.getValidationResponse().getValidationMessages().forEach(m->
+                    log.trace("message: {}; type: {}", m.getMessage(), m.getMessageType().name())
+            );
+            return result;
+        } catch (Exception e) {
+            log.error("Error updating substance!", e);
+        }
         return null;
     }
 
     @Override
-    public Substance persistEntity(Substance substance) {
-        return repository.saveAndFlush(substance);
-    }
-
-    @Override
     public Substance retrieveEntity(String entityId) {
-        Substance substance = null;
+        Substance substance;
         try {
             substance = (Substance) EntityFetcher.of(EntityUtils.Key.of(Substance.class, UUID.fromString(entityId))).call();
+            log.trace("retrieved substance {} version {} total names: {}", substance.getUuid(), substance.version, substance.names.size());
         } catch (Exception e) {
             log.error("Error retrieving substance", e);
             throw new RuntimeException(e);

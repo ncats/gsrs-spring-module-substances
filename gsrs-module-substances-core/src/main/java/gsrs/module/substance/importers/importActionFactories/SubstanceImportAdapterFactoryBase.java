@@ -316,6 +316,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         parameters.put("citation", REFERENCE_INSTRUCTION);
         parameters.put("referenceID", REFERENCE_ID_INSTRUCTION);
         parameters.put("uuid", String.format("[[%s]]", SIMPLE_REF));
+        parameters.put("publicDomain", true);
         referenceNode.set(ACTION_PARAMETERS, parameters);
 
         return referenceNode;

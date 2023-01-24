@@ -3,7 +3,7 @@ package gsrs.dataexchange.processing_actions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataexchange.model.ProcessingAction;
 import ix.core.util.EntityUtils;
-import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,13 +16,13 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){
         log.trace("about to call existing.toBuilder() on existing: {}", existing.getUuid());
-        SubstanceBuilder builder = existing.toBuilder();
+        AbstractSubstanceBuilder builder = toAbstractBuilder(existing);
         ObjectMapper mapper= new ObjectMapper();
 
         Objects.requireNonNull(source, "Must have a non-null source Substance to merge");
         Objects.requireNonNull(existing, "Must have a non-null existing Substance to merge");
 
-        List<String> referencesToCopy = new ArrayList<>();//UUIDs
+        Map<String, String> referencesToCopy = new HashMap<>();//UUIDs
         if(hasTrueValue(parameters, "MergeReferences")){
             source.references.forEach(r->{
                 if( existing.references.stream().anyMatch(r2->r2.docType!=null && r2.docType.equals(r.docType) && r2.citation!=null
@@ -52,13 +52,24 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     Name newName;
                     try {
                         newName = eics.fromJson(n.toJson());
-                        builder.addName( newName);
+
+                        newName.setUuid(UUID.randomUUID());
+                        Set<UUID> newRefs = new HashSet<>();
                         newName.getReferences().forEach(ref->{
-                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
                         });
+                        newName.setReferenceUuids(newRefs);
+                        newName.displayName=false;//substance probably had a display name already; if not, user can make a change  later
+                        builder.addName( newName);
 
                         processLog.accept(String.format("Adding Name %s;", n.name));
                     } catch (IOException e) {
@@ -78,14 +89,23 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     EntityUtils.EntityInfo<Code> eics= EntityUtils.getEntityInfoFor(Code.class);
                     try {
                         Code newCode=eics.fromJson(c.toJson());
+                        newCode.setUuid(UUID.randomUUID());
                         builder.addCode( newCode);
                         processLog.accept(String.format("Adding code %s;", c.code));
+                        Set<UUID> newRefs = new HashSet<>();
                         newCode.getReferences().forEach(ref->{
-                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
                         });
+                        newCode.setReferenceUuids(newRefs);
 
                     } catch (IOException e) {
                         log.error("Error copying code", e);
@@ -106,15 +126,24 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 }else{
                     EntityUtils.EntityInfo<Property> eics= EntityUtils.getEntityInfoFor(Property.class);
                     try {
-                        Property newproperty=eics.fromJson(p.toJson());
-                        builder.addProperty( newproperty);
+                        Property newProperty=eics.fromJson(p.toJson());
+                        newProperty.setUuid(UUID.randomUUID());
+                        builder.addProperty( newProperty);
                         processLog.accept(String.format("Adding property %s;", p.getName()));
-                        newproperty.getReferences().forEach(ref->{
-                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                        Set<UUID> newRefs = new HashSet<>();
+                        newProperty.getReferences().forEach(ref->{
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
                         });
+                        newProperty.setReferenceUuids(newRefs);
 
                     } catch (IOException e) {
                         log.error("Error copying property", e);
@@ -135,14 +164,23 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     EntityUtils.EntityInfo<Note> eics= EntityUtils.getEntityInfoFor(Note.class);
                     try {
                         Note newNote=eics.fromJson(n.toJson());
+                        newNote.setUuid(UUID.randomUUID());
                         builder.addNote(newNote);
                         processLog.accept("Adding note;");
+                        Set<UUID> newRefs = new HashSet<>();
                         newNote.getReferences().forEach(ref->{
-                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
+                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
                         });
+                        newNote.setReferenceUuids(newRefs);
                     } catch (IOException e) {
                         log.error("Error copying note", e);
                         processLog.accept(String.format("Error adding note %s;", n.note));
@@ -159,14 +197,21 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     EntityUtils.EntityInfo<StructuralModification> structuralModificationEntityInfo =EntityUtils.getEntityInfoFor(StructuralModification.class);
                     try {
                         StructuralModification newStructuralModification = structuralModificationEntityInfo.fromJson(sm.toJson());
-                        builder.addStructuralModification(newStructuralModification);
+                        newStructuralModification.setUuid(UUID.randomUUID());
+                        Set<UUID>newRefs = new HashSet<>();
                         newStructuralModification.getReferences().forEach(ref->{
-                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
                         });
-
+                        newStructuralModification.setReferenceUuids(newRefs);
+                        builder.addStructuralModification(newStructuralModification);
                     } catch (IOException e){
                         log.error("Error copying StructuralModification", e);
                         processLog.accept(String.format("Error adding StructuralModification %s;", sm));
@@ -182,13 +227,21 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     EntityUtils.EntityInfo<AgentModification> agentModificationEntityInfo =EntityUtils.getEntityInfoFor(AgentModification.class);
                     try {
                         AgentModification newAgentModification = agentModificationEntityInfo.fromJson(am.toJson());
-                        builder.addAgentModification(newAgentModification);
+                        newAgentModification.setUuid(UUID.randomUUID());
+                        Set<UUID>newRefs = new HashSet<>();
                         newAgentModification.getReferences().forEach(ref->{
-                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
                         });
+                        builder.addAgentModification(newAgentModification);
+
                     } catch (IOException e){
                         log.error("Error copying AgentModification", e);
                         processLog.accept(String.format("Error adding AgentModification %s;", am));
@@ -204,13 +257,21 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     EntityUtils.EntityInfo<PhysicalModification> physicalModificationEntityInfo =EntityUtils.getEntityInfoFor(PhysicalModification.class);
                     try {
                         PhysicalModification newPhysicalModification = physicalModificationEntityInfo.fromJson(pm.toJson());
-                        builder.addPhysicalModification(newPhysicalModification);
+                        newPhysicalModification.setUuid(UUID.randomUUID());
+                        Set<UUID>newRefs = new HashSet<>();
                         newPhysicalModification.getReferences().forEach(ref->{
                             log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
                         });
+                        builder.addPhysicalModification(newPhysicalModification);
                     } catch (IOException e){
                         log.error("Error copying PhysicalModification", e);
                         processLog.accept(String.format("Error adding PhysicalModification %s;", pm));
@@ -230,15 +291,25 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
                     try {
                         Relationship newRel = eics.fromJson(n.toJson());
-                        builder.addRelationship(newRel);
+                        newRel.setUuid(UUID.randomUUID());
+
                         processLog.accept(String.format("Adding Relationship of type %s to substances %s;", newRel.type,
                                 newRel.relatedSubstance.refuuid));
+                        Set<UUID>newRefs = new HashSet<>();
                         newRel.getReferences().forEach(ref->{
                             log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                            if(builder.build().references.stream().noneMatch(r->r.getUuid().toString().equals(ref.getValue()))){
-                                referencesToCopy.add(ref.getValue());
+                            String oldRefValue = ref.getValue();
+                            String newRefValue="";
+                            if(referencesToCopy.containsKey(oldRefValue)){
+                                newRefValue= referencesToCopy.get(oldRefValue);
+                            } else {
+                                newRefValue=UUID.randomUUID().toString();
+                                referencesToCopy.put(ref.getValue(), newRefValue);
                             }
+                            newRefs.add(UUID.fromString(newRefValue));
                         });
+                        newRel.setReferenceUuids(newRefs);
+                        builder.addRelationship(newRel);
                     } catch (IOException e) {
                         log.error("error copying name", e);
                         processLog.accept(String.format("Error adding Relationship %s;", n.type));
@@ -250,11 +321,15 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
         if(!hasTrueValue(parameters, "SkipLevelingReferences")) {
             EntityUtils.EntityInfo<Reference> eicsRefs = EntityUtils.getEntityInfoFor(Reference.class);
-            for (String refUuid : referencesToCopy) {
+            for (String refUuid : referencesToCopy.keySet()) {
                 if (builder.build().references.stream().noneMatch(r -> r.getUuid().toString().equals(refUuid))) {
                     Reference sourceRef = source.references.stream().filter(r -> r.getUuid().toString().equals(refUuid)).findFirst().get();
                     try {
                         Reference newReference = eicsRefs.fromJson(mapper.writeValueAsString(sourceRef));
+                        //newReference.setUuid(UUID.fromString(referencesToCopy.get(refUuid)));
+                        //below works whereas above runs but leaves the UUID unchanged!
+                        newReference.uuid = UUID.fromString( referencesToCopy.get(refUuid));
+                        log.trace("created ref with UUID {} to replace {}", referencesToCopy.get(refUuid), refUuid);
                         builder.addReference(newReference);
                         processLog.accept(String.format("Appending Reference %s;", refUuid));
                     } catch (IOException ex) {
@@ -265,5 +340,36 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             }
         }
         return builder.build();
+    }
+
+    private AbstractSubstanceBuilder toAbstractBuilder(Substance substance) {
+        SubstanceBuilder builder = substance.toBuilder();
+        switch (substance.substanceClass) {
+            case chemical:
+                ChemicalSubstanceBuilder chemicalSubstanceBuilder= builder.asChemical();
+                chemicalSubstanceBuilder.setStructure( ((ChemicalSubstance)substance).getStructure());
+                return chemicalSubstanceBuilder;
+            case protein:
+                ProteinSubstanceBuilder proteinSubstanceBuilder= builder.asProtein();
+                proteinSubstanceBuilder.setProtein( ((ProteinSubstance)substance).protein);
+                return proteinSubstanceBuilder;
+            case nucleicAcid:
+                NucleicAcidSubstanceBuilder nucleicAcidSubstanceBuilder= builder.asNucleicAcid();
+                nucleicAcidSubstanceBuilder.setNucleicAcid( ((NucleicAcidSubstance)substance).nucleicAcid);
+                return nucleicAcidSubstanceBuilder;
+            case mixture:
+                MixtureSubstanceBuilder mixtureSubstanceBuilder=builder.asMixture();
+                mixtureSubstanceBuilder.setMixture(((MixtureSubstance)substance).mixture);
+                return mixtureSubstanceBuilder;
+            case structurallyDiverse:
+                StructurallyDiverseSubstanceBuilder structurallyDiverseSubstanceBuilder= builder.asStructurallyDiverse();
+                structurallyDiverseSubstanceBuilder.setStructurallyDiverse(((StructurallyDiverseSubstance)substance).structurallyDiverse);
+                return structurallyDiverseSubstanceBuilder;
+            case polymer:
+                PolymerSubstanceBuilder polymerSubstanceBuilder= builder.asPolymer();
+                polymerSubstanceBuilder.setPolymer(((PolymerSubstance)substance).polymer);
+            default:
+                return builder;
+        }
     }
 }
