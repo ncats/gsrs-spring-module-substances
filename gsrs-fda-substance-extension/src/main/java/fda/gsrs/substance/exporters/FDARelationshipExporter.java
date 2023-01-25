@@ -77,6 +77,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
     @Override
     @Transactional(readOnly = true)
     public void export(Substance ing) throws IOException {
+
         if(!showPrivates && !ing.getAccess().isEmpty()){
             //Skip substances that aren't public unless we have show private data too
             return;
@@ -96,7 +97,13 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         		            .orElse("");
         String parentUuid = bestParent.getUuid().toString();
         String parentSubstanceClass = bestParent.substanceClass.toString();
+
+        // check access ok
+        if(!showPrivates && !bestParent.getAccess().isEmpty()){
+            return;
+        }
         String parentSubstancePublicOrPrivate = (bestParent.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(bestParent.getAccess());
+
         String parentUnii = bestParent.getApprovalID();
         String parentBdnum = getBdnum(bestParent);
         String parentDisplayName = ptUTF8;
@@ -104,12 +111,24 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         List<Relationship> relationships = ing.relationships;
         for ( Relationship relationship : relationships) {
             String type = relationship.type;
+
+            // check access ok
+            if(!showPrivates && !relationship.getAccess().isEmpty()){
+                continue;
+            }
             String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.getAccess());
+
             String relatedUuid = relationship.relatedSubstance.refuuid;
             EntityUtils.Key relatedKey = relationship.relatedSubstance.getKeyForReferencedSubstance();
             Optional<Substance> fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o->(Substance) o);
             String relatedSubstanceType = fullRelatedSubstance.map(s->s.substanceClass.toString()).orElse("Not present");
+
+            // check access ok
+            if(!showPrivates && !relationship.relatedSubstance.getAccess().isEmpty()){
+                continue;
+            }
             String relatedSubstancePublicOrPrivate = (relationship.relatedSubstance.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.relatedSubstance.getAccess());
+
             String relatedApprovalId = relationship.relatedSubstance.approvalID;
             String relatedBdnum = "";
             String relatedDisplayName = "";
