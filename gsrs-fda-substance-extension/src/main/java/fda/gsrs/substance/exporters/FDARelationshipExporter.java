@@ -1,6 +1,9 @@
 package fda.gsrs.substance.exporters;
 
 import gsrs.module.substance.repository.SubstanceRepository;
+import ix.core.EntityFetcher;
+import ix.core.models.Group;
+import ix.core.util.EntityUtils;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.*;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,10 +12,8 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class FDARelationshipExporter implements Exporter<Substance> {
 
@@ -26,7 +27,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         this.showPrivates =showPrivates;
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("RELATIONSHIP_TYPE\tRelationship Public/Private\tIS_REFLEXIVE\tUUID\tSUBSTANCE_TYPE\tSubst. Public/Private\tUNII\tBDNUM\tDISPLAY_NAME\tRELATED_UUID\tRELATED_SUBSTANCE_TYPE\tRelated Subst. Public/Private\tRELATED_UNII\tRELATED_BDNUM\tRELATED_DISPLAY_NAME\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
+        bw.write("Relationship Public/Private\tIS_REFLEXIVE\tSUBJECT_UUID\tSUBJECT_SUBSTANCE_TYPE\tSubj. Subst. Public/Private\tSUBJECT_APPROVAL_ID\tSUBJECT_BDNUM\tSUBJECT_DISPLAY_NAME\tRELATIONSHIP_TYPE\tRELATED_SUBSTANCE_DISPLAY_NAME\tRELATED_SUBSTANCE_UUID\tRELATED_SUBSTANCE_TYPE\tRelated Subst. Public/Private\tRELATED_SUBSTANCE_APPROVAL_ID\tRELATED_SUBSTANCE_BDNUM\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
         bw.newLine();
     }
 
@@ -80,7 +81,8 @@ public class FDARelationshipExporter implements Exporter<Substance> {
             //Skip substances that aren't public unless we have show private data too
             return;
         }
-        String bdnum = getBdnum(ing);
+        // not used
+        // String bdnum = getBdnum(ing);
 
         Substance bestParent=getParentSubstance(ing);
         if(!showPrivates && !bestParent.getAccess().isEmpty()){
@@ -94,35 +96,27 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         		            .orElse("");
         String parentUuid = bestParent.getUuid().toString();
         String parentSubstanceClass = bestParent.substanceClass.toString();
-        String parentSubstancePublicOrPrivate = (bestParent.getAccess().isEmpty()) ? "Public" : "Private";
+        String parentSubstancePublicOrPrivate = (bestParent.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(bestParent.getAccess());
         String parentUnii = bestParent.getApprovalID();
         String parentBdnum = getBdnum(bestParent);
         String parentDisplayName = ptUTF8;
 
         List<Relationship> relationships = ing.relationships;
         for ( Relationship relationship : relationships) {
-            String type = relationship.getDisplayType();
-            String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private";
+            String type = relationship.type;
+            String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.getAccess());
             String relatedUuid = relationship.relatedSubstance.refuuid;
-            // Sql script used discriminator value for this? but not sure how to get that in Java.
-            String relatedSubstanceType = (relationship.relatedSubstance.substanceClass==null)? "": relationship.relatedSubstance.substanceClass.toString();
-            String relatedSubstancePublicOrPrivate = (relationship.relatedSubstance.getAccess().isEmpty()) ? "Public" : "Private";
-            Optional<Substance> fullRelatedSubstance = substanceRepository.findById(UUID.fromString(relatedUuid));
-//             Substance wrappedSubstance = relationship.relatedSubstance.wrappedSubstance;
-
-
-            String relatedUnii = "";
+            EntityUtils.Key relatedKey = relationship.relatedSubstance.getKeyForReferencedSubstance();
+            Optional<Substance> fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o->(Substance) o);
+            String relatedSubstanceType = fullRelatedSubstance.map(s->s.substanceClass.toString()).orElse("Not present");
+            String relatedSubstancePublicOrPrivate = (relationship.relatedSubstance.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.relatedSubstance.getAccess());
+            String relatedApprovalId = relationship.relatedSubstance.approvalID;
             String relatedBdnum = "";
             String relatedDisplayName = "";
-            relatedUnii = relationship.relatedSubstance.approvalID;
-            relatedDisplayName = relationship.relatedSubstance.refPname;
-
-            // if(fullRelatedSubstance.isPresent()) {
-                // relatedUnii = fullRelatedSubstance.get().getApprovalID();
-                // relatedBdnum = getBdnum(fullRelatedSubstance.get());
-                // relatedBdnum = getBdnum(wrappedSubstance);
-                // relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n->n.getName()).orElse("");
-            // }
+            if(fullRelatedSubstance.isPresent()) {
+                relatedBdnum = getBdnum(fullRelatedSubstance.get());
+                relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n->n.getName()).orElse("");
+            }
             String relationshipCreatedBy = relationship.createdBy.username;
             Date relationshipLastEdited = relationship.getLastEdited();
             String relationshipLastEditedBy = relationship.lastEditedBy.username;
@@ -130,29 +124,31 @@ public class FDARelationshipExporter implements Exporter<Substance> {
             String isReflexive = (parentUuid.equals(relatedUuid)) ? "Y" : "N";
 
             String str =
-            type + "\t" + // RELATIONSHIP_TYPE
             relationshipPublicOrPrivate + "\t" +  // Relationship Public/Private
             isReflexive + "\t" + // IS_REFLEXIVE
-            parentUuid + "\t" +   // UUID
-            parentSubstanceClass + "\t" + // SUBSTANCE_TYPE
-            parentSubstancePublicOrPrivate + "\t" + // Subst. Public/Private
-            parentUnii + "\t" +  // UNII
-            parentBdnum + "\t" +  // BDNUM
-            parentDisplayName + "\t" + // DISPLAY_NAME
-            relatedUuid + "\t" +  // RELATED_UUID
+            parentUuid + "\t" +   // SUBJECT_UUID
+            parentSubstanceClass + "\t" + // SUBJECT_SUBSTANCE_TYPE
+            parentSubstancePublicOrPrivate + "\t" + // Subj. Subst. Public/Private (note this is checked)
+            parentUnii + "\t" +  // SUBJECT_APPROVAL_ID
+            parentBdnum + "\t" +  // SUBJECT_BDNUM
+            parentDisplayName + "\t" + // SUBJECT_DISPLAY_NAME
+            type + "\t" + // RELATIONSHIP_TYPE
+            relatedDisplayName + "\t" +       // RELATED_SUBSTANCE_DISPLAY_NAME
+            relatedUuid + "\t" +  // RELATED_SUBSTANCE_UUID
             relatedSubstanceType + "\t" + // RELATED_SUBSTANCE_TYPE
             relatedSubstancePublicOrPrivate + "\t" +  // Related Subst. Public/Private
-            relatedUnii + "\t" +       // RELATED_UNII
-            relatedBdnum + "\t" +      // RELATED_BDNUM
-            relatedDisplayName + "\t" +       // RELATED_DISPLAY_NAME
+            relatedApprovalId + "\t" +       // RELATED_SUBSTANCE_APPROVAL_ID
+            relatedBdnum + "\t" +      // RELATED_SUBSTANCE_BDNUM
             relationshipCreatedBy + "\t" +       // RELATIONSHIP_CREATED_BY
             relationshipLastEdited + "\t" +       // RELATIONSHIP_LAST_EDITED
             relationshipLastEditedBy + "\t";      // RELATIONSHIP_LAST_EDITED_BY
             bw.write(str);
             bw.newLine();
-
-
         }
+    }
+
+    public String makeAccessGroupString(Set<Group> s) {
+        return (String) s.stream().map(o->o.name).sorted().collect(Collectors.joining(", "));
     }
 
     @Override
