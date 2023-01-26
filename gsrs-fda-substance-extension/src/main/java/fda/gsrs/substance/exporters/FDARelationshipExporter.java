@@ -6,6 +6,7 @@ import ix.core.models.Group;
 import ix.core.util.EntityUtils;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedWriter;
@@ -14,7 +15,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.util.*;
 import java.util.stream.Collectors;
-
+@Slf4j
 public class FDARelationshipExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
@@ -101,18 +102,26 @@ public class FDARelationshipExporter implements Exporter<Substance> {
             String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.getAccess());
 
             String relatedUuid = relationship.relatedSubstance.refuuid;
-            EntityUtils.Key relatedKey = relationship.relatedSubstance.getKeyForReferencedSubstance();
-            Optional<Substance> fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o->(Substance) o);
-            String relatedSubstanceType = fullRelatedSubstance.map(s->s.substanceClass.toString()).orElse("Not present");
 
             String relatedApprovalId = relationship.relatedSubstance.approvalID;
             String relatedSubstancePublicOrPrivate = "";
             String relatedBdnum = "";
             String relatedDisplayName = "";
-            if(fullRelatedSubstance.isPresent()) {
-                relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(fullRelatedSubstance.get().getAccess());
-                relatedBdnum = getBdnum(fullRelatedSubstance.get());
-                relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n->n.getName()).orElse("");
+            String relatedSubstanceType = "Not present";
+
+            EntityUtils.Key relatedKey;
+            Optional<Substance> fullRelatedSubstance;
+            try {
+                relatedKey = relationship.relatedSubstance.getKeyForReferencedSubstance();
+                fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o -> (Substance) o);
+                relatedSubstanceType = fullRelatedSubstance.map(s -> s.substanceClass.toString()).orElse("Not present");
+                if(fullRelatedSubstance.isPresent()) {
+                    relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(fullRelatedSubstance.get().getAccess());
+                    relatedBdnum = getBdnum(fullRelatedSubstance.get());
+                    relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n->n.getName()).orElse("");
+                }
+            } catch(Exception e) {
+                log.warn("Problem loading fullRelatedSubstance." , e);
             }
             String relationshipCreatedBy = relationship.createdBy.username;
             Date relationshipLastEdited = relationship.getLastEdited();
