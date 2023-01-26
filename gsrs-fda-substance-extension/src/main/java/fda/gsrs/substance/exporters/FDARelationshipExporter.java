@@ -41,8 +41,10 @@ public class FDARelationshipExporter implements Exporter<Substance> {
      * @param s
      * @return
      */
-    public Substance getParentSubstance(Substance s){
-    	
+    public Substance getParentSubstance(Substance s) {
+        return s;
+    }
+    public Substance disabled_getParentSubstance(Substance s){
     	if(s.isSubstanceVariant()){
     		SubstanceReference sr= s.getParentSubstanceReference();
     		Substance parent=substanceRepository.findBySubstanceReference(sr);
