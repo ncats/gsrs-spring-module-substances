@@ -24,6 +24,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
     private final SubstanceRepository substanceRepository;
 
     public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, boolean showPrivates) throws IOException{
+        // publicOnly/ShowPrivates is not longer used in favor of scrubber.
         this.showPrivates =showPrivates;
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
@@ -78,18 +79,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
     @Transactional(readOnly = true)
     public void export(Substance ing) throws IOException {
 
-        if(!showPrivates && !ing.getAccess().isEmpty()){
-            //Skip substances that aren't public unless we have show private data too
-            return;
-        }
-        // not used
-        // String bdnum = getBdnum(ing);
-
         Substance bestParent=getParentSubstance(ing);
-        if(!showPrivates && !bestParent.getAccess().isEmpty()){
-            //GSRS-699 skip substances that aren't public unless we have show private data too
-            return;
-        }
 
         // is this the right displayName?
         String ptUTF8=bestParent.getDisplayName()
@@ -98,10 +88,6 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         String parentUuid = bestParent.getUuid().toString();
         String parentSubstanceClass = bestParent.substanceClass.toString();
 
-        // check access ok
-        if(!showPrivates && !bestParent.getAccess().isEmpty()){
-            return;
-        }
         String parentSubstancePublicOrPrivate = (bestParent.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(bestParent.getAccess());
 
         String parentUnii = bestParent.getApprovalID();
@@ -112,10 +98,6 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         for ( Relationship relationship : relationships) {
             String type = relationship.type;
 
-            // check access ok
-            if(!showPrivates && !relationship.getAccess().isEmpty()){
-                continue;
-            }
             String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.getAccess());
 
             String relatedUuid = relationship.relatedSubstance.refuuid;
@@ -123,16 +105,12 @@ public class FDARelationshipExporter implements Exporter<Substance> {
             Optional<Substance> fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o->(Substance) o);
             String relatedSubstanceType = fullRelatedSubstance.map(s->s.substanceClass.toString()).orElse("Not present");
 
-            // check access ok
-            if(!showPrivates && !relationship.relatedSubstance.getAccess().isEmpty()){
-                continue;
-            }
-            String relatedSubstancePublicOrPrivate = (relationship.relatedSubstance.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.relatedSubstance.getAccess());
-
             String relatedApprovalId = relationship.relatedSubstance.approvalID;
+            String relatedSubstancePublicOrPrivate = "";
             String relatedBdnum = "";
             String relatedDisplayName = "";
             if(fullRelatedSubstance.isPresent()) {
+                relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(fullRelatedSubstance.get().getAccess());
                 relatedBdnum = getBdnum(fullRelatedSubstance.get());
                 relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n->n.getName()).orElse("");
             }
