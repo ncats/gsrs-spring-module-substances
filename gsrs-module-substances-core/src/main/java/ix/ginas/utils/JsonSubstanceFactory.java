@@ -82,10 +82,16 @@ public class JsonSubstanceFactory {
     public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 
         if (cryptoService.isReady()) {
+            JsonNode metadata = ((ObjectNode) tree).remove("_metadata");
             unprotect(tree);
+            if (tree == null || (tree.isObject() && tree.size() == 0)) {
+                throw new IllegalStateException("Confidential substance");
+            }
             fixReferences(tree);
             removeEmptyObjects(tree);
-            extractMetadata(tree);
+            if (metadata != null) {
+                storeMetadata(tree, metadata);
+            }
         }
 
         JsonNode subclass = tree.get("substanceClass");
@@ -209,21 +215,18 @@ public class JsonSubstanceFactory {
         }
     }
 
-    private static void extractMetadata(JsonNode tree) {
-        JsonNode metadata = ((ObjectNode) tree).remove("_metadata");
-        if (metadata != null) {
-            ObjectNode ref = new ObjectMapper().createObjectNode();
-            ref.set("uuid", new TextNode(UUID.randomUUID().toString()));
-            ref.set("docType", new TextNode("SYSTEM"));
-            ref.set("citation", metadata.get("txt"));
-            if (metadata.hasNonNull("ori")) {
-                ref.set("url", metadata.get("ori"));
-            }
-            if (metadata.hasNonNull("dat")) {
-                ref.set("documentDate", metadata.get("dat"));
-            }
-            ((ArrayNode) tree.get("references")).add(ref);
+    private static void storeMetadata(JsonNode tree, JsonNode metadata) {
+        ObjectNode ref = new ObjectMapper().createObjectNode();
+        ref.set("uuid", new TextNode(UUID.randomUUID().toString()));
+        ref.set("docType", new TextNode("SYSTEM"));
+        ref.set("citation", metadata.get("txt"));
+        if (metadata.hasNonNull("ori")) {
+            ref.set("url", metadata.get("ori"));
         }
+        if (metadata.hasNonNull("dat")) {
+            ref.set("documentDate", metadata.get("dat"));
+        }
+        ((ArrayNode) tree.get("references")).add(ref);
     }
 
     private static void fixReferences(JsonNode tree) {

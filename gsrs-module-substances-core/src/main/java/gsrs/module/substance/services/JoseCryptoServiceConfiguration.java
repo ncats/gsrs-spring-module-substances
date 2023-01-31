@@ -21,6 +21,7 @@ import javax.annotation.PostConstruct;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.cxf.rs.security.jose.common.JoseConstants;
 import org.apache.cxf.rs.security.jose.jwa.ContentAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.KeyAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.SignatureAlgorithm;
@@ -54,6 +55,7 @@ public class JoseCryptoServiceConfiguration {
     private ContentAlgorithm contentAlgorithm;
     private KeyAlgorithm keyAlgorithm;
     private SignatureAlgorithm signatureAlgorithm;
+    private String zipAlgorithm;
     private Boolean strictVerification;
     private Boolean preserveMetadata;
     private SimpleDateFormat dateFormat;
@@ -86,6 +88,9 @@ public class JoseCryptoServiceConfiguration {
         }
         if (signatureAlgorithm == null) {
             signatureAlgorithm = SignatureAlgorithm.RS256;
+        }
+        if (zipAlgorithm == null) {
+            zipAlgorithm = JoseConstants.JWE_DEFLATE_ZIP_ALGORITHM;
         }
         if (strictVerification == null) {
             strictVerification = false;

@@ -17,12 +17,13 @@ import java.util.Map;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.cxf.common.util.StringUtils;
+import org.apache.cxf.rs.security.jose.common.JoseConstants;
 import org.apache.cxf.rs.security.jose.common.JoseType;
 import org.apache.cxf.rs.security.jose.jwa.ContentAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.KeyAlgorithm;
 import org.apache.cxf.rs.security.jose.jwa.SignatureAlgorithm;
 import org.apache.cxf.rs.security.jose.jwe.ContentEncryptionProvider;
+import org.apache.cxf.rs.security.jose.jwe.JweDecryptionOutput;
 import org.apache.cxf.rs.security.jose.jwe.JweDecryptionProvider;
 import org.apache.cxf.rs.security.jose.jwe.JweEncryption;
 import org.apache.cxf.rs.security.jose.jwe.JweEncryptionProvider;
@@ -78,11 +79,12 @@ public class JoseCryptoService implements CryptoService {
         JwsHeaders protectedHeaders = new JwsHeaders(metadata);
         try {
             protectedHeaders.setKeyId(config.getPrivateKeyId());
-            protectedHeaders.setContentType("application/json");
+            protectedHeaders.setContentType(JoseConstants.MEDIA_TYPE_JOSE_JSON);
             JwsCompactProducer jwsProducer = new JwsCompactProducer(protectedHeaders, str);
             JwsSignatureProvider jwsp = JwsUtils.getSignatureProvider(config.getPrivateKey(), config.getSignatureAlgorithm());
             str = jwsProducer.signWith(jwsp);
         } catch (Exception e) {
+            log.error(e.toString());
         }
         return str;
     }
@@ -134,6 +136,7 @@ public class JoseCryptoService implements CryptoService {
                 ((ObjectNode) result).put("_metadata", metadata);
             }
         } catch (Exception e) {
+            log.error(e.toString());
         }
         return result;
     }
@@ -146,12 +149,14 @@ public class JoseCryptoService implements CryptoService {
         JsonNode result = JsonNodeFactory.instance.objectNode();
         JweHeaders protectedHeaders = new JweHeaders(config.getContentAlgorithm());
         protectedHeaders.setType(JoseType.JOSE_JSON);
-        //protectedHeaders.setZipAlgorithm("DEF");
         JweHeaders sharedUnprotectedHeaders = new JweHeaders();
+        if (JoseConstants.JWE_DEFLATE_ZIP_ALGORITHM.equals(config.getZipAlgorithm())) {
+            protectedHeaders.setZipAlgorithm(config.getZipAlgorithm());
+        }
         sharedUnprotectedHeaders.setKeyEncryptionAlgorithm(config.getKeyAlgorithm());
         ContentEncryptionProvider contentEncryption = JweUtils.getContentEncryptionProvider(config.getContentAlgorithm(), true);
         List<JweEncryptionProvider> jweProviders = new LinkedList<JweEncryptionProvider>();
-        List<JweHeaders> perRecipientHeades = new LinkedList<JweHeaders>();
+        List<JweHeaders> perRecipientHeaders = new LinkedList<JweHeaders>();
         if (config.getPrivateKeyId() != null && !recipients.contains(config.getPrivateKeyId())) {
             recipients.add(config.getPrivateKeyId());
         }
@@ -160,16 +165,17 @@ public class JoseCryptoService implements CryptoService {
             if (key != null) {
                 keyEncryption = JweUtils.getKeyEncryptionProvider(key, config.getKeyAlgorithm());
                 jweProviders.add(new JweEncryption(keyEncryption, contentEncryption));
-                perRecipientHeades.add(new JweHeaders(key.getKeyId()));
+                perRecipientHeaders.add(new JweHeaders(key.getKeyId()));
             }
         }
         if (!jweProviders.isEmpty()) {
-            JweJsonProducer p = new JweJsonProducer(protectedHeaders,
-                                        sharedUnprotectedHeaders,
-                                        StringUtils.toBytesUTF8(node.toString()));
             try {
-                result = mapper.readTree(p.encryptWith(jweProviders, perRecipientHeades));
+                JweJsonProducer p = new JweJsonProducer(protectedHeaders,
+                                                        sharedUnprotectedHeaders,
+                                                        node.toString().getBytes("UTF-8"));
+                result = mapper.readTree(p.encryptWith(jweProviders, perRecipientHeaders));
             } catch (Exception e) {
+                log.error(e.toString());
             }
         }
         node.removeAll();
@@ -200,6 +206,7 @@ public class JoseCryptoService implements CryptoService {
                 }
             }
         } catch (Exception e) {
+            log.error(e.toString());
         }
         Iterator<Map.Entry<String, JsonNode>> fields = result.fields();
         while (fields.hasNext()) {
