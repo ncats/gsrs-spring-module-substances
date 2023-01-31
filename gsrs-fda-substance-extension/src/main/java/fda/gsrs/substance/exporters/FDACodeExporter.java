@@ -3,7 +3,6 @@ package fda.gsrs.substance.exporters;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -32,24 +31,31 @@ public class FDACodeExporter implements Exporter<Substance> {
         obj.codes.stream().filter(cd -> cd.codeSystem.equals(primaryCodeSystem) && cd.type.equals("PRIMARY")).map(cd -> cd.code).findFirst().orElse(null)
         : "";
         for (Code c : obj.getCodes()) {
-            String publicOrPrivate = (c.getAccess().isEmpty())
-                ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(c.getAccess());
-            String str = obj.approvalID;
+            StringBuilder sb = new StringBuilder();
+            sb.append(obj.approvalID);
+            sb.append("\t");
             if (primaryCodeSystem != null) {
-                str += "\t" + priCode;
+                sb.append(priCode);
+                sb.append("\t");
             }
-            str +=
-            "\t" + publicOrPrivate
-            + "\t" + c.code
-            + "\t" + c.codeSystem
-            + "\t" + c.type
-            + "\t" + ((c.codeText != null) ? c.codeText : "")
-            + "\t" + ((c.comments != null) ? ExporterUtilities.replaceAllLinefeedsWithPipes(c.comments) : "");
-            bw.write(str);
+            sb.append(
+                (c.getAccess().isEmpty())
+                ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(c.getAccess())
+            )
+            .append("\t")
+            .append(c.code)
+            .append("\t")
+            .append(c.codeSystem)
+            .append("\t")
+            .append(c.type)
+            .append("\t")
+            .append(((c.codeText != null) ? c.codeText : ""))
+            .append("\t")
+            .append(((c.comments != null) ? ExporterUtilities.replaceAllLinefeedsWithPipes(c.comments) : ""));
+            bw.write(sb.toString());
             bw.newLine();
         }
-      }
-
+    }
 
     @Override
     public void close() throws IOException {

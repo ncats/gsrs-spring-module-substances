@@ -10,9 +10,6 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Created by VenkataSaiRa.Chavali on 3/10/2017.
- */
 public class FDACodeExporterFactory implements ExporterFactory<Substance>{
 
     // To set include e.g. { parameters: {"primaryCodeSystem": "BDNUM"  }, ...}  in your factory configuration
@@ -33,10 +30,7 @@ public class FDACodeExporterFactory implements ExporterFactory<Substance>{
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        // if(params.shouldCompress()) {
         return new FDACodeExporter(out, this.primaryCodeSystem);
-//        }
-//        return new JsonExporter(out);
     }
 
     public void setPrimaryCodeSystem(String primaryCodeSystem) {
@@ -46,5 +40,4 @@ public class FDACodeExporterFactory implements ExporterFactory<Substance>{
     public String getPrimaryCodeSystem() {
         return this.primaryCodeSystem;
     }
-
 }

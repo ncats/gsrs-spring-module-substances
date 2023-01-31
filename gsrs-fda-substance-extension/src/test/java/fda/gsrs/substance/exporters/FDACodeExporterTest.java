@@ -2,8 +2,6 @@ package fda.gsrs.substance.exporters;
 
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import fda.gsrs.substance.exporters.FDACodeExporterFactory;
-import fda.gsrs.substance.exporters.FDACodeExporter;
 import ix.core.models.Group;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.OutputFormat;
@@ -13,7 +11,6 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -33,8 +30,7 @@ public class FDACodeExporterTest {
         FDACodeExporterFactory factory = new FDACodeExporterFactory();
         factory.setPrimaryCodeSystem("BDNUM");
         Assertions.assertEquals("BDNUM", factory.getPrimaryCodeSystem());
-        ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream(4096);
-        File outputFile = File.createTempFile("temp-codes", "txt");
+        File outputFile = File.createTempFile("testExportCodes", "txt");
         if(outputFile.exists()) {
             outputFile.delete();
             log.trace("file existed and was deleted");
@@ -53,14 +49,15 @@ public class FDACodeExporterTest {
         String fileData= Files.lines(outputFile.toPath(),StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
         System.out.println("fileData: " + fileData);
         Assertions.assertTrue(fileData.contains("001123AB"));
-        // Assertions.assertTrue(substanceNames.stream().allMatch(s->fileData.contains(s)));
+        Assertions.assertTrue(fileData.contains("XYZBEFCHI1"));
+        Assertions.assertTrue(fileData.contains("Approval ID\tBDNUM"));
     }
+
     @Test
     public void testExportCodesNoPrimaryCodeSystem() throws IOException {
         FDACodeExporterFactory factory = new FDACodeExporterFactory();
-        Assertions.assertEquals(null, factory.getPrimaryCodeSystem());
-        ByteArrayOutputStream byteArrayInputStream = new ByteArrayOutputStream(4096);
-        File outputFile = File.createTempFile("temp-codes", "txt");
+        Assertions.assertNull(factory.getPrimaryCodeSystem());
+        File outputFile = File.createTempFile("testExportCodesNoPrimaryCodeSystem", "txt");
         if(outputFile.exists()) {
             outputFile.delete();
             log.trace("file existed and was deleted");
@@ -79,9 +76,9 @@ public class FDACodeExporterTest {
         String fileData= Files.lines(outputFile.toPath(),StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
         System.out.println("fileData: " + fileData);
         Assertions.assertTrue(fileData.contains("001123AB"));
-        Assertions.assertEquals(null, factory.getPrimaryCodeSystem());
-
-        // Assertions.assertTrue(substanceNames.stream().allMatch(s->fileData.contains(s)));
+        Assertions.assertTrue(fileData.contains("XYZBEFCHI1"));
+        Assertions.assertFalse(fileData.contains("Approval ID\tBDNUM"));
+        Assertions.assertNull(factory.getPrimaryCodeSystem());
     }
 
 

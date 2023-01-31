@@ -12,8 +12,7 @@ public class ExporterUtilities {
     }
 
     public static String makeAccessGroupString(Set<Group> s) {
-        return (String) s.stream().map(o->o.name).sorted().collect(Collectors.joining(", "));
+        return s.stream().map(o->o.name).sorted().collect(Collectors.joining(", "));
     }
-
 
 }
