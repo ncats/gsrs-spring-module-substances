@@ -137,6 +137,7 @@ public class NameUtilities {
         ReplacementResult result = new ReplacementResult(input, notes);
         if (input != null && input.length() != 0) {
             String cleaned = HtmlUtil.cleanToText(input, "UTF-8");
+            cleaned=cleaned.replace("&gt;",">").replace("&lt;", "<").replace("&amp;","&");
             int start = StringUtils.indexOfDifference(input, cleaned);
             if (start > -1) {
                 notes.add(new ReplacementNote(start, ""));
