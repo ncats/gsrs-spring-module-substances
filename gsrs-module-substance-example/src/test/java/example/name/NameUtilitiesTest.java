@@ -505,5 +505,24 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, actual);
     }
 
+    @Test
+    public void TestFullyStandardizeConfusedHtml1() {
+        String input = "hello->there";
+        String expected = "HELLO->THERE";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestFullyStandardizeConfusedHtml2() {
+        String input = "hello there you & other guy";
+        String expected = "HELLO THERE YOU & OTHER GUY";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
 
 }
