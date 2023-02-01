@@ -20,16 +20,13 @@ public class FDARelationshipExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
 
-    private final boolean showPrivates;
-
     private final SubstanceRepository substanceRepository;
 
-    public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, boolean showPrivates) throws IOException{
-        // publicOnly/ShowPrivates is not longer used in favor of scrubber.
-        this.showPrivates =showPrivates;
+    public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os) throws IOException{
+
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("Relationship Public/Private\tIS_REFLEXIVE\tSUBJECT_UUID\tSUBJECT_SUBSTANCE_TYPE\tSubj. Subst. Public/Private\tSUBJECT_APPROVAL_ID\tSUBJECT_BDNUM\tSUBJECT_DISPLAY_NAME\tRELATIONSHIP_TYPE\tRELATED_SUBSTANCE_DISPLAY_NAME\tRELATED_SUBSTANCE_UUID\tRELATED_SUBSTANCE_TYPE\tRelated Subst. Public/Private\tRELATED_SUBSTANCE_APPROVAL_ID\tRELATED_SUBSTANCE_BDNUM\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
+        bw.write("Relationship Public/Private\tIS_REFLEXIVE\tRELATED_SUBSTANCE_UUID\tRELATED_SUBSTANCE_TYPE\tRelated Subst. Public/Private\tRELATED_SUBSTANCE_APPROVAL_ID\tRELATED_SUBSTANCE_BDNUM\tRELATED_SUBSTANCE_DISPLAY_NAME\tRELATIONSHIP_TYPE\tSUBJECT_DISPLAY_NAME\tSUBJECT_UUID\tSUBJECT_SUBSTANCE_TYPE\tSubj. Subst. Public/Private\tSUBJECT_APPROVAL_ID\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
         bw.newLine();
     }
 
@@ -129,28 +126,33 @@ public class FDARelationshipExporter implements Exporter<Substance> {
             Date relationshipLastEdited = relationship.getLastEdited();
             String relationshipLastEditedBy = relationship.lastEditedBy.username;
             // What if one is null/blank?
+
             String isReflexive = (parentUuid.equals(relatedUuid)) ? "Y" : "N";
 
-            String str =
-            relationshipPublicOrPrivate + "\t" +  // Relationship Public/Private
-            isReflexive + "\t" + // IS_REFLEXIVE
-            parentUuid + "\t" +   // SUBJECT_UUID
-            parentSubstanceClass + "\t" + // SUBJECT_SUBSTANCE_TYPE
-            parentSubstancePublicOrPrivate + "\t" + // Subj. Subst. Public/Private (note this is checked)
-            parentUnii + "\t" +  // SUBJECT_APPROVAL_ID
-            parentBdnum + "\t" +  // SUBJECT_BDNUM
-            parentDisplayName + "\t" + // SUBJECT_DISPLAY_NAME
-            type + "\t" + // RELATIONSHIP_TYPE
-            relatedDisplayName + "\t" +       // RELATED_SUBSTANCE_DISPLAY_NAME
-            relatedUuid + "\t" +  // RELATED_SUBSTANCE_UUID
-            relatedSubstanceType + "\t" + // RELATED_SUBSTANCE_TYPE
-            relatedSubstancePublicOrPrivate + "\t" +  // Related Subst. Public/Private
-            relatedApprovalId + "\t" +       // RELATED_SUBSTANCE_APPROVAL_ID
-            relatedBdnum + "\t" +      // RELATED_SUBSTANCE_BDNUM
-            relationshipCreatedBy + "\t" +       // RELATIONSHIP_CREATED_BY
-            relationshipLastEdited + "\t" +       // RELATIONSHIP_LAST_EDITED
-            relationshipLastEditedBy + "\t";      // RELATIONSHIP_LAST_EDITED_BY
-            bw.write(str);
+
+
+            StringBuilder sb = new StringBuilder()
+            .append(relationshipPublicOrPrivate).append("\t") // Relationship Public/Private
+            .append(isReflexive).append("\t")                 // IS_REFLEXIVE
+            .append(relatedUuid).append("\t")                 // RELATED_SUBSTANCE_UUID
+            .append(relatedSubstanceType).append("\t")        // RELATED_SUBSTANCE_TYPE
+            .append(relatedSubstancePublicOrPrivate).append("\t") // Related Subst. Public/Private
+            .append(relatedApprovalId).append("\t")           // RELATED_SUBSTANCE_APPROVAL_ID
+            .append(relatedBdnum).append("\t")                // RELATED_SUBSTANCE_BDNUM
+
+            .append(relatedDisplayName).append("\t")          // RELATED_SUBSTANCE_DISPLAY_NAME
+            .append(type).append("\t")                        // RELATIONSHIP_TYPE
+            .append(parentDisplayName).append("\t")           // SUBJECT_DISPLAY_NAME
+            .append(parentUuid).append("\t")                  // SUBJECT_UUID
+            .append(parentSubstanceClass).append("\t")        // SUBJECT_SUBSTANCE_TYPE
+
+            .append(parentSubstancePublicOrPrivate).append("\t") // Subj. Subst. Public/Private (note this is checked)
+            .append(parentUnii).append("\t")                  // SUBJECT_APPROVAL_ID
+
+            .append(relationshipCreatedBy).append("\t")       // RELATIONSHIP_CREATED_BY
+            .append(relationshipLastEdited).append("\t")      // RELATIONSHIP_LAST_EDITED
+            .append(relationshipLastEditedBy).append("\t");   // RELATIONSHIP_LAST_EDITED_BY
+            bw.write(sb.toString());
             bw.newLine();
         }
     }

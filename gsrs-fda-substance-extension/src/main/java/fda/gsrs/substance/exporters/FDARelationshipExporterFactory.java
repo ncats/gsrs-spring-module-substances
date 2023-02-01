@@ -33,9 +33,6 @@ public class FDARelationshipExporterFactory implements ExporterFactory<Substance
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, Parameters params) throws IOException {
-        // if(params.shouldCompress()) {
-        return new FDARelationshipExporter(substanceRepository, out, !params.publicOnly());
-//        }
-//        return new JsonExporter(out);
+        return new FDARelationshipExporter(substanceRepository, out);
     }
 }
