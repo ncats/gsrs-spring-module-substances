@@ -9,11 +9,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.StaticContextAccessor;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +70,22 @@ public class JoseCryptoService implements CryptoService {
         return (CryptoService) _instanceSupplier.get();
     }
 
+    private static String format(String template, Map<String, String> parameters) {
+        StringBuilder newTemplate = new StringBuilder(template);
+        List<String> valueList = new ArrayList<String>();
+        Matcher matcher = Pattern.compile("[$][{](\\w+)}").matcher(template);
+        while (matcher.find()) {
+            String key = matcher.group(1);
+            String paramName = "${" + key + "}";
+            int index = newTemplate.indexOf(paramName);
+            if (index != -1) {
+                newTemplate.replace(index, index + paramName.length(), "%s");
+                valueList.add(parameters.get(key));
+            }
+        }
+        return String.format(newTemplate.toString(), valueList.toArray());
+    }
+
     @Override
     public boolean isReady() {
         return config == null ? false : true;
@@ -97,7 +117,7 @@ public class JoseCryptoService implements CryptoService {
         JwsCompactConsumer jwsConsumer = new JwsCompactConsumer(jwsCompactStr);
         try {
             JwsHeaders headers = jwsConsumer.getJwsHeaders();
-            if (config.getStrictVerification() || config.getPreserveMetadata()) {
+            if (config.getStrictVerification() || !config.getMetadataTemplate().isEmpty()) {
                 JsonWebKey key = config.getKey(headers.getKeyId());
                 if (key != null) {
                     verified = jwsConsumer.verifySignatureWith(key, headers.getSignatureAlgorithm());
@@ -109,30 +129,23 @@ public class JoseCryptoService implements CryptoService {
                 return null;
             }
             result = mapper.readTree(jwsConsumer.getDecodedJwsPayloadBytes());
-            if (config.getPreserveMetadata()) {
+            if (!config.getMetadataTemplate().isEmpty()) {
                 ObjectNode metadata = JsonNodeFactory.instance.objectNode();
-                Map<String, Object> hm = headers.asMap();
-                StringBuilder txt = new StringBuilder("Exported");
-                if (hm.containsKey("dat")) {
-                    metadata.set("documentDate", JsonNodeFactory.instance.numberNode(Long.valueOf(headers.getHeader("dat").toString())));
-                    txt = txt
-                        .append(" on ")
-                        .append(config.getDateFormat().format(new Date(Long.valueOf(hm.getOrDefault("dat", new Date().getTime()).toString()))));
-                }
-                txt = txt
-                    .append(" by ")
-                    .append(hm.getOrDefault("usr", "unknown"))
-                    .append(" from ")
-                    .append(verified ? "trusted" : "untrusted")
-                    .append(" source ")
-                    .append(headers.getKeyId())
-                    .append(" (SRS schema version:")
-                    .append(hm.getOrDefault("ver", "unknown"))
-                    .append(")");
-                metadata.set("txt", JsonNodeFactory.instance.textNode(txt.toString()));
-                if (hm.containsKey("ori")) {
+                Map<String, String> parameterMap = new HashMap<String, String>();
+                if (headers.containsProperty("ori")) {
                     metadata.set("url", JsonNodeFactory.instance.textNode(headers.getHeader("ori").toString()));
                 }
+                if (headers.containsProperty("dat")) {
+                    metadata.set("documentDate", JsonNodeFactory.instance.numberNode(Long.valueOf(headers.getHeader("dat").toString())));
+                    parameterMap.put("date", config.getDateFormat().format(new Date(Long.valueOf(headers.getHeader("dat").toString()))));
+                } else {
+                    parameterMap.put("date", "unknown date");
+                }
+                parameterMap.put("user", headers.containsProperty("usr") ? headers.getHeader("usr").toString() : "unknown");
+                parameterMap.put("version", headers.containsProperty("ver") ? headers.getHeader("ver").toString() : "unknown");
+                parameterMap.put("source", headers.getKeyId());
+                parameterMap.put("verified", verified ? "trusted" : "untrusted");
+                metadata.set("txt", JsonNodeFactory.instance.textNode(format(config.getMetadataTemplate(), parameterMap)));
                 ((ObjectNode) result).put("_metadata", metadata);
             }
         } catch (Exception e) {

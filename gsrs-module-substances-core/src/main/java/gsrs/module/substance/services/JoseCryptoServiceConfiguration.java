@@ -56,8 +56,8 @@ public class JoseCryptoServiceConfiguration {
     private KeyAlgorithm keyAlgorithm;
     private SignatureAlgorithm signatureAlgorithm;
     private String zipAlgorithm;
+    private String metadataTemplate;
     private Boolean strictVerification;
-    private Boolean preserveMetadata;
     private SimpleDateFormat dateFormat;
     @Value("${ix.home}")
     private String ixHome;
@@ -92,11 +92,11 @@ public class JoseCryptoServiceConfiguration {
         if (zipAlgorithm == null) {
             zipAlgorithm = JoseConstants.JWE_DEFLATE_ZIP_ALGORITHM;
         }
+        if (metadataTemplate == null) {
+            metadataTemplate = "Exported on ${date} by ${user} from ${verified} source ${source} (SRS schema version:${version})";
+        }
         if (strictVerification == null) {
             strictVerification = false;
-        }
-        if (preserveMetadata == null) {
-            preserveMetadata = true;
         }
         if (dateFormat == null) {
             dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
