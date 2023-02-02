@@ -19,17 +19,16 @@ import java.util.stream.Collectors;
 public class FDARelationshipExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
-
     private final boolean showPrivates;
-
     private final SubstanceRepository substanceRepository;
 
     public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, boolean showPrivates) throws IOException{
         // publicOnly/ShowPrivates is not longer used in favor of scrubber.
-        this.showPrivates =showPrivates;
         this.substanceRepository = substanceRepository;
+        this.showPrivates = showPrivates;
+
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("Relationship Public/Private\tIS_REFLEXIVE\tSUBJECT_UUID\tSUBJECT_SUBSTANCE_TYPE\tSubj. Subst. Public/Private\tSUBJECT_APPROVAL_ID\tSUBJECT_BDNUM\tSUBJECT_DISPLAY_NAME\tRELATIONSHIP_TYPE\tRELATED_SUBSTANCE_DISPLAY_NAME\tRELATED_SUBSTANCE_UUID\tRELATED_SUBSTANCE_TYPE\tRelated Subst. Public/Private\tRELATED_SUBSTANCE_APPROVAL_ID\tRELATED_SUBSTANCE_BDNUM\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
+        bw.write("Relationship Public/Private\tIS_REFLEXIVE\tRELATED_SUBSTANCE_UUID\tRELATED_SUBSTANCE_BDNUM\tRELATED_SUBSTANCE_APPROVAL_ID\tRelated Subst. Public/Private\tRELATED_SUBSTANCE_TYPE\tRELATED_SUBSTANCE_DISPLAY_NAME\tRELATIONSHIP_TYPE\tSUBJECT_DISPLAY_NAME\tSUBJECT_SUBSTANCE_TYPE\tSubj. Subst. Public/Private\tSUBJECT_UUID\tSUBJECT_BDNUM\tSUBJECT_APPROVAL_ID\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
         bw.newLine();
     }
 
@@ -45,118 +44,129 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         return s;
     }
     public Substance disabled_getParentSubstance(Substance s){
-    	if(s.isSubstanceVariant()){
-    		SubstanceReference sr= s.getParentSubstanceReference();
-    		Substance parent=substanceRepository.findBySubstanceReference(sr);
-    		if(parent == null){
-    			Substance fake = new Substance();
-    			fake.approvalID=sr.approvalID;
-    			Name n = new Name();
-    			n.setName(sr.refPname);
-    		
-    			fake.names.add(n); 
-    			
-    			Code cd = new Code();
-    			cd.code="UNKNOWN BDNUM";
-    			cd.codeSystem="BDNUM";
-    			
-    			fake.codes.add(cd);
-    			
-    			return fake;
-    		}
-    		return parent;
-    	}
-    	return s;
+        if(s.isSubstanceVariant()){
+            SubstanceReference sr= s.getParentSubstanceReference();
+            Substance parent=substanceRepository.findBySubstanceReference(sr);
+            if(parent == null){
+                Substance fake = new Substance();
+                fake.approvalID=sr.approvalID;
+                Name n = new Name();
+                n.setName(sr.refPname);
+
+                fake.names.add(n);
+
+                Code cd = new Code();
+                cd.code="UNKNOWN BDNUM";
+                cd.codeSystem="BDNUM";
+
+                fake.codes.add(cd);
+
+                return fake;
+            }
+            return parent;
+        }
+        return s;
     }
-    
-    
+
+
     public String getBdnum(Substance s){
-    	return s.codes.stream()
-    			      .filter(cd->cd.codeSystem.equals("BDNUM"))
-    			      .map(cd->cd.code)
-    			      .findFirst()
-    			      .orElse(null);	
+        return s.codes.stream()
+        .filter(cd->cd.codeSystem.equals("BDNUM"))
+        .map(cd->cd.code)
+        .findFirst()
+        .orElse(null);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public void export(Substance ing) throws IOException {
+        try {
+            Substance bestParent = getParentSubstance(ing);
+            // is this the right displayName?
+            String ptUTF8 = bestParent.getDisplayName()
+            .map(n -> n.getName())
+            .orElse("");
+            String parentUuid = bestParent.getUuid().toString();
+            String parentSubstanceClass = bestParent.substanceClass.toString();
 
-        Substance bestParent=getParentSubstance(ing);
+            String parentSubstancePublicOrPrivate = (bestParent.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(bestParent.getAccess());
 
-        // is this the right displayName?
-        String ptUTF8=bestParent.getDisplayName()
-        		            .map(n->n.getName())
-        		            .orElse("");
-        String parentUuid = bestParent.getUuid().toString();
-        String parentSubstanceClass = bestParent.substanceClass.toString();
+            String parentUnii = bestParent.getApprovalID();
+            String parentBdnum = getBdnum(bestParent);
+            String parentDisplayName = ptUTF8;
 
-        String parentSubstancePublicOrPrivate = (bestParent.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(bestParent.getAccess());
+            List<Relationship> relationships = ing.relationships;
+            for (Relationship relationship : relationships) {
+                String type = relationship.type;
 
-        String parentUnii = bestParent.getApprovalID();
-        String parentBdnum = getBdnum(bestParent);
-        String parentDisplayName = ptUTF8;
+                String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.getAccess());
 
-        List<Relationship> relationships = ing.relationships;
-        for ( Relationship relationship : relationships) {
-            String type = relationship.type;
+                String relatedUuid = relationship.relatedSubstance.refuuid;
 
-            String relationshipPublicOrPrivate = (relationship.getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(relationship.getAccess());
+                String relatedApprovalId = relationship.relatedSubstance.approvalID;
+                String relatedSubstancePublicOrPrivate = "";
+                String relatedBdnum = "";
+                String relatedDisplayName = "";
+                String relatedSubstanceType = "Not present";
 
-            String relatedUuid = relationship.relatedSubstance.refuuid;
-
-            String relatedApprovalId = relationship.relatedSubstance.approvalID;
-            String relatedSubstancePublicOrPrivate = "";
-            String relatedBdnum = "";
-            String relatedDisplayName = "";
-            String relatedSubstanceType = "Not present";
-
-            EntityUtils.Key relatedKey;
-            Optional<Substance> fullRelatedSubstance;
-            try {
-                relatedKey = relationship.relatedSubstance.getKeyForReferencedSubstance();
-                fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o -> (Substance) o);
-                relatedSubstanceType = fullRelatedSubstance.map(s -> s.substanceClass.toString()).orElse("Not present");
-                if(fullRelatedSubstance.isPresent()) {
-                    relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(fullRelatedSubstance.get().getAccess());
-                    relatedBdnum = getBdnum(fullRelatedSubstance.get());
-                    relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n->n.getName()).orElse("");
+                EntityUtils.Key relatedKey;
+                Optional<Substance> fullRelatedSubstance;
+                try {
+                    relatedKey = relationship.relatedSubstance.getKeyForReferencedSubstance();
+                    fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o -> (Substance) o);
+                    relatedSubstanceType = fullRelatedSubstance.map(s -> s.substanceClass.toString()).orElse("Not present");
+                    if (fullRelatedSubstance.isPresent()) {
+                        relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + makeAccessGroupString(fullRelatedSubstance.get().getAccess());
+                        relatedBdnum = getBdnum(fullRelatedSubstance.get());
+                        relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n -> n.getName()).orElse("");
+                    }
+                } catch (Exception e) {
+                    log.warn("Problem loading fullRelatedSubstance.", e);
                 }
-            } catch(Exception e) {
-                log.warn("Problem loading fullRelatedSubstance." , e);
-            }
-            String relationshipCreatedBy = relationship.createdBy.username;
-            Date relationshipLastEdited = relationship.getLastEdited();
-            String relationshipLastEditedBy = relationship.lastEditedBy.username;
-            // What if one is null/blank?
-            String isReflexive = (parentUuid.equals(relatedUuid)) ? "Y" : "N";
+                String relationshipCreatedBy = relationship.createdBy.username;
+                Date relationshipLastEdited = relationship.getLastEdited();
+                String relationshipLastEditedBy = relationship.lastEditedBy.username;
+                // What if one is null/blank?
 
-            String str =
-            relationshipPublicOrPrivate + "\t" +  // Relationship Public/Private
-            isReflexive + "\t" + // IS_REFLEXIVE
-            parentUuid + "\t" +   // SUBJECT_UUID
-            parentSubstanceClass + "\t" + // SUBJECT_SUBSTANCE_TYPE
-            parentSubstancePublicOrPrivate + "\t" + // Subj. Subst. Public/Private (note this is checked)
-            parentUnii + "\t" +  // SUBJECT_APPROVAL_ID
-            parentBdnum + "\t" +  // SUBJECT_BDNUM
-            parentDisplayName + "\t" + // SUBJECT_DISPLAY_NAME
-            type + "\t" + // RELATIONSHIP_TYPE
-            relatedDisplayName + "\t" +       // RELATED_SUBSTANCE_DISPLAY_NAME
-            relatedUuid + "\t" +  // RELATED_SUBSTANCE_UUID
-            relatedSubstanceType + "\t" + // RELATED_SUBSTANCE_TYPE
-            relatedSubstancePublicOrPrivate + "\t" +  // Related Subst. Public/Private
-            relatedApprovalId + "\t" +       // RELATED_SUBSTANCE_APPROVAL_ID
-            relatedBdnum + "\t" +      // RELATED_SUBSTANCE_BDNUM
-            relationshipCreatedBy + "\t" +       // RELATIONSHIP_CREATED_BY
-            relationshipLastEdited + "\t" +       // RELATIONSHIP_LAST_EDITED
-            relationshipLastEditedBy + "\t";      // RELATIONSHIP_LAST_EDITED_BY
-            bw.write(str);
-            bw.newLine();
+                String isReflexive = (parentUuid.equals(relatedUuid)) ? "Y" : "N";
+
+
+                StringBuilder sb = new StringBuilder()
+                .append(relationshipPublicOrPrivate).append("\t") // Relationship Public/Private
+                .append(isReflexive).append("\t")                 // IS_REFLEXIVE
+                .append(relatedUuid).append("\t")                 // RELATED_SUBSTANCE_UUID
+                .append(relatedBdnum).append("\t")                // RELATED_SUBSTANCE_BDNUM
+                .append(relatedApprovalId).append("\t")           // RELATED_SUBSTANCE_APPROVAL_ID
+                .append(relatedSubstancePublicOrPrivate).append("\t") // Related Subst. Public/Private
+                .append(relatedSubstanceType).append("\t")        // RELATED_SUBSTANCE_TYPE
+                .append(relatedDisplayName).append("\t")          // RELATED_SUBSTANCE_DISPLAY_NAME
+                .append(type).append("\t")                        // RELATIONSHIP_TYPE
+
+                .append(parentDisplayName).append("\t")           // SUBJECT_DISPLAY_NAME
+                .append(parentSubstanceClass).append("\t")        // SUBJECT_SUBSTANCE_TYPE
+                .append(parentSubstancePublicOrPrivate).append("\t") // Subj. Subst. Public/Private
+                .append(parentUuid).append("\t")                  // SUBJECT_UUID
+                .append(parentBdnum).append("\t")                  // SUBJECT_BDNUM
+                .append(parentUnii).append("\t")                  // SUBJECT_APPROVAL_ID
+
+                .append(relationshipCreatedBy).append("\t")       // RELATIONSHIP_CREATED_BY
+                .append(relationshipLastEdited).append("\t")      // RELATIONSHIP_LAST_EDITED
+                .append(relationshipLastEditedBy);   // RELATIONSHIP_LAST_EDITED_BY
+                bw.write(sb.toString());
+                bw.newLine();
+            }
+
+        } catch (Exception e) {
+            if (ing.getName() != null) {
+                log.warn("Exception exporting relationships of " + ing.getName());
+            } else {
+                log.warn("Exception exporting relationships of " + "unknown display name");
+            }
         }
     }
 
     public String makeAccessGroupString(Set<Group> s) {
-        return (String) s.stream().map(o->o.name).sorted().collect(Collectors.joining(", "));
+        return s.stream().map(o->o.name).sorted().collect(Collectors.joining(", "));
     }
 
     @Override
