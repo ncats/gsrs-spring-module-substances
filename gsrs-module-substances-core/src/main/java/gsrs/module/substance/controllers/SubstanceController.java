@@ -29,6 +29,9 @@ import javax.validation.constraints.NotBlank;
 
 import gsrs.controller.*;
 import gsrs.dataexchange.model.ProcessingAction;
+import gsrs.holdingarea.model.ImportData;
+import gsrs.holdingarea.model.ImportMetadata;
+import gsrs.holdingarea.service.HoldingAreaService;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -972,7 +975,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         private Structure structure;
     }
 
-    private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version){
+    private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version, String adapterName){
         Substance actualSubstance=null;
         String input=null;
         boolean history = (version!=null);
@@ -1005,6 +1008,37 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                             input = CtTableCleaner.clean(u.structure);
                         } catch (Exception e) {
                             input=u.structure;
+                        }
+                    }else {
+                        try {
+                            log.trace("looking for structure in import data repo. adapterName: {}", adapterName);
+                            HoldingAreaService service= getHoldingAreaService(adapterName);
+                            log.trace("retrieved service {}", service.getClass().getName());
+                            List<ImportData> importDataList= service.getImportData(idOrSmiles);
+                            if( importDataList ==null || importDataList.isEmpty()){
+                                log.trace("looking for item as metadata");
+                                int versionNum =0;
+                                if( version !=null && version.length()>0){
+                                    try {
+                                        versionNum=Integer.parseInt(version);
+                                    } catch (NumberFormatException ignore){}
+                                }
+                                log.trace("using versionNum {}",versionNum);
+                                ImportMetadata importMetadata=service.getImportMetaData(idOrSmiles, versionNum);
+                                importDataList=service.getImportData( importMetadata.getRecordId().toString());
+                            }
+
+                            if( importDataList !=null && !importDataList.isEmpty()){
+                                log.trace("retrieved import data");
+                                ImportData data = importDataList.get(0);
+                                Substance importedSubstance= service.deserializeObject(data.getEntityClassName(), data.getData());
+                                if(importedSubstance!=null ){
+                                    log.trace("retrieved structure from import data repository");
+                                    opStructure = importedSubstance.getStructureToRender();
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("Error retrieving data from import data repository ", e);
                         }
                     }
                 }
@@ -1050,6 +1084,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
+                         @RequestParam(value = "adapter", required = false) String adapterName,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
 
         int[] amaps = null;
@@ -1059,7 +1094,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if (UUIDUtil.isUUID(idOrSmiles)) {
 //            input, null)
             s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
-                return getSubstanceAndStructure(idOrSmiles,version);
+                return getSubstanceAndStructure(idOrSmiles, version, adapterName);
             });
 
             if (s2r.getInput()==null) {

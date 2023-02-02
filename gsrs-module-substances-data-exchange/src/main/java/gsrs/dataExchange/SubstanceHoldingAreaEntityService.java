@@ -4,15 +4,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
-import gsrs.indexer.ComponentScanIndexValueMakerFactory;
+import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.service.GsrsEntityService;
-import gsrs.startertests.TestIndexValueMakerFactory;
 import ix.core.EntityFetcher;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.util.EntityUtils;
+import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
@@ -20,10 +20,7 @@ import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 
 @Slf4j
 public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityService<Substance> {
@@ -35,7 +32,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     private StructureProcessor structureProcessor;
 
     @Autowired
-    private ComponentScanIndexValueMakerFactory factory;
+    private IndexValueMakerFactory factory;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -52,7 +49,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
         try {
             ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode());
             return response;
-        }catch (Exception ex) {
+        } catch (Exception ex) {
             log.error("Error validating substance", ex);
         }
         return null;
@@ -60,7 +57,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
 
     @Override
     public List<MatchableKeyValueTuple> extractKVM(Substance substance) {
-        if( substance instanceof ChemicalSubstance) {
+        if (substance instanceof ChemicalSubstance) {
             Objects.requireNonNull(structureProcessor, "A structure processor is required to handle a chemical substances!");
             log.trace("chemical substance in extractKVM");
             ChemicalSubstance chemicalSubstance = (ChemicalSubstance) substance;
@@ -68,8 +65,7 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
             log.trace("going to instrument structure");
             Structure structure = structureProcessor.instrument(chemicalSubstance.getStructure().toChemical(), true);
             chemicalSubstance.getStructure().updateStructureFields(structure);
-        }
-        else {
+        } else {
             log.trace("other type of substance");
         }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
@@ -85,20 +81,36 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     }
 
     @Override
-    public GsrsEntityService.UpdateResult<Substance> persistEntity(Substance substance) {
-        //temporary debug
+    public GsrsEntityService.ProcessResult<Substance> persistEntity(Substance substance) {
         log.trace("saving substance {} version {} total names: {}", substance.getUuid(), substance.version, substance.names.size());
+        List<String> initialVersions = Arrays.asList("0", "1");
         try {
-            GsrsEntityService.UpdateResult<Substance>result= substanceEntityService.updateEntity(substance.toFullJsonNode());
-            log.trace("result of save {}", result.getStatus());
-            result.getValidationResponse().getValidationMessages().forEach(m->
-                    log.trace("message: {}; type: {}", m.getMessage(), m.getMessageType().name())
-            );
+            GsrsEntityService.ProcessResult result;
+            if (substance.getUuid() == null || initialVersions.contains(substance.version)) {
+                GsrsEntityService.CreationResult<Substance> creationResult = substanceEntityService.createEntity(substance.toFullJsonNode());
+                result = GsrsEntityService.ProcessResult.ofCreation(creationResult);
+            } else {
+                GsrsEntityService.UpdateResult<Substance> updateResult = substanceEntityService.updateEntity(substance.toFullJsonNode());
+                result = GsrsEntityService.ProcessResult.ofUpdate(updateResult);
+            }
+            log.trace("result of save {}", result.toString());
+            if (result.getValidationResponse() != null) {
+                result.getValidationResponse().getValidationMessages().forEach(m ->
+                        log.trace("message: {}; type: {}", ((ValidationMessage) m).getMessage(), ((ValidationMessage) m).getMessageType().name())
+                );
+            }
+
             return result;
         } catch (Exception e) {
             log.error("Error updating substance!", e);
+            log.trace("building return object");
+            GsrsEntityService.ProcessResult.ProcessResultBuilder<Substance> builder = GsrsEntityService.ProcessResult.builder();
+            return builder
+                    .entity(substance)
+                    .saved(false)
+                    .throwable(e)
+                    .build();
         }
-        return null;
     }
 
     @Override
