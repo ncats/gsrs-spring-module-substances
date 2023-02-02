@@ -151,7 +151,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
 
                 .append(relationshipCreatedBy).append("\t")       // RELATIONSHIP_CREATED_BY
                 .append(relationshipLastEdited).append("\t")      // RELATIONSHIP_LAST_EDITED
-                .append(relationshipLastEditedBy).append("\t");   // RELATIONSHIP_LAST_EDITED_BY
+                .append(relationshipLastEditedBy);   // RELATIONSHIP_LAST_EDITED_BY
                 bw.write(sb.toString());
                 bw.newLine();
             }
