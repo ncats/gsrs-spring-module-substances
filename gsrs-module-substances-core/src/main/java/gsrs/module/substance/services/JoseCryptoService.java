@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.cxf.common.util.CompressionUtils;
 import org.apache.cxf.rs.security.jose.common.JoseConstants;
 import org.apache.cxf.rs.security.jose.common.JoseType;
 import org.apache.cxf.rs.security.jose.jwa.ContentAlgorithm;
@@ -183,10 +184,22 @@ public class JoseCryptoService implements CryptoService {
         }
         if (!jweProviders.isEmpty()) {
             try {
+                byte[] bytes = node.toString().getBytes("UTF-8");
+                // Jwe Compression Issue Workaround start
+                if (JoseConstants.JWE_DEFLATE_ZIP_ALGORITHM.equals(config.getZipAlgorithm())) {
+                    protectedHeaders.removeProperty("zip");
+                    bytes = CompressionUtils.deflate(bytes, true);
+                }
+                // Jwe Compression Issue Workaround end
                 JweJsonProducer p = new JweJsonProducer(protectedHeaders,
                                                         sharedUnprotectedHeaders,
-                                                        node.toString().getBytes("UTF-8"));
+                                                        bytes);
                 result = mapper.readTree(p.encryptWith(jweProviders, perRecipientHeaders));
+                // Jwe Compression Issue Workaround start
+                if (JoseConstants.JWE_DEFLATE_ZIP_ALGORITHM.equals(config.getZipAlgorithm())) {
+                    ((ObjectNode) result.get("unprotected")).put("zip", "DEF");
+                }
+                // Jwe Compression Issue Workaround end
             } catch (Exception e) {
                 log.error(e.toString());
             }
