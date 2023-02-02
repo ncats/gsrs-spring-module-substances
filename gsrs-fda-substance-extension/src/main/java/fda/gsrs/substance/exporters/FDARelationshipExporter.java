@@ -19,19 +19,16 @@ import java.util.stream.Collectors;
 public class FDARelationshipExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
-
+    private final boolean showPrivates;
     private final SubstanceRepository substanceRepository;
 
-    private final ShowPrivates showPrivates;
-
-    public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, booleanshowPrivates) throws IOException{
+    public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, boolean showPrivates) throws IOException{
+        // publicOnly/ShowPrivates is not longer used in favor of scrubber.
         this.substanceRepository = substanceRepository;
         this.showPrivates = showPrivates;
 
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write(
-        "Relationship Public/Private\tIS_REFLEXIVE\tRELATED_SUBSTANCE_UUID\tRELATED_SUBSTANCE_BDNUM\tRELATED_SUBSTANCE_APPROVAL_ID\tRelated Subst. Public/Private\tRELATED_SUBSTANCE_TYPE\tRELATED_SUBSTANCE_DISPLAY_NAME\tRELATIONSHIP_TYPE\tSUBJECT_DISPLAY_NAME\tSUBJECT_SUBSTANCE_TYPE\tSubj. Subst. Public/Private\tSUBJECT_UUID\tSUBJECT_BDNUM\tSUBJECT_APPROVAL_ID\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
-        );
+        bw.write("Relationship Public/Private\tIS_REFLEXIVE\tRELATED_SUBSTANCE_UUID\tRELATED_SUBSTANCE_BDNUM\tRELATED_SUBSTANCE_APPROVAL_ID\tRelated Subst. Public/Private\tRELATED_SUBSTANCE_TYPE\tRELATED_SUBSTANCE_DISPLAY_NAME\tRELATIONSHIP_TYPE\tSUBJECT_DISPLAY_NAME\tSUBJECT_SUBSTANCE_TYPE\tSubj. Subst. Public/Private\tSUBJECT_UUID\tSUBJECT_BDNUM\tSUBJECT_APPROVAL_ID\tRELATIONSHIP_CREATED_BY\tRELATIONSHIP_LAST_EDITED\tRELATIONSHIP_LAST_EDITED_BY");
         bw.newLine();
     }
 
@@ -47,39 +44,39 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         return s;
     }
     public Substance disabled_getParentSubstance(Substance s){
-    	if(s.isSubstanceVariant()){
-    		SubstanceReference sr= s.getParentSubstanceReference();
-    		Substance parent=substanceRepository.findBySubstanceReference(sr);
-    		if(parent == null){
-    			Substance fake = new Substance();
-    			fake.approvalID=sr.approvalID;
-    			Name n = new Name();
-    			n.setName(sr.refPname);
-    		
-    			fake.names.add(n); 
-    			
-    			Code cd = new Code();
-    			cd.code="UNKNOWN BDNUM";
-    			cd.codeSystem="BDNUM";
-    			
-    			fake.codes.add(cd);
-    			
-    			return fake;
-    		}
-    		return parent;
-    	}
-    	return s;
+        if(s.isSubstanceVariant()){
+            SubstanceReference sr= s.getParentSubstanceReference();
+            Substance parent=substanceRepository.findBySubstanceReference(sr);
+            if(parent == null){
+                Substance fake = new Substance();
+                fake.approvalID=sr.approvalID;
+                Name n = new Name();
+                n.setName(sr.refPname);
+
+                fake.names.add(n);
+
+                Code cd = new Code();
+                cd.code="UNKNOWN BDNUM";
+                cd.codeSystem="BDNUM";
+
+                fake.codes.add(cd);
+
+                return fake;
+            }
+            return parent;
+        }
+        return s;
     }
-    
-    
+
+
     public String getBdnum(Substance s){
-    	return s.codes.stream()
-    			      .filter(cd->cd.codeSystem.equals("BDNUM"))
-    			      .map(cd->cd.code)
-    			      .findFirst()
-    			      .orElse(null);	
+        return s.codes.stream()
+        .filter(cd->cd.codeSystem.equals("BDNUM"))
+        .map(cd->cd.code)
+        .findFirst()
+        .orElse(null);
     }
-    
+
     @Override
     @Transactional(readOnly = true)
     public void export(Substance ing) throws IOException {
@@ -142,9 +139,9 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                 .append(relatedApprovalId).append("\t")           // RELATED_SUBSTANCE_APPROVAL_ID
                 .append(relatedSubstancePublicOrPrivate).append("\t") // Related Subst. Public/Private
                 .append(relatedSubstanceType).append("\t")        // RELATED_SUBSTANCE_TYPE
-
                 .append(relatedDisplayName).append("\t")          // RELATED_SUBSTANCE_DISPLAY_NAME
                 .append(type).append("\t")                        // RELATIONSHIP_TYPE
+
                 .append(parentDisplayName).append("\t")           // SUBJECT_DISPLAY_NAME
                 .append(parentSubstanceClass).append("\t")        // SUBJECT_SUBSTANCE_TYPE
                 .append(parentSubstancePublicOrPrivate).append("\t") // Subj. Subst. Public/Private
@@ -169,7 +166,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
     }
 
     public String makeAccessGroupString(Set<Group> s) {
-        return (String) s.stream().map(o->o.name).sorted().collect(Collectors.joining(", "));
+        return s.stream().map(o->o.name).sorted().collect(Collectors.joining(", "));
     }
 
     @Override

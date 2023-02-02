@@ -12,12 +12,10 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Created by VenkataSaiRa.Chavali on 3/10/2017.
- */
 public class FDARelationshipExporterFactory implements ExporterFactory<Substance> {
 
-    OutputFormat format = new OutputFormat("relationships.txt", "Relationships, tab-delimited (rel.txt)");
+        OutputFormat format = new OutputFormat("relationships.txt", "Relationships, tab-delimited (rel.txt)");
+
     @Autowired
     private SubstanceRepository substanceRepository;
 
@@ -32,8 +30,7 @@ public class FDARelationshipExporterFactory implements ExporterFactory<Substance
     }
 
     @Override
-    public Exporter<Substance> createNewExporter(OutputStream out, Parameters params) throws IOException {
-        return new FDARelationshipExporter(substanceRepository, out);
+    public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
+        return new FDARelationshipExporter(substanceRepository, out, !params.publicOnly());
     }
-
 }
