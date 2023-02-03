@@ -319,6 +319,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
 
+        //todo: merge definitions
         if(!hasTrueValue(parameters, "SkipLevelingReferences")) {
             EntityUtils.EntityInfo<Reference> eicsRefs = EntityUtils.getEntityInfoFor(Reference.class);
             for (String refUuid : referencesToCopy.keySet()) {

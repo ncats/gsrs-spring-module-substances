@@ -1014,24 +1014,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                             log.trace("looking for structure in import data repo. adapterName: {}", adapterName);
                             HoldingAreaService service= getHoldingAreaService(adapterName);
                             log.trace("retrieved service {}", service.getClass().getName());
-                            List<ImportData> importDataList= service.getImportData(idOrSmiles);
-                            if( importDataList ==null || importDataList.isEmpty()){
-                                log.trace("looking for item as metadata");
-                                int versionNum =0;
-                                if( version !=null && version.length()>0){
-                                    try {
-                                        versionNum=Integer.parseInt(version);
-                                    } catch (NumberFormatException ignore){}
-                                }
-                                log.trace("using versionNum {}",versionNum);
-                                ImportMetadata importMetadata=service.getImportMetaData(idOrSmiles, versionNum);
-                                importDataList=service.getImportData( importMetadata.getRecordId().toString());
+                            int versionNum =0;
+                            if( version !=null && version.length()>0){
+                                try {
+                                    versionNum=Integer.parseInt(version);
+                                } catch (NumberFormatException ignore){}
                             }
+                            log.trace("using versionNum {}",versionNum);
 
-                            if( importDataList !=null && !importDataList.isEmpty()){
+                            ImportData importData = service.getImportDataByInstanceIdOrRecordId(idOrSmiles, versionNum);
+                            if( importData !=null){
                                 log.trace("retrieved import data");
-                                ImportData data = importDataList.get(0);
-                                Substance importedSubstance= service.deserializeObject(data.getEntityClassName(), data.getData());
+                                Substance importedSubstance= service.deserializeObject(importData.getEntityClassName(), importData.getData());
                                 if(importedSubstance!=null ){
                                     log.trace("retrieved structure from import data repository");
                                     opStructure = importedSubstance.getStructureToRender();

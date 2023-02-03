@@ -11,6 +11,7 @@ import ix.core.EntityFetcher;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.text.IndexValueMaker;
+import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
@@ -20,6 +21,8 @@ import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.*;
 
 @Slf4j
@@ -124,5 +127,38 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
             throw new RuntimeException(e);
         }
         return substance;
+    }
+
+    @Override
+    public void IndexEntity(TextIndexer indexer, Object object) {
+        Substance substance= (Substance) object;
+        log.trace("substance uuid: {}", substance.getUuid());
+        if( substance.getUuid()==null) {
+            log.trace("assigned id {}", substance.getOrGenerateUUID());
+        }
+        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(substance);
+        //hackySetKind(wrapper, "sa_substance");
+        //log.trace("set kind to {}", wrapper.getKind());
+        log.trace("create wrapper with kind {}", wrapper.getKind(), wrapper.getEntityInfo().getIDFieldInfo().get());
+        try {
+            indexer.add(wrapper);
+            log.info("successfully indexed object");
+        }  catch (IOException ex) {
+            log.error("Error indexing object!", ex);
+        }
+    }
+
+    private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
+
+        try {
+            Field ieField = EntityUtils.EntityWrapper.class.getField("ei");
+            ieField.setAccessible(true);
+            EntityUtils.EntityInfo ei = (EntityUtils.EntityInfo) ieField.get(wrapper);
+            Field kindField = ei.getClass().getField("kind");
+            kindField.setAccessible(true);
+            kindField.set(ei, desiredKind);
+        } catch (IllegalAccessException | NoSuchFieldException e) {
+            log.error("Error accessing fields", e);
+        }
     }
 }
