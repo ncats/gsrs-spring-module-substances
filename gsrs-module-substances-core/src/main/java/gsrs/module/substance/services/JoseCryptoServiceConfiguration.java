@@ -67,7 +67,7 @@ public class JoseCryptoServiceConfiguration {
     @PostConstruct
     public void init() {
         if (jsonWebKeys == null) {
-            setJsonWebKeys(new HashMap<String, String>() {{ put("filename", "keystore.jwks"); }});
+            setJsonWebKeys(new HashMap<String, String>() {{ put("filename", "file:" + ixHome + "/keystore.jwks"); }});
         }
         if (privateKeyId != null && jsonWebKeys.getKeyIdMap().containsKey(privateKeyId)) {
             privateKeyId = null;
@@ -108,13 +108,19 @@ public class JoseCryptoServiceConfiguration {
         JsonWebKeys jwksobj = new JsonWebKeys();
         if (jwksmap.containsKey("filename")) {
             String filename = (String) jwksmap.get("filename");
+            String password = (String) jwksmap.get("password");
             if (!filename.contains(":")) {
-                filename = "classpath:" + filename;
+                filename = "file:" + filename;
             }
             try (InputStream is = new UrlResource(filename).getInputStream();) {
-                jwksobj = JwkUtils.readJwkSet(is);
+                if (password != null && !password.isEmpty()) {
+                    jwksobj = JwkUtils.decryptJwkSet(is, password.toCharArray());
+                } else {
+                    jwksobj = JwkUtils.readJwkSet(is);
+                }
             } catch (FileNotFoundException e) {
-                jwksobj = generateKeyStore(ixHome + "/keystore.jwks", applicationHost);
+                log.error(e.toString());
+                jwksobj = generateKeyStore(filename, applicationHost, password);
             } catch (Exception e) {
                 log.error(e.toString());
             }
@@ -147,23 +153,21 @@ public class JoseCryptoServiceConfiguration {
         return _instanceSupplier.get();
     }
 
-    private static JsonWebKeys generateKeyStore(String filename, String applicationHost) {
+    private static JsonWebKeys generateKeyStore(String filename, String applicationHost, String password) {
         JsonWebKeys jwksobj = new JsonWebKeys();
-        try (InputStream is = new UrlResource(filename).getInputStream();) {
-            return JwkUtils.readJwkSet(is);
-        } catch (Exception e) {
-        }
         try {
             String kid = new URL(applicationHost).getHost();
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
             generator.initialize(2048);
             KeyPair pair = generator.generateKeyPair();
-            JsonWebKey jwk = JwkUtils.fromRSAPrivateKey((RSAPrivateKey) pair.getPrivate(), "RSA-OAEP", kid);
+            JsonWebKey jwk = JwkUtils.fromRSAPrivateKey((RSAPrivateKey) pair.getPrivate(), null, kid);
             jwksobj.setKey(jwk);
-            String out = JwkUtils.jwkSetToJson(jwksobj);
-            try (FileWriter fileWriter = new FileWriter(filename)) {
-                fileWriter.write(out);
-                return jwksobj;
+            try (FileWriter fileWriter = new FileWriter(new UrlResource(filename).getFile())) {
+                if (password != null && !password.isEmpty()) {
+                    fileWriter.write(JwkUtils.encryptJwkSet(jwksobj, password.toCharArray()));
+                } else {
+                    fileWriter.write(JwkUtils.jwkSetToJson(jwksobj));
+                }
             }
         } catch (Exception e) {
             log.error(e.toString());
