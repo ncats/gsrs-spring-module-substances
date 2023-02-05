@@ -6,7 +6,6 @@ import gsrs.springUtils.StaticContextAccessor;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.InputStream;
-import java.net.URL;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.KeyPair;
@@ -28,6 +27,7 @@ import org.apache.cxf.rs.security.jose.jwa.SignatureAlgorithm;
 import org.apache.cxf.rs.security.jose.jwk.JsonWebKey;
 import org.apache.cxf.rs.security.jose.jwk.JsonWebKeys;
 import org.apache.cxf.rs.security.jose.jwk.JwkUtils;
+import org.apache.cxf.rt.security.crypto.CryptoUtils;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -51,7 +51,6 @@ public class JoseCryptoServiceConfiguration {
         return instance;
     });
     private JsonWebKeys jsonWebKeys;
-    private String privateKeyId;
     private ContentAlgorithm contentAlgorithm;
     private KeyAlgorithm keyAlgorithm;
     private SignatureAlgorithm signatureAlgorithm;
@@ -59,6 +58,8 @@ public class JoseCryptoServiceConfiguration {
     private String metadataTemplate;
     private Boolean strictVerification;
     private SimpleDateFormat dateFormat;
+    @Value("${gsrs.crypto.privateKeyId:#{null}}")
+    private String privateKeyId;
     @Value("${ix.home}")
     private String ixHome;
     @Value("${application.host}")
@@ -69,7 +70,7 @@ public class JoseCryptoServiceConfiguration {
         if (jsonWebKeys == null) {
             setJsonWebKeys(new HashMap<String, String>() {{ put("filename", "file:" + ixHome + "/keystore.jwks"); }});
         }
-        if (privateKeyId != null && jsonWebKeys.getKeyIdMap().containsKey(privateKeyId)) {
+        if (privateKeyId != null && !jsonWebKeys.getKeyIdMap().containsKey(privateKeyId)) {
             privateKeyId = null;
         }
         if (privateKeyId == null && jsonWebKeys.size() > 0) {
@@ -84,7 +85,7 @@ public class JoseCryptoServiceConfiguration {
             contentAlgorithm = ContentAlgorithm.A256GCM;
         }
         if (keyAlgorithm == null) {
-            keyAlgorithm = KeyAlgorithm.RSA_OAEP;
+            keyAlgorithm = KeyAlgorithm.RSA_OAEP_256;
         }
         if (signatureAlgorithm == null) {
             signatureAlgorithm = SignatureAlgorithm.RS256;
@@ -114,13 +115,21 @@ public class JoseCryptoServiceConfiguration {
             }
             try (InputStream is = new UrlResource(filename).getInputStream();) {
                 if (password != null && !password.isEmpty()) {
+                    CryptoUtils.installBouncyCastleProvider();
                     jwksobj = JwkUtils.decryptJwkSet(is, password.toCharArray());
+                    CryptoUtils.removeBouncyCastleProvider();
                 } else {
                     jwksobj = JwkUtils.readJwkSet(is);
                 }
             } catch (FileNotFoundException e) {
-                log.error(e.toString());
-                jwksobj = generateKeyStore(filename, applicationHost, password);
+                log.warn("The keystore " + filename + " not found. Generate a new one");
+                String kid = "localhost";
+                if (privateKeyId != null && !privateKeyId.isEmpty()) {
+                    kid = privateKeyId;
+                } else if (applicationHost != null && applicationHost.contains("//")) {
+                    kid = applicationHost.split("/")[2];
+                }
+                jwksobj = generateKeyStore(filename, kid, password);
             } catch (Exception e) {
                 log.error(e.toString());
             }
@@ -153,10 +162,9 @@ public class JoseCryptoServiceConfiguration {
         return _instanceSupplier.get();
     }
 
-    private static JsonWebKeys generateKeyStore(String filename, String applicationHost, String password) {
+    private static JsonWebKeys generateKeyStore(String filename, String kid, String password) {
         JsonWebKeys jwksobj = new JsonWebKeys();
         try {
-            String kid = new URL(applicationHost).getHost();
             KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
             generator.initialize(2048);
             KeyPair pair = generator.generateKeyPair();
@@ -164,7 +172,9 @@ public class JoseCryptoServiceConfiguration {
             jwksobj.setKey(jwk);
             try (FileWriter fileWriter = new FileWriter(new UrlResource(filename).getFile())) {
                 if (password != null && !password.isEmpty()) {
+                    CryptoUtils.installBouncyCastleProvider();
                     fileWriter.write(JwkUtils.encryptJwkSet(jwksobj, password.toCharArray()));
+                    CryptoUtils.removeBouncyCastleProvider();
                 } else {
                     fileWriter.write(JwkUtils.jwkSetToJson(jwksobj));
                 }
