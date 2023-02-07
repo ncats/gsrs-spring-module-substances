@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataexchange.model.ProcessingAction;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.*;
+import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -23,6 +24,62 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
         Objects.requireNonNull(existing, "Must have a non-null existing Substance to merge");
 
         Map<String, String> referencesToCopy = new HashMap<>();//UUIDs
+
+        /*if( hasTrueValue(parameters, "MergeDefinition")) {
+            if(existing.substanceClass== Substance.SubstanceClass.chemical && source.substanceClass== Substance.SubstanceClass.chemical){
+                GinasChemicalStructure structure= ((ChemicalSubstance)source).getStructure();
+                EntityUtils.EntityInfo<GinasChemicalStructure> eics= EntityUtils.getEntityInfoFor(GinasChemicalStructure.class);
+                try {
+                    GinasChemicalStructure copiedStructure = eics.fromJson(mapper.writeValueAsString(structure));
+                    Set<UUID> newRefs = new HashSet<>();
+                    structure.getReferences().forEach(ref->{
+                        String oldRefValue = ref.getValue();
+                        String newRefValue="";
+                        if(referencesToCopy.containsKey(oldRefValue)){
+                            newRefValue= referencesToCopy.get(oldRefValue);
+                        } else {
+                            newRefValue=UUID.randomUUID().toString();
+                            referencesToCopy.put(ref.getValue(), newRefValue);
+                        }
+                        newRefs.add(UUID.fromString(newRefValue));
+                        log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                    });
+                    copiedStructure.setReferenceUuids(newRefs);
+                    copiedStructure.setId(UUID.randomUUID());
+                    ((ChemicalSubstanceBuilder)builder).setStructure(copiedStructure);
+
+                } catch (IOException e) {
+                    processLog.accept("Error copying structure " );
+                    log.error("Error copying structure");
+                }
+            } else if(existing.substanceClass== Substance.SubstanceClass.protein && source.substanceClass== Substance.SubstanceClass.protein){
+                Protein protein = ((ProteinSubstance)source).protein;
+                EntityUtils.EntityInfo<Protein> eics= EntityUtils.getEntityInfoFor(Protein.class);
+                try {
+                    Protein copiedProtein = eics.fromJson(mapper.writeValueAsString(protein));
+                    Set<UUID> newRefs = new HashSet<>();
+                    protein.getReferences().forEach(ref->{
+                        String oldRefValue = ref.getValue();
+                        String newRefValue="";
+                        if(referencesToCopy.containsKey(oldRefValue)){
+                            newRefValue= referencesToCopy.get(oldRefValue);
+                        } else {
+                            newRefValue=UUID.randomUUID().toString();
+                            referencesToCopy.put(ref.getValue(), newRefValue);
+                        }
+                        newRefs.add(UUID.fromString(newRefValue));
+                        log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                    });
+                    copiedProtein.setReferenceUuids(newRefs);
+                    copiedProtein.setUuid(UUID.randomUUID());
+                    ((ProteinSubstanceBuilder)builder).setProtein(copiedProtein);
+
+                } catch (IOException e) {
+                    processLog.accept("Error copying protein " );
+                    log.error("Error copying protein");
+                }
+            }
+        }*/
         if(hasTrueValue(parameters, "MergeReferences")){
             source.references.forEach(r->{
                 if( existing.references.stream().anyMatch(r2->r2.docType!=null && r2.docType.equals(r.docType) && r2.citation!=null
@@ -373,4 +430,36 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 return builder;
         }
     }
+
+    /* under construction...or maybe destruction  not used for now
+    private boolean copyReferences(GinasCommonSubData source, GinasCommonSubData target, Map<String, String> referencesToCopy,
+                                   Consumer<String> processLog, AbstractSubstanceBuilder builder ){
+        EntityUtils.EntityInfo<GinasCommonSubData> eics= EntityUtils.getEntityInfoFor(GinasCommonSubData.class);
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            GinasCommonSubData copiedItem = eics.fromJson(mapper.writeValueAsString(source));
+            Set<UUID> newRefs = new HashSet<>();
+            source.getReferences().forEach(ref->{
+                String oldRefValue = ref.getValue();
+                String newRefValue="";
+                if(referencesToCopy.containsKey(oldRefValue)){
+                    newRefValue= referencesToCopy.get(oldRefValue);
+                } else {
+                    newRefValue=UUID.randomUUID().toString();
+                    referencesToCopy.put(ref.getValue(), newRefValue);
+                }
+                newRefs.add(UUID.fromString(newRefValue));
+                log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+            });
+            copiedItem.setReferenceUuids(newRefs);
+            copiedItem.setUuid(UUID.randomUUID());
+            //builder.setDefinition(Sub)
+            ((ProteinSubstanceBuilder)builder).setProtein(copiedItem);
+
+        } catch (IOException e) {
+            processLog.accept("Error copying protein " );
+            log.error("Error copying protein");
+        }
+
+    }*/
 }

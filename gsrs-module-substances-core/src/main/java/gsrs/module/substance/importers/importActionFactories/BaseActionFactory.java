@@ -24,8 +24,7 @@ public abstract class BaseActionFactory implements MappingActionFactory<Abstract
 
     private static void assignReferences(GinasAccessReferenceControlled object, Object referenceList) {
         if( referenceList == null) {
-            //todo: make this an info
-            log.warn("in assignReferences, referenceList is null");
+            log.info("in assignReferences, referenceList is null");
             return;
         }
         if( referenceList.getClass().getName().equals("java.lang.String")){
