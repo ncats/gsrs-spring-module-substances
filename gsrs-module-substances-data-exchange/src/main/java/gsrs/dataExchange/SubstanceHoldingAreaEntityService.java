@@ -2,6 +2,7 @@ package gsrs.dataexchange;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
+import gsrs.events.ReindexEntityEvent;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.service.HoldingAreaEntityService;
 import gsrs.indexer.IndexValueMakerFactory;
@@ -20,6 +21,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -36,6 +38,9 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
 
     @Autowired
     private IndexValueMakerFactory factory;
+
+    @Autowired
+    ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -137,15 +142,11 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
             log.trace("assigned id {}", substance.getOrGenerateUUID());
         }
         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(substance);
-        //hackySetKind(wrapper, "sa_substance");
-        //log.trace("set kind to {}", wrapper.getKind());
         log.trace("create wrapper with kind {}", wrapper.getKind(), wrapper.getEntityInfo().getIDFieldInfo().get());
-        try {
-            indexer.add(wrapper);
-            log.info("successfully indexed object");
-        }  catch (IOException ex) {
-            log.error("Error indexing object!", ex);
-        }
+        UUID reindexUuid = UUID.randomUUID();
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, wrapper.getKey(), Optional.of(wrapper),true);
+        applicationEventPublisher.publishEvent(event);
+        log.info("submitted object for indexing");
     }
 
     private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
