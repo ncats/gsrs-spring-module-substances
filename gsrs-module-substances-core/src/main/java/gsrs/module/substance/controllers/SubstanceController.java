@@ -1077,11 +1077,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 Optional<byte[]> possibleImage = getSpecificImageForSubstance(s2r.substanceKey);
                 if(possibleImage.isPresent()) {
                     log.trace("located image with {} bytes; will return ResponseEntity", possibleImage.get().length);
-                    File basicFile = new File("d:\\temp\\del1.jpg");
+                    File basicFile = new File("d:\\temp\\del1." + format);
                     Files.write(basicFile.toPath(), possibleImage.get());
                     HttpHeaders headers = new HttpHeaders();
-                    headers.set("Content-Type", "image/jpeg");
-                    new ResponseEntity<>(possibleImage.get(), headers, HttpStatus.OK);
+                    log.trace("going to set content type to {}", parseContentType(format));
+                    headers.set("Content-Type", parseContentType(format));
+                    return new ResponseEntity<>(possibleImage.get(), headers, HttpStatus.OK);
                 }
                 log.trace("going to return default image");
                 //if we're here, we have a substance but nothing to render return default for substance type
@@ -1221,8 +1222,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", parseContentType(placeholderFile.substring(placeholderFile.length()-3)));
-        log.trace("set content-type to {}", parseContentType(placeholderFile.substring(placeholderFile.length()-3)));
-
+        log.trace("set content-type to {} for {}", parseContentType(placeholderFile.substring(placeholderFile.length()-3)),
+                "images/\" + placeholderFile");
         try(InputStream in = new ClassPathResource("images/" + placeholderFile).getInputStream()) {
             byte[] bytes = IOUtil.toByteArray(in);
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
