@@ -2,7 +2,6 @@ package gsrs.module.substance.utils;
 
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
-import jdk.jpackage.internal.Log;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
@@ -21,8 +20,10 @@ public class ImageUtilities {
     Read the data from the URL and return it
      */
     public static Optional<byte[]> getSubstanceImage(Substance substance){
+        log.trace("starting in getSubstanceImage");
         for (Reference ref : substance.references) {
             if(ref.tags.stream().anyMatch(t->t.term.equals(SUBSTANCE_IMAGE_TAG)) && !ref.uploadedFile.isEmpty()) {
+                log.trace("reference found with image tag.  uploadedFile: {}", ref.uploadedFile);
                 InputStream is = null;
                 try {
                     URL fileUrl = new URL(ref.uploadedFile);

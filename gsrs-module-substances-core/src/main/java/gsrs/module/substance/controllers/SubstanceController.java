@@ -4,8 +4,10 @@ import java.awt.Dimension;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,6 +29,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.utils.ImageUtilities;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -1070,6 +1073,17 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
+                log.trace("going to call getSpecificImageForSubstance");
+                Optional<byte[]> possibleImage = getSpecificImageForSubstance(s2r.substanceKey);
+                if(possibleImage.isPresent()) {
+                    log.trace("located image with {} bytes; will return ResponseEntity", possibleImage.get().length);
+                    File basicFile = new File("d:\\temp\\del1.jpg");
+                    Files.write(basicFile.toPath(), possibleImage.get());
+                    HttpHeaders headers = new HttpHeaders();
+                    headers.set("Content-Type", "image/jpeg");
+                    new ResponseEntity<>(possibleImage.get(), headers, HttpStatus.OK);
+                }
+                log.trace("going to return default image");
                 //if we're here, we have a substance but nothing to render return default for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey(), format);
             }
@@ -1207,12 +1221,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", parseContentType(placeholderFile.substring(placeholderFile.length()-3)));
+        log.trace("set content-type to {}", parseContentType(placeholderFile.substring(placeholderFile.length()-3)));
 
         try(InputStream in = new ClassPathResource("images/" + placeholderFile).getInputStream()) {
             byte[] bytes = IOUtil.toByteArray(in);
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         }
 
+    }
+
+    private Optional<byte[]> getSpecificImageForSubstance(EntityUtils.Key substanceKey){
+        Optional<Substance> substance = EntityFetcher.of(substanceKey).getIfPossible().map(o->(Substance)o);
+        if(substance.isPresent()) {
+            return ImageUtilities.getSubstanceImage(substance.get());
+        }
+        return Optional.empty();
     }
 
     private static String parseContentType(String format){
