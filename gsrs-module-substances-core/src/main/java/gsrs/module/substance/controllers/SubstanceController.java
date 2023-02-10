@@ -1076,13 +1076,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 log.trace("going to call getSpecificImageForSubstance");
                 Optional<byte[]> possibleImage = getSpecificImageForSubstance(s2r.substanceKey);
                 if(possibleImage.isPresent()) {
-                    log.trace("located image with {} bytes; will return ResponseEntity", possibleImage.get().length);
-                    File basicFile = new File("d:\\temp\\del1." + format);
-                    Files.write(basicFile.toPath(), possibleImage.get());
+                    log.trace("located image with {} bytes; will resize to {} and return ResponseEntity", possibleImage.get().length,
+                            size);
+                    byte[] resized = ImageUtilities.resizeImage(possibleImage.get(), size, size, format);
+                    File basicFile = new File("d:\\temp\\del1Resized." + format);
+                    Files.write(basicFile.toPath(), resized);
                     HttpHeaders headers = new HttpHeaders();
+
                     log.trace("going to set content type to {}", parseContentType(format));
                     headers.set("Content-Type", parseContentType(format));
-                    return new ResponseEntity<>(possibleImage.get(), headers, HttpStatus.OK);
+                    return new ResponseEntity<>(resized, headers, HttpStatus.OK);
                 }
                 log.trace("going to return default image");
                 //if we're here, we have a substance but nothing to render return default for substance type

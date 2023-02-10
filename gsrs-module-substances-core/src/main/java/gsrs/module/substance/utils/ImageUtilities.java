@@ -5,6 +5,12 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.awt.image.RenderedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -48,5 +54,20 @@ public class ImageUtilities {
             }
         }
         return Optional.empty();
+    }
+
+    public static byte[] resizeImage(byte[] original, int newWidth, int newHeight, String format) {
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(original);
+        try {
+            BufferedImage newImage = ImageIO.read(inputStream);
+            Image scaledImage= newImage.getScaledInstance(newWidth, newHeight, BufferedImage.SCALE_SMOOTH);
+            BufferedImage scaled2=(BufferedImage) scaledImage;
+            ByteArrayOutputStream outputStream=new ByteArrayOutputStream();
+            ImageIO.write( scaled2, format, outputStream );
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            log.error("Error resizing image", e);
+            throw new RuntimeException(e);
+        }
     }
 }
