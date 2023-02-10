@@ -76,7 +76,8 @@ public class Relationship extends /*CommonDataElementOfCollection */ GinasCommon
     public String type;
 
     public Relationship () {}
-    
+
+    // Should deprecate this
     @JsonIgnore
     public String getDisplayType(){
        return RelationshipUtil.getDisplayType(this);
