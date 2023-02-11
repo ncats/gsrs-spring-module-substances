@@ -29,6 +29,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1074,17 +1075,27 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
                 log.trace("going to call getSpecificImageForSubstance");
-                Optional<byte[]> possibleImage = getSpecificImageForSubstance(s2r.substanceKey);
-                if(possibleImage.isPresent()) {
-                    log.trace("located image with {} bytes; will resize to {} and return ResponseEntity", possibleImage.get().length,
-                            size);
-                    byte[] resized = ImageUtilities.resizeImage(possibleImage.get(), size, size, format);
-                    File basicFile = new File("d:\\temp\\del1Resized." + format);
+                ImageInfo imageInfo= getSpecificImageForSubstance(s2r.substanceKey);
+                if(imageInfo.isHasData() && imageInfo.getImageData().length>0) {
+                    String formatToUse = format;
+                    if( imageInfo.getFormat()!=null && imageInfo.getFormat().trim().length()>0) {
+                        formatToUse= imageInfo.getFormat().trim();
+                    }
+                    //hack
+                    if( formatToUse==null || formatToUse.trim().length()==0) {
+                        formatToUse="jpg";
+                    }
+                    log.trace("located image with {} bytes; format: {}; will resize to {} and return ResponseEntity",
+                            imageInfo.getImageData().length, formatToUse, size);
+
+                    byte[] resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatToUse);
+                    log.trace("resized");
+                    File basicFile = new File("d:\\temp\\del1Resized." + formatToUse);
                     Files.write(basicFile.toPath(), resized);
                     HttpHeaders headers = new HttpHeaders();
 
-                    log.trace("going to set content type to {}", parseContentType(format));
-                    headers.set("Content-Type", parseContentType(format));
+                    log.trace("going to set content type to {}", parseContentType(formatToUse));
+                    headers.set("Content-Type", parseContentType(formatToUse));
                     return new ResponseEntity<>(resized, headers, HttpStatus.OK);
                 }
                 log.trace("going to return default image");
@@ -1234,12 +1245,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
-    private Optional<byte[]> getSpecificImageForSubstance(EntityUtils.Key substanceKey){
+    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey){
         Optional<Substance> substance = EntityFetcher.of(substanceKey).getIfPossible().map(o->(Substance)o);
         if(substance.isPresent()) {
             return ImageUtilities.getSubstanceImage(substance.get());
         }
-        return Optional.empty();
+        return new ImageInfo(false, null, null);
     }
 
     private static String parseContentType(String format){
