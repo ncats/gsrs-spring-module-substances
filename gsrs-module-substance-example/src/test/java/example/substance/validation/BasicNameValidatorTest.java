@@ -18,7 +18,7 @@ import ix.core.validator.ValidationResponseBuilder;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GinasProcessingStrategy;
 import ix.ginas.utils.validation.strategy.AcceptApplyAllProcessingStrategy;
 import ix.ginas.utils.validation.validators.BasicNameValidator;
 import lombok.extern.slf4j.Slf4j;

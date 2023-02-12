@@ -19,7 +19,7 @@ import ix.core.validator.*;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
-import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GinasProcessingStrategy;
 import ix.ginas.utils.NucleicAcidUtils;
 import java.io.IOException;
 

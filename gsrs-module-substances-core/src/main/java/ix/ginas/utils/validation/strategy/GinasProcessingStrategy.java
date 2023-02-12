@@ -1,11 +1,10 @@
-package ix.ginas.utils;
+package ix.ginas.utils.validation.strategy;
 
 import gsrs.services.GroupService;
 import ix.core.models.Group;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 
 import java.util.*;
 import java.util.stream.Collectors;

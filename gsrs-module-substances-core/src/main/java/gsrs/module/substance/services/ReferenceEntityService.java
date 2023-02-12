@@ -17,7 +17,7 @@ import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GinasProcessingStrategy;
 import ix.ginas.utils.validation.strategy.AcceptApplyAllProcessingStrategy;
 import ix.utils.Util;
 import org.springframework.beans.factory.annotation.Autowired;
