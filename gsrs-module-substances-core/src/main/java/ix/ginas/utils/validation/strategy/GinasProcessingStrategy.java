@@ -1,5 +1,6 @@
 package ix.ginas.utils.validation.strategy;
 
+import gsrs.security.GsrsSecurityUtils;
 import gsrs.services.GroupService;
 import ix.core.models.Group;
 import ix.core.validator.GinasProcessingMessage;
@@ -126,9 +127,12 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
 
     public void overrideMessage(GinasProcessingMessage gpm){
         for (GsrsProcessingStrategyFactoryConfiguration.OverrideRule or : gsrsProcessingStrategyFactoryConfiguration.getOverrideRules()) {
-            if (or.getRegex().matcher(gpm.toString()).find()) {
-                if (or.getMessageType() != null && !gpm.messageType.equals(or.getMessageType())) {
+            if ((or.getUserRoles() == null || GsrsSecurityUtils.hasAnyRoles(or.getUserRoles())) && or.getRegex().matcher(gpm.toString()).find()) {
+                if (or.getMessageType() != null) {
                     gpm.messageType = or.getMessageType();
+                }
+                if (or.getSuggestedChange() != null) {
+                    gpm.suggestedChange = or.getSuggestedChange().booleanValue();
                 }
                 break;
             }
