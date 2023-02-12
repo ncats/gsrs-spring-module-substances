@@ -17,8 +17,8 @@ import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.strategy.GinasProcessingStrategy;
-import ix.ginas.utils.validation.strategy.AcceptApplyAllProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.utils.Util;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
@@ -54,6 +54,9 @@ public class ReferenceEntityService extends AbstractGsrsEntityService<Reference,
     @Autowired
     private GroupService groupRepository;
 
+    @Autowired
+    private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
+
 //    @Autowired
 //    private CvSearchService searchService;
 
@@ -68,13 +71,9 @@ public class ReferenceEntityService extends AbstractGsrsEntityService<Reference,
         return UUID.fromString(idAsString);
     }
 
-    private  GinasProcessingStrategy createAcceptApplyAllStrategy() {
-        return new AcceptApplyAllProcessingStrategy(groupRepository);
-    }
-
     @Override
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type) {
-        GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
+        GsrsProcessingStrategy strategy = gsrsProcessingStrategyFactory.createNewDefaultStrategy();
         ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
             public void complete() {

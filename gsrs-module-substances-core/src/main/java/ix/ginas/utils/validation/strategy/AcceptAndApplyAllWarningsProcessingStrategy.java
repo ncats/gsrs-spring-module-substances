@@ -9,12 +9,13 @@ import java.util.List;
 
 public class AcceptAndApplyAllWarningsProcessingStrategy extends GinasProcessingStrategy {
     @Autowired
-    public AcceptAndApplyAllWarningsProcessingStrategy(GroupService groupRepository) {
-        super(groupRepository);
+    public AcceptAndApplyAllWarningsProcessingStrategy(GroupService groupRepository, GsrsProcessingStrategyFactoryConfiguration srsProcessingStrategyFactoryConfiguration) {
+        super(groupRepository, srsProcessingStrategyFactoryConfiguration);
     }
 
     @Override
     public void processMessage(GinasProcessingMessage gpm) {
+        this.overrideMessage(gpm);
         if (gpm.messageType == GinasProcessingMessage.MESSAGE_TYPE.ERROR) {
             gpm.actionType = GinasProcessingMessage.ACTION_TYPE.FAIL;
         } else {

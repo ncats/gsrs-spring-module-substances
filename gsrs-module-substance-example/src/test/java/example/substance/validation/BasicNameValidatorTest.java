@@ -10,7 +10,6 @@ import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
 import gsrs.module.substance.standardizer.FDAMinimumNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
-import gsrs.services.GroupService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.validator.ValidationResponse;
@@ -18,8 +17,8 @@ import ix.core.validator.ValidationResponseBuilder;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.strategy.GinasProcessingStrategy;
-import ix.ginas.utils.validation.strategy.AcceptApplyAllProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.validators.BasicNameValidator;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
-    private GroupService groupService;
+    private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
 
     
 
@@ -97,7 +96,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
         validator=AutowireHelper.getInstance().autowireAndProxy(validator);
-        GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
+        GsrsProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponse<Substance> response2 = new ValidationResponse<>();
         ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(chemical,
                 response2, strategy);
@@ -119,7 +118,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
         validator=AutowireHelper.getInstance().autowireAndProxy(validator);
-        GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
+        GsrsProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponse<Substance> response2 = new ValidationResponse<>();
         ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(chemical,
                 response2, strategy);
@@ -141,7 +140,7 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .build();
         BasicNameValidator validator = new BasicNameValidator();
         validator=AutowireHelper.getInstance().autowireAndProxy(validator);
-        GinasProcessingStrategy strategy = createAcceptApplyAllStrategy();
+        GsrsProcessingStrategy strategy = createAcceptApplyAllStrategy();
         ValidationResponse<Substance> response2 = new ValidationResponse<>();
         ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(chemical,
                 response2, strategy);
@@ -154,8 +153,8 @@ public class BasicNameValidatorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     //copied from NameEntityService
-    private GinasProcessingStrategy createAcceptApplyAllStrategy() {
-        return new AcceptApplyAllProcessingStrategy(groupService);
+    private GsrsProcessingStrategy createAcceptApplyAllStrategy() {
+        return gsrsProcessingStrategyFactory.createNewDefaultStrategy();
     }
 
 }

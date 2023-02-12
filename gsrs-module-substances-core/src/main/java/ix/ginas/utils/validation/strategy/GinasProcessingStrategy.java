@@ -25,10 +25,12 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
     //TODO: add messages directly here
     public List<GinasProcessingMessage> _localMessages = new ArrayList<GinasProcessingMessage>();
 
-    private final GroupService groupRepository;
+    private GroupService groupRepository;
+    private GsrsProcessingStrategyFactoryConfiguration gsrsProcessingStrategyFactoryConfiguration;
 
-    public GinasProcessingStrategy(GroupService groupRepository){
+    public GinasProcessingStrategy(GroupService groupRepository, GsrsProcessingStrategyFactoryConfiguration gsrsProcessingStrategyFactoryConfiguration){
         this.groupRepository = Objects.requireNonNull(groupRepository);
+        this.gsrsProcessingStrategyFactoryConfiguration = Objects.requireNonNull(gsrsProcessingStrategyFactoryConfiguration);
     }
 
     @Override
@@ -36,7 +38,7 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
 
     @Override
     public boolean test(GinasProcessingMessage gpm){
-        processMessage(gpm);
+        this.processMessage(gpm);
         return gpm.actionType == GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
     }
 
@@ -120,5 +122,16 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
 
     private Group getGroupByName(String groupName){
         return groupRepository.registerIfAbsent(groupName);
+    }
+
+    public void overrideMessage(GinasProcessingMessage gpm){
+        for (GsrsProcessingStrategyFactoryConfiguration.OverrideRule or : gsrsProcessingStrategyFactoryConfiguration.getOverrideRules()) {
+            if (or.getRegex().matcher(gpm.toString()).find()) {
+                if (or.getMessageType() != null && !gpm.messageType.equals(or.getMessageType())) {
+                    gpm.messageType = or.getMessageType();
+                }
+                break;
+            }
+        }
     }
 }
