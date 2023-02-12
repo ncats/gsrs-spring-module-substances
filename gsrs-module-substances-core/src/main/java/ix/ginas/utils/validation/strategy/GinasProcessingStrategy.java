@@ -89,7 +89,7 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
     public void addProblems(Substance cs, List<GinasProcessingMessage> list) {
         if (warningHandle == HANDLING_TYPE.MARK) {
             List<GinasProcessingMessage> problems = list.stream()
-                .filter(f->f.isProblem())
+                .filter(f->(f.getMessageType().getPriority() < 2))
                 .collect(Collectors.toList());
             if(!problems.isEmpty()){
                 Map<String, Group> cache = new HashMap<>();
