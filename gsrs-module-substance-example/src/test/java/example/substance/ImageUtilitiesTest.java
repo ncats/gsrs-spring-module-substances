@@ -35,7 +35,8 @@ public class ImageUtilitiesTest {
         builder.addName(plainName);
         builder.addReference(reference);
         Substance substance = builder.build();
-        ImageInfo imageInfo = ImageUtilities.getSubstanceImage(substance);
+        ImageUtilities imageUtilities = new ImageUtilities();
+        ImageInfo imageInfo = imageUtilities.getSubstanceImage(substance);
         Assertions.assertFalse(imageInfo.isHasData());
     }
 
@@ -57,7 +58,8 @@ public class ImageUtilitiesTest {
         builder.addName(plainName);
         builder.addReference(reference);
         Substance substance = builder.build();
-        ImageInfo imageInfo= ImageUtilities.getSubstanceImage(substance);
+        ImageUtilities imageUtilities = new ImageUtilities();
+        ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance);
         Assertions.assertTrue(imageInfo.isHasData() && imageInfo.getImageData().length>0);
     }
 
@@ -100,4 +102,62 @@ public class ImageUtilitiesTest {
         }
     }
 
+    @Test
+    public void resizeImageTest3() {
+        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        try {
+            URL fileUrl = new URL(imageUrl);
+            InputStream is = fileUrl.openStream ();
+            byte[] imageBytes = IOUtils.toByteArray(is);
+            byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 50, 50, "jpeg");
+            File basicFile = new File("d:\\temp\\del2Resized.jpg");
+            assert resizedBytes != null;
+            Files.write(basicFile.toPath(), resizedBytes);
+            Assertions.assertTrue(resizedBytes.length>0);
+        }
+        catch (IOException e) {
+            System.err.printf ("Failed while reading bytes from %s: %s", imageUrl, e.getMessage());
+            e.printStackTrace ();
+            Assertions.fail("error processing image fails test");
+        }
+    }
+
+    @Test
+    public void resizeImageTest4() {
+        String imagePath ="testImage/pentagon.svg";
+        try {
+            File imageFile = new ClassPathResource(imagePath).getFile();
+            byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
+            byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 200, 100, "svg");
+            File basicFile = new File("d:\\temp\\delResizedPentagon.svg");
+            assert resizedBytes != null;
+            Files.write(basicFile.toPath(), resizedBytes);
+            Assertions.assertTrue(resizedBytes.length>0);
+        }
+        catch (IOException e) {
+            System.err.printf ("Failed while reading bytes from %s: %s", imagePath, e.getMessage());
+            e.printStackTrace ();
+            Assertions.fail("error processing image fails test");
+        }
+    }
+
+    @Test
+    public void resizeImageTest5() {
+        String imagePath ="testImage/simple_x.tiff";
+        try {
+            File imageFile = new ClassPathResource(imagePath).getFile();
+            byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
+            byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 200, 100, "tif");
+            File basicFile = new File("d:\\temp\\delResizedSimpleX.tiff");
+            assert resizedBytes != null;
+            Files.write(basicFile.toPath(), resizedBytes);
+            Assertions.assertTrue(resizedBytes.length>0);
+        }
+        catch (IOException e) {
+            System.err.printf ("Failed while reading bytes from %s: %s", imagePath, e.getMessage());
+            e.printStackTrace ();
+            Assertions.fail("error processing image fails test");
+        }
+    }
+//
 }

@@ -31,6 +31,7 @@ import javax.validation.constraints.NotBlank;
 
 import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
+import gsrs.springUtils.AutowireHelper;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -1080,17 +1081,25 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     String formatToUse = format;
                     if( imageInfo.getFormat()!=null && imageInfo.getFormat().trim().length()>0) {
                         formatToUse= imageInfo.getFormat().trim();
+                        log.trace("retrieved mimetype from repo: {}", formatToUse);
+                    } else {
+                        log.trace("no mimetype from repo");
                     }
-                    //hack
-                    if( formatToUse==null || formatToUse.trim().length()==0) {
-                        formatToUse="jpg";
+                    String formatForResize= formatToUse;
+                    if(formatForResize.indexOf("/")>-1) {
+                        formatForResize=formatToUse.split("/")[formatToUse.split("/").length-1];
+                    }
+                    if(formatForResize.equalsIgnoreCase("svg+xml")) {
+                        formatForResize = "svg";
                     }
                     log.trace("located image with {} bytes; format: {}; will resize to {} and return ResponseEntity",
-                            imageInfo.getImageData().length, formatToUse, size);
+                            imageInfo.getImageData().length, formatForResize, size);
 
-                    byte[] resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatToUse);
-                    log.trace("resized");
-                    File basicFile = new File("d:\\temp\\del1Resized." + formatToUse);
+                    byte[] resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
+                    log.trace("resized size {}", resized.length);
+                    File basicFileBefore = new File("d:\\temp\\del1Original." + formatForResize);
+                    Files.write(basicFileBefore.toPath(), imageInfo.getImageData());
+                    File basicFile = new File("d:\\temp\\del1Resized." + formatForResize);
                     Files.write(basicFile.toPath(), resized);
                     HttpHeaders headers = new HttpHeaders();
 
@@ -1248,7 +1257,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey){
         Optional<Substance> substance = EntityFetcher.of(substanceKey).getIfPossible().map(o->(Substance)o);
         if(substance.isPresent()) {
-            return ImageUtilities.getSubstanceImage(substance.get());
+            ImageUtilities imageUtilities = new ImageUtilities();
+            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+            return imageUtilities.getSubstanceImage(substance.get());
         }
         return new ImageInfo(false, null, null);
     }
@@ -1259,6 +1270,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         if("png".equalsIgnoreCase(format)){
             return MediaType.IMAGE_PNG_VALUE;
+        }
+        if("jpg".equalsIgnoreCase(format)) {
+            return MediaType.IMAGE_JPEG_VALUE;
         }
         return MediaType.parseMediaType(format).toString();
     }
