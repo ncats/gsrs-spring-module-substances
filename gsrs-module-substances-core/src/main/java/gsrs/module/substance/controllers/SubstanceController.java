@@ -4,10 +4,8 @@ import java.awt.Dimension;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -1065,49 +1063,58 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String input=null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
-//            input, null)
             s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
                 return getSubstanceAndStructure(idOrSmiles,version);
             });
+
+            if(s2r != null && s2r.substanceKey !=null &&
+                    !(queryParameters.get("forceDefaultImage") !=null &&queryParameters.get("forceDefaultImage").equalsIgnoreCase("TRUE"))) {
+                log.trace("going to call getSpecificImageForSubstance");
+                ImageInfo imageInfo = getSpecificImageForSubstance(s2r.substanceKey);
+                if (imageInfo.isHasData() && imageInfo.getImageData().length > 0) {
+                    String formatToUse = format;
+                    if (imageInfo.getFormat() != null && imageInfo.getFormat().trim().length() > 0) {
+                        formatToUse = imageInfo.getFormat().trim();
+                        log.trace("retrieved mimetype from repo: {}", formatToUse);
+                    } else {
+                        log.trace("no mimetype from repo");
+                    }
+                    String formatForResize = formatToUse;
+                    byte[] resized =  imageInfo.getImageData();
+                    if(!(queryParameters.get("skipResize") !=null &&queryParameters.get("skipResize").equalsIgnoreCase("TRUE"))) {
+                        if (formatForResize.indexOf("/") > -1) {
+                            formatForResize = formatToUse.split("/")[formatToUse.split("/").length - 1];
+                        }
+                        if (formatForResize.equalsIgnoreCase("svg+xml")) {
+                            formatForResize = "svg";
+                        }
+                        log.trace("located image with {} bytes; format: {}; will resize to {} and return ResponseEntity",
+                                imageInfo.getImageData().length, formatForResize, size);
+                        resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
+                    }
+                    log.trace("resized size {}", resized.length);
+                    //File basicFileBefore = new File("d:\\temp\\del1Original." + formatForResize);
+                    //Files.write(basicFileBefore.toPath(), imageInfo.getImageData());
+                    //File basicFile = new File("d:\\temp\\del1Resized." + formatForResize);
+                    //Files.write(basicFile.toPath(), resized);
+                    HttpHeaders headers = new HttpHeaders();
+
+                    log.trace("going to set content type to {}", parseContentType(formatToUse));
+                    headers.set("Content-Type", parseContentType(formatToUse));
+                    return new ResponseEntity<>(resized, headers, HttpStatus.OK);
+                } else {
+                    log.trace("no image found!");
+                }
+            }
+            log.trace("going to return default image");
+
+//            input, null)
 
             if (s2r.getInput()==null) {
                 if(s2r.getSubstanceKey() ==null) {
                     //couldn't find a substance
                     return getGsrsControllerConfiguration().handleNotFound(queryParameters);
                 }
-                log.trace("going to call getSpecificImageForSubstance");
-                ImageInfo imageInfo= getSpecificImageForSubstance(s2r.substanceKey);
-                if(imageInfo.isHasData() && imageInfo.getImageData().length>0) {
-                    String formatToUse = format;
-                    if( imageInfo.getFormat()!=null && imageInfo.getFormat().trim().length()>0) {
-                        formatToUse= imageInfo.getFormat().trim();
-                        log.trace("retrieved mimetype from repo: {}", formatToUse);
-                    } else {
-                        log.trace("no mimetype from repo");
-                    }
-                    String formatForResize= formatToUse;
-                    if(formatForResize.indexOf("/")>-1) {
-                        formatForResize=formatToUse.split("/")[formatToUse.split("/").length-1];
-                    }
-                    if(formatForResize.equalsIgnoreCase("svg+xml")) {
-                        formatForResize = "svg";
-                    }
-                    log.trace("located image with {} bytes; format: {}; will resize to {} and return ResponseEntity",
-                            imageInfo.getImageData().length, formatForResize, size);
-
-                    byte[] resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
-                    log.trace("resized size {}", resized.length);
-                    File basicFileBefore = new File("d:\\temp\\del1Original." + formatForResize);
-                    Files.write(basicFileBefore.toPath(), imageInfo.getImageData());
-                    File basicFile = new File("d:\\temp\\del1Resized." + formatForResize);
-                    Files.write(basicFile.toPath(), resized);
-                    HttpHeaders headers = new HttpHeaders();
-
-                    log.trace("going to set content type to {}", parseContentType(formatToUse));
-                    headers.set("Content-Type", parseContentType(formatToUse));
-                    return new ResponseEntity<>(resized, headers, HttpStatus.OK);
-                }
-                log.trace("going to return default image");
                 //if we're here, we have a substance but nothing to render return default for substance type
                 return getDefaultImageForKey(s2r.getSubstanceKey(), format);
             }
