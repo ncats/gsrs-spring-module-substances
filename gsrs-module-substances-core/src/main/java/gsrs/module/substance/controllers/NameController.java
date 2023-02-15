@@ -7,6 +7,7 @@ import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.services.NameEntityService;
 import gsrs.repository.EditRepository;
 import gsrs.service.GsrsEntityService;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.models.v1.Name;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -50,4 +51,10 @@ public class NameController extends EtagLegacySearchEntityController<NameControl
     protected Optional<EditRepository> editRepository() {
         return Optional.of(editRepository);
     }
+
+	@Override
+	public ResultListRecordGenerator getResultListRecordGenerator() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

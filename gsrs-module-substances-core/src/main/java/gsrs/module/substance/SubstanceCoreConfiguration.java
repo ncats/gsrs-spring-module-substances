@@ -13,6 +13,7 @@ import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
+import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
 import ix.core.search.bulk.BulkSearchService;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
@@ -43,6 +44,7 @@ import org.springframework.context.annotation.Import;
         ConsoleFilterService.class,
         BulkSearchService.class,
         SubstanceMatchViewGenerator.class,
+        SubstanceResultListRecordGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class

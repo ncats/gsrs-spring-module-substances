@@ -16,12 +16,15 @@ public class SubstanceResultListRecordGenerator implements ResultListRecordGener
 			Key key = Key.of(Substance.class, keyString);
 			try {
 				Substance s = (Substance)EntityFetcher.of(key).call();
-				builder.key(key.toString());
-				if(s.getDisplayName().isPresent()) {
-					builder.displayName(s.getDisplayName().get().name);
+				if(s!=null) {
+					builder.key(key.toString());
+					if(s.getDisplayName().isPresent()) {
+						builder.displayName(s.getDisplayName().get().name);
+					}
+					builder.displayCode(s.approvalID);
+					// todo use config for this 
+					builder.displayCodeSystem("UNII");
 				}
-				builder.displayCode(s.approvalID);
-				
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

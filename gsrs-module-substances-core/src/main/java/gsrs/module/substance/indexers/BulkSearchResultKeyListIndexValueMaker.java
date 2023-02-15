@@ -40,7 +40,7 @@ public class BulkSearchResultKeyListIndexValueMaker implements IndexValueMaker<S
 		List<String> list = bulkSearchResultKeyRepository.getAllListNamesFromKey(key, user.id);
 		
 		list.forEach(listName -> {			
-			consumer.accept(IndexableValue.simpleFacetStringValue("User List",BulkSearchResultService.getIndexedValue(listName, userName) ));});
+			consumer.accept(IndexableValue.simpleFacetStringValue("User List",BulkSearchResultService.getIndexedValue(userName, listName) ));});
 	
 	}
 }
