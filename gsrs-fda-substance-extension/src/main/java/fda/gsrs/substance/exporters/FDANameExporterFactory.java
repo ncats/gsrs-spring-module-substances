@@ -18,6 +18,9 @@ import java.util.Set;
 public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
     OutputFormat format = new OutputFormat("names.txt", "Names only, tab-delimited (.txt)");
+
+    private boolean includeBdnum = false;
+
     @Autowired
     private SubstanceRepository substanceRepository;
 
@@ -33,9 +36,15 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        // if(params.shouldCompress()) {
-        return new FDANameExporter(substanceRepository, out, !params.publicOnly());
-//        }
-//        return new JsonExporter(out);
+        return new FDANameExporter(substanceRepository, out, includeBdnum, !params.publicOnly());
     }
+
+    public boolean getIncludeBdnum(boolean includeBdnum) {
+        return this.includeBdnum;
+    }
+
+    public void setIncludeBdnum(boolean includeBdnum) {
+        this.includeBdnum = includeBdnum;
+    }
+
 }

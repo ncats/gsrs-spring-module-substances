@@ -16,15 +16,19 @@ import java.io.OutputStreamWriter;
 /**
  * Created by VenkataSaiRa.Chavali on 3/10/2017.
  */
-public class FDANameExporter implements Exporter<Substance> {
+class FDANameExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
 
     private final boolean showPrivates;
 
+    private final boolean includeBdnum;
+
     private final SubstanceRepository substanceRepository;
 
-    public FDANameExporter(SubstanceRepository substanceRepository, OutputStream os, boolean showPrivates) throws IOException{
+    public FDANameExporter(SubstanceRepository substanceRepository, OutputStream os,  boolean includeBdnum,boolean showPrivates) throws IOException{
+
+        this.includeBdnum = includeBdnum;
         this.showPrivates =showPrivates;
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
