@@ -1,11 +1,14 @@
 package fda.gsrs.substance.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.ginas.exporters.Exporter;
+import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
+import net.minidev.json.JSONNavi;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.BufferedWriter;
@@ -22,14 +25,17 @@ class FDANameExporter implements Exporter<Substance> {
 
     private final boolean showPrivates;
 
+    private final JsonNode detailedParams;
+
     private final boolean includeBdnum;
 
     private final SubstanceRepository substanceRepository;
 
-    public FDANameExporter(SubstanceRepository substanceRepository, OutputStream os,  boolean includeBdnum,boolean showPrivates) throws IOException{
+    public FDANameExporter(SubstanceRepository substanceRepository, OutputStream os, boolean includeBdnum, boolean showPrivates, JsonNode detailedParams) throws IOException{
 
         this.includeBdnum = includeBdnum;
-        this.showPrivates =showPrivates;
+        this.showPrivates = showPrivates;
+        this.detailedParams = detailedParams;
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
         bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tUNII\tBDNUM\tDISPLAY_NAME\tUTF8_DISPLAY_NAME\tPARENT_BDUM\tPARENT_DISPLAY_NAME\tUTF8_PARENT_DISPLAY_NAME");

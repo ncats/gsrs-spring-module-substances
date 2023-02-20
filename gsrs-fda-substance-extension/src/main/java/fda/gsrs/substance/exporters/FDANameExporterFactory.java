@@ -36,7 +36,7 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        return new FDANameExporter(substanceRepository, out, includeBdnum, !params.publicOnly());
+        return new FDANameExporter(substanceRepository, out, includeBdnum, !params.publicOnly(), params.detailedParameters());
     }
 
     public boolean getIncludeBdnum(boolean includeBdnum) {
