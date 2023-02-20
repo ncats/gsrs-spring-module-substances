@@ -122,7 +122,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             processMatchables(previousVersion, matchablesForPrevious, importMetadataRecordsToRindex);
         }
         UUID indexingEventId= UUID.randomUUID();
-        /*importMetadataRecordsToRindex.forEach(r->{
+        importMetadataRecordsToRindex.forEach(r->{
             log.trace("going to index ImportMetadata with ID {}", r);
             if(r.equals(substance.getUuid())) {
                 log.trace("object is a Substance!");
@@ -138,7 +138,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                     log.trace("failed to retrieve ImportMetadata");
                 }
             }
-        });*/
+        });
     }
 
     private void processMatchables(Substance substance, List<MatchableKeyValueTuple> matchableKeyValueTuples, List<UUID> recordIdsToProcess){
