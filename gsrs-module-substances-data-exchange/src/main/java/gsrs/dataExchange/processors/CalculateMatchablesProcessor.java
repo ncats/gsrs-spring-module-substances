@@ -86,10 +86,10 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
     private void recalculateMatchablesFor(Substance substance) {
         log.trace("recalculateMatchablesFor looking at substance " + substance.getUuid());
-        Optional<Integer> version = getVersion(substance);
         Substance previousVersion = null;
-        if( version.isPresent() && version.get()>1) {
-            if( false) {
+        if( false) {
+            Optional<Integer> version = getVersion(substance);
+            if( version.isPresent() && version.get()>1) {
                 List<Edit> editList = editRepository.findByRefidAndVersion(substance.getUuid().toString(), Integer.toString(version.get() - 1));
                 try {
                     if (editList != null && !editList.isEmpty()) {
@@ -114,15 +114,17 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
         List<MatchableKeyValueTuple> matchables = substanceHoldingAreaEntityService.extractKVM(substance);
 
-        List<UUID> importMetadataRecordsToRindex = new ArrayList<>();
+        List<UUID> importMetadataRecordsToReindex = new ArrayList<>();
         log.trace("calculated matchables");
-        processMatchables(substance, matchables, importMetadataRecordsToRindex);
+        processMatchables(substance, matchables, importMetadataRecordsToReindex);
         if(previousVersion !=null){
+            log.trace("previousVersion processing");
             List<MatchableKeyValueTuple> matchablesForPrevious = substanceHoldingAreaEntityService.extractKVM(previousVersion);
-            processMatchables(previousVersion, matchablesForPrevious, importMetadataRecordsToRindex);
+            processMatchables(previousVersion, matchablesForPrevious, importMetadataRecordsToReindex);
         }
         UUID indexingEventId= UUID.randomUUID();
-        importMetadataRecordsToRindex.forEach(r->{
+        log.trace("about to SKIP importMetadataRecordsToReindex.forEach {}", importMetadataRecordsToReindex.size());
+        /*importMetadataRecordsToReindex.forEach(r->{
             log.trace("going to index ImportMetadata with ID {}", r);
             if(r.equals(substance.getUuid())) {
                 log.trace("object is a Substance!");
@@ -138,7 +140,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                     log.trace("failed to retrieve ImportMetadata");
                 }
             }
-        });
+        });*/
     }
 
     private void processMatchables(Substance substance, List<MatchableKeyValueTuple> matchableKeyValueTuples, List<UUID> recordIdsToProcess){
