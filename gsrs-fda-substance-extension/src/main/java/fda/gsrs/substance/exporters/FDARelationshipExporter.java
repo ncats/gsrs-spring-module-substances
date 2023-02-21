@@ -24,7 +24,6 @@ public class FDARelationshipExporter implements Exporter<Substance> {
     public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, boolean includeBdnum) throws IOException{
         this.substanceRepository = substanceRepository;
         this.includeBdnum = includeBdnum;
-        System.out.println("===== includeBdnum: " + includeBdnum);
         bw = new BufferedWriter(new OutputStreamWriter(os));
 
         StringBuilder sb = new StringBuilder();
