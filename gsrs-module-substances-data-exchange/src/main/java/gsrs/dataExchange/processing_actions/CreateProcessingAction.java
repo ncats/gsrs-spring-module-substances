@@ -7,13 +7,12 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /*
-Action represents user intention to keep what's in the DB and ignore the new match
+Create a new record in the main database, ignoring the matched record
  */
-public class IgnoreProcessingAction implements ProcessingAction<Substance> {
+public class CreateProcessingAction implements ProcessingAction<Substance> {
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> log) throws Exception {
-        log.accept("Starting in process");
-        return existing;
+        log.accept("Starting in process. going to return " + source);
+        return source;
     }
-
 }

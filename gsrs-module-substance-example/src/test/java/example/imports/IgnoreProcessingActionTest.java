@@ -1,6 +1,6 @@
 package example.imports;
 
-import gsrs.dataexchange.processing_actions.IgnoreProcessingAction;
+import gsrs.dataexchange.processing_actions.RejectProcessingAction;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import org.junit.jupiter.api.Assertions;
@@ -31,7 +31,7 @@ public class IgnoreProcessingActionTest {
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = (p)-> buildMessage.append(p);
 
-        IgnoreProcessingAction action = new IgnoreProcessingAction();
+        RejectProcessingAction action = new RejectProcessingAction();
         ChemicalSubstance selected = (ChemicalSubstance) action.process(chemical1, chemical2, parms, logger);
         Assertions.assertEquals(chemical2.getStructure().smiles, selected.getStructure().smiles);
         Assertions.assertNotEquals(chemical1.getStructure().smiles, selected.getStructure().smiles);

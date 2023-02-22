@@ -88,12 +88,12 @@ public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityServi
     }
 
     @Override
-    public GsrsEntityService.ProcessResult<Substance> persistEntity(Substance substance) {
+    public GsrsEntityService.ProcessResult<Substance> persistEntity(Substance substance, boolean isNew) {
         log.trace("saving substance {} version {} total names: {}", substance.getUuid(), substance.version, substance.names.size());
-        List<String> initialVersions = Arrays.asList("0", "1");
+        List<String> initialVersions = Arrays.asList("0");
         try {
             GsrsEntityService.ProcessResult result;
-            if (substance.getUuid() == null || initialVersions.contains(substance.version)) {
+            if (isNew) {
                 GsrsEntityService.CreationResult<Substance> creationResult = substanceEntityService.createEntity(substance.toFullJsonNode());
                 result = GsrsEntityService.ProcessResult.ofCreation(creationResult);
             } else {

@@ -1,6 +1,6 @@
 package example.imports;
 
-import gsrs.dataexchange.processing_actions.ReplaceProcessingAction;
+import gsrs.dataexchange.processing_actions.CreateProcessingAction;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import org.junit.jupiter.api.Assertions;
@@ -34,10 +34,10 @@ public class ReplaceProcessingActionTest {
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = (p)-> buildMessage.append(p);
 
-        ReplaceProcessingAction action = new ReplaceProcessingAction();
+        CreateProcessingAction action = new CreateProcessingAction();
         ChemicalSubstance selected = (ChemicalSubstance) action.process(chemical1, chemical2, parms, logger);
         Assertions.assertEquals(chemical1.getStructure().smiles, selected.getStructure().smiles);
         Assertions.assertNotEquals(chemical2.getStructure().smiles, selected.getStructure().smiles);
-        Assertions.assertEquals("Starting in process",  buildMessage.toString());
+        Assertions.assertTrue( buildMessage.toString().startsWith("Starting in process"));
     }
 }
