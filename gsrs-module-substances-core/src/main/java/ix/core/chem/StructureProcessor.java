@@ -6,6 +6,7 @@ import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.models.Text;
 import ix.core.models.Value;
+import ix.ginas.utils.ChemUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -213,23 +214,35 @@ public class StructureProcessor {
             }
         }
 
+        
+        Map<Integer,Integer> ringsize= ChemUtils.getSmallestRingSizeForEachBond(mol, 9);
+        
 
         for(DoubleBondStereochemistry doubleBondStereochemistry : mol.getDoubleBondStereochemistry()) {
-            Bond doubleBond = doubleBondStereochemistry.getDoubleBond();
+        	Bond doubleBond = doubleBondStereochemistry.getDoubleBond();
 
-            // TODO: this is actually a mistake, as it's fine to have some EZ bonds in rings
-            // > 7 atoms. This needs to be more specific, asking based on ring size.
-            if (!doubleBondStereochemistry.getStereo().equals(DoubleBondStereochemistry.DoubleBondStereo.NONE)) {
-            	 boolean isRing=false;
-                 try{
-                 	isRing=doubleBond.isInRing();
-                 }catch(Exception e){
-                 	e.printStackTrace();
-                 }
-                 if(!isRing){
-                ez++;
-            }
-        }
+
+        	if (!doubleBondStereochemistry.getStereo().equals(DoubleBondStereochemistry.DoubleBondStereo.NONE)) {
+        		boolean isRing=false;
+        		try{
+        			// This will only count a bond as a "ring bond" if the minimum ring size
+        			// that that bond shows up in is less than 8 bonds long. Otherwise it's
+        			// not considered a true ring bond and the double bond can be either E or Z.
+        			//
+        			// Note: this is still a simplification as there are other geometric effects which 
+        			// can still make some double bonds ineligible for both E and Z.
+        			int smallestRing= ringsize.getOrDefault(mol.indexOf(doubleBond),999);
+        			if(smallestRing<8) {
+        				isRing=true;
+        			}
+        		}catch(Exception e){
+        			log.warn("Trouble detecting ring geometry for EZ calculation");
+        		}
+
+        		if(!isRing){                	 
+        			ez++;
+        		}
+        	}
         }
 
         Chemical stdMol = mol.copy();
