@@ -46,8 +46,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -112,11 +110,21 @@ import ix.core.util.EntityUtils.Key;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.exporters.SpecificExporterSettings;
+import ix.ginas.models.v1.AgentModification;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Component;
 import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Material;
+import ix.ginas.models.v1.Mixture;
 import ix.ginas.models.v1.Moiety;
+import ix.ginas.models.v1.PolymerClassification;
+import ix.ginas.models.v1.Property;
+import ix.ginas.models.v1.SpecifiedSubstanceComponent;
+import ix.ginas.models.v1.StructuralModification;
+import ix.ginas.models.v1.StructurallyDiverse;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.models.v1.Subunit;
 import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
@@ -391,9 +399,70 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if("@hierarchy".equals(field)){
             return Optional.of(makeJsonTreeForAPI(entity.getValue()));
         }
+        
+        
+        if("@dependencies".equals(field)){
+            return Optional.of(makeSubstanceDependencies(entity.getValue()));
+        }
+        
+        
         return null;
     }
 
+   
+    public static class SubstanceDependency{
+    	public String role;
+    	public SubstanceReference substanceRef;
+    	public SubstanceDependency(String role, SubstanceReference sref) {
+    		this.role=role;
+    		this.substanceRef=sref;
+
+    	}
+    	public static SubstanceDependency of(String role, SubstanceReference sr) {
+    		return new SubstanceDependency(role, sr);
+
+    	}
+    }
+
+    private List<SubstanceDependency> makeSubstanceDependencies(Substance sub) {
+    	return sub.getDependsOnSubstanceReferencesAndParents()
+    			.stream()
+    			.map(ss->{
+    				String role = "Unknown";
+    				Class<?> pcls = ss.k().getClass();
+
+    				if(AgentModification.class.isAssignableFrom(pcls)) {
+    					role="Agent Modification";
+    				}else if(StructuralModification.class.isAssignableFrom(pcls)) {
+    					role="Structural Modification";
+    				}else if(Property.class.isAssignableFrom(pcls)) {
+    					role="Property Substance Reference";
+    				}else if(StructurallyDiverse.class.isAssignableFrom(pcls)) {
+    					StructurallyDiverse par = (StructurallyDiverse)ss.k();
+    					if(par.parentSubstance!=null && par.parentSubstance.uuid.equals(ss.v().uuid)){
+    						role="Structurally Diverse Parent";
+    					}else if(par.hybridSpeciesMaternalOrganism!=null && par.hybridSpeciesMaternalOrganism.uuid.equals(ss.v().uuid)){
+    						role="Structurally Diverse Maternal Parent";
+    					}else if(par.hybridSpeciesPaternalOrganism!=null && par.hybridSpeciesPaternalOrganism.uuid.equals(ss.v().uuid)){
+    						role="Structurally Diverse Paternal Parent";
+    					}else {
+    						role="Unknown Structurally Diverse Parent";
+    					}
+    				}else if(Material.class.isAssignableFrom(pcls)) {
+    					role="Monomer/Starting Material";
+    				}else if(PolymerClassification.class.isAssignableFrom(pcls)) {
+    					role="Polymer Parent";
+    				}else if(SpecifiedSubstanceComponent.class.isAssignableFrom(pcls)) {
+    					role="Specified Substance Component";
+    				}else if(Component.class.isAssignableFrom(pcls)) {
+    					role="Mixture Component";
+    				}else if(Mixture.class.isAssignableFrom(pcls)) {
+    					role="Mixture Parent";
+    				}
+    				return SubstanceDependency.of(role,  ss.v());
+    			}).collect(Collectors.toList());	   
+    }
+    
     private List<SubstanceHierarchyFinder.TreeNode2> makeJsonTreeForAPI(Substance sub) {
     	
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
