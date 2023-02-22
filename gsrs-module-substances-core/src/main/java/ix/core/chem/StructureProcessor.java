@@ -215,7 +215,7 @@ public class StructureProcessor {
         }
 
         
-        Map<Integer,Integer> ringsize= ChemUtils.getSmallestRingSizeForEachBond(mol, 9);
+        CachedSupplier<Map<Integer,Integer>> ringsizeMaker= CachedSupplier.of(()->ChemUtils.getSmallestRingSizeForEachBond(mol, 9));
         
 
         for(DoubleBondStereochemistry doubleBondStereochemistry : mol.getDoubleBondStereochemistry()) {
@@ -231,9 +231,11 @@ public class StructureProcessor {
         			//
         			// Note: this is still a simplification as there are other geometric effects which 
         			// can still make some double bonds ineligible for both E and Z.
-        			int smallestRing= ringsize.getOrDefault(mol.indexOf(doubleBond),999);
-        			if(smallestRing<8) {
-        				isRing=true;
+        			if(doubleBond.isInRing()) {
+	        			int smallestRing= ringsizeMaker.get().getOrDefault(mol.indexOf(doubleBond),999);
+	        			if(smallestRing<8) {
+	        				isRing=true;
+	        			}
         			}
         		}catch(Exception e){
         			log.warn("Trouble detecting ring geometry for EZ calculation");
