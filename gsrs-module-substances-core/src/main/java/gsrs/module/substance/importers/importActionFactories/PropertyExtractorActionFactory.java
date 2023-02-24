@@ -19,14 +19,19 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 
 @Slf4j
 public class PropertyExtractorActionFactory extends BaseActionFactory {
+    Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\-(\\d+\\.?\\d+)(.+)");
+
+    Pattern variationPattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+) (.+)");
+
+    Pattern singleValuePattern =Pattern.compile("(\\d+[.]?\\d*)");
+
     public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
         log.trace("in create");
-        Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\-(\\d+\\.?\\d+)(.+)");
-        Pattern variationPattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+) (.+)");
         return (sub, sdRec) -> {
+            log.trace("starting in create's lamdbda");
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             if(params.get("name")==null ||params.get("propertyType")==null){
-                log.info("property skipped because required name and/or property type field is missing");
+                log.trace("property skipped because required name and/or property type field is missing");
                 return sub;
             }
             Property p = new Property();
@@ -76,6 +81,20 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
                                     amt.low, amt.high, base, variation);
                         } catch (Exception ex){
                             log.warn("Error parsing rangeRaw: {}", rangeRaw);
+                        }
+                    } else {
+                        Matcher m3 = singleValuePattern.matcher(rangeRaw);
+                        if( m3.find()) {
+                            String valueRaw = m3.group(1);
+                            Double base = null;
+                            try {
+                                base = Double.parseDouble(valueRaw);
+                                amt.average = base;
+                                log.trace("created average {} from {}",
+                                        amt.average, valueRaw);
+                            } catch (Exception ex) {
+                                log.warn("Error parsing rangeRaw: {}", rangeRaw);
+                            }
                         }
                     }
                 }

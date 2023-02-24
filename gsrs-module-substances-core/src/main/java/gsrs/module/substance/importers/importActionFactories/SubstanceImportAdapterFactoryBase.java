@@ -198,6 +198,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
             fileImportActions.forEach(fia->{
                 String actionName =fia.getActionName();
                 Class actionClass =fia.getActionClass();
+                log.trace(" handling actionName: {}; class: {}", actionName, actionClass.getName());
                 MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingActionFactory;
                 try {
                     mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -284,7 +285,8 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
 
     protected boolean looksLikeProperty(String fieldName) {
-        List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka", "logp", "logd");
+        List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka", "logp", "logd", "hbond",
+                "tpsa", "count", "rotatable");
         return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
     }
 

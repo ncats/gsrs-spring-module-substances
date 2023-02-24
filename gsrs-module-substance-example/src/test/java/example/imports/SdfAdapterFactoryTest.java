@@ -65,6 +65,44 @@ public class SdfAdapterFactoryTest {
         Assertions.assertEquals("°C", chemicalSubstance.properties.get(0).getValue().units);
     }
 
+    @Test
+    public void PropertyExtractorActionFactorySimpleTest() throws Exception {
+        String propertyName="HBOND_DONOR_COUNT";
+        String propertyValue ="7";
+        Map<String, Object> absParameters = new HashMap<>();
+        absParameters.put("name", propertyName);
+        absParameters.put("valueRange", propertyValue);
+        absParameters.put("propertyType", "chemical");
+
+        PropertyExtractorActionFactory factory = new PropertyExtractorActionFactory();
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingAction = factory.create(absParameters);
+        SubstanceBuilder builder = new SubstanceBuilder();
+        mappingAction.act(builder, record);
+        ChemicalSubstance chemicalSubstance = builder.asChemical().build();
+        chemicalSubstance.properties.forEach(p->log.trace("property: {}, amt: {}", p.getName(), p.getValue().toString()));
+        Assertions.assertEquals(1, chemicalSubstance.properties.size());
+        Assertions.assertTrue( chemicalSubstance.properties.stream().anyMatch(p->p.getName().equals(propertyName) && p.getValue().average.toString().startsWith(propertyValue)));
+    }
+
+    @Test
+    public void PropertyExtractorActionFactorySimple2Test() throws Exception {
+        String propertyName="LOGP";
+        String propertyValue ="2.35";
+        Map<String, Object> absParameters = new HashMap<>();
+        absParameters.put("name", propertyName);
+        absParameters.put("valueRange", propertyValue);
+        absParameters.put("propertyType", "chemical");
+
+        PropertyExtractorActionFactory factory = new PropertyExtractorActionFactory();
+        MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingAction = factory.create(absParameters);
+        SubstanceBuilder builder = new SubstanceBuilder();
+        mappingAction.act(builder, record);
+        ChemicalSubstance chemicalSubstance = builder.asChemical().build();
+        chemicalSubstance.properties.forEach(p->log.trace("property: {}, amt: {}", p.getName(), p.getValue().toString()));
+        Assertions.assertEquals(1, chemicalSubstance.properties.size());
+        Assertions.assertTrue( chemicalSubstance.properties.stream().anyMatch(p->p.getName().equals(propertyName) && p.getValue().average.toString().startsWith(propertyValue)));
+    }
+
     private Optional<String> getSdProperty(String name) {
         String data="";
         switch(name) {
