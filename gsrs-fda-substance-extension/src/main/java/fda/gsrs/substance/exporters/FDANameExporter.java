@@ -49,7 +49,6 @@ class FDANameExporter implements Exporter<Substance> {
         sb.append("PARENT_DISPLAY_NAME").append("\t")
         .append("UTF8_PARENT_DISPLAY_NAME");
         bw.write(sb.toString());
-        // bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tAPPROVAL_ID\tBDNUM\tDISPLAY_NAME\tUTF8_DISPLAY_NAME\tPARENT_BDNUM\tPARENT_DISPLAY_NAME\tUTF8_PARENT_DISPLAY_NAME");
         bw.newLine();
     }
 
