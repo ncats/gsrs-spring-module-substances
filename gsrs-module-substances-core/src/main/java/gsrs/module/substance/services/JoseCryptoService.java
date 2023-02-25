@@ -97,7 +97,7 @@ public class JoseCryptoService implements CryptoService {
         String privateKeyId = config.getPrivateKeyId();
         Map<String, Object> jwksmap = config.getJsonWebKeys();
         if (jwksmap == null) {
-            jwksmap = new HashMap<String, Object>() {{ put("filename", "file:" + config.getIxHome() + "/keystore.jwks"); }};
+            jwksmap = new HashMap<String, Object>() {{ put("filename", "file:" + config.getIxHome() + "keystore.jwks"); }};
         }
         if (jwksmap.containsKey("filename")) {
             String filename = (String) jwksmap.get("filename");

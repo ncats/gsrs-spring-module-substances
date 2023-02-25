@@ -50,7 +50,7 @@ public class JoseCryptoServiceConfiguration {
     private String applicationHost;
 
     public Map<String, Object> getJsonWebKeys() {
-        return jsonWebKeys != null ? jsonWebKeys : new HashMap<String, Object>() {{ put("filename", "file:" + ixHome + "/keystore.jwks"); }};
+        return jsonWebKeys != null ? jsonWebKeys : new HashMap<String, Object>() {{ put("filename", "file:" + getIxHome() + "keystore.jwks"); }};
     }
 
     public String getPrivateKeyId() {
