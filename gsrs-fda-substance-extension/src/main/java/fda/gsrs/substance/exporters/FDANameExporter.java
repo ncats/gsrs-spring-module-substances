@@ -1,16 +1,12 @@
 package fda.gsrs.substance.exporters;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.ginas.exporters.Exporter;
-import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
-import net.minidev.json.JSONNavi;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -23,29 +19,43 @@ class FDANameExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
 
-    private final boolean showPrivates;
-
-    private final JsonNode detailedParams;
-
     private final boolean includeBdnum;
 
     private final SubstanceRepository substanceRepository;
 
-    public FDANameExporter(SubstanceRepository substanceRepository, OutputStream os, boolean includeBdnum, boolean showPrivates, JsonNode detailedParams) throws IOException{
+    public FDANameExporter(SubstanceRepository substanceRepository, OutputStream os, boolean includeBdnum) throws IOException{
 
         this.includeBdnum = includeBdnum;
-        this.showPrivates = showPrivates;
-        this.detailedParams = detailedParams;
         this.substanceRepository = substanceRepository;
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tUNII\tBDNUM\tDISPLAY_NAME\tUTF8_DISPLAY_NAME\tPARENT_BDUM\tPARENT_DISPLAY_NAME\tUTF8_PARENT_DISPLAY_NAME");
+        StringBuilder sb = new StringBuilder();
 
+        sb.append("NAME_ID").append("\t")
+        .append("OWNER_UUID").append("\t")
+        .append("TYPE").append("\t")
+        .append("Name").append("\t")
+        .append("UTF8_Name").append("\t")
+        .append("Public or Private").append("\t")
+        .append("This is a").append("\t")
+        .append("APPROVAL_ID").append("\t");
+        if(includeBdnum){
+            sb.append("BDNUM").append("\t");
+        }
+        sb.append("DISPLAY_NAME").append("\t")
+        .append("UTF8_DISPLAY_NAME").append("\t");
+        if(includeBdnum){
+            sb.append("PARENT_BDNUM").append("\t");
+        }
+        sb.append("PARENT_DISPLAY_NAME").append("\t")
+        .append("UTF8_PARENT_DISPLAY_NAME");
+        bw.write(sb.toString());
+        // bw.write("NAME_ID\tOWNER_UUID\tTYPE\tName\tUTF8_Name\tPublic or Private\tThis is a\tAPPROVAL_ID\tBDNUM\tDISPLAY_NAME\tUTF8_DISPLAY_NAME\tPARENT_BDNUM\tPARENT_DISPLAY_NAME\tUTF8_PARENT_DISPLAY_NAME");
         bw.newLine();
     }
 
     /**
      * Get the "best" form of the substance. This means that if the
-     * substance is a varient sub-concept, return the priority
+     * substance is a variant sub-concept, return the priority
      * substance version. Otherwise, just return the supplied
      * substance.
      * @param s
@@ -75,13 +85,12 @@ class FDANameExporter implements Exporter<Substance> {
     		return parent;
     	}
     	return s;
-    	
     }
     
     
     public String getBdnum(Substance s){
     	return s.codes.stream()
-    			      .filter(cd->cd.codeSystem.equals("BDNUM"))
+    			      .filter(cd->cd.codeSystem.equals("BDNUM")&&cd.type.equals("PRIMARY"))
     			      .map(cd->cd.code)
     			      .findFirst()
     			      .orElse(null);	
@@ -90,10 +99,9 @@ class FDANameExporter implements Exporter<Substance> {
     @Override
     @Transactional(readOnly = true)
     public void export(Substance ing) throws IOException {
-        if(!showPrivates && !ing.getAccess().isEmpty()){
-            //GSRS-699 skip substances that aren't public unless we have show private data too
-            return;
-        }
+        // code previously did this
+        // return if if(!showPrivates && !ing.getAccess().isEmpty())
+
         String bdnum = getBdnum(ing);
         /*
          * 1. ApprovalID of parent if subconcept
@@ -101,14 +109,14 @@ class FDANameExporter implements Exporter<Substance> {
          */
         
         Substance bestParent=getParentSubstance(ing);
-        if(!showPrivates && !bestParent.getAccess().isEmpty()){
-            //GSRS-699 skip substances that aren't public unless we have show private data too
-            return;
-        }
+
+        // code previously did this
+        // return if(!showPrivates && !bestParent.getAccess().isEmpty())
+
         String approvalID = bestParent.getApprovalID();
+
         String parentBdnum = getBdnum(bestParent);
-        
-        
+
         String pt=bestParent.getDisplayName()
         		            .map(n->n.stdName)
         		            .orElse("");
@@ -127,27 +135,36 @@ class FDANameExporter implements Exporter<Substance> {
         
         
         for ( Name n :ing.getAllNames()){
-            boolean isPublic = n.getAccess().isEmpty();
-            boolean isPrivate = !isPublic;
-            
-            if(isPrivate && !showPrivates){
-                continue;
-            }
+
+            String publicOrPrivate = (n.getAccess().isEmpty())
+                ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(n.getAccess());
+
+            // code previously did this
+            // continue if(!n.getAccess().isEmpty() && !showPrivates)
+
             String thisIsA  =  ing.isSubstanceVariant()? "SUB_CONCEPT->SUBSTANCE" : "parent/substance";
 
-            String str = n.uuid +"\t" +bestParent.uuid +"\t" + n.type+"\t"
-            		   + n.stdName + "\t" 
-                       + n.name + "\t" 
-                       + (isPublic?"Public":"Private") + "\t"
-                    + thisIsA +"\t"//this is a ? parent/substance ? what goes here
-                    + approvalID + "\t" + bdnum + "\t"
-                    + ipt +"\t"
-                    + iptUTF8 +"\t"
-                    + parentBdnum+"\t"
-                    + pt + "\t"
-                    + ptUTF8
-                  ;
-            bw.write(str);
+            StringBuilder sb = new StringBuilder();
+            sb.append(n.uuid).append("\t")              // NAME_ID
+            .append(bestParent.uuid).append("\t")       // OWNER_UUID
+            .append(n.type).append("\t")                // TYPE
+            .append(n.stdName).append("\t")             // Name
+            .append(n.name).append("\t")                // UTF8_Name
+            .append(publicOrPrivate).append("\t")       // Public or Private
+            .append(thisIsA).append("\t")               // This is a
+            .append(approvalID).append("\t");           // APPROVAL_ID
+            if(includeBdnum){
+                sb.append(bdnum).append("\t");          // BDNUM
+            }
+            sb.append(ipt).append("\t")                 // DISPLAY_NAME
+            .append(iptUTF8).append("\t");              // UTF8_DISPLAY_NAME
+            if(includeBdnum){
+                sb.append(parentBdnum).append("\t");    // PARENT_BDNUM
+            }
+            sb.append(pt).append("\t")                  // PARENT_DISPLAY_NAME
+            .append(ptUTF8);                            // UTF8_PARENT_DISPLAY_NAME
+
+            bw.write(sb.toString());
             bw.newLine();
         }
     }
