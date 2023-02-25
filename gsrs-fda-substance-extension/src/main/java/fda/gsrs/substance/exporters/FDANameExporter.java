@@ -15,7 +15,7 @@ import java.io.OutputStreamWriter;
 /**
  * Created by VenkataSaiRa.Chavali on 3/10/2017.
  */
-class FDANameExporter implements Exporter<Substance> {
+public class FDANameExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
 
