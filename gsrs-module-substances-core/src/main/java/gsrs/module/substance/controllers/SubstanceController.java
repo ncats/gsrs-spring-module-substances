@@ -1012,7 +1012,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     }else {
                         try {
                             log.trace("looking for structure in import data repo. adapterName: {}", adapterName);
-                            HoldingAreaService service= getHoldingAreaService(adapterName);
+                            HoldingAreaService service;
+                            if(adapterName!=null && adapterName.length()>0) {
+                                service= getHoldingAreaService(adapterName);
+                            } else {
+                                service=getDefaultHoldingAreaService();
+                            }
+
                             log.trace("retrieved service {}", service.getClass().getName());
                             int versionNum =0;
                             if( version !=null && version.length()>0){
