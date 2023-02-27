@@ -28,11 +28,15 @@ public abstract class BaseActionFactory implements MappingActionFactory<Abstract
             return;
         }
         if( referenceList.getClass().getName().equals("java.lang.String")){
+            log.trace("assigning reference {}", referenceList);
             object.addReference((String)referenceList);
         } else {
             List<String> refs = (List<String>) referenceList;
+            log.trace("assigning list of refs");
             if (refs != null) {
-                refs.forEach(r -> object.addReference(r));
+                refs.forEach(r -> {
+                    log.trace("     {}", r);
+                    object.addReference(r);});
             }
         }
     }

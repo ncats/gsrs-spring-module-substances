@@ -234,7 +234,9 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         mapNode.put("name", String.format("{{%s}}", nameField));
         mapNode.put("nameType", nameType);
         mapNode.put("lang", language);
+        mapNode.put("langCV", "LANGUAGE");
         mapNode.put("displayName", false);
+        mapNode.put("nameTypeCV", "NAME_TYPE");
         ArrayNode refs = JsonNodeFactory.instance.arrayNode();
         refs.add(String.format("[[%s]]", SIMPLE_REF));
         mapNode.set("referenceUUIDs", refs);
@@ -247,6 +249,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         mapNode.put("name", fieldName);
         mapNode.put("propertyType", "chemical|physical");
         mapNode.put("valueRange", String.format("{{%s}}", fieldName));
+        mapNode.put("propertyTypeCV", "PROPERTY_TYPE");
         mapNode.put("valueUnits", "");
         return mapNode;
     }
@@ -280,6 +283,8 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         mapNode.put("codeSystem", codeSystem);
         mapNode.put("code", String.format("{{%s}}", codeSystem));
         mapNode.put("codeType", codeType);
+        mapNode.put("codeSystemCV", "CODE_SYSTEM");
+        mapNode.put("codeTypeCV", "CODE_TYPE");
         return mapNode;
     }
 
@@ -320,6 +325,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         parameters.put("uuid", String.format("[[%s]]", SIMPLE_REF));
         parameters.put("publicDomain", true);
         referenceNode.set(ACTION_PARAMETERS, parameters);
+        referenceNode.put("label", "Create Reference");
 
         return referenceNode;
     }

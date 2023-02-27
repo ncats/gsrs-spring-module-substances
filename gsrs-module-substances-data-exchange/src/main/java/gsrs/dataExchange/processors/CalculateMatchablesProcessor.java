@@ -4,8 +4,11 @@ import gsrs.dataexchange.SubstanceHoldingAreaEntityService;
 import gsrs.holdingarea.model.KeyValueMapping;
 import gsrs.holdingarea.model.MatchableKeyValueTuple;
 import gsrs.holdingarea.repository.KeyValueMappingRepository;
+import gsrs.repository.EditRepository;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
+import ix.core.models.Edit;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +16,9 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
 import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
@@ -25,6 +30,9 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
+
+    @Autowired
+    private EditRepository editRepository;
 
     SubstanceHoldingAreaEntityService substanceHoldingAreaEntityService = new SubstanceHoldingAreaEntityService();
 
@@ -65,6 +73,23 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
     private void recalculateMatchablesFor(Substance substance) {
         log.trace("looking at substance " + substance.getUuid());
+        Optional<Integer> version = getVersion(substance);
+        Substance previousVersion = null;
+        /*if( version.isPresent() && version.get()>1) {
+            log.trace("got version {}; editRepository {}", version.get(), editRepository);
+            List<Edit> editList = editRepository.findByRefidAndVersion(substance.getUuid().toString(), Integer.toString(version.get() - 1));
+            try {
+                if (editList != null && !editList.isEmpty()) {
+                    previousVersion = SubstanceBuilder.from(editList.get(0).oldValue).build();
+                }
+            } catch (IOException e) {
+                log.error("Error deserializing Substance", e);
+                log.debug(editList.get(0).oldValue);
+            }
+
+        }else {
+            log.trace("no version");
+        }*/
         substanceHoldingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceHoldingAreaEntityService);
         //clear out the old stuff
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
@@ -92,5 +117,13 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             keyValueMappingRepository.save(mapping);
             log.trace("completed save");
         });
+    }
+
+    private Optional<Integer> getVersion(Substance substance){
+        log.trace("getVersion");
+        if( substance.version !=null && substance.version.length()>0) {
+            return Optional.of(Integer.parseInt(substance.version));
+        }
+        return Optional.empty();
     }
 }

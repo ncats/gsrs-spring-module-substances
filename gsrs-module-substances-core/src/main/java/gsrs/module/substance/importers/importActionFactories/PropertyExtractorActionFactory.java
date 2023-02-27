@@ -177,6 +177,12 @@ public class PropertyExtractorActionFactory extends BaseActionFactory {
                         .setFieldName("defining")
                         .setValueType(Boolean.class)
                         .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("nameCV")
+                        .setValueType(String.class)
+                        .setDefaultValue("PROPERTY_NAME")
+                        .setRequired(true)
+                        .build())
                 .build();
     }
 

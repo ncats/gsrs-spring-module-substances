@@ -78,6 +78,12 @@ public class ReferenceExtractorActionFactory extends BaseActionFactory {
                         .setValueType(Boolean.class)
                         .setDefaultValue(true)
                         .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("docTypeCV")
+                        .setValueType(String.class)
+                        .setDefaultValue("DOCUMENT_TYPE")
+                        .setRequired(true)
+                        .build())
                 .build();
     }
 

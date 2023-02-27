@@ -91,6 +91,12 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                         .setDefaultValue(false)
                         .setRequired(false)
                         .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("nameTypeCV")
+                        .setValueType(String.class)
+                        .setDefaultValue("NAME_TYPE")
+                        .build())
+
                 .build();
     }
 

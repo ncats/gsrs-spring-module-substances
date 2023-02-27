@@ -60,6 +60,18 @@ public class CodeExtractorActionFactory extends BaseActionFactory {
                         .setValueType(String.class)
                         .setDefaultValue("PRIMARY")
                         .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("codeSystemCV")
+                        .setValueType(String.class)
+                        .setDefaultValue("CODE_SYSTEM")
+                        .setRequired(false)
+                        .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("codeTypeCV")
+                        .setValueType(String.class)
+                        .setDefaultValue("CODE_TYPE")
+                        .setRequired(false)
+                        .build())
                 .build();
     }
 
