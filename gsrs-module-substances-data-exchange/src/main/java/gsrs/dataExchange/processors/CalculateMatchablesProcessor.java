@@ -22,10 +22,8 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Consumer;
 
 import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
 import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
@@ -50,32 +48,32 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
     SubstanceHoldingAreaEntityService substanceHoldingAreaEntityService = new SubstanceHoldingAreaEntityService();
 
     @Override
-    public void prePersist(Substance obj) throws FailProcessingException {
+    public void prePersist(Substance obj) {
         //EntityProcessor.super.prePersist(obj);
         log.trace("prePersist");
         recalculateMatchablesFor(obj);
     }
 
     @Override
-    public void preRemove(Substance obj) throws FailProcessingException {
+    public void preRemove(Substance obj) {
         log.trace("preRemove");
         keyValueMappingRepository.deleteByRecordId(obj.uuid);
     }
 
     @Override
-    public void preUpdate(Substance obj) throws FailProcessingException {
+    public void preUpdate(Substance obj) {
         log.trace("preUpdate");
         //recalculateMatchablesFor(obj);
     }
 
     @Override
-    public void postUpdate(Substance obj) throws FailProcessingException {
+    public void postUpdate(Substance obj) {
         log.trace("postUpdate");
         recalculateMatchablesFor(obj);
     }
 
     @Override
-    public void initialize() throws FailProcessingException {
+    public void initialize()  {
         //EntityProcessor.super.initialize();
     }
 
@@ -87,7 +85,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
     private void recalculateMatchablesFor(Substance substance) {
         log.trace("looking at substance " + substance.getUuid());
         Optional<Integer> version = getVersion(substance);
-        Optional<Substance> previousVersion = null;
+        Optional<Substance> previousVersion = Optional.empty();
         if (version.isPresent() && version.get() > 1) {
             log.trace("got version {}", version.get());
             TransactionTemplate txFetch = new TransactionTemplate(platformTransactionManager);
@@ -111,26 +109,23 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             log.trace("no version");
         }
 
-
         substanceHoldingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceHoldingAreaEntityService);
         //clear out the old stuff
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx.executeWithoutResult(
-                a -> {
-                    keyValueMappingRepository.deleteByRecordId(substance.uuid);
-                }
+                a -> keyValueMappingRepository.deleteByRecordId(substance.uuid)
         );
         log.trace("just completed call to deleteByRecordId");
 
-        List<UUID> importMetadataRecordsToReindex = new ArrayList<>();
+        Set<UUID> importMetadataRecordsToReindex = new HashSet<>();
         List<MatchableKeyValueTuple> matchables = substanceHoldingAreaEntityService.extractKVM(substance);
         log.trace("calculated matchables");
-        processMatchables(substance, matchables, importMetadataRecordsToReindex, true);
+        processMatchables(substance, matchables, importMetadataRecordsToReindex::add, true);
         if(previousVersion.isPresent()){
             List<MatchableKeyValueTuple> matchablesForPrevious = substanceHoldingAreaEntityService.extractKVM(previousVersion.get());
-            processMatchables(previousVersion.get(), matchablesForPrevious, importMetadataRecordsToReindex, false);
+            processMatchables(previousVersion.get(), matchablesForPrevious, importMetadataRecordsToReindex::add, false);
             log.trace("calculated matchables for previous (version {}; change reason {})", previousVersion.get().version,
                     previousVersion.get().changeReason);
         } else {
@@ -144,16 +139,19 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             if(r.equals(substance.getUuid())) {
                 log.trace("object is a Substance!");
             } else {
-
-                ImportMetadata metadata = importMetadataRepository.getOne(r);
-                if(metadata!= null) {
-                    log.trace("we have a real ImportMetadata object");
-                    EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
-                    ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
-                            EntityUtils.EntityWrapper.of(wrappedObject));
-                } else {
-                    log.trace("failed to retrieve ImportMetadata");
-                }
+                TransactionTemplate txSingleMetadata = new TransactionTemplate(platformTransactionManager);
+                txSingleMetadata.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                txSingleMetadata.executeWithoutResult(m->{
+                    ImportMetadata metadata = importMetadataRepository.getOne(r);
+                    if(metadata!= null) {
+                        log.trace("we have a real ImportMetadata object within transaction");
+                        EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
+                        ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
+                                EntityUtils.EntityWrapper.of(wrappedObject));
+                    } else {
+                        log.trace("failed to retrieve ImportMetadata");
+                    }
+                });
             }
         });
     }
@@ -166,7 +164,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         return Optional.empty();
     }
 
-    private void processMatchables(Substance substance, List<MatchableKeyValueTuple> matchableKeyValueTuples, List<UUID> recordIdsToProcess,
+    private void processMatchables(Substance substance, List<MatchableKeyValueTuple> matchableKeyValueTuples, Consumer<UUID> uuidConsumer,
                                    boolean saveMatchables) {
         log.trace("processMatchables");
 
@@ -195,15 +193,11 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                     log.trace("skipped save");
                 }
                 //todo: delete previous values?
-            /* the next line of code leads to errors such as
-            2023-02-20 18:14:10.564  WARN 15044 --- [nio-8080-exec-1] ix.core.CombinedEntityProcessor          : Object of class [ix.ginas.models.v1.MixtureSubstance] with identifier [c3685a23-87a4-47de-8bb3-ab9a9cfe9606]: optimistic locking failed; nested exception is org.hibernate.StaleObjectStateException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect) : [ix.ginas.models.v1.MixtureSubstance#c3685a23-87a4-47de-8bb3-ab9a9cfe9606]
-            org.springframework.orm.ObjectOptimisticLockingFailureException: Object of class [ix.ginas.models.v1.MixtureSubstance] with identifier [c3685a23-87a4-47de-8bb3-ab9a9cfe9606]: optimistic locking failed; nested exception is org.hibernate.StaleObjectStateException: Row was updated or deleted by another transaction (or unsaved-value mapping was incorrect) : [ix.ginas.models.v1.MixtureSubstance#c3685a23-87a4-47de-8bb3-ab9a9cfe9606]
-*/
                 List<KeyValueMapping> matches = keyValueMappingRepository.findMappingsByKeyAndValueExcludingRecord(kv.getKey(), kv.getValue(),
                         substance.getUuid());
                 matches.forEach(m -> {
                     log.trace("located match {} for k/v: {}/{}", m.getRecordId(), kv.getKey(), kv.getValue());
-                    recordIdsToProcess.add(m.getRecordId());
+                    uuidConsumer.accept(m.getRecordId());
                 });
             });
         });

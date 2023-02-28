@@ -69,6 +69,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         registry.put("structure_and_moieties", new StructureExtractorActionFactory());
         registry.put("note_import", new NotesExtractorActionFactory());
         registry.put("property_import", new PropertyExtractorActionFactory());
+        registry.put("no-op", new NoOpActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
 

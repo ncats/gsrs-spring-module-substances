@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
-import gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory;
-import gsrs.module.substance.importers.importActionFactories.NSRSSampleNameExtractorActionFactory;
-import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory;
-import gsrs.module.substance.importers.importActionFactories.StructureExtractorActionFactory;
+import gsrs.module.substance.importers.importActionFactories.*;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
@@ -254,6 +251,7 @@ public class NSRSSDFImportAdapterFactory extends SDFImportAdapterFactory {
              */
         //registry.put("property_import", new PropertyExtractorActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
+        registry.put("no-op", new NoOpActionFactory());
     }
 
     @Override
