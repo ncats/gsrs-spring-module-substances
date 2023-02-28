@@ -157,6 +157,17 @@ public class NameUtilitiesTest {
     }
 
     @Test
+    //by Alex Welsch:
+    public void TestMinimallyStandardizeNameNonBreakingSpace() {
+        String input = "Let's not break" + "\u00A0" + "things";
+        System.out.println(input);
+        String expected = "Let's not break things";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
     public void testTwoThirds() {
         String inputName = "⅔";
         String expected = "2/3";
