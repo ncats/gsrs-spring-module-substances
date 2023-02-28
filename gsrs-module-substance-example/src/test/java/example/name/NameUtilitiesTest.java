@@ -168,6 +168,16 @@ public class NameUtilitiesTest {
     }
 
     @Test
+    public void TestMinimallyStandardizeNameNonBreakingSpaces() {
+        String input = "Preserving our " + "\u00A0" + "key  functionality";
+        System.out.println(input);
+        String expected = "Preserving our key functionality";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
     public void testTwoThirds() {
         String inputName = "⅔";
         String expected = "2/3";

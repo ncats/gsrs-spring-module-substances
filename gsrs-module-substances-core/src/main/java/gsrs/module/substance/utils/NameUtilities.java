@@ -102,12 +102,12 @@ public class NameUtilities {
         // 1 replace linefeed preceded by (e.g. dash) with blank; but leave the dash.
         // 2 replace remaining linefeed with space before replaceUnprintables, which will replace with blank ''
         ReplacementResult replacementResult = replaceSingleLinefeedPrecededByCertainCharactersWithBlank(input);
+        replacementResult.update(replaceMessySpaces(replacementResult.getResult()));
         replacementResult.update(replaceSingleOrMultipleLinefeedWithSpace(replacementResult.getResult()));
         replacementResult.update(removeSerialSpaces(replacementResult.getResult()));
         replacementResult.update(replaceUnprintables(replacementResult.getResult()));
         replacementResult.update(removeLeadingWhitespace(replacementResult.getResult()));
         replacementResult.update(removeTrailingWhitespace(replacementResult.getResult()));
-        replacementResult.update(replaceMessySpaces(replacementResult.getResult()));
         return replacementResult;
     }
 
