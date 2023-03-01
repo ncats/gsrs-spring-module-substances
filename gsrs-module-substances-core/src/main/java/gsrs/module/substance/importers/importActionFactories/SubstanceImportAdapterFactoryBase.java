@@ -9,6 +9,8 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
+import gsrs.importer.ImportFieldMetadata;
+import gsrs.importer.ImportFieldStatistics;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.ImportAdapter;
@@ -291,7 +293,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     protected boolean looksLikeProperty(String fieldName) {
         List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka", "logp", "logd", "hbond",
-                "tpsa", "count", "rotatable");
+                "tpsa", "count", "rotatable", "mass", "formula");
         return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
     }
 
@@ -413,6 +415,17 @@ todo: add a table of example input/output values
             log.error("Error in resolveParametersMap ",  ex);
             throw ex;
         }
+    }
+
+    public Set<ImportFieldMetadata> createMetadata(Set<String> fieldNames) {
+        Set<ImportFieldMetadata> fieldMetadata = new HashSet<>();
+        fieldNames.forEach(fn->{
+            fieldMetadata.add(ImportFieldMetadata.builder()
+                    .fieldName(fn)
+                    .statistics(new ImportFieldStatistics()) //todo: fill in real data... will require additional parms to this method
+                    .build());
+        });
+        return fieldMetadata;
     }
 
 }

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
+import gsrs.importer.ImportFieldMetadata;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterStatistics;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 @SpringBootConfiguration
 @Slf4j
 public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
-    public final static String SDF_FIELD_LIST = "SDF Fields";
+    public final static String SDF_FIELD_LIST = "fields";
 
     private Map<String, InputFieldStatistics> fileFieldStatisticsMap;
 
@@ -123,9 +124,9 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
             Map<String, InputFieldStatistics>stats= getFieldsForFile(is);
             ImportAdapterStatistics statistics =
                     new ImportAdapterStatistics();
-            fields =stats.keySet();
+            Set<ImportFieldMetadata> fullFields = createMetadata(stats.keySet());
             ObjectNode node = JsonNodeFactory.instance.objectNode();
-            node.putPOJO(SDF_FIELD_LIST, fields);
+            node.putPOJO(SDF_FIELD_LIST, fullFields);
             node.put("fileName", getFileName());
             statistics.setAdapterSchema(node);
             statistics.setAdapterSettings(createDefaultSdfFileImport(stats));
