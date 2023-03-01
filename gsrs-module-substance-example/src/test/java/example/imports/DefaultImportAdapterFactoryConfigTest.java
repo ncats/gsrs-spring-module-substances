@@ -7,7 +7,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.GsrsFactoryConfiguration;
+import gsrs.dataexchange.SubstanceHoldingAreaEntityService;
 import gsrs.dataexchange.model.MappingAction;
+import gsrs.holdingarea.service.DefaultHoldingAreaService;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.*;
 import gsrs.module.substance.importers.NSRSSDFImportAdapterFactory;
@@ -29,7 +31,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
 
     @Test
     public void testSetup() throws IllegalAccessException, NoSuchFieldException, JsonProcessingException {
-        String substanceContext = "substance";
+        String substanceContext = "substances";
         //build up a complete configuration
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
         Map<String, List<Map<String, Object>>> adapterConfig = new HashMap<>();
@@ -39,6 +41,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         oneAdapter.put("extensions", Arrays.asList("sdf", "sd"));
         oneAdapter.put("parameters", buildConfigParameters());
         oneAdapter.put("holdingAreaServiceClass", gsrs.holdingarea.service.DefaultHoldingAreaService.class);
+        oneAdapter.put("entityServiceClass", "gsrs.dataexchange.SubstanceHoldingAreaEntityService");
         List<Map<String, Object>> adapters = new ArrayList<>();
         adapters.add(oneAdapter);
         adapterConfig.put(substanceContext, adapters);
@@ -76,6 +79,8 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         config.setImportAdapterFactoryClass(NSRSSDFImportAdapterFactory.class);
         config.setAdapterName("Test adapter");
         config.setSupportedFileExtensions(Arrays.asList("sd", "pdf"));
+        config.setHoldingAreaServiceClass(DefaultHoldingAreaService.class);
+        config.setEntityServiceClass(SubstanceHoldingAreaEntityService.class);
 
         ObjectMapper mapper = new ObjectMapper();
         String configString =mapper.writeValueAsString(config);
