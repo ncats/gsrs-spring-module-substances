@@ -249,7 +249,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         log.trace("in createPropertyMap");
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         mapNode.put("name", fieldName);
-        mapNode.put("propertyType", "chemical|physical");
+        mapNode.put("propertyType", "CHEMICAL");
         mapNode.put("valueRange", String.format("{{%s}}", fieldName));
         mapNode.put("propertyTypeCV", "PROPERTY_TYPE");
         mapNode.put("valueUnits", "");
@@ -287,6 +287,9 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         mapNode.put("codeType", codeType);
         mapNode.put("codeSystemCV", "CODE_SYSTEM");
         mapNode.put("codeTypeCV", "CODE_TYPE");
+        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
+        refs.add(String.format("[[%s]]", SIMPLE_REF));
+        mapNode.set("referenceUUIDs", refs);
         return mapNode;
     }
 

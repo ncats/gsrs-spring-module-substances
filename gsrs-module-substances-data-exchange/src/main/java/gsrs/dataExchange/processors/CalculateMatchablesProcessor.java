@@ -132,7 +132,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             log.trace("no previous!");
         }
 
-        UUID indexingEventId= UUID.randomUUID();
+
         log.trace("going to iterate importMetadataRecordsToReindex ({})", importMetadataRecordsToReindex.size());
         importMetadataRecordsToReindex.forEach(r->{
             log.trace("going to index ImportMetadata with ID {}", r);
@@ -144,8 +144,10 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                 txSingleMetadata.executeWithoutResult(m->{
                     ImportMetadata metadata = importMetadataRepository.getOne(r);
                     if(metadata!= null) {
-                        log.trace("we have a real ImportMetadata object within transaction");
+                        log.trace("we have a real ImportMetadata object within transaction, validations: {}, mappings: {}, publisher: {}",
+                            metadata.getValidations().size(), metadata.getKeyValueMappings().size(), (eventPublisher==null));
                         EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
+                        UUID indexingEventId= UUID.randomUUID();
                         ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
                                 EntityUtils.EntityWrapper.of(wrappedObject));
                     } else {

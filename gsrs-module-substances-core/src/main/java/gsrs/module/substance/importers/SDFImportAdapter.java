@@ -7,6 +7,7 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
 import gsrs.importer.PropertyBasedDataRecordContext;
+import ix.core.models.Group;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
@@ -15,6 +16,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -42,11 +45,10 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
         ChemicalReader cr = ChemicalReaderFactory.newReader(is, encoding);
     	
         return cr.stream()
-          .map(c->{
-              return new ChemicalBackedSDRecordContext(c);
-          })
+          .map(c-> new ChemicalBackedSDRecordContext(c))
     	  .map(sd->{
                ChemicalSubstanceBuilder s = new ChemicalSubstanceBuilder();
+               s.setAccess(Collections.singleton(new Group("PROTECTED")));
                for(MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action: actions){
                    try {
                        //log.trace("Before action, substance has {} names and {} codes", s.names.size(), s.codes.size());
