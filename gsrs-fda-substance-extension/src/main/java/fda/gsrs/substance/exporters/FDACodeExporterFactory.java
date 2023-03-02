@@ -10,10 +10,11 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Created by VenkataSaiRa.Chavali on 3/10/2017.
- */
 public class FDACodeExporterFactory implements ExporterFactory<Substance>{
+
+    // To set include e.g. { parameters: {"primaryCodeSystem": "BDNUM"  }, ...}  in your factory configuration
+    // the setter will be called automatically by gsrs code.
+    private String primaryCodeSystem;
 
     OutputFormat format = new OutputFormat("codes.txt", "Codes only, tab-delimited (.txt)");
 
@@ -29,9 +30,14 @@ public class FDACodeExporterFactory implements ExporterFactory<Substance>{
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        // if(params.shouldCompress()) {
-        return new FDACodeExporter(out, !params.publicOnly());
-//        }
-//        return new JsonExporter(out);
+        return new FDACodeExporter(out, this.primaryCodeSystem);
+    }
+
+    public void setPrimaryCodeSystem(String primaryCodeSystem) {
+        this.primaryCodeSystem = primaryCodeSystem;
+    }
+
+    public String getPrimaryCodeSystem() {
+        return this.primaryCodeSystem;
     }
 }
