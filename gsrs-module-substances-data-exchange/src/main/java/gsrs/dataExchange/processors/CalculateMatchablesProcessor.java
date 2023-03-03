@@ -142,11 +142,11 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                 TransactionTemplate txSingleMetadata = new TransactionTemplate(platformTransactionManager);
                 txSingleMetadata.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 txSingleMetadata.executeWithoutResult(m->{
-                    ImportMetadata metadata = importMetadataRepository.getOne(r);
-                    if(metadata!= null) {
+                    Optional<ImportMetadata> metadata = importMetadataRepository.findById(r);
+                    if(metadata.isPresent()) {
                         log.trace("we have a real ImportMetadata object within transaction, validations: {}, mappings: {}, publisher: {}",
-                            metadata.getValidations().size(), metadata.getKeyValueMappings().size(), (eventPublisher==null));
-                        EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata);
+                            metadata.get().getValidations().size(), metadata.get().getKeyValueMappings().size(), (eventPublisher==null));
+                        EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata.get());
                         UUID indexingEventId= UUID.randomUUID();
                         ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
                                 EntityUtils.EntityWrapper.of(wrappedObject));
