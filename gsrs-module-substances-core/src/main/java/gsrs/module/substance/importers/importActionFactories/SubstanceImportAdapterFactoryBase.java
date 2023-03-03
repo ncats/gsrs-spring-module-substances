@@ -17,6 +17,7 @@ import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.model.SDRecordContext;
+import gsrs.springUtils.AutowireHelper;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -169,6 +170,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
                 }
                 log.trace("mappingActionFactory: " + mappingActionFactory);
                 if (mappingActionFactory != null) {
+                    AutowireHelper.getInstance().autowireAndProxy(mappingActionFactory);
                     action = mappingActionFactory.create(params);
                     actions.add(action);
                 } else {

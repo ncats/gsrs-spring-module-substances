@@ -14,7 +14,9 @@ import java.util.Set;
 
 public class FDARelationshipExporterFactory implements ExporterFactory<Substance> {
 
-        OutputFormat format = new OutputFormat("relationships.txt", "Relationships, tab-delimited (rel.txt)");
+    OutputFormat format = new OutputFormat("relationships.txt", "Relationships, tab-delimited (rel.txt)");
+
+    private boolean includeBdnum = false;
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -31,6 +33,15 @@ public class FDARelationshipExporterFactory implements ExporterFactory<Substance
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        return new FDARelationshipExporter(substanceRepository, out, !params.publicOnly());
+        return new FDARelationshipExporter(substanceRepository, out, this.includeBdnum);
     }
+
+    public boolean getIncludeBdnum(boolean includeBdnum) {
+        return this.includeBdnum;
+    }
+
+    public void setIncludeBdnum(boolean includeBdnum) {
+        this.includeBdnum = includeBdnum;
+    }
+
 }
