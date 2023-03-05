@@ -27,9 +27,11 @@ public class JoseCryptoServiceConfiguration {
     @Setter
     private Map<String, Object> jsonWebKeys;
     @Setter
-    private String contentAlgorithm;
+    private String encryptionMethod;
     @Setter
     private String keyAlgorithm;
+    @Setter
+    private String curve;
     @Setter
     private String signatureAlgorithm;
     @Setter
@@ -57,12 +59,16 @@ public class JoseCryptoServiceConfiguration {
         return privateKeyId;
     }
 
-    public String getContentAlgorithm() {
-        return contentAlgorithm != null ? contentAlgorithm : "A256GCM";
+    public String getEncryptionMethod() {
+        return encryptionMethod != null ? encryptionMethod : "A256GCM";
     }
 
     public String getKeyAlgorithm() {
-        return keyAlgorithm != null ? keyAlgorithm : "RSA_OAEP_256";
+        return keyAlgorithm != null ? keyAlgorithm : "RSA-OAEP-256";
+    }
+
+    public String getCurve() {
+        return curve != null ? curve : "P-256";
     }
 
     public String getSignatureAlgorithm() {
