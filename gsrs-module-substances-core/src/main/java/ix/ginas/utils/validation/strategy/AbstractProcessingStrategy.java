@@ -14,7 +14,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy {
+public abstract class AbstractProcessingStrategy implements GsrsProcessingStrategy {
     public static final String FAILED = "FAILED";
     public static final String WARNING = "WARNING";
     public static final String FAIL_REASON = "FAIL_REASON";
@@ -27,11 +27,12 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
     public List<GinasProcessingMessage> _localMessages = new ArrayList<GinasProcessingMessage>();
 
     private GroupService groupRepository;
-    private GsrsProcessingStrategyFactoryConfiguration gsrsProcessingStrategyFactoryConfiguration;
+    private GsrsProcessingStrategyFactoryConfiguration configuration;
 
-    public GinasProcessingStrategy(GroupService groupRepository, GsrsProcessingStrategyFactoryConfiguration gsrsProcessingStrategyFactoryConfiguration){
+    public AbstractProcessingStrategy(GroupService groupRepository,
+            GsrsProcessingStrategyFactoryConfiguration configuration){
         this.groupRepository = Objects.requireNonNull(groupRepository);
-        this.gsrsProcessingStrategyFactoryConfiguration = Objects.requireNonNull(gsrsProcessingStrategyFactoryConfiguration);
+        this.configuration = Objects.requireNonNull(configuration);
     }
 
     @Override
@@ -71,7 +72,7 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
                     throw new IllegalStateException(gpm.message);
 
                 } else if (failType == HANDLING_TYPE.MARK) {
-                    cs.status = GinasProcessingStrategy.FAILED;
+                    cs.status = AbstractProcessingStrategy.FAILED;
                     cs.addRestrictGroup(getGroupByName(Substance.GROUP_ADMIN));
 
                 } else if (failType == HANDLING_TYPE.NOTE) {
@@ -101,22 +102,22 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
         }
     }
 
-    public GinasProcessingStrategy markFailed() {
+    public AbstractProcessingStrategy markFailed() {
         this.failType = HANDLING_TYPE.MARK;
         return this;
     }
 
-    public GinasProcessingStrategy noteFailed() {
+    public AbstractProcessingStrategy noteFailed() {
         this.failType = HANDLING_TYPE.NOTE;
         return this;
     }
 
-    public GinasProcessingStrategy failFailed() {
+    public AbstractProcessingStrategy failFailed() {
         this.failType = HANDLING_TYPE.FAIL;
         return this;
     }
 
-    public GinasProcessingStrategy forceIgnoreFailed() {
+    public AbstractProcessingStrategy forceIgnoreFailed() {
         this.failType = HANDLING_TYPE.FORCE_IGNORE;
         return this;
     }
@@ -126,13 +127,10 @@ public abstract class GinasProcessingStrategy implements GsrsProcessingStrategy 
     }
 
     public void overrideMessage(GinasProcessingMessage gpm){
-        for (GsrsProcessingStrategyFactoryConfiguration.OverrideRule or : gsrsProcessingStrategyFactoryConfiguration.getOverrideRules()) {
-            if ((or.getUserRoles() == null || GsrsSecurityUtils.hasAnyRoles(or.getUserRoles())) && or.getRegex().matcher(gpm.toString()).find()) {
-                if (or.getMessageType() != null) {
-                    gpm.messageType = or.getMessageType();
-                }
-                if (or.getSuggestedChange() != null) {
-                    gpm.suggestedChange = or.getSuggestedChange().booleanValue();
+        for (GsrsProcessingStrategyFactoryConfiguration.OverrideRule rule : configuration.getOverrideRules()) {
+            if ((rule.getUserRoles() == null || GsrsSecurityUtils.hasAnyRoles(rule.getUserRoles())) && rule.getRegex().matcher(gpm.toString()).find()) {
+                if (rule.getNewMessageType() != null) {
+                    gpm.messageType = rule.getNewMessageType();
                 }
                 break;
             }

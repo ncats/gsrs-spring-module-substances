@@ -7,9 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public class AcceptAndApplyAllWarningsProcessingStrategy extends GinasProcessingStrategy {
+public class AcceptAndApplyAllWarningsProcessingStrategy extends AbstractProcessingStrategy {
     @Autowired
-    public AcceptAndApplyAllWarningsProcessingStrategy(GroupService groupRepository, GsrsProcessingStrategyFactoryConfiguration srsProcessingStrategyFactoryConfiguration) {
+    public AcceptAndApplyAllWarningsProcessingStrategy(GroupService groupRepository,
+            GsrsProcessingStrategyFactoryConfiguration srsProcessingStrategyFactoryConfiguration) {
         super(groupRepository, srsProcessingStrategyFactoryConfiguration);
     }
 

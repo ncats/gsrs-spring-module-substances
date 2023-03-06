@@ -24,8 +24,7 @@ public class GsrsProcessingStrategyFactoryConfiguration {
     @Data
     public static class OverrideRule {
         private Pattern regex;
-        private GinasProcessingMessage.MESSAGE_TYPE messageType;
+        private GinasProcessingMessage.MESSAGE_TYPE newMessageType;
         private List<Role> userRoles;
-        private Boolean suggestedChange;
     }
 }
