@@ -19,33 +19,49 @@ public class FDARelationshipExporter implements Exporter<Substance> {
 
     private final BufferedWriter bw;
     private final SubstanceRepository substanceRepository;
-    private final boolean includeBdnum;
+    private final String primaryCodeSystem;
 
-    public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, boolean includeBdnum) throws IOException{
+    public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, String primaryCodeSystem) throws IOException{
         this.substanceRepository = substanceRepository;
-        this.includeBdnum = includeBdnum;
+        this.primaryCodeSystem = primaryCodeSystem;
         bw = new BufferedWriter(new OutputStreamWriter(os));
 
         StringBuilder sb = new StringBuilder();
         sb.append("Relationship Public/Private").append("\t");
         sb.append("IS_REFLEXIVE").append("\t");
         sb.append("RELATED_SUBSTANCE_UUID").append("\t");
-        if(includeBdnum) {
-            sb.append("RELATED_SUBSTANCE_BDNUM").append("\t");
+        if(primaryCodeSystem!=null) {
+            sb.append("RELATED_SUBSTANCE_"+primaryCodeSystem).append("\t");
         }
         sb.append("RELATED_SUBSTANCE_APPROVAL_ID").append("\t");
         sb.append("Related Subst. Public/Private").append("\t");
         sb.append("RELATED_SUBSTANCE_TYPE").append("\t");
         sb.append("RELATED_SUBSTANCE_DISPLAY_NAME").append("\t");
+
         sb.append("RELATIONSHIP_TYPE").append("\t");
+
+
+
         sb.append("SUBJECT_DISPLAY_NAME").append("\t");
         sb.append("SUBJECT_SUBSTANCE_TYPE").append("\t");
         sb.append("Subj. Subst. Public/Private").append("\t");
         sb.append("SUBJECT_UUID").append("\t");
-        if(includeBdnum) {
-            sb.append("SUBJECT_BDNUM").append("\t");
+        if(primaryCodeSystem!=null) {
+            sb.append("SUBJECT_"+primaryCodeSystem).append("\t");
         }
         sb.append("SUBJECT_APPROVAL_ID").append("\t");
+        sb.append("RELATIONSHIP_QUALIFICATION").append("\t");
+        sb.append("RELATIONSHIP_INTERACTION_TYPE").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_TYPE").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_AVG").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_LOW").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_HIGH").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_LOW_LIMIT").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_HIGH_LIMIT").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_UNIT").append("\t");
+        sb.append("RELATIONSHIP_AMOUNT_NONNUMVALUE").append("\t");
+
+
         sb.append("RELATIONSHIP_CREATED_BY").append("\t");
         sb.append("RELATIONSHIP_LAST_EDITED").append("\t");
         sb.append("RELATIONSHIP_LAST_EDITED_BY");
@@ -53,9 +69,9 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         bw.newLine();
     }
 
-    public String getBdnum(Substance s){
+    public String getPrimaryCodeSystemCode(Substance s){
         return s.codes.stream()
-        .filter(cd->cd.codeSystem.equals("BDNUM"))
+        .filter(cd->cd.codeSystem.equals(primaryCodeSystem)&&cd.type.equals("PRIMARY"))
         .map(cd->cd.code)
         .findFirst()
         .orElse(null);
@@ -74,10 +90,10 @@ public class FDARelationshipExporter implements Exporter<Substance> {
 
             String subjectSubstancePublicOrPrivate = (ing.getAccess().isEmpty()) ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(ing.getAccess());
 
-            String subjectUnii = ing.getApprovalID();
-            String subjectBdnum = "";
-            if(includeBdnum) {
-                subjectBdnum = getBdnum(ing);
+            String subjectApprovalId = ing.getApprovalID();
+            String subjectPrimaryCodeSystemCode = "";
+            if(primaryCodeSystem!=null) {
+                subjectPrimaryCodeSystemCode = getPrimaryCodeSystemCode(ing);
             }
             String subjectDisplayName = ptUTF8;
 
@@ -91,7 +107,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
 
                 String relatedApprovalId = relationship.relatedSubstance.approvalID;
                 String relatedSubstancePublicOrPrivate = "";
-                String relatedBdnum = "";
+                String relatedPrimaryCodeSystemCode = "";
                 String relatedDisplayName = "";
                 String relatedSubstanceType = "Not present";
 
@@ -103,14 +119,27 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                     relatedSubstanceType = fullRelatedSubstance.map(s -> s.substanceClass.toString()).orElse("Not present");
                     if (fullRelatedSubstance.isPresent()) {
                         relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(fullRelatedSubstance.get().getAccess());
-                        if (includeBdnum) {
-                            relatedBdnum = getBdnum(fullRelatedSubstance.get());
+                        if (primaryCodeSystem!=null) {
+                            relatedPrimaryCodeSystemCode = getPrimaryCodeSystemCode(fullRelatedSubstance.get());
                         }
                         relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n -> n.getName()).orElse("");
                     }
                 } catch (Exception e) {
                     log.warn("Problem loading fullRelatedSubstance.", e);
                 }
+
+                String relationshipQualification = (relationship.qualification!=null) ? relationship.qualification : "";
+                String relationshipInteractionType = (relationship.interactionType!=null) ? relationship.interactionType : "";
+                Amount ra = relationship.amount;
+                String relationshipAmountType = (ra!=null && ra.type!=null) ? ra.type: "";
+                String relationshipAmountAverage = (ra!=null && ra.average!=null) ? ra.average.toString(): "";
+                String relationshipAmountLow = (ra!=null && ra.low!=null) ? ra.low.toString(): "";
+                String relationshipAmountHigh = (ra!=null && ra.high!=null) ? ra.high.toString(): "";
+                String relationshipAmountLowLimit = (ra!=null && ra.lowLimit!=null) ? ra.lowLimit.toString(): "";
+                String relationshipAmountHighLimit = (ra!=null && ra.highLimit!=null) ? ra.highLimit.toString(): "";
+                String relationshipAmountUnits = (ra!=null && ra.units!=null) ? ra.units: "";
+                String relationshipAmountNonNumericValue = (ra!=null && ra.nonNumericValue!=null) ? ra.nonNumericValue: "";
+
                 String relationshipCreatedBy = relationship.createdBy.username;
                 Date relationshipLastEdited = relationship.getLastEdited();
                 String relationshipLastEditedBy = relationship.lastEditedBy.username;
@@ -123,8 +152,8 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                 .append(relationshipPublicOrPrivate).append("\t") // Relationship Public/Private
                 .append(isReflexive).append("\t")                 // IS_REFLEXIVE
                 .append(relatedUuid).append("\t");                 // RELATED_SUBSTANCE_UUID
-                if(includeBdnum) {
-                    sb.append(relatedBdnum).append("\t");               // RELATED_SUBSTANCE_BDNUM
+                if(primaryCodeSystem!=null) {
+                    sb.append(relatedPrimaryCodeSystemCode).append("\t");               // relatedPrimaryCodeSystemCode
                 }
                 sb.append(relatedApprovalId).append("\t")           // RELATED_SUBSTANCE_APPROVAL_ID
                 .append(relatedSubstancePublicOrPrivate).append("\t") // Related Subst. Public/Private
@@ -136,13 +165,26 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                 .append(subjectSubstanceClass).append("\t")        // SUBJECT_SUBSTANCE_TYPE
                 .append(subjectSubstancePublicOrPrivate).append("\t") // Subj. Subst. Public/Private
                 .append(subjectUuid).append("\t");                  // SUBJECT_UUID
-                if(includeBdnum) {
-                    sb.append(subjectBdnum).append("\t");                  // SUBJECT_BDNUM
+                if(primaryCodeSystem!=null) {
+                    sb.append(subjectPrimaryCodeSystemCode).append("\t");                  // subjectPrimaryCodeSystemCode
                 }
-                sb.append(subjectUnii).append("\t")                  // SUBJECT_APPROVAL_ID
-                .append(relationshipCreatedBy).append("\t")       // RELATIONSHIP_CREATED_BY
-                .append(relationshipLastEdited).append("\t")      // RELATIONSHIP_LAST_EDITED
-                .append(relationshipLastEditedBy);   // RELATIONSHIP_LAST_EDITED_BY
+
+                sb.append(subjectApprovalId).append("\t");                 // SUBJECT_APPROVAL_ID
+
+                sb.append(relationshipQualification).append("\t");       // RELATIONSHIP_QUALIFICATION
+                sb.append(relationshipInteractionType).append("\t");       // RELATIONSHIP_INTERACTION_TYPE
+                sb.append(relationshipAmountType).append("\t");            // RELATIONSHIP_AMOUNT_TYPE
+                sb.append(relationshipAmountAverage).append("\t");         // RELATIONSHIP_AMOUNT_AVG
+                sb.append(relationshipAmountLow).append("\t");             // RELATIONSHIP_AMOUNT_LOW
+                sb.append(relationshipAmountHigh).append("\t");            // RELATIONSHIP_AMOUNT_HIGH
+                sb.append(relationshipAmountLowLimit).append("\t");        // RELATIONSHIP_AMOUNT_LOW_LIMIT
+                sb.append(relationshipAmountHighLimit).append("\t");       // RELATIONSHIP_AMOUNT_HIGH_LIMIT
+                sb.append(relationshipAmountUnits).append("\t");           // RELATIONSHIP_AMOUNT_UNITS
+                sb.append(relationshipAmountNonNumericValue).append("\t"); // RELATIONSHIP_AMOUNT_NONNUMVALUE
+
+                sb.append(relationshipCreatedBy).append("\t");       // RELATIONSHIP_CREATED_BY
+                sb.append(relationshipLastEdited).append("\t");     // RELATIONSHIP_LAST_EDITED
+                sb.append(relationshipLastEditedBy);   // RELATIONSHIP_LAST_EDITED_BY
                 bw.write(sb.toString());
                 bw.newLine();
             }
