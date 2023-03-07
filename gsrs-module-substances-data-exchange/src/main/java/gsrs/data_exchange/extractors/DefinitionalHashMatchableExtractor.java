@@ -1,7 +1,7 @@
 package gsrs.dataexchange.extractors;
 
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.model.MatchableKeyValueTupleExtractor;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.services.ConfigBasedDefinitionalElementFactory;

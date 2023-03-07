@@ -29,7 +29,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     private String inputFileName;
 
-    protected Class holdingAreaService;
+    protected Class stagingAreaService;
 
     protected List<Class> entityServices;
 
@@ -41,7 +41,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     private List<String> extensions = Arrays.asList("csv", "txt", "tsv");
 
-    public final static String FIELD_LIST = "Fields";
+    public final static String FIELD_LIST = "fields";
 
     public String substanceClassName;
 
@@ -194,23 +194,23 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
     }
 
     @Override
-    public Class getHoldingAreaService() {
-        return this.holdingAreaService;
+    public Class getStagingAreaService() {
+        return this.stagingAreaService;
     }
 
     @Override
-    public void setHoldingAreaService(Class holdingService) {
-        this.holdingAreaService = holdingService;
+    public void setStagingAreaService(Class stagingService) {
+        this.stagingAreaService = stagingService;
     }
 
     @Override
-    public Class getHoldingAreaEntityService() {
+    public Class getStagingAreaEntityService() {
         return this.entityServiceClass;
     }
 
     @Override
-    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
-        this.entityServiceClass = holdingAreaEntityService;
+    public void setStagingAreaEntityService(Class stagingAreaEntityService) {
+        this.entityServiceClass = stagingAreaEntityService;
     }
 
     @Override

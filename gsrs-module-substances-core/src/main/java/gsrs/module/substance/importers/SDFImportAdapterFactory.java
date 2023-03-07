@@ -32,7 +32,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     private Map<String, InputFieldStatistics> fileFieldStatisticsMap;
 
-    private Class holdingAreaService;
+    private Class stagingAreaService;
 
     private List<Class> entityServices;
 
@@ -149,25 +149,25 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     }
 
     @Override
-    public Class getHoldingAreaService() {
-        log.trace("using holding area service name from adapter factory");
-        return this.holdingAreaService;
+    public Class getStagingAreaService() {
+        log.trace("using staging area service name from adapter factory");
+        return this.stagingAreaService;
     }
 
     @Override
-    public void setHoldingAreaService(Class holdingAreaService){
-        log.trace("in setHoldingAreaService " + holdingAreaService.getName());
-        this.holdingAreaService=holdingAreaService;
+    public void setStagingAreaService(Class stagingService){
+        log.trace("in setHoldingAreaService " + stagingService.getName());
+        this.stagingAreaService = stagingService;
     }
 
     @Override
-    public Class getHoldingAreaEntityService() {
-        return this.holdingAreaService;
+    public Class getStagingAreaEntityService() {
+        return this.stagingAreaService;
     }
 
     @Override
-    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
-        this.holdingAreaService=holdingAreaEntityService;
+    public void setStagingAreaEntityService(Class stagingAreaEntityService) {
+        this.stagingAreaService =stagingAreaEntityService;
     }
 
     @Override

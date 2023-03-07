@@ -97,22 +97,22 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
     }
 
     @Override
-    public Class getHoldingAreaService() {
+    public Class getStagingAreaService() {
         return null;
     }
 
     @Override
-    public void setHoldingAreaService(Class holdingService) {
+    public void setStagingAreaService(Class stagingService) {
 
     }
 
     @Override
-    public Class getHoldingAreaEntityService() {
+    public Class getStagingAreaEntityService() {
         return null;
     }
 
     @Override
-    public void setHoldingAreaEntityService(Class holdingAreaEntityService) {
+    public void setStagingAreaEntityService(Class stagingAreaEntityService) {
 
     }
 

@@ -7,9 +7,9 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.dataexchange.SubstanceHoldingAreaEntityService;
+import gsrs.data_exchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.model.MappingAction;
-import gsrs.holdingarea.service.DefaultHoldingAreaService;
+import gsrs.stagingarea.service.DefaultStagingAreaService;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.*;
 import gsrs.module.substance.importers.NSRSSDFImportAdapterFactory;
@@ -40,8 +40,8 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         oneAdapter.put("adapterName", "NSRS SDF Adapter");
         oneAdapter.put("extensions", Arrays.asList("sdf", "sd"));
         oneAdapter.put("parameters", buildConfigParameters());
-        oneAdapter.put("holdingAreaServiceClass", gsrs.holdingarea.service.DefaultHoldingAreaService.class);
-        oneAdapter.put("entityServiceClass", "gsrs.dataexchange.SubstanceHoldingAreaEntityService");
+        oneAdapter.put("stagingAreaServiceClass", gsrs.stagingarea.service.DefaultStagingAreaService.class);
+        oneAdapter.put("entityServiceClass", "gsrs.data_exchange.SubstanceStagingAreaEntityService");
         List<Map<String, Object>> adapters = new ArrayList<>();
         adapters.add(oneAdapter);
         adapterConfig.put(substanceContext, adapters);
@@ -79,8 +79,8 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         config.setImportAdapterFactoryClass(NSRSSDFImportAdapterFactory.class);
         config.setAdapterName("Test adapter");
         config.setSupportedFileExtensions(Arrays.asList("sd", "pdf"));
-        config.setHoldingAreaServiceClass(DefaultHoldingAreaService.class);
-        config.setEntityServiceClass(SubstanceHoldingAreaEntityService.class);
+        config.setStagingAreaServiceClass(DefaultStagingAreaService.class);
+        config.setEntityServiceClass(SubstanceStagingAreaEntityService.class);
 
         ObjectMapper mapper = new ObjectMapper();
         String configString =mapper.writeValueAsString(config);

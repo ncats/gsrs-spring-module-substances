@@ -376,7 +376,22 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
 
-        //todo: merge definitions
+        if(existing.substanceClass== Substance.SubstanceClass.chemical &&hasTrueValue(parameters, "CopyStructure")) {
+            ((ChemicalSubstanceBuilder) builder).setStructure(((ChemicalSubstance) source).getStructure());
+            ((ChemicalSubstanceBuilder) builder).clearMoieties();
+            EntityUtils.EntityInfo<Moiety> eicsMoieties = EntityUtils.getEntityInfoFor(Moiety.class);
+
+            ((ChemicalSubstance) source).moieties.forEach(m-> {
+                try {
+                    Moiety copiedMoiety = eicsMoieties.fromJson(mapper.writeValueAsString(m));
+                    ((ChemicalSubstanceBuilder) builder).addMoiety(copiedMoiety);
+                } catch (IOException e) {
+                    log.error("Error copying moiety {}", m.uuid, e);
+                    processLog.accept(String.format("Error copying moiety %s", m.uuid));
+                }
+            });
+        }
+        //todo: consider merging definitions
         if(!hasTrueValue(parameters, "SkipLevelingReferences")) {
             EntityUtils.EntityInfo<Reference> eicsRefs = EntityUtils.getEntityInfoFor(Reference.class);
             for (String refUuid : referencesToCopy.keySet()) {

@@ -1,10 +1,10 @@
-package gsrs.dataexchange;
+package gsrs.data_exchange;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.events.ReindexEntityEvent;
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.service.HoldingAreaEntityService;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.service.StagingAreaEntityService;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.service.GsrsEntityService;
@@ -27,7 +27,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 @Slf4j
-public class SubstanceHoldingAreaEntityService implements HoldingAreaEntityService<Substance> {
+public class SubstanceStagingAreaEntityService implements StagingAreaEntityService<Substance> {
 
     @Autowired
     protected SubstanceEntityService substanceEntityService;

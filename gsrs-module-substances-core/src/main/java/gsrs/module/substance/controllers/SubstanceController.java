@@ -29,9 +29,10 @@ import javax.validation.constraints.NotBlank;
 
 import gsrs.controller.*;
 import gsrs.dataexchange.model.ProcessingAction;
-import gsrs.holdingarea.model.ImportData;
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.stagingarea.model.ImportData;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.service.StagingAreaService;
+import gsrs.stagingarea.service.StagingAreaService;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -1012,11 +1013,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     }else {
                         try {
                             log.trace("looking for structure in import data repo. adapterName: {}", adapterName);
-                            HoldingAreaService service;
+                            StagingAreaService service;
                             if(adapterName!=null && adapterName.length()>0) {
-                                service= getHoldingAreaService(adapterName);
+                                service= getStagingAreaService(adapterName);
                             } else {
-                                service=getDefaultHoldingAreaService();
+                                service=getDefaultStagingAreaService();
                             }
 
                             log.trace("retrieved service {}", service.getClass().getName());
@@ -1033,8 +1034,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                                 log.trace("retrieved import data");
                                 Substance importedSubstance= service.deserializeObject(importData.getEntityClassName(), importData.getData());
                                 if(importedSubstance!=null ){
-                                    log.trace("retrieved structure from import data repository");
+                                    log.trace("retrieved substance from import data repository");
                                     opStructure = importedSubstance.getStructureToRender();
+                                    if(!opStructure.isPresent()) {
+                                        log.trace("no structure found within SA substance; will create key");
+                                        Key k = Key.of(EntityUtils.EntityWrapper.of(importedSubstance));
+                                        StructureToRender.StructureToRenderBuilder builder = StructureToRender.builder().substanceKey(k).input(input);
+                                        return builder.build();
+                                    }
                                 }
                             }
                         } catch (Exception e) {

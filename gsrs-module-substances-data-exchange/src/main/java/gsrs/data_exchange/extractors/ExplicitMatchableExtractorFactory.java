@@ -1,7 +1,7 @@
 package gsrs.dataexchange.extractors;
 
 
-import gsrs.holdingarea.model.MatchableKeyValueTupleExtractor;
+import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 
 public class ExplicitMatchableExtractorFactory implements MatchableExtractorFactory {
     @Override

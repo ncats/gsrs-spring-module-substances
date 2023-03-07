@@ -1,7 +1,7 @@
 package gsrs.dataexchange.extractors;
 
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.model.MatchableKeyValueTupleExtractor;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import ix.ginas.models.v1.Substance;
 import org.hibernate.procedure.spi.ParameterRegistrationImplementor;
 

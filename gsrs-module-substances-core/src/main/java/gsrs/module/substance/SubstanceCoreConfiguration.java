@@ -22,8 +22,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-//import gsrs.holdingArea.services.ImportMetadataLegacySearchService;
-import gsrs.holdingarea.service.ImportMetadataLegacySearchService;
+import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
 
 @Configuration
 @Import({SubstanceController.class, EditController2.class, NameController.class, CodeController.class, ReferenceController.class,

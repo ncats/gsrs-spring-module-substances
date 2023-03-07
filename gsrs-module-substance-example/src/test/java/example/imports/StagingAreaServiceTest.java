@@ -1,9 +1,9 @@
 package example.imports;
 
-import gsrs.dataexchange.SubstanceHoldingAreaEntityService;
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.service.DefaultHoldingAreaService;
-import gsrs.holdingarea.service.HoldingAreaService;
+import gsrs.data_exchange.SubstanceStagingAreaEntityService;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.service.DefaultStagingAreaService;
+import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -19,28 +19,28 @@ import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-public class HoldingAreaServiceTest  extends AbstractSubstanceJpaEntityTest {
+public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
 
-    HoldingAreaService holdingAreaService;
+    StagingAreaService stagingAreaService;
 
     String substanceContext = "ix.ginas.models.v1.Substance";
 
     @BeforeEach
     public void setup(){
-        if( holdingAreaService == null ){
-            log.trace("setting up holding area service");
-            holdingAreaService = new DefaultHoldingAreaService(substanceContext);
-            holdingAreaService = AutowireHelper.getInstance().autowireAndProxy(holdingAreaService);
-            SubstanceHoldingAreaEntityService holdingAreaEntityService = new SubstanceHoldingAreaEntityService();
-            holdingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(holdingAreaEntityService);
-            holdingAreaService.registerEntityService(holdingAreaEntityService);
+        if( stagingAreaService == null ){
+            log.trace("setting up staging area service");
+            stagingAreaService = new DefaultStagingAreaService(substanceContext);
+            stagingAreaService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaService);
+            SubstanceStagingAreaEntityService stagingAreaEntityService = new SubstanceStagingAreaEntityService();
+            stagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaEntityService);
+            stagingAreaService.registerEntityService(stagingAreaEntityService);
         }
     }
 
     @Test
     public void testgetMatchables() throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         String testMethodName = "getMatchables";
-        Method testMethod = holdingAreaService.getClass().getDeclaredMethod(testMethodName, Object.class);
+        Method testMethod = stagingAreaService.getClass().getDeclaredMethod(testMethodName, Object.class);
         if(testMethod==null) {
             Assertions.fail("Error locating testing method!");
         }
@@ -52,7 +52,7 @@ public class HoldingAreaServiceTest  extends AbstractSubstanceJpaEntityTest {
                 .addName("chem1")
                 .setUUID(uuid1)
                 .build();
-        List<MatchableKeyValueTuple> matchables = (List<MatchableKeyValueTuple>) testMethod.invoke(holdingAreaService, chem);
+        List<MatchableKeyValueTuple> matchables = (List<MatchableKeyValueTuple>) testMethod.invoke(stagingAreaService, chem);
         log.trace("(matchables)");
         matchables.forEach(m-> log.trace("key: '{}'; value: '{}'; layer: {}\n", m.getKey(), m.getValue(), m.getLayer()));
         Assertions.assertTrue(matchables.stream().anyMatch(m->m.getKey().equalsIgnoreCase("Definitional Hash - Layer 1")

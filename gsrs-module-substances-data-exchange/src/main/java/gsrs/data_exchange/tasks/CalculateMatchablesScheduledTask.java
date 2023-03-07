@@ -1,9 +1,9 @@
-package gsrs.dataexchange.tasks;
+package gsrs.data_exchange.tasks;
 
-import gsrs.dataexchange.SubstanceHoldingAreaEntityService;
-import gsrs.holdingarea.model.KeyValueMapping;
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.repository.KeyValueMappingRepository;
+import gsrs.data_exchange.SubstanceStagingAreaEntityService;
+import gsrs.stagingarea.model.KeyValueMapping;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
@@ -32,7 +32,7 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
-    SubstanceHoldingAreaEntityService substanceHoldingAreaEntityService = new SubstanceHoldingAreaEntityService();
+    SubstanceStagingAreaEntityService substanceStagingAreaEntityService = new SubstanceStagingAreaEntityService();
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
@@ -53,7 +53,7 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
 
         listen.newProcess();
 
-        substanceHoldingAreaEntityService= AutowireHelper.getInstance().autowireAndProxy(substanceHoldingAreaEntityService);
+        substanceStagingAreaEntityService= AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
 
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);
@@ -61,7 +61,7 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
         tx.executeWithoutResult(
                 a-> substanceRepository.streamAll().forEach(s -> {
                     log.trace("looking at substance " + s.getUuid());
-                    List<MatchableKeyValueTuple> matchables = substanceHoldingAreaEntityService.extractKVM(s);
+                    List<MatchableKeyValueTuple> matchables = substanceStagingAreaEntityService.extractKVM(s);
                     matchables.forEach(kv -> {
                         log.trace("going to store KeyValueMapping with key {} and value '{}' qualifier: {}, instance id: {}; location: {}",
                                 kv.getKey(), kv.getValue(), kv.getQualifier(), s.uuid.toString(), DATA_SOURCE_MAIN);

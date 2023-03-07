@@ -1,12 +1,12 @@
-package gsrs.dataexchange.processors;
+package gsrs.data_exchange.processors;
 
-import gsrs.dataexchange.SubstanceHoldingAreaEntityService;
+import gsrs.data_exchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
-import gsrs.holdingarea.model.ImportMetadata;
-import gsrs.holdingarea.model.KeyValueMapping;
-import gsrs.holdingarea.model.MatchableKeyValueTuple;
-import gsrs.holdingarea.repository.ImportMetadataRepository;
-import gsrs.holdingarea.repository.KeyValueMappingRepository;
+import gsrs.stagingarea.model.ImportMetadata;
+import gsrs.stagingarea.model.KeyValueMapping;
+import gsrs.stagingarea.model.MatchableKeyValueTuple;
+import gsrs.stagingarea.repository.ImportMetadataRepository;
+import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.repository.EditRepository;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
@@ -25,8 +25,8 @@ import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
-import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
+import static gsrs.data_exchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
+import static gsrs.data_exchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
 
 @Slf4j
 public class CalculateMatchablesProcessor implements EntityProcessor<Substance> {
@@ -45,7 +45,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
-    SubstanceHoldingAreaEntityService substanceHoldingAreaEntityService = new SubstanceHoldingAreaEntityService();
+    SubstanceStagingAreaEntityService substanceStagingAreaEntityService = new SubstanceStagingAreaEntityService();
 
     @Override
     public void prePersist(Substance obj) {
@@ -109,7 +109,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             log.trace("no version");
         }
 
-        substanceHoldingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceHoldingAreaEntityService);
+        substanceStagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
         //clear out the old stuff
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);
@@ -120,11 +120,11 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         log.trace("just completed call to deleteByRecordId");
 
         Set<UUID> importMetadataRecordsToReindex = new HashSet<>();
-        List<MatchableKeyValueTuple> matchables = substanceHoldingAreaEntityService.extractKVM(substance);
+        List<MatchableKeyValueTuple> matchables = substanceStagingAreaEntityService.extractKVM(substance);
         log.trace("calculated matchables");
         processMatchables(substance, matchables, importMetadataRecordsToReindex::add, true);
         if(previousVersion.isPresent()){
-            List<MatchableKeyValueTuple> matchablesForPrevious = substanceHoldingAreaEntityService.extractKVM(previousVersion.get());
+            List<MatchableKeyValueTuple> matchablesForPrevious = substanceStagingAreaEntityService.extractKVM(previousVersion.get());
             processMatchables(previousVersion.get(), matchablesForPrevious, importMetadataRecordsToReindex::add, false);
             log.trace("calculated matchables for previous (version {}; change reason {})", previousVersion.get().version,
                     previousVersion.get().changeReason);

@@ -14,7 +14,7 @@ public class GSRSJSONImportAdapterFactory extends SubstanceImportAdapterFactoryB
 
     private String description = "Importer for the GSRS-specific JSON file used by GSRS since version 2";
 
-    protected Class holdingAreaService;
+    protected Class stagingAreaService;
 
     @Override
     public String getAdapterName() {
@@ -46,13 +46,13 @@ public class GSRSJSONImportAdapterFactory extends SubstanceImportAdapterFactoryB
     }
 
     @Override
-    public Class getHoldingAreaService() {
-        return this.holdingAreaService;
+    public Class getStagingAreaService() {
+        return this.stagingAreaService;
     }
 
     @Override
-    public void setHoldingAreaService(Class holdingService) {
-        this.holdingAreaService = holdingService;
+    public void setStagingAreaService(Class stagingService) {
+        this.stagingAreaService = stagingService;
     }
 
 }

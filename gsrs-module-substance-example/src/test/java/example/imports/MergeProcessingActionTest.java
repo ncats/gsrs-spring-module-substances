@@ -3,8 +3,6 @@ package example.imports;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.dataexchange.processing_actions.MergeProcessingAction;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
-import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.services.PrincipalServiceImpl;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.models.Keyword;
@@ -20,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,17 +31,17 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     @Autowired
     private StructureIndexerService indexer;
 
-    @Autowired
-    private SubstanceEntityService substanceEntityService;
+    //@Autowired
+    //private SubstanceEntityService substanceEntityService;
 
     @Autowired
     private PrincipalServiceImpl principalService;
 
-    @Autowired
-    private SubstanceRepository substanceRepository;
+//    @Autowired
+//    private SubstanceRepository substanceRepository;
 
-    @Autowired
-    private PlatformTransactionManager platformTransactionManager;
+//    @Autowired
+//    private PlatformTransactionManager platformTransactionManager;
 
     @BeforeEach
     public void clearIndexers() throws IOException {
@@ -53,7 +50,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNames() throws Exception {
+    public void testMergeNames() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -92,9 +89,107 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         Assertions.assertTrue(output instanceof ChemicalSubstance);
     }
 
+    @Test
+    public void testMergeStructures() {
+
+        String cleanMolfile ="\n" +
+                "  ACCLDraw03062319102D\n" +
+                "\n" +
+                "  5  3  0  0  0  0  0  0  0  0999 V2000\n" +
+                "    2.6138   -5.4326    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    3.6517   -4.8689    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    3.6827   -3.6879    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    4.6591   -5.4863    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    7.7500   -3.9500    0.0000 Na  0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "  1  2  1  0  0  0  0\n" +
+                "  2  3  2  0  0  0  0\n" +
+                "  2  4  1  0  0  0  0\n" +
+                "M  END\n";
+        String disorganizedMolfile = "\n" +
+                "  ACCLDraw03062319112D\n" +
+                "\n" +
+                "  5  3  0  0  0  0  0  0  0  0999 V2000\n" +
+                "    2.1450   -8.2451    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    3.6517   -4.8689    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    1.5265   -2.1879    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    7.7216  -12.9550    0.0000 O   0  5  0  0  0  0  0  0  0  0  0  0\n" +
+                "    7.7500   -3.9500    0.0000 Na  0  3  0  0  0  0  0  0  0  0  0  0\n" +
+                "  1  2  1  0  0  0  0\n" +
+                "  2  3  2  0  0  0  0\n" +
+                "  2  4  1  0  0  0  0\n" +
+                "M  CHG  2   4  -1   5   1\n" +
+                "M  END\n";
+        String smilesNoCharge="[Na].CC(=O)O";
+        String smilesWithCharges ="[Na+].CC(=O)[O-]";
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference(smilesNoCharge);
+        Name name1 = new Name();
+        name1.name="sodium acetate";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        builder.addName(name1);
+
+        builder.addCode("CHEMBL", "CHEMBL1354");
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference(smilesWithCharges);
+        builder2.addName("Sodium Acetate");
+        builder2.addCode("CHEMBL", "CHEMBL1354");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("CopyStructure", "true");
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        ChemicalSubstance mergedChemical = (ChemicalSubstance) output;
+        Assertions.assertTrue(!mergedChemical.getStructure().smiles.contains("+")
+            && !mergedChemical.getStructure().smiles.contains("-"));
+        mergedChemical.moieties.stream().noneMatch(moi->moi.structure.smiles.contains("-") || moi.structure.smiles.contains("+"));
+    }
 
     @Test
-    public void testMergeNamesIncludeReferences() throws Exception {
+    public void testMergeStructuresReverse() {
+
+        String smilesNoCharge="[Na].CC(=O)O";
+        String smilesWithCharges ="[Na+].CC(=O)[O-]";
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference(smilesWithCharges);
+        Name name1 = new Name();
+        name1.name="sodium acetate";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        builder.addName(name1);
+
+        builder.addCode("CHEMBL", "CHEMBL1354");
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference(smilesNoCharge);
+        builder2.addName("Sodium Acetate");
+        builder2.addCode("CHEMBL", "CHEMBL1354");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("CopyStructure", "true");
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        ChemicalSubstance mergedChemical = (ChemicalSubstance) output;
+        Assertions.assertTrue(mergedChemical.getStructure().smiles.contains("+")
+                && mergedChemical.getStructure().smiles.contains("-"));
+        mergedChemical.moieties.stream().allMatch(moi->moi.structure.smiles.contains("-") || moi.structure.smiles.contains("+"));
+    }
+
+    @Test
+    public void testMergeNamesIncludeReferences() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -144,7 +239,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNamesIncludeReferencesWhenBlocked() throws Exception {
+    public void testMergeNamesIncludeReferencesWhenBlocked() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -356,7 +451,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
             });
         });
         Assertions.assertTrue(output.codes.stream().allMatch(c-> c.getReferences().isEmpty() || c.getReferences().stream().anyMatch(cr->output.references.stream().anyMatch(ref->ref.uuid.toString().equalsIgnoreCase(cr.term)))));
-        Assertions.assertTrue(output.codes.stream().filter(c->c.codeSystem==casCodeNoRef.codeSystem && c.code.equals(casCodeNoRef.code)).allMatch(c2->c2.getReferences().isEmpty()));
+        Assertions.assertTrue(output.codes.stream().filter(c->c.codeSystem.equals( casCodeNoRef.codeSystem) && c.code.equals(casCodeNoRef.code)).allMatch(c2->c2.getReferences().isEmpty()));
     }
 
     @Test
