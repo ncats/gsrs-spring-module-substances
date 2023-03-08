@@ -15,17 +15,13 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Created by VenkataSaiRa.Chavali on 3/10/2017.
- */
 public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
-    public static final String NAME_PARAMETERS ="addNames";
-    public static final String CODE_PARAMETERS ="addPrimaryCodeSystems";
+    public static final String PRIMARY_CODE_SYSTEM_PARAMETERS ="showPrimaryCodeSystemField";
 
     OutputFormat format = new OutputFormat("names.txt", "Names only, tab-delimited (.txt)");
 
-    private boolean includeBdnum = false;
+    private String primaryCodeSystem;
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -42,41 +38,34 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        return new FDANameExporter(substanceRepository, out, includeBdnum);
+        return new FDANameExporter(substanceRepository, out, params, this.primaryCodeSystem);
     }
 
-    public boolean getIncludeBdnum(boolean includeBdnum) {
-        return this.includeBdnum;
+    public String getPrimaryCodeSystem(String primaryCodeSystem) {
+        return this.primaryCodeSystem;
     }
 
-    public void setIncludeBdnum(boolean includeBdnum) {
-        this.includeBdnum = includeBdnum;
+    public void setPrimaryCodeSystem(String primaryCodeSystem) {
+        this.primaryCodeSystem = primaryCodeSystem;
     }
-
 
     @Override
     public JsonNode getSchema() {
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
-        ObjectNode nameNode = JsonNodeFactory.instance.objectNode();
-        nameNode.put("type", "boolean");
-        nameNode.put("title", "Include Names?");
-        nameNode.put("comments", "Add Substance names to output?");
-        parameters.set(NAME_PARAMETERS, nameNode);
 
-        ObjectNode codeNode = JsonNodeFactory.instance.objectNode();
-        codeNode.put("type", "boolean");
-        codeNode.put("title", "Include Codes?");
-        codeNode.put("comments", "Add Substance codes to output?");
-        parameters.set(CODE_PARAMETERS, codeNode);
+        ObjectNode primaryCodeSystemNode = JsonNodeFactory.instance.objectNode();
+        primaryCodeSystemNode.put("type", "boolean");
+        primaryCodeSystemNode.put("title", "Include Primary Code System Field");
+        primaryCodeSystemNode.put("comments", "Include Primary Code System Field");
+        parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
 
         ObjectNode approvalIDNameNode = JsonNodeFactory.instance.objectNode();
         approvalIDNameNode.put("type", "string");
         approvalIDNameNode.put("title", "Label for Approval ID in file");
         approvalIDNameNode.put("comments", "Header for Approval ID in file");
         parameters.set("approvalIDName", approvalIDNameNode);
-        return generateSchemaNode("SDF File Exporter Parameters", parameters);
+
+        return generateSchemaNode("Names Exporter Parameters", parameters);
     }
-
-
 
 }
