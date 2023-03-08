@@ -57,12 +57,15 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
         primaryCodeSystemNode.put("type", "boolean");
         primaryCodeSystemNode.put("title", "Include Primary Code System Field");
         primaryCodeSystemNode.put("comments", "Include Primary Code System Field");
+        primaryCodeSystemNode.put("value", true);
+
         parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
 
         ObjectNode approvalIDNameNode = JsonNodeFactory.instance.objectNode();
         approvalIDNameNode.put("type", "string");
         approvalIDNameNode.put("title", "Label for Approval ID in file");
         approvalIDNameNode.put("comments", "Header for Approval ID in file");
+        primaryCodeSystemNode.put("value", "APPROVAL_ID");
         parameters.set("approvalIDName", approvalIDNameNode);
 
         return generateSchemaNode("Names Exporter Parameters", parameters);
