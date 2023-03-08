@@ -436,7 +436,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     				}else if(StructuralModification.class.isAssignableFrom(pcls)) {
     					role="Structural Modification";
     				}else if(Property.class.isAssignableFrom(pcls)) {
-    					role="Property Substance Reference";
+                                        Property prop = (Property)ss.k();
+    					role="Property Substance:" + prop.name;
     				}else if(StructurallyDiverse.class.isAssignableFrom(pcls)) {
     					StructurallyDiverse par = (StructurallyDiverse)ss.k();
     					if(par.parentSubstance!=null && par.parentSubstance.uuid.equals(ss.v().uuid)){
