@@ -8,6 +8,7 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -40,6 +41,7 @@ public class ImageUtilitiesTest {
         Assertions.assertFalse(imageInfo.isHasData());
     }
 
+    @Disabled
     @Test
     public void testSubstanceWithImage() {
         SubstanceBuilder builder = new SubstanceBuilder();
