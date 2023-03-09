@@ -17,7 +17,9 @@ import java.util.Set;
 
 public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
-    public static final String PRIMARY_CODE_SYSTEM_PARAMETERS ="showPrimaryCodeSystemField";
+    public static final String PRIMARY_CODE_SYSTEM_PARAMETERS ="omitPrimaryCodeSystemField";
+    public static final String APPROVAL_ID_NAME_PARAMETERS ="approvalIdName";
+    public static final String DEFAULT_APPROVAL_ID_NAME ="APPROVAL_ID";
 
     OutputFormat format = new OutputFormat("names.txt", "Names only, tab-delimited (.txt)");
 
@@ -53,22 +55,21 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
     public JsonNode getSchema() {
         ObjectNode parameters = JsonNodeFactory.instance.objectNode();
 
-        ObjectNode primaryCodeSystemNode = JsonNodeFactory.instance.objectNode();
-        primaryCodeSystemNode.put("type", "boolean");
-        primaryCodeSystemNode.put("title", "Include Primary Code System Field");
-        primaryCodeSystemNode.put("comments", "Include Primary Code System Field");
-        primaryCodeSystemNode.put("value", true);
-
-        parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
-
+        if(getPrimaryCodeSystem()!=null) {
+            ObjectNode primaryCodeSystemNode = JsonNodeFactory.instance.objectNode();
+            primaryCodeSystemNode.put("type", "boolean");
+            primaryCodeSystemNode.put("title", "Omit Primary Code System Field ("+ getPrimaryCodeSystem() +")");
+            primaryCodeSystemNode.put("comments", "Omit Primary Code System Field ("+ getPrimaryCodeSystem() +")");
+            primaryCodeSystemNode.put("default", false);
+            parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
+        }
         ObjectNode approvalIDNameNode = JsonNodeFactory.instance.objectNode();
         approvalIDNameNode.put("type", "string");
         approvalIDNameNode.put("title", "Label for Approval ID in file");
         approvalIDNameNode.put("comments", "Header for Approval ID in file");
-        primaryCodeSystemNode.put("value", "APPROVAL_ID");
-        parameters.set("approvalIDName", approvalIDNameNode);
-
-        return generateSchemaNode("Names Exporter Parameters", parameters);
+        approvalIDNameNode.put("default", DEFAULT_APPROVAL_ID_NAME);
+        parameters.set(APPROVAL_ID_NAME_PARAMETERS, approvalIDNameNode);
+        return generateSchemaNode("Name Exporter Parameters", parameters);
     }
 
 }

@@ -22,7 +22,8 @@ public class FDANameExporter implements Exporter<Substance> {
     private final String primaryCodeSystem;
 
     private ExporterFactory.Parameters params;
-    private boolean showPrimaryCodeSystem;
+    private boolean omitPrimaryCodeSystem;
+    private String chosenApprovalIdName;
 
     public FDANameExporter(SubstanceRepository substanceRepository, OutputStream os, ExporterFactory.Parameters params, String primaryCodeSystem) throws IOException{
 
@@ -31,9 +32,14 @@ public class FDANameExporter implements Exporter<Substance> {
         this.params = params;
         JsonNode detailedParameters = params.detailedParameters();
 
-        showPrimaryCodeSystem = (detailedParameters!=null
+        omitPrimaryCodeSystem = (detailedParameters!=null
             && detailedParameters.hasNonNull(FDANameExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS)
             && detailedParameters.get(FDANameExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS).booleanValue());
+
+        chosenApprovalIdName = (detailedParameters!=null
+            && detailedParameters.hasNonNull(FDANameExporterFactory.APPROVAL_ID_NAME_PARAMETERS)
+            && detailedParameters.get(FDANameExporterFactory.APPROVAL_ID_NAME_PARAMETERS).textValue().trim().length()>0)
+            ? detailedParameters.get(FDANameExporterFactory.APPROVAL_ID_NAME_PARAMETERS).textValue().trim() : FDANameExporterFactory.DEFAULT_APPROVAL_ID_NAME;
 
         bw = new BufferedWriter(new OutputStreamWriter(os));
         StringBuilder sb = new StringBuilder();
@@ -45,13 +51,13 @@ public class FDANameExporter implements Exporter<Substance> {
         .append("UTF8_Name").append("\t")
         .append("Public or Private").append("\t")
         .append("This is a").append("\t")
-        .append("APPROVAL_ID").append("\t");
-        if(showPrimaryCodeSystem && primaryCodeSystem!=null){
+        .append(chosenApprovalIdName).append("\t");
+        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null){
             sb.append(primaryCodeSystem).append("\t");
         }
         sb.append("DISPLAY_NAME").append("\t")
         .append("UTF8_DISPLAY_NAME").append("\t");
-        if(showPrimaryCodeSystem && primaryCodeSystem!=null){
+        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null){
             sb.append("PARENT_"+primaryCodeSystem).append("\t");
         }
         sb.append("PARENT_DISPLAY_NAME").append("\t")
@@ -155,12 +161,12 @@ public class FDANameExporter implements Exporter<Substance> {
             .append(publicOrPrivate).append("\t")       // Public or Private
             .append(thisIsA).append("\t")               // This is a
             .append(approvalID).append("\t");           // APPROVAL_ID
-            if(showPrimaryCodeSystem && primaryCodeSystem!=null){
+            if(!omitPrimaryCodeSystem && primaryCodeSystem!=null){
                 sb.append(primaryCodeSystemCode).append("\t");          // primaryCodeSystemCode
             }
             sb.append(ipt).append("\t")                 // DISPLAY_NAME
             .append(iptUTF8).append("\t");              // UTF8_DISPLAY_NAME
-            if(showPrimaryCodeSystem && primaryCodeSystem!=null){
+            if(!omitPrimaryCodeSystem && primaryCodeSystem!=null){
                 sb.append(parentPrimaryCodeSystemCode).append("\t");    // parentPrimaryCodeSystemCode
             }
             sb.append(pt).append("\t")                  // PARENT_DISPLAY_NAME
