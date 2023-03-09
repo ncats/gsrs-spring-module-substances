@@ -9,7 +9,6 @@ import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -24,33 +23,38 @@ public class FDARelationshipExporter implements Exporter<Substance> {
     private final String primaryCodeSystem;
 
     private ExporterFactory.Parameters params;
-    private boolean showAmountData;
-    private boolean showPrimaryCodeSystem;
+    private boolean omitAmountData;
+    private boolean omitPrimaryCodeSystem;
+    private String chosenApprovalIdName;
 
     public FDARelationshipExporter(SubstanceRepository substanceRepository, OutputStream os, ExporterFactory.Parameters params, String primaryCodeSystem) throws IOException{
         this.substanceRepository = substanceRepository;
         this.primaryCodeSystem = primaryCodeSystem;
         this.params = params;
-        JsonNode detailedParameters  = params.detailedParameters();
+        JsonNode detailedParameters = params.detailedParameters();
 
-        showAmountData = (detailedParameters!=null
-            && detailedParameters.hasNonNull(FDARelationshipExporterFactory.AMOUNT_DATA_PARAMETERS)
-            && detailedParameters.get(FDARelationshipExporterFactory.AMOUNT_DATA_PARAMETERS).booleanValue());
+        omitAmountData = (detailedParameters!=null
+        && detailedParameters.hasNonNull(FDARelationshipExporterFactory.AMOUNT_DATA_PARAMETERS)
+        && detailedParameters.get(FDARelationshipExporterFactory.AMOUNT_DATA_PARAMETERS).booleanValue());
 
-        showPrimaryCodeSystem = (detailedParameters!=null
-            && detailedParameters.hasNonNull(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS)
-            && detailedParameters.get(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS).booleanValue());
+        omitPrimaryCodeSystem = (detailedParameters!=null
+        && detailedParameters.hasNonNull(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS)
+        && detailedParameters.get(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS).booleanValue());
+
+        chosenApprovalIdName = (detailedParameters!=null
+        && detailedParameters.hasNonNull(FDARelationshipExporterFactory.APPROVAL_ID_NAME_PARAMETERS)
+        && detailedParameters.get(FDARelationshipExporterFactory.APPROVAL_ID_NAME_PARAMETERS).textValue().trim().length()>0)
+        ? detailedParameters.get(FDARelationshipExporterFactory.APPROVAL_ID_NAME_PARAMETERS).textValue().trim() : FDARelationshipExporterFactory.DEFAULT_APPROVAL_ID_NAME;
 
         bw = new BufferedWriter(new OutputStreamWriter(os));
-
         StringBuilder sb = new StringBuilder();
         sb.append("Relationship Public/Private").append("\t");
         sb.append("IS_REFLEXIVE").append("\t");
         sb.append("RELATED_SUBSTANCE_UUID").append("\t");
-        if(showPrimaryCodeSystem && primaryCodeSystem!=null) {
+        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
             sb.append("RELATED_SUBSTANCE_"+primaryCodeSystem).append("\t");
         }
-        sb.append("RELATED_SUBSTANCE_APPROVAL_ID").append("\t");
+        sb.append("RELATED_SUBSTANCE_"+chosenApprovalIdName).append("\t");
         sb.append("Related Subst. Public/Private").append("\t");
         sb.append("RELATED_SUBSTANCE_TYPE").append("\t");
         sb.append("RELATED_SUBSTANCE_DISPLAY_NAME").append("\t");
@@ -60,15 +64,15 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         sb.append("SUBJECT_SUBSTANCE_TYPE").append("\t");
         sb.append("Subj. Subst. Public/Private").append("\t");
         sb.append("SUBJECT_UUID").append("\t");
-        if(showPrimaryCodeSystem && primaryCodeSystem!=null) {
+        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
             sb.append("SUBJECT_"+primaryCodeSystem).append("\t");
         }
-        sb.append("SUBJECT_APPROVAL_ID").append("\t");
+        sb.append("SUBJECT_"+chosenApprovalIdName).append("\t");
 
         sb.append("RELATIONSHIP_QUALIFICATION").append("\t");
         sb.append("RELATIONSHIP_INTERACTION_TYPE").append("\t");
 
-        if(showAmountData) {
+        if(!omitAmountData) {
             sb.append("RELATIONSHIP_AMOUNT_TYPE").append("\t");
             sb.append("RELATIONSHIP_AMOUNT_AVG").append("\t");
             sb.append("RELATIONSHIP_AMOUNT_LOW").append("\t");
@@ -108,7 +112,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
 
             String subjectApprovalId = ing.getApprovalID();
             String subjectPrimaryCodeSystemCode = "";
-            if(showPrimaryCodeSystem && primaryCodeSystem!=null) {
+            if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
                 subjectPrimaryCodeSystemCode = getPrimaryCodeSystemCode(ing);
             }
             String subjectDisplayName = ptUTF8;
@@ -135,7 +139,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                     relatedSubstanceType = fullRelatedSubstance.map(s -> s.substanceClass.toString()).orElse("Not present");
                     if (fullRelatedSubstance.isPresent()) {
                         relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(fullRelatedSubstance.get().getAccess());
-                        if (showPrimaryCodeSystem && primaryCodeSystem!=null) {
+                        if (!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
                             relatedPrimaryCodeSystemCode = getPrimaryCodeSystemCode(fullRelatedSubstance.get());
                         }
                         relatedDisplayName = fullRelatedSubstance.get().getDisplayName().map(n -> n.getName()).orElse("");
@@ -168,7 +172,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                 .append(relationshipPublicOrPrivate).append("\t") // Relationship Public/Private
                 .append(isReflexive).append("\t")                 // IS_REFLEXIVE
                 .append(relatedUuid).append("\t");                 // RELATED_SUBSTANCE_UUID
-                if(showPrimaryCodeSystem && primaryCodeSystem!=null) {
+                if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
                     sb.append(relatedPrimaryCodeSystemCode).append("\t");               // relatedPrimaryCodeSystemCode
                 }
                 sb.append(relatedApprovalId).append("\t")           // RELATED_SUBSTANCE_APPROVAL_ID
@@ -181,7 +185,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                 .append(subjectSubstanceClass).append("\t")        // SUBJECT_SUBSTANCE_TYPE
                 .append(subjectSubstancePublicOrPrivate).append("\t") // Subj. Subst. Public/Private
                 .append(subjectUuid).append("\t");                  // SUBJECT_UUID
-                if(showPrimaryCodeSystem && primaryCodeSystem!=null) {
+                if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
                     sb.append(subjectPrimaryCodeSystemCode).append("\t");                  // subjectPrimaryCodeSystemCode
                 }
 
@@ -190,7 +194,7 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                 sb.append(relationshipQualification).append("\t");       // RELATIONSHIP_QUALIFICATION
                 sb.append(relationshipInteractionType).append("\t");       // RELATIONSHIP_INTERACTION_TYPE
 
-                if (showAmountData) {
+                if (!omitAmountData) {
                     sb.append(relationshipAmountType).append("\t");            // RELATIONSHIP_AMOUNT_TYPE
                     sb.append(relationshipAmountAverage).append("\t");         // RELATIONSHIP_AMOUNT_AVG
                     sb.append(relationshipAmountLow).append("\t");             // RELATIONSHIP_AMOUNT_LOW
