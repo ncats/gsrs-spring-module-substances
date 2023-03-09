@@ -58,8 +58,8 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
         if(getPrimaryCodeSystem()!=null) {
             ObjectNode primaryCodeSystemNode = JsonNodeFactory.instance.objectNode();
             primaryCodeSystemNode.put("type", "boolean");
-            primaryCodeSystemNode.put("title", "Omit Primary Code System Field ("+ getPrimaryCodeSystem() +")");
-            primaryCodeSystemNode.put("comments", "Omit Primary Code System Field ("+ getPrimaryCodeSystem() +")");
+            primaryCodeSystemNode.put("title", "Omit primary code system field ("+ getPrimaryCodeSystem() +")");
+            primaryCodeSystemNode.put("comments", "Omit primary code system field ("+ getPrimaryCodeSystem() +")");
             primaryCodeSystemNode.put("default", false);
             parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
         }
