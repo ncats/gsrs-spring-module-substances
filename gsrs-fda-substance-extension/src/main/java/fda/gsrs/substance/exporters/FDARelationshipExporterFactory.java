@@ -43,7 +43,7 @@ public class FDARelationshipExporterFactory implements ExporterFactory<Substance
         return new FDARelationshipExporter(substanceRepository, out, params, this.primaryCodeSystem);
     }
 
-    public String getPrimaryCodeSystem(boolean primaryCodeSystem) {
+    public String getPrimaryCodeSystem() {
         return this.primaryCodeSystem;
     }
 
@@ -58,24 +58,25 @@ public class FDARelationshipExporterFactory implements ExporterFactory<Substance
         ObjectNode amountDataNode = JsonNodeFactory.instance.objectNode();
         amountDataNode.put("type", "boolean");
         amountDataNode.put("title", "Include relationship amount fields?");
+        amountDataNode.put("default", true);
         amountDataNode.put("comments", "Include relationship amount fields?");
         parameters.set(AMOUNT_DATA_PARAMETERS, amountDataNode);
 
-        ObjectNode primaryCodeSystemNode = JsonNodeFactory.instance.objectNode();
-        primaryCodeSystemNode.put("type", "string");
-        primaryCodeSystemNode.put("title", "Include Primary Code System Field");
-        primaryCodeSystemNode.put("comments", "Include Primary Code System Field");
-        parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
+        if(getPrimaryCodeSystem()!=null) {
+            ObjectNode primaryCodeSystemNode = JsonNodeFactory.instance.objectNode();
+            primaryCodeSystemNode.put("type", "boolean");
+            primaryCodeSystemNode.put("title", "Include Primary Code System Field");
+            primaryCodeSystemNode.put("default", true);
+            primaryCodeSystemNode.put("comments", "Include Primary Code System Field ("+ getPrimaryCodeSystem() +")");
+            parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
+        }
 
         ObjectNode approvalIDNameNode = JsonNodeFactory.instance.objectNode();
         approvalIDNameNode.put("type", "string");
         approvalIDNameNode.put("title", "Label for Approval ID in file");
+        approvalIDNameNode.put("default", approvalIDName);
         approvalIDNameNode.put("comments", "Header for Approval ID in file");
         parameters.set("approvalIDName", approvalIDNameNode);
-
         return generateSchemaNode("Relationship Exporter Parameters", parameters);
     }
-
-
-
 }

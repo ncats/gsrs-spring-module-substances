@@ -33,13 +33,13 @@ public class FDARelationshipExporter implements Exporter<Substance> {
         this.params = params;
         JsonNode detailedParameters  = params.detailedParameters();
 
-        showAmountData = detailedParameters!=null
+        showAmountData = (detailedParameters!=null
             && detailedParameters.hasNonNull(FDARelationshipExporterFactory.AMOUNT_DATA_PARAMETERS)
-            && detailedParameters.get(FDARelationshipExporterFactory.AMOUNT_DATA_PARAMETERS).booleanValue();
+            && detailedParameters.get(FDARelationshipExporterFactory.AMOUNT_DATA_PARAMETERS).booleanValue());
 
-        showPrimaryCodeSystem = detailedParameters!=null
+        showPrimaryCodeSystem = (detailedParameters!=null
             && detailedParameters.hasNonNull(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS)
-            && detailedParameters.get(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS).booleanValue();
+            && detailedParameters.get(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS).booleanValue());
 
         bw = new BufferedWriter(new OutputStreamWriter(os));
 
@@ -189,14 +189,17 @@ public class FDARelationshipExporter implements Exporter<Substance> {
 
                 sb.append(relationshipQualification).append("\t");       // RELATIONSHIP_QUALIFICATION
                 sb.append(relationshipInteractionType).append("\t");       // RELATIONSHIP_INTERACTION_TYPE
-                sb.append(relationshipAmountType).append("\t");            // RELATIONSHIP_AMOUNT_TYPE
-                sb.append(relationshipAmountAverage).append("\t");         // RELATIONSHIP_AMOUNT_AVG
-                sb.append(relationshipAmountLow).append("\t");             // RELATIONSHIP_AMOUNT_LOW
-                sb.append(relationshipAmountHigh).append("\t");            // RELATIONSHIP_AMOUNT_HIGH
-                sb.append(relationshipAmountLowLimit).append("\t");        // RELATIONSHIP_AMOUNT_LOW_LIMIT
-                sb.append(relationshipAmountHighLimit).append("\t");       // RELATIONSHIP_AMOUNT_HIGH_LIMIT
-                sb.append(relationshipAmountUnits).append("\t");           // RELATIONSHIP_AMOUNT_UNITS
-                sb.append(relationshipAmountNonNumericValue).append("\t"); // RELATIONSHIP_AMOUNT_NONNUMVALUE
+
+                if (showAmountData) {
+                    sb.append(relationshipAmountType).append("\t");            // RELATIONSHIP_AMOUNT_TYPE
+                    sb.append(relationshipAmountAverage).append("\t");         // RELATIONSHIP_AMOUNT_AVG
+                    sb.append(relationshipAmountLow).append("\t");             // RELATIONSHIP_AMOUNT_LOW
+                    sb.append(relationshipAmountHigh).append("\t");            // RELATIONSHIP_AMOUNT_HIGH
+                    sb.append(relationshipAmountLowLimit).append("\t");        // RELATIONSHIP_AMOUNT_LOW_LIMIT
+                    sb.append(relationshipAmountHighLimit).append("\t");       // RELATIONSHIP_AMOUNT_HIGH_LIMIT
+                    sb.append(relationshipAmountUnits).append("\t");           // RELATIONSHIP_AMOUNT_UNITS
+                    sb.append(relationshipAmountNonNumericValue).append("\t"); // RELATIONSHIP_AMOUNT_NONNUMVALUE
+                }
 
                 sb.append(relationshipCreatedBy).append("\t");       // RELATIONSHIP_CREATED_BY
                 sb.append(relationshipLastEdited).append("\t");     // RELATIONSHIP_LAST_EDITED
