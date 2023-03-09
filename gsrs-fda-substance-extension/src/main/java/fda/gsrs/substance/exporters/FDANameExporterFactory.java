@@ -41,7 +41,7 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
         return new FDANameExporter(substanceRepository, out, params, this.primaryCodeSystem);
     }
 
-    public String getPrimaryCodeSystem(String primaryCodeSystem) {
+    public String getPrimaryCodeSystem() {
         return this.primaryCodeSystem;
     }
 
