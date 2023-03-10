@@ -141,8 +141,7 @@ public class ReindexFromBackups implements ReindexService{
                         tx.setReadOnly(true);
                         tx.executeWithoutResult(stat->{
                             List<BackupEntity> blist=backupRepository.findAll();
-                            eventConsumer.accept(new BeginReindexEvent(reindexId, blist.size(), BeginReindexEvent.IndexBehavior.WIPE_ALL_INDEXES,
-                                    Collections.emptyList()));
+                            eventConsumer.accept(new BeginReindexEvent(reindexId, blist.size()));
                             try(Stream<BackupEntity> stream = blist.stream()){
                                 l.message("Initializing reindexing: beginning process");
 

@@ -24,7 +24,6 @@ import java.util.*;
 @Slf4j
 public class BasicSubstanceScrubberTests {
 
-
     @Test
     public void testScrubSubstanceSpecificCodeRemoved() {
         //verify that expected code is removed
@@ -1124,100 +1123,6 @@ public class BasicSubstanceScrubberTests {
                 .filter(c->c.codeSystem.equals("CAS"))
                 .findFirst().get();
         Assertions.assertEquals(casCodeUuid, cleanedCasCode.uuid);
-    }
-
-    @Test
-    public void testScrubSubstanceUuids2() {
-        String currentSmiles="C1CCCCCCC1N";
-        ChemicalSubstance chemical = SubstanceTestUtil.makeChemicalSubstance(currentSmiles);
-        chemical.names.clear();//remove any bogus names
-        UUID mainUuid=UUID.randomUUID();
-        chemical.uuid=mainUuid;
-        int standardUuidLength=36;
-
-        Reference publicRef = new Reference();
-        publicRef.publicDomain=true;
-        publicRef.docType="Wikipedia";
-        publicRef.citation="Some public chemical";
-
-        Reference publicRef2 = new Reference();
-        publicRef2.publicDomain=true;
-        publicRef2.docType="UNIPROT";
-        publicRef2.citation="Some public protein ref";
-
-        Reference publicRef2a = new Reference();
-        publicRef2a.publicDomain=true;
-        publicRef2a.docType="UNIPROT";
-        publicRef2a.citation="Some public protein ref 2";
-        UUID refUuid= UUID.randomUUID();
-        publicRef2a.uuid= refUuid;
-
-        Reference publicRef3 = new Reference();
-        publicRef3.publicDomain=true;
-        publicRef3.docType="KEW GARDENS (WCPS)";
-        publicRef3.citation="KEW GARDENS (WCPS)";
-        String approvalIdValue="Approved12";
-        String approvalIDCodeSystem="Approval ID Code";
-
-        Name namePublic = new Name();
-        namePublic.name = "public name";
-        namePublic.addReference(publicRef);
-        namePublic.addReference(publicRef2a);
-        UUID publicNameUuid=UUID.randomUUID();
-        namePublic.uuid=publicNameUuid;
-        chemical.addReference(publicRef);
-        chemical.addReference(publicRef2a);
-        chemical.names.add(namePublic);
-        chemical.created = new Date();
-
-        Reference poeRef = new Reference();
-        poeRef.citation="nevermore";
-        poeRef.docType="OTHER";
-        chemical.addReference(poeRef);
-        chemical.status="approved";
-        chemical.approvalID=approvalIdValue;
-
-        Code cas= new Code();
-        cas.codeSystem="CAS";
-        cas.type="PRIMARY";
-        cas.code="293-55-0";
-        cas.addReference(publicRef2);
-        UUID casCodeUuid=UUID.randomUUID();
-        cas.uuid=casCodeUuid;
-        chemical.codes.add(cas);
-        chemical.addReference(publicRef2);
-
-        String uuidCodeSystem="Our UUID";
-        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-        scrubberSettings.setSubstanceReferenceCleanup(false);
-        scrubberSettings.setRegenerateUUIDs(true);
-        scrubberSettings.setUUIDCleanup(true);
-        scrubberSettings.setUUIdCleanupCopyUUIDIdToCode(true);
-        scrubberSettings.setUUIDCleanupUUIDCodeSystem(uuidCodeSystem);
-
-        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
-        chemical.addNote("This is a note");
-        String reasonToChange = "change is inevitable";
-        chemical.changeReason = reasonToChange;
-        Optional<Substance> cleaned = scrubber.scrub(chemical);
-        ChemicalSubstance cleanedChemical = (ChemicalSubstance) cleaned.get();
-        Assertions.assertNotEquals(mainUuid, cleanedChemical.uuid);
-        Assertions.assertEquals(standardUuidLength, cleanedChemical.uuid.toString().length());
-
-        Name cleanedPublicName= cleanedChemical.names.stream()
-                .filter(n->n.name.equals("public name"))
-                .findFirst().get();
-        Assertions.assertNotEquals(publicNameUuid, cleanedPublicName.uuid);
-        Code cleanedCasCode = cleanedChemical.codes.stream()
-                .filter(c->c.codeSystem.equals("CAS"))
-                .findFirst().get();
-        Assertions.assertNotEquals(casCodeUuid, cleanedCasCode.uuid);
-
-        Reference cleanedUnipRef = cleanedChemical.references.stream()
-                .filter(r->r.docType.equals(publicRef2a.docType) && r.citation.equals(publicRef2a.citation))
-                .findFirst().get();
-        System.out.println(cleanedUnipRef.uuid.equals( refUuid) ? "reference UUIDs unchanged" : "reference UUIDs changed");
-        Assertions.assertTrue( cleanedChemical.codes.stream().anyMatch(c->c.codeSystem.equals(uuidCodeSystem) && c.code.equals(mainUuid.toString())));
     }
 
     @Test

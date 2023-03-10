@@ -1536,8 +1536,7 @@ public class ValidationUtils {
                     
                     List<Object> fut = sr.getMatches();
                     List<Substance> hits = fut.stream()
-							.filter(o -> o instanceof Substance)//added 17 February 2023 MAM to prevent ClassCastException
-							.map(s ->(Substance)s)
+                            .map(s ->(Substance)s)
                             .filter(ss->{
                                 //filter out exact matches
                                 return !substance.getOrGenerateUUID().equals(ss.getOrGenerateUUID());

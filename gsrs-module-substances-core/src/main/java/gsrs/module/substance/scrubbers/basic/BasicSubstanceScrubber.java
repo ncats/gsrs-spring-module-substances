@@ -421,33 +421,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return substance;
     }
 
-    private Substance scrubUUID(Substance substance) {
-        UUID topLevelUuid = substance.getOrGenerateUUID();
-        log.trace("in scrubUUID, topLevelUuid: {}", topLevelUuid);
-
-        if(topLevelUuid!=null && this.scrubberSettings.getUUIDCleanupUUIDCodeSystem()!= null
-                && this.scrubberSettings.getUUIDCleanupUUIDCodeSystem().length()>0
-                && this.scrubberSettings.getUUIdCleanupCopyUUIDIdToCode()) {
-            Optional<Code> code=substance.codes.stream().filter(c->c.codeSystem.equals(this.scrubberSettings.getUUIDCleanupUUIDCodeSystem())).findFirst();
-            if( code.isPresent()) {
-                log.trace("code already present");
-                code.get().setCode(topLevelUuid.toString());
-            }else{
-                log.trace("will create code");
-                Code uuidCode= new Code();
-                uuidCode.codeSystem=scrubberSettings.getUUIDCleanupUUIDCodeSystem();
-                uuidCode.code=topLevelUuid.toString();
-                uuidCode.type="PRIMARY";
-                substance.addCode(uuidCode);
-            }
-        }
-
-        if(scrubberSettings.getApprovalIdCleanupRemoveApprovalId()){
-            substance.approvalID=null;
-        }
-        return substance;
-    }
-
     public String restrictedJSONSimple(String s) {
         log.trace("starting restrictedJSONSimple 4");
         DocumentContext dc = JsonPath.parse(s);
@@ -844,10 +817,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             if( scrubberSettings.getApprovalIdCleanup()) {
                 scrubApprovalId(snew);
             }
-            if(scrubberSettings.UUIDCleanup){
-                scrubUUID(snew);
-            }
-            //keep this separate because earlier versions did not make RegenerateUUIDs depend on UUIDCleanup
             if(scrubberSettings.getRegenerateUUIDs()){
                 snew = reassignUuids(snew);
             }

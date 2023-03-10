@@ -22,8 +22,6 @@ public class StructurallyDiverseSubstanceBuilder extends AbstractSubstanceBuilde
         }
     }
 
-    public StructurallyDiverseSubstanceBuilder() {
-    }
     protected <S extends Substance> StructurallyDiverseSubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
         this.andThen = (s)-> (StructurallyDiverseSubstance) builder.andThen.apply((S) s);
     }

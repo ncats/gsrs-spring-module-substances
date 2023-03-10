@@ -32,7 +32,7 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        log.trace("starting in CodesValidator.validate. " );
+        log.trace("starting in validate. " );
         Iterator<Code> codesIter = s.codes.iterator();
         while(codesIter.hasNext()){
             Code cd = codesIter.next();

@@ -62,15 +62,9 @@ public class SubstanceBuilder extends AbstractSubstanceBuilder<Substance, Substa
 	}
 	
 	public StructurallyDiverseSubstanceBuilder asStructruallyDiverse(){
-        return asStructurallyDiverse();
+        return new StructurallyDiverseSubstanceBuilder(this).setSubstanceClass(SubstanceClass.structurallyDiverse);
     }
-
-/*
-Creating overload with correct spelling but leaving incorrect spelling in place in case someone is using it.
- */
-	public StructurallyDiverseSubstanceBuilder asStructurallyDiverse(){
-		return new StructurallyDiverseSubstanceBuilder(this).setSubstanceClass(SubstanceClass.structurallyDiverse);
-	}
+	
 	protected <S extends Substance> SubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
 	    this.andThen = (s)-> (Substance) builder.andThen.apply((S) s);
 	}

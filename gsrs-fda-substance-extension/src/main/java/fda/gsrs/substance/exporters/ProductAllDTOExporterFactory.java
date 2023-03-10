@@ -54,7 +54,7 @@ public class ProductAllDTOExporterFactory implements ExporterFactory {
 		}
 
 		SpreadsheetFormat format = SpreadsheetFormat.XLSX;
-		Spreadsheet spreadsheet = format.createSpreadsheet(out);
+		Spreadsheet spreadsheet = format.createSpeadsheet(out);
 
 		ProductAllDTOExporter.Builder builder = new ProductAllDTOExporter.Builder(spreadsheet);
 		configure(builder, params);

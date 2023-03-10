@@ -73,7 +73,7 @@ public class ImageUtilitiesTest {
             InputStream is = fileUrl.openStream ();
             byte[] imageBytes = IOUtils.toByteArray(is);
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 50, 50, "jpg");
-            File basicFile = File.createTempFile("del2Resized", "jpg");
+            File basicFile = new File("d:\\temp\\del2Resized.jpg");
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);
@@ -92,7 +92,7 @@ public class ImageUtilitiesTest {
             File imageFile = new ClassPathResource(imagePath).getFile();
             byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 200, 100, "png");
-            File basicFile = File.createTempFile("delResizedPuppy2", "png");
+            File basicFile = new File("d:\\temp\\delResizedPuppy2.png");
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);
@@ -112,7 +112,7 @@ public class ImageUtilitiesTest {
             InputStream is = fileUrl.openStream ();
             byte[] imageBytes = IOUtils.toByteArray(is);
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 50, 50, "jpeg");
-            File basicFile = File.createTempFile("del2Resized", "jpg");
+            File basicFile = new File("d:\\temp\\del2Resized.jpg");
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);
@@ -131,7 +131,7 @@ public class ImageUtilitiesTest {
             File imageFile = new ClassPathResource(imagePath).getFile();
             byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 200, 100, "svg");
-            File basicFile = File.createTempFile("delResizedPentagon", "svg");
+            File basicFile = new File("d:\\temp\\delResizedPentagon.svg");
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);
@@ -150,7 +150,7 @@ public class ImageUtilitiesTest {
             File imageFile = new ClassPathResource(imagePath).getFile();
             byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 200, 100, "tif");
-            File basicFile = File.createTempFile("delResizedSimpleX", "tiff");
+            File basicFile = new File("d:\\temp\\delResizedSimpleX.tiff");
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);

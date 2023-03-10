@@ -4,7 +4,6 @@ import gov.nih.ncats.common.Tuple;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
-import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.service.PayloadService;
 import ix.core.models.Payload;
@@ -61,9 +60,6 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 
     @Autowired
     private SubstanceLegacySearchService searchService;
-
-    @Autowired
-    private SubstanceSequenceSearchService substanceSequenceSearchService;
 
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
@@ -244,7 +240,6 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
         }
 
         boolean sequenceHasChanged = sequenceHasChanged(cs, objold);
-        log.trace("sequenceHasChanged: {}", sequenceHasChanged);
 
         if (sequenceHasChanged) {
             validateSequenceDuplicates(cs, callback);
@@ -288,7 +283,6 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
     private void validateSequenceDuplicates(
             ProteinSubstance proteinsubstance, ValidatorCallback callback) {
 
-        log.trace("starting in validateSequenceDuplicates");
         try {
             proteinsubstance.protein.subunits
                     .stream()
@@ -305,7 +299,6 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                     .forEach(subs -> {
                         try {
                             Subunit su = subs.get(0);
-                            log.trace("checking sequence {} for uniqueness", su.sequence);
                             String suSet = subs.stream().map(su1 -> su1.subunitIndex + "").collect(Collectors.joining(","));
 
                             Payload payload = new Payload();
@@ -323,9 +316,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                             //Simplified searcher, using lucene direct index
                             searchers.add(seq -> {
                                 try {
-                                    log.trace("searching for sequence {}", seq);
                                     List<Tuple<ProteinSubstance, Subunit>> simpleResults = executeSimpleExactProteinSubunitSearch(su);
-                                    log.trace("number of duplicates found: {}", simpleResults.size());
 
                                     return simpleResults.stream()
                                             .map(t -> {
@@ -430,46 +421,26 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
     public List<Tuple<ProteinSubstance, Subunit>> executeSimpleExactProteinSubunitSearch(Subunit su) throws InterruptedException, ExecutionException,
             TimeoutException, IOException {
         String q = "root_protein_subunits_sequence:" + su.sequence;
-        log.trace("executeSimpleExactProteinSubunitSearch using query '{}'", q);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .fdim(0)
                 .query(q)
-                .top(Integer.MAX_VALUE)//Integer.MAX_VALUE
+                .top(Integer.MAX_VALUE)
                 .build();
 
         SearchResult sr = searchService.search(request.getQuery(), request.getOptions());
-
         Future<List> fut = sr.getMatchesFuture();
-        //List<Substance> matches= sr.getMatches();
-/*        log.trace("total matches: {}",matches.size());
 
-        log.trace("request.getQuery(): {}", request.getQuery());
-        Stream<Tuple<ProteinSubstance, Subunit>> presults = matches.stream()
-                .map(s -> (ProteinSubstance) s)
-                .flatMap(sub -> {
-                    log.trace("sub found one of these: {}", sub.getClass().getName());
-                    ProteinSubstance ps = (ProteinSubstance) sub;
-                    return ps.protein.getSubunits()
-                            .stream()
-                            .filter(sur -> sur.sequence.equalsIgnoreCase(su.sequence))
-                            .map(sur -> Tuple.of(sub, sur));
-                });
-*/
-
-        log.trace("new query");
         Stream<Tuple<ProteinSubstance, Subunit>> presults = fut.get(10_000, TimeUnit.MILLISECONDS)
                 .stream()
                 .map(s -> (ProteinSubstance) s)
                 .flatMap(sub -> {
-                    log.trace("sub found one of these: {}", sub.getClass().getName());
                     ProteinSubstance ps = (ProteinSubstance) sub;
                     return ps.protein.getSubunits()
                             .stream()
                             .filter(sur -> sur.sequence.equalsIgnoreCase(su.sequence))
                             .map(sur -> Tuple.of(sub, sur));
                 });
-
         presults = presults.map(t -> Tuple.of(t.v().uuid, t).withKEquality())
                 .distinct()
                 .map(t -> t.v());
