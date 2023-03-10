@@ -29,7 +29,7 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
     public void setup(){
         if( stagingAreaService == null ){
             log.trace("setting up staging area service");
-            stagingAreaService = new DefaultStagingAreaService(substanceContext);
+            stagingAreaService = new DefaultStagingAreaService();
             stagingAreaService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaService);
             SubstanceStagingAreaEntityService stagingAreaEntityService = new SubstanceStagingAreaEntityService();
             stagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaEntityService);

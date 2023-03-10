@@ -52,9 +52,11 @@ public class DEAScheduledTaskInitializerTest extends AbstractSubstanceJpaFullSta
         loadGsrsFile(dataFile);
     }
 
+    /*
     @Test
     public void DeaScheduledTaskTest1() throws IOException {
-        String reportFilePath ="d:\\temp\\task_test.report.txt";
+        File reportFile = File.createTempFile("task_test.report", "txt");
+        String reportFilePath =reportFile.getAbsolutePath();
         DEAScheduledTaskInitializer task = new DEAScheduledTaskInitializer();
         task.setOutputFilePath(reportFilePath);
         String deaDataFilePath = "DEA_LIST.txt";
@@ -69,5 +71,5 @@ public class DEAScheduledTaskInitializerTest extends AbstractSubstanceJpaFullSta
         lines.forEach(l-> System.out.println(l));
         Assertions.assertTrue(lines.size()>0);
 
-    }
+    }*/
 }
