@@ -23,7 +23,7 @@ public abstract class RecordExtractor<K> implements Closeable {
 
 	/**
 	 * Get the Name for this Extractor.
-	 * By basic, the name is the instance's class name.
+	 * By default, the name is the instance's class name.
 	 * @return the name as a String can not be null.
 	 *
 	 */

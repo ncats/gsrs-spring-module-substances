@@ -14,7 +14,7 @@ import static org.junit.Assert.assertEquals;
 
 @Slf4j
 public class TagUtilities{
-    // TO DO: Add test for period in regex.
+
     @Data
     public static class BracketExtraction{
         private String namePart;
@@ -32,10 +32,10 @@ public class TagUtilities{
     // Results in namePart in group 1 and raw string of concatenated bracketed terms in group 2
     // Until I made it non-greedy, matching "Hello [GREEN BOOK]    [BASKET  ]" included the first bracketed term in namePart
     // Allows : as a potential tag term splitter per Chemid's format.
-    public static final Pattern  bracketTermRegex1 = Pattern.compile("(.+?)[ ]+((\\[[ \\-A-Za-z0-9.:]+\\][ ]*)+)$");
+    public static final Pattern  bracketTermRegex1 = Pattern.compile("(.+?)[ ]+((\\[[ \\-A-Za-z0-9:]+\\][ ]*)+)$");
 
     // Used to loop over, and extract bracketed terms from tagsPartRaw
-    public static final Pattern bracketTermRegex2 = Pattern.compile("\\[([ \\-A-Za-z0-9.:]+)\\]");
+    public static final Pattern bracketTermRegex2 = Pattern.compile("\\[([ \\-A-Za-z0-9:]+)\\]");
 
     // Set to true to clean up name part during bracket extraction.
     // Maybe make this configurable? Did this so it could be turned off in the case that other procedures are used to clean up the name part.

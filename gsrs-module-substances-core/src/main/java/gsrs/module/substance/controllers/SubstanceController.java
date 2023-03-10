@@ -27,6 +27,10 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.controller.*;
+import gsrs.dataexchange.model.ProcessingAction;
+import gsrs.stagingarea.model.ImportData;
+import gsrs.stagingarea.service.StagingAreaService;
 import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.springUtils.AutowireHelper;
@@ -68,11 +72,6 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
@@ -1048,7 +1047,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         private Structure structure;
     }
 
-    private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version){
+    private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version, String adapterName){
         Substance actualSubstance=null;
         String input=null;
         boolean history = (version!=null);
@@ -1081,6 +1080,43 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                             input = CtTableCleaner.clean(u.structure);
                         } catch (Exception e) {
                             input=u.structure;
+                        }
+                    }else {
+                        try {
+                            log.trace("looking for structure in import data repo. adapterName: {}", adapterName);
+                            StagingAreaService service;
+                            if(adapterName!=null && adapterName.length()>0) {
+                                service= getStagingAreaService(adapterName);
+                            } else {
+                                service=getDefaultStagingAreaService();
+                            }
+
+                            log.trace("retrieved service {}", service.getClass().getName());
+                            int versionNum =0;
+                            if( version !=null && version.length()>0){
+                                try {
+                                    versionNum=Integer.parseInt(version);
+                                } catch (NumberFormatException ignore){}
+                            }
+                            log.trace("using versionNum {}",versionNum);
+
+                            ImportData importData = service.getImportDataByInstanceIdOrRecordId(idOrSmiles, versionNum);
+                            if( importData !=null){
+                                log.trace("retrieved import data");
+                                Substance importedSubstance= service.deserializeObject(importData.getEntityClassName(), importData.getData());
+                                if(importedSubstance!=null ){
+                                    log.trace("retrieved substance from import data repository");
+                                    opStructure = importedSubstance.getStructureToRender();
+                                    if(!opStructure.isPresent()) {
+                                        log.trace("no structure found within SA substance; will create key");
+                                        Key k = Key.of(EntityUtils.EntityWrapper.of(importedSubstance));
+                                        StructureToRender.StructureToRenderBuilder builder = StructureToRender.builder().substanceKey(k).input(input);
+                                        return builder.build();
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("Error retrieving data from import data repository ", e);
                         }
                     }
                 }
@@ -1126,6 +1162,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
+                         @RequestParam(value = "adapter", required = false) String adapterName,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
 
         int[] amaps = null;
@@ -1134,7 +1171,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String input=null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
             s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
-                return getSubstanceAndStructure(idOrSmiles,version);
+                return getSubstanceAndStructure(idOrSmiles, version, adapterName);
             });
 
             if(s2r != null && s2r.substanceKey !=null &&
@@ -1163,10 +1200,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
                     }
                     log.trace("resized size {}", resized.length);
-                    //File basicFileBefore = new File("d:\\temp\\del1Original." + formatForResize);
-                    //Files.write(basicFileBefore.toPath(), imageInfo.getImageData());
-                    //File basicFile = new File("d:\\temp\\del1Resized." + formatForResize);
-                    //Files.write(basicFile.toPath(), resized);
                     HttpHeaders headers = new HttpHeaders();
 
                     log.trace("going to set content type to {}", parseContentType(formatToUse));
@@ -1756,6 +1789,43 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         publicItems.id=-1l;
         items.add(publicItems);
         return items;
+    }
+
+
+    /*
+    temporary test endpoint.
+    TODO: remove?
+     */
+    @GetGsrsRestApiMapping("/substanceMerge")
+    public ResponseEntity<Object> substanceProcessGet(
+            @RequestParam(required = true) String sourceSubstanceUuid,
+            @RequestParam(required = true) String baseSubstanceUuid,
+            @RequestParam Map<String, String> queryParameters,
+            HttpServletRequest httpServletRequest,
+            RedirectAttributes attributes) throws Exception {
+
+        log.trace("going to retrieve substances for source ({}) and base ({})", sourceSubstanceUuid, baseSubstanceUuid);
+        Key sourceKey = Key.of(Substance.class, UUID.fromString(sourceSubstanceUuid));
+        Key baseKey  = Key.of(Substance.class, UUID.fromString(baseSubstanceUuid));
+        Substance source = (Substance) EntityFetcher.of(sourceKey).call();
+        Substance base = (Substance) EntityFetcher.of(baseKey).call();
+        log.trace("retrieved substances");
+        Map<String, Object> mergeOptions = new HashMap<>();
+        queryParameters.keySet().forEach(p -> {
+            if (p.startsWith("Merge") || p.equals("RelationshipUniqueness")) {
+                mergeOptions.put(p, queryParameters.get(p));
+            }
+        });
+        log.trace("going to instantiate MergeProcessingAction");
+        Class processingActionClass= Class.forName("gsrs.dataexchange.processing_actions.MergeProcessingAction");
+        ProcessingAction<Substance> action = (ProcessingAction<Substance>) processingActionClass.newInstance();
+        StringBuilder sb = new StringBuilder();
+        log.trace("going to call process");
+        Substance merged = action.process(base, source, mergeOptions, sb::append);
+        merged.setUuid(UUID.randomUUID());
+        log.trace("ready to return.  Logging:");
+        log.trace(sb.toString());
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(merged, queryParameters), HttpStatus.OK);
     }
 }
 

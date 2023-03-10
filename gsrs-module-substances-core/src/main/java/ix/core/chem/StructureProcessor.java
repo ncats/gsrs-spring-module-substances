@@ -344,6 +344,28 @@ public class StructureProcessor {
     }
 
 
+    private boolean isBondDiazo(Bond doubleBond) {
+        log.trace("in isBondDiazo");
+        if(doubleBond.getAtom1().getAtomicNumber()!=7 || doubleBond.getAtom2().getAtomicNumber()!=7) {
+            return false;
+        }
+        //loop over all bonds connected to either atom of the double bond
+        List bondSet = doubleBond.getAtom1().getBonds();
+        bondSet.addAll(doubleBond.getAtom2().getBonds());
+        
+        for( Object b : bondSet) {
+            Bond bond = (Bond)b;
+            if( bond.equals(doubleBond) ) continue; //skip the starting bonds
+            if( (bond.getAtom1() != doubleBond.getAtom1() && bond.getAtom1() != doubleBond.getAtom2() 
+                    && bond.getBondType()==Bond.BondType.DOUBLE && bond.getAtom1().getAtomicNumber()==7) 
+                    || (bond.getAtom2() != doubleBond.getAtom1() && bond.getAtom2() != doubleBond.getAtom2() 
+                    && bond.getBondType()==Bond.BondType.DOUBLE && bond.getAtom2().getAtomicNumber()==7) ){
+                log.trace("bond IS part of a diazo system");
+                return true;
+            }
+        }
+        return false;
+    }
     public static Chemical polymerSimplify(Chemical chem){
         try{
             String nmol = Arrays.stream(chem.toMol().split("\n"))

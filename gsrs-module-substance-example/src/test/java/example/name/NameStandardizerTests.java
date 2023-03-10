@@ -1,16 +1,10 @@
 package example.name;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
-import gsrs.module.substance.standardizer.ReplacementNote;
-import gsrs.module.substance.standardizer.ReplacementResult;
-import gsrs.module.substance.utils.NameUtilities;
 import lombok.extern.slf4j.Slf4j;
 
 /**

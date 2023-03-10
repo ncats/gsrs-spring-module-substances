@@ -67,7 +67,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     public SubstanceSpreadsheetExporter createNewExporter(OutputStream out, Parameters params) throws IOException {
 
         SpreadsheetFormat format = (SpreadsheetFormat)params.getFormat();
-        Spreadsheet spreadsheet = format.createSpeadsheet(out);
+        Spreadsheet spreadsheet = format.createSpreadsheet(out);
 
         createdDefaultMapIfNeeded();
         SubstanceSpreadsheetExporter.Builder builder = new SubstanceSpreadsheetExporter.Builder( spreadsheet, DEFAULT_RECIPE_MAP);

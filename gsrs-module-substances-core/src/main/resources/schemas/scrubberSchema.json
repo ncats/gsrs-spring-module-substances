@@ -243,10 +243,40 @@
         ]
       }
     },
+    "UUIDCleanup": {
+      "comments": "Apply additional criteria to the top-level UUID field",
+      "type": "boolean",
+      "title": "Clean up (top-level) UUIDs"
+    },
     "regenerateUUIDs": {
       "comments": "All UUIDs in the object being exported will be given a newly-generated value",
       "type": "boolean",
-      "title": "Regenerate UUIDs"
+      "title": "Regenerate UUIDs",
+      "visibleIf": {
+        "UUIDCleanup": [
+          true
+        ]
+      }
+    },
+    "UUIdCleanupCopyUUIDIdToCode": {
+      "comments": "The record's UUID (system-generated identifier) is copied to a code",
+      "type": "boolean",
+      "title": "Copy UUID to code if code not already present",
+      "visibleIf": {
+        "UUIDCleanup": [
+          true
+        ]
+      }
+    },
+    "UUIDCleanupUUIDCodeSystem": {
+      "comments": "When this parameter has a value, the record's top-level UUID (system-generated identifier) is copied to a code of this specified system",
+      "type": "string",
+      "title": "Copy UUID to code with following code system (if not already present)",
+      "visibleIf": {
+        "UUIDCleanup": [
+          true
+        ]
+      }
     },
     "changeAllStatuses": {
       "comments": "All status value in the object being exported will be given a value",

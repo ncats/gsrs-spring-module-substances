@@ -41,24 +41,16 @@ public class TransformedRecord<K, V> implements Serializable {
 
 
 
-        boolean persisted=false;
         try {
             if (config.isActuallyPersist()) {
                 config.getRecordPersisterFactory().createPersisterFor(rec.job).persist(this);
-                persisted=true;
             }
+            bulkLoadServiceCallBack.persistedSuccess();
         } catch (Exception e) {
             e.printStackTrace();
             bulkLoadServiceCallBack.persistedFailure();
             SubstanceBulkLoadService.getPersistFailureLogger().info(rec.name + "\t" + rec.message + "\t"
                     + MAPPER.valueToTree(theRecord).toString().replace("\n", ""));
-        }
-        if(persisted) {
-            try {
-            bulkLoadServiceCallBack.persistedSuccess();
-            }catch(Exception e) {
-                e.printStackTrace();
-            }
         }
 
     }

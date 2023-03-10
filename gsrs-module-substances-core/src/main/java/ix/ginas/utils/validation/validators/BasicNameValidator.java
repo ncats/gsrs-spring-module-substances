@@ -1,9 +1,6 @@
 package ix.ginas.utils.validation.validators;
 
-import org.springframework.beans.factory.annotation.Autowired;
-
-import gsrs.module.substance.standardizer.NameStandardizer;
-import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
+import gsrs.module.substance.utils.NameUtilities;
 import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
@@ -20,35 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
 
-	@Autowired
-	private NameStandardizerConfiguration nameStdConfig;
-
-	
-    private NameStandardizer nameStandardizer;
-
-    private void initIfNeeded() {
-    	if(nameStdConfig!=null) {
-    		if(nameStandardizer==null) {
-    			try {
-    				nameStandardizer=nameStdConfig.nameStandardizer();
-    			}catch(Exception e) {
-    				
-    			}
-    		}
-    	}
-    }
-    
-    public BasicNameValidator() {
-    	
-    }
-    
-    public BasicNameValidator(NameStandardizer basicStandardizer) {
-    	this.nameStandardizer=basicStandardizer;
-    }
-    
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-    	initIfNeeded();
         log.trace("starting in validate");
         if (s == null) {
             log.warn("Substance is null");
@@ -60,7 +30,8 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
         }
 
         s.names.forEach(n -> {
-            ReplacementResult minimallyStandardizedName = nameStandardizer.standardize(n.name);
+
+            ReplacementResult minimallyStandardizedName = NameUtilities.getInstance().standardizeMinimally(n.name);
             String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
                     minimallyStandardizedName.getResult());
             log.trace(debugMessage);
@@ -75,5 +46,4 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
             }
         });
     }
-    
 }

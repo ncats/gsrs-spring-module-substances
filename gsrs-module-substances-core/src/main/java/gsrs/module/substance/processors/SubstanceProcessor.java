@@ -131,7 +131,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
         transactionTemplate2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
 
-        log.debug("Persisting substance:" + s);
+        log.debug("Persisting substance: {}; new: {}", s, newInsert);
         if (s.isAlternativeDefinition()) {
 
             log.debug("It's alternative");
