@@ -50,7 +50,7 @@ public class FDACodeExporterTest {
         System.out.println("fileData: " + fileData);
         Assertions.assertTrue(fileData.contains("001123AB"));
         Assertions.assertTrue(fileData.contains("XYZBEFCHI1"));
-        Assertions.assertTrue(fileData.contains("Approval ID\tBDNUM"));
+        Assertions.assertTrue(fileData.contains("APPROVAL_ID\tBDNUM"));
     }
 
     @Test
@@ -85,6 +85,7 @@ public class FDACodeExporterTest {
     private Substance createSubstanceWithNamesAndCodes() {
         SubstanceBuilder builder = new SubstanceBuilder();
         substanceNames.forEach(builder::addName);
+        builder.generateNewUUID();
         Code b1= new Code();
         b1.codeSystem="BDNUM";
         b1.code="001123AB";
