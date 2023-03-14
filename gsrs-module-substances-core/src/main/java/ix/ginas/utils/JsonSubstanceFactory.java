@@ -3,11 +3,7 @@ package ix.ginas.utils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import com.fasterxml.jackson.databind.node.MissingNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.json.JsonEntityUtil;
 import ix.core.controllers.EntityFactory;
@@ -16,7 +12,6 @@ import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.v1.*;
 
 import java.util.List;
-import java.util.UUID;
 
 /**
  * Created by katzelda on 9/7/16.
@@ -76,7 +71,6 @@ public class JsonSubstanceFactory {
     }
     public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 
-        fixReferences(tree);
         JsonNode subclass = tree.get("substanceClass");
         ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
 
@@ -94,11 +88,13 @@ public class JsonSubstanceFactory {
                 switch (type) {
                     case chemical:
 
-                        if( !(tree.at("/structure") instanceof MissingNode)) {
+                        //these checks on 'hasNonNull' added 28 December 2022 to prevent run time exceptions
+                        //todo: discuss w/ Tyler in earlier 2023
+                        if(tree.hasNonNull("structure")) {
                             ObjectNode structure = (ObjectNode) tree.at("/structure");
                             fixStereoOnStructure(structure);
                         }
-                        if( !(tree.at("/moieties") instanceof MissingNode)) {
+                        if(tree.hasNonNull("moieties")) {
                             for (JsonNode moiety : tree.at("/moieties")) {
                                 fixStereoOnStructure((ObjectNode) moiety);
                             }
@@ -177,27 +173,6 @@ public class JsonSubstanceFactory {
 
             }
             structure.put("stereochemistry", "UNKNOWN");
-        }
-    }
-
-    private static void fixReferences(JsonNode tree) {
-        ArrayNode references = (ArrayNode)tree.at("/references");
-        for (int i = 0; i < references.size(); i++) {
-            ObjectNode ref = (ObjectNode) references.get(i);
-            if (!ref.has("uuid")) {
-                ref.set("uuid", new TextNode(UUID.randomUUID().toString()));
-            }
-        }
-        for (JsonNode refsNode: tree.findValues("references")) {
-            if (refsNode.isArray()) {
-                ArrayNode refs = (ArrayNode) refsNode;
-                for (int i = 0; i < refs.size(); i++) {
-                    JsonNode ref = refs.get(i);
-                    if (ref.isTextual() && ref.asText("").chars().allMatch(Character::isDigit)) {
-                        refs.set(i, references.get(ref.asInt()).get("uuid"));
-                    }
-                }
-            }
         }
     }
 }

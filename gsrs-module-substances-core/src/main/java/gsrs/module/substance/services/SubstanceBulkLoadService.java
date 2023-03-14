@@ -142,11 +142,11 @@ public class SubstanceBulkLoadService {
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
         synchronized (jobLock) {
             if(stats==null ) {
-                log.info("skipping save because stats is null");
+                //log.info("skipping save because stats is null");
                 return null;
             }
             if(!stats._isDone()) {
-                log.info("skipping save of job in process");
+                //log.info("skipping save of job in process");
                 return null;
             }
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
@@ -254,7 +254,7 @@ public class SubstanceBulkLoadService {
                     ProcessingJob job = tx2.execute(s -> {
                         ProcessingJob innerJob=processingJobRepository.findById(pp.jobId).get();
                         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
-                        log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
+                        //log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
                         return innerJob;
                     });
 

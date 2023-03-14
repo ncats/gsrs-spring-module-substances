@@ -39,10 +39,7 @@ public class QualifiedAtom{
 		if (this.massIndication != other.massIndication) {
 			return false;
 		}
-		if (!Objects.equals(this.symbol, other.symbol)) {
-			return false;
-		}
-		return true;
+		return Objects.equals(this.symbol, other.symbol);
 	}
 
 	private String symbol;
@@ -65,7 +62,7 @@ public class QualifiedAtom{
 	public void setMassIndication(int massIndication) {
 		this.massIndication = massIndication;
 	}
-
+	
 	public double getAtomicMass() {
 		return atomicMass;
 	}
@@ -73,5 +70,5 @@ public class QualifiedAtom{
 	public void setAtomicMass(double atomicMass) {
 		this.atomicMass = atomicMass;
 	}
-
+	
 }
