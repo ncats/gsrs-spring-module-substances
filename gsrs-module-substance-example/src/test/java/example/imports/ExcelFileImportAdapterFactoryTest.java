@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
+import example.GsrsModuleSubstanceApplication;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.CodeProcessorFieldImpl;
 import gsrs.imports.ImportAdapter;
@@ -20,7 +21,9 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,6 +37,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+@WithMockUser(username = "admin", roles = "Admin")
 public class ExcelFileImportAdapterFactoryTest extends AbstractSubstanceJpaFullStackEntityTest {
 
 /*
