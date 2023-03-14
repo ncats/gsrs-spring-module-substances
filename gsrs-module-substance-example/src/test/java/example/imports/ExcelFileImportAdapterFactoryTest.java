@@ -14,6 +14,7 @@ import gsrs.module.substance.importers.importActionFactories.CodeExtractorAction
 import gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
-public class ExcelFileImportAdapterFactoryTest {
+public class ExcelFileImportAdapterFactoryTest extends AbstractSubstanceJpaFullStackEntityTest {
 
 /*
 Confirm ability to read data

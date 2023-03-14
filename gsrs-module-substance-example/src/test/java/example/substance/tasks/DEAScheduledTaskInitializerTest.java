@@ -54,7 +54,9 @@ public class DEAScheduledTaskInitializerTest extends AbstractSubstanceJpaFullSta
 
     @Test
     public void DeaScheduledTaskTest1() throws IOException {
-        String reportFilePath ="d:\\temp\\task_test.report.txt";
+        File reportFile = File.createTempFile("task_test.report", "txt");
+        String reportFilePath =reportFile.getAbsolutePath();
+        log.debug("using reportFilePath {}", reportFilePath);
         DEAScheduledTaskInitializer task = new DEAScheduledTaskInitializer();
         task.setOutputFilePath(reportFilePath);
         String deaDataFilePath = "DEA_LIST.txt";

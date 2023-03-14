@@ -270,9 +270,6 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
 
     public T addCode(Code code) {
         return andThen(s ->{
-            if(code.getReferences().isEmpty()) {
-                code.addReference(getOrAddFirstReference(s) ,s);
-            }
             s.codes.add(code);
         });
     }
