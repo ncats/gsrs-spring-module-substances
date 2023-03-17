@@ -1,16 +1,10 @@
 package example.name;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
 import gsrs.module.substance.standardizer.NameStandardizer;
-import gsrs.module.substance.standardizer.ReplacementNote;
-import gsrs.module.substance.standardizer.ReplacementResult;
-import gsrs.module.substance.utils.NameUtilities;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -57,5 +51,29 @@ public class NameStandardizerTests {
         String nameWithEarlyBrackets= "1,2-CHLORO (3,5)BENZENE [USAN][INN]";
         boolean result = ns.isStandardized(nameWithEarlyBrackets);
         Assertions.assertTrue(result);
+    }
+
+    @Test
+    public void testDoNotAllowLinefeeds() {
+        NameStandardizer ns = new FDAFullNameStandardizer();
+        String nameWithLinefeeds = "\n\rI AM HUNGRY LIKE A\r\nWOLF";
+        boolean result = ns.isStandardized(nameWithLinefeeds);
+        Assertions.assertFalse(result);
+    }
+
+    @Test
+    public void testDoNotAllowLeadingWhitespace() {
+        NameStandardizer ns = new FDAFullNameStandardizer();
+        String input = " GIMME SOME SPACE";
+        boolean result = ns.isStandardized(input);
+        Assertions.assertFalse(result);
+    }
+
+    @Test
+    public void testDoNotAllowTrailingWhitespace() {
+        NameStandardizer ns = new FDAFullNameStandardizer();
+        String input = "GIMME SOME SPACE ";
+        boolean result = ns.isStandardized(input);
+        Assertions.assertFalse(result);
     }
 }

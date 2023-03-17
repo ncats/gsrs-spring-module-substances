@@ -49,7 +49,7 @@ public class ClinicalTrialEuropeDTOExporterFactory implements ExporterFactory {
 		}
 
 		SpreadsheetFormat format = SpreadsheetFormat.XLSX;
-		Spreadsheet spreadsheet = format.createSpeadsheet(out);
+		Spreadsheet spreadsheet = format.createSpreadsheet(out);
 
 		ClinicalTrialEuropeDTOExporter.Builder builder = new ClinicalTrialEuropeDTOExporter.Builder(spreadsheet);
 		configure(builder, params);
