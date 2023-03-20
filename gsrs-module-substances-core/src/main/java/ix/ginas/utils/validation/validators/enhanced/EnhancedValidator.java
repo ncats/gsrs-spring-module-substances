@@ -28,7 +28,7 @@ public class EnhancedValidator extends AbstractValidatorPlugin<Substance> {
         if (s.getAllNames().size() > 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
             .WARNING_MESSAGE(String.format("Only one name, please."));
-            mes.setMessageId("AlexWasHere");
+            // mes.setMessageId("AlexWasHere");
             callback.addMessage(mes);
         }
     }
