@@ -159,7 +159,7 @@ static class Testconfig{
             System.out.println(String.format("messageId: %s", vm.getMessageId()));
             System.out.println(String.format("isError: %s", vm.isError()));
             // I want this to succeed, but it doesn't
-            assertEquals("E", vm.getMessageId().substring(0,1));
+            assertEquals("ERROR", vm.getMessageType());
 
         });
 
