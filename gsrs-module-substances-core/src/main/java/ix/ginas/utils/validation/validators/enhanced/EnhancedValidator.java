@@ -23,12 +23,10 @@ public class EnhancedValidator extends AbstractValidatorPlugin<Substance> {
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-
-
+        // This is a TEMPORARY, simple validator for testing.
         if (s.getAllNames().size() > 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
             .WARNING_MESSAGE(String.format("Only one name, please."));
-            // mes.setMessageId("AlexWasHere");
             callback.addMessage(mes);
         }
     }
