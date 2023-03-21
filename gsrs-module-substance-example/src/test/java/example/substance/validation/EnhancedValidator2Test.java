@@ -2,23 +2,17 @@ package example.substance.validation;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
-import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
-import gsrs.module.substance.standardizer.FDAMinimumNameStandardizer;
-import gsrs.module.substance.standardizer.NameStandardizer;
-import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.services.GroupService;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
-import ix.core.models.Group;
 import ix.core.models.Role;
-import ix.core.validator.*;
+import ix.core.validator.ValidationMessage;
+import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidationResponseBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.strategy.AcceptApplyAllProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
@@ -27,16 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.TestPropertySource;
 
-import java.util.*;
+import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 @Slf4j
 
@@ -52,7 +42,7 @@ import static org.junit.Assert.assertNotEquals;
 // "}\n"
 // })
 
-public class EnhancedValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {  // AbstractSubstanceJpaEntityTest {
+public class EnhancedValidator2Test extends AbstractSubstanceJpaFullStackEntityTest {  // AbstractSubstanceJpaEntityTest {
 /*
     @TestConfiguration
     static class Testconfig{
@@ -67,11 +57,11 @@ public class EnhancedValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
     @Autowired
     private GroupService groupService;
 
-    // @Autowired
-    // private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
+    @Autowired
+    private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
 
-    // @Autowired
-    // private GsrsProcessingStrategyFactoryConfiguration gsrsProcessingStrategyFactoryConfiguration;
+    @Autowired
+    private GsrsProcessingStrategyFactoryConfiguration gsrsProcessingStrategyFactoryConfiguration;
 
     private ObjectMapper mapper = new ObjectMapper();
 
@@ -110,8 +100,10 @@ public class EnhancedValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
         newSubstance.names.add(new Name("ASPIRIN ABC"));
         newSubstance.names.add(new Name("ASPIRIN DEF"));
         // see also ValidatorConfigTest in starter
+
         EnhancedValidator validator = new EnhancedValidator();
-        validator = AutowireHelper.getInstance().autowireAndProxy(validator);
+        // validator = AutowireHelper.getInstance().autowireAndProxy(validator);
+
         DefaultValidatorConfig vConf = new DefaultValidatorConfig();
         vConf.setValidatorClass(EnhancedValidator.class);
 
@@ -120,8 +112,8 @@ public class EnhancedValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
         // vConf.setParameters( ); ??
 
         // GsrsProcessingStrategyFactoryConfiguration pConf = gsrsProcessingStrategyFactoryConfiguration;
-        GsrsProcessingStrategyFactoryConfiguration pConf = new GsrsProcessingStrategyFactoryConfiguration();
-        pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
+        GsrsProcessingStrategyFactoryConfiguration pConf = gsrsProcessingStrategyFactoryConfiguration;
+        // pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
         GsrsProcessingStrategyFactoryConfiguration.OverrideRule or1 = new GsrsProcessingStrategyFactoryConfiguration.OverrideRule();
         or1.setRegex(Pattern.compile("W.*"));
         or1.setUserRoles(Role.roles(Role.valueOf("Admin"), Role.valueOf("Approver")));
@@ -130,21 +122,25 @@ public class EnhancedValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
         or2.setRegex(Pattern.compile("W.*"));
         or2.setUserRoles(Role.roles(Role.valueOf("DataEntry")));
         or2.setNewMessageType(ValidationMessage.MESSAGE_TYPE.ERROR);
-        // GsrsProcessingStrategy strategy =  gsrsProcessingStrategyFactory.createNewStrategy("ACCEPT_APPLY_ALL");
         pConf.setOverrideRules(Arrays.asList(or1, or2));
         pConf.setDefaultStrategy("ACCEPT_APPLY_ALL");
 
-        GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);
-        gsrsProcessingStrategyFactory = AutowireHelper.getInstance().autowireAndProxy(gsrsProcessingStrategyFactory);
+        // GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);
+        // gsrsProcessingStrategyFactory = AutowireHelper.getInstance().autowireAndProxy(gsrsProcessingStrategyFactory);
 
-        GsrsProcessingStrategy strategy = gsrsProcessingStrategyFactory.createNewStrategy(pConf.getDefaultStrategy());
+        GsrsProcessingStrategy strategy = createAcceptApplyAllStrategy();
+
+        // GsrsProcessingStrategy strategy = gsrsProcessingStrategyFactory.createNewStrategy(pConf.getDefaultStrategy());
         // How can the override rules in pConf affect the validation response below? Seems like they don't?
 
-        ValidationResponse<Substance> response2 = new ValidationResponse<>();
-        ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(newSubstance, response2, strategy);
-        validator.validate(newSubstance, null, validationResponsebuilder);
 
-        ValidationResponse<Substance> response = validationResponsebuilder.buildResponse();
+
+ //       ValidationResponse<Substance> response2 = new ValidationResponse<>();
+ //       ValidationResponseBuilder validationResponsebuilder = new ValidationResponseBuilder(newSubstance, response2, strategy);
+        ValidationResponse<Substance> response = validator.validate(newSubstance, null);
+//        ValidationResponse<Substance> response = validationResponsebuilder.buildResponse();
+
+
         String currentUser = GsrsSecurityUtils.getCurrentUsername().isPresent() ? GsrsSecurityUtils.getCurrentUsername().get() : "unknown";
         boolean hasRole = GsrsSecurityUtils.hasAnyRoles("DataEntry");
         assertEquals("bob", currentUser);
@@ -162,4 +158,10 @@ public class EnhancedValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
         });
 
     }
+
+    //copied from NameEntityService
+    private GsrsProcessingStrategy createAcceptApplyAllStrategy() {
+        return gsrsProcessingStrategyFactory.createNewDefaultStrategy();
+    }
+
 }
