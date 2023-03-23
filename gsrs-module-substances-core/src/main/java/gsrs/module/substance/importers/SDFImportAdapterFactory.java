@@ -198,10 +198,15 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
                 actionNode.put("label", "Create Property Action");
                 ObjectNode mapNode = createPropertyMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
-            } else {
+            } else if(looksLikeCode(f)) {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
                 actionNode.put("label", "Create Code Action");
                 ObjectNode mapNode = createCodeMap(f, "PRIMARY");
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+            } else {
+                actionNode.put(ACTION_NAME, "note_import");
+                actionNode.put("label", "Create Note Action");
+                ObjectNode mapNode = createNoteMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             }
             result.add(actionNode);

@@ -280,6 +280,12 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
+    public ObjectNode createNoteMap(String noteFieldName) {
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("note", "{{" + noteFieldName + "}}");
+        return mapNode;
+    }
+
     public ObjectNode createCodeMap(String codeSystem, String codeType) {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         if (codeType == null || codeType.length() == 0) {
@@ -296,13 +302,16 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
-
     protected boolean looksLikeProperty(String fieldName) {
         List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka", "logp", "logd", "hbond",
                 "tpsa", "count", "rotatable", "mass", "formula");
         return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
     }
 
+    protected boolean looksLikeCode(String fieldName) {
+        List<String> propertyWords = Arrays.asList("CAS", "EINECS","CHEMBL", "CHEBI", "NSC", "NCI", "ANUM", "PUBCHEM_COMPOUND_CID");
+        return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
+    }
     protected boolean looksLikeProteinSequence(String fieldName) {
         if(fieldName.toUpperCase().contains("PROTEIN") && fieldName.toUpperCase().contains("SEQUENCE")){
             return true;

@@ -1198,10 +1198,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
                     }
                     log.trace("resized size {}", resized.length);
-                    //File basicFileBefore = new File("d:\\temp\\del1Original." + formatForResize);
-                    //Files.write(basicFileBefore.toPath(), imageInfo.getImageData());
-                    //File basicFile = new File("d:\\temp\\del1Resized." + formatForResize);
-                    //Files.write(basicFile.toPath(), resized);
                     HttpHeaders headers = new HttpHeaders();
 
                     log.trace("going to set content type to {}", parseContentType(formatToUse));
