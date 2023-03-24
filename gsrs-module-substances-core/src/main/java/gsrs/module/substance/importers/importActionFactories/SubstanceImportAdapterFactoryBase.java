@@ -309,8 +309,10 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
     }
 
     protected boolean looksLikeCode(String fieldName) {
-        List<String> propertyWords = Arrays.asList("CAS", "EINECS","CHEMBL", "CHEBI", "NSC", "NCI", "ANUM", "PUBCHEM_COMPOUND_CID");
-        return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
+        List<String> codeIndicatorsPartial = Arrays.asList("CAS", "EINECS","CHEMBL", "CHEBI", "NSC", "NCI", "ANUM", "PUBCHEM_COMPOUND_CID");
+        List<String> codeIndicatorsFull = Arrays.asList("RN", "EC","NCIT", "RXCUI", "NCBI", "GRIN", "MPNS", "INN_ID", "USAN_ID");
+        return codeIndicatorsPartial.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)))
+                ||codeIndicatorsFull.stream().anyMatch(p2->fieldName.toUpperCase().equals(p2));
     }
     protected boolean looksLikeProteinSequence(String fieldName) {
         if(fieldName.toUpperCase().contains("PROTEIN") && fieldName.toUpperCase().contains("SEQUENCE")){
