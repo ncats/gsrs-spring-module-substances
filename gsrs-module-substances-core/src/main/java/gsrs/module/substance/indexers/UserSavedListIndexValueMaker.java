@@ -10,7 +10,7 @@ import gsrs.repository.PrincipalRepository;
 import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.KeyUserList;
 import ix.core.models.Principal;
-import ix.core.search.bulk.UserSaveListService;
+import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.core.util.EntityUtils.EntityWrapper;
@@ -43,7 +43,7 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 		list.forEach(e->log.warn("list name " + e.listName));
 		
 		list.forEach(listName -> {			
-			String value = UserSaveListService.getIndexedValue(listName.principal.username, listName.listName);
+			String value = UserSavedListService.getIndexedValue(listName.principal.username, listName.listName);
 			log.info("index value: " + value);
 			consumer.accept(IndexableValue.simpleFacetStringValue("User List",value));});
 	
