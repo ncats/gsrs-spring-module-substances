@@ -30,8 +30,7 @@ import static org.junit.Assert.assertTrue;
 
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
-public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEntityTest {  // AbstractSubstanceJpaEntityTest {
-    // data load: turn off entity processors to see how fast things go?
+public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     // SubstanceEntityServiceImpl extends AbstractGsrsEntityService.
     // See AbstractGsrsEntityService to four steps created  (validator=, response=, callback=, then validator.validate)
