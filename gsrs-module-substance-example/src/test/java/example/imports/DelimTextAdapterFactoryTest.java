@@ -19,6 +19,7 @@ import gsrs.module.substance.importers.importActionFactories.CodeExtractorAction
 import gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtractorActionFactory;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
@@ -39,7 +40,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
-public class DelimTextAdapterFactoryTest {
+public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest {
 
     /*
     Make sure the initialize method populates the registry (a Map)
