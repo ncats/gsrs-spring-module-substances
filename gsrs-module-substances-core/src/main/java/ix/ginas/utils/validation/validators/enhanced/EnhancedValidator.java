@@ -15,7 +15,6 @@ import java.util.Set;
 @Slf4j
 @Data
 public class EnhancedValidator extends AbstractValidatorPlugin<Substance> {
-
     //    @Autowired
     //    private SubstanceRepository substanceRepository;
 
@@ -27,6 +26,7 @@ public class EnhancedValidator extends AbstractValidatorPlugin<Substance> {
         if (s.getAllNames().size() > 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
             .WARNING_MESSAGE(String.format("Only one name, please."));
+            mes.appliableChange(true);
             callback.addMessage(mes);
         }
     }
