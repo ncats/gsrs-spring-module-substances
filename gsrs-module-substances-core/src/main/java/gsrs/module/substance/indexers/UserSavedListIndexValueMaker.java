@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import gsrs.repository.KeyUserListRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.security.GsrsSecurityUtils;
+import ix.core.models.KeyUserList;
 import ix.core.models.Principal;
 import ix.core.search.bulk.UserSaveListService;
 import ix.core.search.text.IndexValueMaker;
@@ -35,21 +36,15 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
 		
-				
-    	if(!GsrsSecurityUtils.getCurrentUsername().isPresent()) return;  	    	
-    	String userName = GsrsSecurityUtils.getCurrentUsername().get();
-    	log.warn("UserSavedListIndexValueMaker " + " username: " + userName);
-    	Principal user = principalRepository.findDistinctByUsernameIgnoreCase(userName);
-		if(user == null)
-			return;
+		log.info("In UserSavedListIndexValueMaker ");		
 		String key = EntityWrapper.of(substance).getKey().toRootKey().getIdString();
 	
-		List<String> list = keyUserListRepository.getAllListNamesFromKey(key, user.id);
-		list.forEach(e->log.warn("list name " + e));
+		List<KeyUserList> list = keyUserListRepository.getAllListNamesFromKey(key);
+		list.forEach(e->log.warn("list name " + e.listName));
 		
 		list.forEach(listName -> {			
-			String value = UserSaveListService.getIndexedValue(userName, listName);
-			log.warn("value: " + value);
+			String value = UserSaveListService.getIndexedValue(listName.principal.username, listName.listName);
+			log.info("index value: " + value);
 			consumer.accept(IndexableValue.simpleFacetStringValue("User List",value));});
 	
 	}
