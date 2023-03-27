@@ -23,12 +23,10 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+import static org.junit.Assert.*;
 
 @Slf4j
-
-
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEntityTest {
 
@@ -48,17 +46,72 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
 
     @Test
     @WithMockUser(username = "admin", roles="Admin")
-    public void testEnhancedValidator1() throws ClassNotFoundException {
+    public void testValidationFilter0() throws ClassNotFoundException {
+        // What if strategy is null?
+        // We should get hint about config property in stack trace.
+        GsrsProcessingStrategyFactoryConfiguration pConf = new GsrsProcessingStrategyFactoryConfiguration();
+        pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
+        GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);
+        gsrsProcessingStrategyFactory = AutowireHelper.getInstance().autowireAndProxy(gsrsProcessingStrategyFactory);
+        GsrsProcessingStrategy strategy = null;
+        boolean npe = false;
+        boolean hint = false;
+        try {
+            strategy = gsrsProcessingStrategyFactory.createNewStrategy(pConf.getDefaultStrategy());
+        } catch (NullPointerException e) {
+            npe=true;
+            hint = e.getMessage().contains("GsrsProcessingStrategy strategyName is null");
+        }
+        assertNull(strategy);
+        assertTrue(npe);
+        assertTrue(hint);
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles="Admin")
+    public void testValidationFilterB1() throws ClassNotFoundException {
+        // what if overrideRules is null?
+        // We should get NPE and hint about config property in stack trace.
+        Substance newSubstance = new Substance();
+        newSubstance.names.add(new Name("ASPIRIN ABC"));
+        // see also ValidatorConfigTest in starter
+        NameCountValidator validator = new NameCountValidator();
+        validator = AutowireHelper.getInstance().autowireAndProxy(validator);
+
+        GsrsProcessingStrategyFactoryConfiguration pConf = new GsrsProcessingStrategyFactoryConfiguration();
+        pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
+        pConf.setDefaultStrategy("ACCEPT_APPLY_ALL_WARNINGS");
+
+        GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);
+        gsrsProcessingStrategyFactory = AutowireHelper.getInstance().autowireAndProxy(gsrsProcessingStrategyFactory);
+        GsrsProcessingStrategy strategy = gsrsProcessingStrategyFactory.createNewStrategy(pConf.getDefaultStrategy());
+        boolean npe = false;
+        boolean hint = false;
+        try {
+            ValidationResponse<Substance> response2 = new ValidationResponse<>(newSubstance);
+            ValidatorCallback callback = createCallbackFor(newSubstance, response2, DefaultValidatorConfig.METHOD_TYPE.CREATE, strategy);
+            validator.validate(newSubstance, null, callback);
+            callback.complete();
+        } catch (NullPointerException e) {
+            npe = true;
+            hint = e.getMessage().contains("OverrideRules value is null");
+        }
+        assertTrue(npe);
+        assertTrue(hint);
+    }
+
+
+    @Test
+    @WithMockUser(username = "admin", roles="Admin")
+    public void testValidationFilter1() throws ClassNotFoundException {
         // Reset the configuration values associated with gsrs.processing-strategy property value; set override values.
         // Check if we can change WARNING to ERROR.
         // Check if we can create message id based on template/format.
-
         String testUsername = "admin";
         String testRole = "Admin";
         String testMessageType = "ERROR";
         String testTemplate = "FYI, there are %s names.*";
         String testContains = "FYI,";
-
 
         Substance newSubstance = new Substance();
         newSubstance.names.add(new Name("ASPIRIN ABC"));
@@ -87,7 +140,7 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         boolean hasRole = GsrsSecurityUtils.hasAnyRoles(testRole);
         assertEquals(testUsername, currentUser);
         assertEquals(true, hasRole);
-
+        assertTrue(response2.getValidationMessages().size()==1);
         response2.getValidationMessages().forEach(vm -> {
             // System.out.println(String.format("user: %s", currentUser));
             // System.out.println(String.format("type: %s", vm.getMessageType()));
@@ -102,7 +155,7 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
 
     @Test
     @WithMockUser(username = "bob", roles="DataEntry")
-    public void testEnhancedValidator2() throws ClassNotFoundException {
+    public void testValidationFilter2() throws ClassNotFoundException {
         // Reset the configuration values associated with gsrs.processing-strategy property value; set override values.
         // Check if we can change WARNING to NOTICE.
 
@@ -141,7 +194,7 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         boolean hasRole = GsrsSecurityUtils.hasAnyRoles(testRole);
         assertEquals(testUsername, currentUser);
         assertEquals(true, hasRole);
-
+        assertTrue(response2.getValidationMessages().size()==1);
         response2.getValidationMessages().forEach(vm -> {
             // System.out.println(String.format("user: %s", currentUser));
             // System.out.println(String.format("type: %s", vm.getMessageType()));
@@ -151,12 +204,6 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
             assertEquals(testMessageType, vm.getMessageType().toString());
         });
     }
-
-
-
-
-
-
 
     // This is modified from SubstanceServiceImpl because we could not pass strategy
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type, GsrsProcessingStrategy strategy) {
@@ -224,6 +271,5 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
             }
         }
     }
-
 
 }

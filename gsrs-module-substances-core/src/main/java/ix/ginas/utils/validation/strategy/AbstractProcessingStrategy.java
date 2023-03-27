@@ -127,6 +127,7 @@ public abstract class AbstractProcessingStrategy implements GsrsProcessingStrate
     }
 
     public void overrideMessage(GinasProcessingMessage gpm){
+        Objects.requireNonNull(configuration.getOverrideRules(), "OverrideRules value is null; please configure the property gsrs.processing-strategy.");
         for (GsrsProcessingStrategyFactoryConfiguration.OverrideRule rule : configuration.getOverrideRules()) {
             if ((rule.getUserRoles() == null || GsrsSecurityUtils.hasAnyRoles(rule.getUserRoles())) && rule.getRegex().matcher(gpm.toString()).find()) {
                 if (rule.getNewMessageType() != null) {

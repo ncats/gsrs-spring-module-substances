@@ -4,6 +4,8 @@ import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 /**
  * Factory class that creates new {@link GsrsProcessingStrategy}
  * instances.
@@ -33,6 +35,7 @@ public class GsrsProcessingStrategyFactory {
      * @throws IllegalArgumentException if unknown strategy.
      */
     public GsrsProcessingStrategy createNewStrategy(String strategyName){
+        Objects.requireNonNull(strategyName, "GsrsProcessingStrategy strategyName is null; please configure the property gsrs.processing-strategy.");
         switch(strategyName.toUpperCase()){
             case "ACCEPT_APPLY_ALL":
                 return (GsrsProcessingStrategy) new AcceptApplyAllProcessingStrategy(groupService, configuration);
