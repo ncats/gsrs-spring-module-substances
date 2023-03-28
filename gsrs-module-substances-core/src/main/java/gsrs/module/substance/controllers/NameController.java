@@ -52,9 +52,4 @@ public class NameController extends EtagLegacySearchEntityController<NameControl
         return Optional.of(editRepository);
     }
 
-	@Override
-	public ResultListRecordGenerator getResultListRecordGenerator() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

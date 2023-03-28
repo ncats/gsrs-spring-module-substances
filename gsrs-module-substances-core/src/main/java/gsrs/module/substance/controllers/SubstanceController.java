@@ -141,8 +141,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
 	
+	public SubstanceController() {
+		super();
+	};
+		
 	@Autowired 
-	private ResultListRecordGenerator resultListRecordGenerator;
+	public SubstanceController(ResultListRecordGenerator resultListRecordGenerator) {
+		super(resultListRecordGenerator);
+	}
 	
 	@Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -168,12 +174,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         return so;
     }
-	
-	@Override
-	public ResultListRecordGenerator getResultListRecordGenerator() {
-    	return resultListRecordGenerator;
-    }
-    private static interface SimpleStandardizer{
+
+	private static interface SimpleStandardizer{
         public Chemical standardize(Chemical c);
         public static SimpleStandardizer REMOVE_HYDROGENS() {
             return (c)->{

@@ -51,9 +51,4 @@ public class ReferenceController extends EtagLegacySearchEntityController<Refere
         return Optional.of(editRepository);
     }
 
-	@Override
-	public ResultListRecordGenerator getResultListRecordGenerator() {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

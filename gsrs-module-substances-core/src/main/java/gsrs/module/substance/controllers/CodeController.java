@@ -50,11 +50,5 @@ public class CodeController extends EtagLegacySearchEntityController<CodeControl
     @Override
     protected Optional<EditRepository> editRepository() {
         return Optional.of(editRepository);
-    }
-
-	@Override
-	public ResultListRecordGenerator getResultListRecordGenerator() {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    }	
 }

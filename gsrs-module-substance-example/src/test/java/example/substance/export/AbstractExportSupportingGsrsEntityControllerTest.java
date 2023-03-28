@@ -47,12 +47,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         protected Object createSearchResponse(List results, SearchResult result, HttpServletRequest request) {
             return null;
         }
-        
-        @Override
-        public ResultListRecordGenerator getResultListRecordGenerator() {
-        	return null;
-        }
-
+      
         @SneakyThrows
         @Override
         protected GsrsEntityService getEntityService() {
