@@ -84,7 +84,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
     private void recalculateMatchablesFor(Substance substance) {
         log.trace("looking at substance " + substance.getUuid());
-        Optional<Integer> version = getVersion(substance);
+        /*Optional<Integer> version = getVersion(substance);
         Optional<Substance> previousVersion = Optional.empty();
         if (version.isPresent() && version.get() > 1) {
             log.trace("got version {}", version.get());
@@ -93,6 +93,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             previousVersion = txFetch.execute(a -> {
                 log.trace("going to look for edits for id {} and version {}.", substance.getUuid(), version.get()-2);
                 List<Edit> editList = editRepository.findByRefidAndVersion(substance.getUuid().toString(), Integer.toString(version.get()-2));
+                //sort
                 try {
                     log.trace("edit list: {}", (editList==null || editList.isEmpty()) ?"null/empty" : editList.size());
                     if (editList != null && !editList.isEmpty()) {
@@ -108,7 +109,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         } else {
             log.trace("no version");
         }
-
+*/
         substanceStagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
         //clear out the old stuff
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
@@ -123,7 +124,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         List<MatchableKeyValueTuple> matchables = substanceStagingAreaEntityService.extractKVM(substance);
         log.trace("calculated matchables");
         processMatchables(substance, matchables, importMetadataRecordsToReindex::add, true);
-        if(previousVersion.isPresent()){
+  /*      if(previousVersion.isPresent()){
             List<MatchableKeyValueTuple> matchablesForPrevious = substanceStagingAreaEntityService.extractKVM(previousVersion.get());
             processMatchables(previousVersion.get(), matchablesForPrevious, importMetadataRecordsToReindex::add, false);
             log.trace("calculated matchables for previous (version {}; change reason {})", previousVersion.get().version,
@@ -131,7 +132,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         } else {
             log.trace("no previous!");
         }
-
+*/
 
         log.trace("going to iterate importMetadataRecordsToReindex ({})", importMetadataRecordsToReindex.size());
         importMetadataRecordsToReindex.forEach(r->{
