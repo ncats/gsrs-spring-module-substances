@@ -1,4 +1,4 @@
-package gsrs.data_exchange;
+package gsrs.dataexchange;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
@@ -16,7 +16,6 @@ import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
-import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;

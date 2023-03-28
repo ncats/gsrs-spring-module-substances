@@ -1,7 +1,7 @@
 package example.imports;
 
 import example.GsrsModuleSubstanceApplication;
-import gsrs.dataexchange.processing_actions.MergeProcessingAction;
+import gsrs.dataexchange.processingactions.MergeProcessingAction;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.services.PrincipalServiceImpl;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
