@@ -141,13 +141,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
 	
-	public SubstanceController() {
-		super();
-	};
-		
-	@Autowired 
-	public SubstanceController(ResultListRecordGenerator resultListRecordGenerator) {
-		super(resultListRecordGenerator);
+	@Autowired
+	private ResultListRecordGenerator resultListRecordGenerator;
+	
+	@Override	
+	public ResultListRecordGenerator getResultListRecordGenerator() {
+		return resultListRecordGenerator;
 	}
 	
 	@Override
