@@ -49,7 +49,6 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,
-        // Was in Egor's but not in master
         GsrsProcessingStrategyFactoryConfiguration.class,
         ImportMetadataLegacySearchService.class
 })
