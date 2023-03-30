@@ -11,7 +11,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import gov.nih.ncats.common.util.TimeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -34,6 +36,8 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.ginas.models.v1.Name;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.persistence.EntityManager;
 
 @Slf4j
 @Data
@@ -100,6 +104,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
+        long start = TimeUtil.getCurrentTimeMillis();
     	initIfNeeded();
         File writeFile = getOutputFile();
         File abfile = writeFile.getAbsoluteFile();
@@ -113,7 +118,6 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
         l.message("Initializing name standardization: acquiring list");
 
-        ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
         l.message("Initializing name standardization: acquiring user account");
         Authentication adminAuth = adminService.getAnyAdmin();
         l.message("Initializing name standardization: starting process");
@@ -121,33 +125,32 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
         try (PrintStream out = makePrintStream(writeFile)){
             out.print("Existing standardized name\tNew standardized name\tMessage\n");
-            adminService.runAs(adminAuth, (Runnable) () -> {
-                TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                log.trace("got outer tx " + tx);
-                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                try {
-                    processNames(l, out);
-                } catch (Exception ex) {
-                    l.message("Error standardizing. error: " + ex.getMessage());
-                }
-            });
+                adminService.runAs(adminAuth, (Runnable) () -> {
+                    // this isn't actually used.
+                    // TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+                    // log.trace("got outer tx " + tx);
+                    // tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    try {
+                        processNames(l, out);
+                    } catch (Exception ex) {
+                        l.message("Error standardizing. error: " + ex.getMessage());
+                    }
+                });
+
         } catch (Exception ee) {
             log.error("error generating standard names: ", ee);
             l.message("ERROR:" + ee.getMessage());
             throw new RuntimeException(ee);
         }
 
-        l.message("Shutting down executor service");
-        executor.shutdown();
-        try {
-            executor.awaitTermination(1, TimeUnit.DAYS);
-        } catch (InterruptedException e) {
-            //should never happen
-            log.error("Interrupted exception!");
-        }
-        l.message("Task finished");
+        // l.message("Shutting down executor service");
+        // executor modified above we only have one so we don't need to wait/shutdown
+
+        long end = TimeUtil.getCurrentTimeMillis();
         l.complete();
-        //listen.doneProcess();
+        l.message("Full time to execute, (End-Start): "+ (end-start));
+        // change later to info or nothing
+        log.error("Full time to execute, (End-Start): "+ (end-start));
     }
 
     @Override
@@ -171,6 +174,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
      */
     private File getOutputFile() {
         return FilePathParserUtils.getFileParserBuilder()
+                // will use supplied if outputPath specified in config; it is the full filepath.
+                // otherwise it will use the defaultFilePath
                 .suppliedFilePath(outputPath)
                 .defaultFilePath("reports/" + name + "-%DATE% %TIME%.txt")
                 .dateFormatter(formatter)
@@ -192,6 +197,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                     printStream.format( "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
                             prevStdName, newlyStdName, name.getName(), prevStdName, newlyStdName);
                 }
+                // If told explicitly to regen all names, or if stdname not null but effectively null, then null out the stdName field
+                // to signal that the name should be regenerated.
                 if (forceRecalculationOfAll || (name.stdName != null && name.stdName.equals(regenerateNameValue))) {
                     name.stdName = null;
                 }
@@ -210,39 +217,45 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     }
 
     private void processNames(SchedulerPlugin.TaskListener l, PrintStream printStream){
+
         log.trace("starting in processNames");
+        // ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
 
         List<String> nameIds= nameRepository.getAllUuids();
         log.trace("total names: {}", nameIds.size());
-        int soFar =0;
-        for (String nameId: nameIds) {
-            soFar++;
-            log.trace("going to fetch name with ID {}", nameId);
-            UUID nameUuid= UUID.fromString(nameId);
-            Optional<Name> nameOpt = nameRepository.findById(nameUuid);
-            if( !nameOpt.isPresent()){
-                log.info("No name found with ID {}", nameId);
-                continue;
-            }
-            Name name = nameOpt.get();
-            log.trace("processing name with ID {}", name.uuid.toString());
-            if(standardizeName(name, printStream) ) {
+        EntityManager em = StaticContextAccessor.getEntityManagerFor(Name.class);
+            AtomicInteger soFar = new AtomicInteger(0);
+nameIds.parallelStream().forEach(nameId->{
+    soFar.incrementAndGet();
+    log.trace("going to fetch name with ID {}", nameId);
+    // change later or remove
+    log.error("going to fetch name with ID {}", nameId);
+    UUID nameUuid= UUID.fromString(nameId);
+    Optional<Name> nameOpt = nameRepository.findById(nameUuid);
+    if( !nameOpt.isPresent()){
+        log.info("No name found with ID {}", nameId);
+        return;
+    }
+    Name name = nameOpt.get();
+    log.trace("processing name with ID {}", name.uuid.toString());
+    // If this method standardizeName ends up mutating the name, the we do the following steps
+    if(standardizeName(name, printStream) ) {
                 try {
                     log.trace("resaving name {}", name.getName());
                     //name.forceUpdate();
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                     //log.trace("got tx " + tx);
-                    tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     tx.setReadOnly(false);
                     tx.executeWithoutResult(c-> {
                         log.trace("before saveAndFlush");
                         //log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
                         //log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
                         //hack to make sure name persists
-                        Name name2 = StaticContextAccessor.getEntityManagerFor(Name.class).merge(name);
+                        Name name2 = em.merge(name);
                         //log.trace("name2 dirtiness: " + name2.isDirty());
                         name2.forceUpdate();
-                        //log.trace("name2 dirtiness after update: " + name2.isDirty());
+                        // change was trace and commented out
+                        log.error("name2 dirtiness after update: " + name2.isDirty());
                         nameRepository.saveAndFlush(name2);
                         //log.trace("finished saveAndFlush");
                     });
@@ -251,9 +264,10 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 } catch (Exception ex) {
                     log.error("Error during save: {}", ex.getMessage());
                 }
-            }
-            l.message(String.format("Processed %d of %d names", soFar, nameIds.size()));
-        }
+    }
+    l.message(String.format("Processed %d of %d names", soFar, nameIds.size()));
+});
+
     }
 
     private PrintStream makePrintStream(File writeFile) throws IOException {
