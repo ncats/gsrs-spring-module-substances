@@ -45,23 +45,26 @@ public class FDANameExporter implements Exporter<Substance> {
         StringBuilder sb = new StringBuilder();
 
         sb.append("NAME_ID").append("\t")
-        .append("OWNER_UUID").append("\t")
-        .append("TYPE").append("\t")
-        .append("Name").append("\t")
-        .append("UTF8_Name").append("\t")
-        .append("Public or Private").append("\t")
-        .append("This is a").append("\t")
-        .append(chosenApprovalIdName).append("\t");
+	        .append("OWNER_UUID").append("\t")
+	        .append("TYPE").append("\t")
+	        .append("Name").append("\t")
+	        .append("UTF8_Name").append("\t")
+	        .append("Public or Private").append("\t")
+	        .append("This is a").append("\t")
+	        .append(chosenApprovalIdName).append("\t");
+        
         if(!omitPrimaryCodeSystem && primaryCodeSystem!=null){
             sb.append(primaryCodeSystem).append("\t");
         }
+        
         sb.append("DISPLAY_NAME").append("\t")
-        .append("UTF8_DISPLAY_NAME").append("\t");
+          .append("UTF8_DISPLAY_NAME").append("\t");
+        
         if(!omitPrimaryCodeSystem && primaryCodeSystem!=null){
             sb.append("PARENT_"+primaryCodeSystem).append("\t");
         }
         sb.append("PARENT_DISPLAY_NAME").append("\t")
-        .append("UTF8_PARENT_DISPLAY_NAME");
+          .append("UTF8_PARENT_DISPLAY_NAME");
         bw.write(sb.toString());
         bw.newLine();
     }
@@ -79,6 +82,10 @@ public class FDANameExporter implements Exporter<Substance> {
         if(s.isSubstanceVariant()){
             SubstanceReference sr= s.getParentSubstanceReference();
             Substance parent=substanceRepository.findBySubstanceReference(sr);
+            if(parent!=null) {
+            	parent=(Substance)this.params.getScrubber().scrub(parent).orElse(null);
+            }
+            
             if(parent == null){
                 Substance fake = new Substance();
                 fake.approvalID=sr.approvalID;
@@ -102,10 +109,10 @@ public class FDANameExporter implements Exporter<Substance> {
 
     public String getPrimaryCodeSystemCode(Substance s){
         return s.codes.stream()
-        .filter(cd->cd.codeSystem.equals(primaryCodeSystem)&&cd.type.equals("PRIMARY"))
-        .map(cd->cd.code)
-        .findFirst()
-        .orElse(null);
+			        .filter(cd->cd.codeSystem.equals(primaryCodeSystem)&&cd.type.equals("PRIMARY"))
+			        .map(cd->cd.code)
+			        .findFirst()
+			        .orElse(null);
     }
 
     @Override

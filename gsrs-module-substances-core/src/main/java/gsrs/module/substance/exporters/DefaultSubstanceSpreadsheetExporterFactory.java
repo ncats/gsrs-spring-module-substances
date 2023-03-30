@@ -51,7 +51,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     @Autowired
     private SubstanceSpreadsheetExporterConfiguration substanceExporterConfiguration;
 
-    private Map<Column, ColumnValueRecipe<Substance>> DEFAULT_RECIPE_MAP;
+    
 
     @Override
     public Set<OutputFormat> getSupportedFormats() {
@@ -69,8 +69,8 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
         SpreadsheetFormat format = (SpreadsheetFormat)params.getFormat();
         Spreadsheet spreadsheet = format.createSpreadsheet(out);
 
-        createdDefaultMapIfNeeded();
-        SubstanceSpreadsheetExporter.Builder builder = new SubstanceSpreadsheetExporter.Builder( spreadsheet, DEFAULT_RECIPE_MAP);
+        
+        SubstanceSpreadsheetExporter.Builder builder = new SubstanceSpreadsheetExporter.Builder( spreadsheet, createColumnRecipes(params));
 
         configure(builder, params);
 
@@ -128,163 +128,160 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
         return "INGREDIENT SUBSTANCE";
     }
 
-     synchronized void createdDefaultMapIfNeeded() {
-
-         if (DEFAULT_RECIPE_MAP == null) {
-             DEFAULT_RECIPE_MAP = new LinkedHashMap<>();
+    public Map<Column, ColumnValueRecipe<Substance>> createColumnRecipes(Parameters params) {
+    	Map<Column, ColumnValueRecipe<Substance>> defaultRecipeMap= new LinkedHashMap<>();
 
 
-             //UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM ITIS NCBI PLANTS GRIN MPNS INN_ID MF INCHIKEY SMILES INGREDIENT_TYPE 
+    	//UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM ITIS NCBI PLANTS GRIN MPNS INN_ID MF INCHIKEY SMILES INGREDIENT_TYPE 
 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
-             
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_NAME, createRestrictableRecipe(Substance.class,DefaultColumns.STD_NAME, (s, pubOnly,cell) -> {
-                     Optional<Name> opName = ((Substance)s).getDisplayName();
-                     boolean wroteName = false;
-                     if(opName.isPresent()) {
-                            cell.writeString(opName.get().stdName);
-                            wroteName=true;
-                     }
-                     if(!wroteName) {
-                         //TODO: Something based on what comes back
-                     }
-             }).replaceColumnName(DefaultColumns.STD_NAME.name(), "DISPLAY_NAME"));
-             
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS").replaceColumnName(DefaultColumns.CAS.name(),"RN"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.EC, new CodeSystemRecipe(DefaultColumns.EC, "ECHA (EC/EINECS)"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCI_THESAURUS, new CodeSystemRecipe(DefaultColumns.NCI_THESAURUS, "NCI_THESAURUS").replaceColumnName(DefaultColumns.NCI_THESAURUS
-                     .name(),"NCIT"));
-             
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
-             
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.ITIS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.ITIS, "ITIS")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NCBI, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.NCBI, "NCBI TAXONOMY")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")
-                                                                                                      .replaceColumnName(DefaultColumns.USDA_PLANTS.name(),"PLANTS")
-                                                                                                      ));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN")));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.MPNS, ParentSourceMaterialRecipeWrapper.wrap(substanceRepository, new CodeSystemRecipe(DefaultColumns.MPNS, "MPNS")));
-             
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN").replaceColumnName(DefaultColumns.INN.name(),"INN_ID"));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.USAN, new CodeSystemRecipe(DefaultColumns.USAN, "USAN").replaceColumnName(DefaultColumns.USAN.name(),"USAN_ID"));
-         
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.FORMULA, createRestrictableRecipe(Substance.class,DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
-                 if (s instanceof ChemicalSubstance) {
-                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     Optional.ofNullable(chemicalSubstance.getStructure())
-                             .ifPresent(ss->{
-                                cell.writeString(ss.formula);
-                             });
-                     
-                 } else if (s instanceof PolymerSubstance) {
-                     //TODO: there's a property that should be the fallback for this  
-                     // for proteins, polymers, etc
-                     cell.writeString("");
-                 } 
-             }).replaceColumnName(DefaultColumns.FORMULA.name(),"MF"));
-             
-             
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(Substance.class,DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
-                 if (s instanceof ChemicalSubstance) {
-                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                     Structure.Stereo ster = chemicalSubstance.getStereochemistry();
-                     if (ster!=null && !ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
-                         return;
-                     }
-                    
-                    
-                     try {
-                         Chemical chem = s.toChemical();
-                         cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(chem))
-                                          .getKey()
-                                          .replace("InChIKey=", ""));
-                     } catch (Exception e) {
+    	defaultRecipeMap.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
+    	defaultRecipeMap.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
 
-                     }
-                 }
-             }).replaceColumnName(DefaultColumns.STD_INCHIKEY_FORMATTED.name(),"INCHIKEY"));
-             
-             
-             
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.SMILES, createRestrictableRecipe(DefaultColumns.SMILES, (s,pubOnly, cell) -> {
-                 if (s instanceof ChemicalSubstance) {
-                     ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
-                    
-                     Optional.ofNullable(chemicalSubstance.getStructure())
-                             .ifPresent(ss->{
-                                cell.writeString(ss.smiles);
-                             });
-                 }
-             }));
-          
+    	defaultRecipeMap.put(DefaultColumns.STD_NAME, createRestrictableRecipe(Substance.class,DefaultColumns.STD_NAME, (s, pubOnly,cell) -> {
+    		Optional<Name> opName = ((Substance)s).getDisplayName();
+    		boolean wroteName = false;
+    		if(opName.isPresent()) {
+    			cell.writeString(opName.get().stdName);
+    			wroteName=true;
+    		}
+    		if(!wroteName) {
+    			//TODO: Something based on what comes back
+    		}
+    	}).replaceColumnName(DefaultColumns.STD_NAME.name(), "DISPLAY_NAME"));
 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.INGREDIENT_TYPE, SingleColumnValueRecipe.create(DefaultColumns.INGREDIENT_TYPE, (s, cell) -> {
-                 cell.writeString(getIngredientType(s));
-             }));
+    	defaultRecipeMap.put(DefaultColumns.CAS, new CodeSystemRecipe(DefaultColumns.CAS, "CAS").replaceColumnName(DefaultColumns.CAS.name(),"RN"));
+    	defaultRecipeMap.put(DefaultColumns.EC, new CodeSystemRecipe(DefaultColumns.EC, "ECHA (EC/EINECS)"));
+    	defaultRecipeMap.put(DefaultColumns.NCI_THESAURUS, new CodeSystemRecipe(DefaultColumns.NCI_THESAURUS, "NCI_THESAURUS").replaceColumnName(DefaultColumns.NCI_THESAURUS
+    			.name(),"NCIT"));
 
-                
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NAME, createRestrictableRecipe(Substance.class,DefaultColumns.NAME, (s, pubOnly,cell) -> {
-                 cell.writeString(s.getName());                 
-             }).replaceColumnName(DefaultColumns.NAME.name(), "UTF8_DISPLAY_NAME"));
-                         
-             
+    	defaultRecipeMap.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
+    	defaultRecipeMap.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
 
-         
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.SUBSTANCE_TYPE, SingleColumnValueRecipe.create(DefaultColumns.SUBSTANCE_TYPE, (s, cell) -> cell.writeString(s.substanceClass.name())));
+    	defaultRecipeMap.put(DefaultColumns.ITIS, ParentSourceMaterialRecipeWrapper.wrap(new CodeSystemRecipe(DefaultColumns.ITIS, "ITIS"),params.getScrubber()));
+    	defaultRecipeMap.put(DefaultColumns.NCBI, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.NCBI, "NCBI TAXONOMY"),params.getScrubber()));
+    	defaultRecipeMap.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")
+    			.replaceColumnName(DefaultColumns.USDA_PLANTS.name(),"PLANTS"),params.getScrubber()
+    			));
+    	defaultRecipeMap.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN"),params.getScrubber()));
+    	defaultRecipeMap.put(DefaultColumns.MPNS, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.MPNS, "MPNS"),params.getScrubber()));
 
-             //Lazy place to put new basic columns
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.PROTEIN_SEQUENCE, createRestrictableRecipe(DefaultColumns.PROTEIN_SEQUENCE, (s,pubOnly, cell) -> {
-                 if (s instanceof ProteinSubstance) {
-                     ProteinSubstance proteinSubstance = (ProteinSubstance) s;
-                     if(proteinSubstance.protein==null)return;
-                     List<Subunit> subunits = proteinSubstance.protein.getSubunits();
-                     if(subunits==null)return;
-                     StringBuilder sb = new StringBuilder();
-                     for (Subunit su : subunits) {
-                         if (sb.length() != 0) {
-                             sb.append("|");
-                         }
-                         sb.append(su.sequence);
-                     }
-                     cell.writeString(sb.toString());
-                 }
-             }));
+    	defaultRecipeMap.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN").replaceColumnName(DefaultColumns.INN.name(),"INN_ID"));
+    	defaultRecipeMap.put(DefaultColumns.USAN, new CodeSystemRecipe(DefaultColumns.USAN, "USAN").replaceColumnName(DefaultColumns.USAN.name(),"USAN_ID"));
 
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.NUCLEIC_ACID_SEQUENCE, createRestrictableRecipe(DefaultColumns.NUCLEIC_ACID_SEQUENCE, (s, pubOnly, cell) -> {
-                 //TODO: perhaps put a limit on this? 4000 chars?
-                  if (s instanceof NucleicAcidSubstance) {
-                     NucleicAcidSubstance nucleicAcidSubstance = (NucleicAcidSubstance) s;
-                     if(nucleicAcidSubstance.nucleicAcid==null)return;
-                     List<Subunit> subunits = nucleicAcidSubstance.nucleicAcid.getSubunits();
-                     if(subunits==null)return;
-                     StringBuilder sb = new StringBuilder();
+    	defaultRecipeMap.put(DefaultColumns.FORMULA, createRestrictableRecipe(Substance.class,DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
+    		if (s instanceof ChemicalSubstance) {
+    			ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
+    			Optional.ofNullable(chemicalSubstance.getStructure())
+    			.ifPresent(ss->{
+    				cell.writeString(ss.formula);
+    			});
 
-                     for (Subunit su : subunits) {
-                         if (sb.length() != 0) {
-                             sb.append("|");
-                         }
-                         sb.append(su.sequence);
-                     }
-                     cell.writeString(sb.toString());
-                 }
-             }));
-             DEFAULT_RECIPE_MAP.put(DefaultColumns.RECORD_ACCESS_GROUPS, SingleColumnValueRecipe.create(DefaultColumns.RECORD_ACCESS_GROUPS, (s, cell) -> {
-                 StringBuilder sb = new StringBuilder();
-                 for (Group g : s.getAccess()) {
-                     if (sb.length() != 0) {
-                         sb.append("|");
-                     }
-                     sb.append(g.name);
-                 }
-                 cell.writeString(sb.toString());
-             }));
+    		} else if (s instanceof PolymerSubstance) {
+    			//TODO: there's a property that should be the fallback for this  
+    			// for proteins, polymers, etc
+    			cell.writeString("");
+    		} 
+    	}).replaceColumnName(DefaultColumns.FORMULA.name(),"MF"));
 
-             
 
-         }
-     }
+    	defaultRecipeMap.put(DefaultColumns.STD_INCHIKEY_FORMATTED, createRestrictableRecipe(Substance.class,DefaultColumns.STD_INCHIKEY_FORMATTED, (s, pubOnly, cell) -> {
+    		if (s instanceof ChemicalSubstance) {
+    			ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
+    			Structure.Stereo ster = chemicalSubstance.getStereochemistry();
+    			if (ster!=null && !ster.equals(Structure.Stereo.ABSOLUTE) && !ster.equals(Structure.Stereo.ACHIRAL) && !substanceExporterConfiguration.isIncludeInChiKeysAnyway()) {
+    				return;
+    			}
+
+
+    			try {
+    				Chemical chem = s.toChemical();
+    				cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(chem))
+    						.getKey()
+    						.replace("InChIKey=", ""));
+    			} catch (Exception e) {
+
+    			}
+    		}
+    	}).replaceColumnName(DefaultColumns.STD_INCHIKEY_FORMATTED.name(),"INCHIKEY"));
+
+
+
+    	defaultRecipeMap.put(DefaultColumns.SMILES, createRestrictableRecipe(DefaultColumns.SMILES, (s,pubOnly, cell) -> {
+    		if (s instanceof ChemicalSubstance) {
+    			ChemicalSubstance chemicalSubstance = (ChemicalSubstance) s;
+
+    			Optional.ofNullable(chemicalSubstance.getStructure())
+    			.ifPresent(ss->{
+    				cell.writeString(ss.smiles);
+    			});
+    		}
+    	}));
+
+
+    	defaultRecipeMap.put(DefaultColumns.INGREDIENT_TYPE, SingleColumnValueRecipe.create(DefaultColumns.INGREDIENT_TYPE, (s, cell) -> {
+    		cell.writeString(getIngredientType(s));
+    	}));
+
+
+    	defaultRecipeMap.put(DefaultColumns.NAME, createRestrictableRecipe(Substance.class,DefaultColumns.NAME, (s, pubOnly,cell) -> {
+    		cell.writeString(s.getName());                 
+    	}).replaceColumnName(DefaultColumns.NAME.name(), "UTF8_DISPLAY_NAME"));
+
+
+
+
+    	defaultRecipeMap.put(DefaultColumns.SUBSTANCE_TYPE, SingleColumnValueRecipe.create(DefaultColumns.SUBSTANCE_TYPE, (s, cell) -> cell.writeString(s.substanceClass.name())));
+
+    	//Lazy place to put new basic columns
+    	defaultRecipeMap.put(DefaultColumns.PROTEIN_SEQUENCE, createRestrictableRecipe(DefaultColumns.PROTEIN_SEQUENCE, (s,pubOnly, cell) -> {
+    		if (s instanceof ProteinSubstance) {
+    			ProteinSubstance proteinSubstance = (ProteinSubstance) s;
+    			if(proteinSubstance.protein==null)return;
+    			List<Subunit> subunits = proteinSubstance.protein.getSubunits();
+    			if(subunits==null)return;
+    			StringBuilder sb = new StringBuilder();
+    			for (Subunit su : subunits) {
+    				if (sb.length() != 0) {
+    					sb.append("|");
+    				}
+    				sb.append(su.sequence);
+    			}
+    			cell.writeString(sb.toString());
+    		}
+    	}));
+
+    	defaultRecipeMap.put(DefaultColumns.NUCLEIC_ACID_SEQUENCE, createRestrictableRecipe(DefaultColumns.NUCLEIC_ACID_SEQUENCE, (s, pubOnly, cell) -> {
+    		//TODO: perhaps put a limit on this? 4000 chars?
+    		if (s instanceof NucleicAcidSubstance) {
+    			NucleicAcidSubstance nucleicAcidSubstance = (NucleicAcidSubstance) s;
+    			if(nucleicAcidSubstance.nucleicAcid==null)return;
+    			List<Subunit> subunits = nucleicAcidSubstance.nucleicAcid.getSubunits();
+    			if(subunits==null)return;
+    			StringBuilder sb = new StringBuilder();
+
+    			for (Subunit su : subunits) {
+    				if (sb.length() != 0) {
+    					sb.append("|");
+    				}
+    				sb.append(su.sequence);
+    			}
+    			cell.writeString(sb.toString());
+    		}
+    	}));
+    	defaultRecipeMap.put(DefaultColumns.RECORD_ACCESS_GROUPS, SingleColumnValueRecipe.create(DefaultColumns.RECORD_ACCESS_GROUPS, (s, cell) -> {
+    		StringBuilder sb = new StringBuilder();
+    		for (Group g : s.getAccess()) {
+    			if (sb.length() != 0) {
+    				sb.append("|");
+    			}
+    			sb.append(g.name);
+    		}
+    		cell.writeString(sb.toString());
+    	}));
+
+    	return defaultRecipeMap;
+
+    }
 
 
     
@@ -372,11 +369,11 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
     private static class ParentSourceMaterialRecipeWrapper extends SubstanceFetcherRecipeWrapper {
 
-        private final SubstanceRepository substanceRepository;
+        private final RecordScrubber scrubber;
 
-        public ParentSourceMaterialRecipeWrapper(SubstanceRepository substanceRepository, ColumnValueRecipe<Substance> del) {
+        public ParentSourceMaterialRecipeWrapper(ColumnValueRecipe<Substance> del,RecordScrubber scrubber) {
             super(del);
-            this.substanceRepository = Objects.requireNonNull(substanceRepository);
+            this.scrubber = Objects.requireNonNull(scrubber);
         }
 
         @Override
@@ -386,20 +383,17 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
                 StructurallyDiverseSubstance sdiv = (StructurallyDiverseSubstance)s;
                 SubstanceReference sr=sdiv.structurallyDiverse.parentSubstance;
                 if(sr!=null){
-                    
                     Key key = Key.of(Substance.class, UUID.fromString(sr.refuuid));
+                    Substance par= (Substance)EntityFetcher.of(key).getIfPossible()
+                    		.map(o->scrubber.scrub(o).orElse(null))
+                    		.filter(oo->oo!=null)
+                    		.orElse(null);
                     
-//                    if(full!=null){
-                        try {
-                            return (Substance)EntityFetcher.of(key).call();
-                        } catch (Exception e) {
-
-                            Substance full = substanceRepository.findBySubstanceReference(sr);
-                            if(full!=null) {
-                                return full;
-                            }
-                        }
-//                    }
+                    //this will return itself if there is no parent
+                    //TODO: consider if this is correct behavior
+                    if(par==null)return s;
+                    
+                    return par;
                 }
             }
             return s;
@@ -411,8 +405,8 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
          * @param col
          * @return
          */
-        public static ParentSourceMaterialRecipeWrapper wrap(SubstanceRepository substanceRepository, ColumnValueRecipe<Substance> col){
-            return new ParentSourceMaterialRecipeWrapper(substanceRepository, col);
+        public static ParentSourceMaterialRecipeWrapper wrap(ColumnValueRecipe<Substance> col, RecordScrubber scrub){
+            return new ParentSourceMaterialRecipeWrapper( col, scrub);
         }
 
     }
