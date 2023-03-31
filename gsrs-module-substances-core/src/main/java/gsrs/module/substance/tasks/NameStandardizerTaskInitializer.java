@@ -8,26 +8,19 @@ import java.io.PrintStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.EntityPersistAdapter;
 import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
-import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.config.FilePathParserUtils;
 import gsrs.module.substance.repository.NameRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -54,8 +47,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
     @JsonIgnore
     private DateTimeFormatter formatterTime = DateTimeFormatter.ofPattern("HH-mm-ss");
-    
-    
+
     private String outputPath;
     private String name = "nameStandardizationReport";
     private String STANDARD_FILE_ENCODING ="UTF-8";
@@ -130,10 +122,6 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         try (PrintStream out = makePrintStream(writeFile)){
             out.print("Existing standardized name\tNew standardized name\tMessage\n");
                 adminService.runAs(adminAuth, (Runnable) () -> {
-                    // this isn't actually used.
-                    // TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                    // log.trace("got outer tx " + tx);
-                    // tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                     try {
                         processNames(l, out);
                     } catch (Exception ex) {
@@ -147,14 +135,10 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             throw new RuntimeException(ee);
         }
 
-        // l.message("Shutting down executor service");
-        // executor modified above we only have one so we don't need to wait/shutdown
-
         long end = TimeUtil.getCurrentTimeMillis();
         l.complete();
         l.message("Full time to execute, (End-Start): "+ (end-start));
-        // change later to info or nothing
-        log.error("Full time to execute, (End-Start): "+ (end-start));
+        log.info("Full time to execute, (End-Start): "+ (end-start));
     }
 
     @Override
@@ -178,8 +162,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
      */
     private File getOutputFile() {
         return FilePathParserUtils.getFileParserBuilder()
-                // will use supplied if outputPath specified in config; it is the full filepath.
-                // otherwise it will use the defaultFilePath
+                // It will use supplied if outputPath specified in task config; it is the full filepath.
+                // Otherwise, it will use the default path.
                 .suppliedFilePath(outputPath)
                 .defaultFilePath("reports/" + name + "-%DATE% %TIME%.txt")
                 .dateFormatter(formatter)
@@ -221,84 +205,59 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     }
 
     private void processNames(SchedulerPlugin.TaskListener l, PrintStream printStream){
-
         log.trace("starting in processNames");
-        // ExecutorService executor = BlockingSubmitExecutor.newFixedThreadPool(5, 10);
-
         List<String> nameIds= nameRepository.getAllUuids();
         log.trace("total names: {}", nameIds.size());
         EntityManager em = StaticContextAccessor.getEntityManagerFor(Name.class);
         EntityPersistAdapter epa = StaticContextAccessor.getBean(EntityPersistAdapter.class);
-        EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
-
+        EntityUtils.EntityInfo<Name> nei= EntityUtils.getEntityInfoFor(Name.class);
         AtomicInteger soFar = new AtomicInteger(0);
-        System.out.println("nameIds.size():" + nameIds.size());
-        // was nameIds.parallelStream.forEach
         nameIds.parallelStream().forEach(nameId->{
-    soFar.incrementAndGet();
-    log.trace("going to fetch name with ID {}", nameId);
-    // change later or remove
-    log.error("going to fetch name with ID {}", nameId);
-
-
-    EntityUtils.Key key = EntityUtils.Key.ofStringId(eics, nameId);
-    Optional<Name> nameOpt = EntityFetcher.of(key).getIfPossible().map(n -> (Name) n);
-
-
-    // UUID nameUuid= UUID.fromString(nameId);
-    // Optional<Name> nameOpt = nameRepository.findById(nameUuid);
-    if( !nameOpt.isPresent()){
-        log.info("No name found with ID {}", nameId);
-        System.out.println("No name found with ID: "+ nameId);
-
-        return;
-    }
-    Name name = nameOpt.get();
-    System.out.println(name.getName());
-    log.trace("processing name with ID {}", name.uuid.toString());
-    // If this method standardizeName ends up mutating the name, the we do the following steps
-    if(standardizeName(name, printStream) ) {
+            soFar.incrementAndGet();
+            log.trace("going to fetch name with ID {}", nameId);
+            // This way did not work after moving the code block
+            // UUID nameUuid= UUID.fromString(nameId);
+            // Optional<Name> nameOpt = nameRepository.findById(nameUuid);
+            EntityUtils.Key key = EntityUtils.Key.ofStringId(nei, nameId);
+            Optional<Name> nameOpt = EntityFetcher.of(key).getIfPossible().map(n -> (Name) n);
+            if( !nameOpt.isPresent()){
+                log.info("No name found with ID {}", nameId);
+                return;
+            }
+            Name name = nameOpt.get();
+            log.trace("processing name with ID {}", name.uuid.toString());
+            // If this method, standardizeName, ends up mutating the name, then we do the following steps
+            if(standardizeName(name, printStream) ) {
                 try {
                     log.trace("resaving name {}", name.getName());
-                    //name.forceUpdate();
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                    //log.trace("got tx " + tx);
                     tx.setReadOnly(false);
                     tx.executeWithoutResult(c-> {
-                        epa.runWithDisabledHistory(()-> {
-                            log.trace("before saveAndFlush");
-                            System.out.println("before saveAndFlush");
-
-                            //log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
-                            //log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
-                            //hack to make sure name persists
-                            Name name2 = null;
+                        // epa.runWithDisabledHistory(()-> {
+                        // StaticContextAccessor.getBean(GsrsEntityProcessorListener.class).runWithDisabledHooks(()->{
                             try {
-                                // EntityManager em = StaticContextAccessor.getEntityManagerFor(Name.class);
-                                name2 = em.merge(name);
-                                //log.trace("name2 dirtiness: " + name2.isDirty());
+                                log.trace("before saveAndFlush");
+                                // log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
+                                // log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
+                                // hack to make sure name persists
+                                Name name2 = em.merge(name);
+                                // log.trace("name2 dirtiness: {}" , (log.isTraceEnabled()) ? name2.isDirty(): "");
                                 name2.forceUpdate();
-                                // change was trace and commented out
-                                System.out.println("name2 dirtiness after update: " + name2.isDirty());
+                                log.trace("name2 dirtiness after update: {}", (log.isTraceEnabled()) ? name2.isDirty() : "");
                                 nameRepository.saveAndFlush(name2);
-                                //log.trace("finished saveAndFlush");
-                            } catch (Exception e) {
-                                System.out.println(e.getMessage());
-                                System.out.println(e.getStackTrace());
-
+                                // log.trace("finished saveAndFlush");
+                            } catch (Exception ex) {
+                                log.error("Error during save while executing transaction: {}", ex.getMessage());
                             }
-                        });
-                    });
-
-                    log.error("saved name {}", name.getName());
+                        // });
+                     });
                 } catch (Exception ex) {
-                    System.out.println("Error during save: {} "+ ex.getMessage());
-                    // log.error("Error during save: {}", ex.getMessage());
+                    log.error("Error during save: {}", ex.getMessage());
                 }
-    }
-    l.message(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
-});
-
+            }
+            l.message(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
+            log.info(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
+        });
     }
 
     private PrintStream makePrintStream(File writeFile) throws IOException {
