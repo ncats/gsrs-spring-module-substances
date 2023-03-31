@@ -14,6 +14,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import gov.nih.ncats.common.util.TimeUtil;
+import gsrs.EntityPersistAdapter;
+import ix.core.EntityFetcher;
+import ix.core.util.EntityUtils;
+import ix.ginas.models.v1.Substance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -197,7 +201,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                     printStream.format( "%s\t%s\tExisting standardized name for %s, '%s' differs from automatically standardized name: '%s'\n",
                             prevStdName, newlyStdName, name.getName(), prevStdName, newlyStdName);
                 }
-                // If told explicitly to regen all names, or if stdname not null but effectively null, then null out the stdName field
+                // If told explicitly to regenerate all names, or if stdName not null but effectively null, then null out the stdName field
                 // to signal that the name should be regenerated.
                 if (forceRecalculationOfAll || (name.stdName != null && name.stdName.equals(regenerateNameValue))) {
                     name.stdName = null;
@@ -224,19 +228,33 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         List<String> nameIds= nameRepository.getAllUuids();
         log.trace("total names: {}", nameIds.size());
         EntityManager em = StaticContextAccessor.getEntityManagerFor(Name.class);
-            AtomicInteger soFar = new AtomicInteger(0);
-nameIds.parallelStream().forEach(nameId->{
+        EntityPersistAdapter epa = StaticContextAccessor.getBean(EntityPersistAdapter.class);
+        EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
+
+        AtomicInteger soFar = new AtomicInteger(0);
+        System.out.println("nameIds.size():" + nameIds.size());
+        // was nameIds.parallelStream.forEach
+        nameIds.parallelStream().forEach(nameId->{
     soFar.incrementAndGet();
     log.trace("going to fetch name with ID {}", nameId);
     // change later or remove
     log.error("going to fetch name with ID {}", nameId);
-    UUID nameUuid= UUID.fromString(nameId);
-    Optional<Name> nameOpt = nameRepository.findById(nameUuid);
+
+
+    EntityUtils.Key key = EntityUtils.Key.ofStringId(eics, nameId);
+    Optional<Name> nameOpt = EntityFetcher.of(key).getIfPossible().map(n -> (Name) n);
+
+
+    // UUID nameUuid= UUID.fromString(nameId);
+    // Optional<Name> nameOpt = nameRepository.findById(nameUuid);
     if( !nameOpt.isPresent()){
         log.info("No name found with ID {}", nameId);
+        System.out.println("No name found with ID: "+ nameId);
+
         return;
     }
     Name name = nameOpt.get();
+    System.out.println(name.getName());
     log.trace("processing name with ID {}", name.uuid.toString());
     // If this method standardizeName ends up mutating the name, the we do the following steps
     if(standardizeName(name, printStream) ) {
@@ -247,25 +265,38 @@ nameIds.parallelStream().forEach(nameId->{
                     //log.trace("got tx " + tx);
                     tx.setReadOnly(false);
                     tx.executeWithoutResult(c-> {
-                        log.trace("before saveAndFlush");
-                        //log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
-                        //log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
-                        //hack to make sure name persists
-                        Name name2 = em.merge(name);
-                        //log.trace("name2 dirtiness: " + name2.isDirty());
-                        name2.forceUpdate();
-                        // change was trace and commented out
-                        log.error("name2 dirtiness after update: " + name2.isDirty());
-                        nameRepository.saveAndFlush(name2);
-                        //log.trace("finished saveAndFlush");
+                        epa.runWithDisabledHistory(()-> {
+                            log.trace("before saveAndFlush");
+                            System.out.println("before saveAndFlush");
+
+                            //log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
+                            //log.trace("json: " + EntityUtils.EntityWrapper.of(name).toInternalJson());
+                            //hack to make sure name persists
+                            Name name2 = null;
+                            try {
+                                // EntityManager em = StaticContextAccessor.getEntityManagerFor(Name.class);
+                                name2 = em.merge(name);
+                                //log.trace("name2 dirtiness: " + name2.isDirty());
+                                name2.forceUpdate();
+                                // change was trace and commented out
+                                System.out.println("name2 dirtiness after update: " + name2.isDirty());
+                                nameRepository.saveAndFlush(name2);
+                                //log.trace("finished saveAndFlush");
+                            } catch (Exception e) {
+                                System.out.println(e.getMessage());
+                                System.out.println(e.getStackTrace());
+
+                            }
+                        });
                     });
 
-                    log.trace("saved name {}", name.getName());
+                    log.error("saved name {}", name.getName());
                 } catch (Exception ex) {
-                    log.error("Error during save: {}", ex.getMessage());
+                    System.out.println("Error during save: {} "+ ex.getMessage());
+                    // log.error("Error during save: {}", ex.getMessage());
                 }
     }
-    l.message(String.format("Processed %d of %d names", soFar, nameIds.size()));
+    l.message(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
 });
 
     }
