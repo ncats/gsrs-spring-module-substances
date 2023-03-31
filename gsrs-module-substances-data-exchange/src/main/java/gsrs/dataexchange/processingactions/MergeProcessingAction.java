@@ -449,6 +449,23 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
     public String getActionName() {
         return "Merge";
     }
+
+    @Override
+    public List<String> getOptions(){
+        return Arrays.asList("MergeReferences",
+                "MergeNames",
+                "MergeCodes",
+                "MergeProperties",
+                "MergeNotes",
+                "NoteUniqueness",
+                "MergeRelationships",
+                "RelationshipUniqueness",
+                "MergeModifications",
+                "MergeStructuralModifications",
+                "MergeAgentModifications",
+                "MergePhysicalModifications",
+                "SkipLevelingReferences");
+    }
     /* under construction...or maybe destruction  not used for now
     private boolean copyReferences(GinasCommonSubData source, GinasCommonSubData target, Map<String, String> referencesToCopy,
                                    Consumer<String> processLog, AbstractSubstanceBuilder builder ){

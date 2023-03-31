@@ -147,7 +147,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                         EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata.get());
                         UUID indexingEventId= UUID.randomUUID();
                         ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
-                                EntityUtils.EntityWrapper.of(wrappedObject));
+                                wrappedObject);
                     } else {
                         log.trace("failed to retrieve ImportMetadata");
                     }
