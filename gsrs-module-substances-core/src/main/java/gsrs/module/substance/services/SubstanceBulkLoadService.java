@@ -1,9 +1,42 @@
 package gsrs.module.substance.services;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+
+import javax.annotation.PreDestroy;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.AuditConfig;
@@ -17,8 +50,19 @@ import gsrs.security.AdminService;
 import gsrs.security.hasAdminRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
-import ix.core.models.*;
-import ix.core.processing.*;
+import ix.core.EntityFetcher;
+import ix.core.models.Keyword;
+import ix.core.models.Payload;
+import ix.core.models.ProcessingJob;
+import ix.core.models.ProcessingJobUtils;
+import ix.core.models.ProcessingRecord;
+import ix.core.processing.PayloadExtractedRecord;
+import ix.core.processing.PayloadProcessor;
+import ix.core.processing.PersistRecordWorkerFactory;
+import ix.core.processing.RecordExtractor;
+import ix.core.processing.RecordPersister;
+import ix.core.processing.RecordTransformer;
+import ix.core.processing.TransformedRecord;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
 import ix.core.util.EntityUtils;
@@ -26,34 +70,9 @@ import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
 import ix.core.validator.ValidationMessage;
 import ix.ginas.models.v1.Reference;
-import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import javax.annotation.PreDestroy;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 @Slf4j
 @Service
@@ -376,7 +395,9 @@ public class SubstanceBulkLoadService {
 
     public class BulkLoadServiceCallBackImpl implements BulkLoadServiceCallback{
 
-        private final ProcessingJob job;
+        private ProcessingJob job;
+        
+        
 
         public BulkLoadServiceCallBackImpl(ProcessingJob job) {
             this.job = job;
@@ -389,36 +410,52 @@ public class SubstanceBulkLoadService {
 
         @Override
         public void updateJobIfNecessary(ProcessingJob job) {
-
+        	
         }
+        
+        private void resyncJob() {
+        	try {
+        		Keyword tester=job.keys.stream().findAny().orElse(null);
+        		log.trace(tester.toString());
+        	}catch(Exception e) {
+        		job=EntityFetcher.ofPojo(job).getIfPossible().orElse(job);
+        	}
+        }
+        
 
         @Override
         public void persistedSuccess() {
+        	resyncJob() ;
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PE_GOOD);
         }
 
         @Override
         public void persistedFailure() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PE_BAD);
         }
 
         @Override
         public void extractionSuccess() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_EX_GOOD);
         }
 
         @Override
         public void extractionFailure() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_EX_BAD);
         }
 
         @Override
         public void processedSuccess() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PR_GOOD);
         }
 
         @Override
         public void processedFailure() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PR_BAD);
         }
     }
@@ -427,7 +464,8 @@ public class SubstanceBulkLoadService {
         return jobCacheStatistics.get(jobTerm);
     }
     public Statistics getStatisticsForJob(ProcessingJob pj){
-        String k=pj.getKeyMatching(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY);
+    	
+    	String k=pj.getKeyMatching(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY);
         //the Map interface says we should be able to call get(null)
         //but Concurrent hashmap will throw a null pointer when
         //computing the hash value, at least in Java 7...
