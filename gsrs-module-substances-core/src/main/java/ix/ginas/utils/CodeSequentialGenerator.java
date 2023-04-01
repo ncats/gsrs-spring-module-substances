@@ -1,52 +1,33 @@
 package ix.ginas.utils;
 
-import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-
-import gov.nih.ncats.common.util.SingleThreadCounter;
 import gsrs.module.substance.services.CodeEntityService;
-import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.repository.CodeRepository;
-import gsrs.repository.GroupRepository;
 import ix.core.models.Group;
 import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+
 @Slf4j
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
 
-    private static final String GROUP_PROTECTED = "protected";
+	private static final String GROUP_PROTECTED = "protected";
 
-    @Autowired
+	@Autowired
 	private CodeRepository codeRepository;
 
 	@Autowired
 	private CodeEntityService codeEntityService;
-	
-	@Autowired
-	private PlatformTransactionManager  transactionManager;
 
-	
-
-	
-	private final CachedSupplier<AtomicLong> lastNum;
 	private String codeSystem;
 	private String name;
+	private Long max;
 
 	public CodeRepository getCodeRepository() {
 		return codeRepository;
@@ -64,52 +45,20 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		this.codeSystem = codeSystem;
 	}
 
-	protected Comparator<String> getCodeSystemComparator(){
-		return Comparator.comparing(code-> Long.parseLong(code.replaceAll(suffix+"$", "")));
-	}
 	@JsonCreator
-	public CodeSequentialGenerator(@JsonProperty("name") String name,
-								   @JsonProperty("len") int len,
-								   @JsonProperty("suffix") String suffix,
-								   @JsonProperty("padding") boolean padding,
-								   @JsonProperty("codeSystem") String codeSystem) {
+	public CodeSequentialGenerator( @JsonProperty("name") String name,
+					@JsonProperty("len") int len,
+					@JsonProperty("suffix") String suffix,
+					@JsonProperty("padding") boolean padding,
+					@JsonProperty("max") Long max,
+					@JsonProperty("codeSystem") String codeSystem) {
 		super(len, suffix, padding);
 		this.name = name;
+		this.max = max;
 		this.codeSystem = codeSystem;
-		this.lastNum = CachedSupplier.runOnce(this::findHighestValueCode);
 	}
 
 
-		
-		protected AtomicLong findHighestValueCode() {
-		    //this method must be in transaction so the underlying connection for the stream stays open
-		    //for the stream.
-		    //
-		    log.debug("Starting to find highest Value Codesystem");
-		    
-		    TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
-		    txTemplate.setReadOnly(true);
-		    txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
-		    return txTemplate.execute(status -> {
-				SingleThreadCounter counter = new SingleThreadCounter();
-		        try (Stream<String> codesByCodeSystemAndCodeLike = getCodeRepository().findCodeByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
-	                String lastCode = codesByCodeSystemAndCodeLike
-//	                        .map(Code::getCode)
-				//TODO fix this. It's inefficient and also probably a source of lots of issues
-				.peek(c->{
-					int currentCount = counter.increment().getAsInt();
-					if((currentCount  % 1000) ==0){
-						log.debug("find max code count at " + currentCount);
-					}
-				})
-	                        .max(getCodeSystemComparator())
-	                        .orElse("0" + suffix);
-
-		        log.debug("found highest value codesystem");
-	                return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
-	            }
-		    });
-		}
 	@Override
 	public String getName() {
 		return name;
@@ -117,7 +66,16 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 
 	@Override
 	public long getNextNumber() {
-		return lastNum.getSync().incrementAndGet();
+		long nextNumber = 1L;
+		try {
+			nextNumber = codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThen(codeSystem, "%" + suffix, max).longValue() + 1L;
+		} catch (Exception e) {
+		}
+		if (nextNumber > max) {
+			//TODO: What shall we do if the result next number value out of range?
+			//throw new Exception("Next number out of range.");
+		}
+		return nextNumber;
 	}
 	
 	public Code getCode(){
@@ -127,8 +85,17 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		c.type="PRIMARY";
 		return c;
 	}
+
 	public Code addCode(Substance s){
 		return codeEntityService.createNewSystemCode(s, this.codeSystem,c-> this.generateID(),GROUP_PROTECTED);
+	}
+
+	public Long getMax() {
+		return max;
+	}
+
+	public void setMax(Long max) {
+		this.max = max;
 	}
 
 	@Override
@@ -138,7 +105,4 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		}
 		return false;
 	}
-	
-	
-
 }

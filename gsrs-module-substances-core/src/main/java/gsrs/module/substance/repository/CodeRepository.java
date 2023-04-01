@@ -5,6 +5,7 @@ import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,9 @@ public interface CodeRepository extends GsrsVersionedRepository<Code, UUID> {
     Stream<String> findCodeByCodeSystemAndCodeLike(String codesystem, String codeLike);
 
     Stream<Code> findCodesByCodeSystemAndCodeLike(String codesystem, String codeLike);
+
+    @Query("select max(CAST(SUBSTRING(c.code, 1, LENGTH(c.code) - LENGTH(:codelike) + 1) as long)) from Code c where c.codeSystem = :codesystem and c.code like :codelike and CAST(SUBSTRING(c.code, 1, LENGTH(c.code) - LENGTH(:codelike) + 1) as long) <= :maxcode")
+    Long findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThen(@Param("codesystem") String codeSystem, @Param("codelike") String codeLike, @Param("maxcode") Long maxCode);
 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
     @Query("select s from Name s where CONCAT(s.uuid, '') like ?1%")

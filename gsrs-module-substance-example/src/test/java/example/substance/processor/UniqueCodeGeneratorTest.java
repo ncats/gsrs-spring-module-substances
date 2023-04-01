@@ -95,7 +95,8 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         String suffix = "SUFFIX";
         boolean padding = true;
         String codeSystem = "Codes R Us";
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, codeSystem);//removed 'last'
+        Long max = Long.MAX_VALUE;
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem);
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
@@ -110,6 +111,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         instantiationMap.put("length", 9);
         instantiationMap.put("codesystem", codeSystemName);
         instantiationMap.put("padding", true);
+        instantiationMap.put("max", Long.MAX_VALUE);
         UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
 
@@ -144,6 +146,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         instantiationMap.put("length", 9);
         instantiationMap.put("codesystem", codeSystemName);
         instantiationMap.put("padding", true);
+        instantiationMap.put("max", Long.MAX_VALUE);
         UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
 
@@ -161,6 +164,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         instantiationMap.put("length", 9);
         instantiationMap.put("codesystem", codeSystemName);
         instantiationMap.put("padding", true);
+        instantiationMap.put("max", Long.MAX_VALUE);
         UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
 

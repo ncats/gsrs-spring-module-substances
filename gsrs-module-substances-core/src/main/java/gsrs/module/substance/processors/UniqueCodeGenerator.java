@@ -37,15 +37,21 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         String name = (String) with.get("name");
         codeSystem = (String) with.get("codesystem");
         String codeSystemSuffix = (String) with.get("suffix");
-        //Long last = (Long) with.computeIfPresent("last", (key, val) -> ((Number) val).longValue());
         int length = (Integer) with.get("length");
         boolean padding = (Boolean) with.get("padding");
-        String msg = String.format("codeSystem: %s; codeSystemSuffix: %s; length: %d;  padding: %b",
-                codeSystem, codeSystemSuffix, length, padding);
+        Long maxValue;
+        try {
+            maxValue = Long.parseLong(String.valueOf(with.get("max")));
+        } catch (Exception e) {
+            maxValue = Long.MAX_VALUE;
+        }
+        final Long max = maxValue;
+        String msg = String.format("codeSystem: %s; codeSystemSuffix: %s; length: %d;  padding: %b, max: %d",
+                codeSystem, codeSystemSuffix, length, padding, max);
         log.trace(msg);
         if (codeSystem != null) {
             seqGen = CachedSupplier.runOnce(()->{
-                CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);//removed 'last'
+                CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, max, codeSystem);
                 return AutowireHelper.getInstance().autowireAndProxy(gen);
 
             });
@@ -110,7 +116,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
 
     private void addCodeSystemIfNecessary() {
         log.trace("starting addCodeSystemIfNecessary. cvDomain: " + CODE_SYSTEM_VOCABULARY + "; codeSystem: " + codeSystem);
-        
+
         try {
             Optional<GsrsCodeSystemControlledVocabularyDTO> opt = cvApi.findByDomain(CODE_SYSTEM_VOCABULARY);
 
