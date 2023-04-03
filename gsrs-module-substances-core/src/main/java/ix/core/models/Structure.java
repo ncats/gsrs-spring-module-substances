@@ -443,7 +443,7 @@ public class Structure extends BaseModel {
     }
 
     
-    @JsonIgnore
+    @JsonProperty("inchiKey")
     @Transient
     public String getInChIKey() {
     	try{
@@ -469,7 +469,7 @@ public class Structure extends BaseModel {
 
     }
 
-    @JsonIgnore
+    @JsonProperty("inchi")
     @Transient
     public String getInChI() {
     	try{
