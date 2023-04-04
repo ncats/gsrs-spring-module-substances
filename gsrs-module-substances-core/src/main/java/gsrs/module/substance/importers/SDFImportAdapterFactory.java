@@ -30,6 +30,8 @@ import java.util.stream.Collectors;
 public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     public final static String SDF_FIELD_LIST = "fields";
 
+    public final static String RECORD_COUNT_FIELD ="_recordCount";
+
     private Map<String, InputFieldStatistics> fileFieldStatisticsMap;
 
     private Class stagingAreaService;

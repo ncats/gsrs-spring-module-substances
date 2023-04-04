@@ -1,5 +1,6 @@
 package gsrs.module.substance.utils;
 
+import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import ix.ginas.importers.InputFieldStatistics;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,11 +18,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.io.IOException;
 
 import lombok.Data;
+
+import static gsrs.module.substance.importers.SDFImportAdapterFactory.RECORD_COUNT_FIELD;
 
 /*
 Routines that process files for some general purpose
@@ -106,7 +110,7 @@ TODO: consider other data types like:
      */
     public static Map<String, InputFieldStatistics> getSDFieldStatistics(InputStream istream , int maxExamples) throws IOException {
         Map<String, InputFieldStatistics> retMap = new LinkedHashMap<>();
-
+        AtomicInteger recordCounter = new AtomicInteger(0);
         try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, "UTF-8"))) {
             String fieldName=null;
             String value="";
@@ -130,6 +134,7 @@ TODO: consider other data types like:
                         fs.add(value.trim());
                     }
                     inValue=false;
+                    recordCounter.incrementAndGet();
                 }else{
                     if(inValue){
                         value=value + line + "\n";
@@ -137,6 +142,7 @@ TODO: consider other data types like:
                 }
             }
         }
+        //todo: add record count to statistics when object contains a field for it
         return retMap;
     }
 
@@ -170,6 +176,7 @@ TODO: consider other data types like:
                         InputFieldStatistics fs=retMap.computeIfAbsent(fieldName, k-> new InputFieldStatistics(k, maxExamples));
                         fs.add(value.trim());
                     }
+
                     inValue=false;
                 }else{
                     if(inValue){
