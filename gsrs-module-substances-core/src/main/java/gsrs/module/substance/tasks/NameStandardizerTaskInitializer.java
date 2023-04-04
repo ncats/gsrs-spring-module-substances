@@ -12,6 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.EntityPersistAdapter;
+import gsrs.GsrsEntityProcessorListener;
 import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -234,7 +235,14 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                     tx.setReadOnly(false);
                     tx.executeWithoutResult(c-> {
                         // epa.runWithDisabledHistory(()-> {
-                        // StaticContextAccessor.getBean(GsrsEntityProcessorListener.class).runWithDisabledHooks(()->{
+                        System.out.println("Before runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
+
+                        GsrsEntityProcessorListener b =  StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
+                        System.out.println("The processorId is: " + b.getProcessorId());
+                        b.setTempString( Thread.currentThread().getName());
+                        b.runWithDisabledHooks(()->{
+                            System.out.println("After runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
+                            System.out.println("The processorId is: " + b.getProcessorId());
                             try {
                                 log.trace("before saveAndFlush");
                                 // log.trace("key: " + EntityUtils.EntityWrapper.of(name).getKey());
@@ -249,7 +257,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                             } catch (Exception ex) {
                                 log.error("Error during save while executing transaction: {}", ex.getMessage());
                             }
-                        // });
+                        });
                      });
                 } catch (Exception ex) {
                     log.error("Error during save: {}", ex.getMessage());
