@@ -2,6 +2,7 @@ package gsrs.module.substance.utils;
 
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import ix.ginas.importers.InputFieldStatistics;
+import ix.ginas.importers.InputFileStatistics;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -101,14 +102,14 @@ TODO: consider other data types like:
    /*
     Read an SD file from an input stream and retrieve some basic statistics about the fields.
      */
-    public static Map<String, InputFieldStatistics> getSDFieldStatistics(InputStream istream) throws IOException {
+    public static InputFileStatistics getSDFieldStatistics(InputStream istream) throws IOException {
         return getSDFieldStatistics(istream,MAX_READS);
     }
     
     /*
     Read an SD file from an input stream and retrieve some basic statistics about the fields.
      */
-    public static Map<String, InputFieldStatistics> getSDFieldStatistics(InputStream istream , int maxExamples) throws IOException {
+    public static InputFileStatistics getSDFieldStatistics(InputStream istream , int maxExamples) throws IOException {
         Map<String, InputFieldStatistics> retMap = new LinkedHashMap<>();
         AtomicInteger recordCounter = new AtomicInteger(0);
         try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, "UTF-8"))) {
@@ -143,7 +144,7 @@ TODO: consider other data types like:
             }
         }
         //todo: add record count to statistics when object contains a field for it
-        return retMap;
+        return new InputFileStatistics(retMap, recordCounter.get());
     }
 
     public static Map<String, InputFieldStatistics> getTextFieldStatistics(InputStream istream , int maxExamples,
