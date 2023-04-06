@@ -1,6 +1,6 @@
-package gsrs.data_exchange.processors;
+package gsrs.dataexchange.processors;
 
-import gsrs.data_exchange.SubstanceStagingAreaEntityService;
+import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.KeyValueMapping;
@@ -10,9 +10,7 @@ import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.repository.EditRepository;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
-import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
-import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +19,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static gsrs.data_exchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
-import static gsrs.data_exchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
+import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
+import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
 
 @Slf4j
 public class CalculateMatchablesProcessor implements EntityProcessor<Substance> {
@@ -150,7 +147,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                         EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata.get());
                         UUID indexingEventId= UUID.randomUUID();
                         ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
-                                EntityUtils.EntityWrapper.of(wrappedObject));
+                                wrappedObject);
                     } else {
                         log.trace("failed to retrieve ImportMetadata");
                     }

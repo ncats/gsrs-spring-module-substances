@@ -1,4 +1,4 @@
-package gsrs.dataexchange.processing_actions;
+package gsrs.dataexchange.processingactions;
 
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
@@ -136,4 +136,8 @@ public class CreateBatchProcessingAction implements ProcessingAction<Substance> 
         return substances;
     }
 
+    @Override
+    public String getActionName() {
+        return "Create Batch";
+    }
 }
