@@ -84,7 +84,10 @@ public class SubstanceBulkLoadService {
     private static final Logger PersistFailLogger = LoggerFactory.getLogger("persistFail");
     private static final Logger TransformFailLogger = LoggerFactory.getLogger("transformFail");
     private static final Logger ExtractFailLogger = LoggerFactory.getLogger("extractFail");
-
+    // __alex__ put this in a config file; try not being 1; what happens if 4?
+    // or check how many processors available to the JVM then set to that
+    // maybe -1 means uses max threads minus 1
+    // make not static bulk loading factory configuration
     private final static int NUMBER_OF_LOADING_THREADS=1;
 
     public static Logger getPersistFailureLogger(){
@@ -157,7 +160,7 @@ public class SubstanceBulkLoadService {
     public Statistics getStatisticsFor(String jobId){
         return getStatisticsForJob(jobId);
     }
-
+// __alex__ see what happens if this is never called?
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
         synchronized (jobLock) {
             if(stats==null ) {
@@ -305,14 +308,43 @@ public class SubstanceBulkLoadService {
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
 
                     BulkLoadServiceCallback callback = new BulkLoadServiceCallBackImpl(job);
-                   
+
+
 
                         try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
                             Object record;
+
                             int count = 0;
+                            // move it here isPreserveOldEditInfo?
                             do {
                                 try {
+                                    // __alex__
+                                     // call extractor in single thread.
+                                    // make a chunker utility
+                                    //  chunk  = makeChunk(size of chunk)
+                                    // load 20 records at a time in chunks then persist as a chunk the 20 as one thread
+                                    // see if it makes a difference to use different size chunks
+                                    //
+                                    // (blocking) executor service
+
+                                    // user this executor when you make a parallelStream
+
+
+                                    // summary
+                                    /*
+                                    try to use chunker
+                                    use multi-threaded persister
+                                    increase executor service number of threads
+                                    remove/investigate annotations that are making new transaction
+                                    disable saving of statistics
+                                    disable saving of processing records
+                                    try doing all of this by just calling createEntity method / investigate
+
+                                    */
+
+
+
                                     record = extractorInstance.getNextRecord();
 
                                     final PayloadExtractedRecord prg = new PayloadExtractedRecord(job, record);
@@ -321,11 +353,14 @@ public class SubstanceBulkLoadService {
                                         //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
                                         Runnable r;
                                         count++;
+                                        // why for each record?
                                         if (parameters.isPreserveOldEditInfo()) {
                                             r = () -> {
                                                 try {
                                                     auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
                                                 }finally{
+                                                    // Is it necessary to have transaction for each substance added ?
+                                                    // __alex__
                                                     saveJobInSeparateTransaction(pp.jobId, pp.key);
                                                 }
                                             };
@@ -333,6 +368,9 @@ public class SubstanceBulkLoadService {
                                         } else {
                                             r = ()->{
                                                 try{
+                                                    // __alex__
+                                                    // mysql or oracle; ebean ? needs single thread or not
+                                                    // generally see if we can reduce the number of transactions throughout
                                                     factory.newWorkerFor(prg, configuration, parameters, callback).run();
                                                 }finally{
                                                     saveJobInSeparateTransaction(pp.jobId, pp.key);
@@ -540,6 +578,10 @@ public class SubstanceBulkLoadService {
                 List<String> errors = new ArrayList<>();
                 if (prec.recordToPersist != null) {
                     try{
+                        // __alex__ this may be the only line that matters in the grand scheme of things
+                        // if what happens if everything else is excluded
+                        // code was written to walk up the object to find owners in the transformation service or createEntity.
+                        // some of those tranformations might be important
                         GsrsEntityService.CreationResult result = substanceEntityService.createEntity(prec.recordToPersist,true);
                         worked= result.isCreated();
 
@@ -572,7 +614,7 @@ public class SubstanceBulkLoadService {
                     prec.rec.stop = TimeUtil.getCurrentTimeMillis();
                 }
                 //copy of rec to get the stats in a detached
-
+                // __alex__ try turning this off see if makes a difference
                 processingRecordRepository.saveAndFlush(entityManager.contains(prec.rec)? prec.rec : entityManager.merge(prec.rec));
 
 
