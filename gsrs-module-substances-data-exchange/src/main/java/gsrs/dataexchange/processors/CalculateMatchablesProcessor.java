@@ -203,6 +203,4 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         });
 
     }
-
-
 }
