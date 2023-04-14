@@ -18,12 +18,14 @@ import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
 
 @Configuration
 @Import({SubstanceController.class, EditController2.class, NameController.class, CodeController.class, ReferenceController.class,
@@ -31,7 +33,8 @@ import org.springframework.context.annotation.Import;
         EditEntityService.class, NameLegacySearchService.class, CodeLegacySearchService.class, ReferenceLegacySearchService.class,
         SubstanceEntityServiceImpl.class, RelationEventListener.class,
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
-        LegacyGinasAppController.class, NameStandardizerConfiguration.class,
+        LegacyGinasAppController.class,
+        NameStandardizerConfiguration.class,
         ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
         SubstanceDataConfiguration.class,
         StructureResolverController.class, ChemicalDuplicateFinder.class,
@@ -49,7 +52,9 @@ import org.springframework.context.annotation.Import;
         SubstanceResultListRecordGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
-        GsrsProcessingStrategyFactory.class
+        GsrsProcessingStrategyFactory.class,
+        GsrsProcessingStrategyFactoryConfiguration.class,
+        ImportMetadataLegacySearchService.class
 })
 public class SubstanceCoreConfiguration {
 

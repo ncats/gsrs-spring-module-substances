@@ -3,14 +3,12 @@ package example.name;
 import java.util.ArrayList;
 import java.util.List;
 
+import gsrs.module.substance.standardizer.ReplacementNote;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
-import gsrs.module.substance.standardizer.NameStandardizer;
-import gsrs.module.substance.standardizer.ReplacementNote;
-import gsrs.module.substance.standardizer.ReplacementResult;
 import gsrs.module.substance.utils.NameUtilities;
+import gsrs.module.substance.standardizer.ReplacementResult;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -154,6 +152,27 @@ public class NameUtilitiesTest {
         String input = sb.toString();
         ReplacementResult r = NameUtilities.replaceUnprintables(input);
         Assertions.assertEquals("", r.getResult());
+    }
+
+    @Test
+    //by Alex Welsch:
+    public void TestMinimallyStandardizeNameNonBreakingSpace() {
+        String input = "Let's not break" + "\u00A0" + "things";
+        System.out.println(input);
+        String expected = "Let's not break things";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestMinimallyStandardizeNameNonBreakingSpaces() {
+        String input = "Preserving our " + "\u00A0" + "key  functionality";
+        System.out.println(input);
+        String expected = "Preserving our key functionality";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
     }
 
     @Test
