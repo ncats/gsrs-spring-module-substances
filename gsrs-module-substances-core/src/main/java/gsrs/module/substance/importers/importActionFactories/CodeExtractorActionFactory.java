@@ -18,11 +18,12 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 public class CodeExtractorActionFactory extends BaseActionFactory {
     @Override
     public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> abstractParams) throws Exception {
+
         log.trace("in create");
         return (sub, sdRec) -> {
             log.trace("lambda");
             //abstractParams.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
-            Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
+            Map<String, Object> params = resolveParametersMap( sdRec, abstractParams);
             log.trace("params: ");
             //params.keySet().forEach(k->log.trace("key: " + k + "; value: " +abstractParams.get(k)));
             String codeValue =(String) params.get("code");

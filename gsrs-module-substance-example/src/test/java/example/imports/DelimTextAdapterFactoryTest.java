@@ -299,7 +299,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         String fileEncoding = "UTF-8";
         ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
         settingsNode.put("Encoding", fileEncoding);
-        Stream<Substance> substanceBuilderStream= delimTextImportAdapter.parse(fis, settingsNode);
+        Stream<Substance> substanceBuilderStream= delimTextImportAdapter.parse(fis, settingsNode, null);
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
                 .map(p->((ProteinSubstance)p))
                 .collect(Collectors.toList());
@@ -346,7 +346,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         ImportAdapter<Substance> importAdapter = factory.createAdapter(adapter);
         ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
         settingsNode.put("Encoding", Charset.defaultCharset().name());
-        Stream<Substance> substanceStream = importAdapter.parse(fis, settingsNode);
+        Stream<Substance> substanceStream = importAdapter.parse(fis, settingsNode, null);
         substanceStream.forEach(s -> {
             log.trace("full substance: ");
             String fullSubstanceJson =s.toFullJsonNode().toPrettyString();

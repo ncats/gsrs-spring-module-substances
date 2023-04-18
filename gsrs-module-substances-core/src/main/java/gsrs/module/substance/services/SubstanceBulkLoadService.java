@@ -227,7 +227,7 @@ public class SubstanceBulkLoadService {
         service.shutdownNow();
         applyStatisticsChangeForJob(processorJobKey, Statistics.CHANGE.CANCEL);
         return true;
-   }
+       }
     @hasAdminRole
     public PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
         // first see if this payload has already processed..

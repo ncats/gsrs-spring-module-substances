@@ -215,7 +215,7 @@ Confirm ability to read data
         ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
         settingsNode.put("Encoding", fileEncoding);
         settingsNode.put("dataSheetName", "Sheet0");
-        Stream<Substance> substanceBuilderStream= excelFileImportAdapter.parse(fis, settingsNode);
+        Stream<Substance> substanceBuilderStream= excelFileImportAdapter.parse(fis, settingsNode, null);
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
                 .map(p->((ProteinSubstance)p))
                 .collect(Collectors.toList());

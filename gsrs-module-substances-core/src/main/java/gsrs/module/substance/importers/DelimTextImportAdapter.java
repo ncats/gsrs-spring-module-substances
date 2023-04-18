@@ -1,5 +1,6 @@
 package gsrs.module.substance.importers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.DefaultPropertyBasedRecordContext;
@@ -83,7 +84,7 @@ public class DelimTextImportAdapter implements ImportAdapter<Substance> {
     }
 
     @Override
-    public Stream<Substance> parse(InputStream is, ObjectNode settings) {
+    public Stream<Substance> parse(InputStream is, ObjectNode settings, JsonNode schema) {
         log.trace("Charset.defaultCharset: " + Charset.defaultCharset().name());
         TextFileReader reader = new TextFileReader();
         try {

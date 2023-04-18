@@ -1,5 +1,6 @@
 package gsrs.module.substance.importers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.DefaultPropertyBasedRecordContext;
@@ -39,7 +40,7 @@ public class ExcelFileImportAdapter extends DelimTextImportAdapter {
     }
 
     @Override
-    public Stream<Substance> parse(InputStream is, ObjectNode settings) {
+    public Stream<Substance> parse(InputStream is, ObjectNode settings, JsonNode schema) {
         ExcelSpreadsheetReader reader = new ExcelSpreadsheetReader(is);
         String sheetWithData = settings == null || !settings.hasNonNull("dataSheetName") ? this.dataSheetName
                 : settings.get("dataSheetName").textValue();

@@ -35,7 +35,7 @@ public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullSt
         GSRSJSONImportAdapter adapter = (GSRSJSONImportAdapter) factory.createAdapter(JsonNodeFactory.instance.objectNode());
         Resource dataFile = new ClassPathResource("testdumps/rep90.ginas");
         FileInputStream fis = new FileInputStream(dataFile.getFile());
-        Stream<Substance> subs = adapter.parse(fis, null);
+        Stream<Substance> subs = adapter.parse(fis, null, null);
         Assertions.assertEquals(90, subs.count());
     }
 

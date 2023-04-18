@@ -23,7 +23,7 @@ public class GSRSJSONImportAdapter implements ImportAdapter<Substance> {
     private PlatformTransactionManager platformTransactionManager;
 
     @Override
-    public Stream<Substance> parse(InputStream is, ObjectNode settings) {
+    public Stream<Substance> parse(InputStream is, ObjectNode settings, JsonNode schema) {
         Stream.Builder<Substance> newSubstanceStream= Stream.builder();
         SubstanceBulkLoadService.GinasDumpExtractor dumpExtractor = new SubstanceBulkLoadService.GinasDumpExtractor(is);
         try {
