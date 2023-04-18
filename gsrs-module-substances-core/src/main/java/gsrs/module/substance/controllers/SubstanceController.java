@@ -108,6 +108,7 @@ import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
@@ -135,6 +136,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
 
+	
+	@Autowired
+	private ResultListRecordGenerator resultListRecordGenerator;
+	
+	@Override	
+	public ResultListRecordGenerator getResultListRecordGenerator() {
+		return resultListRecordGenerator;
+	}	
+	
     @Autowired
     private PrincipalServiceImpl principalService;
 
@@ -162,7 +172,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         return so;
     }
-    private static interface SimpleStandardizer{
+
+	private static interface SimpleStandardizer{
         public Chemical standardize(Chemical c);
         public static SimpleStandardizer REMOVE_HYDROGENS() {
             return (c)->{
