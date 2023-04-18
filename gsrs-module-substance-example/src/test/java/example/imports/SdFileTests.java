@@ -117,8 +117,8 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
                 log.trace(s.toFullJsonNode().toPrettyString());
             }
             Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
-            Assertions.assertTrue(s.names.size()>=1 || s.notes.size()>0);
-            Assertions.assertTrue( s.codes.size()>=1);
+            Assertions.assertTrue(s.names.size()>=1);
+            Assertions.assertTrue( s.codes.size()>=1 || s.notes.size()>0);
 
         });
         fisRead.close();

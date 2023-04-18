@@ -45,8 +45,7 @@ public class NotesExtractorActionFactory extends BaseActionFactory {
             Note n = new Note();
             n.note = (String) params.get("note");
             doBasicsImports(n, params);
-            //TODO: more params
-            sub.build().notes.add(n);
+            sub.addNote(n);
             return sub;
         };
     }
