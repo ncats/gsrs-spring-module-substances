@@ -3,6 +3,7 @@ package gsrs.module.substance.importers;
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
+import gsrs.springUtils.AutowireHelper;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import java.util.Arrays;
@@ -42,6 +43,7 @@ public class GSRSJSONImportAdapterFactory extends SubstanceImportAdapterFactoryB
     public ImportAdapter<Substance> createAdapter(JsonNode adapterSettings) {
         log.trace("starting in createAdapter. adapterSettings: " + adapterSettings.toPrettyString());
         GSRSJSONImportAdapter importAdapter = new GSRSJSONImportAdapter();
+        AutowireHelper.getInstance().autowire(importAdapter);
         return importAdapter;
     }
 

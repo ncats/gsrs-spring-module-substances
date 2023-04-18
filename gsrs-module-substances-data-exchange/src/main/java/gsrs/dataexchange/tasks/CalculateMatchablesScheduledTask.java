@@ -1,6 +1,6 @@
-package gsrs.data_exchange.tasks;
+package gsrs.dataexchange.tasks;
 
-import gsrs.data_exchange.SubstanceStagingAreaEntityService;
+import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.stagingarea.model.KeyValueMapping;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.repository.KeyValueMappingRepository;

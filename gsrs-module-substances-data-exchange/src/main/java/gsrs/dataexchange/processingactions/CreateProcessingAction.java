@@ -1,4 +1,4 @@
-package gsrs.dataexchange.processing_actions;
+package gsrs.dataexchange.processingactions;
 
 import gsrs.dataexchange.model.ProcessingAction;
 import ix.ginas.models.v1.Substance;
@@ -14,5 +14,10 @@ public class CreateProcessingAction implements ProcessingAction<Substance> {
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> log) throws Exception {
         log.accept("Starting in process. going to return " + source);
         return source;
+    }
+
+    @Override
+    public String getActionName() {
+        return "Create";
     }
 }

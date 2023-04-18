@@ -1,7 +1,7 @@
 package example.imports;
 
 import example.GsrsModuleSubstanceApplication;
-import gsrs.dataexchange.processing_actions.CreateBatchProcessingAction;
+import gsrs.dataexchange.processingactions.CreateBatchProcessingAction;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;

@@ -1,6 +1,6 @@
 package example.imports;
 
-import gsrs.data_exchange.SubstanceStagingAreaEntityService;
+import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
 import gsrs.stagingarea.service.StagingAreaService;

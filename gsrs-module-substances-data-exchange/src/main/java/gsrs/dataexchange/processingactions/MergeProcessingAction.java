@@ -1,10 +1,9 @@
-package gsrs.dataexchange.processing_actions;
+package gsrs.dataexchange.processingactions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataexchange.model.ProcessingAction;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.*;
-import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -446,6 +445,27 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
         }
     }
 
+    @Override
+    public String getActionName() {
+        return "Merge";
+    }
+
+    @Override
+    public List<String> getOptions(){
+        return Arrays.asList("MergeReferences",
+                "MergeNames",
+                "MergeCodes",
+                "MergeProperties",
+                "MergeNotes",
+                "NoteUniqueness",
+                "MergeRelationships",
+                "RelationshipUniqueness",
+                "MergeModifications",
+                "MergeStructuralModifications",
+                "MergeAgentModifications",
+                "MergePhysicalModifications",
+                "SkipLevelingReferences");
+    }
     /* under construction...or maybe destruction  not used for now
     private boolean copyReferences(GinasCommonSubData source, GinasCommonSubData target, Map<String, String> referencesToCopy,
                                    Consumer<String> processLog, AbstractSubstanceBuilder builder ){
