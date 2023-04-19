@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.ImportFieldMetadata;
-import gsrs.importer.ImportFieldStatistics;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.ImportAdapter;
@@ -18,6 +17,7 @@ import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.springUtils.AutowireHelper;
+import ix.ginas.importers.InputFieldStatistics;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -439,7 +439,7 @@ todo: add a table of example input/output values
         fieldNames.forEach(fn->{
             fieldMetadata.add(ImportFieldMetadata.builder()
                     .fieldName(fn)
-                    .statistics(new ImportFieldStatistics()) //todo: fill in real data... will require additional parms to this method
+                    .statistics(new InputFieldStatistics(fn)) //todo: fill in real data... will require additional parms to this method
                     .build());
         });
         return fieldMetadata;

@@ -10,6 +10,7 @@ import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
@@ -46,7 +47,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         protected Object createSearchResponse(List results, SearchResult result, HttpServletRequest request) {
             return null;
         }
-
+      
         @SneakyThrows
         @Override
         protected GsrsEntityService getEntityService() {

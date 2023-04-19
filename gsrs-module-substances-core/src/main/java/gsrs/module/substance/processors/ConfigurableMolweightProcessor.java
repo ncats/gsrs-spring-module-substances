@@ -28,7 +28,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
 
     private Map<QualifiedAtom, Double> atomicWeights = new HashMap<>();
     private String atomWeightFilePath;
-    private String persistanceMode;
+    private String persistenceMode;
     private String propertyName;
     private Integer decimalDigits = 0;
     private String oldPropertyName;
@@ -41,9 +41,9 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
         if (!atomWeightFilePath.isEmpty() && Files.exists(Paths.get(atomWeightFilePath))) {
             initAtomicWeights(atomWeightFilePath);
         } else {
-            log.trace("file not found: " + atomWeightFilePath);
+            log.trace("file not found: {}", atomWeightFilePath);
         }
-        persistanceMode = (String) initialValues.get("persistanceMode");
+        persistenceMode = (String) initialValues.get("persistenceMode");
         propertyName = (String) initialValues.get("propertyName");
         if (initialValues.get("decimalDigits") != null) {
             decimalDigits = (Integer) initialValues.get("decimalDigits");
@@ -64,12 +64,12 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
         }
     }
 
-    public String getPersistanceMode() {
-        return persistanceMode;
+    public String getPersistenceMode() {
+        return persistenceMode;
     }
 
-    public void setPersistanceMode(String persistanceMode) {
-        this.persistanceMode = persistanceMode;
+    public void setPersistenceMode(String persistenceMode) {
+        this.persistenceMode = persistenceMode;
     }
 
     public String getPropertyName() {
@@ -89,17 +89,17 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
     }
 
     private void initAtomicWeights(String filePath) {
-        log.debug("starting in initAtomicWeights. path: " + filePath);
+        log.trace("starting in initAtomicWeights. path: {}", filePath);
         atomicWeights = new HashMap<>();
         String commentIntro = "#";
         try {
             List<String> lines = Files.readAllLines(Paths.get(filePath));
-            log.debug("total lines " + lines.size());
+            log.trace("total lines {}", lines.size());
             for (int lineNum = 1; lineNum < lines.size(); lineNum++) {
                 String line = lines.get(lineNum);
-                log.debug("line: " + line);
+                log.trace("line: {}", line);
                 if (line.trim().isEmpty() || line.trim().startsWith(commentIntro)) {
-                    log.debug(String.format("line %d is blank", lineNum));
+                    log.trace("line {} is blank", lineNum);
                     continue;
                 }
                 String[] lineParts = line.split(",");
@@ -118,25 +118,22 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
                                 massIndication = parsedMassIndication.get();
                             }
                         }
-                        log.debug("massIndication: " + massIndication);
+                        log.trace("massIndication: " + massIndication);
                         QualifiedAtom qa = new QualifiedAtom(symbol, massIndication);
-                        log.trace(String.format("adding atomic weight for symbol %s, massIndication: %d, value: %s",
-                                symbol, massIndication, parsedWt.get().toString()));
+                        log.trace("adding atomic weight for symbol {}, massIndication: {}, value: {}",
+                                symbol, massIndication, parsedWt.get());
                         atomicWeights.put(qa, parsedWt.get());
-                    }
-                    else {
-                        //log.debug("no double in input " + rawAw);
                     }
                 }
                 else {
-                    log.debug("skipping blank line " + line);
+                    log.trace("skipping blank line " + line);
                 }
             }
         } catch (Exception ex) {
             log.error("Error reading atomic weights: " + ex.getMessage());
             ex.printStackTrace();
         }
-        log.debug("initAtomicWeights completed");
+        log.trace("initAtomicWeights completed");
     }
 
     @Override
@@ -147,7 +144,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
     public void calculateMw(ChemicalSubstance s) {
         log.trace("ConfigurableMolweightProcessor.calculateMw");
         Double calculatedMw = computeMolWt(s);
-        if (persistanceMode.equalsIgnoreCase("intrinsic")) {
+        if (persistenceMode.equalsIgnoreCase("intrinsic")) {
             log.debug("setting intrinsic mw value to " + calculatedMw);
             s.getStructure().mwt = calculatedMw;
             //s.getStructure().forceUpdate();
@@ -182,9 +179,9 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
         }
         Amount propertyAmount = new Amount();
         propertyAmount.average = decimalDigits > 0 ? roundToDecimals(mw, decimalDigits) : mw;
-        //propertyAmount.type= PROPERTY_TYPE;
-        //propertyAmount.nonNumericValue = this.getClass().getName();
+        mwProperty.setPropertyType(PROPERTY_TYPE);
         mwProperty.setValue(propertyAmount);
+        mwProperty.forceUpdate();
         if (oldPropertyName != null && oldPropertyName.length() > 0) {
             //Property propertyToRemove = null;
             int indexToRemove = -1;
@@ -243,7 +240,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
         try {
             double d = Double.parseDouble(input);
             parsed = Optional.of(d);
-        } catch (NumberFormatException ex) {
+        } catch (NumberFormatException ignored) {
 
         }
         return parsed;
@@ -254,7 +251,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
         try {
             int d = Integer.parseInt(input);
             parsed = Optional.of(d);
-        } catch (NumberFormatException ex) {
+        } catch (NumberFormatException ignored) {
 
         }
         return parsed;
@@ -263,7 +260,7 @@ public class ConfigurableMolweightProcessor implements EntityProcessor<ChemicalS
     public static double roundToDecimals(double num, int n) {
         String format = String.format("%s.%df", "%", n);
         String formattedNumber = String.format(format, num);
-        log.trace("formattedNumber: " + formattedNumber);
+        log.trace("formattedNumber: {}", formattedNumber);
         return Double.parseDouble(formattedNumber);
     }
 

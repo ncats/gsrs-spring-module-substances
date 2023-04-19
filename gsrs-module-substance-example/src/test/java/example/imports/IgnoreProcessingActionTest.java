@@ -1,6 +1,6 @@
 package example.imports;
 
-import gsrs.dataexchange.processing_actions.RejectProcessingAction;
+import gsrs.dataexchange.processingactions.RejectProcessingAction;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import org.junit.jupiter.api.Assertions;

@@ -59,7 +59,7 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 			for (int layer = 1; layer <= layerHashes.size(); layer++)
 			{
 				String layerName = "root_definitional_hash_layer_" + layer;
-				log.trace("layerName: " + layerName + ":" + layerHashes.get(layer - 1));
+				log.trace("layerName: {} value: {}", layerName, layerHashes.get(layer - 1));
 				consumer.accept(IndexableValue.simpleStringValue(layerName, layerHashes.get(layer - 1)));
 			}
 		} catch (Exception ex)
@@ -67,6 +67,7 @@ public class SubstanceDefinitionalHashIndexer implements IndexValueMaker<Substan
 			log.error("Error during indexing", ex);
 			ex.printStackTrace();
 		}
+		log.trace("finished in createIndexableValues");
 	}
 
 }
