@@ -135,7 +135,12 @@ public class FDARelationshipExporter implements Exporter<Substance> {
                 Optional<Substance> fullRelatedSubstance;
                 try {
                     relatedKey = relationship.relatedSubstance.getKeyForReferencedSubstance();
-                    fullRelatedSubstance = EntityFetcher.of(relatedKey).getIfPossible().map(o -> (Substance) o);
+                    fullRelatedSubstance = EntityFetcher.of(relatedKey)
+                    		                            .getIfPossible()
+                    		                            .map(o -> (Substance) o)
+                    		                            .map(oo->(Substance)params.getScrubber().scrub(oo).orElse(null))
+                    		                            .filter(oo->oo!=null)
+                    		                            ;
                     relatedSubstanceType = fullRelatedSubstance.map(s -> s.substanceClass.toString()).orElse("Not present");
                     if (fullRelatedSubstance.isPresent()) {
                         relatedSubstancePublicOrPrivate = (fullRelatedSubstance.get().getAccess().isEmpty()) ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(fullRelatedSubstance.get().getAccess());
