@@ -56,8 +56,11 @@ public class ScrubProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         ScrubProcessingAction scrubProcessingAction = new ScrubProcessingAction();
         StringBuilder logHolder = new StringBuilder();
+        Map<String, Object> scrubberSettings = new HashMap<>();
+        scrubberSettings.put("UUIDCleanup", true);
+        scrubberSettings.put("regenerateUUIDs", true);
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("RegenerateUUIDs", true);
+        parameters.put("scrubberSettings", scrubberSettings);
         Substance result = scrubProcessingAction.process(startingSubstance, null, parameters, logHolder::append);
         UUID resultNameUuid = result.names.get(0).uuid;
 
@@ -83,8 +86,12 @@ public class ScrubProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         ScrubProcessingAction scrubProcessingAction = new ScrubProcessingAction();
         StringBuilder logHolder = new StringBuilder();
+        Map<String, Object> scrubberSettings = new HashMap<>();
+        scrubberSettings.put("approvalIdCleanup", true);
+        scrubberSettings.put("approvalIdCleanupRemoveApprovalId", true);
+
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("RemoveApprovalId", true);
+        parameters.put("scrubberSettings", scrubberSettings);
         Substance result = scrubProcessingAction.process(startingSubstance, null, parameters, logHolder::append);
         Assertions.assertNull(result.approvalID);
     }
@@ -106,9 +113,14 @@ public class ScrubProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         String codeSystem = "ApprovalCode";
         ScrubProcessingAction scrubProcessingAction = new ScrubProcessingAction();
         StringBuilder logHolder = new StringBuilder();
+        Map<String, Object> scrubberSettings = new HashMap<>();
+        scrubberSettings.put("approvalIdCleanup", true);
+        scrubberSettings.put("approvalIdCleanupRemoveApprovalId", true);
+        scrubberSettings.put("approvalIdCleanupCopyApprovalIdToCode", true);
+        scrubberSettings.put("approvalIdCleanupApprovalIdCodeSystem", codeSystem);
+
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("RemoveApprovalId", true);
-        parameters.put("ApprovalIdCodeSystem", codeSystem);
+        parameters.put("scrubberSettings", scrubberSettings);
 
         Substance result = scrubProcessingAction.process(startingSubstance, null, parameters, logHolder::append);
         Assertions.assertNull(result.approvalID);
@@ -132,8 +144,12 @@ public class ScrubProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         ScrubProcessingAction scrubProcessingAction = new ScrubProcessingAction();
         StringBuilder logHolder = new StringBuilder();
         Map<String, Object> parameters = new HashMap<>();
+        Map<String, Object> scrubberSettings = new HashMap<>();
+        scrubberSettings.put("auditInformationCleanup", true);
+        //scrubberSettings.put("auditInformationCleanupDeidentifyAuditUser", true);
+        scrubberSettings.put("auditInformationCleanupNewAuditorValue", registrarUserName);
 
-        parameters.put("ReplacementAuditUser", registrarUserName);
+        parameters.put("scrubberSettings", scrubberSettings);
 
         Substance result = scrubProcessingAction.process(startingSubstance, null, parameters, logHolder::append);
         Assertions.assertNull(result.approvalID);

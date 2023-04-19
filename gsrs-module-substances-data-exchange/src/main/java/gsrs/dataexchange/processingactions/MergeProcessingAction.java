@@ -1,18 +1,28 @@
 package gsrs.dataexchange.processingactions;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.*;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.FileCopyUtils;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
 public class MergeProcessingAction implements ProcessingAction<Substance> {
+
+    private JsonNode settings;
+
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){
         log.trace("about to call existing.toBuilder() on existing: {}", existing.getUuid());
@@ -113,7 +123,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Set<UUID> newRefs = new HashSet<>();
                         newName.getReferences().forEach(ref->{
                             String oldRefValue = ref.getValue();
-                            String newRefValue="";
+                            String newRefValue;
                             if(referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue= referencesToCopy.get(oldRefValue);
                             } else {
@@ -151,7 +161,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Set<UUID> newRefs = new HashSet<>();
                         newCode.getReferences().forEach(ref->{
                             String oldRefValue = ref.getValue();
-                            String newRefValue="";
+                            String newRefValue;
                             if(referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue= referencesToCopy.get(oldRefValue);
                             } else {
@@ -189,7 +199,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Set<UUID> newRefs = new HashSet<>();
                         newProperty.getReferences().forEach(ref->{
                             String oldRefValue = ref.getValue();
-                            String newRefValue="";
+                            String newRefValue;
                             if(referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue= referencesToCopy.get(oldRefValue);
                             } else {
@@ -226,7 +236,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Set<UUID> newRefs = new HashSet<>();
                         newNote.getReferences().forEach(ref->{
                             String oldRefValue = ref.getValue();
-                            String newRefValue="";
+                            String newRefValue;
                             if(referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue= referencesToCopy.get(oldRefValue);
                             } else {
@@ -257,7 +267,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Set<UUID>newRefs = new HashSet<>();
                         newStructuralModification.getReferences().forEach(ref->{
                             String oldRefValue = ref.getValue();
-                            String newRefValue="";
+                            String newRefValue;
                             if(referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue= referencesToCopy.get(oldRefValue);
                             } else {
@@ -287,7 +297,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         Set<UUID>newRefs = new HashSet<>();
                         newAgentModification.getReferences().forEach(ref->{
                             String oldRefValue = ref.getValue();
-                            String newRefValue="";
+                            String newRefValue;
                             if(referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue= referencesToCopy.get(oldRefValue);
                             } else {
@@ -355,7 +365,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         newRel.getReferences().forEach(ref->{
                             log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
                             String oldRefValue = ref.getValue();
-                            String newRefValue="";
+                            String newRefValue;
                             if(referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue= referencesToCopy.get(oldRefValue);
                             } else {
@@ -466,6 +476,36 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 "MergePhysicalModifications",
                 "SkipLevelingReferences");
     }
+
+    @Override
+    public JsonNode getAvailableSettingsSchema() {
+        return schemaSupplier.get();
+    }
+
+
+    private final static String JSONSchema = getSchemaString();
+
+    private static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
+        ObjectMapper mapper =new ObjectMapper();
+        try {
+            JsonNode schemaNode=mapper.readTree(JSONSchema);
+            return schemaNode;
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return null;//todo: alternate return?
+    });
+
+    @SneakyThrows
+    private static String getSchemaString() {
+        log.trace("starting getSchemaString");
+        ClassPathResource fileResource = new ClassPathResource("schemas/mergeSchema.json");
+        byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
+        String schemaString =new String(binaryData, StandardCharsets.UTF_8);
+        log.trace("read schema:{}", schemaString);
+        return schemaString;
+    }
+
     /* under construction...or maybe destruction  not used for now
     private boolean copyReferences(GinasCommonSubData source, GinasCommonSubData target, Map<String, String> referencesToCopy,
                                    Consumer<String> processLog, AbstractSubstanceBuilder builder ){
