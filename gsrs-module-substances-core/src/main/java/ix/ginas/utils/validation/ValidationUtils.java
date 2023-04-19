@@ -19,7 +19,7 @@ import ix.core.validator.*;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
-import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.NucleicAcidUtils;
 import java.io.IOException;
 
@@ -77,7 +77,7 @@ public class ValidationUtils {
 	private static <D extends GinasAccessReferenceControlled> void validatePublicReferenced(Substance s,
                                                                                             D data,
                                                                                             List<GinasProcessingMessage> gpm,
-                                                                                            GinasProcessingStrategy strat,
+                                                                                            GsrsProcessingStrategy strat,
                                                                                             Function<D,String> namer) {
 		//If public
 		if(data.getAccess().isEmpty()){
@@ -101,7 +101,7 @@ public class ValidationUtils {
 
 	private static boolean validateReferenced(Substance s,
                                               GinasAccessReferenceControlled data,
-                                              List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat,
+                                              List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat,
                                               ReferenceAction onemptyref) {
 
 		boolean worked = true;
@@ -258,7 +258,7 @@ public class ValidationUtils {
 
 
 //	private static boolean validateNames(Substance s,
-//                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+//                                         List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 //		boolean preferred = false;
 //		int display = 0;
 //		List<Name> remnames = new ArrayList<Name>();
@@ -428,7 +428,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static boolean validateCodes(Substance s,
-//                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+//                                         List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 //		List<Code> remnames = new ArrayList<Code>();
 //		for (Code cd : s.codes) {
 //			if (cd == null) {
@@ -531,7 +531,7 @@ public class ValidationUtils {
 	}
 
 	private static boolean validateRelationships(Substance s,
-                                                 List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+                                                 List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 		List<Relationship> remnames = new ArrayList<Relationship>();
 		for (Relationship n : s.relationships) {
 			if (isEffectivelyNull(n)) {
@@ -590,7 +590,7 @@ public class ValidationUtils {
 	}
 
 	private static boolean validateNotes(Substance s,
-                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+                                         List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 		List<Note> remnames = new ArrayList<Note>();
 		for (Note n : s.notes) {
 			if (n == null) {
@@ -704,7 +704,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareMixture(
-//            MixtureSubstance cs, GinasProcessingStrategy strat) {
+//            MixtureSubstance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.mixture == null) {
 //			gpm.add(GinasProcessingMessage
@@ -745,7 +745,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareStructurallyDiverse(
-//            StructurallyDiverseSubstance cs, GinasProcessingStrategy strat) {
+//            StructurallyDiverseSubstance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.structurallyDiverse == null) {
 //			gpm.add(GinasProcessingMessage
@@ -795,7 +795,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareSSG1(
-//            SpecifiedSubstanceGroup1Substance cs, GinasProcessingStrategy strat) {
+//            SpecifiedSubstanceGroup1Substance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.specifiedSubstance == null) {
 //			gpm.add(GinasProcessingMessage
@@ -820,7 +820,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPreparePolymer(
-//            PolymerSubstance cs, GinasProcessingStrategy strat) {
+//            PolymerSubstance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.polymer == null) {
 //			gpm.add(GinasProcessingMessage
@@ -1004,7 +1004,7 @@ public class ValidationUtils {
 	}
 
 	private static List<? extends GinasProcessingMessage> validateAndPrepareNa(
-            NucleicAcidSubstance cs, GinasProcessingStrategy strat) {
+            NucleicAcidSubstance cs, GsrsProcessingStrategy strat) {
 		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 		if (cs.nucleicAcid == null) {
 			gpm.add(GinasProcessingMessage
@@ -1056,7 +1056,7 @@ public class ValidationUtils {
 	}
 
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareProtein(
-//            ProteinSubstance cs, ProteinSubstance old, GinasProcessingStrategy strat) {
+//            ProteinSubstance cs, ProteinSubstance old, GsrsProcessingStrategy strat) {
 //
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.protein == null) {
@@ -1241,7 +1241,7 @@ public class ValidationUtils {
 //	}
 //
 //	public static List<? extends GinasProcessingMessage> validateAndPrepareChemical(
-//            ChemicalSubstance cs, GinasProcessingStrategy strat, boolean includeReferenceCheck) {
+//            ChemicalSubstance cs, GsrsProcessingStrategy strat, boolean includeReferenceCheck) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.structure == null) {
 //			gpm.add(GinasProcessingMessage.ERROR_MESSAGE("Chemical substance must have a chemical structure"));
@@ -1354,7 +1354,7 @@ public class ValidationUtils {
 //
 //	private static List<GinasProcessingMessage> validateChemicalStructure(
 //            GinasChemicalStructure oldstr, Structure newstr,
-//            GinasProcessingStrategy strat) {
+//            GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //
 //		String oldhash = null;
@@ -1428,11 +1428,11 @@ public class ValidationUtils {
 
 //	public static class GinasValidationResponseBuilder<T> extends ValidationResponseBuilder<T> {
 //
-//		private final GinasProcessingStrategy _strategy;
+//		private final GsrsProcessingStrategy _strategy;
 //		public GinasValidationResponseBuilder(T o){
-//			this(o, GinasProcessingStrategy.ACCEPT_APPLY_ALL());
+//			this(o, GsrsProcessingStrategy.ACCEPT_APPLY_ALL());
 //		}
-//		public GinasValidationResponseBuilder(T o, GinasProcessingStrategy strategy) {
+//		public GinasValidationResponseBuilder(T o, GsrsProcessingStrategy strategy) {
 //			super(o, strategy);
 //			this._strategy = Objects.requireNonNull(strategy);
 //			boolean allowPossibleDuplicates=false;

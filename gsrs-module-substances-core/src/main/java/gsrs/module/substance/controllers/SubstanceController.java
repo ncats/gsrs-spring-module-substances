@@ -29,9 +29,12 @@ import javax.validation.constraints.NotBlank;
 
 import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
+import gsrs.services.PrincipalServiceImpl;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.model.ImportData;
 import gsrs.stagingarea.service.StagingAreaService;
+import ix.core.models.*;
+import ix.ginas.models.v1.*;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -103,10 +106,6 @@ import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
 import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
-import ix.core.models.Payload;
-import ix.core.models.Structure;
-import ix.core.models.StructureRenderingParameters;
-import ix.core.models.Text;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResultContext;
 import ix.core.search.text.TextIndexer;
@@ -115,23 +114,6 @@ import ix.core.util.EntityUtils.Key;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.exporters.SpecificExporterSettings;
-import ix.ginas.models.v1.AgentModification;
-import ix.ginas.models.v1.Amount;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Component;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Material;
-import ix.ginas.models.v1.Mixture;
-import ix.ginas.models.v1.Moiety;
-import ix.ginas.models.v1.PolymerClassification;
-import ix.ginas.models.v1.Property;
-import ix.ginas.models.v1.SpecifiedSubstanceComponent;
-import ix.ginas.models.v1.StructuralModification;
-import ix.ginas.models.v1.StructurallyDiverse;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.SubstanceReference;
-import ix.ginas.models.v1.Subunit;
-import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil.TypedCallable;
@@ -152,8 +134,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
-	
-	@Override
+
+    @Autowired
+    private PrincipalServiceImpl principalService;
+
+    @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
 
         so= super.instrumentSearchOptions(so);
@@ -442,7 +427,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     					role="Structural Modification";
     				}else if(Property.class.isAssignableFrom(pcls)) {
                                         Property prop = (Property)ss.k();
-    					role="Property Substance:" + prop.getName();
+    					role="Property:" + prop.getName();
     				}else if(StructurallyDiverse.class.isAssignableFrom(pcls)) {
     					StructurallyDiverse par = (StructurallyDiverse)ss.k();
     					if(par.parentSubstance!=null && par.parentSubstance.uuid.equals(ss.v().uuid)){
@@ -1198,10 +1183,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
                     }
                     log.trace("resized size {}", resized.length);
-                    //File basicFileBefore = new File("d:\\temp\\del1Original." + formatForResize);
-                    //Files.write(basicFileBefore.toPath(), imageInfo.getImageData());
-                    //File basicFile = new File("d:\\temp\\del1Resized." + formatForResize);
-                    //Files.write(basicFile.toPath(), resized);
                     HttpHeaders headers = new HttpHeaders();
 
                     log.trace("going to set content type to {}", parseContentType(formatToUse));
@@ -1792,5 +1773,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         items.add(publicItems);
         return items;
     }
+
 }
 

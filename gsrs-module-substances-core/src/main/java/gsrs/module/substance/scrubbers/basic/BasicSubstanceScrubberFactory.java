@@ -3,10 +3,8 @@ package gsrs.module.substance.scrubbers.basic;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
-import ix.ginas.exporters.NoOpRecordScrubberFactory;
 import ix.ginas.exporters.RecordScrubber;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.models.v1.Substance;
@@ -16,11 +14,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.FileCopyUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Optional;
 
 @Slf4j

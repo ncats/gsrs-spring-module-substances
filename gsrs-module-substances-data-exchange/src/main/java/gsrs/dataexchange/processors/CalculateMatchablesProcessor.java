@@ -1,6 +1,6 @@
-package gsrs.data_exchange.processors;
+package gsrs.dataexchange.processors;
 
-import gsrs.data_exchange.SubstanceStagingAreaEntityService;
+import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.KeyValueMapping;
@@ -10,9 +10,7 @@ import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.repository.EditRepository;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.EntityProcessor;
-import ix.core.models.Edit;
 import ix.core.util.EntityUtils;
-import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +19,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.function.Consumer;
 
-import static gsrs.data_exchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
-import static gsrs.data_exchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
+import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.DATA_SOURCE_MAIN;
+import static gsrs.dataexchange.tasks.CalculateMatchablesScheduledTask.SUBSTANCE_CLASS;
 
 @Slf4j
 public class CalculateMatchablesProcessor implements EntityProcessor<Substance> {
@@ -84,7 +81,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
     private void recalculateMatchablesFor(Substance substance) {
         log.trace("looking at substance " + substance.getUuid());
-        Optional<Integer> version = getVersion(substance);
+        /*Optional<Integer> version = getVersion(substance);
         Optional<Substance> previousVersion = Optional.empty();
         if (version.isPresent() && version.get() > 1) {
             log.trace("got version {}", version.get());
@@ -93,6 +90,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             previousVersion = txFetch.execute(a -> {
                 log.trace("going to look for edits for id {} and version {}.", substance.getUuid(), version.get()-2);
                 List<Edit> editList = editRepository.findByRefidAndVersion(substance.getUuid().toString(), Integer.toString(version.get()-2));
+                //sort
                 try {
                     log.trace("edit list: {}", (editList==null || editList.isEmpty()) ?"null/empty" : editList.size());
                     if (editList != null && !editList.isEmpty()) {
@@ -108,7 +106,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         } else {
             log.trace("no version");
         }
-
+*/
         substanceStagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
         //clear out the old stuff
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
@@ -123,7 +121,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         List<MatchableKeyValueTuple> matchables = substanceStagingAreaEntityService.extractKVM(substance);
         log.trace("calculated matchables");
         processMatchables(substance, matchables, importMetadataRecordsToReindex::add, true);
-        if(previousVersion.isPresent()){
+  /*      if(previousVersion.isPresent()){
             List<MatchableKeyValueTuple> matchablesForPrevious = substanceStagingAreaEntityService.extractKVM(previousVersion.get());
             processMatchables(previousVersion.get(), matchablesForPrevious, importMetadataRecordsToReindex::add, false);
             log.trace("calculated matchables for previous (version {}; change reason {})", previousVersion.get().version,
@@ -131,7 +129,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         } else {
             log.trace("no previous!");
         }
-
+*/
 
         log.trace("going to iterate importMetadataRecordsToReindex ({})", importMetadataRecordsToReindex.size());
         importMetadataRecordsToReindex.forEach(r->{
@@ -149,7 +147,7 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                         EntityUtils.EntityWrapper<ImportMetadata> wrappedObject = EntityUtils.EntityWrapper.of(metadata.get());
                         UUID indexingEventId= UUID.randomUUID();
                         ImportMetadataReindexer.indexOneItem(indexingEventId, eventPublisher::publishEvent, EntityUtils.Key.of(wrappedObject),
-                                EntityUtils.EntityWrapper.of(wrappedObject));
+                                wrappedObject);
                     } else {
                         log.trace("failed to retrieve ImportMetadata");
                     }
@@ -205,6 +203,4 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
         });
 
     }
-
-
 }

@@ -1,4 +1,4 @@
-package gsrs.dataexchange.processing_actions;
+package gsrs.dataexchange.processingactions;
 
 import gsrs.dataexchange.model.ProcessingAction;
 import ix.ginas.models.v1.Substance;
@@ -16,4 +16,8 @@ public class RejectProcessingAction implements ProcessingAction<Substance> {
         return existing;
     }
 
+    @Override
+    public String getActionName() {
+        return "Reject";
+    }
 }

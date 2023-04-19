@@ -1,9 +1,5 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
@@ -39,22 +35,20 @@ public class StructureExtractorActionFactory extends BaseActionFactory {
         log.trace("create");
         return (sub, sdRec) -> {
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
-            GinasChemicalStructure s = new GinasChemicalStructure();
-            s.molfile = (String) params.get("molfile");
-            doBasicsImports(s, params);
-            ((ChemicalSubstanceBuilder)sub).setStructure(s);
             List<Structure> moieties = new ArrayList<>();
-            ObjectMapper mapper = new ObjectMapper();
             try {
 
-                Structure struc = structureProcessor.taskFor(s.molfile)
+                Structure struc = structureProcessor.taskFor((String) params.get("molfile"))
                         .components(moieties)
                         .standardize(false)
                         .query(false)
                         .build()
                         .instrument()
                         .getStructure();
-
+                log.trace("created struc with formula {} and mwt {}", struc.formula, struc.mwt);
+                GinasChemicalStructure fullStructure = new GinasChemicalStructure(struc);
+                doBasicsImports(fullStructure, params);
+                ((ChemicalSubstanceBuilder)sub).setStructure(fullStructure);
 
                 for (Structure m : moieties) {
                     Moiety moiety = new Moiety();

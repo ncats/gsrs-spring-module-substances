@@ -16,6 +16,7 @@ import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import ix.core.search.bulk.BulkSearchService;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -48,6 +49,7 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,
+        GsrsProcessingStrategyFactoryConfiguration.class,
         ImportMetadataLegacySearchService.class
 })
 public class SubstanceCoreConfiguration {

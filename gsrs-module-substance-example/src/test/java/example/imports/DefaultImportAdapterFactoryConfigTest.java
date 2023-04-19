@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.data_exchange.SubstanceStagingAreaEntityService;
+import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
 import gsrs.importer.PropertyBasedDataRecordContext;
@@ -41,7 +41,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         oneAdapter.put("extensions", Arrays.asList("sdf", "sd"));
         oneAdapter.put("parameters", buildConfigParameters());
         oneAdapter.put("stagingAreaServiceClass", gsrs.stagingarea.service.DefaultStagingAreaService.class);
-        oneAdapter.put("entityServiceClass", "gsrs.data_exchange.SubstanceStagingAreaEntityService");
+        oneAdapter.put("entityServiceClass", "gsrs.dataexchange.SubstanceStagingAreaEntityService");
         List<Map<String, Object>> adapters = new ArrayList<>();
         adapters.add(oneAdapter);
         adapterConfig.put(substanceContext, adapters);

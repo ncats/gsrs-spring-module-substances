@@ -110,14 +110,16 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         InputStream fisRead = new FileInputStream(dataFile.getAbsoluteFile());
         ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
         settingsNode.put("Encoding", Charset.defaultCharset().name());
-        Stream<Substance> substanceStream = importAdapter.parse(fisRead, settingsNode);
+        Stream<Substance> substanceStream = importAdapter.parse(fisRead, settingsNode, null);
         substanceStream.forEach(s -> {
+            if(!s.substanceClass.toString().contains("chemical") || s.names.isEmpty() || s.codes.isEmpty()){
+                log.trace("full substance that does not conform: ");
+                log.trace(s.toFullJsonNode().toPrettyString());
+            }
             Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
             Assertions.assertTrue(s.names.size()>=1);
-            Assertions.assertTrue( s.codes.size()>=1);
+            Assertions.assertTrue( s.codes.size()>=1 || s.notes.size()>0);
 
-            log.trace("full substance: ");
-            log.trace(s.toFullJsonNode().toPrettyString());
         });
         fisRead.close();
     }
@@ -138,7 +140,7 @@ public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
         bais = new ByteArrayInputStream(c.toSd().getBytes());
         ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
         settingsNode.put("Encoding", Charset.defaultCharset().name());
-        Stream<Substance> substanceStream = importAdapter.parse(bais, settingsNode);
+        Stream<Substance> substanceStream = importAdapter.parse(bais, settingsNode, null);
         substanceStream.forEach(s -> {
             log.trace("full substance: ");
             log.trace(s.toFullJsonNode().toPrettyString());

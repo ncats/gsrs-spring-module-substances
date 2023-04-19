@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.ImportFieldMetadata;
-import gsrs.importer.ImportFieldStatistics;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.ImportAdapter;
@@ -18,9 +17,11 @@ import gsrs.imports.ImportAdapterFactory;
 import gsrs.imports.ImportAdapterStatistics;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.springUtils.AutowireHelper;
+import ix.ginas.importers.InputFieldStatistics;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import springfox.documentation.spring.web.json.Json;
 
 import java.io.InputStream;
 import java.util.*;
@@ -152,7 +153,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         log.info("general setDescription method called");
     }
 
-    public List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
+    public List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) {
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
@@ -168,6 +169,11 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
                 if (mappingActionFactory instanceof BaseActionFactory && statistics != null) {
                     ((BaseActionFactory) mappingActionFactory).setAdapterSchema(statistics.getAdapterSchema());
                     log.trace("called setAdapterSchema");
+                }else if(this.getFileName()!=null ){
+                    ObjectNode adapterSchema = JsonNodeFactory.instance.objectNode();
+                    adapterSchema.put("fileName", getFileName());
+                    ((BaseActionFactory) mappingActionFactory).setAdapterSchema(adapterSchema);
+                    log.trace("passed file name to baseActionFactory");
                 }
                 log.trace("mappingActionFactory: " + mappingActionFactory);
                 if (mappingActionFactory != null) {
@@ -280,6 +286,12 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
+    public ObjectNode createNoteMap(String noteFieldName) {
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("note", "{{" + noteFieldName + "}}");
+        return mapNode;
+    }
+
     public ObjectNode createCodeMap(String codeSystem, String codeType) {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         if (codeType == null || codeType.length() == 0) {
@@ -296,13 +308,18 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
-
     protected boolean looksLikeProperty(String fieldName) {
         List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka", "logp", "logd", "hbond",
                 "tpsa", "count", "rotatable", "mass", "formula");
         return propertyWords.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)));
     }
 
+    protected boolean looksLikeCode(String fieldName) {
+        List<String> codeIndicatorsPartial = Arrays.asList("CAS", "EINECS","CHEMBL", "CHEBI", "NSC", "NCI", "ANUM", "PUBCHEM_COMPOUND_CID");
+        List<String> codeIndicatorsFull = Arrays.asList("RN", "EC","NCIT", "RXCUI", "NCBI", "GRIN", "MPNS", "INN_ID", "USAN_ID");
+        return codeIndicatorsPartial.stream().anyMatch(p->fieldName.toUpperCase(Locale.ROOT).contains(p.toUpperCase(Locale.ROOT)))
+                ||codeIndicatorsFull.stream().anyMatch(p2->fieldName.toUpperCase().equals(p2));
+    }
     protected boolean looksLikeProteinSequence(String fieldName) {
         if(fieldName.toUpperCase().contains("PROTEIN") && fieldName.toUpperCase().contains("SEQUENCE")){
             return true;
@@ -428,7 +445,7 @@ todo: add a table of example input/output values
         fieldNames.forEach(fn->{
             fieldMetadata.add(ImportFieldMetadata.builder()
                     .fieldName(fn)
-                    .statistics(new ImportFieldStatistics()) //todo: fill in real data... will require additional parms to this method
+                    .statistics(new InputFieldStatistics(fn)) //todo: fill in real data... will require additional parms to this method
                     .build());
         });
         return fieldMetadata;
