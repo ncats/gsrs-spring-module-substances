@@ -1,8 +1,9 @@
 package example.imports;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import example.GsrsModuleSubstanceApplication;
-import gsrs.controller.AbstractImportSupportingGsrsEntityController;
 import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.module.substance.importers.GSRSJSONImportAdapter;
 import gsrs.module.substance.importers.GSRSJSONImportAdapterFactory;
@@ -35,14 +36,13 @@ public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullSt
         GSRSJSONImportAdapter adapter = (GSRSJSONImportAdapter) factory.createAdapter(JsonNodeFactory.instance.objectNode());
         Resource dataFile = new ClassPathResource("testdumps/rep90.ginas");
         FileInputStream fis = new FileInputStream(dataFile.getFile());
-        Stream<Substance> subs = adapter.parse(fis, null);
+        Stream<Substance> subs = adapter.parse(fis, null, null);
         Assertions.assertEquals(90, subs.count());
     }
 
     @Test
     public void saveSubstanceTest() throws IOException {
-        GSRSJSONImportAdapterFactory factory = new GSRSJSONImportAdapterFactory();
-        GSRSJSONImportAdapter adapter = (GSRSJSONImportAdapter) factory.createAdapter(JsonNodeFactory.instance.objectNode());
+        //GSRSJSONImportAdapterFactory factory = new GSRSJSONImportAdapterFactory();
         Resource dataFile = new ClassPathResource("testdumps/rep19.tsv");
         List<String> lines = Files.readAllLines(dataFile.getFile().toPath());
         List<String> resultingSubstanceIds = new ArrayList<>();
@@ -55,6 +55,11 @@ public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullSt
                                     .source(dataFile.getFilename())
                                     .adapterName("this");
                     ImportRecordParameters parameters = builder.build();
+                    ObjectNode rareSettings = JsonNodeFactory.instance.objectNode();
+                    rareSettings.put("skipIndexing", true);
+                    ObjectNode settings = JsonNodeFactory.instance.objectNode();
+                    settings.set("rarelyUsedSettings", rareSettings);
+                    parameters.setSettings(settings);
 
                     DefaultStagingAreaService<Substance> service = new DefaultStagingAreaService<>();
                     AutowireHelper.getInstance().autowire(service);

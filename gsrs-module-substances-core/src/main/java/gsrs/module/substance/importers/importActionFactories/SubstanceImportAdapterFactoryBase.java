@@ -21,6 +21,7 @@ import ix.ginas.importers.InputFieldStatistics;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import springfox.documentation.spring.web.json.Json;
 
 import java.io.InputStream;
 import java.util.*;
@@ -152,7 +153,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         log.info("general setDescription method called");
     }
 
-    public List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) throws Exception {
+    public List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> getMappingActions(JsonNode adapterSettings) {
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
@@ -168,6 +169,11 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
                 if (mappingActionFactory instanceof BaseActionFactory && statistics != null) {
                     ((BaseActionFactory) mappingActionFactory).setAdapterSchema(statistics.getAdapterSchema());
                     log.trace("called setAdapterSchema");
+                }else if(this.getFileName()!=null ){
+                    ObjectNode adapterSchema = JsonNodeFactory.instance.objectNode();
+                    adapterSchema.put("fileName", getFileName());
+                    ((BaseActionFactory) mappingActionFactory).setAdapterSchema(adapterSchema);
+                    log.trace("passed file name to baseActionFactory");
                 }
                 log.trace("mappingActionFactory: " + mappingActionFactory);
                 if (mappingActionFactory != null) {

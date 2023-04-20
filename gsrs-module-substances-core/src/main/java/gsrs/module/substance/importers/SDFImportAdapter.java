@@ -1,5 +1,6 @@
 package gsrs.module.substance.importers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.io.ChemicalReader;
 import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
@@ -17,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -34,7 +34,7 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
     
     @SneakyThrows
     @Override
-    public Stream<Substance> parse(InputStream is, ObjectNode settings) {
+    public Stream<Substance> parse(InputStream is, ObjectNode settings, JsonNode schema) {
         log.trace("Charset.defaultCharset: {}", Charset.defaultCharset().name());
         String encoding;
         if(!settings.hasNonNull("Encoding")) {
@@ -48,6 +48,7 @@ public class SDFImportAdapter implements ImportAdapter<Substance> {
           .map(c-> new ChemicalBackedSDRecordContext(c))
     	  .map(sd->{
                ChemicalSubstanceBuilder s = new ChemicalSubstanceBuilder();
+               //for now, newly imported substances will be PROTECTED
                s.setAccess(Collections.singleton(new Group("PROTECTED")));
                for(MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action: actions){
                    try {
