@@ -25,6 +25,11 @@
       "type": "boolean",
       "title": "Merge Properties"
     },
+    "mergePropertiesPropertyUniqueness": {
+      "comments": "Skip copying a property with the same name as an existing property of the existing substance",
+      "type": "boolean",
+      "title": "Property Name Uniqueness"
+    },
     "mergeNotes": {
       "comments": "Copy notes from new substance into existing substance",
       "type": "boolean",
@@ -59,55 +64,49 @@
       "comments": "Copy modifications from new substance into existing substance (see separate selections for Agent, Structural and Physical)",
       "type": "boolean",
       "title": "Copy modifications from new substance into existing substance"
+    },
+    "mergeModificationsMergeStructuralModifications": {
+      "comments": "When merging modifications, include structural modifications",
+      "type": "boolean",
+      "title": "Merge Structural Modifications",
+      "visibleIf": {
+        "mergeModifications": [
+          true
+        ]
+      }
+    },
+    "mergeModificationsMergeAgentModifications": {
+      "comments": "When merging modifications, include agent modifications",
+      "type": "boolean",
+      "title": "Merge Agent Modifications",
+      "visibleIf": {
+        "mergeModifications": [
+          true
+        ]
+      }
+    },
+    "mergeModificationsMergePhysicalModifications": {
+      "comments": "When merging modifications, include physical modifications",
+      "type": "boolean",
+      "title": "Merge Physical Modifications",
+      "visibleIf": {
+        "mergeModifications": [
+          true
+        ]
+      }
+    },
+    "skipLevelingReferences": {
+      "comments": "When merging codes, names, properties, etc., skip the step of copying references attached to these things",
+      "type": "boolean",
+      "title": "Skip Leveling References"
+    },
+    "copyStructure" : {
+      "comments": "Copy the chemical structure (molfile) from the new substance into the existing substance",
+      "type" : "boolean",
+      "title":"Copy chemical structure"
     }
-  },
-  "mergeModificationsMergeStructuralModifications": {
-    "comments": "When merging modifications, include structural modifications",
-    "type": "boolean",
-    "title": "Merge Structural Modifications",
-    "visibleIf": {
-      "mergeModifications": [
-        true
-      ]
-    }
-  },
-  "mergeModificationsMergeAgentModifications": {
-    "comments": "When merging modifications, include agent modifications",
-    "type": "boolean",
-    "title": "Merge Agent Modifications",
-    "visibleIf": {
-      "mergeModifications": [
-        true
-      ]
-    }
-  },
-  "mergeModificationsMergePhysicalModifications": {
-    "comments": "When merging modifications, include physical modifications",
-    "type": "boolean",
-    "title": "Merge Physical Modifications",
-    "visibleIf": {
-      "mergeModifications": [
-        true
-      ]
-    }
-  },
-  "skipLevelingReferences": {
-    "comments": "When merging codes, names, properties, etc., skip the step of copying references attached to these things",
-    "type": "boolean",
-    "title": "Skip Leveling References"
   },
   "required": [],
   "constraints": [
-    {
-      "if": "removeCodesBySystem",
-      "then": {
-        "oneOf": [
-          [
-            "removeCodesBySystemCodeSystemsToRemove",
-            "removeCodesBySystemCodeSystemsToKeep"
-          ]
-        ]
-      }
-    }
   ]
 }

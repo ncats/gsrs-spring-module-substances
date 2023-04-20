@@ -69,7 +69,7 @@ public class ScrubProcessingAction implements ProcessingAction<Substance> {
         ClassPathResource fileResource = new ClassPathResource("schemas/importScrubberSchema.json");
         byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
         String schemaString =new String(binaryData, StandardCharsets.UTF_8);
-        log.trace("read schema:{}", schemaString);
+        //log.trace("read schema:{}", schemaString);
         return schemaString;
     }
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
+import gsrs.module.substance.importers.model.MergeProcessingActionParameters;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.*;
@@ -25,9 +26,14 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){
+        ObjectMapper mapper = new ObjectMapper();
+        if( !parameters.containsKey("mergeSettings")) {
+            log.warn("no mergeSettings found!");
+            return existing;
+        }
+        MergeProcessingActionParameters mergeParameters= mapper.convertValue(parameters.get("mergeSettings"), MergeProcessingActionParameters.class);
         log.trace("about to call existing.toBuilder() on existing: {}", existing.getUuid());
         AbstractSubstanceBuilder builder = toAbstractBuilder(existing);
-        ObjectMapper mapper= new ObjectMapper();
 
         Objects.requireNonNull(source, "Must have a non-null source Substance to merge");
         Objects.requireNonNull(existing, "Must have a non-null existing Substance to merge");
@@ -89,7 +95,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 }
             }
         }*/
-        if(hasTrueValue(parameters, "MergeReferences")){
+        if(mergeParameters.getMergeReferences()){
             source.references.forEach(r->{
                 if( existing.references.stream().anyMatch(r2->r2.docType!=null && r2.docType.equals(r.docType) && r2.citation!=null
                         && r2.citation.equals(r.citation))){
@@ -109,7 +115,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
         
-        if(hasTrueValue(parameters, "MergeNames")){
+        if(mergeParameters.getMergeNames()){
             source.names.forEach(n-> {
                 if( existing.names.stream().anyMatch(en->en.name.equals(n.name))){
                     processLog.accept(String.format("Name %s was already present;", n.name));
@@ -147,7 +153,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
 
-        if(hasTrueValue(parameters, "MergeCodes")){
+        if(mergeParameters.getMergeCodes()){
             source.codes.forEach(c-> {
                 if( existing.codes.stream().anyMatch(en->en.code.equals(c.code) && en.codeSystem.equals(c.codeSystem))){
                     processLog.accept(String.format("code %s was already present;", c.code));
@@ -182,9 +188,9 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
 
-        if(hasTrueValue(parameters, "MergeProperties")){
+        if(mergeParameters.getMergeProperties()){
             source.properties.forEach(p-> {
-                if( hasTrueValue(parameters, "PropertyNameUniqueness") &&
+                if( mergeParameters.getMergePropertiesPropertyUniqueness() &&
                         (existing.properties.stream().anyMatch(en->en.getPropertyType().equals(p.getPropertyType())
                         && en.getName().equals(p.getName()))
                         || builder.build().properties.stream().anyMatch(p2->p2.getName().equals(p.getName()) && p2.getPropertyType().equals(p.getPropertyType())))){
@@ -221,9 +227,9 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
 
-        if(hasTrueValue(parameters, "MergeNotes")){
+        if(mergeParameters.getMergeNotes()){
             source.notes.forEach(n-> {
-                if( hasTrueValue(parameters, "NoteUniqueness") &&
+                if( mergeParameters.getMergeNotesNoteUniqueness() &&
                         (existing.notes.stream().anyMatch(en->en.note.equals(n.note)))){
                     processLog.accept(String.format("note %s was already present;", n.note));
                 }else{
@@ -255,8 +261,8 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 }
             });
         }
-        if(hasTrueValue(parameters, "MergeModifications")) {
-            if(hasTrueValue(parameters, "MergeStructuralModifications")){
+        if(mergeParameters.getMergeModifications()) {
+            if(mergeParameters.getMergeModificationsMergeStructuralModifications()) {
                 source.modifications.structuralModifications.forEach(sm->{
                     //simple-minded copy here to start
                     //TODO: evaluate how accurate/useful this is
@@ -286,7 +292,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 });
             }
 
-            if(hasTrueValue(parameters, "MergeAgentModifications")){
+            if(mergeParameters.getMergeModificationsMergeAgentModifications()){
                 source.modifications.agentModifications.forEach(am->{
                     //simple-minded copy here to start
                     //TODO: evaluate how accurate/useful this is
@@ -316,7 +322,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 });
             }
 
-            if(hasTrueValue(parameters, "MergePhysicalModifications")){
+            if(mergeParameters.getMergeModificationsMergePhysicalModifications()){
                 source.modifications.physicalModifications.forEach(pm->{
                     //simple-minded copy here to start
                     //TODO: evaluate how accurate/useful this is
@@ -347,14 +353,13 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             }
         }
 
-        if(hasTrueValue(parameters, "MergeRelationships")){
+        if(mergeParameters.getMergeRelationships()){
             source.relationships.forEach(n-> {
-                if( hasTrueValue(parameters, "RelationshipUniqueness")
+                if( mergeParameters.getMergeRelationshipsRelationshipUniqueness()
                         && existing.relationships.stream().anyMatch(en->en.type.equals(n.type) && en.relatedSubstance.refuuid.equals(n.relatedSubstance.refuuid))){
                     processLog.accept(String.format("Relationship of type %s to substance %s was already present;", n.type, n.relatedSubstance.refuuid));
                 }else{
                     EntityUtils.EntityInfo<Relationship> eics= EntityUtils.getEntityInfoFor(Relationship.class);
-
                     try {
                         Relationship newRel = eics.fromJson(n.toJson());
                         newRel.setUuid(UUID.randomUUID());
@@ -385,7 +390,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
 
-        if(existing.substanceClass== Substance.SubstanceClass.chemical &&hasTrueValue(parameters, "CopyStructure")) {
+        if(existing.substanceClass== Substance.SubstanceClass.chemical && mergeParameters.getCopyStructure() ) {
             ((ChemicalSubstanceBuilder) builder).setStructure(((ChemicalSubstance) source).getStructure());
             ((ChemicalSubstanceBuilder) builder).clearMoieties();
             EntityUtils.EntityInfo<Moiety> eicsMoieties = EntityUtils.getEntityInfoFor(Moiety.class);
@@ -401,7 +406,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             });
         }
         //todo: consider merging definitions
-        if(!hasTrueValue(parameters, "SkipLevelingReferences")) {
+        if( !mergeParameters.getSkipLevelingReferences()) {
             EntityUtils.EntityInfo<Reference> eicsRefs = EntityUtils.getEntityInfoFor(Reference.class);
             for (String refUuid : referencesToCopy.keySet()) {
                 if (builder.build().references.stream().noneMatch(r -> r.getUuid().toString().equals(refUuid))) {
@@ -502,7 +507,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
         ClassPathResource fileResource = new ClassPathResource("schemas/mergeSchema.json");
         byte[] binaryData = FileCopyUtils.copyToByteArray(fileResource.getInputStream());
         String schemaString =new String(binaryData, StandardCharsets.UTF_8);
-        log.trace("read schema:{}", schemaString);
+        //log.trace("read schema:{}", schemaString);
         return schemaString;
     }
 

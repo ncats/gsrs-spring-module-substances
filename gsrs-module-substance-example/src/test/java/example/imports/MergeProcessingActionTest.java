@@ -31,17 +31,9 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     @Autowired
     private StructureIndexerService indexer;
 
-    //@Autowired
-    //private SubstanceEntityService substanceEntityService;
 
     @Autowired
     private PrincipalServiceImpl principalService;
-
-//    @Autowired
-//    private SubstanceRepository substanceRepository;
-
-//    @Autowired
-//    private PlatformTransactionManager platformTransactionManager;
 
     @BeforeEach
     public void clearIndexers() throws IOException {
@@ -75,8 +67,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeNames", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -139,8 +133,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL1354");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("copyStructure", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("CopyStructure", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -175,8 +171,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL1354");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("copyStructure", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("CopyStructure", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -222,8 +220,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeNames", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -269,9 +269,11 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
+        mergeSettings.put("skipLevelingReferences", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeNames", "true");
-        parms.put("SkipLevelingReferences", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -313,8 +315,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
-        Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeNames", "true");
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
+Map<String, Object> parms = new HashMap<>();
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -358,8 +362,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeNames", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -388,8 +394,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeCodes", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeCodes", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -399,7 +407,6 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertTrue( chemical1.codes.stream().allMatch(c-> output.codes.stream().anyMatch(c2->c2.code.equals(c.code)&& c2.codeSystem.equals(c.codeSystem))));
     }
-
 
     @Test
     public void testMergeCodesWithReferences() {
@@ -429,8 +436,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         ChemicalSubstance chemical2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeCodes", "true");
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeCodes", "true");
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -470,9 +479,11 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addCode("CHEMBL", "CHEMBL171623");
         Substance concept2 = builder2.build();
 
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeCodes", "true");
+        mergeSettings.put("mergeNames", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeCodes", "true");
-        parms.put("MergeNames", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -510,8 +521,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builderExisting.addSubUnit(newUnit2);
         builderExisting.addName("POTE ankyrin domain family member B Three");
         ProteinSubstance proteinExisting = builderExisting.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeReferences", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeReferences", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -552,8 +565,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         ref2.uploadedFile ="https://www.uniprot.org/uniprotkb/A0JP26/entry";
         builderExisting.addReference(ref2);
         ProteinSubstance proteinExisting = builderExisting.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeReferences", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeReferences", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -562,6 +577,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertTrue( proteinSource.references.stream().allMatch(r-> output.references.stream().anyMatch(r2-> r2.docType.equals(r.docType) && r2.citation.equals(r.citation))));
     }
+
     @Test
     public void testMergeReferencesNegative() {
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
@@ -586,8 +602,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builderExisting.addSubUnit(newUnit2);
         builderExisting.addName("POTE ankyrin domain family member B Three");
         ProteinSubstance proteinExisting = builderExisting.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeReferences", false);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeReferences", false);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -636,8 +654,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addDnaSubunit(sequence);
         builder2.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstance2 = builder2.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeReferences", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeReferences", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -690,8 +710,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addDnaSubunit(sequence);
         builder2.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstance2 = builder2.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeProperties", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeProperties", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -749,8 +771,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addDnaSubunit(sequence);
         builder2.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstance2 = builder2.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeProperties", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeProperties", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -810,9 +834,11 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builder2.addDnaSubunit(sequence);
         builder2.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstance2 = builder2.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeProperties", true);
+        mergeSettings.put("mergePropertiesPropertyUniqueness", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeProperties", true);
-        parms.put("PropertyNameUniqueness", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -876,10 +902,12 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builderExisting.addDnaSubunit(sequence);
         builderExisting.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstanceExisting = builderExisting.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeProperties", true);
+        mergeSettings.put("mergePropertiesPropertyUniqueness", true);
+        mergeSettings.put("mergeRelationships", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeProperties", true);
-        parms.put("PropertyNameUniqueness", true);
-        parms.put("MergeRelationships", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -944,8 +972,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builderExisting.addDnaSubunit(sequence);
         builderExisting.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstanceExisting = builderExisting.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeRelationships", false);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeRelationships", false);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -1004,9 +1034,11 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builderExisting.addDnaSubunit(sequence);
         builderExisting.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstanceExisting = builderExisting.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNotes", true);
+        mergeSettings.put("mergeRelationships", true);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeNotes", true);
-        parms.put("MergeRelationships", true);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -1067,8 +1099,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         builderExisting.addDnaSubunit(sequence);
         builderExisting.addName(nameValue);
         NucleicAcidSubstance nucleicAcidSubstanceExisting = builderExisting.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("MergeNotes", false);
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeNotes", false);
+        parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
@@ -1089,47 +1123,16 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
         MergeProcessingAction action = new MergeProcessingAction();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeModifications", true);
+        mergeSettings.put("mergeModificationsMergeStructuralModifications", true);
+
         Map<String, Object> parms = new HashMap<>();
-        parms.put("MergeModifications", true);
-        parms.put("MergeStructuralModifications", true);
+        parms.put("mergeSettings", mergeSettings);
 
         Substance output = action.process( proteinSubstanceSource, proteinSubstanceTarget, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertEquals(proteinSubstanceSource.getModifications().structuralModifications.size(), output.getModifications().structuralModifications.size());
     }
 
-    @Test
-    public void hasTrueValueTest(){
-        MergeProcessingAction action = new MergeProcessingAction();
-        Map<String, Object> parmset = new HashMap<>();
-
-        Assertions.assertFalse( action.hasTrueValue(parmset, "anything"));
-
-    }
-
-    @Test
-    public void hasTrueValueTest2(){
-        MergeProcessingAction action = new MergeProcessingAction();
-        Map<String, Object> parmset = new HashMap<>();
-
-        parmset.put("Something", false);
-        Assertions.assertFalse( action.hasTrueValue(parmset, "Something"));
-    }
-
-    @Test
-    public void hasTrueValueTest3(){
-        MergeProcessingAction action = new MergeProcessingAction();
-        Map<String, Object> parmset = new HashMap<>();
-        parmset.put("Something", true);
-        Assertions.assertTrue( action.hasTrueValue(parmset, "Something"));
-    }
-
-
-    @Test
-    public void hasTrueValueTest4(){
-        MergeProcessingAction action = new MergeProcessingAction();
-        Map<String, Object> parmset = new HashMap<>();
-        parmset.put("Something", "TRUE");
-        Assertions.assertTrue( action.hasTrueValue(parmset, "Something"));
-    }
 }
