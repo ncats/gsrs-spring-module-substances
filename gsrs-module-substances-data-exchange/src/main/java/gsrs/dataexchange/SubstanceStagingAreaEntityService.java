@@ -3,6 +3,7 @@ package gsrs.dataexchange;
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.events.ReindexEntityEvent;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.service.StagingAreaEntityService;
 import gsrs.indexer.IndexValueMakerFactory;
@@ -19,6 +20,7 @@ import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.validators.DefinitionalDependencyValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -54,8 +56,28 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     @Override
     public ValidationResponse<Substance> validate(Substance substance) {
         try {
+            //need to remove the UUID or errors occur on the deserialization process within validation
+            UUID originalUuid=null;
+            boolean ignoreMessageAboutUuid=false;
+            if( substance.uuid!=null){
+                originalUuid=substance.uuid;
+                ignoreMessageAboutUuid=true;
+            }
+            substance.uuid=null;
             ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode());
-            return response;
+            //treat one validator separately
+            DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
+            AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
+            ValidationResponse<Substance> response2 = definitionalDependencyValidator.validate(substance, null);
+            substance.uuid=originalUuid;
+            log.trace("adding messages from DefinitionalDependencyValidator");
+            boolean finalIgnoreMessageAboutUuid = ignoreMessageAboutUuid;
+            response.getValidationMessages().forEach(m->{
+                if(!(finalIgnoreMessageAboutUuid && m.getMessage().startsWith("Substance has no UUID, will generate uuid"))){
+                    response2.addValidationMessage(m);
+                }
+            });
+            return response2;
         } catch (Exception ex) {
             log.error("Error validating substance", ex);
         }
@@ -141,7 +163,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             log.trace("assigned id {}", substance.getOrGenerateUUID());
         }
         EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(substance);
-        log.trace("create wrapper with kind {}", wrapper.getKind(), wrapper.getEntityInfo().getIDFieldInfo().get());
+        log.trace("create wrapper with kind {} - id field {}", wrapper.getKind(), wrapper.getEntityInfo().getIDFieldInfo().get());
         UUID reindexUuid = UUID.randomUUID();
         ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, wrapper.getKey(), Optional.of(wrapper),true);
         applicationEventPublisher.publishEvent(event);
