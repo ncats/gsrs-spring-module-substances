@@ -136,7 +136,8 @@ public class ImageUtilitiesTest {
             File imageFile = new ClassPathResource(imagePath).getFile();
             byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 200, 100, "svg");
-            File basicFile = File.createTempFile ("delResizedPentagon", "svg");
+            File basicFile = File.createTempFile ("delResizedPentagon", ".svg");
+            log.debug("writing image to file {}", basicFile.getAbsolutePath());
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);
