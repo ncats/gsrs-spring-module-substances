@@ -32,7 +32,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.2</version>
+            <version>0.6.4-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>

@@ -90,10 +90,16 @@ public class ImageUtilities {
 
     public static byte[] resizeImage(byte[] original, int newWidth, int newHeight, String format) {
         log.trace("starting resizeImage");
+        if( format.equalsIgnoreCase("SVG")){
+            return  handleResizeForSvg(original, newWidth, newHeight);
+        }
         ByteArrayInputStream inputStream = new ByteArrayInputStream(original);
         try {
             BufferedImage originalImage = ImageIO.read(inputStream);
-            
+            if(originalImage==null){
+                log.warn("null image detected");
+                return new byte[0];
+            }
             BufferedImage  resizedImage = handleResize(originalImage, newWidth, newHeight);
             if(resizedImage==null){
                 log.error("Error! no resized image!");
@@ -122,5 +128,10 @@ public class ImageUtilities {
             log.error("Error resizing", ex);
         }
         return resizedImage;
+    }
+
+    public static byte[] handleResizeForSvg(byte[] inputImageData, int newW, int newH){
+        //todo: make this really do something
+        return inputImageData;
     }
 }
