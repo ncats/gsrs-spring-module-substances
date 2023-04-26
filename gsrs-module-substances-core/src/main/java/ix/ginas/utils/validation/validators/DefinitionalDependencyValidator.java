@@ -79,7 +79,7 @@ public class DefinitionalDependencyValidator extends AbstractValidatorPlugin<Sub
         log.trace("starting in findMissingRelatedSubstances");
         List<ImportSubstanceReference> missing = new ArrayList<>();
         for (Relationship rel : substance.relationships) {
-            if (rel.relatedSubstance != null && rel.relatedSubstance.refuuid != null && !substanceRepository.exists(rel.relatedSubstance)) {
+            if (!isSameSubstance(substance, rel.relatedSubstance)&& rel.relatedSubstance != null && rel.relatedSubstance.refuuid != null && !substanceRepository.exists(rel.relatedSubstance)) {
                 ImportSubstanceReference refToMissing = new ImportSubstanceReference(rel.relatedSubstance, SUBSTANCE_REFERENCE_RELATED);
                 missing.add(refToMissing);
             }
@@ -91,5 +91,9 @@ public class DefinitionalDependencyValidator extends AbstractValidatorPlugin<Sub
             }
         }
         return missing;
+    }
+
+    private boolean isSameSubstance(Substance substance, SubstanceReference reference){
+        return(substance.uuid!=null && reference.refuuid !=null && substance.uuid.toString().equals(reference.refuuid));
     }
 }
