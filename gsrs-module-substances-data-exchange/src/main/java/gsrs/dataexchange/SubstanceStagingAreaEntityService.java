@@ -77,6 +77,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
                     response2.addValidationMessage(m);
                 }
             });
+            response2.setNewObject(response.getNewObject());
             return response2;
         } catch (Exception ex) {
             log.error("Error validating substance", ex);

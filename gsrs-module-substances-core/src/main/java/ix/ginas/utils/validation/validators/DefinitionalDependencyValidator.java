@@ -58,7 +58,8 @@ public class DefinitionalDependencyValidator extends AbstractValidatorPlugin<Sub
             });
                 return response;
         }
-        return super.validate(objnew, objold);
+        return new ValidationResponse<Substance>();
+        //return super.validate(objnew, objold);
     }
 
     private List<ImportSubstanceReference> findMissingDefinitionalSubstances(Substance substance)  {
