@@ -1,6 +1,7 @@
 package gsrs.module.substance.indexers;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Consumer;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,17 +36,23 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 	
 	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
-		
-		log.info("In UserSavedListIndexValueMaker ");		
-		String key = EntityWrapper.of(substance).getKey().toRootKey().getIdString();
+				
+		try {
+			String key = EntityWrapper.of(substance).getKey().toRootKey().getIdString();
 	
-		List<KeyUserList> list = keyUserListRepository.getAllListNamesFromKey(key);
-		list.forEach(e->log.warn("list name " + e.listName));
+			List<KeyUserList> list = keyUserListRepository.getAllListNamesFromKey(key);	
 		
-		list.forEach(listName -> {			
-			String value = UserSavedListService.getIndexedValue(listName.principal.username, listName.listName);
-			log.info("index value: " + value);
-			consumer.accept(IndexableValue.simpleFacetStringValue("User List",value));});
-	
+			list.forEach(listName -> {			
+				String value = UserSavedListService.getIndexedValue(listName.principal.username, listName.listName);				
+				consumer.accept(IndexableValue.simpleFacetStringValue("User List",value));});
+			
+		}catch(NoSuchElementException nseExp) {
+			if(substance.getName()!=null)
+				log.warn("Cannot find the UUID of the substance: " + substance.getName());
+			else
+				log.warn("Cannot find the UUID and name of the substance.");
+		}catch(Exception exp) {
+			exp.printStackTrace();
+		}	
 	}
 }
