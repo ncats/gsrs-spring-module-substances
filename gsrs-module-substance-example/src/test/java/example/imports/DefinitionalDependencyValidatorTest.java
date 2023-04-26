@@ -39,6 +39,25 @@ public class DefinitionalDependencyValidatorTest extends AbstractSubstanceJpaFul
     }
 
     @Test
+    public void testMissingSubstanceDefFlag() {
+        ProteinSubstance testProtein= createProtein();
+        String missingSubstanceName ="Random missing substance";
+        AgentModification agentModification = new AgentModification();
+        agentModification.agentModificationProcess ="CULTURE";
+        agentModification.agentSubstance = new SubstanceReference();
+        agentModification.agentSubstance.refuuid= UUID.randomUUID().toString();
+        agentModification.agentSubstance.refPname= missingSubstanceName;
+        testProtein.modifications = new Modifications();
+        testProtein.modifications.agentModifications.add(agentModification);
+        DefinitionalDependencyValidator validator = new DefinitionalDependencyValidator();
+        AutowireHelper.getInstance().autowire(validator);
+        ValidationResponse<Substance> response= validator.validate(testProtein, null);
+        Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(vm->vm.getMessage().contains("is missing")
+                && vm.getMessage().contains(missingSubstanceName)
+                && vm.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR));
+    }
+
+    @Test
     public void testNoMissingSubstanceFlag() {
         ProteinSubstance testProtein= createProtein();
         String missingSubstanceName ="Random missing substance";
