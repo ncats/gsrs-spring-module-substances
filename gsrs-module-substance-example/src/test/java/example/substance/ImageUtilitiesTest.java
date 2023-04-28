@@ -53,10 +53,8 @@ public class ImageUtilitiesTest {
 
         Reference reference = new Reference();
         reference.publicDomain= true;
-        reference.docType="book";
+        reference.docType="Image Reference";
         reference.citation="Descriptions of stuff, page 203";
-        reference.addTag("PUBLIC_DOMAIN_RELEASE");
-        reference.addTag(ImageUtilities.SUBSTANCE_IMAGE_TAG);
         reference.uploadedFile="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         plainName.addReference(reference);
         builder.addName(plainName);
@@ -136,7 +134,8 @@ public class ImageUtilitiesTest {
             File imageFile = new ClassPathResource(imagePath).getFile();
             byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 200, 100, "svg");
-            File basicFile = File.createTempFile ("delResizedPentagon", "svg");
+            File basicFile = File.createTempFile ("delResizedPentagon", ".svg");
+            log.debug("writing image to file {}", basicFile.getAbsolutePath());
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);
@@ -166,5 +165,4 @@ public class ImageUtilitiesTest {
             Assertions.fail("error processing image fails test");
         }
     }
-//
 }
