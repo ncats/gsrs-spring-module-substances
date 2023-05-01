@@ -4,6 +4,8 @@ import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
+
 /**
  * Factory class that creates new {@link GsrsProcessingStrategy}
  * instances.
@@ -12,13 +14,17 @@ import org.springframework.stereotype.Service;
 public class GsrsProcessingStrategyFactory {
 
     private final GroupService groupService;
+    private final GsrsProcessingStrategyFactoryConfiguration configuration;
 
     @Autowired
-    public GsrsProcessingStrategyFactory(GroupService groupService) {
+    public GsrsProcessingStrategyFactory(GroupService groupService,
+            GsrsProcessingStrategyFactoryConfiguration configuration) {
         this.groupService = groupService;
+        this.configuration = configuration;
     }
+
     public GsrsProcessingStrategy createNewDefaultStrategy(){
-        return new AcceptApplyAllProcessingStrategy(groupService);
+        return createNewStrategy(configuration.getDefaultStrategy());
     }
 
     /**
@@ -29,19 +35,20 @@ public class GsrsProcessingStrategyFactory {
      * @throws IllegalArgumentException if unknown strategy.
      */
     public GsrsProcessingStrategy createNewStrategy(String strategyName){
+        Objects.requireNonNull(strategyName, "GsrsProcessingStrategy strategyName is null; please configure the property gsrs.processing-strategy.");
         switch(strategyName.toUpperCase()){
             case "ACCEPT_APPLY_ALL":
-                return new AcceptApplyAllProcessingStrategy(groupService);
+                return (GsrsProcessingStrategy) new AcceptApplyAllProcessingStrategy(groupService, configuration);
             case "ACCEPT_APPLY_ALL_WARNINGS":
-                return new AcceptAndApplyAllWarningsProcessingStrategy(groupService);
+                return (GsrsProcessingStrategy) new AcceptAndApplyAllWarningsProcessingStrategy(groupService, configuration);
             case "ACCEPT_APPLY_ALL_WARNINGS_MARK_FAILED":
-                return new AcceptAndApplyAllWarningsProcessingStrategy(groupService)
+                return (GsrsProcessingStrategy) new AcceptAndApplyAllWarningsProcessingStrategy(groupService, configuration)
                             .markFailed();
             case "ACCEPT_APPLY_ALL_MARK_FAILED":
-                return new AcceptApplyAllProcessingStrategy(groupService)
+                return (GsrsProcessingStrategy) new AcceptApplyAllProcessingStrategy(groupService, configuration)
                             .markFailed();
             case "ACCEPT_APPLY_ALL_NOTE_FAILED":
-                return new AcceptApplyAllProcessingStrategy(groupService)
+                return (GsrsProcessingStrategy) new AcceptApplyAllProcessingStrategy(groupService, configuration)
                             .noteFailed();
             default:
                 throw new IllegalArgumentException("No strategy known with name:\"" + strategyName + "\"");

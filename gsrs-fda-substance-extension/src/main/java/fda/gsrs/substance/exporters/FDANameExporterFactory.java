@@ -1,5 +1,8 @@
 package fda.gsrs.substance.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
@@ -12,12 +15,16 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
-/**
- * Created by VenkataSaiRa.Chavali on 3/10/2017.
- */
 public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
+    public static final String PRIMARY_CODE_SYSTEM_PARAMETERS ="omitPrimaryCodeSystemField";
+    public static final String APPROVAL_ID_NAME_PARAMETERS ="approvalIdName";
+    public static final String DEFAULT_APPROVAL_ID_NAME ="APPROVAL_ID";
+
     OutputFormat format = new OutputFormat("names.txt", "Names only, tab-delimited (.txt)");
+
+    private String primaryCodeSystem;
+
     @Autowired
     private SubstanceRepository substanceRepository;
 
@@ -33,9 +40,36 @@ public class FDANameExporterFactory implements ExporterFactory<Substance> {
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        // if(params.shouldCompress()) {
-        return new FDANameExporter(substanceRepository, out, !params.publicOnly());
-//        }
-//        return new JsonExporter(out);
+        return new FDANameExporter(substanceRepository, out, params, this.primaryCodeSystem);
     }
+
+    public String getPrimaryCodeSystem() {
+        return this.primaryCodeSystem;
+    }
+
+    public void setPrimaryCodeSystem(String primaryCodeSystem) {
+        this.primaryCodeSystem = primaryCodeSystem;
+    }
+
+    @Override
+    public JsonNode getSchema() {
+        ObjectNode parameters = JsonNodeFactory.instance.objectNode();
+
+        if(getPrimaryCodeSystem()!=null) {
+            ObjectNode primaryCodeSystemNode = JsonNodeFactory.instance.objectNode();
+            primaryCodeSystemNode.put("type", "boolean");
+            primaryCodeSystemNode.put("title", "Omit primary code system field ("+ getPrimaryCodeSystem() +")");
+            primaryCodeSystemNode.put("comments", "Omit primary code system field ("+ getPrimaryCodeSystem() +")");
+            primaryCodeSystemNode.put("default", false);
+            parameters.set(PRIMARY_CODE_SYSTEM_PARAMETERS, primaryCodeSystemNode);
+        }
+        ObjectNode approvalIDNameNode = JsonNodeFactory.instance.objectNode();
+        approvalIDNameNode.put("type", "string");
+        approvalIDNameNode.put("title", "Label for Approval ID in file");
+        approvalIDNameNode.put("comments", "Header for Approval ID in file");
+        approvalIDNameNode.put("default", DEFAULT_APPROVAL_ID_NAME);
+        parameters.set(APPROVAL_ID_NAME_PARAMETERS, approvalIDNameNode);
+        return generateSchemaNode("Name Exporter Parameters", parameters);
+    }
+
 }

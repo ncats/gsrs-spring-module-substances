@@ -11,7 +11,6 @@ import gsrs.module.substance.standardizer.ReplacementNote;
 import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
-import gsrs.module.substance.utils.HtmlUtil;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -38,6 +37,8 @@ public class NameUtilities {
     //private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\p{ASCII}]");
     private static final Pattern UNPRINTABLES_PATTERN = Pattern.compile("\\p{C}");
     //private static final String NON_ASCII_REPLACEMENT = "?";
+
+    private static final Pattern NON_BREAKING_SPACE_PATTERN = Pattern.compile("\u00A0");
     private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
     private static final Pattern PATTERN_LEADING_WHITE_SPACE = Pattern.compile("^\\s+");
     private static final Pattern PATTERN_TRAILING_WHITE_SPACE = Pattern.compile("\\s+$");
@@ -101,6 +102,7 @@ public class NameUtilities {
         // 1 replace linefeed preceded by (e.g. dash) with blank; but leave the dash.
         // 2 replace remaining linefeed with space before replaceUnprintables, which will replace with blank ''
         ReplacementResult replacementResult = replaceSingleLinefeedPrecededByCertainCharactersWithBlank(input);
+        replacementResult.update(replaceMessySpaces(replacementResult.getResult()));
         replacementResult.update(replaceSingleOrMultipleLinefeedWithSpace(replacementResult.getResult()));
         replacementResult.update(removeSerialSpaces(replacementResult.getResult()));
         replacementResult.update(replaceUnprintables(replacementResult.getResult()));
@@ -209,6 +211,22 @@ public class NameUtilities {
             List<ReplacementNote> notes = new ArrayList<>();
             notes.add(note1);
             return new ReplacementResult(matcher.replaceAll(""), notes);
+        }
+        return defaultResult;
+    }
+
+    public static ReplacementResult replaceMessySpaces(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+
+        Matcher matcher = NON_BREAKING_SPACE_PATTERN.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(" "), notes);
         }
         return defaultResult;
     }

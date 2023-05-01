@@ -190,8 +190,11 @@ public class PeptideInterpreter {
 //			}
 		}
 		//Finding (C=O), replace --> [He]
+		Set<Atom> toRemove =new HashSet<>();
+		
 		for (Atom ma : m2.getAtoms()) {
 			if (ma.getAtomicNumber() == 6) {
+				if(toRemove.contains(ma))continue;
 				for(Bond b : ma.getBonds()){
 					Atom otherAtom = b.getOtherAtom(ma);
 					if (otherAtom.getAtomicNumber() == 8 && b.getBondType() == Bond.BondType.DOUBLE) {
@@ -201,14 +204,17 @@ public class PeptideInterpreter {
 //						}
 						ma.setAtomicNumber(2);
 						ma.setImplicitHCount(0);
-						m2.removeAtom(otherAtom);
+						toRemove.add(otherAtom);
+//						m2.removeAtom(otherAtom);
 					}
 				}
 			}
 		}
-
+		toRemove.forEach(ma->m2.removeAtom(ma));
+		toRemove.clear();
 		//
 		for (Atom ma : m2.getAtoms()) {
+			if(toRemove.contains(ma))continue;
 			if(incAtoms.contains(ma)){
 				//C
 				if (ma.getAtomicNumber() == 6) {
@@ -241,7 +247,8 @@ public class PeptideInterpreter {
 							}
 
 						}
-						m2.removeAtom(amine);
+						toRemove.add(amine);
+//						m2.removeAtom(amine);
 						for(Bond b : carbonyl.getBonds()){
 //						for (int i = 0; i < carbonyl.getBondCount(); i++) {
 							Atom oatom = b.getOtherAtom(carbonyl);
@@ -253,10 +260,13 @@ public class PeptideInterpreter {
 									}
 								}
 							} else {
-								m2.removeAtom(oatom);
+//								m2.removeAtom(oatom);
+
+								toRemove.add(oatom);
 							}
 						}
-						m2.removeAtom(carbonyl);
+						toRemove.add(carbonyl);
+//						m2.removeAtom(carbonyl);
 						ma.setAtomicNumber(10);
 						ma.setImplicitHCount(0);
 						if(mod){
@@ -266,6 +276,7 @@ public class PeptideInterpreter {
 				}
 			}
 		}
+		toRemove.forEach(ma->m2.removeAtom(ma));
 
 		m2.atoms()
 				.filter(a-> a.getAtomicNumber() ==10 && ( a.getMassNumber() ==7 || a.getMassNumber() == 6))
@@ -324,7 +335,12 @@ public class PeptideInterpreter {
 		removeDisulfide(m4);
 //		System.out.println("contracting peptides...");
 		contractPeptide(m4);
-//		System.out.println("now smiles is =" + m4.toSmiles());
+//		try {
+//			System.out.println("now smiles is =" + m4.copy().toSmiles());
+//		}catch(Exception e) {
+//			System.out.println("now smiles is =" + m4.copy().toMol());
+//			e.printStackTrace();
+//		}
 //		System.out.println(m4.atoms().map(a-> "[ " + a.getSymbol() + " " + a.getAtomToAtomMap().getAsInt() + "]").collect(Collectors.joining(",")));
 		Set<Integer> backboneAtoms  = new HashSet<>();
 		Set<Integer> modind  = new HashSet<>();
