@@ -22,7 +22,7 @@ public class ImageReferenceValidator extends AbstractValidatorPlugin<Substance> 
         int totalImageRefs = 0;
         boolean hasImageRefOnRelationship = false;
         for(Reference reference : objnew.references) {
-            if(isImageReference(reference)){
+            if(ImageUtilities.isImageReference(reference)){
                 log.trace("found image reference");
                 totalImageRefs++;
                 if( objnew.relationships.stream().anyMatch(r->r.getReferences().stream().anyMatch(ref->ref.getValue().equals(reference.getUuid().toString())))){
@@ -31,14 +31,11 @@ public class ImageReferenceValidator extends AbstractValidatorPlugin<Substance> 
             }
         }
         if(totalImageRefs>1){
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("substance has more than one image reference!"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Substance has more than one image reference!"));
         }
         if(hasImageRefOnRelationship){
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("substance has at least one image reference on a relationship.  This can have unintended consequences!"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Substance has at least one image reference on a relationship.  This can have unintended consequences!"));
         }
     }
 
-    private boolean isImageReference(Reference ref){
-        return ( ref.uploadedFile != null && ref.uploadedFile.length()>0  && ref.tags.stream().anyMatch(t->t.getValue().equals(ImageUtilities.SUBSTANCE_IMAGE_TAG)));
-    }
 }

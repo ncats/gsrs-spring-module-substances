@@ -53,10 +53,8 @@ public class ImageUtilitiesTest {
 
         Reference reference = new Reference();
         reference.publicDomain= true;
-        reference.docType="book";
+        reference.docType="Image Reference";
         reference.citation="Descriptions of stuff, page 203";
-        reference.addTag("PUBLIC_DOMAIN_RELEASE");
-        reference.addTag(ImageUtilities.SUBSTANCE_IMAGE_TAG);
         reference.uploadedFile="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         plainName.addReference(reference);
         builder.addName(plainName);
@@ -167,5 +165,4 @@ public class ImageUtilitiesTest {
             Assertions.fail("error processing image fails test");
         }
     }
-//
 }
