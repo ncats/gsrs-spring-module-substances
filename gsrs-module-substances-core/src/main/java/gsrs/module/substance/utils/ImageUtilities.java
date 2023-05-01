@@ -21,7 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Slf4j
 public class ImageUtilities {
 
-    public static final String SUBSTANCE_IMAGE_TAG ="SUBSTANCE IMAGE";
+    public static final String SUBSTANCE_IMAGE_REFERENCE_TYPE = "IMAGE REFERENCE";
 
     @Autowired
     private PayloadRepository payloadRepository;
@@ -38,7 +38,7 @@ public class ImageUtilities {
     public ImageInfo getSubstanceImage(Substance substance){
         log.trace("starting in getSubstanceImage");
         for (Reference ref : substance.references) {
-            if(ref.tags.stream().anyMatch(t->t.term.equals(SUBSTANCE_IMAGE_TAG)) && ref.uploadedFile!=null && !ref.uploadedFile.isEmpty()) {
+            if(isImageReference(ref)) {
                 log.trace("reference found with image tag.  uploadedFile: {}", ref.uploadedFile);
                 String payloadId = getPayloadIdFromUrl(ref.uploadedFile);
                 if( payloadId ==null || payloadId.length()==0) {
@@ -83,17 +83,23 @@ public class ImageUtilities {
         Optional<InputStream> stream= payloadService.getPayloadAsInputStream(id);
         byte[] fileData = new byte[Math.toIntExact(payloadSize)];
         try(BufferedInputStream bufferedInputStream= new BufferedInputStream(stream.get())) {
-             bufferedInputStream.read(fileData);
-             return Optional.of( fileData);
+            bufferedInputStream.read(fileData);
+            return Optional.of( fileData);
         }
     }
 
     public static byte[] resizeImage(byte[] original, int newWidth, int newHeight, String format) {
         log.trace("starting resizeImage");
+        if( format.equalsIgnoreCase("SVG")){
+            return  handleResizeForSvg(original, newWidth, newHeight);
+        }
         ByteArrayInputStream inputStream = new ByteArrayInputStream(original);
         try {
             BufferedImage originalImage = ImageIO.read(inputStream);
-            
+            if(originalImage==null){
+                log.warn("null image detected");
+                return new byte[0];
+            }
             BufferedImage  resizedImage = handleResize(originalImage, newWidth, newHeight);
             if(resizedImage==null){
                 log.error("Error! no resized image!");
@@ -123,4 +129,14 @@ public class ImageUtilities {
         }
         return resizedImage;
     }
+
+    public static byte[] handleResizeForSvg(byte[] inputImageData, int newW, int newH){
+        //todo: make this really do something
+        return inputImageData;
+    }
+
+    public static boolean isImageReference(Reference ref){
+        return ( ref.uploadedFile != null && ref.uploadedFile.length()>0  && ref.docType.equalsIgnoreCase(SUBSTANCE_IMAGE_REFERENCE_TYPE));
+    }
+
 }
