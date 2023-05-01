@@ -1545,7 +1545,7 @@ public class ValidationUtils {
                             .collect(Collectors.toList());
                     return hits;
                 } catch (Exception ex) {
-                    log.error("error during search");
+                    log.error("error during search. query: {}", request.getQuery());
                     ex.printStackTrace();
                 }
                 return nameValues;
