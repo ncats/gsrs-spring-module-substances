@@ -29,10 +29,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.*;
 import java.nio.file.Files;
 import java.time.format.DateTimeFormatter;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -118,16 +115,18 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                                 Substance fullSubstance = (Substance) EntityFetcher.of(EntityUtils.Key.of(Substance.class, s.getUuid())).call();
                                 listen.preRecordProcess(s);
                                 adminService.runAs(adminAuth, (Runnable) () -> {
-                                    fixSubstanceReference(fullSubstance, out::println, out::println);
+                                    fixSubstanceReference(fullSubstance, out::println);
                                     listen.recordProcessed(s);
                                 });
                             } catch (Throwable ex) {
-                                log.error("error processing", ex);
+                                log.error("error processing record {}", s.uuid, ex);
                                 l.message("Error processing references for " + s.uuid + " error: " + ex.getMessage());
                                 listen.error(ex);
                             }
                         });
                     });
+                    out.println();
+                    out.println("report completed at " + (new Date()));
                 } catch (Exception ex) {
                     l.message("Error processing substance references " + ex.getMessage());
                 }
@@ -164,38 +163,41 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
     5) name as primary name
     6) name, any
      */
-    public void fixSubstanceReference(Substance startingSubstance, Consumer<String> missingMessages, Consumer<String> multipleMatchMessages) {
+    public void fixSubstanceReference(Substance startingSubstance, Consumer<String> actionRecorder) {
         AtomicBoolean substanceNeedsToSave = new AtomicBoolean(false);
         startingSubstance.relationships.forEach(r -> {
-            SubstanceReferenceState state = resolveSubstanceReference(r.relatedSubstance, multipleMatchMessages);
+            SubstanceReferenceState state = resolveSubstanceReference(r.relatedSubstance, actionRecorder);
             if (state == SubstanceReferenceState.JUST_RESOLVED) {
+                String message = String.format("Referenced substance %s for relationship of type %s was found on substance %s!",
+                        r.relatedSubstance.refuuid, r.type, startingSubstance.uuid.toString());
+                actionRecorder.accept(message);
                 substanceNeedsToSave.set(true);
             } else if (state == SubstanceReferenceState.UNRESOLVABLE) {
                 String message = String.format("Referenced substance %s for relationship of type %s was not found on substance %s!",
                         r.relatedSubstance.refuuid, r.type, startingSubstance.uuid.toString());
-                missingMessages.accept(message);
+                actionRecorder.accept(message);
             }
             if (r.mediatorSubstance != null) {
-                state = resolveSubstanceReference(r.mediatorSubstance, multipleMatchMessages);
+                state = resolveSubstanceReference(r.mediatorSubstance, actionRecorder);
                 if (state == SubstanceReferenceState.JUST_RESOLVED) {
                     substanceNeedsToSave.set(true);
                 } else if (state == SubstanceReferenceState.UNRESOLVABLE) {
                     String message = String.format("Mediator substance %s for relationship of type %s was not found on substance %s!",
                             r.relatedSubstance.refuuid, r.type, startingSubstance.uuid.toString());
-                    missingMessages.accept(message);
+                    actionRecorder.accept(message);
                 }
             }
         });
         List<Tuple<GinasAccessControlled, SubstanceReference>> refs = startingSubstance.getDependsOnSubstanceReferencesAndParents();
         refs.forEach(r -> {
-            SubstanceReferenceState state = resolveSubstanceReference(r.v(), multipleMatchMessages);
+            SubstanceReferenceState state = resolveSubstanceReference(r.v(), actionRecorder);
             if (state == SubstanceReferenceState.JUST_RESOLVED) {
                 substanceNeedsToSave.set(true);
             }
             if (state == SubstanceReferenceState.UNRESOLVABLE) {
                 String message = String.format("Referenced substance %s for %s of %s was not found!", r.v().refuuid, r.k().getClass().getName(),
                         startingSubstance.uuid.toString());
-                missingMessages.accept(message);
+                actionRecorder.accept(message);
             }
         });
         if (substanceNeedsToSave.get()) {
@@ -219,7 +221,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
     }
 
     public SubstanceReferenceState resolveSubstanceReference(SubstanceReference substanceReference,
-                                                             Consumer<String> multipleMatchMessages) {
+                                                             Consumer<String> actionRecorder) {
         SubstanceReferenceState substanceReferenceState = SubstanceReferenceState.UNRESOLVABLE;
         if (substanceReference == null) {
             log.info("resolveSubstanceReference called with null parameter");
@@ -227,6 +229,13 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
         }
         if (substanceRepository.exists(substanceReference)) {
             return SubstanceReferenceState.ALREADY_RESOLVED;
+        }
+        Substance idMatch= substanceRepository.getOne(UUID.fromString(substanceReference.refuuid));
+        if( idMatch!=null) {
+            log.trace("found substance by UUID");
+            substanceReference.wrappedSubstance=idMatch;
+            substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
+            return substanceReferenceState;
         }
         boolean currentReferenceResolved = false;
         List<Substance> uuidMatches = refUuidCodeSystem != null && refUuidCodeSystem.length() > 0 ? ValidationUtils.findSubstancesByCode(refUuidCodeSystem, substanceReference.refuuid,
@@ -236,7 +245,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             String message = String.format("More than one record found with UUID code %s and code system %s. Using first matching record",
                     substanceReference.refuuid, refUuidCodeSystem);
             log.warn(message);
-            multipleMatchMessages.accept(message);
+            actionRecorder.accept(message);
             substanceReference.refuuid = uuidMatches.get(0).uuid.toString();
             currentReferenceResolved = true;
             substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
@@ -244,6 +253,9 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             substanceReference.refuuid = uuidMatches.get(0).uuid.toString();
             currentReferenceResolved = true;
             substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
+            String message = String.format("Resolved record UUID %s by code (code system %s)",
+                    substanceReference.refuuid, refUuidCodeSystem);
+            actionRecorder.accept(message);
         }
         if (!currentReferenceResolved && substanceReference.approvalID != null && substanceReference.approvalID.length() > 0) {
             Substance approvalIdMatch = substanceRepository.findByApprovalID(substanceReference.approvalID);
@@ -251,6 +263,9 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                 substanceReference.refuuid = approvalIdMatch.uuid.toString();
                 currentReferenceResolved = true;
                 substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
+                String message = String.format("Resolved record UUID %s by Approval ID %s",
+                        substanceReference.refuuid, substanceReference.approvalID);
+                actionRecorder.accept(message);
             } else {
                 List<Substance> approvalIdMatches = ValidationUtils.findSubstancesByCode(this.refApprovalIdCodeSystem,
                         substanceReference.approvalID, transactionManager, searchService);
@@ -259,11 +274,14 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                         String message = String.format("More than one record found with Approval ID code %s and code system %s. Using first matching record",
                                 substanceReference.refuuid, refApprovalIdCodeSystem);
                         log.warn(message);
-                        multipleMatchMessages.accept(message);
+                        actionRecorder.accept(message);
                     }
                     substanceReference.refuuid = approvalIdMatches.get(0).uuid.toString();
                     currentReferenceResolved = true;
                     substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
+                    String message = String.format("Resolved record UUID %s/Approval ID %s by code (code system %s)",
+                            substanceReference.refuuid, substanceReference.approvalID, refApprovalIdCodeSystem);
+                    actionRecorder.accept(message);
                 }
             }
         }
@@ -276,10 +294,13 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                     String message = String.format("More than one record found with Name %s. Using first matching record",
                             substanceReference.refPname);
                     log.warn(message);
-                    multipleMatchMessages.accept(message);
+                    actionRecorder.accept(message);
                 }
                 substanceReference.refuuid = nameMatches.get(0).uuid.toString();
                 substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
+                String message = String.format("Resolved record UUID %s/name %s by name",
+                        substanceReference.refuuid, substanceReference.refPname);
+                actionRecorder.accept(message);
             }
         }
 
