@@ -6,6 +6,7 @@ import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.models.Text;
 import ix.core.models.Value;
+import ix.ginas.utils.ChemUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -213,23 +214,37 @@ public class StructureProcessor {
             }
         }
 
+        
+        CachedSupplier<Map<Integer,Integer>> ringsizeMaker= CachedSupplier.of(()->ChemUtils.getSmallestRingSizeForEachBond(mol, 9));
+        
 
         for(DoubleBondStereochemistry doubleBondStereochemistry : mol.getDoubleBondStereochemistry()) {
-            Bond doubleBond = doubleBondStereochemistry.getDoubleBond();
+        	Bond doubleBond = doubleBondStereochemistry.getDoubleBond();
 
-            // TODO: this is actually a mistake, as it's fine to have some EZ bonds in rings
-            // > 7 atoms. This needs to be more specific, asking based on ring size.
-            if (!doubleBondStereochemistry.getStereo().equals(DoubleBondStereochemistry.DoubleBondStereo.NONE)) {
-            	 boolean isRing=false;
-                 try{
-                 	isRing=doubleBond.isInRing();
-                 }catch(Exception e){
-                 	e.printStackTrace();
-                 }
-                 if(!isRing){
-                ez++;
-            }
-        }
+
+        	if (!doubleBondStereochemistry.getStereo().equals(DoubleBondStereochemistry.DoubleBondStereo.NONE)) {
+        		boolean isRing=false;
+        		try{
+        			// This will only count a bond as a "ring bond" if the minimum ring size
+        			// that that bond shows up in is less than 8 bonds long. Otherwise it's
+        			// not considered a true ring bond and the double bond can be either E or Z.
+        			//
+        			// Note: this is still a simplification as there are other geometric effects which 
+        			// can still make some double bonds ineligible for both E and Z.
+        			if(doubleBond.isInRing()) {
+	        			int smallestRing= ringsizeMaker.get().getOrDefault(mol.indexOf(doubleBond),999);
+	        			if(smallestRing<8) {
+	        				isRing=true;
+	        			}
+        			}
+        		}catch(Exception e){
+        			log.warn("Trouble detecting ring geometry for EZ calculation");
+        		}
+
+        		if(!isRing){                	 
+        			ez++;
+        		}
+        	}
         }
 
         Chemical stdMol = mol.copy();
@@ -329,6 +344,28 @@ public class StructureProcessor {
     }
 
 
+    private boolean isBondDiazo(Bond doubleBond) {
+        log.trace("in isBondDiazo");
+        if(doubleBond.getAtom1().getAtomicNumber()!=7 || doubleBond.getAtom2().getAtomicNumber()!=7) {
+            return false;
+        }
+        //loop over all bonds connected to either atom of the double bond
+        List bondSet = doubleBond.getAtom1().getBonds();
+        bondSet.addAll(doubleBond.getAtom2().getBonds());
+        
+        for( Object b : bondSet) {
+            Bond bond = (Bond)b;
+            if( bond.equals(doubleBond) ) continue; //skip the starting bonds
+            if( (bond.getAtom1() != doubleBond.getAtom1() && bond.getAtom1() != doubleBond.getAtom2() 
+                    && bond.getBondType()==Bond.BondType.DOUBLE && bond.getAtom1().getAtomicNumber()==7) 
+                    || (bond.getAtom2() != doubleBond.getAtom1() && bond.getAtom2() != doubleBond.getAtom2() 
+                    && bond.getBondType()==Bond.BondType.DOUBLE && bond.getAtom2().getAtomicNumber()==7) ){
+                log.trace("bond IS part of a diazo system");
+                return true;
+            }
+        }
+        return false;
+    }
     public static Chemical polymerSimplify(Chemical chem){
         try{
             String nmol = Arrays.stream(chem.toMol().split("\n"))

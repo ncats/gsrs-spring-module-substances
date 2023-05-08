@@ -25,6 +25,24 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, CodeSystemUrlGenerator {
 
+/*
+    1) Put a file such as "codeSystem.json" in the resources folder and/or the classpath.
+       The JSON looks like this:
+       [{"codeSystem":"XYZ","url":"http://some.url.com/$CODE$"},  {...}]
+    2) Configure like so:
+    gsrs.entityProcessors +=  {
+        "class":"ix.ginas.models.v1.Substance",
+        "processor":"gsrs.module.substance.processors.CodeProcessor",
+        "with": {
+            "class":"gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator",
+            "json":{
+                "filename": "codeSystem.json"
+            }
+        }
+    }
+*/
+
+
 	// This ensures that the url is parsable from classpath protocol even
 	// if there's no registered handler for classpath
 	private static URL getUrl(String fname) throws MalformedURLException {

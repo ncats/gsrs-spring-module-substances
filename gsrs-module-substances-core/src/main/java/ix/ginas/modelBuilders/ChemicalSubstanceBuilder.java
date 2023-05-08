@@ -4,6 +4,7 @@ import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.ginas.models.v1.*;
 
+import java.util.ArrayList;
 import java.util.function.Supplier;
 
 public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalSubstance, ChemicalSubstanceBuilder> {
@@ -80,5 +81,9 @@ public class ChemicalSubstanceBuilder extends AbstractSubstanceBuilder<ChemicalS
     }
     public ChemicalSubstanceBuilder setStructure(GinasChemicalStructure structure){
         return andThen(s-> { s.setStructure(structure);});
+    }
+
+    public ChemicalSubstanceBuilder clearMoieties() {
+        return andThen(s-> {s.moieties= new ArrayList<>();});
     }
 }

@@ -7,6 +7,7 @@ import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.services.ReferenceEntityService;
 import gsrs.repository.EditRepository;
 import gsrs.service.GsrsEntityService;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.models.v1.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -49,4 +50,5 @@ public class ReferenceController extends EtagLegacySearchEntityController<Refere
     protected Optional<EditRepository> editRepository() {
         return Optional.of(editRepository);
     }
+
 }
