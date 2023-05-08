@@ -3,6 +3,7 @@ package example;
 import gsrs.*;
 import gsrs.cv.EnableControlledVocabulary;
 import gsrs.module.substance.indexers.DeprecatedIndexValueMaker;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -28,6 +29,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @EnableGsrsScheduler
 @EnableGsrsBackup
 @EnableControlledVocabulary
+@Slf4j
 public class GsrsModuleSubstanceApplication {
 
     @Bean
@@ -53,5 +55,6 @@ public class GsrsModuleSubstanceApplication {
     public static void main(String[] args) {
         SpringApplication.run(GsrsModuleSubstanceApplication.class, args);
     }
+
 
 }

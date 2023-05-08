@@ -422,7 +422,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
             TimeoutException, IOException {
         String q = "root_protein_subunits_sequence:" + su.sequence;
         SearchRequest request = new SearchRequest.Builder()
-                .kind(ProteinSubstance.class)
+                .kind(Substance.class)
                 .fdim(0)
                 .query(q)
                 .top(Integer.MAX_VALUE)
