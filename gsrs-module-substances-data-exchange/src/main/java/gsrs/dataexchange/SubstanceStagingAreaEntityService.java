@@ -1,6 +1,8 @@
 package gsrs.dataexchange;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.springUtils.AutowireHelper;
@@ -9,23 +11,26 @@ import gsrs.stagingarea.service.StagingAreaEntityService;
 import gsrs.indexer.IndexValueMakerFactory;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.service.GsrsEntityService;
+import gsrs.validator.DefaultValidatorConfig;
+import gsrs.validator.GsrsValidatorFactory;
+import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
-import ix.core.validator.ValidationMessage;
-import ix.core.validator.ValidationResponse;
+import ix.core.validator.*;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.ValidatorFactory;
 import ix.ginas.utils.validation.validators.DefinitionalDependencyValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 
-import java.lang.reflect.Field;
+import javax.annotation.PostConstruct;
 import java.util.*;
 
 @Slf4j
@@ -53,9 +58,32 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         return JsonSubstanceFactory.makeSubstance(json);
     }
 
+    @Autowired
+    private GsrsValidatorFactory validatorFactoryService;
+
+    private CachedSupplier<ValidatorFactory> validatorFactory;
+    CachedSupplierGroup ENTITY_SERVICE_INITIALIZATION_GROUP = new CachedSupplierGroup();
+
+    private boolean initializedValidator = false;
+    @PostConstruct
+    private void initValidator(){
+        //need this in a post construct so the validator factory service is injected
+        //This is added to the initization Group so that we can reset this in tests
+
+        //This cache might be unncessary as of now the call to newFactory isn't cached
+        //by tests where the return value could change over time?  but keep it here anyway for now...
+        validatorFactory = ENTITY_SERVICE_INITIALIZATION_GROUP.add(()->validatorFactoryService.newFactory("substances"));
+    }
+
+    private final ValidatorConfig.METHOD_TYPE validationMethodType = ValidatorConfig.METHOD_TYPE.BATCH;
+
     @Override
     public ValidationResponse<Substance> validate(Substance substance) {
         try {
+            if(!initializedValidator) {
+                initValidator();
+                initializedValidator=true;
+            }
             //need to remove the UUID or errors occur on the deserialization process within validation
             UUID originalUuid=null;
             boolean ignoreMessageAboutUuid=false;
@@ -64,7 +92,14 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
                 ignoreMessageAboutUuid=true;
             }
             substance.uuid=null;
-            ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode());
+            Validator<Substance> validator = validatorFactory.getSync().createValidatorFor(substance, null,
+                    validationMethodType, ValidatorCategory.CATEGORY_ALL());
+
+            ValidationResponse<Substance> response = new ValidationResponse<>(substance);
+            ValidatorCallback callback = createCallbackFor(substance, response, validationMethodType);
+            validator.validate(substance, null, callback);
+            callback.complete();
+            //ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode(), ValidatorCategory.);
             //treat one validator separately
             DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
             AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
@@ -114,7 +149,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     public GsrsEntityService.ProcessResult<Substance> persistEntity(Substance substance, boolean isNew) {
         log.trace("saving substance {} version {} total names: {}", substance.getUuid(), substance.version, substance.names.size());
         try {
-            GsrsEntityService.ProcessResult result;
+            GsrsEntityService.ProcessResult<Substance> result;
             if (isNew) {
                 GsrsEntityService.CreationResult<Substance> creationResult = substanceEntityService.createEntity(substance.toFullJsonNode(),
                         true);
@@ -126,7 +161,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             log.trace("result of save {}", result.toString());
             if (result.getValidationResponse() != null) {
                 result.getValidationResponse().getValidationMessages().forEach(m ->
-                        log.trace("message: {}; type: {}", ((ValidationMessage) m).getMessage(), ((ValidationMessage) m).getMessageType().name())
+                        log.trace("message: {}; type: {}",  m.getMessage(), m.getMessageType().name())
                 );
             }
 
@@ -163,7 +198,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         if( substance.getUuid()==null) {
             log.trace("assigned id {}", substance.getOrGenerateUUID());
         }
-        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(substance);
+        EntityUtils.EntityWrapper<Substance> wrapper = EntityUtils.EntityWrapper.of(substance);
         log.trace("create wrapper with kind {} - id field {}", wrapper.getKind(), wrapper.getEntityInfo().getIDFieldInfo().get());
         UUID reindexUuid = UUID.randomUUID();
         ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, wrapper.getKey(), Optional.of(wrapper),true);
@@ -171,7 +206,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         log.info("submitted object for indexing");
     }
 
-    private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
+    /*private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
 
         try {
             Field ieField = EntityUtils.EntityWrapper.class.getField("ei");
@@ -183,5 +218,42 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         } catch (IllegalAccessException | NoSuchFieldException e) {
             log.error("Error accessing fields", e);
         }
+    }
+*/
+    protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, DefaultValidatorConfig.METHOD_TYPE type) {
+        return new ValidatorCallback() {
+            @Override
+            public void addMessage(ValidationMessage message) {
+                response.addValidationMessage(message);
+            }
+
+            @Override
+            public void setInvalid() {
+                response.setValid(false);
+            }
+
+            @Override
+            public void setValid() {
+                response.setValid(true);
+            }
+
+            @Override
+            public void haltProcessing() {
+
+            }
+
+            @Override
+            public void addMessage(ValidationMessage message, Runnable appyAction) {
+                response.addValidationMessage(message);
+                appyAction.run();
+            }
+
+            @Override
+            public void complete() {
+                if(response.hasError()){
+                    response.setValid(false);
+                }
+            }
+        };
     }
 }

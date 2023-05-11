@@ -1559,4 +1559,103 @@ public class ValidationUtils {
     }
 
 
+	public static List<Substance> findSubstancesByCode(String codeSystem, String codeValue, PlatformTransactionManager transactionManager,
+													   SubstanceLegacySearchService searchService) {
+		List<Substance> candidates = new ArrayList<>();
+		try {
+			String codeSystemToSearch = codeSystem.replace(" ", "\\ ");
+			String searchItem = "root_codes_" + codeSystemToSearch + ":\""
+					+ codeValue + "\"";
+
+			log.trace("In findSubstancesByCode, query: {}", searchItem);
+			TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+			candidates = (List<Substance>) transactionSearch.execute(ts
+					-> {
+				List<String> nameValues = new ArrayList<>();
+				SearchRequest request = new SearchRequest.Builder()
+						.kind(Substance.class)
+						.fdim(0)
+						.query(searchItem)
+						.top(Integer.MAX_VALUE)
+						.build();
+				log.trace("built query: " + request.getQuery());
+				try {
+					SearchOptions options = new SearchOptions();
+					SearchResult sr = searchService.search(request.getQuery(), options);
+
+					//this might not be necessary anymore
+					sr.waitForFinish();
+
+					List<Object> fut = sr.getMatches();
+					List<Substance> hits = fut.stream()
+							.filter(o -> o instanceof Substance)//added 17 February 2023 MAM to prevent ClassCastException
+							.filter(s->((Substance) s).codes.stream().anyMatch(c->c.code.equalsIgnoreCase(codeValue)&&c.codeSystem.equalsIgnoreCase(codeSystem)))
+							.map(s ->(Substance)s)
+							.collect(Collectors.toList());
+					return hits;
+				} catch (Exception ex) {
+					log.error("error during search");
+					ex.printStackTrace();
+				}
+				return nameValues;
+			});
+		} catch (Exception ex) {
+			log.error( "Error running query", ex);
+			ex.printStackTrace();
+			Sneak.sneakyThrow(ex);
+		}
+		return candidates;
+	}
+
+	public static List<Substance> findSubstancesByName(String name, PlatformTransactionManager transactionManager,
+													   SubstanceLegacySearchService searchService) {
+		List<Substance> candidates = new ArrayList<>();
+		try {
+			String searchItem = "root_names_name:\""
+					+ name + "\"";
+			log.trace("In findSubstancesByName, query: {}", searchItem);
+			TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+			candidates = (List<Substance>) transactionSearch.execute(ts
+					-> {
+				SearchRequest request = new SearchRequest.Builder()
+						.kind(Substance.class)
+						.fdim(0)
+						.query(searchItem)
+						.top(Integer.MAX_VALUE)
+						.build();
+				log.trace("built query: " + request.getQuery());
+				try {
+					SearchOptions options = new SearchOptions();
+					SearchResult sr = searchService.search(request.getQuery(), options);
+
+					//this might not be necessary anymore
+					sr.waitForFinish();
+
+					List<Object> fut = sr.getMatches();
+					List<Substance> nameMatches = fut.stream()
+							.filter(o -> o instanceof Substance)//added 17 February 2023 MAM to prevent ClassCastException
+							.map(s ->(Substance)s)
+							.collect(Collectors.toList());
+					if(nameMatches.size()>0) {
+						List<Substance> displays = nameMatches.stream()
+								.filter(s->((Substance) s).names.stream().anyMatch(n->n.name.equalsIgnoreCase(name)&&n.displayName))
+								.collect(Collectors.toList());
+						if(!displays.isEmpty()){
+							return displays;
+						}
+					}
+					return nameMatches;
+				} catch (Exception ex) {
+					log.error("error during search");
+					ex.printStackTrace();
+				}
+				return Collections.EMPTY_LIST;
+			});
+		} catch (Exception ex) {
+			log.error( "Error running query", ex);
+			ex.printStackTrace();
+			Sneak.sneakyThrow(ex);
+		}
+		return candidates;
+	}
 }
