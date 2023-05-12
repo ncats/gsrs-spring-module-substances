@@ -115,7 +115,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             response2.setNewObject(response.getNewObject());
             return response2;
         } catch (Exception ex) {
-            log.error("Error validating substance", ex);
+            log.warn("Error validating substance", ex);
         }
         return null;
     }
@@ -245,7 +245,11 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             @Override
             public void addMessage(ValidationMessage message, Runnable appyAction) {
                 response.addValidationMessage(message);
-                appyAction.run();
+                if( appyAction!=null) {
+                    appyAction.run();
+                } else {
+                    log.warn("in addMessage, appyAction is null");
+                }
             }
 
             @Override

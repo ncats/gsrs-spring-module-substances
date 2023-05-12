@@ -110,7 +110,25 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
         }
         return srefs;
     }
-    
+
+
+	@Override
+	@JsonIgnore
+	public List<Tuple<GinasAccessControlled,SubstanceReference>> getSubstanceReferencesAndParentsBeyondDependsOn(){
+		List<Tuple<GinasAccessControlled,SubstanceReference>> srefs=new ArrayList<>();
+		srefs.addAll(super.getSubstanceReferencesAndParentsBeyondDependsOn());
+		if(polymer.monomers!=null) {
+			polymer.monomers.forEach(s -> {
+				if (s!=null && s.defining!=null && s.monomerSubstance !=null) {
+					srefs.add(Tuple.of(s,s.monomerSubstance));
+				}
+			});
+		}
+		if(this.polymer.classification !=null && this.polymer.classification.parentSubstance !=null){
+			srefs.add(Tuple.of(this.polymer.classification,this.polymer.classification.parentSubstance));
+		}
+		return srefs;
+	}
 
 	@Override
 	@JsonIgnore

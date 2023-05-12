@@ -62,7 +62,13 @@ public class StructurallyDiverseSubstance extends Substance implements GinasSubs
         }
         return srefs;
     }
-    
+
+    @Override
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getSubstanceReferencesAndParentsBeyondDependsOn(){
+        return this.getDependsOnSubstanceReferencesAndParents();
+    }
+
     @Override
     @JsonIgnore
     public List<SubstanceReference> getDependsOnSubstanceReferences(){

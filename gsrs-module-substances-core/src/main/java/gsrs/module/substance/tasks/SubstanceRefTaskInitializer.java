@@ -188,7 +188,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                 }
             }
         });
-        List<Tuple<GinasAccessControlled, SubstanceReference>> refs = startingSubstance.getDependsOnSubstanceReferencesAndParents();
+        List<Tuple<GinasAccessControlled, SubstanceReference>> refs = startingSubstance.getSubstanceReferencesAndParentsBeyondDependsOn() ;
         refs.forEach(r -> {
             SubstanceReferenceState state = resolveSubstanceReference(r.v(), actionRecorder);
             if (state == SubstanceReferenceState.JUST_RESOLVED) {
@@ -214,7 +214,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                         }
                     }
                 } catch (Exception e) {
-                    log.error("Error saving substance", e);
+                    log.error("Error saving substance {}", startingSubstance.uuid, e);
                 }
             });
         }
@@ -227,19 +227,24 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             log.info("resolveSubstanceReference called with null parameter");
             return substanceReferenceState;
         }
-        if (substanceRepository.exists(substanceReference)) {
+        if (substanceRepository.exists(substanceReference) && substanceReference.refuuid!=null && substanceReference.refuuid.length()>0
+                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)) !=null) {
             return SubstanceReferenceState.ALREADY_RESOLVED;
         }
-        Substance idMatch= substanceRepository.getOne(UUID.fromString(substanceReference.refuuid));
-        if( idMatch!=null && idMatch.uuid!=null && idMatch.uuid.toString().equals(substanceReference.refuuid)) {
+        //Substance idMatch= substanceRepository.getOne(UUID.fromString(substanceReference.refuuid));
+        EntityFetcher fetcher = EntityFetcher.of(EntityUtils.Key.of(Substance.class, substanceReference.refuuid));
+        Optional<Substance> idMatch =fetcher.getIfPossible();
+        if( idMatch.isPresent() && idMatch.get().uuid!=null && idMatch.get().uuid.toString().equals(substanceReference.refuuid)) {
             log.trace("found substance by UUID");
-            substanceReference.wrappedSubstance=idMatch;
+            substanceReference.wrappedSubstance=idMatch.get();
             substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
             return substanceReferenceState;
         }
         boolean currentReferenceResolved = false;
-        List<Substance> uuidMatches = refUuidCodeSystem != null && refUuidCodeSystem.length() > 0 ? ValidationUtils.findSubstancesByCode(refUuidCodeSystem, substanceReference.refuuid,
-                transactionManager, searchService) : Collections.emptyList();
+        List<Substance> uuidMatches = refUuidCodeSystem != null && refUuidCodeSystem.length() > 0
+                    && substanceReference.refuuid!=null && substanceReference.refuuid.length() > 0
+                ? ValidationUtils.findSubstancesByCode(refUuidCodeSystem, substanceReference.refuuid, transactionManager, searchService)
+                : Collections.emptyList();
 
         if (uuidMatches.size() > 1) {
             String message = String.format("More than one record found with UUID code %s and code system %s. Using first matching record",
@@ -247,10 +252,12 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             log.warn(message);
             actionRecorder.accept(message);
             substanceReference.refuuid = uuidMatches.get(0).uuid.toString();
+            substanceReference.wrappedSubstance=uuidMatches.get(0);
             currentReferenceResolved = true;
             substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
         } else if (uuidMatches.size() == 1) {
             substanceReference.refuuid = uuidMatches.get(0).uuid.toString();
+            substanceReference.wrappedSubstance=uuidMatches.get(0);
             currentReferenceResolved = true;
             substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
             String message = String.format("Resolved record UUID %s by code (code system %s)",
@@ -261,6 +268,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             Substance approvalIdMatch = substanceRepository.findByApprovalID(substanceReference.approvalID);
             if (approvalIdMatch != null) {
                 substanceReference.refuuid = approvalIdMatch.uuid.toString();
+                substanceReference.wrappedSubstance=approvalIdMatch;
                 currentReferenceResolved = true;
                 substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
                 String message = String.format("Resolved record UUID %s by Approval ID %s",
@@ -277,6 +285,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                         actionRecorder.accept(message);
                     }
                     substanceReference.refuuid = approvalIdMatches.get(0).uuid.toString();
+                    substanceReference.wrappedSubstance=approvalIdMatches.get(0);
                     currentReferenceResolved = true;
                     substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
                     String message = String.format("Resolved record UUID %s/Approval ID %s by code (code system %s)",
@@ -297,13 +306,13 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                     actionRecorder.accept(message);
                 }
                 substanceReference.refuuid = nameMatches.get(0).uuid.toString();
+                substanceReference.wrappedSubstance= nameMatches.get(0);
                 substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
                 String message = String.format("Resolved record UUID %s/name %s by name",
                         substanceReference.refuuid, substanceReference.refPname);
                 actionRecorder.accept(message);
             }
         }
-
         return substanceReferenceState;
     }
 

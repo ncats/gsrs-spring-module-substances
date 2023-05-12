@@ -52,13 +52,14 @@ public class DefinitionalDependencyValidator extends AbstractValidatorPlugin<Sub
         if( !missing.isEmpty()){
             ValidationResponse<Substance> response= new ValidationResponse<>();
             missing.forEach(i->{
-                ValidationMessage message = GinasProcessingMessage.ERROR_MESSAGE(String.format("Substance %s (ID: %s), listed as %s is missing",
+                ValidationMessage message = GinasProcessingMessage.WARNING_MESSAGE(String.format("Substance %s (ID: %s), listed as %s is missing",
                                 i.getRefPname(), i.getRefuuid(), i.getRole().toLowerCase()));
                 response.addValidationMessage(message);
             });
                 return response;
         }
         return new ValidationResponse<Substance>();
+        //This validator is designed to be run separately
         //return super.validate(objnew, objold);
     }
 
