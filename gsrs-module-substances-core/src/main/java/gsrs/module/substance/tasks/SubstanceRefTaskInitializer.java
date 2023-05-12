@@ -188,7 +188,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                 }
             }
         });
-        List<Tuple<GinasAccessControlled, SubstanceReference>> refs = startingSubstance.getSubstanceReferencesAndParentsBeyondDependsOn() ;
+        List<Tuple<GinasAccessControlled, SubstanceReference>> refs = getBaseRefs(startingSubstance);
         refs.forEach(r -> {
             SubstanceReferenceState state = resolveSubstanceReference(r.v(), actionRecorder);
             if (state == SubstanceReferenceState.JUST_RESOLVED) {
@@ -228,7 +228,9 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             return substanceReferenceState;
         }
         if (substanceRepository.exists(substanceReference) && substanceReference.refuuid!=null && substanceReference.refuuid.length()>0
-                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)) !=null) {
+                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)) !=null
+                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).uuid !=null
+                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).uuid.toString().equals(substanceReference.refuuid)) {
             return SubstanceReferenceState.ALREADY_RESOLVED;
         }
         //Substance idMatch= substanceRepository.getOne(UUID.fromString(substanceReference.refuuid));
@@ -329,5 +331,13 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
         return new PrintStream(
                 new BufferedOutputStream(Files.newOutputStream(writeFile.toPath())),
                 false, "UTF-8");
+    }
+
+    private List<Tuple<GinasAccessControlled, SubstanceReference>> getBaseRefs(Substance substance){
+        //at the moment, polymers are the old substance where calling the correct method makes a difference
+        if(substance instanceof PolymerSubstance){
+            return ((PolymerSubstance)substance).getSubstanceReferencesAndParentsBeyondDependsOn();
+        }
+        return substance.getSubstanceReferencesAndParentsBeyondDependsOn();
     }
 }
