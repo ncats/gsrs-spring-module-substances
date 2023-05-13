@@ -1193,6 +1193,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                                 imageInfo.getImageData().length, formatForResize, size);
                         resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
                     }
+                    if( resized==null || resized.length==0){
+                        return new ResponseEntity<>("No image found where expected!", HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
                     log.trace("resized size {}", resized.length);
                     HttpHeaders headers = new HttpHeaders();
 

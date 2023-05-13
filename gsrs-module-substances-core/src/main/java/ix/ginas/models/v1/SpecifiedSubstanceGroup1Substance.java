@@ -56,8 +56,13 @@ public class SpecifiedSubstanceGroup1Substance extends Substance implements Gina
 		}
         return srefs;
     }
-    
+
     @Override
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getSubstanceReferencesAndParentsBeyondDependsOn() {
+        return this.getDependsOnSubstanceReferencesAndParents();
+    }
+     @Override
     @JsonIgnore
     public List<SubstanceReference> getDependsOnSubstanceReferences(){
         List<SubstanceReference> sref = new ArrayList<SubstanceReference>();

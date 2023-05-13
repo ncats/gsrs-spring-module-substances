@@ -10,6 +10,9 @@ import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
@@ -31,11 +34,24 @@ public class NameExtractorActionFactory extends BaseActionFactory {
             String language = params.get("lang") != null ? (String) params.get("lang") : DEFAULT_LANGUAGE;
             Boolean isDisplayName = params.get("displayName") != null && params.get("displayName").toString().equalsIgnoreCase("TRUE");
 
+
             if (splitNames) {
+                log.trace("splitNames true");
                 for (String sn : suppliedName.trim().split("\n")) {
                     if (sn.isEmpty()) continue;
+
                     //check for duplicates
                     sn = sn.trim();
+                    List<String> nameSegments = new ArrayList<>();
+                    if(looksLikeGsrsExportedName(sn, nameSegments)){
+                        //parsing as name exported from GSRS with pipes
+                        log.trace("exported from GSRS");
+                        sn=nameSegments.get(0);
+                        language=nameSegments.get(1);
+                        if( nameSegments.size()>2 && nameSegments.get(2)!=null && nameSegments.get(2).length()>0){
+                            isDisplayName=Boolean.parseBoolean(nameSegments.get(2));
+                        }
+                    }
                     String finalSn = sn; //weird limitation of lambdas in Java
                     if(sub.build().names.stream().anyMatch(n->n.name.equals(finalSn))){
                         log.info(String.format("duplicate name '%s' skipped", sn));
@@ -100,4 +116,35 @@ public class NameExtractorActionFactory extends BaseActionFactory {
                 .build();
     }
 
+    public static boolean looksLikeGsrsExportedName(String name, List<String> nameSegments){
+        if( name==null || name.length()<4) {
+            return false;
+        }
+        //crude heuristic
+        String lastTen= name;
+        int lastSegment = name.length()<10 ? 0 : name.length() -10;
+        lastTen=name.substring(lastSegment,  Math.max(name.length(), name.length()-lastSegment));
+        //looking for cases where there are TWO pipe delimiters, separated by 2 or more chars
+        if(lastTen.lastIndexOf("|") > 0 && lastTen.lastIndexOf("|", lastTen.lastIndexOf("|") -2) > 0){
+            String[] segments = name.split("\\|");
+            if( segments.length >2){
+                String possibleBoolean = segments[segments.length-1];//this can be empty so no point in checking
+                String possibleLang = segments[segments.length-2];
+                if(possibleLang.length()==2 || possibleLang.length()==3){
+                    //we might also check the possible language against the CV but the file may contain a value not in the cv
+                    nameSegments.addAll(Arrays.asList(segments));
+                    return true;
+                }
+            } else if(segments.length==2){
+                String possibleLang = segments[segments.length-1];
+                if(possibleLang.length()==2 || possibleLang.length()==3){
+                    //we might also check the possible language against the CV but the file may contain a value not in the cv
+                    nameSegments.addAll(Arrays.asList(segments));
+                    return true;
+                }
+            }
+
+        }
+        return false;
+    }
 }
