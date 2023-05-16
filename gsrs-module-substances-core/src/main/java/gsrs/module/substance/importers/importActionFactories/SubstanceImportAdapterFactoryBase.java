@@ -21,7 +21,6 @@ import ix.ginas.importers.InputFieldStatistics;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
-//import springfox.documentation.spring.web.json.Json;
 
 import java.io.InputStream;
 import java.util.*;
