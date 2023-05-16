@@ -183,13 +183,18 @@ public class ProcessingJob extends LongBaseModel {
         if(keywordLabelMap !=null) {
             return;
         }
-        keywordLabelMap = new HashMap<>();
-        keywordTermMap = new HashMap<>();
+        HashMap<String,Keyword> tKeywordLabelMap = new HashMap<>();
+        HashMap<String,Keyword> tkeywordTermMap = new HashMap<>();
 
+        
         for (Keyword k : keys) {
-            keywordLabelMap.put(k.label, k);
-            keywordTermMap.put(k.term, k);
+        	tKeywordLabelMap.put(k.label, k);
+            tkeywordTermMap.put(k.term, k);
         }
+        
+        this.keywordLabelMap=tKeywordLabelMap;
+        this.keywordTermMap=tkeywordTermMap;
+        
 
     }
 

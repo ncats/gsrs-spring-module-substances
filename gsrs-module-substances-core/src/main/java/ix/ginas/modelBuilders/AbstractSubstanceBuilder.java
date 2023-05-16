@@ -188,7 +188,12 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
 
 
     public T addProperty(Property p) {
-        return andThen(s -> {s.properties.add(p);});
+        return andThen(s -> {
+            if(p!=null) {
+                s.properties.add(p);
+                p.setOwner(s);
+            }
+        });
     }
     public T addName(Name name) {
         return andThen(s -> {
@@ -196,6 +201,53 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
         });
     }
 
+    public T addStructuralModification(StructuralModification modification){
+        Objects.requireNonNull(modification);
+
+        return andThen( s->{
+            if(s.modifications ==null){
+                Modifications mods = new Modifications();
+                s.modifications= mods;
+                //s.setModifications(mods);
+            }
+            if(s.modifications.structuralModifications ==null){
+                s.modifications.structuralModifications = new ArrayList<>();
+            }
+            s.modifications.structuralModifications.add(modification);
+        });
+    }
+
+    public T addAgentModification(AgentModification modification){
+        Objects.requireNonNull(modification);
+
+        return andThen( s->{
+            if(s.modifications ==null){
+                Modifications mods = new Modifications();
+                s.modifications= mods;
+                //s.setModifications(mods);
+            }
+            if(s.modifications.agentModifications ==null){
+                s.modifications.agentModifications = new ArrayList<>();
+            }
+            s.modifications.agentModifications.add(modification);
+        });
+    }
+
+    public T addPhysicalModification(PhysicalModification modification){
+        Objects.requireNonNull(modification);
+
+        return andThen( s->{
+            if(s.modifications ==null){
+                Modifications mods = new Modifications();
+                s.modifications= mods;
+                //s.setModifications(mods);
+            }
+            if(s.modifications.physicalModifications ==null){
+                s.modifications.physicalModifications = new ArrayList<>();
+            }
+            s.modifications.physicalModifications.add(modification);
+        });
+    }
     protected static Reference createNewPublicDomainRef(){
         Reference r = new Reference();
         r.publicDomain = true;
@@ -218,9 +270,6 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
 
     public T addCode(Code code) {
         return andThen(s ->{
-            if(code.getReferences().isEmpty()) {
-                code.addReference(getOrAddFirstReference(s) ,s);
-            }
             s.codes.add(code);
         });
     }

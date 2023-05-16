@@ -1,57 +1,84 @@
 package fda.gsrs.substance.exporters;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import ix.ginas.exporters.Exporter;
+import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
-
+import lombok.extern.slf4j.Slf4j;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 
-/**
- * Created by VenkataSaiRa.Chavali on 3/10/2017.
- */
+@Slf4j
 public class FDACodeExporter implements Exporter<Substance> {
 
-    private String primaryCodeSystem= "BDNUM";
-    BufferedWriter bw;
+    private final BufferedWriter bw;
+    private final String primaryCodeSystem;
 
-    private final boolean showPrivates;
+    private ExporterFactory.Parameters params;
+    private boolean omitPrimaryCodeSystem;
+    private String chosenApprovalIdName;
 
-    public FDACodeExporter(OutputStream os, boolean showPrivates) throws IOException{
-        this.showPrivates =showPrivates;
+    public FDACodeExporter(OutputStream os, ExporterFactory.Parameters params, String primaryCodeSystem) throws IOException{
+        this.primaryCodeSystem = primaryCodeSystem;
+        this.params = params;
+        JsonNode detailedParameters = params.detailedParameters();
+
+        omitPrimaryCodeSystem = (detailedParameters!=null
+        && detailedParameters.hasNonNull(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS)
+        && detailedParameters.get(FDARelationshipExporterFactory.PRIMARY_CODE_SYSTEM_PARAMETERS).booleanValue());
+
+        chosenApprovalIdName = (detailedParameters!=null
+        && detailedParameters.hasNonNull(FDACodeExporterFactory.APPROVAL_ID_NAME_PARAMETERS)
+        && detailedParameters.get(FDACodeExporterFactory.APPROVAL_ID_NAME_PARAMETERS).textValue().trim().length()>0)
+        ? detailedParameters.get(FDACodeExporterFactory.APPROVAL_ID_NAME_PARAMETERS).textValue().trim() : FDACodeExporterFactory.DEFAULT_APPROVAL_ID_NAME;
 
         bw = new BufferedWriter(new OutputStreamWriter(os));
-        bw.write("UNII\t" + primaryCodeSystem + "\tCode\tCode System\tCode Type\tCode Text\tComments\tisPublic");
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("UUID").append("\t");
+        sb.append(chosenApprovalIdName).append("\t");
+        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
+            sb.append(primaryCodeSystem).append("\t");
+        }
+        sb.append("Code Public/Private").append("\t");
+        sb.append("CODE").append("\t");
+        sb.append("CODE_SYSTEM").append("\t");
+        sb.append("CODE_TYPE").append("\t");
+        sb.append("CODE_TEXT").append("\t");
+        sb.append("COMMENTS").append("\t");
+
+        bw.write(sb.toString());
         bw.newLine();
     }
 
     @Override
     public void export(Substance obj) throws IOException {
-        //GSRS-699 skip substances that aren't public unless we have show private data too
-        if(!showPrivates && !obj.getAccess().isEmpty()){
-            return;
+        // The substance corresponds to one line of "scrubbed" data.
+        String priCode = null;
+        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
+            priCode = obj.codes.stream().filter(cd -> cd.codeSystem.equals(primaryCodeSystem)
+            && cd.type.equals("PRIMARY")).map(cd -> cd.code).findFirst().orElse(null);
         }
-        
-        String priCode = obj.codes.stream().filter(cd->cd.codeSystem.equals(primaryCodeSystem)).map(cd->cd.code).findFirst().orElse(null);
-        for ( Code c :obj.getCodes()){
-//            if(c.codeSystem.equals(primaryCodeSystem)){
-//                continue;
-//            }
-            boolean isPublic = c.getAccess().isEmpty();
-            if(!showPrivates && !isPublic){
-                continue;
+        String uuid = obj.getUuid().toString();
+        for (Code c : obj.getCodes()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(uuid).append("\t");
+            sb.append(obj.approvalID).append("\t");
+            if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
+                sb.append(priCode).append("\t");
             }
-            String str = obj.approvalID 
-                         + "\t" + priCode 
-                         + "\t" + c.code 
-                         + "\t" + c.codeSystem 
-                         + "\t" + c.type
-                         + "\t" + ((c.comments!=null)?c.comments:"") 
-                         + "\t" + ((c.codeText!=null)?c.codeText:"") 
-                         + "\t" + isPublic;
-            bw.write(str);
+            sb.append(
+                (c.getAccess().isEmpty())
+                ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(c.getAccess())).append("\t");
+            sb.append(c.code).append("\t");
+            sb.append(c.codeSystem).append("\t");
+            sb.append(c.type).append("\t");
+            sb.append((c.codeText != null) ? c.codeText : "").append("\t");
+            sb.append((c.comments != null) ? ExporterUtilities.replaceAllLinefeedsWithPipes(c.comments) : "");
+            bw.write(sb.toString());
             bw.newLine();
         }
     }

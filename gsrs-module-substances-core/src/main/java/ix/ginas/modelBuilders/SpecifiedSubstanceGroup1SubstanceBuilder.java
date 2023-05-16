@@ -12,6 +12,9 @@ import java.util.function.Supplier;
  */
 public class SpecifiedSubstanceGroup1SubstanceBuilder extends AbstractSubstanceBuilder<SpecifiedSubstanceGroup1Substance, SpecifiedSubstanceGroup1SubstanceBuilder> {
 
+    public SpecifiedSubstanceGroup1SubstanceBuilder(){
+
+    }
 
     public SpecifiedSubstanceGroup1SubstanceBuilder(Substance copy) {
         super(copy);

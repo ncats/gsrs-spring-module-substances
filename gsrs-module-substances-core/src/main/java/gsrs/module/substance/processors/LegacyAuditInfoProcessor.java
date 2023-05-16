@@ -47,8 +47,10 @@ public class LegacyAuditInfoProcessor implements EntityProcessor<Substance> {
 	}
 	
 	private void applyPrincipalIf(Pattern p, String s, Consumer<Principal> pconsumer){
+		log.trace("applyPrincipalIf");
 		String pname=getIf(p ,s);
-		if(pname!=null && !pname.isEmpty()){	
+		if(pname!=null && !pname.isEmpty()){
+			log.trace("going to register principal {}", pname);
 			Principal prince= principalService.registerIfAbsent(pname);
 			pconsumer.accept(prince);
 		}

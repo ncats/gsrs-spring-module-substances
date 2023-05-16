@@ -3,14 +3,12 @@ package example.name;
 import java.util.ArrayList;
 import java.util.List;
 
+import gsrs.module.substance.standardizer.ReplacementNote;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import gsrs.module.substance.standardizer.FDAFullNameStandardizer;
-import gsrs.module.substance.standardizer.NameStandardizer;
-import gsrs.module.substance.standardizer.ReplacementNote;
-import gsrs.module.substance.standardizer.ReplacementResult;
 import gsrs.module.substance.utils.NameUtilities;
+import gsrs.module.substance.standardizer.ReplacementResult;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -154,6 +152,27 @@ public class NameUtilitiesTest {
         String input = sb.toString();
         ReplacementResult r = NameUtilities.replaceUnprintables(input);
         Assertions.assertEquals("", r.getResult());
+    }
+
+    @Test
+    //by Alex Welsch:
+    public void TestMinimallyStandardizeNameNonBreakingSpace() {
+        String input = "Let's not break" + "\u00A0" + "things";
+        System.out.println(input);
+        String expected = "Let's not break things";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestMinimallyStandardizeNameNonBreakingSpaces() {
+        String input = "Preserving our " + "\u00A0" + "key  functionality";
+        System.out.println(input);
+        String expected = "Preserving our key functionality";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
     }
 
     @Test
@@ -405,5 +424,124 @@ public class NameUtilitiesTest {
         Assertions.assertEquals(expected, result.getResult());
     }
 
+    @Test
+    public void testReplaceSingleLinefeedPrecededByCertainCharactersWithBlank1() {
+        String inputName ="howdy-\r\npartner-\r\n\r\nnice day-\nfor a walk";
+        String expected ="howdy-partner-nice day-for a walk";
+        ReplacementResult result= NameUtilities.getInstance().replaceSingleLinefeedPrecededByCertainCharactersWithBlank(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void testReplaceSingleLinefeedPrecededByCertainCharactersWithBlank2() {
+        String inputName ="howdy-\r\n\r\npartner\r\n\r\nnice day-\nfor a walk";
+        String expected ="howdy-partner\r\n\r\nnice day-for a walk";
+        ReplacementResult result= NameUtilities.getInstance().replaceSingleLinefeedPrecededByCertainCharactersWithBlank(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void testReplaceSingleOrMultipleLinefeedWithSpace() {
+        String inputName =" \r\n \n\r howdy partner\n\r\r\n";
+        String expected = "     howdy partner "; // 5 leading spaces; 1 trailing
+        ReplacementResult result= NameUtilities.getInstance().replaceSingleOrMultipleLinefeedWithSpace(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void testRemoveLeadingWhitespace() {
+        String inputName =" \r\n \t \n\r howdy partner \n\r\r   \t \n";
+        String expected ="howdy partner \n\r\r   \t \n";
+        ReplacementResult result= NameUtilities.getInstance().removeLeadingWhitespace(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void testRemoveTrailingWhitespace() {
+        String inputName =" \r\n \t \n\r howdy partner \n\r\r   \t \n";
+        String expected =" \r\n \t \n\r howdy partner";
+        ReplacementResult result= NameUtilities.getInstance().removeTrailingWhitespace(inputName);
+        Assertions.assertEquals(expected, result.getResult());
+    }
+
+    @Test
+    public void TestfullyStandardizeNameWithLinefeeds() {
+        String input = " \tCopied   from pdf \r\n     in à hurry ";
+        String expected = "COPIED FROM PDF IN A HURRY";
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestMinimallyStandardizeNameWithLinefeeds() {
+        String input = " \tCopied   from pdf \r\n     in à hurry ";
+        String expected = "Copied from pdf in à hurry";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestMinimallyStandardizeNameWithLinefeedsPreceededByDash() {
+        String input = " \tCopied   from pdf-\r\nin-\nà\r\nhurry ";
+        String expected = "Copied from pdf-in-à hurry";
+        ReplacementResult result= NameUtilities.getInstance().standardizeMinimally(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestFullyStandardizeNameWithDashFollowedByLinefeedsRealExample() {
+        String input = "human serum albumin (residues 1-585) fusion protein with\n" +
+        "    human somatotropin (growth hormone) (residues 586-\n" +
+        "    776), produced in yeast cells (Saccharomyces cerevisiae)\n" +
+        "    growth hormone derivative";
+        String expected = "human serum albumin (residues 1-585) fusion protein with human somatotropin (growth hormone) (residues 586-776), produced in yeast cells (Saccharomyces cerevisiae) growth hormone derivative";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestFullyStandardizeNameContainingHtml1() {
+        String input = "<body>Feeling a <a href='/'>little</a>:\n<i>hyper</i></body>";
+        String expected = "Feeling a little: hyper";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestFullyStandardizeNameContainingHtml2() {
+        String input = "<body>Feeling a <a href='/'>little</a>-\n<i>hyper</i></body>";
+        String expected = "Feeling a little-hyper";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestFullyStandardizeConfusedHtml1() {
+        String input = "hello->there";
+        String expected = "HELLO->THERE";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
+
+    @Test
+    public void TestFullyStandardizeConfusedHtml2() {
+        String input = "hello there you & other guy";
+        String expected = "HELLO THERE YOU & OTHER GUY";
+        expected = expected.toUpperCase();
+        ReplacementResult result= NameUtilities.getInstance().fullyStandardizeName(input);
+        String actual=result.getResult();
+        Assertions.assertEquals(expected, actual);
+    }
 
 }

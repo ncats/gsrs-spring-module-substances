@@ -27,6 +27,14 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.utils.ImageInfo;
+import gsrs.module.substance.utils.ImageUtilities;
+import gsrs.services.PrincipalServiceImpl;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.stagingarea.model.ImportData;
+import gsrs.stagingarea.service.StagingAreaService;
+import ix.core.models.*;
+import ix.ginas.models.v1.*;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -46,8 +54,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -100,25 +106,15 @@ import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
 import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
-import ix.core.models.Payload;
-import ix.core.models.Structure;
-import ix.core.models.StructureRenderingParameters;
-import ix.core.models.Text;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResultContext;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.core.search.text.TextIndexer;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.exporters.SpecificExporterSettings;
-import ix.ginas.models.v1.Amount;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Moiety;
-import ix.ginas.models.v1.Substance;
-import ix.ginas.models.v1.Subunit;
-import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil.TypedCallable;
@@ -139,8 +135,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
+
 	
-	@Override
+	@Autowired
+	private ResultListRecordGenerator resultListRecordGenerator;
+	
+	@Override	
+	public ResultListRecordGenerator getResultListRecordGenerator() {
+		return resultListRecordGenerator;
+	}	
+	
+    @Autowired
+    private PrincipalServiceImpl principalService;
+
+    @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
 
         so= super.instrumentSearchOptions(so);
@@ -164,7 +172,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         return so;
     }
-    private static interface SimpleStandardizer{
+
+	private static interface SimpleStandardizer{
         public Chemical standardize(Chemical c);
         public static SimpleStandardizer REMOVE_HYDROGENS() {
             return (c)->{
@@ -391,9 +400,71 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if("@hierarchy".equals(field)){
             return Optional.of(makeJsonTreeForAPI(entity.getValue()));
         }
+        
+        
+        if("@dependencies".equals(field)){
+            return Optional.of(makeSubstanceDependencies(entity.getValue()));
+        }
+        
+        
         return null;
     }
 
+   
+    public static class SubstanceDependency{
+    	public String role;
+    	public SubstanceReference substanceRef;
+    	public SubstanceDependency(String role, SubstanceReference sref) {
+    		this.role=role;
+    		this.substanceRef=sref;
+
+    	}
+    	public static SubstanceDependency of(String role, SubstanceReference sr) {
+    		return new SubstanceDependency(role, sr);
+
+    	}
+    }
+
+    private List<SubstanceDependency> makeSubstanceDependencies(Substance sub) {
+    	return sub.getDependsOnSubstanceReferencesAndParents()
+    			.stream()
+    			.map(ss->{
+    				String role = "Unknown";
+    				Class<?> pcls = ss.k().getClass();
+
+    				if(AgentModification.class.isAssignableFrom(pcls)) {
+    					role="Agent Modification";
+    				}else if(StructuralModification.class.isAssignableFrom(pcls)) {
+    					role="Structural Modification";
+    				}else if(Property.class.isAssignableFrom(pcls)) {
+                                        Property prop = (Property)ss.k();
+    					role="Property:" + prop.getName();
+    				}else if(StructurallyDiverse.class.isAssignableFrom(pcls)) {
+    					StructurallyDiverse par = (StructurallyDiverse)ss.k();
+    					if(par.parentSubstance!=null && par.parentSubstance.uuid.equals(ss.v().uuid)){
+    						role="Structurally Diverse Parent";
+    					}else if(par.hybridSpeciesMaternalOrganism!=null && par.hybridSpeciesMaternalOrganism.uuid.equals(ss.v().uuid)){
+    						role="Structurally Diverse Maternal Parent";
+    					}else if(par.hybridSpeciesPaternalOrganism!=null && par.hybridSpeciesPaternalOrganism.uuid.equals(ss.v().uuid)){
+    						role="Structurally Diverse Paternal Parent";
+    					}else {
+    						role="Unknown Structurally Diverse Parent";
+    					}
+    				}else if(Material.class.isAssignableFrom(pcls)) {
+    					role="Monomer/Starting Material";
+    				}else if(PolymerClassification.class.isAssignableFrom(pcls)) {
+    					role="Polymer Parent";
+    				}else if(SpecifiedSubstanceComponent.class.isAssignableFrom(pcls)) {
+    					role="Specified Substance Component";
+    				}else if(Component.class.isAssignableFrom(pcls)) {
+    					role="Mixture Component";
+    				}else if(Mixture.class.isAssignableFrom(pcls)) {
+    					role="Mixture Parent";
+    				}
+    				return SubstanceDependency.of(role,  ss.v());
+    			}).collect(Collectors.toList());	   
+    }
+    
     private List<SubstanceHierarchyFinder.TreeNode2> makeJsonTreeForAPI(Substance sub) {
     	
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
@@ -1009,6 +1080,39 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                         } catch (Exception e) {
                             input=u.structure;
                         }
+                    }else {
+                        try {
+                            log.trace("looking for structure in import data repo. ");
+                            StagingAreaService service;
+                            service=getDefaultStagingAreaService();
+
+                            log.trace("retrieved service {}", service.getClass().getName());
+                            int versionNum =0;
+                            if( version !=null && version.length()>0){
+                                try {
+                                    versionNum=Integer.parseInt(version);
+                                } catch (NumberFormatException ignore){}
+                            }
+                            log.trace("using versionNum {}",versionNum);
+
+                            ImportData importData = service.getImportDataByInstanceIdOrRecordId(idOrSmiles, versionNum);
+                            if( importData !=null){
+                                log.trace("retrieved import data");
+                                Substance importedSubstance= service.deserializeObject(importData.getEntityClassName(), importData.getData());
+                                if(importedSubstance!=null ){
+                                    log.trace("retrieved substance from import data repository");
+                                    opStructure = importedSubstance.getStructureToRender();
+                                    if(!opStructure.isPresent()) {
+                                        log.trace("no structure found within SA substance; will create key");
+                                        Key k = Key.of(EntityUtils.EntityWrapper.of(importedSubstance));
+                                        StructureToRender.StructureToRenderBuilder builder = StructureToRender.builder().substanceKey(k).input(input);
+                                        return builder.build();
+                                    }
+                                }
+                            }
+                        } catch (Exception e) {
+                            log.error("Error retrieving data from import data repository ", e);
+                        }
                     }
                 }
             } else {
@@ -1060,10 +1164,51 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String input=null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
-//            input, null)
             s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
                 return getSubstanceAndStructure(idOrSmiles,version);
             });
+
+            if(s2r != null && s2r.substanceKey !=null &&
+                    !(queryParameters.get("forceDefaultImage") !=null &&queryParameters.get("forceDefaultImage").equalsIgnoreCase("TRUE"))) {
+                log.trace("going to call getSpecificImageForSubstance");
+                ImageInfo imageInfo = getSpecificImageForSubstance(s2r.substanceKey);
+                if (imageInfo.isHasData() && imageInfo.getImageData().length > 0) {
+                    String formatToUse = format;
+                    if (imageInfo.getFormat() != null && imageInfo.getFormat().trim().length() > 0) {
+                        formatToUse = imageInfo.getFormat().trim();
+                        log.trace("retrieved mimetype from repo: {}", formatToUse);
+                    } else {
+                        log.trace("no mimetype from repo");
+                    }
+                    String formatForResize = formatToUse;
+                    byte[] resized =  imageInfo.getImageData();
+                    if(!(queryParameters.get("skipResize") !=null &&queryParameters.get("skipResize").equalsIgnoreCase("TRUE"))) {
+                        if (formatForResize.indexOf("/") > -1) {
+                            formatForResize = formatToUse.split("/")[formatToUse.split("/").length - 1];
+                        }
+                        if (formatForResize.equalsIgnoreCase("svg+xml")) {
+                            formatForResize = "svg";
+                        }
+                        log.trace("located image with {} bytes; format: {}; will resize to {} and return ResponseEntity",
+                                imageInfo.getImageData().length, formatForResize, size);
+                        resized = ImageUtilities.resizeImage(imageInfo.getImageData(), size, size, formatForResize);
+                    }
+                    if( resized==null || resized.length==0){
+                        return new ResponseEntity<>("No image found where expected!", HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                    log.trace("resized size {}", resized.length);
+                    HttpHeaders headers = new HttpHeaders();
+
+                    log.trace("going to set content type to {}", parseContentType(formatToUse));
+                    headers.set("Content-Type", parseContentType(formatToUse));
+                    return new ResponseEntity<>(resized, headers, HttpStatus.OK);
+                } else {
+                    log.trace("no image found!");
+                }
+            }
+            log.trace("going to return default image");
+
+//            input, null)
 
             if (s2r.getInput()==null) {
                 if(s2r.getSubstanceKey() ==null) {
@@ -1207,12 +1352,23 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", parseContentType(placeholderFile.substring(placeholderFile.length()-3)));
-
+        log.trace("set content-type to {} for {}", parseContentType(placeholderFile.substring(placeholderFile.length()-3)),
+                "images/\" + placeholderFile");
         try(InputStream in = new ClassPathResource("images/" + placeholderFile).getInputStream()) {
             byte[] bytes = IOUtil.toByteArray(in);
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         }
 
+    }
+
+    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey){
+        Optional<Substance> substance = EntityFetcher.of(substanceKey).getIfPossible().map(o->(Substance)o);
+        if(substance.isPresent()) {
+            ImageUtilities imageUtilities = new ImageUtilities();
+            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+            return imageUtilities.getSubstanceImage(substance.get());
+        }
+        return new ImageInfo(false, null, null);
     }
 
     private static String parseContentType(String format){
@@ -1221,6 +1377,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         if("png".equalsIgnoreCase(format)){
             return MediaType.IMAGE_PNG_VALUE;
+        }
+        if("jpg".equalsIgnoreCase(format)) {
+            return MediaType.IMAGE_JPEG_VALUE;
         }
         return MediaType.parseMediaType(format).toString();
     }
@@ -1628,5 +1787,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         items.add(publicItems);
         return items;
     }
+
 }
 
