@@ -120,7 +120,6 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
-        System.out.println(codeGenerator.getCode());
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
     }
 
@@ -136,7 +135,6 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
-        System.out.println(codeGenerator.getCode());
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
     }
 
@@ -154,7 +152,6 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
-            System.out.println(codeGenerator.getCode());
             Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
         }
         {
@@ -169,10 +166,8 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             ChemicalSubstance substance = getAnotherSubstanceFromFile("660YQ98I10");
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
-            System.out.println(codeGenerator.getCode());
             Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
         }
-
     }
 
 
