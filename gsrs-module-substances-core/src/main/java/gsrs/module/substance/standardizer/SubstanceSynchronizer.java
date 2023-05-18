@@ -110,8 +110,8 @@ public class SubstanceSynchronizer {
         }
         if (substanceRepository.exists(substanceReference) && substanceReference.refuuid!=null && substanceReference.refuuid.length()>0
                 && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)) !=null
-                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).uuid !=null
-                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).uuid.toString().equals(substanceReference.refuuid)) {
+                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).getUuid() !=null
+                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).getUuid().toString().equals(substanceReference.refuuid)) {
             return SubstanceReferenceState.ALREADY_RESOLVED;
         }
         //Substance idMatch= substanceRepository.getOne(UUID.fromString(substanceReference.refuuid));
