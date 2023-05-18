@@ -86,7 +86,7 @@ public class SubstanceSynchronizer {
             tx.executeWithoutResult(s -> {
                 try {
                     log.trace("going to save substance {}", startingSubstance.getUuid().toString());
-                    GsrsEntityService.UpdateResult<Substance> updateResult = substanceEntityService.updateEntity(startingSubstance.toFullJsonNode());
+                    GsrsEntityService.UpdateResult<Substance> updateResult = substanceEntityService.updateEntityWithoutValidation(startingSubstance.toFullJsonNode());
                     if (updateResult.getStatus() == GsrsEntityService.UpdateResult.STATUS.ERROR) {
                         log.error("Error updating substance: {}", updateResult.getValidationResponse().toString());
                         if (updateResult.getThrowable() != null) {
