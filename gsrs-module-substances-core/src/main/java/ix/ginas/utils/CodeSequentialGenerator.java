@@ -14,6 +14,29 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Objects;
+/*
+  See UniqueCodeGenerator.
+  Creates a code id used in the database for each code row. The id has a number part and suffix part.
+  When a code is inserted, get the next code id number part by looking in the database to find the highest number part previously used.
+  The code id number part must be less than or equal to max.
+  The code id must have length that is less than the concatenated digit characters + the length of the suffix.
+
+  Configure like so:
+	gsrs.entityProcessors +={
+		"entityClassName" = "ix.ginas.models.v1.Substance",
+		"processor" = "gsrs.module.substance.processors.UniqueCodeGenerator",
+		"with"=  {
+			"name": "Some Name",
+			"codesystem"="SOMECODESYSTEM",
+			"suffix"="ZZ",
+			"length"=5,  # leave out for default
+			"padding"=true,
+			"max"=999,   # leave out for default
+		}
+	}
+ */
+
+
 
 @Slf4j
 @Component

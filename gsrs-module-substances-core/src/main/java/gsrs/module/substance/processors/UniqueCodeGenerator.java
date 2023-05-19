@@ -76,8 +76,6 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
     public void generateCodeIfNecessary(Substance s) {
         log.trace("starting in generateCodeIfNecessary");
 
-
-
         if (seqGen != null && s.isPrimaryDefinition()) {
             log.trace("looking for code");
             CodeSequentialGenerator codeSequentialGenerator = seqGen.getSync();
