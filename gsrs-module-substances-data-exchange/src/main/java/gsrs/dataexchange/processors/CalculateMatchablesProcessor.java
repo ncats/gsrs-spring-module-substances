@@ -188,9 +188,6 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
                 mapping.setDataLocation(DATA_SOURCE_MAIN);
                 if(saveMatchables) {
                     keyValueMappingRepository.save(mapping);
-                    log.trace("completed save");
-                } else {
-                    log.trace("skipped save");
                 }
                 //todo: delete previous values?
                 List<KeyValueMapping> matches = keyValueMappingRepository.findMappingsByKeyAndValueExcludingRecord(kv.getKey(), kv.getValue(),

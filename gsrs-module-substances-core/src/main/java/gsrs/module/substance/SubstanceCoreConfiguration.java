@@ -11,6 +11,7 @@ import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
+import gsrs.module.substance.standardizer.SubstanceSynchronizer;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
@@ -54,7 +55,8 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,
         GsrsProcessingStrategyFactoryConfiguration.class,
-        ImportMetadataLegacySearchService.class
+        ImportMetadataLegacySearchService.class,
+        SubstanceSynchronizer.class
 })
 public class SubstanceCoreConfiguration {
 
