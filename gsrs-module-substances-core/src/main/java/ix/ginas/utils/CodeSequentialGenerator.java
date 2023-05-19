@@ -16,10 +16,17 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Objects;
 /*
   See UniqueCodeGenerator.
-  Creates a code id used in the database for each code row. The id has a number part and suffix part.
-  When a code is inserted, get the next code id number part by looking in the database to find the highest number part previously used.
+
+  Creates a code/id value that has a number part and suffix part.
+  When a substance is created:
+
+     a) get the next code id number part by looking in the database to find the highest number part previously used with the suffix.
+     b) insert a code row with configured code system, type primary, and the code value generated.
+
   The code id number part must be less than or equal to max.
-  The code id must have length that is less than the concatenated digit characters + the length of the suffix.
+  The length parameter should  >= # of possible digits + the length of the suffix.
+  for example if max = 9999999 and suffix equal AB then length should be 9.
+  If you don't specify a length the default will be Long.MAX_VALUE
 
   Configure like so:
 	gsrs.entityProcessors +={
@@ -29,14 +36,12 @@ import java.util.Objects;
 			"name": "Some Name",
 			"codesystem"="SOMECODESYSTEM",
 			"suffix"="ZZ",
-			"length"=5,  # leave out for default
+			"length"=5,
 			"padding"=true,
-			"max"=999,   # leave out for default
+			"max"=999
 		}
 	}
  */
-
-
 
 @Slf4j
 @Component
@@ -90,6 +95,9 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 			+ String.format("These values are %s %s %s", this.getLen(), String.valueOf(this.max).length(), this.suffix.length())));
 		}
 		this.name = name;
+
+		// I don't get an NPE with a null code system.
+		// Should we have an exception if codeSystem is null?
 		this.codeSystem = codeSystem;
 	}
 
@@ -117,7 +125,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	public long getNextNumber() {
 		long nextNumber = 1L;
 		try {
-			nextNumber = codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThen(codeSystem, "%" + suffix, max)
+			nextNumber = codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan(codeSystem, "%" + suffix, max)
 			.longValue()
 			+ 1L;
 		} catch (Exception e) {

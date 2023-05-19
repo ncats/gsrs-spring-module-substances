@@ -163,6 +163,62 @@ public void clearIndexers() throws IOException {
         assertTrue(message2.contains("maxNumber can not be null"));
     }
 
+    @Test
+    public void testDistinguishDifferentSuffix() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        // if bdnum 0000001AA exists, we should still be able to create 0000001AB
+        Map<String, Object> m = new HashMap<>();
+        m.put("name", "bdnum");
+        m.put("length", 9);
+        m.put("suffix", "AB");
+        m.put("padding", true);
+        m.put("max", 9999999L);
+        m.put("codeSystem", "BDNUM");
+
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
+        (String) m.get("name"),
+        (int)m.get("length"),
+        (String)m.get("suffix"),
+        (boolean)m.get("padding"),
+        (Long)m.get("max"),
+        (String)m.get("codeSystem")
+        );
+
+
+        UUID uuid1 = UUID.randomUUID();
+        Code code1 = new Code();
+        code1.codeSystem="BDNUM";
+        code1.type="PRIMARY";
+        code1.code="0000001AA";   // Creating a bdnum without generator; note AA suffix is different
+
+        UUID uuid2 = UUID.randomUUID();
+        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
+        .addName("TEST1 ABC", n->n.stdName="TEST1 ABC")
+        .setUUID(uuid1)
+        .addCode(code1);
+        Substance built1 = substanceBuilder1.build();
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
+
+
+        // Only use code generator on substance 2
+        AutowireHelper.getInstance().autowire(codeGenerator);
+
+        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
+        .addName("TEST2 ABC", n->n.stdName="TEST2 ABC")
+        .setUUID(uuid2);
+        Substance built2 = substanceBuilder2.build();
+        codeGenerator.addCode(built2);
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
+
+        Optional<Substance> so1 = substanceEntityService.get(uuid1);
+        Substance s1 = so1.get();
+        assertTrue(s1.getCodes().stream().anyMatch(c -> c.code.equals("0000001AA")));
+
+        Optional<Substance> so2 = substanceEntityService.get(uuid2);
+        Substance s2 = so2.get();
+        assertTrue(s2.getCodes().stream().anyMatch(c -> c.code.equals("0000001AB")));
+    }
+
+
 
 @Test
 public void addTwoSubstancesTest() throws IOException, ExecutionException, InterruptedException, TimeoutException {
