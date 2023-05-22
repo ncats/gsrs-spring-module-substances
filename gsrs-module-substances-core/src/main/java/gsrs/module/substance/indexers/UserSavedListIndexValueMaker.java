@@ -45,7 +45,7 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 			list.forEach(listName -> {			
 				String value = UserSavedListService.getIndexedValue(listName.principal.username, listName.listName);				
 				consumer.accept(IndexableValue.simpleFacetStringValue("User List",value));
-				log.error("create indexed values: " + value);
+//				log.error("create indexed values: " + value);
 			});
 			
 		}catch(NoSuchElementException nseExp) {
