@@ -17,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -55,7 +56,7 @@ public class ChemicalRenderingFullStackTest  extends AbstractSubstanceJpaFullSta
                 null,
                 null,
                 false,
-                null))
+                new HashMap<String, String>()))
                 .getBody();
         String xml = Arrays.stream(new String(bod2).split("\n"))
                 //remove description from svg which contains timestamp
