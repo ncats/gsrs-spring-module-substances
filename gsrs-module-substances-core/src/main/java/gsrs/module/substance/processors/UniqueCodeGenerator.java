@@ -9,6 +9,7 @@ import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.CodeSequentialGenerator;
+import ix.ginas.utils.LegacyCodeSequentialGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -39,6 +40,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         String codeSystemSuffix = (String) with.get("suffix");
         int length = (Integer) with.get("length");
         boolean padding = (Boolean) with.get("padding");
+        Boolean useLegacy = (Boolean) with.get("useLegacy");
         Long maxValue;
         try {
             maxValue = Long.parseLong(String.valueOf(with.get("max")));
@@ -50,11 +52,19 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
                 codeSystem, codeSystemSuffix, length, padding, max);
         log.trace(msg);
         if (codeSystem != null) {
-            seqGen = CachedSupplier.runOnce(()->{
-                CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, max, codeSystem);
-                return AutowireHelper.getInstance().autowireAndProxy(gen);
+            if (useLegacy != null && useLegacy.booleanValue()) {
+                seqGen = CachedSupplier.runOnce(()->{
+                    CodeSequentialGenerator gen= new LegacyCodeSequentialGenerator(name, length, codeSystemSuffix, padding, codeSystem);
+                    return AutowireHelper.getInstance().autowireAndProxy(gen);
 
-            });
+                });
+            } else {
+                seqGen = CachedSupplier.runOnce(()->{
+                    CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, max, codeSystem);
+                    return AutowireHelper.getInstance().autowireAndProxy(gen);
+
+                });
+            }
         }
     }
 
