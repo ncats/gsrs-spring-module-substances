@@ -27,7 +27,9 @@ public class ReferenceExtractorActionFactory extends BaseActionFactory {
             Reference r = new Reference();
             r.citation = (String) params.get("citation");
             if( r.citation.equalsIgnoreCase(SDFImportAdapterFactory.REFERENCE_INSTRUCTION)) {
-                r.citation= String.format("File %s imported on %s", getAdapterSchema().get("fileName"), new Date());
+                String fileName = getFileName();
+                log.trace("got fileName {}", fileName);
+                r.citation= String.format("File %s imported on %s", fileName, new Date());
             }
             r.docType = (String) params.get("docType");
             r.publicDomain = params.get("publicDomain")!=null && params.get("publicDomain").toString().equalsIgnoreCase("true");
@@ -87,4 +89,13 @@ public class ReferenceExtractorActionFactory extends BaseActionFactory {
                 .build();
     }
 
+    private String getFileName() {
+        if( getAdapterSchema().hasNonNull("fileName")){
+            return getAdapterSchema().get("fileName").textValue();
+        }
+        if(this.getParameters().containsKey("fileName")){
+            return (String)this.getParameters().get("fileName");
+        }
+        return "[unknown]";
+    }
 }

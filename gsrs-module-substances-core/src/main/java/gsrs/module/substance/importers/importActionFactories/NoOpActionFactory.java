@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
 
 @Slf4j
-public class NoOpActionFactory implements MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> {
+public class NoOpActionFactory extends BaseActionFactory {
 
     @Override
     public MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> create(Map<String, Object> params) throws Exception {
@@ -34,11 +34,9 @@ public class NoOpActionFactory implements MappingActionFactory<AbstractSubstance
 
     @Override
     public void setParameters(Map<String, Object> parameters) {
-
     }
 
     @Override
     public void implementParameters() {
-
     }
 }
