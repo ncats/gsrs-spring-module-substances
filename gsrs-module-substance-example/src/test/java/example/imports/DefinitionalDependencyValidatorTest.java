@@ -35,7 +35,7 @@ public class DefinitionalDependencyValidatorTest extends AbstractSubstanceJpaFul
         ValidationResponse<Substance> response= validator.validate(testProtein, null);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(vm->vm.getMessage().contains("is missing")
                 && vm.getMessage().contains(missingSubstanceName)
-                && vm.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR));
+                && vm.getMessageType()== ValidationMessage.MESSAGE_TYPE.WARNING));
     }
 
     @Test
@@ -54,7 +54,7 @@ public class DefinitionalDependencyValidatorTest extends AbstractSubstanceJpaFul
         ValidationResponse<Substance> response= validator.validate(testProtein, null);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(vm->vm.getMessage().contains("is missing")
                 && vm.getMessage().contains(missingSubstanceName)
-                && vm.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR));
+                && vm.getMessageType()== ValidationMessage.MESSAGE_TYPE.WARNING));
     }
 
     @Test

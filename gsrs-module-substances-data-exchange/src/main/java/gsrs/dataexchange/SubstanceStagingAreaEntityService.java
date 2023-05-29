@@ -1,10 +1,12 @@
 package gsrs.dataexchange;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.events.ReindexEntityEvent;
+import gsrs.module.substance.standardizer.SubstanceSynchronizer;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.service.StagingAreaEntityService;
@@ -32,6 +34,7 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.function.Consumer;
 
 @Slf4j
 public class SubstanceStagingAreaEntityService implements StagingAreaEntityService<Substance> {
@@ -47,6 +50,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
 
     @Autowired
     ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    SubstanceSynchronizer substanceSynchronizer;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -154,9 +160,11 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
                 GsrsEntityService.CreationResult<Substance> creationResult = substanceEntityService.createEntity(substance.toFullJsonNode(),
                         true);
                 result = GsrsEntityService.ProcessResult.ofCreation(creationResult);
+                result.setEntityId(creationResult.getCreatedEntity().uuid);
             } else {
                 GsrsEntityService.UpdateResult<Substance> updateResult = substanceEntityService.updateEntity(substance.toFullJsonNode());
                 result = GsrsEntityService.ProcessResult.ofUpdate(updateResult);
+                result.setEntityId(updateResult.getUpdatedEntity().uuid);
             }
             log.trace("result of save {}", result.toString());
             if (result.getValidationResponse() != null) {
@@ -205,6 +213,27 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         applicationEventPublisher.publishEvent(event);
         log.info("submitted object for indexing");
     }
+
+    @Override
+    public void synchronizeEntity(String substanceId, Consumer<String> recorder, JsonNode options) {
+        log.trace("Starting synchronizeEntity");
+        EntityFetcher fetcher = EntityFetcher.of(EntityUtils.Key.of(Substance.class, substanceId));
+        Optional<Substance> possibleSubstance=fetcher.getIfPossible();
+        if( !possibleSubstance.isPresent()) {
+            log.error("Error retrieving substance with UUID {}", substanceId);
+            return;
+        }
+        Substance substance = possibleSubstance.get();
+        log.trace("retrieved substance");
+        String uuidCodeSystem = (options.isObject() && options.hasNonNull("refUuidCodeSystem") )?
+                ((ObjectNode)options).get("refUuidCodeSystem").textValue()  : "UUID Code";
+        String approvalIdCodeSystem = (options.isObject() && options.hasNonNull("refApprovalIdCodeSystem") )?
+                ((ObjectNode)options).get("refApprovalIdCodeSystem").textValue()  : "FDA UNII";
+        log.trace("using uuidCodeSystem: {} and approvalIdCodeSystem: {}", uuidCodeSystem, approvalIdCodeSystem);
+        substanceSynchronizer.fixSubstanceReferences(substance, recorder, uuidCodeSystem, approvalIdCodeSystem);
+        log.trace("finishing synchronizeEntity");
+    }
+
 
     /*private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
 

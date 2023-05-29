@@ -2,46 +2,55 @@ package gsrs.module.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import gov.nih.ncats.common.sneak.Sneak;
+import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
+import gsrs.json.JsonEntityUtil;
 import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
+import ix.core.models.ForceUpdatableModel;
 import ix.core.models.Role;
 import ix.core.util.EntityUtils;
-import ix.core.validator.GinasProcessingMessage;
-import ix.core.validator.ValidationResponse;
-import ix.core.validator.ValidationResponseBuilder;
-import ix.core.validator.ValidatorCallback;
+import ix.core.util.LogUtil;
+import ix.core.validator.*;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.ginas.utils.validation.strategy.BatchProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.utils.Util;
+import ix.utils.pojopatch.PojoDiff;
+import ix.utils.pojopatch.PojoPatch;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import javax.persistence.EntityManager;
+import javax.swing.text.DefaultStyledDocument;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.io.UncheckedIOException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
+@Slf4j
 public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substance, UUID> implements SubstanceEntityService {
     public static final String  CONTEXT = "substances";
 
@@ -62,7 +71,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Autowired
     private SubstanceBulkLoadServiceConfiguration bulkLoadServiceConfiguration;
 
+    @Autowired
+    private EntityPersistAdapter entityPersistAdapter;
 
+    @Autowired
+    private ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -294,6 +307,170 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
 
+    @Override
+    public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) throws Exception{
 
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
+
+        return transactionTemplate.execute( status-> {
+            try {
+                Substance updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
+                EntityUtils.Key oKey = EntityUtils.EntityWrapper.of(updatedEntity).getKey();
+                EntityManager entityManager = oKey.getEntityManager();
+
+                UpdateResult.UpdateResultBuilder<Substance> builder = UpdateResult.<Substance>builder();
+                EntityUtils.EntityWrapper<Substance> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
+                    EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
+                    String oldJson = og.toFullJson();
+
+                    EntityUtils.EntityWrapper<Substance> oWrap = EntityUtils.EntityWrapper.of(oldEntity);
+                    EntityUtils.EntityWrapper<Substance> nWrap = EntityUtils.EntityWrapper.of(updatedEntity);
+
+                    boolean usePojoPatch=false;
+                    //only use POJO patch if the entities are the same type
+                    if(oWrap.getEntityClass().equals(nWrap.getEntityClass())){
+                        usePojoPatch=true;
+                    }
+                    if(usePojoPatch) {
+                        PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
+                        LogUtil.debug(() -> "changes = " + patch.getChanges());
+                        final List<Object> removed = new ArrayList<Object>();
+
+                        //Apply the changes, grabbing every change along the way
+                        Stack changeStack = patch.apply(oldEntity, c -> {
+                            if ("remove".equals(c.getOp())) {
+                                removed.add(c.getOldValue());
+                            }
+                            LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
+                        });
+                        if (changeStack.isEmpty()) {
+                            throw new IllegalStateException("No change detected");
+                        } else {
+                            LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
+                        }
+                        oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
+                        //This is the last line of defense for making sure that the patch worked
+                        //Should throw an exception here if there's a major problem
+                        //This is inefficient, but forces confirmation that the object is fully realized
+                        String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
+
+
+                        while (!changeStack.isEmpty()) {
+                            Object v = changeStack.pop();
+                            EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
+                            if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+                                Object o =  ewchanged.getValue();
+                                if(o instanceof ForceUpdatableModel) {
+                                    //Maybe don't do twice? IDK.
+                                    ((ForceUpdatableModel)o).forceUpdate();
+                                }
+
+                                entityManager.merge(o);
+                            }
+                        }
+
+                        //explicitly delete deleted things
+                        //This should ONLY delete objects which "belong"
+                        //to something. That is, have a @SingleParent annotation
+                        //inside
+
+                        removed.stream()
+                                .filter(Objects::nonNull)
+
+                                .map(o -> EntityUtils.EntityWrapper.of(o))
+                                .filter(ew -> ew.isExplicitDeletable())
+                                .forEach(ew -> {
+                                    Object o = ew.getValue();
+                                    log.warn("deleting:" + o);
+                                    //hibernate can only remove entities from this transaction
+                                    //this logic will merge "detached" entities from outside this transaction before removing anything
+
+                                    entityManager.remove(entityManager.contains(o) ? o : entityManager.merge(o));
+
+                                });
+
+                        try {
+                            Substance saved = transactionalUpdate(oldEntity, oldJson);
+//                			System.out.println("updated entity = " + saved);
+                            String internalJSON = EntityUtils.EntityWrapper.of(saved).toInternalJson();
+//                			System.out.println("updated entity full eager fetch = " + internalJSON.hashCode());
+                            builder.updatedEntity(saved);
+
+                            builder.status(UpdateResult.STATUS.UPDATED);
+
+                            return Optional.of(saved);
+                        } catch (Throwable t) {
+                            t.printStackTrace();
+
+                            builder.status(UpdateResult.STATUS.ERROR);
+                            builder.throwable(t);
+                            return Optional.empty();
+                        }
+                    }else {
+                        //NON POJOPATCH: delete and save for updates
+
+                        Substance oldValue=(Substance)oWrap.getValue();
+                        entityManager.remove(oldValue);
+
+                        // Now need to take care of bad update pieces:
+                        //	1. Version not incremented correctly (post update hooks not called)
+                        //  2. Some metadata / audit data may be problematic
+                        //  3. The update hooks are called explicitly now
+                        //     ... and that's a weird thing to do, because the persist hooks
+                        //     will get called too. Does someone really expect things to
+                        //     get called twice?
+                        // TODO: the above pieces are from the old codebase, but the new one
+                        // has to have these evaluated too. Need unit tests.
+
+                        entityManager.flush();
+                        // if we clear here, it will cause issues for
+                        // some detached entities later, but not clearing causes other issues
+
+                        entityManager.clear();
+
+                        Substance newValue = (Substance)nWrap.getValue();
+                        entityManager.persist(newValue);
+                        entityManager.flush();
+
+
+//                	    T saved=newValue;
+                        Substance saved = transactionalUpdate(newValue, oldJson);
+                        builder.updatedEntity(saved);
+                        builder.status(UpdateResult.STATUS.UPDATED);
+
+                        return Optional.of(saved); //Delete & Create
+                    }
+                });
+                if(savedVersion ==null){
+                    status.setRollbackOnly();
+                }else {
+                    //IDK?
+//                    if(forceMoreSave[0]) {
+//                        EntityUtils.EntityWrapper<T> savedVersion2 = entityPersistAdapter.performChangeOn(savedVersion, sec -> {
+//
+//                        });
+//                    }
+                    //only publish events if we save!
+                    AbstractEntityUpdatedEvent<Substance> event = newUpdateEvent(savedVersion.getValue());
+                    if(event !=null) {
+                        applicationEventPublisher.publishEvent(event);
+                        //todo: if RabbitMq is desired, make the following work
+                        /*if (gsrsRabbitMqConfiguration.isEnabled() && exchangeName != null) {
+                            rabbitTemplate.convertAndSend(exchangeName, substanceUpdatedKey, event);
+                        }*/
+                    }
+                }
+
+                UpdateResult<Substance> updateResult= builder.build();
+                if(updateResult.getThrowable() !=null){
+                    Sneak.sneakyThrow( updateResult.getThrowable());
+                }
+                return updateResult;
+            }catch(IOException e){
+                status.setRollbackOnly();
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
 
 }
