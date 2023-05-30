@@ -89,10 +89,15 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 
 		this.max = max;
 		if(suffix==null) { this.suffix= "";}
-		if(len<1) { this.setLen(String.valueOf(this.max).length()+this.suffix.length()); }
-        if(!(this.getLen() >= String.valueOf(this.max).length()+this.suffix.length())) {
-			Sneak.sneakyThrow(new Exception("The len value should be greater than or equal to the number of max's digits + the number of characters in the suffix. "
-			+ String.format("These values are %s %s %s", this.getLen(), String.valueOf(this.max).length(), this.suffix.length())));
+		if(!this.getClass().equals(LegacyCodeSequentialGenerator.class)) {
+            // Legacy could be an extension of this class, and if so these checks aren't appropriate.
+			if (len < 1) {
+				this.setLen(String.valueOf(this.max).length() + this.suffix.length());
+			}
+			if (!(this.getLen() >= String.valueOf(this.max).length() + this.suffix.length())) {
+				Sneak.sneakyThrow(new Exception("The len value should be greater than or equal to the number of max's digits + the number of characters in the suffix. "
+				+ String.format("These values are %s %s %s", this.getLen(), String.valueOf(this.max).length(), this.suffix.length())));
+			}
 		}
 		this.name = name;
 

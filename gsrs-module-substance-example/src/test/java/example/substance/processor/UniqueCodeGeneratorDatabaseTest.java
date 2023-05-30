@@ -20,6 +20,7 @@ import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.CodeSequentialGenerator;
+import ix.ginas.utils.LegacyCodeSequentialGenerator;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,42 +41,41 @@ import static org.junit.Assert.assertTrue;
 @WithMockUser(username = "admin", roles = "Admin")
 public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullStackEntityTest {
 
-@Autowired
-private SubstanceLegacySearchService searchService;
+    @Autowired
+    private SubstanceLegacySearchService searchService;
 
-@Autowired
-private TextIndexerFactory textIndexerFactory;
+    @Autowired
+    private TextIndexerFactory textIndexerFactory;
 
+    @Autowired
+    private DefinitionalElementFactory definitionalElementFactory;
 
-@Autowired
-private DefinitionalElementFactory definitionalElementFactory;
+    @Autowired
+    private TestIndexValueMakerFactory testIndexValueMakerFactory;
 
-@Autowired
-private TestIndexValueMakerFactory testIndexValueMakerFactory;
+    @Autowired
+    StructureProcessor structureProcessor;
 
-@Autowired
-StructureProcessor structureProcessor;
+    @Autowired
+    private TestGsrsValidatorFactory factory;
 
-@Autowired
-private TestGsrsValidatorFactory factory;
+    @Autowired
+    private TestEntityProcessorFactory entityProcessorFactory;
 
-@Autowired
-private TestEntityProcessorFactory entityProcessorFactory;
+    ObjectMapper objectMapper = new ObjectMapper();
 
-ObjectMapper objectMapper = new ObjectMapper();
-
-@BeforeEach
-public void clearIndexers() throws IOException {
-    SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-    AutowireHelper.getInstance().autowire(hashIndexer);
-    testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-    {
-        ValidatorConfig config = new DefaultValidatorConfig();
-        config.setValidatorClass(ChemicalValidator.class);
-        config.setNewObjClass(ChemicalSubstance.class);
-        factory.addValidator("substances", config);
+    @BeforeEach
+    public void clearIndexers() throws IOException {
+        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+        AutowireHelper.getInstance().autowire(hashIndexer);
+        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+        {
+            ValidatorConfig config = new DefaultValidatorConfig();
+            config.setValidatorClass(ChemicalValidator.class);
+            config.setNewObjClass(ChemicalSubstance.class);
+            factory.addValidator("substances", config);
+        }
     }
-}
 
     @Test
     public void testConstructor1() throws IOException, ExecutionException, InterruptedException, TimeoutException {
@@ -122,7 +122,6 @@ public void clearIndexers() throws IOException {
         }
         assertTrue(message.contains("The len value should be greater than or equal"));
     }
-
 
     @Test
     public void testCheckNextNumberWithinRange() throws IOException, ExecutionException, InterruptedException, TimeoutException {
@@ -183,7 +182,6 @@ public void clearIndexers() throws IOException {
         (String)m.get("codeSystem")
         );
 
-
         UUID uuid1 = UUID.randomUUID();
         Code code1 = new Code();
         code1.codeSystem="BDNUM";
@@ -197,7 +195,6 @@ public void clearIndexers() throws IOException {
         .addCode(code1);
         Substance built1 = substanceBuilder1.build();
         loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
-
 
         // Only use code generator on substance 2
         AutowireHelper.getInstance().autowire(codeGenerator);
@@ -218,66 +215,64 @@ public void clearIndexers() throws IOException {
         assertTrue(s2.getCodes().stream().anyMatch(c -> c.code.equals("0000001AB")));
     }
 
+    @Test
+    public void testAddTwoSubstances() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        Map<String, Object> m = new HashMap<>();
+        m.put("name", "whatever");
+        m.put("length", String.valueOf(9999L).length()+2);
+        m.put("suffix", "XX");
+        m.put("padding", true);
+        m.put("max", 9999L);
+        m.put("codeSystem", "MYCS");
 
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
+            (String) m.get("name"),
+            (int)m.get("length"),
+            (String)m.get("suffix"),
+            (boolean)m.get("padding"),
+            (Long)m.get("max"),
+            (String)m.get("codeSystem")
+        );
+        AutowireHelper.getInstance().autowire(codeGenerator);
+        UUID uuid1 = UUID.randomUUID();
+        Code code1 = new Code();
+        code1.codeSystem="CodeSystem1";
+        code1.type="PRIMARY";
+        code1.code="CODE1";
 
-@Test
-public void addTwoSubstancesTest() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-    Map<String, Object> m = new HashMap<>();
-    m.put("name", "whatever");
-    m.put("length", String.valueOf(9999L).length()+2);
-    m.put("suffix", "XX");
-    m.put("padding", true);
-    m.put("max", 9999L);
-    m.put("codeSystem", "MYCS");
+        UUID uuid2 = UUID.randomUUID();
+        Code code2 = new Code();
+        code2.codeSystem="CodeSystem2";
+        code2.code="CODE2";
+        code2.type="PRIMARY";
 
-    CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-        (String) m.get("name"),
-        (int)m.get("length"),
-        (String)m.get("suffix"),
-        (boolean)m.get("padding"),
-        (Long)m.get("max"),
-        (String)m.get("codeSystem")
-    );
-    AutowireHelper.getInstance().autowire(codeGenerator);
-    UUID uuid1 = UUID.randomUUID();
-    Code code1 = new Code();
-    code1.codeSystem="CodeSystem1";
-    code1.type="PRIMARY";
-    code1.code="CODE1";
+        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
+        .addName("TEST1 ABC", n->n.stdName="TEST1 ABC")
+        .setUUID(uuid1)
+        .addCode(code1);
+        Substance built1 = substanceBuilder1.build();
+        codeGenerator.addCode(built1);
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
 
-    UUID uuid2 = UUID.randomUUID();
-    Code code2 = new Code();
-    code2.codeSystem="CodeSystem2";
-    code2.code="CODE2";
-    code2.type="PRIMARY";
+        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
+        .addName("TEST2 ABC", n->n.stdName="TEST2 ABC")
+        .setUUID(uuid2)
+        .addCode(code2);
+        Substance built2 = substanceBuilder2.build();
+        codeGenerator.addCode(built2);
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
 
-    SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-    .addName("TEST1 ABC", n->n.stdName="TEST1 ABC")
-    .setUUID(uuid1)
-    .addCode(code1);
-    Substance built1 = substanceBuilder1.build();
-    codeGenerator.addCode(built1);
-    loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
+        Optional<Substance> so1 = substanceEntityService.get(uuid1);
+        Substance s1 = so1.get();
+        assertTrue(s1.getCodes().stream().anyMatch(c -> c.code.equals("0001XX")));
 
-    SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-    .addName("TEST2 ABC", n->n.stdName="TEST2 ABC")
-    .setUUID(uuid2)
-    .addCode(code2);
-    Substance built2 = substanceBuilder2.build();
-    codeGenerator.addCode(built2);
-    loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
-
-    Optional<Substance> so1 = substanceEntityService.get(uuid1);
-    Substance s1 = so1.get();
-    assertTrue(s1.getCodes().stream().anyMatch(c -> c.code.equals("0001XX")));
-
-    Optional<Substance> so2 = substanceEntityService.get(uuid2);
-    Substance s2 = so2.get();
-    assertTrue(s2.getCodes().stream().anyMatch(c -> c.code.equals("0002XX")));
-}
+        Optional<Substance> so2 = substanceEntityService.get(uuid2);
+        Substance s2 = so2.get();
+        assertTrue(s2.getCodes().stream().anyMatch(c -> c.code.equals("0002XX")));
+    }
 
     @Test
-    public void addThreeSubstancesMaxTooSmallTest() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+    public void testAddThreeSubstancesMaxTooSmall() throws IOException, ExecutionException, InterruptedException, TimeoutException {
         Map<String, Object> m = new HashMap<>();
         m.put("name", "whatever");
         m.put("length", String.valueOf(2L).length()+2);
@@ -339,6 +334,124 @@ public void addTwoSubstancesTest() throws IOException, ExecutionException, Inter
             message = e.getMessage();
         }
         assertTrue(message.contains("The value for nextNumber is out of range."));
+    }
+
+    @Test
+    public void testUseLegacy() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        Map<String, Object> m = new HashMap<>();
+        m.put("name", "BDNUM NAME");
+        m.put("length", 9);
+        m.put("suffix", "AB");
+        m.put("padding", true);
+        m.put("codeSystem", "BDNUM");
+
+        LegacyCodeSequentialGenerator codeGenerator = new LegacyCodeSequentialGenerator(
+        (String) m.get("name"),
+        (int) m.get("length"),
+        (String) m.get("suffix"),
+        (boolean) m.get("padding"),
+        (String) m.get("codeSystem")
+        );
+        AutowireHelper.getInstance().autowire(codeGenerator);
+
+        UUID uuid1 = UUID.randomUUID();
+        Code code1 = new Code();
+        code1.codeSystem = "CodeSystem1";
+        code1.type = "PRIMARY";
+        code1.code = "CODE1";
+        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
+        .addName("TEST1 ABC", n -> n.stdName = "TEST1 ABC")
+        .setUUID(uuid1)
+        .addCode(code1);
+        Substance built1 = substanceBuilder1.build();
+        codeGenerator.addCode(built1);
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
+
+        UUID uuid2 = UUID.randomUUID();
+        Code code2 = new Code();
+        code2.codeSystem = "CodeSystem2";
+        code2.code = "CODE2";
+        code2.type = "PRIMARY";
+        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
+        .addName("TEST2 ABC", n -> n.stdName = "TEST2 ABC")
+        .setUUID(uuid2)
+        .addCode(code2);
+        Substance built2 = substanceBuilder2.build();
+        codeGenerator.addCode(built2);
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
+
+        UUID uuid3 = UUID.randomUUID();
+        Code code3 = new Code();
+        code2.codeSystem = "CodeSystem3";
+        code2.code = "CODE3";
+        code2.type = "PRIMARY";
+        SubstanceBuilder substanceBuilder3 = new SubstanceBuilder()
+        .addName("TEST3 ABC", n -> n.stdName = "TEST3 ABC")
+        .setUUID(uuid3)
+        .addCode(code3);
+        Substance built3 = substanceBuilder3.build();
+        String message = "";
+        assertEquals("0000003AB", codeGenerator.getCode().code);
+    }
+
+    @Test
+    public void testDontUseLegacy() throws IOException, ExecutionException, InterruptedException, TimeoutException {
+        Map<String, Object> m = new HashMap<>();
+        m.put("name", "BDNUM NAME");
+        m.put("length", 9);
+        m.put("suffix", "AB");
+        m.put("padding", true);
+        m.put("codeSystem", "BDNUM");
+        m.put("max", 9999999L);
+
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
+        (String) m.get("name"),
+        (int) m.get("length"),
+        (String) m.get("suffix"),
+        (boolean) m.get("padding"),
+        (Long) m.get("max"),
+        (String) m.get("codeSystem")
+        );
+        AutowireHelper.getInstance().autowire(codeGenerator);
+
+        UUID uuid1 = UUID.randomUUID();
+        Code code1 = new Code();
+        code1.codeSystem = "CodeSystem1";
+        code1.type = "PRIMARY";
+        code1.code = "CODE1";
+        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
+        .addName("TEST1 ABC", n -> n.stdName = "TEST1 ABC")
+        .setUUID(uuid1)
+        .addCode(code1);
+        Substance built1 = substanceBuilder1.build();
+        codeGenerator.addCode(built1);
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
+
+        UUID uuid2 = UUID.randomUUID();
+        Code code2 = new Code();
+        code2.codeSystem = "CodeSystem2";
+        code2.code = "CODE2";
+        code2.type = "PRIMARY";
+        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
+        .addName("TEST2 ABC", n -> n.stdName = "TEST2 ABC")
+        .setUUID(uuid2)
+        .addCode(code2);
+        Substance built2 = substanceBuilder2.build();
+        codeGenerator.addCode(built2);
+        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
+
+        UUID uuid3 = UUID.randomUUID();
+        Code code3 = new Code();
+        code2.codeSystem = "CodeSystem3";
+        code2.code = "CODE3";
+        code2.type = "PRIMARY";
+        SubstanceBuilder substanceBuilder3 = new SubstanceBuilder()
+        .addName("TEST3 ABC", n -> n.stdName = "TEST3 ABC")
+        .setUUID(uuid3)
+        .addCode(code3);
+        Substance built3 = substanceBuilder3.build();
+        String message = "";
+        assertEquals("0000003AB", codeGenerator.getCode().code);
     }
 
     public Substance loadSubstanceFromJsonString(String jsonText) {

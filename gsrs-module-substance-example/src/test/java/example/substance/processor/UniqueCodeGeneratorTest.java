@@ -107,7 +107,8 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
     }
 
-    // ====
+    // ==== A
+
     @Test
     public void testSeqGenNoSuffix() {
         String seqGenName = "not used";
@@ -170,8 +171,6 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         }
     }
 
-
-
     @Test
     public void testSeqGenCheckDefaults() {
         String seqGenName = "not used";
@@ -187,7 +186,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(codeGenerator.getLen(),String.valueOf(codeGenerator.getMax()).length()+codeGenerator.getSuffix().length());
     }
 
-// ====
+    // ==== B
 
     @Test
     public void testCreateCodeSystem() {
@@ -269,7 +268,6 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         
         Assertions.assertEquals(totalBefore, totalAfter);
     }
-
 
     private ProteinSubstance getSubstanceFromFile(String name) {
         try {
