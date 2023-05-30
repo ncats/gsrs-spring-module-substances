@@ -141,6 +141,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
         ExplicitMatchableExtractorFactory factory = new ExplicitMatchableExtractorFactory();
+        AutowireHelper.getInstance().autowire(factory);
         factory.createExtractorFor(Substance.class).extract(substance, allMatchables::add);
         return allMatchables;
     }
