@@ -1,5 +1,6 @@
 package gsrs.dataexchange.extractors;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
@@ -27,6 +28,8 @@ public class DefinitionalHashMatchableExtractor implements MatchableKeyValueTupl
 
     @Autowired
     public PlatformTransactionManager transactionManager;
+
+    public DefinitionalHashMatchableExtractor(JsonNode config){}
 
     @Override
     public void extract(Substance substance, Consumer<MatchableKeyValueTuple> c) {
