@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CASNumberMatchableExtractor extends CodeMatchableExtractor {
+
     public CASNumberMatchableExtractor(JsonNode config) {
         super(casCodeSystems, CAS_TYPE, CAS_KEY);
         casCodeSystems.clear();

@@ -14,7 +14,6 @@ public class AllNamesMatchableExtractor<T> implements MatchableKeyValueTupleExtr
     public final int PRIMARY_NAME_LAYER =0;
     public final int NAME_LAYER =1;
 
-    public AllNamesMatchableExtractor(JsonNode config){}
     @Override
     public void extract(T substanceObject, Consumer<MatchableKeyValueTuple> c) {
         String[] primaryName = new String[1];

@@ -173,8 +173,6 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
 
         txSaveMatchables.executeWithoutResult(r -> {
             matchableKeyValueTuples.forEach(kv -> {
-                log.trace("going to store KeyValueMapping with key {} and value '{}' qualifier: {}, instance id: {}; location: {}",
-                        kv.getKey(), kv.getValue(), kv.getQualifier(), substance.uuid.toString(), DATA_SOURCE_MAIN);
                 KeyValueMapping mapping = new KeyValueMapping();
                 mapping.setKey(kv.getKey());
                 String valueToStore = kv.getValue();

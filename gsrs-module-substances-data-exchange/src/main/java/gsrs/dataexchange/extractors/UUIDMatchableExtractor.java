@@ -1,6 +1,5 @@
 package gsrs.dataexchange.extractors;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import ix.ginas.models.v1.Substance;
@@ -12,8 +11,6 @@ import java.util.function.Consumer;
 public class UUIDMatchableExtractor implements MatchableKeyValueTupleExtractor<Substance> {
 
     private final String KEY="UUID";
-
-    public UUIDMatchableExtractor(JsonNode config) {}
 
     @Override
     public void extract(Substance substance, Consumer<MatchableKeyValueTuple> c) {
