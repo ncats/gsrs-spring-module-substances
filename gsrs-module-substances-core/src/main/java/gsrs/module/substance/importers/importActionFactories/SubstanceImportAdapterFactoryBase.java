@@ -170,10 +170,10 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
                     ((BaseActionFactory) mappingActionFactory).setAdapterSchema(statistics.getAdapterSchema());
                     log.trace("called setAdapterSchema");
                 }else if(this.getFileName()!=null ){
-                    ObjectNode adapterSchema = JsonNodeFactory.instance.objectNode();
-                    adapterSchema.put("fileName", getFileName());
-                    ((BaseActionFactory) mappingActionFactory).setAdapterSchema(adapterSchema);
-                    log.trace("passed file name to baseActionFactory");
+                    Map<String, Object> parameters = new HashMap<>();
+                    parameters.put("fileName", getFileName());
+                    mappingActionFactory.getParameters().put("fileName", getFileName());
+                    log.trace("passed file name to non-baseActionFactory action");
                 }
                 log.trace("mappingActionFactory: " + mappingActionFactory);
                 if (mappingActionFactory != null) {

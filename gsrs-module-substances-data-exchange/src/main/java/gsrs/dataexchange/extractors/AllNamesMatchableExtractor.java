@@ -1,5 +1,6 @@
 package gsrs.dataexchange.extractors;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import ix.ginas.models.v1.Substance;
