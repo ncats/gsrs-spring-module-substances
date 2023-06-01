@@ -27,7 +27,7 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
             //shouldn't happen unless we get invalid submission
             return;
         }
-        log.debug("starting addStructureDefinitialElements (ChemicalSubstance)");
+        log.debug("starting computeDefinitionalElements (ChemicalSubstance)");
         consumer.accept(DefinitionalElement.of("structure.properties.hash1",
                 structure.getStereoInsensitiveHash(), 1));
         log.debug("structure.getStereoInsensitiveHash(): "  + structure.getStereoInsensitiveHash());
