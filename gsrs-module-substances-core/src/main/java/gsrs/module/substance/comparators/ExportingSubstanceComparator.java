@@ -12,15 +12,19 @@ public class ExportingSubstanceComparator implements Serializable, Comparator<Su
     @Override
     public int compare(Substance substance1, Substance substance2) {
         log.trace("starting ExportingSubstanceComparator.compare");
+        if(substance1 ==null || substance2==null){
+            log.trace("one or more parameters is null");
+            return 0;
+        }
         AtomicInteger result = new AtomicInteger(0);
         if( substance1.getDependsOnSubstanceReferencesAndParents().stream().anyMatch(sr->
             substance2.getUuid()!=null && sr.v().refuuid.equals(substance2.getUuid().toString())
-                    || (substance2.getApprovalID()!=null && sr.v().approvalID.equals(substance2.getApprovalID())))) {
+                    || (substance2.getApprovalID()!=null && sr.v().approvalID!=null && sr.v().approvalID.equals(substance2.getApprovalID())))) {
             log.trace("detected that substance1 depends on substance2");
             result.set(1);
         } else if( substance2.getDependsOnSubstanceReferencesAndParents().stream().anyMatch(sr->
                 substance1.getUuid()!=null && sr.v().refuuid.equals(substance1.getUuid().toString())
-                || (substance1.getApprovalID()!=null && sr.v().approvalID.equals(substance1.getApprovalID())))) {
+                    || (substance1.getApprovalID()!=null && sr.v().approvalID!=null && sr.v().approvalID.equals(substance1.getApprovalID())))) {
             log.trace("detected that substance2 depends on substance1");
             result.set(-1);
         } else {
