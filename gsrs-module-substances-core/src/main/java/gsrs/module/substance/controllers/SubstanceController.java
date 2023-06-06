@@ -6,18 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -27,6 +16,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.comparators.ExportingSubstanceComparator;
 import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.services.PrincipalServiceImpl;
@@ -1757,7 +1747,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new BasicRecordExpanderFactory();
     }
 
-    
+
+    @Override
+    public Comparator<Substance> getComparator() {
+        log.trace("returning substance-specific comparator");
+        return new ExportingSubstanceComparator();
+    }
     public List<Text> getHardcodedConfigsBackup() throws JsonProcessingException {
         List<Text> items = new ArrayList<>();
 
