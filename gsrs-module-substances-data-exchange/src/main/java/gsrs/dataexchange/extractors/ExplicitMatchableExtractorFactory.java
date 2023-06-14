@@ -15,7 +15,14 @@ public class ExplicitMatchableExtractorFactory implements MatchableExtractorFact
 
     final String substancesContext = "substances";
 
-    @Autowired
+    public GsrsFactoryConfiguration getGsrsFactoryConfiguration() {
+        return gsrsFactoryConfiguration;
+    }
+
+    public void setGsrsFactoryConfiguration(GsrsFactoryConfiguration gsrsFactoryConfiguration) {
+        this.gsrsFactoryConfiguration = gsrsFactoryConfiguration;
+    }
+
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     private CachedSupplier<MatchableKeyValueTupleExtractor> matchableExtractors =CachedSupplier.of(()->{
