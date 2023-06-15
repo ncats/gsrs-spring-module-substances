@@ -1,20 +1,26 @@
 package example.exports.comparators;
 
+import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.comparators.ExportingSubstanceComparator;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.models.Keyword;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import ix.ginas.modelBuilders.MixtureSubstanceBuilder;
 import ix.ginas.modelBuilders.PolymerSubstanceBuilder;
 import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-public class ExportingSubstanceComparatorTest {
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+public class ExportingSubstanceComparatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     //case 1: no dependencies - expect result 0
     @Test
@@ -219,4 +225,138 @@ public class ExportingSubstanceComparatorTest {
         substances.sort(comparator);
         Assertions.assertEquals(wholePlant, substances.get(0));
     }
+
+    @Test
+    public void testMixtureSort() {
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder1.setStructureWithDefaultReference("c1ccccc1C");
+        UUID chemical1Id = UUID.randomUUID();
+        chemicalSubstanceBuilder1.setDisplayName("Toluene");
+        chemicalSubstanceBuilder1.setUUID(chemical1Id);
+        ChemicalSubstance chemical1 = chemicalSubstanceBuilder1.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
+        UUID chemical2Id = UUID.randomUUID();
+        chemicalSubstanceBuilder2.setStructureWithDefaultReference("c1ccccc1CC");
+        chemicalSubstanceBuilder2.setUUID(chemical2Id);
+        chemicalSubstanceBuilder2.setDisplayName("Ethylbenzene");
+        ChemicalSubstance chemical2 = chemicalSubstanceBuilder2.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder3 = new ChemicalSubstanceBuilder();
+        UUID chemical3Id = UUID.randomUUID();
+        chemicalSubstanceBuilder3.setStructureWithDefaultReference("c1ccccc1CCC");
+        chemicalSubstanceBuilder3.setUUID(chemical3Id);
+        chemicalSubstanceBuilder3.setDisplayName("Propylbenzene");
+        ChemicalSubstance chemical3 = chemicalSubstanceBuilder3.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder4 = new ChemicalSubstanceBuilder();
+        UUID chemical4Id = UUID.randomUUID();
+        chemicalSubstanceBuilder4.setStructureWithDefaultReference("c1ccccc1CCCC");
+        chemicalSubstanceBuilder4.setUUID(chemical4Id);
+        chemicalSubstanceBuilder4.setDisplayName("Butylbenzene");
+        ChemicalSubstance chemical4 = chemicalSubstanceBuilder4.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder5 = new ChemicalSubstanceBuilder();
+        UUID chemical5Id = UUID.randomUUID();
+        chemicalSubstanceBuilder5.setStructureWithDefaultReference("c1ccccc1CCCCC");
+        chemicalSubstanceBuilder5.setUUID(chemical5Id);
+        chemicalSubstanceBuilder5.setDisplayName("Pentylbenzene");
+        ChemicalSubstance chemical5 = chemicalSubstanceBuilder5.build();
+
+        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
+        UUID mixtureId = UUID.randomUUID();
+        mixtureSubstanceBuilder.setUUID(mixtureId);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical1);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical2);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical3);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical4);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical5);
+
+        MixtureSubstance mixture= mixtureSubstanceBuilder.build();
+        ExportingSubstanceComparator comparator = new ExportingSubstanceComparator();
+        List<Substance> substances = new ArrayList<>();
+        substances.add(mixture);
+        substances.add(chemical5);
+        substances.add(chemical4);
+        substances.add(chemical3);
+        substances.add(chemical2);
+        substances.add(chemical1);
+
+        substances.sort(comparator);
+        Assertions.assertEquals(mixtureId, substances.get(5).getUuid());
+    }
+
+    @Test
+    public void testMixtureSort2() {
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
+        chemicalSubstanceBuilder1.setStructureWithDefaultReference("c1ccccc1C");
+        UUID chemical1Id = UUID.randomUUID();
+        chemicalSubstanceBuilder1.setDisplayName("Toluene");
+        chemicalSubstanceBuilder1.setUUID(chemical1Id);
+        ChemicalSubstance chemical1 = chemicalSubstanceBuilder1.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder2 = new ChemicalSubstanceBuilder();
+        UUID chemical2Id = UUID.randomUUID();
+        chemicalSubstanceBuilder2.setStructureWithDefaultReference("c1ccccc1CC");
+        chemicalSubstanceBuilder2.setUUID(chemical2Id);
+        chemicalSubstanceBuilder2.setDisplayName("Ethylbenzene");
+        ChemicalSubstance chemical2 = chemicalSubstanceBuilder2.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder3 = new ChemicalSubstanceBuilder();
+        UUID chemical3Id = UUID.randomUUID();
+        chemicalSubstanceBuilder3.setStructureWithDefaultReference("c1ccccc1CCC");
+        chemicalSubstanceBuilder3.setUUID(chemical3Id);
+        chemicalSubstanceBuilder3.setDisplayName("Propylbenzene");
+        ChemicalSubstance chemical3 = chemicalSubstanceBuilder3.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder4 = new ChemicalSubstanceBuilder();
+        UUID chemical4Id = UUID.randomUUID();
+        chemicalSubstanceBuilder4.setStructureWithDefaultReference("c1ccccc1CCCC");
+        chemicalSubstanceBuilder4.setUUID(chemical4Id);
+        chemicalSubstanceBuilder4.setDisplayName("Butylbenzene");
+        ChemicalSubstance chemical4 = chemicalSubstanceBuilder4.build();
+
+        ChemicalSubstanceBuilder chemicalSubstanceBuilder5 = new ChemicalSubstanceBuilder();
+        UUID chemical5Id = UUID.randomUUID();
+        chemicalSubstanceBuilder5.setStructureWithDefaultReference("c1ccccc1CCCCC");
+        chemicalSubstanceBuilder5.setUUID(chemical5Id);
+        chemicalSubstanceBuilder5.setDisplayName("Pentylbenzene");
+        ChemicalSubstance chemical5 = chemicalSubstanceBuilder5.build();
+
+        MixtureSubstanceBuilder mixtureSubstanceBuilder = new MixtureSubstanceBuilder();
+        UUID mixtureId = UUID.randomUUID();
+        mixtureSubstanceBuilder.setUUID(mixtureId);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical1);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical2);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical3);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical4);
+        mixtureSubstanceBuilder.addComponents("MUST_BE_PRESENT", chemical5);
+
+        ChemicalSubstanceBuilder unrelatedChemicalSubstanceBuilder = new ChemicalSubstanceBuilder();
+        UUID unrelatedChemicalId = UUID.randomUUID();
+        unrelatedChemicalSubstanceBuilder.setStructureWithDefaultReference("CCCCC");
+        unrelatedChemicalSubstanceBuilder.setUUID(unrelatedChemicalId);
+        unrelatedChemicalSubstanceBuilder.setDisplayName("Butane");
+        ChemicalSubstance unrelatedChemical = unrelatedChemicalSubstanceBuilder.build();
+
+        MixtureSubstance mixture= mixtureSubstanceBuilder.build();
+        ExportingSubstanceComparator comparator = new ExportingSubstanceComparator();
+        List<Substance> substances = new ArrayList<>();
+        substances.add(mixture);
+        substances.add(unrelatedChemical);
+        substances.add(chemical5);
+        substances.add(chemical4);
+        substances.add(chemical3);
+        substances.add(chemical2);
+        substances.add(chemical1);
+
+        substances.sort(comparator);
+        List<String> sortedIds = substances.stream().map(s->s.getUuid().toString()).collect(Collectors.toList());
+        Assertions.assertTrue( sortedIds.indexOf(mixtureId.toString()) > sortedIds.indexOf(chemical1Id.toString()));
+        Assertions.assertTrue( sortedIds.indexOf(mixtureId.toString()) > sortedIds.indexOf(chemical2Id.toString()));
+        Assertions.assertTrue( sortedIds.indexOf(mixtureId.toString()) > sortedIds.indexOf(chemical3Id.toString()));
+        Assertions.assertTrue( sortedIds.indexOf(mixtureId.toString()) > sortedIds.indexOf(chemical4Id.toString()));
+        Assertions.assertTrue( sortedIds.indexOf(mixtureId.toString()) > sortedIds.indexOf(chemical5Id.toString()));
+    }
+
 }

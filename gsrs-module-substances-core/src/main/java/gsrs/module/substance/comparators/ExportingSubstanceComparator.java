@@ -11,11 +11,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ExportingSubstanceComparator implements Serializable, Comparator<Substance> {
     @Override
     public int compare(Substance substance1, Substance substance2) {
-        log.trace("starting ExportingSubstanceComparator.compare");
         if(substance1 ==null || substance2==null){
             log.trace("one or more parameters is null");
             return 0;
         }
+        log.trace("starting ExportingSubstanceComparator.compare 1 {} - 2 {}", substance1.getUuid() != null ? substance1.getUuid().toString() : "[no id]",
+                substance2.getUuid() != null ? substance2.getUuid().toString() : "[no id]");
         AtomicInteger result = new AtomicInteger(0);
         if( substance1.getDependsOnSubstanceReferencesAndParents().stream().anyMatch(sr->
             substance2.getUuid()!=null && sr.v().refuuid.equals(substance2.getUuid().toString())
