@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class ExportingSubstanceComparatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
-    //case 1: no dependencies - expect result 0
+    //no dependencies and no UUIDs - expect result to depend on names
     @Test
     public void testSameOrder() {
         ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
@@ -38,10 +38,10 @@ public class ExportingSubstanceComparatorTest extends AbstractSubstanceJpaFullSt
 
         ExportingSubstanceComparator comparator = new ExportingSubstanceComparator();
         int result = comparator.compare(chemical1, chemical2);
-        Assertions.assertEquals(chemical1.getName().compareTo(chemical2.getName()) , result);
+        Assertions.assertEquals((chemical1.getName().compareTo(chemical2.getName())), result);
     }
 
-    //case 1: no dependencies - expect result 0 (Assign IDs)
+    //no dependencies - expect result to depend on UUID
     @Test
     public void testSameOrderWithIds() {
         ChemicalSubstanceBuilder chemicalSubstanceBuilder1 = new ChemicalSubstanceBuilder();
@@ -58,7 +58,7 @@ public class ExportingSubstanceComparatorTest extends AbstractSubstanceJpaFullSt
 
         ExportingSubstanceComparator comparator = new ExportingSubstanceComparator();
         int result = comparator.compare(chemical1, chemical2);
-        Assertions.assertEquals(chemical1.getUuid().compareTo(chemical2.getUuid()), result);
+        Assertions.assertEquals(chemical1.getName().compareTo(chemical2.getName()), result);
     }
 
     @Test
@@ -224,6 +224,7 @@ public class ExportingSubstanceComparatorTest extends AbstractSubstanceJpaFullSt
         substances.add(wholePlant);
         ExportingSubstanceComparator comparator = new ExportingSubstanceComparator();
         substances.sort(comparator);
+        //make sure the whole plant (dependent substance) gets sorted to the top position
         Assertions.assertEquals(wholePlant, substances.get(0));
     }
 
