@@ -17,11 +17,16 @@ import gsrs.service.AbstractGsrsEntityService;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
+import ix.core.chem.StructureProcessor;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.models.Role;
+import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
 import ix.core.util.LogUtil;
 import ix.core.validator.*;
+import ix.ginas.models.utils.JSONConstants;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.ginas.utils.validation.strategy.BatchProcessingStrategy;
@@ -76,6 +81,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private StructureProcessor structureProcessor;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -466,6 +474,32 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     Sneak.sneakyThrow( updateResult.getThrowable());
                 }
                 return updateResult;
+            }catch(IOException e){
+                status.setRollbackOnly();
+                throw new UncheckedIOException(e);
+            }
+        });
+    }
+
+    @Override
+    public UpdateResult<Substance> updateEntity(JsonNode updatedEntityJson) throws Exception {
+
+        log.trace("in SubstanceEntityServiceImpl.updateEntity");
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
+
+        return transactionTemplate.execute( status-> {
+            try {
+                Substance updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
+                if( updatedEntity instanceof ChemicalSubstance) {
+                    GinasChemicalStructure structure=((ChemicalSubstance)updatedEntity).getStructure();
+                    Structure instrumented =structureProcessor.instrument(structure.molfile);
+                    GinasChemicalStructure fullStructure = new GinasChemicalStructure(instrumented);
+                    fullStructure.setReferences(structure.getReferences());
+                    updatedEntity= ((ChemicalSubstance)updatedEntity).toChemicalBuilder().setStructure(fullStructure).build();
+                    log.trace("using 'rebuilt' chemical substance with instrumented structure for update");
+                }
+                return handleUpdate(updatedEntity, status);
             }catch(IOException e){
                 status.setRollbackOnly();
                 throw new UncheckedIOException(e);
