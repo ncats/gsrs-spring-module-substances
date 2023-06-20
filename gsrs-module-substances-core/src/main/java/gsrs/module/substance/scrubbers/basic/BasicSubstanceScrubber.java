@@ -508,6 +508,10 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
         dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
 
+        if( scrubberSettings.removeStdNames) {
+            log.trace("Removing std names");
+            dc.delete("$..stdName");
+        }
         return dc.jsonString();
     }
 
