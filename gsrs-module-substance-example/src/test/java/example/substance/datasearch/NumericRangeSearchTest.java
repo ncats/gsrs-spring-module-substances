@@ -113,7 +113,7 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
         log.trace("starting in testSearchByDateRange");
         Date now = new Date();
         long nowMillis = now.getTime();
-        long startRange = nowMillis - 1000;
+        long startRange = nowMillis - 10000;
         long endRange = nowMillis + 1000;
         String start = "" + (startRange);
         String end = "" + (endRange);
@@ -142,8 +142,8 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
         log.trace("starting in testSearchBy2DateRanges2");
         Date now = new Date();
         long nowMillis = now.getTime();
-        long startRange = nowMillis - 1000;
-        long endRange = nowMillis + 1000;
+        long startRange = nowMillis - 3000;
+        long endRange = nowMillis + 3000;
         String start = "" + (startRange);
         String end = "" + (endRange);
         

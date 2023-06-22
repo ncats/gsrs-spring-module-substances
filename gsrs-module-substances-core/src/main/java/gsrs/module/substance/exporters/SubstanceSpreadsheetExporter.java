@@ -36,7 +36,11 @@ public class SubstanceSpreadsheetExporter implements Exporter<Substance> {
 
         int j=0;
         for(ColumnValueRecipe<Substance> recipe : recipeMap){
-            j+= recipe.writeValuesFor(row, j, s);
+            try{
+                j+= recipe.writeValuesFor(row, j, s);
+            }catch(Exception e){
+                log.warn("WARNING: trouble exporting column " + j + " for substance record '" + s.uuid + "'", e);
+            }
         }
     }
 
@@ -47,7 +51,7 @@ public class SubstanceSpreadsheetExporter implements Exporter<Substance> {
 
 
     /**
-     * Builder class that makes a SpreadsheetExporter.  By default, the default columns are used
+     * Builder class that makes a SpreadsheetExporter.  By basic, the basic columns are used
      * but these may be modified using the add/remove column methods.
      *
      */

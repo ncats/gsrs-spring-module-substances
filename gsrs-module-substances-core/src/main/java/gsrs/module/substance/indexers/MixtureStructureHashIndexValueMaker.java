@@ -56,18 +56,18 @@ public class MixtureStructureHashIndexValueMaker implements IndexValueMaker<Subs
 	public void extractStructureHashes(ChemicalSubstance s, Consumer<IndexableValue> consumer) {
 		
 		//consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", lychi3));
-		if( s.getStructure().getStereoInsensitiveHash() != null && s.getStructure().getStereoInsensitiveHash().length() > 0)
-		{
-		consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", s.getStructure().getStereoInsensitiveHash()));
-		}
-		if(s.getStructure().getExactHash() != null && s.getStructure().getExactHash().length() >0 )
-		{
-		consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", s.getStructure().getExactHash()));
-		}
+	    
 
+        String stereoInsensitive=s.getStructure().getStereoInsensitiveHash();
+        String exact=s.getStructure().getExactHash();          
+        
+        ChemicalSubstanceStructureHashIndexValueMaker.addHashes(stereoInsensitive, exact, "root_structure_properties", consumer);
+
+        
 		s.moieties.stream().forEach(m->{
-			consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_properties_term", m.structure.getStereoInsensitiveHash()));
-			consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_properties_term", m.structure.getExactHash()));
+		    String sins=m.structure.getStereoInsensitiveHash();
+            String exa=m.structure.getExactHash();
+            ChemicalSubstanceStructureHashIndexValueMaker.addHashes(sins, exa, "root_moieties_properties", consumer);
 		});
 		
 	}

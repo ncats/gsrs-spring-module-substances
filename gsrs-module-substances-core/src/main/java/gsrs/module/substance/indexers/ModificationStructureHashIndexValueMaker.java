@@ -62,21 +62,11 @@ public class ModificationStructureHashIndexValueMaker implements IndexValueMaker
         //consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", lychi3));
 		String stereoInsensitive=s.getStructure().getStereoInsensitiveHash();
 		String exact=s.getStructure().getExactHash();
-		if(stereoInsensitive!=null){
-			consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", stereoInsensitive));
-		}
-		if(exact!=null){
-			consumer.accept(IndexableValue.simpleStringValue("root_structure_properties_term", exact));
-		}
+		ChemicalSubstanceStructureHashIndexValueMaker.addHashes(stereoInsensitive, exact, "root_structure_properties", consumer);
         s.moieties.stream().forEach(m->{
 			String sins=m.structure.getStereoInsensitiveHash();
 			String exa=m.structure.getExactHash();
-			if(sins!=null){
-				consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_properties_term", sins));
-			}
-			if(exa!=null){
-				consumer.accept(IndexableValue.simpleStringValue("root_moieties_structure_properties_term", exa));
-			}
+			ChemicalSubstanceStructureHashIndexValueMaker.addHashes(sins, exa, "root_moieties_properties", consumer);
         });
 
     }

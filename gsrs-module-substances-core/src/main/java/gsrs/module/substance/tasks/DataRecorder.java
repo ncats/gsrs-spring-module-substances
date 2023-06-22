@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class DataRecorder extends ScheduledTaskInitializer {
 
-    private static final int DEFAULT_NUM_RECORDS= 10; // with default cron of very 30 sec this makes last 5 mins snapshots
+    private static final int DEFAULT_NUM_RECORDS= 100; // with basic cron of very 30 sec this makes last 5 mins snapshots
    
 //    private String logFileString = new File("logs/dataRecorder.log");
     
@@ -47,8 +47,15 @@ public class DataRecorder extends ScheduledTaskInitializer {
         this.outputPath=path;
     }
     
-    @JsonProperty("keep_record_count")
+    @JsonProperty("keepRecordCount")
     public void setKeepRecordCount(Integer krc) {
+        if(krc !=null && krc>0){
+            data= new KeepLastList<String>(krc);
+        }
+    }
+    
+    @JsonProperty("keep_record_count")
+    public void setKeepRecordCountLegacy(Integer krc) {
         if(krc !=null && krc>0){
             data= new KeepLastList<String>(krc);
         }

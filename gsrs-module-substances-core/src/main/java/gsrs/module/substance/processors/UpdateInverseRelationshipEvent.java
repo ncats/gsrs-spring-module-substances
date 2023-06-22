@@ -35,14 +35,15 @@ public class UpdateInverseRelationshipEvent {
      * @return
      */
     public TryToCreateInverseRelationshipEvent toCreateEvent() {
-        
-        
+    	// TP 2022-11-29: this code used to have a bug where it would
+    	// set the from substance AND to substance to be the same, causing unintentional self-referencing
+    	// relationships. This is fixed in 3.0.3.
         return TryToCreateInverseRelationshipEvent.builder()
          .creationMode(CreationMode.CREATE_IF_MISSING)
          .relationshipIdToInvert(relationshipIdThatWasUpdated)
          .originatorUUID(originatorUUID)
-         .toSubstance(substanceIdToUpdate)
          .fromSubstance(substanceIdToUpdate)
+         .toSubstance(substanceIdThatWasUpdated)
          .build();
     }
 }

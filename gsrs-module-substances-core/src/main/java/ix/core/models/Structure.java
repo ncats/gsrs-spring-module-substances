@@ -43,7 +43,7 @@ public class Structure extends BaseModel {
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by default hibernate will store uuids as binary
+    //maintain backwards compatibility with old GSRS store it as varchar(40) by basic hibernate will store uuids as binary
     @Type(type = "uuid-char" )
     @Column(length =40, updatable = false)
     public UUID id;
@@ -274,9 +274,12 @@ public class Structure extends BaseModel {
     @JsonView(BeanViews.JsonDiff.class)
     @JsonDeserialize(contentUsing=AbstractValueDeserializer.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-    @JoinTable(name="ix_core_structure_property", inverseJoinColumns = {
-            @JoinColumn(name="ix_core_value_id")
-    })
+    @JoinTable(name="ix_core_structure_property",
+        inverseJoinColumns = {@JoinColumn(name="ix_core_value_id")},
+        indexes = {
+            @Index(name="property_structure_id_index", columnList="ix_core_structure_id"),
+            @Index(name="property_value_id_index", columnList="ix_core_value_id")}
+    )
     public List<Value> properties = new ArrayList<Value>();
 
     @ManyToMany(cascade = CascadeType.ALL)

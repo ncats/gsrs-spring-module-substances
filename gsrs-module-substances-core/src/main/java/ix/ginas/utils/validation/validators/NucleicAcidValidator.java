@@ -85,23 +85,13 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
         }
         if (cs.nucleicAcid.getSugars() == null
                 || cs.nucleicAcid.getSugars().isEmpty()) {
-            if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
-                callback.addMessage(GinasProcessingMessage
-                        .WARNING_MESSAGE(NO_SUGAR_MESSAGE));
-            } else {
                 callback.addMessage(GinasProcessingMessage
                         .ERROR_MESSAGE(NO_SUGAR_MESSAGE));
-            }
         }
         if (cs.nucleicAcid.getLinkages() == null
                 || cs.nucleicAcid.getLinkages().isEmpty()) {
-            if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
-                callback.addMessage(GinasProcessingMessage
-                        .WARNING_MESSAGE(NO_LINKAGE_MESSAGE));
-            } else {
                 callback.addMessage(GinasProcessingMessage
                         .ERROR_MESSAGE(NO_LINKAGE_MESSAGE));
-            }
         }
         for (int i=0; i< subunits.size(); i++) {
             Subunit su = subunits.get(i);
@@ -151,7 +141,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
     public List<Tuple<NucleicAcidSubstance, Subunit>> executeSimpleExactNucleicAcidSubunitSearch(Subunit su) throws InterruptedException, ExecutionException, TimeoutException, IOException {
         String q = "root_nucleicAcid_subunits_sequence:" + su.sequence;
         SearchRequest request = new SearchRequest.Builder()
-                .kind(NucleicAcidSubstance.class)
+                .kind(Substance.class)
                 .fdim(0)
                 .query(q)
                 .top(Integer.MAX_VALUE)

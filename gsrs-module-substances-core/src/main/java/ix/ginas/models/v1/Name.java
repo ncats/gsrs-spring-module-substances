@@ -4,6 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import gsrs.module.substance.SubstanceDataConfiguration;
+import gsrs.module.substance.utils.HtmlUtil;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.core.SingleParent;
 import ix.core.models.*;
 import ix.ginas.models.CommonDataElementOfCollection;
@@ -21,11 +25,13 @@ import java.util.*;
 
 @JSONEntity(title = "Name", isFinal = true)
 @Entity
-@Table(name="ix_ginas_name")
+@Table(name="ix_ginas_name", indexes = {@Index(name = "name_index", columnList = "name"),
+                                        @Index(name = "name_owner_index", columnList = "owner_uuid")})
 @SingleParent
 @IndexableRoot
 public class Name extends CommonDataElementOfCollection {
-
+	
+	
 	public static enum Sorter implements  Comparator<Name> {
 
 		/**
@@ -114,7 +120,7 @@ public class Name extends CommonDataElementOfCollection {
 	}
 
     @JSONEntity(title = "Name", isRequired = true)
-    @Column(nullable=false)
+    @Column(nullable=false, length=1024)
     @Indexable(name="Name", suggest=true)
     public String name;
 
@@ -125,7 +131,7 @@ public class Name extends CommonDataElementOfCollection {
     
     @Lob
     @Basic(fetch= FetchType.EAGER)
-    @JsonView(BeanViews.JsonDiff.class)
+    //@JsonView(BeanViews.JsonDiff.class)  commenting this out to make the stdName field easier to see
 	@Indexable(name="Standardized Name", suggest=true)
 	public String stdName;
     
@@ -176,48 +182,30 @@ public class Name extends CommonDataElementOfCollection {
     }
 
     public String getName () {
-        return fullName != null ? fullName : name;
+    	return fullName != null ? fullName : name;
     }
 
     @PreUpdate
-	private void preUpdate(){
+    private void preUpdate(){
+    	
     	tidyName();
-		updateImmutables();
-	}
+    	updateImmutables();
+    }
 
-	@PrePersist
-	private void prePersist(){
-		tidyName();
-	}
+    @PrePersist
+    private void prePersist(){
+    	tidyName();
+    }
 
     private void tidyName () {
-        if (name.getBytes().length > 255) {
-            fullName = name;
-            name = truncateString(name,254);
-            
-        }
-    }
-    
-    private static String truncateString(String s, int maxBytes){
-    	byte[] b = (s+"   ").getBytes();
-    	if(maxBytes>=b.length){
-    		return s;
-    	}
-    	boolean lastComplete=false;
-    	for(int i=maxBytes;i>=0;i--){
-    		if(lastComplete)
-    			return new String(Arrays.copyOf(b, i));
-    		if((b[i] & 0x80) ==0){
-    			return new String(Arrays.copyOf(b, i));
-    		}
-    		if(b[i]==-79){
-    			lastComplete=true;
-    		}
-    	}
+    	int clen= SubstanceDataConfiguration.INSTANCE().getNameColumnLength();
     	
-    	return "";
+    	if (name.length() > clen) {
+    		fullName = name;
+    		name = HtmlUtil.truncate(name, clen);
+    	}
     }
-    
+
     public void addLocator(Substance sub, String loc){
     	Reference r = new Reference();
     	r.docType=Name.SRS_LOCATOR;

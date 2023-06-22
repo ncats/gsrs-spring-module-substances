@@ -13,7 +13,7 @@ import java.util.List;
 
 @JSONEntity(title = "Note", isFinal = true)
 @Entity
-@Table(name="ix_ginas_note")
+@Table(name="ix_ginas_note", indexes = {@Index(name = "note_owner_index", columnList = "owner_uuid")})
 public class Note extends CommonDataElementOfCollection {
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore

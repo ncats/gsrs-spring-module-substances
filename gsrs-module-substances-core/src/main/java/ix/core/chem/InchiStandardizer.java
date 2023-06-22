@@ -6,11 +6,13 @@ import gov.nih.ncats.molwitch.io.ChemFormat;
 import ix.core.models.Structure;
 import ix.core.models.Text;
 import ix.core.models.Value;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+@Slf4j
 public class InchiStandardizer extends AbstractStructureStandardizer {
     private static final int ATOM_LIMIT_FOR_STANDARDIZATION = 240;
 
@@ -25,6 +27,7 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
     public InchiStandardizer(int maxNumberOfAtoms){
         this.maxNumberOfAtoms = maxNumberOfAtoms;
     }
+    
     @Override
     public String canonicalSmiles(Structure s, String mol) {
         String smiles=null;
@@ -60,6 +63,7 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
         }
         try {
             String inchi = orig.toInchi().getInchi();
+            
             Chemical chem= Inchi.toChemical(inchi);
             //some inchi->chemical flavors have very bad clean functions and don't compute stereo or coords correctly
             //which can lead to wrong molecules so do a double check that we get the right inchi back
@@ -72,7 +76,10 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
 
             return chem;
         }catch(Exception e){
-            e.printStackTrace();
+        	log.warn("Trouble using InchIStandardizer on record [" + orig.getFormula() + "] :" + e.getMessage() + " enable TRACE log level for more information");
+        	if(log.isTraceEnabled()) {
+        		log.trace("Trouble using InchIStandardizer on record with structure name \"" + orig.getName() + "\" [" + orig.getFormula() + "]", e);
+        	}
             return orig;
         }
     }

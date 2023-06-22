@@ -1,9 +1,42 @@
 package gsrs.module.substance.services;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
+
+import javax.annotation.PreDestroy;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.AuditConfig;
@@ -17,42 +50,29 @@ import gsrs.security.AdminService;
 import gsrs.security.hasAdminRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
-import ix.core.models.*;
-import ix.core.processing.*;
+import ix.core.EntityFetcher;
+import ix.core.models.Keyword;
+import ix.core.models.Payload;
+import ix.core.models.ProcessingJob;
+import ix.core.models.ProcessingJobUtils;
+import ix.core.models.ProcessingRecord;
+import ix.core.processing.PayloadExtractedRecord;
+import ix.core.processing.PayloadProcessor;
+import ix.core.processing.PersistRecordWorkerFactory;
+import ix.core.processing.RecordExtractor;
+import ix.core.processing.RecordPersister;
+import ix.core.processing.RecordTransformer;
+import ix.core.processing.TransformedRecord;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
+import ix.core.util.EntityUtils;
 import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
 import ix.core.validator.ValidationMessage;
 import ix.ginas.models.v1.Reference;
-import ix.ginas.utils.JsonSubstanceFactory;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import javax.annotation.PreDestroy;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 @Slf4j
 @Service
@@ -65,6 +85,7 @@ public class SubstanceBulkLoadService {
     private static final Logger TransformFailLogger = LoggerFactory.getLogger("transformFail");
     private static final Logger ExtractFailLogger = LoggerFactory.getLogger("extractFail");
 
+    private final static int NUMBER_OF_LOADING_THREADS=1;
 
     public static Logger getPersistFailureLogger(){
         return PersistFailLogger;
@@ -136,8 +157,17 @@ public class SubstanceBulkLoadService {
     public Statistics getStatisticsFor(String jobId){
         return getStatisticsForJob(jobId);
     }
+
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
         synchronized (jobLock) {
+            if(stats==null ) {
+                //log.info("skipping save because stats is null");
+                return null;
+            }
+            if(!stats._isDone()) {
+                //log.info("skipping save of job in process");
+                return null;
+            }
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
@@ -197,7 +227,7 @@ public class SubstanceBulkLoadService {
         service.shutdownNow();
         applyStatisticsChangeForJob(processorJobKey, Statistics.CHANGE.CANCEL);
         return true;
-   }
+       }
     @hasAdminRole
     public PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
         // first see if this payload has already processed..
@@ -222,13 +252,10 @@ public class SubstanceBulkLoadService {
             processingJobRepository.saveAndFlush(job);
             return job.id;
         });
-        //owner now set automatically in created by?
-//        job.owner= ((UserProfile) GsrsSecurityUtils.getCurrentUser()).user.;
-//        saveJobInSeparateTransaction(job);
         storeStatisticsForJob(pp.key, new Statistics());
 
 
-        final ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(3, MAX_EXTRACTION_QUEUE);
+        final ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(NUMBER_OF_LOADING_THREADS, MAX_EXTRACTION_QUEUE);
 
         final PersistRecordWorkerFactory factory = configuration.getPersistRecordWorkerFactory(parameters);
 
@@ -240,8 +267,16 @@ public class SubstanceBulkLoadService {
             public void run() {
                 TransactionTemplate tx = new TransactionTemplate(transactionManager);
                 tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                tx.executeWithoutResult(ignore->{
-                ProcessingJob job = processingJobRepository.findById(pp.jobId).get();
+                tx.executeWithoutResult(ignore-> {
+                    TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
+                    tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    ProcessingJob job = tx2.execute(s -> {
+                        ProcessingJob innerJob=processingJobRepository.findById(pp.jobId).get();
+                        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
+                        //log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
+                        return innerJob;
+                    });
+
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
                 //katzelda 6/2019: IDE says we don't ever use the FilterSessions but we do it's just a sideeffect that gets used when we
@@ -326,14 +361,6 @@ public class SubstanceBulkLoadService {
                 }
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
-//                    Statistics stat = getStatisticsForJob(pp.key);
-                    //don't mark extraction done that changes the stats and changes
-                    //the initial estimate we can just use that
-
-//                    stat.applyChange(Statistics.CHANGE.MARK_EXTRACTION_DONE);
-//                    job.status =ProcessingJob.Status.COMPLETE;
-//                    job.message="";
-//                    saveJobInSeparateTransaction(pp.jobId, stat);
                     executorServices.remove(pp.key);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
@@ -368,7 +395,9 @@ public class SubstanceBulkLoadService {
 
     public class BulkLoadServiceCallBackImpl implements BulkLoadServiceCallback{
 
-        private final ProcessingJob job;
+        private ProcessingJob job;
+        
+        
 
         public BulkLoadServiceCallBackImpl(ProcessingJob job) {
             this.job = job;
@@ -381,36 +410,52 @@ public class SubstanceBulkLoadService {
 
         @Override
         public void updateJobIfNecessary(ProcessingJob job) {
-
+        	
         }
+        
+        private void resyncJob() {
+        	try {
+        		Keyword tester=job.keys.stream().findAny().orElse(null);
+        		log.trace(tester.toString());
+        	}catch(Exception e) {
+        		job=EntityFetcher.ofPojo(job).getIfPossible().orElse(job);
+        	}
+        }
+        
 
         @Override
         public void persistedSuccess() {
+        	resyncJob() ;
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PE_GOOD);
         }
 
         @Override
         public void persistedFailure() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PE_BAD);
         }
 
         @Override
         public void extractionSuccess() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_EX_GOOD);
         }
 
         @Override
         public void extractionFailure() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_EX_BAD);
         }
 
         @Override
         public void processedSuccess() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PR_GOOD);
         }
 
         @Override
         public void processedFailure() {
+        	resyncJob();
             applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PR_BAD);
         }
     }
@@ -419,7 +464,8 @@ public class SubstanceBulkLoadService {
         return jobCacheStatistics.get(jobTerm);
     }
     public Statistics getStatisticsForJob(ProcessingJob pj){
-        String k=pj.getKeyMatching(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY);
+    	
+    	String k=pj.getKeyMatching(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY);
         //the Map interface says we should be able to call get(null)
         //but Concurrent hashmap will throw a null pointer when
         //computing the hash value, at least in Java 7...
@@ -515,10 +561,10 @@ public class SubstanceBulkLoadService {
                     }
                     if (worked) {
                         prec.rec.status = ProcessingRecord.Status.OK;
-                        //String kind, String id
-                        prec.rec.xref = new XRef(JsonSubstanceFactory.getSubstanceKind(prec.recordToPersist).getName(), prec.recordToPersist.get("uuid").asText());
-                        //NOTE: the JPA mappings aren't set for cascade correctly? have to manually save both
-                        xRefRepository.saveAndFlush(prec.rec.xref);
+                        /*
+                        we used to save the individual records separately but as of August 2022, we're
+                        streamlining the saving process
+                         */
                     } else {
                         prec.rec.message =  errors.get(0);
                         prec.rec.status = ProcessingRecord.Status.FAILED;
@@ -547,30 +593,6 @@ public class SubstanceBulkLoadService {
 
     }
 
-//    /**
-//     * This Extractor is for explicitly testing that failed validation
-//     * records do fail.
-//     *
-//     * @author peryeata
-//     *
-//     */
-//    public static class GinasAlwaysFailTestDumpExtractor extends GinasDumpExtractor {
-//        public GinasAlwaysFailTestDumpExtractor(InputStream is) {
-//            super(is);
-//        }
-//
-//        @Override
-//        public RecordTransformer getTransformer() {
-//            return new RecordTransformer<JsonNode, Substance>(){
-//                @Override
-//                public Substance transform(PayloadExtractedRecord<JsonNode> pr, ProcessingRecord rec) {
-//                    throw new IllegalStateException("Intentionally failed validation");
-//                }
-//
-//            };
-//        }
-//
-//    }
 
     public static class GinasDumpExtractor extends GinasJSONExtractor {
         BufferedReader buff;
@@ -609,10 +631,6 @@ public class SubstanceBulkLoadService {
                     //use static pattern so we don't recompile on every split call
                     //which is what String.split() does
                     String[] toks = TOKEN_SPLIT_PATTERN.split(line);
-                    // Logger.debug("extracting:"+ toks[1]);
-//				ByteArrayInputStream bis = new ByteArrayInputStream(toks[2].getBytes(StandardCharsets.UTF_8));
-//
-//				return mapper.readTree(bis);
                     if(toks ==null || toks.length <2){
                         continue;
                     }
@@ -729,25 +747,6 @@ public class SubstanceBulkLoadService {
             rec.start = System.currentTimeMillis();
             rec.status = ProcessingRecord.Status.ADAPTED;
             return pr.theRecord;
-//            Substance sub = null;
-//            try {
-//                sub = transformSubstance(pr.theRecord);
-//                addImportReference(sub, rec.job);
-//                ValidationResponse resp = validatorFactory.createValidatorFor(sub, null, ValidatorConfig.METHOD_TYPE.BATCH, ValidatorCategory.CATEGORY_ALL())
-//                        .validate(sub, null);
-//                if(resp.hasError()){
-//                    throw new IllegalArgumentException("validation error: " + resp.getValidationMessages());
-//                }
-//                rec.status = ProcessingRecord.Status.ADAPTED;
-//            } catch (Throwable t) {
-//                rec.stop = System.currentTimeMillis();
-//                rec.status = ProcessingRecord.Status.FAILED;
-//                rec.message = t.getMessage();
-//                log.error(t.getMessage());
-//                t.printStackTrace();
-//                throw new IllegalStateException(t);
-//            }
-//            return sub;
         }
 
         public String getName(JsonNode theRecord) {

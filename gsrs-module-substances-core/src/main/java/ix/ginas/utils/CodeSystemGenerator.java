@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import ix.ginas.models.v1.Substance;
 
-public class CodeSystemGenerator implements NamedIdGenerator<Substance, String> {
+public class CodeSystemGenerator implements NamedIdGenerator<Substance, String>,SubstanceApprovalIdGenerator {
 
 
     private final String name;

@@ -24,7 +24,6 @@ import java.util.*;
 
 @Entity
 @Table(name="ix_core_procjob")
-@Backup
 @Indexable(indexed = false)
 @EntityMapperOptions(selfRelViews = BeanViews.Compact.class, idProviderRef = "loaderLabel")
 @SequenceGenerator(name = "LONG_SEQ_ID", sequenceName = "ix_core_procjob_seq", allocationSize = 1)
@@ -51,6 +50,8 @@ public class ProcessingJob extends LongBaseModel {
 
     @ManyToMany(cascade=CascadeType.ALL)
     @JoinTable(name="ix_core_procjob_key")
+    //, inverseJoinColumns = {
+    //            @JoinColumn(name="ix_core_procjob_id")
     public List<Keyword> keys = new ArrayList<Keyword>();
 
     @Transient
@@ -182,13 +183,18 @@ public class ProcessingJob extends LongBaseModel {
         if(keywordLabelMap !=null) {
             return;
         }
-        keywordLabelMap = new HashMap<>();
-        keywordTermMap = new HashMap<>();
+        HashMap<String,Keyword> tKeywordLabelMap = new HashMap<>();
+        HashMap<String,Keyword> tkeywordTermMap = new HashMap<>();
 
+        
         for (Keyword k : keys) {
-            keywordLabelMap.put(k.label, k);
-            keywordTermMap.put(k.term, k);
+        	tKeywordLabelMap.put(k.label, k);
+            tkeywordTermMap.put(k.term, k);
         }
+        
+        this.keywordLabelMap=tKeywordLabelMap;
+        this.keywordTermMap=tkeywordTermMap;
+        
 
     }
 

@@ -30,20 +30,23 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
         if(substanceReference ==null){
             return null;
         }
+
+        //Older Substance data did not have a refuuid as all references were based on approval id
+        //so we need to check for null here
+        if(substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid)) {
+            return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
+        }
         if(substanceReference.approvalID !=null) {
             Substance s = findByApprovalID(substanceReference.approvalID);
             if (s != null) {
                 return s;
             }
         }
-        //Older Substance data did not have a refuuid as all references were based on approval id
-        //so we need to check for null here
-        if(substanceReference.refuuid !=null && UUIDUtil.isUUID(substanceReference.refuuid)) {
-            return findById(UUID.fromString(substanceReference.refuuid)).orElse(null);
-        }
 
         return null;
     }
+    
+    
     @Query("select s from Substance s where s.approvalID= ?1")
     Substance findByApprovalID(String approvalID);
     @Query("select s from Substance s where s.approvalID= ?1")
@@ -52,6 +55,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     Optional<SubstanceSummary> findSummaryByUuid(UUID uuid);
 
     List<SubstanceSummary> findByNames_NameIgnoreCase(String name);
+    List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
+
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
@@ -153,4 +158,10 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     
     @Query("select s from Substance s")
     public Stream<Substance> streamAll();
+
+    @Query("select s.id from Substance s")
+    List<UUID> getAllIds();
+
+    @Query("select s.id from Substance s where dtype='CHE'")
+    List<UUID> getAllChemicalIds();
 }

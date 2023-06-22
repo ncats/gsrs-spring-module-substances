@@ -44,6 +44,11 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
 
 				// Get Ingredient List
 				product.getProductIngredientAllList().forEach(ingredient -> {
+					//skip ingredients that aren't this ingredient
+					if(!substance.getUuid().toString().equals(ingredient.getSubstanceUuid())) {
+						return;
+					}
+
 					if(ingredient.getIngredientType() !=null){
 						consumer.accept(IndexableValue.simpleFacetStringValue("Product Ingredient Type", ingredient.getIngredientType()));
 					}

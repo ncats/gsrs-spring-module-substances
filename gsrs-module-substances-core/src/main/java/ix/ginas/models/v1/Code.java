@@ -18,7 +18,10 @@ import java.util.regex.Pattern;
 
 @JSONEntity(title = "Code", isFinal = true)
 @Entity
-@Table(name="ix_ginas_code")
+@Table(name="ix_ginas_code",indexes = {@Index(name = "ix_ix_ginas_code_code", columnList = "code"),
+		@Index(name = "ix_ix_ginas_code_code_system", columnList = "code_system"),
+		@Index(name = "ix_ix_ginas_code_type", columnList = "type"),
+		@Index(name = "ix_ix_ginas_code_owner", columnList = "owner_uuid")})
 @DynamicFacet(label="codeSystem", value="code")
 @IndexableRoot
 public class Code extends CommonDataElementOfCollection{

@@ -3,6 +3,7 @@ package example;
 import gsrs.*;
 import gsrs.cv.EnableControlledVocabulary;
 import gsrs.module.substance.indexers.DeprecatedIndexValueMaker;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
@@ -28,21 +29,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @EnableGsrsScheduler
 @EnableGsrsBackup
 @EnableControlledVocabulary
+@Slf4j
 public class GsrsModuleSubstanceApplication {
 
     @Bean
     public WebMvcConfigurer corsConfigurer() {
-        return new WebMvcConfigurerAdapter() {
+        return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedOrigins("*")
-                        .allowedMethods("GET", "PUT", "POST", "PATCH", "DELETE", "OPTIONS");
-
+                        .allowedMethods("GET", "PUT", "POST", "PATCH", "DELETE", "OPTIONS")
+                        .allowedHeaders("origin", "Content-Type", "Authorization", "Accept", "Accept-Language", "X-Authorization", "X-Requested-With", "auth-username", "auth-password", "auth-token", "auth-key", "auth-token")
+                        .allowCredentials(false).maxAge(300);
             }
         };
     }
-
 
 
     @Bean
@@ -53,5 +55,6 @@ public class GsrsModuleSubstanceApplication {
     public static void main(String[] args) {
         SpringApplication.run(GsrsModuleSubstanceApplication.class, args);
     }
+
 
 }

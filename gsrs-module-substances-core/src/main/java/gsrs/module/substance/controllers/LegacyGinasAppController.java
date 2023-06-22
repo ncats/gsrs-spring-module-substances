@@ -246,7 +246,7 @@ public class LegacyGinasAppController {
         if(standardize !=null){
             attributes.addAttribute("standardize", standardize);
         }
-        return new ModelAndView("redirect:/api/v1/substances/render(" +id +")");
+        return new ModelAndView("/api/v1/substances/render(" +id +")");
     }
 
     //GET	 /render	ix.ncats.controllers.App.renderParam(structure: String ?= null, size: Int ?= 150)
@@ -282,7 +282,7 @@ public class LegacyGinasAppController {
         Chemical c = parseAndComputeCoordsIfNeeded(structure);
 
 
-        byte [] data = substanceController.renderChemical(null, c,"svg", size, null, null, stereo, standardize);
+        byte [] data = substanceController.renderChemical(null, c,"svg", size, null, null, stereo, standardize, null);
         HttpHeaders headers = new HttpHeaders();
 
         headers.set("Content-Type", "image/svg+xml");
@@ -305,7 +305,7 @@ public class LegacyGinasAppController {
     public Object suggestFields(HttpServletRequest httpRequest, RedirectAttributes attributes) throws IOException {
         httpRequest.setAttribute(
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
-        return new ModelAndView("redirect:/api/v1/substances/suggest/@fields");
+        return new ModelAndView("/api/v1/substances/suggest/@fields");
     }
     @GetGsrsRestApiMapping("/suggest")
     public Object suggest(@RequestParam(value ="q") String q, @RequestParam(value ="max", defaultValue = "10") int max,
@@ -314,7 +314,7 @@ public class LegacyGinasAppController {
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
         attributes.addAttribute("q", q);
         attributes.addAttribute("max", max);
-        return new ModelAndView("redirect:/api/v1/substances/suggest");
+        return new ModelAndView("/api/v1/substances/suggest");
     }
     @GetGsrsRestApiMapping("/suggest/{field}")
     public Object suggestField(@PathVariable("field") String field,  @RequestParam("q") String q, @RequestParam(value ="max", defaultValue = "10") int max,
@@ -323,6 +323,6 @@ public class LegacyGinasAppController {
                     View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
             attributes.addAttribute("q", q);
             attributes.addAttribute("max", max);
-            return new ModelAndView("redirect:/api/v1/substances/suggest/" + field);
+            return new ModelAndView("/api/v1/substances/suggest/" + field);
     }
 }

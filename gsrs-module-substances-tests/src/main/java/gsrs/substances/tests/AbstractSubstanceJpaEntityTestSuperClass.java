@@ -136,7 +136,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         public BackupService backupService(){
             return new BackupService();
         }
-
+        
         @Bean
         @ConditionalOnMissingBean
         @Primary

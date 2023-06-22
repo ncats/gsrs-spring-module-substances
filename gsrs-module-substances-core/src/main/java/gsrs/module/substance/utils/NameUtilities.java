@@ -2,16 +2,16 @@ package gsrs.module.substance.utils;
 
 import java.text.Normalizer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import gsrs.module.substance.services.ConsoleFilterService;
+import gsrs.module.substance.standardizer.ReplacementNote;
+import gsrs.module.substance.standardizer.ReplacementResult;
 import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  *
@@ -37,7 +37,18 @@ public class NameUtilities {
     //private static final Pattern NON_ASCII_PATTERN = Pattern.compile("[^\\p{ASCII}]");
     private static final Pattern UNPRINTABLES_PATTERN = Pattern.compile("\\p{C}");
     //private static final String NON_ASCII_REPLACEMENT = "?";
+
+    private static final Pattern NON_BREAKING_SPACE_PATTERN = Pattern.compile("\u00A0");
     private static final Pattern PATTERN_MULTIPLE_WHITE_SPACE = Pattern.compile("\\s{2,}");
+    private static final Pattern PATTERN_LEADING_WHITE_SPACE = Pattern.compile("^\\s+");
+    private static final Pattern PATTERN_TRAILING_WHITE_SPACE = Pattern.compile("\\s+$");
+
+    // Example1 "Hello-\n\n  Dolly" ==> "Hello-Dolly"
+    // Example2 "Hello-   \n\n  Dolly" ==> "Hello-Dolly"
+    private static final Pattern PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS = Pattern.compile("(?<=[\\-])[ \\t]*[\\r\\n]+[\\s]*");
+
+    private static final Pattern PATTERN_SINGLE_OR_MULTIPLE_LINEFEED = Pattern.compile("[\\r\\n]+");
+
     private static final Pattern PATTERN_ZERO_WIDTH = Pattern.compile("[\u200B\u200C\u200D\u2060\uFEFF]");
     
     private static final Pattern PATTERN_CASE0 = Pattern.compile("[\u00B4\u02B9\u02BC\u02C8\u0301\u2018\u2019\u201B\u2032\u2034\u2037]");
@@ -88,8 +99,15 @@ public class NameUtilities {
         if (input == null || input.length() == 0) {
             return new ReplacementResult(input, new ArrayList<>());
         }
-        ReplacementResult replacementResult = removeSerialSpaces(input);
+        // 1 replace linefeed preceded by (e.g. dash) with blank; but leave the dash.
+        // 2 replace remaining linefeed with space before replaceUnprintables, which will replace with blank ''
+        ReplacementResult replacementResult = replaceSingleLinefeedPrecededByCertainCharactersWithBlank(input);
+        replacementResult.update(replaceMessySpaces(replacementResult.getResult()));
+        replacementResult.update(replaceSingleOrMultipleLinefeedWithSpace(replacementResult.getResult()));
+        replacementResult.update(removeSerialSpaces(replacementResult.getResult()));
         replacementResult.update(replaceUnprintables(replacementResult.getResult()));
+        replacementResult.update(removeLeadingWhitespace(replacementResult.getResult()));
+        replacementResult.update(removeTrailingWhitespace(replacementResult.getResult()));
         return replacementResult;
     }
 
@@ -106,6 +124,27 @@ public class NameUtilities {
             notes.add(new ReplacementNote(matcher.start(), " "));
             String cleaned = matcher.replaceAll(" ");
             result.setResult(cleaned);
+        }
+        return result;
+    }
+
+    /**
+     * Remove html from a string, then convert to text.
+     *
+     * @param input text data
+     * @return text data + messages about some of the replacements
+     */
+    public static ReplacementResult cleanHtmlToText(String input) {
+        List<ReplacementNote> notes = new ArrayList<>();
+        ReplacementResult result = new ReplacementResult(input, notes);
+        if (input != null && input.length() != 0) {
+            String cleaned = HtmlUtil.cleanToText(input, "UTF-8");
+            cleaned=cleaned.replace("&gt;",">").replace("&lt;", "<").replace("&amp;","&");
+            int start = StringUtils.indexOfDifference(input, cleaned);
+            if (start > -1) {
+                notes.add(new ReplacementNote(start, ""));
+                result.setResult(cleaned);
+            }
         }
         return result;
     }
@@ -131,7 +170,15 @@ public class NameUtilities {
         if(namePart==null) {
             namePart=input.trim();
         }
-        ReplacementResult initialResult = replaceUnprintables(namePart);
+        ReplacementResult initialResult = cleanHtmlToText(namePart);
+
+        // 1 replace linefeed preceded by (e.g. dash) with blank; but leave the dash.
+        // 2 replace remaining linefeed with space before replaceUnprintables, which will replace with blank ''
+        initialResult.update(replaceSingleLinefeedPrecededByCertainCharactersWithBlank(initialResult.getResult()));
+
+        initialResult.update(replaceSingleOrMultipleLinefeedWithSpace(initialResult.getResult()));
+        initialResult.update(replaceUnprintables(initialResult.getResult()));
+        initialResult.update(removeSerialSpaces(initialResult.getResult()));
 
         ReplacementResult resultForSpecifics = initialResult.update(makeSpecificReplacements(initialResult.getResult()));
         String workingString = resultForSpecifics.getResult();
@@ -140,6 +187,8 @@ public class NameUtilities {
         results.update(zeroWidthRemovalResult);
         workingString = nkfdNormalizations(results.getResult());
         results.update(removeSerialSpaces(workingString));
+        results.update(removeLeadingWhitespace(results.getResult()));
+        results.update(removeTrailingWhitespace(results.getResult()));
         results.setResult(results.getResult().toUpperCase() +suffix);
         return results;
     }
@@ -166,7 +215,109 @@ public class NameUtilities {
         return defaultResult;
     }
 
+    public static ReplacementResult replaceMessySpaces(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+
+        Matcher matcher = NON_BREAKING_SPACE_PATTERN.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(" "), notes);
+        }
+        return defaultResult;
+    }
+
+    /**
+     * Replace single linefeed preceded with certain characters with blank, for example '-\r\n' ==> '-'
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult replaceSingleLinefeedPrecededByCertainCharactersWithBlank(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+        Matcher matcher = PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(""), notes);
+        }
+        return defaultResult;
+    }
+
+    /**
+     * Replace single or multiple linefeed with a single space
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult replaceSingleOrMultipleLinefeedWithSpace(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+        Matcher matcher = PATTERN_SINGLE_OR_MULTIPLE_LINEFEED.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(" "), notes);
+        }
+        return defaultResult;
+    }
+
+    /**
+     * Remove leading whitespace
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult removeLeadingWhitespace(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+        Matcher matcher = PATTERN_LEADING_WHITE_SPACE.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(""), notes);
+        }
+        return defaultResult;
+    }
+
+    /**
+     * Remove trailing whitespace
+     *
+     * @param source starting text
+     * @return clean text with some messages
+     */
+    public static ReplacementResult removeTrailingWhitespace(String source) {
+        ReplacementResult defaultResult = new ReplacementResult(source, new ArrayList<>());
+        if (source == null || source.length() == 0) {
+            return defaultResult;
+        }
+        Matcher matcher = PATTERN_TRAILING_WHITE_SPACE.matcher(source);
+        if (matcher.find()) {
+            ReplacementNote note1 = new ReplacementNote(matcher.start(), source.substring(matcher.start(), matcher.start() + 1));
+            List<ReplacementNote> notes = new ArrayList<>();
+            notes.add(note1);
+            return new ReplacementResult(matcher.replaceAll(""), notes);
+        }
+        return defaultResult;
+    }
+
+
     private void initReplacers() {
+        replacers.add(new Replacer("\\×", "X"));
         String[] replacementTokensGreek = REPLACEMENT_SOURCE_GREEK.split(";");
         for (int i = 0; i < replacementTokensGreek.length; i = i + 2) {
             replacers.add(new Replacer(replacementTokensGreek[i], replacementTokensGreek[i + 1])
