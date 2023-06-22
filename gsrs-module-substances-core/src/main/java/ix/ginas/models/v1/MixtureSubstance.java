@@ -49,7 +49,12 @@ public class MixtureSubstance extends Substance implements GinasSubstanceDefinit
         return srefs;
         
     }
-    
+
+	@Override
+	@JsonIgnore
+	public List<Tuple<GinasAccessControlled,SubstanceReference>> getSubstanceReferencesAndParentsBeyondDependsOn() {
+		return this.getDependsOnSubstanceReferencesAndParents();
+	}
 
 	@Override
 	@JsonIgnore

@@ -266,6 +266,12 @@ public Boolean uUIdCleanupCopyUUIDIdToCode = false;
 */
 @JsonProperty("UUIDCleanupUUIDCodeSystem")
 public String UUIDCleanupUUIDCodeSystem ="";
+/**
+* Remove Standardized Names
+*/
+@JsonProperty("removeStdNames")
+public Boolean removeStdNames = false;
+
 	/**
 	 * Change All Statuses
 	 * <p>

@@ -1074,6 +1074,69 @@ public class ScrubberTestsSpecific {
         Assertions.assertNotNull(scrubbedSubstance.mixture);
     }
 
+    @Test
+    /*
+    Substance has 1 names with an original stdName
+    Expect to remove the stdName
+     */
+    public void testRemoveStdName(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Name openName = new Name();
+        openName.name="Open Name";
+        openName.stdName="oPeN nAmE";
+        openName.languages.add(new Keyword("en"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+        Substance testConcept = substanceBuilder.build();
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveStdNames(true);
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Assertions.assertEquals(1, cleaned.get().names.size());
+        Assertions.assertNull(cleaned.get().names.get(0).stdName);
+    }
+
+    @Test
+    /*
+    Substance has 1 names with an original stdName
+    Expect to remove the stdName
+     */
+    public void testDontRemoveStdName(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Name openName = new Name();
+        openName.name="Open Name";
+        openName.stdName="oPeN nAmE";
+        openName.languages.add(new Keyword("en"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+        Substance testConcept = substanceBuilder.build();
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveStdNames(false);
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Assertions.assertEquals(openName.stdName, cleaned.get().names.get(0).stdName);
+    }
+
     private NucleicAcidSubstance createApprovedNA(String newApprovalId) {
         NucleicAcidSubstanceBuilder builder = new NucleicAcidSubstanceBuilder();
         builder.setStatus("approved");
