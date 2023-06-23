@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.Predicate;
 
 import gov.nih.ncats.common.stream.StreamUtil;
@@ -454,26 +455,35 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
         if( scrubberSettings.getRemoveNotes()){
             log.trace("deleting notes");
-            dc.delete("$['notes'][?]", (ctx)->{
-            	Map code=ctx.item(Map.class);
-            	Object o=code.get("access");
-                return o == null || !o.toString().contains(TO_FORCE_KEEP);
-            });
+            JSONArray testArray = dc.read("$['notes']");
+            if( !testArray.isEmpty()) {
+                dc.delete("$['notes'][?]", (ctx) -> {
+                    Map code = ctx.item(Map.class);
+                    Object o = code.get("access");
+                    return o == null || !o.toString().contains(TO_FORCE_KEEP);
+                });
+            }
         }
 
         if( scrubberSettings.getRemoveChangeReason()){
-            dc.delete("$.changeReason");
+            safeDelete(dc,"$.changeReason");
+            //dc.delete("$.changeReason");
         }
 
         if(scrubberSettings.getRemoveDates()) {
-            dc.delete("$..lastEdited");
-            dc.delete("$..created");
+            safeDelete(dc, "$..lastEdited");
+            //dc.delete("$..lastEdited");
+            safeDelete(dc, "$..created");
+            //dc.delete("$..created");
         }
         if(scrubberSettings.getAuditInformationCleanup()) {
         	if(scrubberSettings.getAuditInformationCleanupDeidentifyAuditUser()) {
-        		dc.delete("$..lastEditedBy");
-        		dc.delete("$..createdBy");
-        		dc.delete("$..approvedBy");
+                safeDelete(dc,"$..lastEditedBy");
+                //dc.delete("$..lastEditedBy");
+                safeDelete(dc,"$..createdBy");
+                //dc.delete("$..createdBy");
+                safeDelete(dc,"$..approvedBy");
+                //dc.delete("$..approvedBy");
         	}else if(scrubberSettings.getAuditInformationCleanupNewAuditorValue()!=null) {
         		String newAuditor = scrubberSettings.getAuditInformationCleanupNewAuditorValue();
 
@@ -502,15 +512,25 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 return false;
             };
             log.trace("Before code delete");
-            dc.delete("$['codes'][?]",codeSystemPredicate);
+            JSONArray testArray = dc.read("$['codes']");
+            if(!testArray.isEmpty()) {
+                dc.delete("$['codes'][?]", codeSystemPredicate);
+            }
         }
 
-
-        dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+        safeDelete(dc, "$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+/*
+        JSONArray testObject =dc.read("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+        if(testObject.isEmpty()) {
+            log.trace("About to delete access expression");
+            dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+        }
+*/
 
         if( scrubberSettings.removeStdNames) {
             log.trace("Removing std names");
-            dc.delete("$..stdName");
+            safeDelete(dc, "$..stdName");
+            //dc.delete("$..stdName");
         }
         return dc.jsonString();
     }
@@ -867,7 +887,14 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
         return Optional.empty();
     }
-    
+
+    private void safeDelete(DocumentContext doc, String itemToDelete){
+        try{
+            doc.delete(itemToDelete);
+        }catch( PathNotFoundException ignore){
+
+        }
+    }
     public static void main(String[] args) {
     	log.trace("main method");
     }
