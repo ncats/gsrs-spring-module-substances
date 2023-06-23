@@ -487,9 +487,9 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         	}else if(scrubberSettings.getAuditInformationCleanupNewAuditorValue()!=null) {
         		String newAuditor = scrubberSettings.getAuditInformationCleanupNewAuditorValue();
 
-        		dc.set("$..lastEditedBy", newAuditor);
-        		dc.set("$..createdBy", newAuditor);
-        		dc.set("$..approvedBy", newAuditor);
+        		safeSet(dc,"$..lastEditedBy", newAuditor);
+        		safeSet(dc,"$..createdBy", newAuditor);
+        		safeSet(dc,"$..approvedBy", newAuditor);
         	}
         }
 
@@ -895,6 +895,15 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
         }
     }
+
+    private void safeSet(DocumentContext doc, String itemToSet, String newValue){
+        try{
+            doc.set(itemToSet, newValue);
+        }catch( PathNotFoundException ignore){
+
+        }
+    }
+
     public static void main(String[] args) {
     	log.trace("main method");
     }
