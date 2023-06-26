@@ -37,6 +37,9 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
     private PlatformTransactionManager platformTransactionManager;
     SubstanceStagingAreaEntityService substanceStagingAreaEntityService = new SubstanceStagingAreaEntityService();
 
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
+
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
         l.message("Initializing substance matchable processing");
@@ -56,7 +59,12 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
 
         listen.newProcess();
 
-        substanceStagingAreaEntityService= AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
+        substanceStagingAreaEntityService.setGsrsFactoryConfiguration(this.gsrsFactoryConfiguration);
+        try {
+            substanceStagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
+        }catch (Exception ignore){
+
+        }
 
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);
