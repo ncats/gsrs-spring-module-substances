@@ -5,6 +5,7 @@ import gsrs.stagingarea.model.KeyValueMapping;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.springUtils.AutowireHelper;
