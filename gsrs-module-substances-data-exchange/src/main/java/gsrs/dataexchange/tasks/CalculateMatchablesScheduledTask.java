@@ -5,6 +5,7 @@ import gsrs.stagingarea.model.KeyValueMapping;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.repository.KeyValueMappingRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.springUtils.AutowireHelper;
@@ -37,6 +38,9 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
     private PlatformTransactionManager platformTransactionManager;
     SubstanceStagingAreaEntityService substanceStagingAreaEntityService = new SubstanceStagingAreaEntityService();
 
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
+
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
         l.message("Initializing substance matchable processing");
@@ -56,7 +60,12 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
 
         listen.newProcess();
 
-        substanceStagingAreaEntityService= AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
+        substanceStagingAreaEntityService.setGsrsFactoryConfiguration(this.gsrsFactoryConfiguration);
+        try {
+            substanceStagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
+        }catch (Exception ignore){
+
+        }
 
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);
