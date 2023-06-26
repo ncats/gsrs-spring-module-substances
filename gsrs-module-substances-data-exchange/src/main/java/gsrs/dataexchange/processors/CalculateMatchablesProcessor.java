@@ -2,6 +2,7 @@ package gsrs.dataexchange.processors;
 
 import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.services.ImportMetadataReindexer;
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.stagingarea.model.ImportMetadata;
 import gsrs.stagingarea.model.KeyValueMapping;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
@@ -43,6 +44,9 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
     private ApplicationEventPublisher eventPublisher;
 
     SubstanceStagingAreaEntityService substanceStagingAreaEntityService = new SubstanceStagingAreaEntityService();
+
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     @Override
     public void prePersist(Substance obj) {
@@ -107,7 +111,14 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
             log.trace("no version");
         }
 */
-        substanceStagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
+
+        substanceStagingAreaEntityService.setGsrsFactoryConfiguration(gsrsFactoryConfiguration);
+        try {
+            substanceStagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(substanceStagingAreaEntityService);
+        } catch (Exception ignore){
+            log.trace("autowire issue");
+        }
+
         //clear out the old stuff
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);
