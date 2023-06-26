@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
+import gsrs.GsrsFactoryConfiguration;
 import gsrs.dataexchange.extractors.ExplicitMatchableExtractorFactory;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.module.substance.standardizer.SubstanceSynchronizer;
@@ -53,6 +54,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
 
     @Autowired
     SubstanceSynchronizer substanceSynchronizer;
+
+    @Autowired
+    private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -141,7 +145,8 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
         ExplicitMatchableExtractorFactory factory = new ExplicitMatchableExtractorFactory();
-        AutowireHelper.getInstance().autowire(factory);
+        factory.setGsrsFactoryConfiguration(gsrsFactoryConfiguration);
+        factory=AutowireHelper.getInstance().autowireAndProxy(factory);
         factory.createExtractorFor(Substance.class).extract(substance, allMatchables::add);
         return allMatchables;
     }

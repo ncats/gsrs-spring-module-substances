@@ -114,6 +114,11 @@
         ]
       }
     },
+      "removeStdNames": {
+        "comments": "When selected, remove any standardized names from the input",
+        "title": "Remove Standardized Names",
+        "type": "boolean"
+      },
     "auditInformationCleanup": {
       "comments": "Apply succeeding criteria to audit fields",
       "type": "boolean",
