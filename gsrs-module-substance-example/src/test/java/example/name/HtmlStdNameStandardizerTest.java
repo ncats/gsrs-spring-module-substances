@@ -187,8 +187,9 @@ public class HtmlStdNameStandardizerTest {
      */
     @Test
     public void testNkfdNormalization() {
+        //fixed expected value 26 June 2023 MAM
         String input = "𝐸₃éé👍!";
-        String expected = "?3EE?!";
+        String expected = "E3EE?!";
         String actual = standardizer.standardize(input).getResult();
         Assertions.assertEquals(expected, actual); //, "Because of removing Unprintable characters first"
     }
