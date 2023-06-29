@@ -1036,7 +1036,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         private Structure structure;
     }
 
-    private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version){
+    private StructureToRender getSubstanceAndStructure(String idOrSmiles, String version, String recordId){
         Substance actualSubstance=null;
         String input=null;
         boolean history = (version!=null);
@@ -1084,19 +1084,39 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                                 } catch (NumberFormatException ignore){}
                             }
                             log.trace("using versionNum {}",versionNum);
-
+                            String moietyId=null;
+                            if(recordId!=null && recordId.length()>0) {
+                                moietyId=idOrSmiles;
+                                idOrSmiles=recordId;
+                            }
                             ImportData importData = service.getImportDataByInstanceIdOrRecordId(idOrSmiles, versionNum);
                             if( importData !=null){
                                 log.trace("retrieved import data");
                                 Substance importedSubstance= service.deserializeObject(importData.getEntityClassName(), importData.getData());
                                 if(importedSubstance!=null ){
                                     log.trace("retrieved substance from import data repository");
-                                    opStructure = importedSubstance.getStructureToRender();
+                                    if( moietyId!=null) {
+                                        log.trace("we have a moiety ID: {}", moietyId);
+                                        GinasChemicalStructure[] returnable = new GinasChemicalStructure[1];
+                                        String finalMoietyId=moietyId;
+                                        ((ChemicalSubstance) importedSubstance).moieties.forEach(m->{
+                                            if(m.getUUID().toString().equals(finalMoietyId)){
+                                                log.trace("found moiety");
+                                                returnable[0] = m.structure;
+                                            }
+                                        });
+                                        if( returnable[0] !=null) {
+                                            opStructure= Optional.of(returnable[0]);
+                                        }
+                                    }
                                     if(!opStructure.isPresent()) {
-                                        log.trace("no structure found within SA substance; will create key");
-                                        Key k = Key.of(EntityUtils.EntityWrapper.of(importedSubstance));
-                                        StructureToRender.StructureToRenderBuilder builder = StructureToRender.builder().substanceKey(k).input(input);
-                                        return builder.build();
+                                        opStructure = importedSubstance.getStructureToRender();
+                                        if (!opStructure.isPresent()) {
+                                            log.trace("no structure found within SA substance; will create key");
+                                            Key k = Key.of(EntityUtils.EntityWrapper.of(importedSubstance));
+                                            StructureToRender.StructureToRenderBuilder builder = StructureToRender.builder().substanceKey(k).input(input);
+                                            return builder.build();
+                                        }
                                     }
                                 }
                             }
@@ -1155,9 +1175,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String input=null;
         if (UUIDUtil.isUUID(idOrSmiles)) {
             s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
-                return getSubstanceAndStructure(idOrSmiles,version);
+                return getSubstanceAndStructure(idOrSmiles,version, null);
             });
 
+            if( s2r!=null && s2r.substanceKey==null && queryParameters.containsKey("recordId")) {
+                s2r= getSubstanceAndStructure(idOrSmiles,version, queryParameters.get("recordId"));
+            }
             if(s2r != null && s2r.substanceKey !=null &&
                     !(queryParameters.get("forceDefaultImage") !=null &&queryParameters.get("forceDefaultImage").equalsIgnoreCase("TRUE"))) {
                 log.trace("going to call getSpecificImageForSubstance");
