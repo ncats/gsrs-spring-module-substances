@@ -15,11 +15,37 @@
       "type": "boolean",
       "title": "Merge Names"
     },
+    "mergeNames_specificNames": {
+      "comments": "Specific names to copy",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Specific Names to Include",
+      "visibleIf": {
+        "mergeNames": [
+          true
+        ]
+      }
+    },
     "mergeCodes": {
       "comments": "Copy codes from new substance into existing substance",
       "type": "boolean",
       "title": "Merge Codes"
     },
+      "mergeCodes_specificSystems": {
+        "comments": "Specific code systems to copy",
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "title": "Specific Code Systems to Include",
+        "visibleIf": {
+          "mergeCodes": [
+            true
+          ]
+        }
+      },
     "mergeProperties": {
       "comments": "Copy properties from new substance into existing substance",
       "type": "boolean",
@@ -29,6 +55,19 @@
       "comments": "Skip copying a property with the same name as an existing property of the existing substance",
       "type": "boolean",
       "title": "Property Name Uniqueness"
+    },
+    "mergeProperties_specificPropertyNames": {
+      "comments": "Names of specific properties to copy",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "title": "Specific Properties to Include",
+      "visibleIf": {
+        "mergeProperties": [
+          true
+        ]
+      }
     },
     "mergeNotes": {
       "comments": "Copy notes from new substance into existing substance",

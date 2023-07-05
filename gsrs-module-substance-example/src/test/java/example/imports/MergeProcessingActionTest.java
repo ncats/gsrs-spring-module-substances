@@ -21,8 +21,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
@@ -378,6 +377,59 @@ Map<String, Object> parms = new HashMap<>();
     }
 
     @Test
+    public void testMergeNamesSpecific() throws Exception {
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCN");
+        String nameToMerge="Chemical Name that Belongs";
+        
+        Name name1 = new Name();
+        name1.name="putrecine";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        builder.addName(name1);
+
+        Name name2 = new Name();
+        name2.name="1,4 diaminobutane";
+        name2.languages.add(new Keyword("de"));
+        name2.displayName=false;
+        builder.addName(name2);
+        builder.addName("Stuff");
+        builder.addCode("CHEMBL", "CHEMBL46257");
+
+        Name name3 = new Name();
+        name3.name=nameToMerge;
+        name3.languages.add(new Keyword("en"));
+        name3.displayName=false;
+        builder.addName(name3);
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
+        Name name2Clone =eics.fromJson(name2.toJson());
+        builder2.addName(name2Clone);
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
+        mergeSettings.put("mergeNames_specificNames", Collections.singletonList(nameToMerge));
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("mergeSettings", mergeSettings);
+
+        List<String> namesNotExpected = Collections.singletonList("putrecine");
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        Assertions.assertEquals( chemical2.names.size()+1, output.names.size());
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        Assertions.assertTrue(output.names.stream().anyMatch(n->n.name.equals(nameToMerge)));
+        Assertions.assertTrue(output.names.stream().noneMatch(n->namesNotExpected.contains(n.name)));
+    }
+
+    @Test
     public void testMergeCodes() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
@@ -406,6 +458,41 @@ Map<String, Object> parms = new HashMap<>();
         Assertions.assertEquals(4,output.codes.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertTrue( chemical1.codes.stream().allMatch(c-> output.codes.stream().anyMatch(c2->c2.code.equals(c.code)&& c2.codeSystem.equals(c.codeSystem))));
+    }
+
+    @Test
+    public void testMergeCodesSpecific() {
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCN");
+        builder.addName("putrecine");
+        builder.addCode("CHEMBL","CHEMBL46257");
+        builder.addCode("CHEBI","CHEBI46257");
+        builder.addCode("CAS", "BOGUS");
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeCodes", "true");
+        List<String> codeSystemsToCopy=Arrays.asList("CHEMBL", "CHEBI");
+        mergeSettings.put("mergeCodes_specificSystems", codeSystemsToCopy);
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("mergeSettings", mergeSettings);
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        Assertions.assertEquals(chemical2.getCodes().size()+2, output.codes.size());
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        //expect codes that either were previously part of chemical2 OR on list of specific code systems to copy
+        Assertions.assertTrue(output.codes.stream().allMatch(c-> codeSystemsToCopy.contains(c.codeSystem) || chemical2.getCodes().stream()
+                .anyMatch(c2->c2.code.equals(c.code) && c2.codeSystem.equals(c.codeSystem))));
     }
 
     @Test
@@ -848,6 +935,66 @@ Map<String, Object> parms = new HashMap<>();
 
         Assertions.assertEquals(2, output.properties.size());
     }
+
+ /*
+2 properties in source; 1 will be copied based on settings
+ */
+    @Test
+    public void testMergeProperty5() {
+
+        NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
+        Reference ref1 = new Reference();
+        ref1.citation="215";
+        ref1.docType="GenBank";
+        ref1.url="https://www.ncbi.nlm.nih.gov/gene/215";
+        String sequence="ACTGTCGCTTCAGCCAGGCTGCGGAGCGGACGGACGCGCCTGGTGCCCCGGGGAGGGGCGCCACCGGGGGAGGAGGAGGAGGAGAAGGTGGAGAGGAAGAGACGCCCCCTCTGCCCGAGACCTCTCAAGGCCCTGACCTCAGGGGCCAGGGCACTGACAGGACAGGAGAGCCAAGTTCCTCCACTTGGGCTGCCCGAAGAGGCCGCGACC";
+        builder.addDnaSubunit(sequence);
+
+        List<String> propertyToCopy = Collections.singletonList("Color");
+        String nameValue="ATP binding cassette subfamily D member 1";
+        Name newName = new Name(nameValue);
+        newName.addReference(ref1);
+        builder.addName(newName);
+        Code code1= new Code("GenBank", "215");
+        builder.addCode(code1);
+        builder.addReference(ref1);
+        Property p1 = new Property();
+        String property1Name ="Color";
+        p1.setName(property1Name);
+        Amount value1 = new Amount();
+        value1.nonNumericValue="purple";
+        p1.setValue(value1);
+        builder.addProperty(p1);
+
+        Property p2 = new Property();
+        String property2Name ="Melting Point";
+        p2.setName(property2Name);
+        Amount value2 = new Amount();
+        value2.average=123.4;
+        p2.setValue(value2);
+        builder.addProperty(p2);
+        NucleicAcidSubstance nucleicAcidSubstance = builder.build();
+
+        NucleicAcidSubstanceBuilder builder2= new NucleicAcidSubstanceBuilder();
+        builder2.addDnaSubunit(sequence);
+        builder2.addName(nameValue);
+        NucleicAcidSubstance nucleicAcidSubstance2 = builder2.build();
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeProperties", true);
+        mergeSettings.put("mergeProperties_specificPropertyNames", Collections.singletonList("Color"));
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("mergeSettings", mergeSettings);
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        MergeProcessingAction action = new MergeProcessingAction();
+        Substance output = action.process( nucleicAcidSubstance, nucleicAcidSubstance2, parms, logger);
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+
+        Assertions.assertEquals(1, output.properties.size());
+        Assertions.assertEquals("Color", output.properties.get(0).getName());
+    }
+
 
     @Test
     public void testMergeRelationships() {

@@ -119,6 +119,9 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             source.names.forEach(n-> {
                 if( existing.names.stream().anyMatch(en->en.name.equals(n.name))){
                     processLog.accept(String.format("Name %s was already present;", n.name));
+                } else if(mergeParameters.getMergeNamesSpecificNames()!=null && !mergeParameters.getMergeNamesSpecificNames().isEmpty()
+                        && !mergeParameters.getMergeNamesSpecificNames().contains(n.name)) {
+                    log.trace("omitting name '{}' because it was not on the list of specific names", n.name);
                 }else{
                     EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
                     Name newName;
@@ -155,8 +158,11 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
         if(mergeParameters.getMergeCodes()){
             source.codes.forEach(c-> {
-                if( existing.codes.stream().anyMatch(en->en.code.equals(c.code) && en.codeSystem.equals(c.codeSystem))){
+                if( existing.codes.stream().anyMatch(en->en.code.equals(c.code) && en.codeSystem.equals(c.codeSystem))) {
                     processLog.accept(String.format("code %s was already present;", c.code));
+                }else if( mergeParameters.getMergeCodesSpecificSystems()!=null && !mergeParameters.getMergeCodesSpecificSystems().isEmpty()
+                        && !mergeParameters.getMergeCodesSpecificSystems().contains(c.codeSystem)) {
+                    log.trace("omitting code '{}' because its code system {} was not on the list of specific code systems", c.code, c.codeSystem);
                 }else{
                     EntityUtils.EntityInfo<Code> eics= EntityUtils.getEntityInfoFor(Code.class);
                     try {
@@ -193,8 +199,11 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 if( mergeParameters.getMergePropertiesPropertyUniqueness() &&
                         (existing.properties.stream().anyMatch(en->en.getPropertyType().equals(p.getPropertyType())
                         && en.getName().equals(p.getName()))
-                        || builder.build().properties.stream().anyMatch(p2->p2.getName().equals(p.getName()) && p2.getPropertyType().equals(p.getPropertyType())))){
+                        || builder.build().properties.stream().anyMatch(p2->p2.getName().equals(p.getName()) && p2.getPropertyType().equals(p.getPropertyType())))) {
                     processLog.accept(String.format("property %s was already present;", p.getName()));
+                } else if(mergeParameters.getMergePropertiesSpecificPropertyNames() != null && !mergeParameters.getMergePropertiesSpecificPropertyNames().isEmpty()
+                    && !mergeParameters.getMergePropertiesSpecificPropertyNames().contains(p.getName())){
+                    log.trace("property with name {} was skipped because it is not on the list of properites to copy", p.getName());
                 }else{
                     EntityUtils.EntityInfo<Property> eics= EntityUtils.getEntityInfoFor(Property.class);
                     try {

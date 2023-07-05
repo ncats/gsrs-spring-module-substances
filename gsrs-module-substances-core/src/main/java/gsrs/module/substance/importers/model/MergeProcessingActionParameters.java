@@ -1,7 +1,7 @@
-
 package gsrs.module.substance.importers.model;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Generated;
 
@@ -22,9 +22,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({
         "mergeReferences",
         "mergeNames",
+        "mergeNames_specificNames",
         "mergeCodes",
+        "mergeCodes_specificSystems",
         "mergeProperties",
         "mergePropertiesPropertyUniqueness",
+        "mergeProperties_specificPropertyNames",
         "mergeNotes",
         "mergeNotesNoteUniqueness",
         "mergeRelationships",
@@ -50,129 +53,105 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeNames")
-    private Boolean mergeNames = false;
+    private Boolean mergeNames= false;
+    /**
+     * Specific Names to Include
+     * <p>
+     */
+    @JsonProperty("mergeNames_specificNames")
+    private List<String> mergeNamesSpecificNames;
     /**
      * Merge Codes
      * <p>
      */
     @JsonProperty("mergeCodes")
-    private Boolean mergeCodes = false;
+    private Boolean mergeCodes= false;
+    /**
+     * Specific Code Systems to Include
+     * <p>
+     */
+    @JsonProperty("mergeCodes_specificSystems")
+    private List<String> mergeCodesSpecificSystems;
     /**
      * Merge Properties
      * <p>
      */
     @JsonProperty("mergeProperties")
-    private Boolean mergeProperties = false;
+    private Boolean mergeProperties= false;
     /**
      * Property Name Uniqueness
      * <p>
      */
     @JsonProperty("mergePropertiesPropertyUniqueness")
-    private Boolean mergePropertiesPropertyUniqueness = false;
+    private Boolean mergePropertiesPropertyUniqueness= false;
+    /**
+     * Specific Properties to Include
+     * <p>
+     */
+    @JsonProperty("mergeProperties_specificPropertyNames")
+    private List<String> mergePropertiesSpecificPropertyNames;
     /**
      * Merge Notes
      * <p>
      */
     @JsonProperty("mergeNotes")
-    private Boolean mergeNotes = false;
+    private Boolean mergeNotes= false;
     /**
      * Note uniqueness
      * <p>
      */
     @JsonProperty("mergeNotesNoteUniqueness")
-    private Boolean mergeNotesNoteUniqueness = false;
+    private Boolean mergeNotesNoteUniqueness= false;
     /**
      * Merge Relationships
      * <p>
      */
     @JsonProperty("mergeRelationships")
-    private Boolean mergeRelationships = false;
+    private Boolean mergeRelationships= false;
     /**
      * Relationship Uniqueness
      * <p>
      */
     @JsonProperty("mergeRelationshipsRelationshipUniqueness")
-    private Boolean mergeRelationshipsRelationshipUniqueness = false;
+    private Boolean mergeRelationshipsRelationshipUniqueness= false;
     /**
      * Copy modifications from new substance into existing substance
      * <p>
      */
     @JsonProperty("mergeModifications")
-    private Boolean mergeModifications = false;
+    private Boolean mergeModifications= false;
     /**
      * Merge Structural Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergeStructuralModifications")
-    private Boolean mergeModificationsMergeStructuralModifications = false;
+    private Boolean mergeModificationsMergeStructuralModifications= false;
     /**
      * Merge Agent Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergeAgentModifications")
-    private Boolean mergeModificationsMergeAgentModifications = false;
+    private Boolean mergeModificationsMergeAgentModifications= false;
     /**
      * Merge Physical Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergePhysicalModifications")
-    private Boolean mergeModificationsMergePhysicalModifications = false;
+    private Boolean mergeModificationsMergePhysicalModifications= false;
     /**
      * Skip Leveling References
      * <p>
      */
     @JsonProperty("skipLevelingReferences")
-    private Boolean skipLevelingReferences = false;
+    private Boolean skipLevelingReferences= false;
     /**
      * Copy chemical structure
      * <p>
      */
     @JsonProperty("copyStructure")
-    private Boolean copyStructure = false;
+    private Boolean copyStructure= false;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
-
-    /**
-     * No args constructor for use in serialization
-     */
-    public MergeProcessingActionParameters() {
-    }
-
-    /**
-     * @param mergeModificationsMergeStructuralModifications
-     * @param mergeCodes
-     * @param mergeModificationsMergeAgentModifications
-     * @param mergeModificationsMergePhysicalModifications
-     * @param mergeRelationships
-     * @param mergeRelationshipsRelationshipUniqueness
-     * @param mergeNotes
-     * @param mergeNames
-     * @param skipLevelingReferences
-     * @param mergeProperties
-     * @param mergePropertiesPropertyUniqueness
-     * @param mergeReferences
-     * @param copyStructure
-     * @param mergeModifications
-     * @param mergeNotesNoteUniqueness
-     */
-    public MergeProcessingActionParameters(Boolean mergeReferences, Boolean mergeNames, Boolean mergeCodes, Boolean mergeProperties, Boolean mergePropertiesPropertyUniqueness, Boolean mergeNotes, Boolean mergeNotesNoteUniqueness, Boolean mergeRelationships, Boolean mergeRelationshipsRelationshipUniqueness, Boolean mergeModifications, Boolean mergeModificationsMergeStructuralModifications, Boolean mergeModificationsMergeAgentModifications, Boolean mergeModificationsMergePhysicalModifications, Boolean skipLevelingReferences, Boolean copyStructure) {
-        super();
-        this.mergeReferences = mergeReferences;
-        this.mergeNames = mergeNames;
-        this.mergeCodes = mergeCodes;
-        this.mergeProperties = mergeProperties;
-        this.mergePropertiesPropertyUniqueness = mergePropertiesPropertyUniqueness;
-        this.mergeNotes = mergeNotes;
-        this.mergeNotesNoteUniqueness = mergeNotesNoteUniqueness;
-        this.mergeRelationships = mergeRelationships;
-        this.mergeRelationshipsRelationshipUniqueness = mergeRelationshipsRelationshipUniqueness;
-        this.mergeModifications = mergeModifications;
-        this.mergeModificationsMergeStructuralModifications = mergeModificationsMergeStructuralModifications;
-        this.mergeModificationsMergeAgentModifications = mergeModificationsMergeAgentModifications;
-        this.mergeModificationsMergePhysicalModifications = mergeModificationsMergePhysicalModifications;
-        this.skipLevelingReferences = skipLevelingReferences;
-        this.copyStructure = copyStructure;
-    }
 
     /**
      * Merge References
@@ -211,6 +190,24 @@ public class MergeProcessingActionParameters {
     }
 
     /**
+     * Specific Names to Include
+     * <p>
+     */
+    @JsonProperty("mergeNames_specificNames")
+    public List<String> getMergeNamesSpecificNames() {
+        return mergeNamesSpecificNames;
+    }
+
+    /**
+     * Specific Names to Include
+     * <p>
+     */
+    @JsonProperty("mergeNames_specificNames")
+    public void setMergeNamesSpecificNames(List<String> mergeNamesSpecificNames) {
+        this.mergeNamesSpecificNames = mergeNamesSpecificNames;
+    }
+
+    /**
      * Merge Codes
      * <p>
      */
@@ -226,6 +223,24 @@ public class MergeProcessingActionParameters {
     @JsonProperty("mergeCodes")
     public void setMergeCodes(Boolean mergeCodes) {
         this.mergeCodes = mergeCodes;
+    }
+
+    /**
+     * Specific Code Systems to Include
+     * <p>
+     */
+    @JsonProperty("mergeCodes_specificSystems")
+    public List<String> getMergeCodesSpecificSystems() {
+        return mergeCodesSpecificSystems;
+    }
+
+    /**
+     * Specific Code Systems to Include
+     * <p>
+     */
+    @JsonProperty("mergeCodes_specificSystems")
+    public void setMergeCodesSpecificSystems(List<String> mergeCodesSpecificSystems) {
+        this.mergeCodesSpecificSystems = mergeCodesSpecificSystems;
     }
 
     /**
@@ -262,6 +277,24 @@ public class MergeProcessingActionParameters {
     @JsonProperty("mergePropertiesPropertyUniqueness")
     public void setMergePropertiesPropertyUniqueness(Boolean mergePropertiesPropertyUniqueness) {
         this.mergePropertiesPropertyUniqueness = mergePropertiesPropertyUniqueness;
+    }
+
+    /**
+     * Specific Properties to Include
+     * <p>
+     */
+    @JsonProperty("mergeProperties_specificPropertyNames")
+    public List<String> getMergePropertiesSpecificPropertyNames() {
+        return mergePropertiesSpecificPropertyNames;
+    }
+
+    /**
+     * Specific Properties to Include
+     * <p>
+     */
+    @JsonProperty("mergeProperties_specificPropertyNames")
+    public void setMergePropertiesSpecificPropertyNames(List<String> mergePropertiesSpecificPropertyNames) {
+        this.mergePropertiesSpecificPropertyNames = mergePropertiesSpecificPropertyNames;
     }
 
     /**
@@ -452,82 +485,6 @@ public class MergeProcessingActionParameters {
     @JsonAnySetter
     public void setAdditionalProperty(String name, Object value) {
         this.additionalProperties.put(name, value);
-    }
-
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(MergeProcessingActionParameters.class.getName()).append('@').append(Integer.toHexString(System.identityHashCode(this))).append('[');
-        sb.append("mergeReferences");
-        sb.append('=');
-        sb.append(((this.mergeReferences == null) ? "<null>" : this.mergeReferences));
-        sb.append(',');
-        sb.append("mergeNames");
-        sb.append('=');
-        sb.append(((this.mergeNames == null) ? "<null>" : this.mergeNames));
-        sb.append(',');
-        sb.append("mergeCodes");
-        sb.append('=');
-        sb.append(((this.mergeCodes == null) ? "<null>" : this.mergeCodes));
-        sb.append(',');
-        sb.append("mergeProperties");
-        sb.append('=');
-        sb.append(((this.mergeProperties == null) ? "<null>" : this.mergeProperties));
-        sb.append(',');
-        sb.append("mergePropertiesPropertyUniqueness");
-        sb.append('=');
-        sb.append(((this.mergePropertiesPropertyUniqueness == null) ? "<null>" : this.mergePropertiesPropertyUniqueness));
-        sb.append(',');
-        sb.append("mergeNotes");
-        sb.append('=');
-        sb.append(((this.mergeNotes == null) ? "<null>" : this.mergeNotes));
-        sb.append(',');
-        sb.append("mergeNotesNoteUniqueness");
-        sb.append('=');
-        sb.append(((this.mergeNotesNoteUniqueness == null) ? "<null>" : this.mergeNotesNoteUniqueness));
-        sb.append(',');
-        sb.append("mergeRelationships");
-        sb.append('=');
-        sb.append(((this.mergeRelationships == null) ? "<null>" : this.mergeRelationships));
-        sb.append(',');
-        sb.append("mergeRelationshipsRelationshipUniqueness");
-        sb.append('=');
-        sb.append(((this.mergeRelationshipsRelationshipUniqueness == null) ? "<null>" : this.mergeRelationshipsRelationshipUniqueness));
-        sb.append(',');
-        sb.append("mergeModifications");
-        sb.append('=');
-        sb.append(((this.mergeModifications == null) ? "<null>" : this.mergeModifications));
-        sb.append(',');
-        sb.append("mergeModificationsMergeStructuralModifications");
-        sb.append('=');
-        sb.append(((this.mergeModificationsMergeStructuralModifications == null) ? "<null>" : this.mergeModificationsMergeStructuralModifications));
-        sb.append(',');
-        sb.append("mergeModificationsMergeAgentModifications");
-        sb.append('=');
-        sb.append(((this.mergeModificationsMergeAgentModifications == null) ? "<null>" : this.mergeModificationsMergeAgentModifications));
-        sb.append(',');
-        sb.append("mergeModificationsMergePhysicalModifications");
-        sb.append('=');
-        sb.append(((this.mergeModificationsMergePhysicalModifications == null) ? "<null>" : this.mergeModificationsMergePhysicalModifications));
-        sb.append(',');
-        sb.append("skipLevelingReferences");
-        sb.append('=');
-        sb.append(((this.skipLevelingReferences == null) ? "<null>" : this.skipLevelingReferences));
-        sb.append(',');
-        sb.append("copyStructure");
-        sb.append('=');
-        sb.append(((this.copyStructure == null) ? "<null>" : this.copyStructure));
-        sb.append(',');
-        sb.append("additionalProperties");
-        sb.append('=');
-        sb.append(((this.additionalProperties == null) ? "<null>" : this.additionalProperties));
-        sb.append(',');
-        if (sb.charAt((sb.length() - 1)) == ',') {
-            sb.setCharAt((sb.length() - 1), ']');
-        } else {
-            sb.append(']');
-        }
-        return sb.toString();
     }
 
 }
