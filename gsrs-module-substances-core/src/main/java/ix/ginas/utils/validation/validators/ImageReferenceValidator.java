@@ -5,6 +5,8 @@ import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.PolymerSubstance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,6 +37,9 @@ public class ImageReferenceValidator extends AbstractValidatorPlugin<Substance> 
         }
         if(hasImageRefOnRelationship){
             callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Substance has at least one image reference on a relationship.  This can have unintended consequences!"));
+        }
+        if( totalImageRefs>0 && (objnew instanceof ChemicalSubstance || objnew instanceof PolymerSubstance)) {
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("It is not customary to set a customized image for Chemicals or Polymers!"));
         }
     }
 

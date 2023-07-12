@@ -295,4 +295,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             }
         };
     }
+
+    public void setGsrsFactoryConfiguration(GsrsFactoryConfiguration gsrsFactoryConfiguration) {
+        this.gsrsFactoryConfiguration = gsrsFactoryConfiguration;
+    }
+
 }
