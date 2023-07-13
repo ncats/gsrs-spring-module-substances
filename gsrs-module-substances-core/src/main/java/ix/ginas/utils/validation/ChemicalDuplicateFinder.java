@@ -41,7 +41,7 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
     @Autowired
     private KeywordRepository keywordRepository;
 
-    private List<String> formulasOfCommonFragments = Arrays.asList("HCl", "H2O", "HBr");
+    private final List<String> formulasOfCommonFragments = Arrays.asList("ClH", "Na", "H2O", "Cl", "K", "Ca", "C4H4O4", "H2O4S", "Br", "CH4O3S", "I", "H", "Mg", "BrH", "HO", "H4N", "Al", "Fe", "C2H4O2", "O", "Zn", "C4H6O6", "Cu", "H3O4P", "O4S", "C6H8O7", "Li", "C2H3O2", "CH3O4S", "Mn", "Co");
 
 //    @Autowired
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
@@ -56,7 +56,7 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
 
     /**
      * Find Possible Duplicates but only return the given max number of results.
-     * @param subRef
+     * @param subRef a reference to a substance of interest
      * @param max if set to 0 then there is no max number of results, if set to a positive number
      *            then limit the number of results to that number.
      * @return the list of results as SubstanceReferences.
