@@ -1,8 +1,5 @@
 package example.substance.validation;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +31,9 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.utils.Util;
+
+import static org.junit.Assert.*;
+
 @WithMockUser(username = "admin", roles="Admin")
 //@Disabled("substance repository query doesn't work yet")
 public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEntityTest {
@@ -443,4 +443,64 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         assertEquals(300, results.size());
         results.forEach( uuid-> assertTrue(uuids.contains(uuid)));
     }
+
+    @Test
+    public void searchForHydrochlorideShouldNotFindDuplicate(){
+        UUID uuid = UUID.randomUUID();
+        ChemicalSubstance s = new ChemicalSubstanceBuilder()
+                .setUUID(uuid)
+                .setStructureWithDefaultReference("Cl.c1ccncc1")
+                .addName("pyridinium chloride")
+                .build();
+        //have to structure process first to generate hashes
+
+        s.getStructure().updateStructureFields(structureProcessor.instrument(s.getStructure().toChemical(), true));
+
+
+        JsonNode json = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER().toJsonNode(s);
+        Substance saved = assertCreated(json);
+
+
+        assertTrue(keywordRepository.count() > 0);
+
+
+        ChemicalSubstance hydrochloride = new ChemicalSubstanceBuilder()
+                .setUUID(UUID.randomUUID())
+                .setStructureWithDefaultReference("Cl")
+                .addName("hydrochloride")
+                .build();
+        //have to structure process first to generate hashes
+
+        List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(hydrochloride.asSubstanceReference());
+        assertTrue(possibleDuplicatesFor.isEmpty());
+    }
+
+    @Test
+    public void searchForIodideShouldFindDuplicate(){
+        UUID uuid = UUID.randomUUID();
+        ChemicalSubstance s = new ChemicalSubstanceBuilder()
+                .setUUID(uuid)
+                .setStructureWithDefaultReference("[I-]")
+                .addName("pure iodide")
+                .build();
+        //have to structure process first to generate hashes
+
+        s.getStructure().updateStructureFields(structureProcessor.instrument(s.getStructure().toChemical(), true));
+
+        JsonNode json = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER().toJsonNode(s);
+        Substance saved = assertCreated(json);
+
+        assertTrue(keywordRepository.count() > 0);
+
+        ChemicalSubstance iodide = new ChemicalSubstanceBuilder()
+                .setUUID(UUID.randomUUID())
+                .setStructureWithDefaultReference("[I-]")
+                .addName("iodide")
+                .build();
+        iodide.getStructure().updateStructureFields(structureProcessor.instrument(iodide.getStructure().toChemical(), true));
+
+        List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(iodide.asSubstanceReference());
+        assertFalse(possibleDuplicatesFor.isEmpty());
+    }
+
 }
