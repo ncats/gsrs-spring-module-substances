@@ -5,19 +5,18 @@ import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.models.Keyword;
+import ix.core.models.Structure;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -30,6 +29,7 @@ import java.util.stream.Collectors;
  * we passed in.
  */
 @Component
+@Slf4j
 public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReference> {
 
     @Autowired
@@ -40,6 +40,8 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
 
     @Autowired
     private KeywordRepository keywordRepository;
+
+    private List<String> formulasOfCommonFragments = Arrays.asList("HCl", "H2O", "HBr");
 
 //    @Autowired
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
@@ -86,7 +88,7 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
             List<Keyword> keywords = keywordRepository.findByTerm(hash);
 
 
-            if (!keywords.isEmpty()) {
+            if (!keywords.isEmpty() && !isCommonFragment(structure)) {
                 Substance ourSubstance = sub;
                 int chunkSize=100;
                 Predicate<ChemicalSubstance> skipOurselvesFilter = s-> !(ourSubstance.getUuid().equals(s.getUuid()));
@@ -109,7 +111,8 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
                     do{
                         subList = keywords.subList(current, Math.min(keywords.size(), current+chunkSize));
                         current+=chunkSize;
-                        dupMap.putAll(chemicalSubstanceRepository.findByStructure_PropertiesIn(subList)
+                        List<ChemicalSubstance> initialResults=chemicalSubstanceRepository.findByStructure_PropertiesIn(subList);
+                        dupMap.putAll(initialResults
                                         .stream()
                                         .filter(skipOurselvesFilter)
                                         .limit(max)
@@ -156,4 +159,8 @@ public class ChemicalDuplicateFinder implements DuplicateFinder<SubstanceReferen
         return new ChemicalDuplicateFinder();
     }
 
+    private boolean isCommonFragment(Structure structure) {
+        log.trace("isCommonFragment about to return {}", formulasOfCommonFragments.contains(structure.formula));
+        return formulasOfCommonFragments.contains(structure.formula);
+    }
 }
