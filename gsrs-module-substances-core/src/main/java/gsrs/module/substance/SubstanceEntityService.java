@@ -1,5 +1,6 @@
 package gsrs.module.substance;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.service.GsrsEntityService;
 import ix.ginas.models.v1.Substance;
 import org.springframework.data.domain.Page;
@@ -29,5 +30,5 @@ public interface SubstanceEntityService extends GsrsEntityService<Substance, UUI
 
     Optional<Substance> flexLookup(String someKindOfId);
 
-
+    UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) throws Exception;
 }

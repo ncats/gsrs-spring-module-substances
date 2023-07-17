@@ -19,7 +19,7 @@ import ix.core.validator.*;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
-import ix.ginas.utils.GinasProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.NucleicAcidUtils;
 import java.io.IOException;
 
@@ -77,7 +77,7 @@ public class ValidationUtils {
 	private static <D extends GinasAccessReferenceControlled> void validatePublicReferenced(Substance s,
                                                                                             D data,
                                                                                             List<GinasProcessingMessage> gpm,
-                                                                                            GinasProcessingStrategy strat,
+                                                                                            GsrsProcessingStrategy strat,
                                                                                             Function<D,String> namer) {
 		//If public
 		if(data.getAccess().isEmpty()){
@@ -101,7 +101,7 @@ public class ValidationUtils {
 
 	private static boolean validateReferenced(Substance s,
                                               GinasAccessReferenceControlled data,
-                                              List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat,
+                                              List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat,
                                               ReferenceAction onemptyref) {
 
 		boolean worked = true;
@@ -258,7 +258,7 @@ public class ValidationUtils {
 
 
 //	private static boolean validateNames(Substance s,
-//                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+//                                         List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 //		boolean preferred = false;
 //		int display = 0;
 //		List<Name> remnames = new ArrayList<Name>();
@@ -428,7 +428,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static boolean validateCodes(Substance s,
-//                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+//                                         List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 //		List<Code> remnames = new ArrayList<Code>();
 //		for (Code cd : s.codes) {
 //			if (cd == null) {
@@ -531,7 +531,7 @@ public class ValidationUtils {
 	}
 
 	private static boolean validateRelationships(Substance s,
-                                                 List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+                                                 List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 		List<Relationship> remnames = new ArrayList<Relationship>();
 		for (Relationship n : s.relationships) {
 			if (isEffectivelyNull(n)) {
@@ -590,7 +590,7 @@ public class ValidationUtils {
 	}
 
 	private static boolean validateNotes(Substance s,
-                                         List<GinasProcessingMessage> gpm, GinasProcessingStrategy strat) {
+                                         List<GinasProcessingMessage> gpm, GsrsProcessingStrategy strat) {
 		List<Note> remnames = new ArrayList<Note>();
 		for (Note n : s.notes) {
 			if (n == null) {
@@ -704,7 +704,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareMixture(
-//            MixtureSubstance cs, GinasProcessingStrategy strat) {
+//            MixtureSubstance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.mixture == null) {
 //			gpm.add(GinasProcessingMessage
@@ -745,7 +745,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareStructurallyDiverse(
-//            StructurallyDiverseSubstance cs, GinasProcessingStrategy strat) {
+//            StructurallyDiverseSubstance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.structurallyDiverse == null) {
 //			gpm.add(GinasProcessingMessage
@@ -795,7 +795,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareSSG1(
-//            SpecifiedSubstanceGroup1Substance cs, GinasProcessingStrategy strat) {
+//            SpecifiedSubstanceGroup1Substance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.specifiedSubstance == null) {
 //			gpm.add(GinasProcessingMessage
@@ -820,7 +820,7 @@ public class ValidationUtils {
 //	}
 //
 //	private static List<? extends GinasProcessingMessage> validateAndPreparePolymer(
-//            PolymerSubstance cs, GinasProcessingStrategy strat) {
+//            PolymerSubstance cs, GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.polymer == null) {
 //			gpm.add(GinasProcessingMessage
@@ -1004,7 +1004,7 @@ public class ValidationUtils {
 	}
 
 	private static List<? extends GinasProcessingMessage> validateAndPrepareNa(
-            NucleicAcidSubstance cs, GinasProcessingStrategy strat) {
+            NucleicAcidSubstance cs, GsrsProcessingStrategy strat) {
 		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 		if (cs.nucleicAcid == null) {
 			gpm.add(GinasProcessingMessage
@@ -1056,7 +1056,7 @@ public class ValidationUtils {
 	}
 
 //	private static List<? extends GinasProcessingMessage> validateAndPrepareProtein(
-//            ProteinSubstance cs, ProteinSubstance old, GinasProcessingStrategy strat) {
+//            ProteinSubstance cs, ProteinSubstance old, GsrsProcessingStrategy strat) {
 //
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.protein == null) {
@@ -1241,7 +1241,7 @@ public class ValidationUtils {
 //	}
 //
 //	public static List<? extends GinasProcessingMessage> validateAndPrepareChemical(
-//            ChemicalSubstance cs, GinasProcessingStrategy strat, boolean includeReferenceCheck) {
+//            ChemicalSubstance cs, GsrsProcessingStrategy strat, boolean includeReferenceCheck) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //		if (cs.structure == null) {
 //			gpm.add(GinasProcessingMessage.ERROR_MESSAGE("Chemical substance must have a chemical structure"));
@@ -1354,7 +1354,7 @@ public class ValidationUtils {
 //
 //	private static List<GinasProcessingMessage> validateChemicalStructure(
 //            GinasChemicalStructure oldstr, Structure newstr,
-//            GinasProcessingStrategy strat) {
+//            GsrsProcessingStrategy strat) {
 //		List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
 //
 //		String oldhash = null;
@@ -1428,11 +1428,11 @@ public class ValidationUtils {
 
 //	public static class GinasValidationResponseBuilder<T> extends ValidationResponseBuilder<T> {
 //
-//		private final GinasProcessingStrategy _strategy;
+//		private final GsrsProcessingStrategy _strategy;
 //		public GinasValidationResponseBuilder(T o){
-//			this(o, GinasProcessingStrategy.ACCEPT_APPLY_ALL());
+//			this(o, GsrsProcessingStrategy.ACCEPT_APPLY_ALL());
 //		}
-//		public GinasValidationResponseBuilder(T o, GinasProcessingStrategy strategy) {
+//		public GinasValidationResponseBuilder(T o, GsrsProcessingStrategy strategy) {
 //			super(o, strategy);
 //			this._strategy = Objects.requireNonNull(strategy);
 //			boolean allowPossibleDuplicates=false;
@@ -1536,7 +1536,8 @@ public class ValidationUtils {
                     
                     List<Object> fut = sr.getMatches();
                     List<Substance> hits = fut.stream()
-                            .map(s ->(Substance)s)
+							.filter(o -> o instanceof Substance)//added 17 February 2023 MAM to prevent ClassCastException
+							.map(s ->(Substance)s)
                             .filter(ss->{
                                 //filter out exact matches
                                 return !substance.getOrGenerateUUID().equals(ss.getOrGenerateUUID());
@@ -1544,7 +1545,7 @@ public class ValidationUtils {
                             .collect(Collectors.toList());
                     return hits;
                 } catch (Exception ex) {
-                    log.error("error during search");
+                    log.error("error during search. query: {}", request.getQuery());
                     ex.printStackTrace();
                 }
                 return nameValues;
@@ -1558,4 +1559,103 @@ public class ValidationUtils {
     }
 
 
+	public static List<Substance> findSubstancesByCode(String codeSystem, String codeValue, PlatformTransactionManager transactionManager,
+													   SubstanceLegacySearchService searchService) {
+		List<Substance> candidates = new ArrayList<>();
+		try {
+			String codeSystemToSearch = codeSystem.replace(" ", "\\ ");
+			String searchItem = "root_codes_" + codeSystemToSearch + ":\""
+					+ codeValue + "\"";
+
+			log.trace("In findSubstancesByCode, query: {}", searchItem);
+			TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+			candidates = (List<Substance>) transactionSearch.execute(ts
+					-> {
+				List<String> nameValues = new ArrayList<>();
+				SearchRequest request = new SearchRequest.Builder()
+						.kind(Substance.class)
+						.fdim(0)
+						.query(searchItem)
+						.top(Integer.MAX_VALUE)
+						.build();
+				log.trace("built query: " + request.getQuery());
+				try {
+					SearchOptions options = new SearchOptions();
+					SearchResult sr = searchService.search(request.getQuery(), options);
+
+					//this might not be necessary anymore
+					sr.waitForFinish();
+
+					List<Object> fut = sr.getMatches();
+					List<Substance> hits = fut.stream()
+							.filter(o -> o instanceof Substance)//added 17 February 2023 MAM to prevent ClassCastException
+							.filter(s->((Substance) s).codes.stream().anyMatch(c->c.code.equalsIgnoreCase(codeValue)&&c.codeSystem.equalsIgnoreCase(codeSystem)))
+							.map(s ->(Substance)s)
+							.collect(Collectors.toList());
+					return hits;
+				} catch (Exception ex) {
+					log.error("error during search");
+					ex.printStackTrace();
+				}
+				return nameValues;
+			});
+		} catch (Exception ex) {
+			log.error( "Error running query", ex);
+			ex.printStackTrace();
+			Sneak.sneakyThrow(ex);
+		}
+		return candidates;
+	}
+
+	public static List<Substance> findSubstancesByName(String name, PlatformTransactionManager transactionManager,
+													   SubstanceLegacySearchService searchService) {
+		List<Substance> candidates = new ArrayList<>();
+		try {
+			String searchItem = "root_names_name:\""
+					+ name + "\"";
+			log.trace("In findSubstancesByName, query: {}", searchItem);
+			TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
+			candidates = (List<Substance>) transactionSearch.execute(ts
+					-> {
+				SearchRequest request = new SearchRequest.Builder()
+						.kind(Substance.class)
+						.fdim(0)
+						.query(searchItem)
+						.top(Integer.MAX_VALUE)
+						.build();
+				log.trace("built query: " + request.getQuery());
+				try {
+					SearchOptions options = new SearchOptions();
+					SearchResult sr = searchService.search(request.getQuery(), options);
+
+					//this might not be necessary anymore
+					sr.waitForFinish();
+
+					List<Object> fut = sr.getMatches();
+					List<Substance> nameMatches = fut.stream()
+							.filter(o -> o instanceof Substance)//added 17 February 2023 MAM to prevent ClassCastException
+							.map(s ->(Substance)s)
+							.collect(Collectors.toList());
+					if(nameMatches.size()>0) {
+						List<Substance> displays = nameMatches.stream()
+								.filter(s->((Substance) s).names.stream().anyMatch(n->n.name.equalsIgnoreCase(name)&&n.displayName))
+								.collect(Collectors.toList());
+						if(!displays.isEmpty()){
+							return displays;
+						}
+					}
+					return nameMatches;
+				} catch (Exception ex) {
+					log.error("error during search");
+					ex.printStackTrace();
+				}
+				return Collections.EMPTY_LIST;
+			});
+		} catch (Exception ex) {
+			log.error( "Error running query", ex);
+			ex.printStackTrace();
+			Sneak.sneakyThrow(ex);
+		}
+		return candidates;
+	}
 }

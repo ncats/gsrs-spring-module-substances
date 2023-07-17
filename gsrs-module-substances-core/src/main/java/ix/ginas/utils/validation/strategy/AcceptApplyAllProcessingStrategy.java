@@ -3,19 +3,20 @@ package ix.ginas.utils.validation.strategy;
 import gsrs.services.GroupService;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
-import ix.ginas.utils.GinasProcessingStrategy;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 
-public class AcceptApplyAllProcessingStrategy extends GinasProcessingStrategy {
+public class AcceptApplyAllProcessingStrategy extends AbstractProcessingStrategy {
     @Autowired
-    public AcceptApplyAllProcessingStrategy(GroupService groupRepository) {
-        super(groupRepository);
+    public AcceptApplyAllProcessingStrategy(GroupService groupRepository,
+            GsrsProcessingStrategyFactoryConfiguration srsProcessingStrategyFactoryConfiguration) {
+        super(groupRepository, srsProcessingStrategyFactoryConfiguration);
     }
 
     @Override
     public void processMessage(GinasProcessingMessage gpm) {
+        this.overrideMessage(gpm);
         if (gpm.suggestedChange){
             gpm.actionType = GinasProcessingMessage.ACTION_TYPE.APPLY_CHANGE;
         }else{

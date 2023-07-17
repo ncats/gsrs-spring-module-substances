@@ -7,6 +7,7 @@ import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.services.CodeEntityService;
 import gsrs.repository.EditRepository;
 import gsrs.service.GsrsEntityService;
+import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.models.v1.Code;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -49,5 +50,5 @@ public class CodeController extends EtagLegacySearchEntityController<CodeControl
     @Override
     protected Optional<EditRepository> editRepository() {
         return Optional.of(editRepository);
-    }
+    }	
 }

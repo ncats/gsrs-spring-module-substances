@@ -235,13 +235,43 @@ public class BasicSubstanceScrubberParameters {
 	@JsonProperty("approvalIdCleanupApprovalIdCodeSystem")
 	public String approvalIdCleanupApprovalIdCodeSystem;
 	/**
+* Clean up (top-level) UUIDs
+* <p>
+*
+*
+*/
+@JsonProperty("UUIDCleanup")
+public Boolean UUIDCleanup=false;
+/**
 	 * Regenerate UUIDs
 	 * <p>
 	 *
 	 *
 	 */
 	@JsonProperty("regenerateUUIDs")
-	public Boolean regenerateUUIDs = false;
+public Boolean regenerateUUIDs =false;
+/**
+* Copy UUID to code if code not already present
+* <p>
+*
+*
+*/
+@JsonProperty("UUIdCleanupCopyUUIDIdToCode")
+public Boolean uUIdCleanupCopyUUIDIdToCode = false;
+/**
+* Copy UUID to code with following code system (if not already present)
+* <p>
+*
+*
+*/
+@JsonProperty("UUIDCleanupUUIDCodeSystem")
+public String UUIDCleanupUUIDCodeSystem ="";
+/**
+* Remove Standardized Names
+*/
+@JsonProperty("removeStdNames")
+public Boolean removeStdNames = false;
+
 	/**
 	 * Change All Statuses
 	 * <p>

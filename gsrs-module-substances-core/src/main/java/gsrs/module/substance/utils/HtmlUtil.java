@@ -113,6 +113,15 @@ public final class HtmlUtil {
         return(safeHtml);
     }
 
+    public static String cleanToText(String content, String charset) {
+        Document.OutputSettings settings = new Document.OutputSettings();
+        settings.prettyPrint(false);
+        settings.charset(charset);
+        settings.escapeMode(Entities.EscapeMode.base);
+        String safeText = Jsoup.clean(content, "", Safelist.none(), settings);
+        return(safeText);
+    }
+
     public static boolean isValid(String content) {
         Safelist sl = Safelist.none().addTags(safetags.toArray(new String[safetags.size()]));
         return Jsoup.isValid(content, sl);

@@ -1073,7 +1073,15 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         return srefs;
         
     }
-    
+
+    /*
+    Overrides may include substance references even when the holder of the substance reference is not marked as
+    defining.  For example, monomers not marked as defining.
+     */
+    @JsonIgnore
+    public List<Tuple<GinasAccessControlled,SubstanceReference>> getSubstanceReferencesAndParentsBeyondDependsOn() {
+        return this.getDependsOnSubstanceReferencesAndParents();
+    }
 
     @JsonIgnore
     public List<Tuple<GinasAccessControlled,SubstanceReference>> getNonDefiningSubstanceReferencesAndParents(){
@@ -1599,5 +1607,15 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
         }
 
         return hexString.toString();
+    }
+    
+    /*
+    add a new property to the collection and make sure it persists
+    */
+    public void addProperty(Property newProperty) {
+        if( newProperty==null) return;
+        this.properties.add(newProperty);
+        newProperty.setOwner(this);
+        setIsDirty("properties");        
     }
 }
