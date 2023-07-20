@@ -104,6 +104,8 @@ public class StructuralModification extends GinasCommonSubData {
     @Override
     public void forceUpdate() {
    	    super.forceUpdate();
-   	    siteContainer.forceUpdate();
+		   if( siteContainer!=null) {
+			   siteContainer.forceUpdate();
+		   }
     }
 }
