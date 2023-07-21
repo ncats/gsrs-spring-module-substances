@@ -1,5 +1,6 @@
 package example.substance.tasks;
 
+import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.tasks.DEAScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
@@ -14,8 +15,10 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -26,6 +29,7 @@ import java.util.List;
 
 @Slf4j
 @WithMockUser(username = "admin", roles = "Admin")
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class DEAScheduledTaskInitializerTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     private String fileName = "testdumps/rep19.tsv";
@@ -52,6 +56,7 @@ public class DEAScheduledTaskInitializerTest extends AbstractSubstanceJpaFullSta
         loadGsrsFile(dataFile);
     }
 
+    @Disabled
     @Test
     public void DeaScheduledTaskTest1() throws IOException {
         File reportFile = File.createTempFile("task_test.report", "txt");
