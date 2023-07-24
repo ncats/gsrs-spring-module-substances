@@ -475,6 +475,10 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         assertTrue(possibleDuplicatesFor.isEmpty());
     }
 
+    /*
+    Test changed to match  the filtering of small, common fragments in findPossibleDuplicatesFor
+    24 July 2024
+     */
     @Test
     public void searchForIodideShouldFindDuplicate(){
         UUID uuid = UUID.randomUUID();
@@ -500,7 +504,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         iodide.getStructure().updateStructureFields(structureProcessor.instrument(iodide.getStructure().toChemical(), true));
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(iodide.asSubstanceReference());
-        assertFalse(possibleDuplicatesFor.isEmpty());
+        assertTrue(possibleDuplicatesFor.isEmpty());
     }
 
 }
