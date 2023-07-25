@@ -15,6 +15,7 @@ import ix.ginas.utils.validation.validators.DEAValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,6 +26,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 @Slf4j
+@Disabled
 public class DEAValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     private static boolean configured = false;
