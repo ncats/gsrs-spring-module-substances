@@ -50,7 +50,10 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
         }
         if (objectNode.has("includeRelated")) {
             includeRelated = objectNode.get("includeRelated").asBoolean();
+        } else if ( objectNode.has("includedRelatedItems")) {
+            includeRelated = objectNode.get("includedRelatedItems").asBoolean();
         }
+
         if (objectNode.has("includeMediatorSubstances")) {
             includeMediatorSubstances = objectNode.get("includeMediatorSubstances").asBoolean();
         }
