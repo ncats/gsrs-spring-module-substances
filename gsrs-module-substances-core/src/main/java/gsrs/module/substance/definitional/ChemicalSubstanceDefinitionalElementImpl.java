@@ -5,6 +5,7 @@ import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
+import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -33,7 +34,9 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
             return;
         }
         if(structure.properties.isEmpty()) {
-            log.trace("instrumented structure");
+            log.warn("instrumenting structure to avoid error on substance {}",
+                    (chemicalSubstance.getUuid() !=null ? chemicalSubstance.getUuid() : "[ID not available]"));
+            Util.printAllExecutingStackTraces();
             structure = structureProcessor.instrument(chemicalSubstance.getStructure().toChemical(), true);
         }
 
