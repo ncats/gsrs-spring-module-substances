@@ -28,6 +28,27 @@
         ]
       }
     },
+    "mergeNames_skipNameMatches": {
+      "comments": "Skip the merging of names that have an exact duplicate somewhere in GSRS",
+      "type": "boolean",
+      "title": "Skip Names with any duplicate (including other GSRS records)",
+      "visibleIf": {
+        "mergeNames": [
+          true
+        ]
+      }
+    },
+    "mergeNames_mergeNamesOnStdName": {
+      "comments": "Merge those names that match a name within the designated record IF they have the same standardized name",
+      "type": "boolean",
+      "title": "Merge only Names that have a standardized name match within the matching substance",
+      "visibleIf": {
+        "mergeNames": [
+          true
+        ]
+      }
+    },
+
     "mergeCodes": {
       "comments": "Copy codes from new substance into existing substance",
       "type": "boolean",
