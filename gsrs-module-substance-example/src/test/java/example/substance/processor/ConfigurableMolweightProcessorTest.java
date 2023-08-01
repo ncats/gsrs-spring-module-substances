@@ -26,7 +26,7 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
 
         Map configValues = new HashMap();
         configValues.put("atomWeightFilePath", atomicWeightFilePath);
-        configValues.put("persistanceMode", "intrinsic");
+        configValues.put("persistenceMode", "intrinsic");
         configValues.put("decimalDigits", 2);
         ConfigurableMolweightProcessor processor = new ConfigurableMolweightProcessor(configValues);
         //construct a simple chemical
@@ -48,7 +48,7 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
 
         Map configValues = new HashMap();
         configValues.put("atomWeightFilePath", atomicWeightFilePath);
-        configValues.put("persistanceMode", "intrinsic");
+        configValues.put("persistenceMode", "intrinsic");
         configValues.put("decimalDigits", 2);
         ConfigurableMolweightProcessor processor = new ConfigurableMolweightProcessor(configValues);
         //construct a simple chemical
@@ -71,7 +71,7 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
 
         Map configValues = new HashMap();
         configValues.put("atomWeightFilePath", atomicWeightFilePath);
-        configValues.put("persistanceMode", "property");
+        configValues.put("persistenceMode", "property");
         configValues.put("decimalDigits", 3);
         configValues.put("propertyName", propertyName);
         ConfigurableMolweightProcessor processor = new ConfigurableMolweightProcessor(configValues);
@@ -98,7 +98,7 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
 
         Map configValues = new HashMap();
         configValues.put("atomWeightFilePath", atomicWeightFilePath);
-        configValues.put("persistanceMode", "property");
+        configValues.put("persistenceMode", "property");
         configValues.put("decimalDigits", 3);
         configValues.put("propertyName", propertyName);
         ConfigurableMolweightProcessor processor = new ConfigurableMolweightProcessor(configValues);

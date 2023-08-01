@@ -443,10 +443,16 @@ public class Structure extends BaseModel {
     }
 
     
-    @JsonIgnore
+    @JsonProperty("_inchiKey")
     @Transient
     public String getInChIKey() {
     	try{
+            for (Value val : this.properties) {
+                if(val==null) continue;
+                if (Structure.H_InChI_Key.equals(val.label)) {
+                    return Objects.toString(val.getValue());
+                }
+            }
             return getInChIKeyAndThrow();
     	}catch(Exception e){
     		e.printStackTrace();
@@ -469,10 +475,16 @@ public class Structure extends BaseModel {
 
     }
 
-    @JsonIgnore
+    @JsonProperty("_inchi")
     @Transient
     public String getInChI() {
     	try{
+            for (Value val : this.properties) {
+                if(val==null) continue;
+                if (Structure.F_InChI.equals(val.label)) {
+                    return Objects.toString(val.getValue());
+                }
+            }
             return getInChIAndThrow();
     	}catch(Exception e){
     		e.printStackTrace();
