@@ -81,7 +81,7 @@ public class ProteinUtils
             = "A	C-3;H-7;N-1;O-2\n"
             + "R	C-6;H-14;N-4;O-2\n"
             + "D	C-4;H-7;N-1;O-4\n"
-            + "N	C-4;H-7;N-2;O-3\n"
+            + "N	C-4;H-8;N-2;O-3\n"  //correct H coefficient 31 July 2023
             + "C	C-3;H-7;N;O-2;S-1\n"
             + "E	C-5;H-9;N;O-4\n"
             + "Q	C-5;H-10;N-2;O-3\n"

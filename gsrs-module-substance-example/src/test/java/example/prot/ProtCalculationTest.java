@@ -656,6 +656,26 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
                 "Formula must be the same when protein sequence includes lowercase codes");
     }
 
+    @Test
+    public void aparaginePetitdeMolFormulaTest() {
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "N";
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        String expectedFormula ="C4H8N2O3";
+        Assertions.assertEquals(8, contribution.getFormulaMap().get("H").getAsInt());
+        Assertions.assertEquals(expectedFormula, contribution.getFormula());
+    }
+
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 
