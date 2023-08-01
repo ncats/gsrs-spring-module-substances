@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "mergeReferences",
         "mergeNames",
         "mergeNames_specificNames",
+        "mergeNames_skipNameMatches",
+        "mergeNames_mergeNamesOnStdName",
         "mergeCodes",
         "mergeCodes_specificSystems",
         "mergeProperties",
@@ -53,7 +55,7 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeNames")
-    private Boolean mergeNames= false;
+    private Boolean mergeNames = false;
     /**
      * Specific Names to Include
      * <p>
@@ -61,11 +63,23 @@ public class MergeProcessingActionParameters {
     @JsonProperty("mergeNames_specificNames")
     private List<String> mergeNamesSpecificNames;
     /**
+     * Skip Names with any duplicate (including other GSRS records)
+     * <p>
+     */
+    @JsonProperty("mergeNames_skipNameMatches")
+    private Boolean mergeNamesSkipNameMatches = true;
+    /**
+     * Merge only Names that have a standardized name match within the matching substance
+     * <p>
+     */
+    @JsonProperty("mergeNames_mergeNamesOnStdName")
+    private Boolean mergeNamesMergeNamesOnStdName = false;
+    /**
      * Merge Codes
      * <p>
      */
     @JsonProperty("mergeCodes")
-    private Boolean mergeCodes= false;
+    private Boolean mergeCodes = false;
     /**
      * Specific Code Systems to Include
      * <p>
@@ -77,13 +91,13 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeProperties")
-    private Boolean mergeProperties= false;
+    private Boolean mergeProperties = false;
     /**
      * Property Name Uniqueness
      * <p>
      */
     @JsonProperty("mergePropertiesPropertyUniqueness")
-    private Boolean mergePropertiesPropertyUniqueness= false;
+    private Boolean mergePropertiesPropertyUniqueness = false;
     /**
      * Specific Properties to Include
      * <p>
@@ -95,61 +109,61 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeNotes")
-    private Boolean mergeNotes= false;
+    private Boolean mergeNotes = false;
     /**
      * Note uniqueness
      * <p>
      */
     @JsonProperty("mergeNotesNoteUniqueness")
-    private Boolean mergeNotesNoteUniqueness= false;
+    private Boolean mergeNotesNoteUniqueness = false;
     /**
      * Merge Relationships
      * <p>
      */
     @JsonProperty("mergeRelationships")
-    private Boolean mergeRelationships= false;
+    private Boolean mergeRelationships = false;
     /**
      * Relationship Uniqueness
      * <p>
      */
     @JsonProperty("mergeRelationshipsRelationshipUniqueness")
-    private Boolean mergeRelationshipsRelationshipUniqueness= false;
+    private Boolean mergeRelationshipsRelationshipUniqueness = false;
     /**
      * Copy modifications from new substance into existing substance
      * <p>
      */
     @JsonProperty("mergeModifications")
-    private Boolean mergeModifications= false;
+    private Boolean mergeModifications = false;
     /**
      * Merge Structural Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergeStructuralModifications")
-    private Boolean mergeModificationsMergeStructuralModifications= false;
+    private Boolean mergeModificationsMergeStructuralModifications = false;
     /**
      * Merge Agent Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergeAgentModifications")
-    private Boolean mergeModificationsMergeAgentModifications= false;
+    private Boolean mergeModificationsMergeAgentModifications = false;
     /**
      * Merge Physical Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergePhysicalModifications")
-    private Boolean mergeModificationsMergePhysicalModifications= false;
+    private Boolean mergeModificationsMergePhysicalModifications = false;
     /**
      * Skip Leveling References
      * <p>
      */
     @JsonProperty("skipLevelingReferences")
-    private Boolean skipLevelingReferences= false;
+    private Boolean skipLevelingReferences = false;
     /**
      * Copy chemical structure
      * <p>
      */
     @JsonProperty("copyStructure")
-    private Boolean copyStructure= false;
+    private Boolean copyStructure = false;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
@@ -205,6 +219,42 @@ public class MergeProcessingActionParameters {
     @JsonProperty("mergeNames_specificNames")
     public void setMergeNamesSpecificNames(List<String> mergeNamesSpecificNames) {
         this.mergeNamesSpecificNames = mergeNamesSpecificNames;
+    }
+
+    /**
+     * Skip Names with any duplicate (including other GSRS records)
+     * <p>
+     */
+    @JsonProperty("mergeNames_skipNameMatches")
+    public Boolean getMergeNamesSkipNameMatches() {
+        return mergeNamesSkipNameMatches;
+    }
+
+    /**
+     * Skip Names with any duplicate (including other GSRS records)
+     * <p>
+     */
+    @JsonProperty("mergeNames_skipNameMatches")
+    public void setMergeNamesSkipNameMatches(Boolean mergeNamesSkipNameMatches) {
+        this.mergeNamesSkipNameMatches = mergeNamesSkipNameMatches;
+    }
+
+    /**
+     * Merge only Names that have a standardized name match within the matching substance
+     * <p>
+     */
+    @JsonProperty("mergeNames_mergeNamesOnStdName")
+    public Boolean getMergeNamesMergeNamesOnStdName() {
+        return mergeNamesMergeNamesOnStdName;
+    }
+
+    /**
+     * Merge only Names that have a standardized name match within the matching substance
+     * <p>
+     */
+    @JsonProperty("mergeNames_mergeNamesOnStdName")
+    public void setMergeNamesMergeNamesOnStdName(Boolean mergeNamesMergeNamesOnStdName) {
+        this.mergeNamesMergeNamesOnStdName = mergeNamesMergeNamesOnStdName;
     }
 
     /**
