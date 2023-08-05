@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -713,6 +714,15 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         proteinSubstance.setProtein(protein);
 
         Set<String> unknownResidues = new HashSet<>();
+        String formulaSource ="C639 H992 N192 O197 S20";
+        Map<String,SingleThreadCounter> baseProteinFormula = parseMapFromFormula(formulaSource);
+        ChemicalSubstance methionine= buildMethionine();
+        Map<String,SingleThreadCounter> methionineFormula = parseMapFromFormula(methionine.getStructure().formula);
+        ProteinUtils.removeWater(methionineFormula);
+
+        Map<String,SingleThreadCounter> substituteFormula = parseMapFromFormula(substitute.getStructure().formula);
+        ProteinUtils.removeWater(substituteFormula);
+        //????
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
@@ -747,6 +757,24 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
 
         return tryptophan;
+    }
+
+    private ChemicalSubstance buildMethionine() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+
+        String methioMolfile="\\n  Marvin  01132112312D          \\n\\n  9  8  0  0  1  0            999 V2000\\n    8.9709  -10.7849    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.9709   -9.9648    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.2622  -11.2022    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0\\n    8.2622  -12.0175    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.5499  -10.7849    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    6.8383  -11.2022    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    6.1290  -10.7849    0.0000 S   0  0  0  0  0  0  0  0  0  0  0  0\\n    5.4123  -11.2022    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    9.6832  -11.2022    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n  1  2  2  0  0  0  0\\n  1  3  1  0  0  0  0\\n  3  4  1  1  0  0  0\\n  3  5  1  0  0  0  0\\n  5  6  1  0  0  0  0\\n  7  6  1  0  0  0  0\\n  7  8  1  0  0  0  0\\n  1  9  1  0  0  0  0\\nM  END";
+
+        GinasChemicalStructure structure= new GinasChemicalStructure();
+        structure.molfile =methioMolfile;
+        structure.setMwt(149.21);
+        structure.formula ="C5H11NO2S";
+        ChemicalSubstance methionine = builder.setStructure(structure)
+                .addName("methionine")
+                .addCode("FDA UNII", "8DUH1N11BX")
+                .build();
+        substanceRepository.saveAndFlush(methionine);
+
+        return methionine;
     }
 
     private ChemicalSubstance buildSubstituteChemical() {
@@ -987,5 +1015,49 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
             elementData.put(symbolBuilder.toString(), new SingleThreadCounter(multiplier));
         }
         return elementData;
+    }
+
+    private Map<String,SingleThreadCounter> subtractFormulas(Map<String,SingleThreadCounter> minuend, Map<String,SingleThreadCounter> subtrahend){
+        Map<String,SingleThreadCounter> difference = new HashMap<>();
+        minuend.keySet().forEach(s->{
+            int newValue =minuend.get(s).getAsInt();
+            if( subtrahend.containsKey(s)){
+                newValue -= subtrahend.get(s).getAsInt();
+            }
+            difference.put(s, new SingleThreadCounter(newValue));
+        });
+        //now add any keys from the second operand that have not been handled yet
+        subtrahend.keySet().forEach(k->{
+            if( !difference.containsKey(k)) {
+                difference.put(k, new SingleThreadCounter( -1* subtrahend.get(k).getAsInt()));
+            }
+        });
+        return difference;
+    }
+    
+    @Test
+    public void testsubtractFormulas() {
+        Map<String,SingleThreadCounter> formula1 = new HashMap<>();
+        formula1.put("C", new SingleThreadCounter(10));
+        formula1.put("H", new SingleThreadCounter(2));
+        formula1.put("N", new SingleThreadCounter(20));
+        formula1.put("O", new SingleThreadCounter(4));
+
+        Map<String,SingleThreadCounter> formula2 = new HashMap<>();
+        formula2.put("C", new SingleThreadCounter(2));
+        formula2.put("H", new SingleThreadCounter(1));
+        formula2.put("N", new SingleThreadCounter(2));
+        formula2.put("O", new SingleThreadCounter(2));
+
+        Map<String,SingleThreadCounter> expected = new HashMap<>();
+        expected.put("C", new SingleThreadCounter(8));
+        expected.put("H", new SingleThreadCounter(1));
+        expected.put("N", new SingleThreadCounter(18));
+        expected.put("O", new SingleThreadCounter(2));
+
+        Map<String, SingleThreadCounter> actual = subtractFormulas(formula1, formula2);
+        expected.keySet().forEach(k->{
+            Assertions.assertEquals(expected.get(k).getAsInt(), actual.get(k).getAsInt());
+        });
     }
 }
