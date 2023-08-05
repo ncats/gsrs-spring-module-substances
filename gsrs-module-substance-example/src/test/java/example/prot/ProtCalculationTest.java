@@ -11,9 +11,12 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.MolecularWeightAndFormulaContribution;
 import ix.ginas.utils.ProteinUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+//import org.openscience.cdk.silent.MolecularFormula;
+import org.openscience.cdk.silent.MolecularFormula;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
@@ -25,6 +28,7 @@ import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Slf4j
 public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String CV_AMINO_ACID_SUBSTITUTION = "AMINO_ACID_SUBSTITUTION";
@@ -657,7 +661,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
-    public void aparaginePetitdeMolFormulaTest() {
+    public void aparaginePeptideMolFormulaTest() {
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -674,6 +678,56 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         String expectedFormula ="C4H8N2O3";
         Assertions.assertEquals(8, contribution.getFormulaMap().get("H").getAsInt());
         Assertions.assertEquals(expectedFormula, contribution.getFormula());
+    }
+
+    @Test
+    public void proteinMwTestMod4() {
+        /*
+        Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
+         */
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "MDPQEMVVKNPYAHISIPRAHLRPDLGQQLEVASTCSSSSEMQPLPVGPCAPEPTHLLQPTEVPGPKGAKGNQGAAPIQNQQAWQQPGNPYSSSQQAGLTYAGPPPAGRGDDIAHHCCCCPCCHCCHCPPFCRCHSCCCCVIS";
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+
+        List<Site> sites = new ArrayList<>();
+        Site newSite= new Site();
+        newSite.residueIndex=1;
+        newSite.subunitIndex=1;
+        sites.add(newSite);
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+        ChemicalSubstance substitute = buildSubstituteChemical();
+
+        modification.molecularFragment.refuuid=substitute.getUuid().toString();
+        modification.residueModified="1_1";
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            log.trace("message: {} ", m.message);
+        });
+
+        double valineMw= 117.1463;
+        double isoleucineMw = 113.15764;
+        double trypophanMw= 204.2;
+        double methionineMw =149.2;
+        double expectedMw = 113269.0 - methionineMw + trypophanMw;
+        double actual =contribution.getMw();
+
+        assertEquals(expectedMw, actual, 0.9);
     }
 
     private ChemicalSubstance buildTryptophan() {
@@ -693,6 +747,22 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
 
         return tryptophan;
+    }
+
+    private ChemicalSubstance buildSubstituteChemical() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        String molfile ="\\n  Marvin  04212313312D          \\n\\n 11 11  0  0  0  0            999 V2000\\n    4.9509    1.1880    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.2365    0.7755    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.2365   -0.0495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    3.5220   -0.4620    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.8075   -0.0495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.0930   -0.4620    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    3.5220   -1.2870    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.2365   -1.6995    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.9509   -1.2870    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.9509   -0.4620    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    5.6655   -0.0495    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  3  4  2  0  0  0  0\\n  4  5  1  0  0  0  0\\n  5  6  1  0  0  0  0\\n  4  7  1  0  0  0  0\\n  7  8  2  0  0  0  0\\n  8  9  1  0  0  0  0\\n  9 10  2  0  0  0  0\\n  3 10  1  0  0  0  0\\n 10 11  1  0  0  0  0\\nM  END";
+        String mofileFormula ="C7H9NO3";
+        GinasChemicalStructure structure= new GinasChemicalStructure();
+        structure.molfile =molfile;
+        structure.formula =mofileFormula;
+        ChemicalSubstance chemicalSubstance = builder
+                .setStructure(structure)
+                .addName("4,5-bis(hydroxymethyl)pyridin-3-ol")
+                .addCode("PubChem CID", "21678630")
+                .build();
+        substanceRepository.saveAndFlush(chemicalSubstance);
+        return chemicalSubstance;
     }
     
     private PolymerSubstance buildPolymer() {
@@ -810,5 +880,112 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
             Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
         }
         return "";
+    }
+
+    @Test
+    public void testParseH2O() {
+        String inputFormula = "H2O";
+        Map<String, SingleThreadCounter> expected = new HashMap<>();
+        expected.put("H", new SingleThreadCounter(2));
+        expected.put("O", new SingleThreadCounter(1));
+
+        Map<String, SingleThreadCounter> actual =parseMapFromFormula(inputFormula);
+        for(String symbol : expected.keySet()){
+            Assertions.assertEquals(expected.get(symbol).getAsInt(), actual.get(symbol).getAsInt());
+        }
+    }
+
+    @Test
+    public void testParseSugar() {
+        String inputFormula = "C12H22O11";
+        Map<String, SingleThreadCounter> expected = new HashMap<>();
+        expected.put("H", new SingleThreadCounter(22));
+        expected.put("O", new SingleThreadCounter(11));
+        expected.put("C", new SingleThreadCounter(12));
+
+        Map<String, SingleThreadCounter> actual =parseMapFromFormula(inputFormula);
+        for(String symbol : expected.keySet()){
+            Assertions.assertEquals(expected.get(symbol).getAsInt(), actual.get(symbol).getAsInt());
+        }
+    }
+
+    @Test
+    public void testParseCalciumCarbonate() {
+        String inputFormula = "CaCO3";
+        Map<String, SingleThreadCounter> expected = new HashMap<>();
+        expected.put("Ca", new SingleThreadCounter(1));
+        expected.put("O", new SingleThreadCounter(3));
+        expected.put("C", new SingleThreadCounter(1));
+
+        Map<String, SingleThreadCounter> actual =parseMapFromFormula(inputFormula);
+        for(String symbol : expected.keySet()){
+            Assertions.assertEquals(expected.get(symbol).getAsInt(), actual.get(symbol).getAsInt());
+        }
+    }
+
+    @Test
+    public void testParseMolFmla() {
+        String inputFormula = "C8H5Br2N";
+        Map<String, SingleThreadCounter> expected = new HashMap<>();
+        expected.put("H", new SingleThreadCounter(5));
+        expected.put("Br", new SingleThreadCounter(2));
+        expected.put("N", new SingleThreadCounter(1));
+        expected.put("C", new SingleThreadCounter(8));
+
+        Map<String, SingleThreadCounter> actual =parseMapFromFormula(inputFormula);
+        for(String symbol : expected.keySet()){
+            Assertions.assertEquals(expected.get(symbol).getAsInt(), actual.get(symbol).getAsInt());
+        }
+    }
+
+    @Test
+    public void testParseMolFmlaWithSpaces() {
+        String inputFormula = "C8 H5 Br2 N";
+        Map<String, SingleThreadCounter> expected = new HashMap<>();
+        expected.put("H", new SingleThreadCounter(5));
+        expected.put("Br", new SingleThreadCounter(2));
+        expected.put("N", new SingleThreadCounter(1));
+        expected.put("C", new SingleThreadCounter(8));
+
+        Map<String, SingleThreadCounter> actual =parseMapFromFormula(inputFormula);
+        for(String symbol : expected.keySet()){
+            Assertions.assertEquals(expected.get(symbol).getAsInt(), actual.get(symbol).getAsInt());
+        }
+    }
+
+    private Map<String, SingleThreadCounter> parseMapFromFormula(String formula){
+
+        Map<String, SingleThreadCounter> elementData = new HashMap<>();
+        int pos=0;
+        StringBuilder symbolBuilder = new StringBuilder();
+        StringBuilder multiplierBuilder = new StringBuilder();
+        while(pos< formula.length()) {
+            if(Character.isDigit(formula.charAt(pos))) {
+                multiplierBuilder.append(formula.charAt(pos));
+            } else if(symbolBuilder.length()==0 || Character.isLowerCase(formula.charAt(pos))){
+                symbolBuilder.append(formula.charAt(pos));
+            }else if(Character.isUpperCase(formula.charAt(pos))){
+                if(symbolBuilder.length()>0 ) {
+                    int multiplier =1;
+                    if(multiplierBuilder.length()>0) {
+                        multiplier=Integer.parseInt(multiplierBuilder.toString());
+                    }
+                    elementData.put(symbolBuilder.toString(), new SingleThreadCounter(multiplier));
+                    symbolBuilder= new StringBuilder();
+                    multiplierBuilder = new StringBuilder();
+                }
+                symbolBuilder.append(formula.charAt(pos));
+            }
+            pos++;
+        }
+        //handle last char
+        if(symbolBuilder.length()>0 ) {
+            int multiplier =1;
+            if(multiplierBuilder.length()>0) {
+                multiplier=Integer.parseInt(multiplierBuilder.toString());
+            }
+            elementData.put(symbolBuilder.toString(), new SingleThreadCounter(multiplier));
+        }
+        return elementData;
     }
 }

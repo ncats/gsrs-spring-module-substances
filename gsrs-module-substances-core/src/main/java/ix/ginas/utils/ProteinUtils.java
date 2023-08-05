@@ -588,7 +588,7 @@ public class ProteinUtils
      * common disulfide pattern found for that subtype, based on the sequence of
      * cysteine residues found in the subunits, sorted by size, largest first.
      * So, for example, IGG1 monoclonal antibodies tend to have a disulfide
-     * pattern specific to the order of cyteines, where the first C is linked to
+     * pattern specific to the order of cysteines, where the first C is linked to
      * the second, the third is linked to the forth, etc ...
      * </p>
      *
