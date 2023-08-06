@@ -20,6 +20,7 @@ import ix.core.EntityFetcher;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.models.Role;
 import ix.core.util.EntityUtils;
+import ix.core.util.EntityUtils.Key;
 import ix.core.util.LogUtil;
 import ix.core.validator.*;
 import ix.ginas.models.v1.Substance;
@@ -472,5 +473,12 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             }
         });
     }
+
+	@Override
+	public List<Key> getKeys() {
+		List<UUID> IDs = repository.getAllIds();
+		List<Key> keys = IDs.stream().map(id->Key.ofStringId(Substance.class, id.toString())).collect(Collectors.toList());
+		return keys;
+	}
 
 }
