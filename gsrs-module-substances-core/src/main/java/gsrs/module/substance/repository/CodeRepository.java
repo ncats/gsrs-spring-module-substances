@@ -26,4 +26,8 @@ public interface CodeRepository extends GsrsVersionedRepository<Code, UUID> {
     List<Code> findByUuidStartingWith(String partialUUID);
 
     List<Code> findByCodeIgnoreCase(String code);
+    
+    @Query("select c.uuid from Code c")
+    List<UUID> getAllIDs();
+    
 }

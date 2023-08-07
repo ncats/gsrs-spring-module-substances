@@ -233,7 +233,9 @@ public class ReferenceEntityService extends AbstractGsrsEntityService<Reference,
         return Optional.empty();
     }
 
-
-
-
+	@Override
+	public List<UUID> getIDs() {
+		// TODO Auto-generated method stub
+		return new ArrayList<UUID>();
+	}
 }

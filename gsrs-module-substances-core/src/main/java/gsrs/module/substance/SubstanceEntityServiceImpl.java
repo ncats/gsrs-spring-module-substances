@@ -475,10 +475,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
 	@Override
-	public List<Key> getKeys() {
-		List<UUID> IDs = repository.getAllIds();
-		List<Key> keys = IDs.stream().map(id->Key.ofStringId(Substance.class, id.toString())).collect(Collectors.toList());
-		return keys;
+	public List<UUID> getIDs() {
+		List<UUID> IDs = repository.getAllIds();		
+		return IDs;
 	}
 
 }
