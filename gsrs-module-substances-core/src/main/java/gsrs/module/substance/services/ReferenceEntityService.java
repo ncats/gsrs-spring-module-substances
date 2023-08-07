@@ -38,11 +38,11 @@ import java.util.stream.Collectors;
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
 public class ReferenceEntityService extends AbstractGsrsEntityService<Reference, UUID> {
-    public static final String  CONTEXT = "names";
+    public static final String  CONTEXT = "references";
 
 
     public ReferenceEntityService() {
-        super(CONTEXT,  IdHelpers.UUID, "gsrs_exchange", "name.created", "name.updated");
+        super(CONTEXT,  IdHelpers.UUID, "gsrs_exchange", "reference.created", "reference.updated");
     }
 
     @Autowired
