@@ -14,9 +14,6 @@ import ix.ginas.utils.ProteinUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-//import org.openscience.cdk.silent.MolecularFormula;
-import org.openscience.cdk.silent.MolecularFormula;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
@@ -25,7 +22,6 @@ import java.nio.file.Files;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -35,16 +31,14 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     private static final String CV_AMINO_ACID_SUBSTITUTION = "AMINO_ACID_SUBSTITUTION";
     private static final Double CELLULOSE_SULFATE_MW =470000.0;
     private static final Double PROLINE_MW = 115.1305;
-    private static final Double WATER_MW = 18.015;;
+    private static final Double WATER_MW = 18.015;
     private static final Double LARGE_PROTEIN_MW_TOLERANCE = 12.0;
     private static final Double MW_HIGH_OFFSET =1000.0;
     private static final Double MW_LOW_OFFSET =-1000.0;
     private static final Double MW_HIGHLIMIT_OFFSET =1000.0;
     private static final Double MW_LOWLIMIT_OFFSET =-1000.0;
     
-    @TempDir
-    static File file;
-    
+
     @Test
     public void mwIndoleTest() {
         String indoleMolfile = "\n" +
@@ -71,7 +65,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
                 "  2  7  1  0  0  0  0\n" +
                 "  4  8  1  0  0  0  0\n" +
                 "M  END\n";
-        Double expected = 117.14788;
+        double expected = 117.14788;
         Double actual=null;
         try {
             Chemical mol = Chemical.parseMol(indoleMolfile);
@@ -220,11 +214,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            System.out.printf("message: %s; ", m.message);
-        });
-        double valineMw= 117.1463;
-        double isoleucineMw = 113.15764;
+        contribution.getMessages().forEach(m-> System.out.printf("message: %s; \n", m.message));
         double trypophanMw= 204.2;
         double methionineMw =149.2;
         double expectedMw = 113269.0 - methionineMw + trypophanMw;
@@ -283,10 +273,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            System.out.printf("message: %s; ", m.message);
-        });
-        double valineMw= 117.1463;
+        contribution.getMessages().forEach(m-> System.out.printf("message: %s; \n", m.message));
         double lycineMw = 146.189;
         double trypophanMw= 204.2;
         double methionineMw =149.2;
@@ -461,9 +448,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            System.out.printf("message: %s; ", m.message);
-        });
+        contribution.getMessages().forEach(m-> System.out.printf("message: %s; \n", m.message));
         double isoleucineMw = 131.175; //wikipedia
         double expectedAverageMw = 5047292.71 - isoleucineMw + CELLULOSE_SULFATE_MW;
         double actualAverage =contribution.getMw();
@@ -538,8 +523,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     @Test
     public void getSingleAAWeightTest() {
         String histideAbbreviation = "H";
-        Double histidineMw = 155.156 - WATER_MW;
-        Double actual = ProteinUtils.getSingleAAWeight(histideAbbreviation);
+        double histidineMw = 155.156 - WATER_MW;
+        double actual = ProteinUtils.getSingleAAWeight(histideAbbreviation);
         assertEquals(histidineMw, actual, 0.01);
     }
     
@@ -548,8 +533,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         Subunit unit1 = new Subunit();
         unit1.sequence="MKKLVIALCLMMVLAVMVEEAEAKWCFRVCYRGICYRRCRGKRNEVRQYRDRGYDVRAIPEETFFTRQDEDEDDDEE";
         Set<String> unknowns = new HashSet<>();
-        Double expected = 9349.0;
-        Double actual = ProteinUtils.getSubunitWeight(unit1, unknowns);
+        double expected = 9349.0;
+        double actual = ProteinUtils.getSubunitWeight(unit1, unknowns);
         assertEquals(expected, actual, 0.5);
         assertEquals(0, unknowns.size());
     }
@@ -559,8 +544,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         Subunit unit1 = new Subunit();
         unit1.sequence="MKKLVIALCLMMVLAVMVEEAEAKWCFRVCYRGICYRRCRGKRNEVRQYRDRGYDVRAIPEETFFTRQDEDEDDDEE@";
         Set<String> unknowns = new HashSet<>();
-        Double expected = 9349.0;
-        Double actual = ProteinUtils.getSubunitWeight(unit1, unknowns);
+        double expected = 9349.0;
+        double actual = ProteinUtils.getSubunitWeight(unit1, unknowns);
         assertEquals(expected, actual, 0.4);
         assertEquals("@", unknowns.toArray()[0]);
     }
@@ -613,7 +598,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     @Test
     public void getMolWeightPropertiesTest() {
         ProteinSubstance protein88ECG9H7RA = getProteinFromFile();
-        Double expectedMwValue = 23900.0;
+        double expectedMwValue = 23900.0;
         List<Property> mwProps = ProteinUtils.getMolWeightProperties(protein88ECG9H7RA);
         assertEquals(expectedMwValue, mwProps.get(0).getValue().average, 0.1);
     }
@@ -722,7 +707,8 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         Map<String,SingleThreadCounter> substituteFormula = parseMapFromFormula(substitute.getStructure().formula);
         ProteinUtils.removeWater(substituteFormula);
-        //????
+
+        Map<String,SingleThreadCounter> expectedFormula = ProteinUtils.addFormulas( ProteinUtils.subtractFormulas(baseProteinFormula, methionineFormula), substituteFormula);
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
@@ -730,14 +716,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
             log.trace("message: {} ", m.message);
         });
 
-        double valineMw= 117.1463;
-        double isoleucineMw = 113.15764;
-        double trypophanMw= 204.2;
-        double methionineMw =149.2;
-        double expectedMw = 113269.0 - methionineMw + trypophanMw;
-        double actual =contribution.getMw();
-
-        assertEquals(expectedMw, actual, 0.9);
+        Assertions.assertTrue(formulasEqual(expectedFormula, contribution.getFormulaMap()));
     }
 
     private ChemicalSubstance buildTryptophan() {
@@ -784,6 +763,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         GinasChemicalStructure structure= new GinasChemicalStructure();
         structure.molfile =molfile;
         structure.formula =mofileFormula;
+        structure.mwt= 7*12.011+9*1.008+14.007+3*15.999;
         ChemicalSubstance chemicalSubstance = builder
                 .setStructure(structure)
                 .addName("4,5-bis(hydroxymethyl)pyridin-3-ol")
@@ -859,17 +839,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         return polymer;
     }
     
-    private Substance getPolymerFromFile() {
-        try {
-            File polymerFile =new ClassPathResource("testJSON/8OZM26QV2C.json").getFile();
-            SubstanceBuilder builder =SubstanceBuilder.from(polymerFile);
-            return builder.build();
-        } catch (IOException ex) {
-            Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return null;
-    }
-    
+
     private ProteinSubstance getProteinFromFile() {
         try {
             File proteinFile =new ClassPathResource("testJSON/88ECG9H7RA.json").getFile();
@@ -887,8 +857,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
             
             List<String> lines =Files.readAllLines(fastaFile.toPath());
             lines.remove(0);
-            String sequence = String.join("", lines);
-            return sequence;
+            return String.join("", lines);
         }
         catch(Exception ex) {
             Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
@@ -901,8 +870,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
             File fastaFile = new ClassPathResource("molfiles/9DLQ4CIU6V.mol").getFile();
 
             List<String> lines =Files.readAllLines(fastaFile.toPath());
-            String molfile = String.join("\n", lines);
-            return molfile;
+            return String.join("\n", lines);
         }
         catch(Exception ex) {
             Logger.getLogger(ProtCalculationTest.class.getName()).log(Level.SEVERE, null, ex);
@@ -1017,26 +985,24 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         return elementData;
     }
 
-    private Map<String,SingleThreadCounter> subtractFormulas(Map<String,SingleThreadCounter> minuend, Map<String,SingleThreadCounter> subtrahend){
-        Map<String,SingleThreadCounter> difference = new HashMap<>();
-        minuend.keySet().forEach(s->{
-            int newValue =minuend.get(s).getAsInt();
-            if( subtrahend.containsKey(s)){
-                newValue -= subtrahend.get(s).getAsInt();
-            }
-            difference.put(s, new SingleThreadCounter(newValue));
-        });
-        //now add any keys from the second operand that have not been handled yet
-        subtrahend.keySet().forEach(k->{
-            if( !difference.containsKey(k)) {
-                difference.put(k, new SingleThreadCounter( -1* subtrahend.get(k).getAsInt()));
+
+    private boolean formulasEqual(Map<String,SingleThreadCounter> formula1, Map<String,SingleThreadCounter> formula2){
+        if( formula1.size()!=formula2.size()){
+            return false;
+        }
+
+        Boolean[] result = new Boolean[1];
+        result[0]=true;
+        formula1.keySet().forEach(s->{
+            if( !formula2.containsKey(s) || formula1.get(s).getAsInt()!= formula2.get(s).getAsInt()){
+                result[0] = false;
             }
         });
-        return difference;
+        return result[0];
     }
-    
+
     @Test
-    public void testsubtractFormulas() {
+    public void testSubtractFormulas() {
         Map<String,SingleThreadCounter> formula1 = new HashMap<>();
         formula1.put("C", new SingleThreadCounter(10));
         formula1.put("H", new SingleThreadCounter(2));
@@ -1055,9 +1021,92 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         expected.put("N", new SingleThreadCounter(18));
         expected.put("O", new SingleThreadCounter(2));
 
-        Map<String, SingleThreadCounter> actual = subtractFormulas(formula1, formula2);
-        expected.keySet().forEach(k->{
-            Assertions.assertEquals(expected.get(k).getAsInt(), actual.get(k).getAsInt());
-        });
+        Map<String, SingleThreadCounter> actual = ProteinUtils.subtractFormulas(formula1, formula2);
+        expected.keySet().forEach(k-> Assertions.assertEquals(expected.get(k).getAsInt(), actual.get(k).getAsInt()));
     }
+
+    @Test
+    public void testSubtractFormulas2() {
+        Map<String,SingleThreadCounter> formula1 = new HashMap<>();
+        formula1.put("C", new SingleThreadCounter(2));
+        formula1.put("H", new SingleThreadCounter(2));
+        formula1.put("N", new SingleThreadCounter(20));
+        formula1.put("S", new SingleThreadCounter(4));
+
+        Map<String,SingleThreadCounter> formula2 = new HashMap<>();
+        formula2.put("C", new SingleThreadCounter(5));
+        formula2.put("H", new SingleThreadCounter(1));
+        formula2.put("N", new SingleThreadCounter(2));
+        formula2.put("O", new SingleThreadCounter(2));
+
+        Map<String,SingleThreadCounter> expected = new HashMap<>();
+        expected.put("C", new SingleThreadCounter(-3));
+        expected.put("H", new SingleThreadCounter(1));
+        expected.put("N", new SingleThreadCounter(18));
+        expected.put("S", new SingleThreadCounter(4));
+        expected.put("O", new SingleThreadCounter(-2));
+
+        Map<String, SingleThreadCounter> actual = ProteinUtils.subtractFormulas(formula1, formula2);
+        expected.keySet().forEach(k-> Assertions.assertEquals(expected.get(k).getAsInt(), actual.get(k).getAsInt()));
+    }
+
+    @Test
+    public void testAddFormulas() {
+        Map<String,SingleThreadCounter> formula1 = new HashMap<>();
+        formula1.put("C", new SingleThreadCounter(2));
+        formula1.put("H", new SingleThreadCounter(2));
+        formula1.put("N", new SingleThreadCounter(20));
+        formula1.put("S", new SingleThreadCounter(4));
+
+        Map<String,SingleThreadCounter> formula2 = new HashMap<>();
+        formula2.put("C", new SingleThreadCounter(5));
+        formula2.put("H", new SingleThreadCounter(1));
+        formula2.put("N", new SingleThreadCounter(2));
+        formula2.put("O", new SingleThreadCounter(2));
+
+        Map<String,SingleThreadCounter> expected = new HashMap<>();
+        expected.put("C", new SingleThreadCounter(7));
+        expected.put("H", new SingleThreadCounter(3));
+        expected.put("N", new SingleThreadCounter(22));
+        expected.put("S", new SingleThreadCounter(4));
+        expected.put("O", new SingleThreadCounter(2));
+
+        Map<String, SingleThreadCounter> actual = ProteinUtils.addFormulas(formula1, formula2);
+        expected.keySet().forEach(k-> Assertions.assertEquals(expected.get(k).getAsInt(), actual.get(k).getAsInt()));
+    }
+
+    @Test
+    public void testFormulasEqual() {
+        Map<String,SingleThreadCounter> formula1 = new HashMap<>();
+        formula1.put("C", new SingleThreadCounter(2));
+        formula1.put("H", new SingleThreadCounter(2));
+        formula1.put("N", new SingleThreadCounter(20));
+        formula1.put("S", new SingleThreadCounter(4));
+
+        Map<String,SingleThreadCounter> formula2 = new HashMap<>();
+        formula2.put("C", new SingleThreadCounter(5));
+        formula2.put("H", new SingleThreadCounter(1));
+        formula2.put("N", new SingleThreadCounter(2));
+        formula2.put("O", new SingleThreadCounter(2));
+
+        Assertions.assertFalse(formulasEqual(formula1, formula2));
+    }
+
+    @Test
+    public void testFormulasEqual2() {
+        Map<String,SingleThreadCounter> formula1 = new HashMap<>();
+        formula1.put("C", new SingleThreadCounter(23));
+        formula1.put("H", new SingleThreadCounter(42));
+        formula1.put("N", new SingleThreadCounter(20));
+        formula1.put("S", new SingleThreadCounter(4));
+
+        Map<String,SingleThreadCounter> formula2 = new HashMap<>();
+        formula2.put("C", new SingleThreadCounter(23));
+        formula2.put("H", new SingleThreadCounter(42));
+        formula2.put("N", new SingleThreadCounter(20));
+        formula2.put("S", new SingleThreadCounter(4));
+
+        Assertions.assertTrue(formulasEqual(formula1, formula2));
+    }
+
 }

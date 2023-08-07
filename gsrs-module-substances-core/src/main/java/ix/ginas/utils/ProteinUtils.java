@@ -269,7 +269,7 @@ public class ProteinUtils
                         AminoAcid acid = AminoAcid.parse(aa);
                         double aaWt = getSingleAAWeight(aaCode);
                         double siteContribution = contribution.getMw() - waterMW - aaWt; //the value from getSingleAAWeight includes the effect of removal of 1 H2O
-                        // the contribution's mw does not so we substract the mw of water
+                        // the contribution's mw does not, so we subtract the mw of water
                         log.trace(String.format("processing site with subunit %d; residue number %d; AA: %c; name: %s; aa mw: %.2f; net effect of site: %.2f",
                                 site.subunitIndex, site.residueIndex, aa, acid.getName(), aaWt, siteContribution));
                         total += siteContribution;
@@ -324,6 +324,8 @@ public class ProteinUtils
         log.trace(String.format("basic MW: %.2f; basic formula: %s; disulfideContribution: %.2f",
                 total, makeFormulaFromMap(formulaCounts), disulfideContribution));
         total -= disulfideContribution;
+        Map<String, SingleThreadCounter> formulaMapWithContrib[] =new Map[1];
+        formulaMapWithContrib[0]=formulaCounts;
         if (ps.hasModifications() && ps.modifications.structuralModifications.size() > 0) {
             log.debug("considering structuralModifications");
             double waterMW = 18.02;//https://tripod.nih.gov/ginas/app/substances?q=water
@@ -388,22 +390,11 @@ public class ProteinUtils
                                 lowLimitTotal += lowLimitDelta;
                                 log.trace(String.format("lowLimitDelta: %.2f; lowLimitTotal: %.2f", lowLimitDelta, lowLimitTotal));
                             }
-                            final Map<String, SingleThreadCounter> formulaMap = contribution.getFormulaMap();
-                            contribution.getFormulaMap().keySet().forEach(k -> {
-                                if (formulaCounts.containsKey(k)) {
-                                    formulaCounts.get(k).increment(formulaMap.get(k).getAsLong());
-                                }
-                                else {
-                                    formulaCounts.put(k, new SingleThreadCounter(formulaMap.get(k).getAsLong()));
-                                }
-                            });
+                            formulaMapWithContrib[0] = addFormulas(formulaCounts, contribution.getFormulaMap());
 
                             Map<String, SingleThreadCounter> aaContribution = getSingleAAFormula(aaCode);
-                            aaContribution.keySet().forEach(k -> {
-                                if (formulaCounts.containsKey(k)) {
-                                    formulaCounts.get(k).decrement(aaContribution.get(k).getAsLong());
-                                }
-                            });
+                            formulaMapWithContrib[0]=subtractFormulas(formulaMapWithContrib[0], aaContribution);
+                            removeWater(formulaMapWithContrib[0]);
                         }
                         messages.addAll(contribution.getMessages());
                     }
@@ -425,7 +416,7 @@ public class ProteinUtils
 
         log.trace(String.format("final total: %.2f; highTotal: %.2f; lowTotal: %.2f; highLimitTotal: %.2f; lowLimitTotal: %.2f", total,
                 highTotal, lowTotal, highLimitTotal, lowLimitTotal));
-        result = new MolecularWeightAndFormulaContribution(total, ps.substanceClass.toString(), formulaCounts);
+        result = new MolecularWeightAndFormulaContribution(total, ps.substanceClass.toString(), formulaMapWithContrib[0]);
         result.setFormula(FormulaInfo.toCanonicalString(makeFormulaFromMap(formulaCounts)));
         result.setMessages(messages);
         result.setMwHigh(highTotal);
@@ -747,6 +738,43 @@ public class ProteinUtils
                 ? protein.getDisulfideLinks().size() * HYDROGEN_MOLECULAR_WEIGHT
                 : 0.0d;
     }
+
+    public static Map<String,SingleThreadCounter> subtractFormulas(Map<String,SingleThreadCounter> minuend, Map<String,SingleThreadCounter> subtrahend){
+        Map<String,SingleThreadCounter> difference = new HashMap<>();
+        minuend.keySet().forEach(s->{
+            int newValue =minuend.get(s).getAsInt();
+            if( subtrahend.containsKey(s)){
+                newValue -= subtrahend.get(s).getAsInt();
+            }
+            difference.put(s, new SingleThreadCounter(newValue));
+        });
+        //now add any keys from the second operand that have not been handled yet
+        subtrahend.keySet().forEach(k->{
+            if( !difference.containsKey(k)) {
+                difference.put(k, new SingleThreadCounter( -1* subtrahend.get(k).getAsInt()));
+            }
+        });
+        return difference;
+    }
+
+    public static Map<String,SingleThreadCounter> addFormulas(Map<String,SingleThreadCounter> addend1, Map<String,SingleThreadCounter> addend2){
+        Map<String,SingleThreadCounter> difference = new HashMap<>();
+        addend1.keySet().forEach(s->{
+            int newValue =addend1.get(s).getAsInt();
+            if( addend2.containsKey(s)){
+                newValue += addend2.get(s).getAsInt();
+            }
+            difference.put(s, new SingleThreadCounter(newValue));
+        });
+        //now add any keys from the second operand that have not been handled yet
+        addend2.keySet().forEach(k->{
+            if( !difference.containsKey(k)) {
+                difference.put(k, new SingleThreadCounter( addend2.get(k).getAsInt()));
+            }
+        });
+        return difference;
+    }
+
     //katzelda Feb 2021: this is duplicated logic of the Amount part of the Property calculation
 //  public static String getAmountString(double avg, double low, double high, double lowLimit, double highLimit) {
 //    log.trace("ProteinUtils.getAmountString");
