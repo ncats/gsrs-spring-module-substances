@@ -709,9 +709,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
         MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
                 proteinSubstance, unknownResidues);
-        contribution.getMessages().forEach(m->{
-            log.trace("message: {} ", m.message);
-        });
+        contribution.getMessages().forEach(m-> log.trace("message: {} ", m.message));
 
         Assertions.assertTrue(formulasEqual(expectedFormula, contribution.getFormulaMap()));
     }
@@ -773,6 +771,67 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertTrue(formulasEqual(expectedFormula, contribution.getFormulaMap()));
     }
 
+
+    @Test
+    public void proteinMwTestMod6() {
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence = "MLSRNDDICIYGGLGLGGLLLLAVVLLSACLCWLHRRVKRLERSWAQGSSEQELHYASLQRLPVPSSEGPDLRGRDKRGTKEDPRADYACIAENKPT";
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+
+        List<Site> sites = new ArrayList<>();
+        Site newSite= new Site();
+        newSite.residueIndex=2;
+        newSite.subunitIndex=1;
+        sites.add(newSite);
+        Site newSite2= new Site();
+        newSite2.residueIndex=3;
+        newSite2.subunitIndex=1;
+        sites.add(newSite2);
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+        ChemicalSubstance substitute = buildSubstituteChemical2();
+
+        modification.molecularFragment.refuuid=substitute.getUuid().toString();
+        modification.residueModified="1_2;1_3";
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+        String formulaSource ="C469 H764 N142 O140 S5";
+        Map<String,SingleThreadCounter> baseProteinFormula = parseMapFromFormula(formulaSource);
+        ChemicalSubstance leucine= buildLeucine();
+        Map<String,SingleThreadCounter> leucineFormula = parseMapFromFormula(leucine.getStructure().formula);
+        ProteinUtils.removeWater(leucineFormula);
+
+        ChemicalSubstance serine = buildSerine();
+        Map<String,SingleThreadCounter> serineFormula = parseMapFromFormula(serine.getStructure().formula);
+        ProteinUtils.removeWater(serineFormula);
+
+        Map<String,SingleThreadCounter> substituteFormula = parseMapFromFormula(substitute.getStructure().formula);
+        ProteinUtils.removeWater(substituteFormula);
+
+        Map<String,SingleThreadCounter> expectedFormula = ProteinUtils.subtractFormulas(baseProteinFormula, leucineFormula);
+        expectedFormula = ProteinUtils.addFormulas( expectedFormula, substituteFormula);
+        expectedFormula = ProteinUtils.subtractFormulas(expectedFormula, serineFormula);
+        expectedFormula = ProteinUtils.addFormulas( expectedFormula, substituteFormula);
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            log.trace("message: {} ", m.message);
+        });
+
+        Assertions.assertTrue(formulasEqual(expectedFormula, contribution.getFormulaMap()));
+    }
+
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 
@@ -809,6 +868,62 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         return methionine;
     }
 
+
+    private ChemicalSubstance buildThreonine() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+
+        String threoMolfile="\\n  Marvin  01132107332D          \\n\\n  8  7  0  0  1  0            999 V2000\\n   -0.0958   -0.0667    0.0000 C   0  0  2  0  0  0  0  0  0  0  0  0\\n    0.6250   -0.4792    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.6250   -1.3042    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n   -0.0958    0.7583    0.0000 C   0  0  2  0  0  0  0  0  0  0  0  0\\n   -0.8000   -0.4792    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n    1.3417   -0.0667    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.6250    1.1708    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n   -0.8000    1.1708    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  2  1  1  0  0  0  0\\n  3  2  2  0  0  0  0\\n  4  1  1  0  0  0  0\\n  1  5  1  1  0  0  0\\n  6  2  1  0  0  0  0\\n  4  7  1  1  0  0  0\\n  8  4  1  0  0  0  0\\nM  END";
+
+        GinasChemicalStructure structure= new GinasChemicalStructure();
+        structure.molfile =threoMolfile;
+        structure.setMwt(119.12);
+        structure.formula ="C4H9NO3";
+        ChemicalSubstance threonine = builder.setStructure(structure)
+                .addName("threonine")
+                .addCode("FDA UNII", "2ZD004190S")
+                .build();
+        substanceRepository.saveAndFlush(threonine);
+
+        return threonine;
+    }
+
+
+    private ChemicalSubstance buildSerine() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+
+        String serMolfile="\\n  Marvin  01132107052D          \\n\\n  7  6  0  0  1  0            999 V2000\\n    2.7387    0.3545    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.0245   -0.0720    0.0000 C   0  0  1  0  0  0  0  0  0  0  0  0\\n    2.7207    1.1663    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.0168   -0.8863    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n    3.4323   -0.0642    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    1.3077    0.3365    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.5883   -0.0617    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n  2  1  1  0  0  0  0\\n  3  1  2  0  0  0  0\\n  2  4  1  1  0  0  0\\n  5  1  1  0  0  0  0\\n  6  2  1  0  0  0  0\\n  7  6  1  0  0  0  0\\nM  END";
+
+        GinasChemicalStructure structure= new GinasChemicalStructure();
+        structure.molfile =serMolfile;
+        structure.setMwt(105.09);
+        structure.formula ="C3H7NO3";
+        ChemicalSubstance serine = builder.setStructure(structure)
+                .addName("serine")
+                .addCode("FDA UNII", "452VLY9402")
+                .build();
+        substanceRepository.saveAndFlush(serine);
+
+        return serine;
+    }
+
+    private ChemicalSubstance buildLeucine() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+
+        String leuMolfile="\\n  Marvin  01132100552D          \\n\\n  9  8  0  0  1  0            999 V2000\\n   12.6108   -0.4395    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   11.8937   -0.0291    0.0000 C   0  0  2  0  0  0  0  0  0  0  0  0\\n   12.6108   -1.2603    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n   11.8937    0.7918    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   11.1930   -0.4395    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n   13.3197   -0.0249    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n   12.6108    1.2022    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   13.3197    0.7918    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   12.6108    2.0272    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  2  1  1  0  0  0  0\\n  3  1  2  0  0  0  0\\n  4  2  1  0  0  0  0\\n  2  5  1  1  0  0  0\\n  6  1  1  0  0  0  0\\n  7  4  1  0  0  0  0\\n  8  7  1  0  0  0  0\\n  9  7  1  0  0  0  0\\nM  END";
+
+        GinasChemicalStructure structure= new GinasChemicalStructure();
+        structure.molfile =leuMolfile;
+        structure.setMwt(131.17);
+        structure.formula ="C6H13NO2";
+        ChemicalSubstance leucine = builder.setStructure(structure)
+                .addName("leucine")
+                .addCode("FDA UNII", "GMW67QNF9C")
+                .build();
+        substanceRepository.saveAndFlush(leucine);
+
+        return leucine;
+    }
+
     private ChemicalSubstance buildSubstituteChemical() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         String molfile ="\\n  Marvin  04212313312D          \\n\\n 11 11  0  0  0  0            999 V2000\\n    4.9509    1.1880    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.2365    0.7755    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.2365   -0.0495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    3.5220   -0.4620    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.8075   -0.0495    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.0930   -0.4620    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    3.5220   -1.2870    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.2365   -1.6995    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.9509   -1.2870    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.9509   -0.4620    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    5.6655   -0.0495    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  3  4  2  0  0  0  0\\n  4  5  1  0  0  0  0\\n  5  6  1  0  0  0  0\\n  4  7  1  0  0  0  0\\n  7  8  2  0  0  0  0\\n  8  9  1  0  0  0  0\\n  9 10  2  0  0  0  0\\n  3 10  1  0  0  0  0\\n 10 11  1  0  0  0  0\\nM  END";
@@ -825,7 +940,23 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         substanceRepository.saveAndFlush(chemicalSubstance);
         return chemicalSubstance;
     }
-    
+
+    private ChemicalSubstance buildSubstituteChemical2() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        String molfile ="\\n  Marvin  01132112462D          \\n\\n 30 33  0  0  0  0            999 V2000\\n    8.7068   -4.1345    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.3079   -4.2821    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.0151   -4.7070    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.4789   -3.4817    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.3389   -3.4817    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    6.5851   -4.6940    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    5.8753   -4.2744    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.1554   -3.4428    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.1554   -4.2666    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    5.1552   -4.6863    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.4402   -4.2744    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.0151   -5.5256    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    3.0180   -4.2744    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.8782   -3.0309    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.8782   -4.6863    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    4.4402   -3.4428    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\\n    6.9970   -2.8340    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.7378   -2.7511    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.3079   -5.9375    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    6.5851   -5.5178    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    3.7407   -4.6863    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -0.5440   -3.0309    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -0.5569   -4.6707    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    2.3108   -4.6863    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    1.5880   -4.2666    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    0.8886   -2.1994    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    7.3985   -2.1035    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n    8.2482   -2.1035    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -1.2745   -4.2433    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   -1.2745   -3.4428    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  2  3  2  0  0  0  0\\n  3  1  1  0  0  0  0\\n  4  5  2  0  0  0  0\\n  5  1  1  0  0  0  0\\n  6  2  1  0  0  0  0\\n  7  6  1  0  0  0  0\\n  8  9  2  0  0  0  0\\n  9 15  1  0  0  0  0\\n 10  7  1  0  0  0  0\\n 11 10  1  0  0  0  0\\n 12  3  1  0  0  0  0\\n 13 21  1  0  0  0  0\\n 14  8  1  0  0  0  0\\n 15 25  1  0  0  0  0\\n 11 16  1  0  0  0  0\\n 17  4  1  0  0  0  0\\n 18  5  1  0  0  0  0\\n 19 12  2  0  0  0  0\\n 20 19  1  0  0  0  0\\n 21 11  1  0  0  0  0\\n 22  8  1  0  0  0  0\\n 23  9  1  0  0  0  0\\n 24 13  1  0  0  0  0\\n 25 24  1  0  0  0  0\\n 26 14  1  0  0  0  0\\n 27 28  1  0  0  0  0\\n 28 18  2  0  0  0  0\\n 29 23  2  0  0  0  0\\n 30 29  1  0  0  0  0\\n  4  2  1  0  0  0  0\\n 27 17  2  0  0  0  0\\n 20  6  2  0  0  0  0\\n 30 22  2  0  0  0  0\\nM  END";
+        String mofileFormula ="C24H26N2O4";
+        GinasChemicalStructure structure= new GinasChemicalStructure();
+        structure.molfile =molfile;
+        structure.formula =mofileFormula;
+        structure.mwt= 24*12.011+26*1.008+2*14.007+4*15.999;
+        ChemicalSubstance chemicalSubstance = builder
+                .setStructure(structure)
+                .addName("CARVEDILOL")
+                .addCode("CAS", "72956-09-3")
+                .build();
+        substanceRepository.saveAndFlush(chemicalSubstance);
+        return chemicalSubstance;
+    }
     private PolymerSubstance buildPolymer() {
         PolymerSubstanceBuilder builder = new PolymerSubstanceBuilder(new Substance());
         builder.addName("CELLULOSE SULFATE");
@@ -1041,6 +1172,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     private boolean formulasEqual(Map<String,SingleThreadCounter> formula1, Map<String,SingleThreadCounter> formula2){
         if( formula1.size()!=formula2.size()){
+            log.warn("formulas of different lengths");
             return false;
         }
 
@@ -1048,6 +1180,7 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         result[0]=true;
         formula1.keySet().forEach(s->{
             if( !formula2.containsKey(s) || formula1.get(s).getAsInt()!= formula2.get(s).getAsInt()){
+                log.warn("formulas disagree for species {}", s);
                 result[0] = false;
             }
         });
