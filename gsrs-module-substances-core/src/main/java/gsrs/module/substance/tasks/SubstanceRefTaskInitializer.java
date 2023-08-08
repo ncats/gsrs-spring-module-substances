@@ -103,6 +103,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
         try {
             listen.newProcess();
             listen.totalRecordsToProcess((int) substanceRepository.count());
+            log.trace("substanceRepository.count(): {}", substanceRepository.count());
 
             Authentication adminAuth = adminService.getAnyAdmin();
             File writeFile = getOutputFile();
@@ -132,6 +133,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                     out.println();
                     out.println("report completed at " + (new Date()));
                 } catch (Exception ex) {
+                    log.error("Error processing substances", ex);
                     l.message("Error processing substance references " + ex.getMessage());
                 }
             });
@@ -141,6 +143,7 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             try {
                 executor.awaitTermination(1, TimeUnit.DAYS);
             } catch (InterruptedException e) {
+                log.error("interruptedException", e);
                 //should never happen
             }
             l.message("Task finished");
