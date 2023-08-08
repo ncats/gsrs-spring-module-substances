@@ -668,9 +668,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     public void proteinMwTestMod4() {
-        /*
-        Create an unmodified protein -- just an amino acid sequence -- and calculate its molecular weight
-         */
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
         Subunit subunit1= new  Subunit();
@@ -719,6 +716,63 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertTrue(formulasEqual(expectedFormula, contribution.getFormulaMap()));
     }
 
+    @Test
+    public void proteinMwTestMod5() {
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "MDPQEMVVKNPYAHISIPRAHLRPDLGQQLEVASTCSSSSEMQPLPVGPCAPEPTHLLQPTEVPGPKGAKGNQGAAPIQNQQAWQQPGNPYSSSQQAGLTYAGPPPAGRGDDIAHHCCCCPCCHCCHCPPFCRCHSCCCCVIS";
+        StructuralModification modification = new StructuralModification();
+        modification.structuralModificationType = CV_AMINO_ACID_SUBSTITUTION;
+
+        List<Site> sites = new ArrayList<>();
+        Site newSite= new Site();
+        newSite.residueIndex=1;
+        newSite.subunitIndex=1;
+        sites.add(newSite);
+        Site newSite2= new Site();
+        newSite2.residueIndex=6;
+        newSite2.subunitIndex=1;
+        sites.add(newSite2);
+        modification.setSites(sites);
+        modification.extent="COMPLETE";
+        modification.molecularFragment = new SubstanceReference();
+        ChemicalSubstance substitute = buildSubstituteChemical();
+
+        modification.molecularFragment.refuuid=substitute.getUuid().toString();
+        modification.residueModified="1_1";
+        Modifications mods = new Modifications();
+        mods.structuralModifications.add(modification);
+        proteinSubstance.setModifications(mods);
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+        String formulaSource ="C639 H992 N192 O197 S20";
+        Map<String,SingleThreadCounter> baseProteinFormula = parseMapFromFormula(formulaSource);
+        ChemicalSubstance methionine= buildMethionine();
+        Map<String,SingleThreadCounter> methionineFormula = parseMapFromFormula(methionine.getStructure().formula);
+        ProteinUtils.removeWater(methionineFormula);
+
+        Map<String,SingleThreadCounter> substituteFormula = parseMapFromFormula(substitute.getStructure().formula);
+        ProteinUtils.removeWater(substituteFormula);
+
+        Map<String,SingleThreadCounter> removedLeavingGroup = ProteinUtils.subtractFormulas(baseProteinFormula, methionineFormula);
+        removedLeavingGroup = ProteinUtils.subtractFormulas(removedLeavingGroup, methionineFormula);
+        Map<String,SingleThreadCounter> expectedFormula = ProteinUtils.addFormulas( removedLeavingGroup, substituteFormula);
+        expectedFormula = ProteinUtils.addFormulas( expectedFormula, substituteFormula);
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        contribution.getMessages().forEach(m->{
+            log.trace("message: {} ", m.message);
+        });
+
+        Assertions.assertTrue(formulasEqual(expectedFormula, contribution.getFormulaMap()));
+    }
+
     private ChemicalSubstance buildTryptophan() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
 
@@ -733,7 +787,6 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
                 .addCode("FDA UNII", "8DUH1N11BX")
                 .build();
         substanceRepository.saveAndFlush(tryptophan);
-
 
         return tryptophan;
     }

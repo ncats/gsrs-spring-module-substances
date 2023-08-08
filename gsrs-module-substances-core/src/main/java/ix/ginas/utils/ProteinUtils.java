@@ -390,8 +390,7 @@ public class ProteinUtils
                                 lowLimitTotal += lowLimitDelta;
                                 log.trace(String.format("lowLimitDelta: %.2f; lowLimitTotal: %.2f", lowLimitDelta, lowLimitTotal));
                             }
-                            formulaMapWithContrib[0] = addFormulas(formulaCounts, contribution.getFormulaMap());
-
+                            formulaMapWithContrib[0] = addFormulas(formulaMapWithContrib[0], contribution.getFormulaMap());
                             Map<String, SingleThreadCounter> aaContribution = getSingleAAFormula(aaCode);
                             formulaMapWithContrib[0]=subtractFormulas(formulaMapWithContrib[0], aaContribution);
                             removeWater(formulaMapWithContrib[0]);
@@ -417,7 +416,7 @@ public class ProteinUtils
         log.trace(String.format("final total: %.2f; highTotal: %.2f; lowTotal: %.2f; highLimitTotal: %.2f; lowLimitTotal: %.2f", total,
                 highTotal, lowTotal, highLimitTotal, lowLimitTotal));
         result = new MolecularWeightAndFormulaContribution(total, ps.substanceClass.toString(), formulaMapWithContrib[0]);
-        result.setFormula(FormulaInfo.toCanonicalString(makeFormulaFromMap(formulaCounts)));
+        result.setFormula(FormulaInfo.toCanonicalString(makeFormulaFromMap(formulaMapWithContrib[0])));
         result.setMessages(messages);
         result.setMwHigh(highTotal);
         result.setMwLow(lowTotal);
