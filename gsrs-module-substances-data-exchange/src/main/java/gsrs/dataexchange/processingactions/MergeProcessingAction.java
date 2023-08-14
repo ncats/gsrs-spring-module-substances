@@ -6,11 +6,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.module.substance.importers.model.MergeProcessingActionParameters;
+import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.FileCopyUtils;
 
@@ -22,7 +24,8 @@ import java.util.function.Consumer;
 @Slf4j
 public class MergeProcessingAction implements ProcessingAction<Substance> {
 
-    private JsonNode settings;
+    @Autowired
+    private SubstanceRepository substanceRepository;
 
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){
@@ -40,7 +43,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
         Map<String, String> referencesToCopy = new HashMap<>();//UUIDs
 
-        /*if( hasTrueValue(parameters, "MergeDefinition")) {
+        if( mergeParameters.getCopyStructure()) {
             if(existing.substanceClass== Substance.SubstanceClass.chemical && source.substanceClass== Substance.SubstanceClass.chemical){
                 GinasChemicalStructure structure= ((ChemicalSubstance)source).getStructure();
                 EntityUtils.EntityInfo<GinasChemicalStructure> eics= EntityUtils.getEntityInfoFor(GinasChemicalStructure.class);
@@ -67,7 +70,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     processLog.accept("Error copying structure " );
                     log.error("Error copying structure");
                 }
-            } else if(existing.substanceClass== Substance.SubstanceClass.protein && source.substanceClass== Substance.SubstanceClass.protein){
+            }/* else if(existing.substanceClass== Substance.SubstanceClass.protein && source.substanceClass== Substance.SubstanceClass.protein){
                 Protein protein = ((ProteinSubstance)source).protein;
                 EntityUtils.EntityInfo<Protein> eics= EntityUtils.getEntityInfoFor(Protein.class);
                 try {
@@ -93,8 +96,8 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     processLog.accept("Error copying protein " );
                     log.error("Error copying protein");
                 }
-            }
-        }*/
+            }*/
+        }
         if(mergeParameters.getMergeReferences()){
             source.references.forEach(r->{
                 if( existing.references.stream().anyMatch(r2->r2.docType!=null && r2.docType.equals(r.docType) && r2.citation!=null
@@ -116,44 +119,26 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
         }
         
         if(mergeParameters.getMergeNames()){
+            Set<Name> namesToCopy = new HashSet<>();
             source.names.forEach(n-> {
                 if( existing.names.stream().anyMatch(en->en.name.equals(n.name))){
                     processLog.accept(String.format("Name %s was already present;", n.name));
                 } else if(mergeParameters.getMergeNamesSpecificNames()!=null && !mergeParameters.getMergeNamesSpecificNames().isEmpty()
                         && !mergeParameters.getMergeNamesSpecificNames().contains(n.name)) {
                     log.trace("omitting name '{}' because it was not on the list of specific names", n.name);
-                }else{
-                    EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
-                    Name newName;
-                    try {
-                        newName = eics.fromJson(n.toJson());
-
-                        newName.setUuid(UUID.randomUUID());
-                        Set<UUID> newRefs = new HashSet<>();
-                        newName.getReferences().forEach(ref->{
-                            String oldRefValue = ref.getValue();
-                            String newRefValue;
-                            if(referencesToCopy.containsKey(oldRefValue)){
-                                newRefValue= referencesToCopy.get(oldRefValue);
-                            } else {
-                                newRefValue=UUID.randomUUID().toString();
-                                referencesToCopy.put(ref.getValue(), newRefValue);
-                            }
-                            newRefs.add(UUID.fromString(newRefValue));
-                            log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-                        });
-                        newName.setReferenceUuids(newRefs);
-                        newName.displayName=false;//substance probably had a display name already; if not, user can make a change  later
-                        builder.addName( newName);
-
-                        processLog.accept(String.format("Adding Name %s;", n.name));
-                    } catch (IOException e) {
-                        log.error("error copying name", e);
-                        processLog.accept(String.format("Error adding Name %s;", n.name));
-                        throw new RuntimeException(e);
+                }else {
+                    if(mergeParameters.getMergeNamesSkipNameMatches()){
+                        List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_NameIgnoreCase(n.name);
+                        if( !sr.isEmpty()){
+                            log.info("skipping name {} because it is used elsewhere AND a merge setting prohibits this", n.name);
+                            processLog.accept(String.format("skipping name %s because it is used elsewhere AND a merge setting prohibits this", n.name));
+                            return;
+                        }
                     }
+                    namesToCopy.add(n);
                 }
             });
+            copyNames(builder, namesToCopy, referencesToCopy, processLog);
         }
 
         if(mergeParameters.getMergeCodes()){
@@ -162,7 +147,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     processLog.accept(String.format("code %s was already present;", c.code));
                 }else if( mergeParameters.getMergeCodesSpecificSystems()!=null && !mergeParameters.getMergeCodesSpecificSystems().isEmpty()
                         && !mergeParameters.getMergeCodesSpecificSystems().contains(c.codeSystem)) {
-                    log.trace("omitting code '{}' because its code system {} was not on the list of specific code systems", c.code, c.codeSystem);
+                    log.info("omitting code '{}' because its code system {} was not on the list of specific code systems", c.code, c.codeSystem);
                 }else{
                     EntityUtils.EntityInfo<Code> eics= EntityUtils.getEntityInfoFor(Code.class);
                     try {
@@ -309,17 +294,15 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     try {
                         AgentModification newAgentModification = agentModificationEntityInfo.fromJson(am.toJson());
                         newAgentModification.setUuid(UUID.randomUUID());
-                        Set<UUID>newRefs = new HashSet<>();
+                        //Set<UUID>newRefs = new HashSet<>();
                         newAgentModification.getReferences().forEach(ref->{
                             String oldRefValue = ref.getValue();
                             String newRefValue;
-                            if(referencesToCopy.containsKey(oldRefValue)){
-                                newRefValue= referencesToCopy.get(oldRefValue);
-                            } else {
+                            if(!referencesToCopy.containsKey(oldRefValue)){
                                 newRefValue=UUID.randomUUID().toString();
                                 referencesToCopy.put(ref.getValue(), newRefValue);
                             }
-                            newRefs.add(UUID.fromString(newRefValue));
+                            //newRefs.add(UUID.fromString(newRefValue));
                         });
                         builder.addAgentModification(newAgentModification);
 
@@ -339,7 +322,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     try {
                         PhysicalModification newPhysicalModification = physicalModificationEntityInfo.fromJson(pm.toJson());
                         newPhysicalModification.setUuid(UUID.randomUUID());
-                        Set<UUID>newRefs = new HashSet<>();
+                        //Set<UUID>newRefs = new HashSet<>();
                         newPhysicalModification.getReferences().forEach(ref->{
                             log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
                             String oldRefValue = ref.getValue();
@@ -350,7 +333,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                                 newRefValue=UUID.randomUUID().toString();
                                 referencesToCopy.put(ref.getValue(), newRefValue);
                             }
-                            newRefs.add(UUID.fromString(newRefValue));
+                            //newRefs.add(UUID.fromString(newRefValue));
                         });
                         builder.addPhysicalModification(newPhysicalModification);
                     } catch (IOException e){
@@ -499,7 +482,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
     private final static String JSONSchema = getSchemaString();
 
-    private static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
+    private final static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
         ObjectMapper mapper =new ObjectMapper();
         try {
             JsonNode schemaNode=mapper.readTree(JSONSchema);
@@ -551,4 +534,41 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
         }
 
     }*/
+
+    private void copyNames(AbstractSubstanceBuilder target, Set<Name> namesToCopy, Map<String, String> referencesToCopy,
+                           Consumer<String> processLog) {
+        EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
+        namesToCopy.forEach(n->{
+            try {
+                Name newName;
+                newName = eics.fromJson(n.toJson());
+
+                newName.setUuid(UUID.randomUUID());
+                Set<UUID> newRefs = new HashSet<>();
+                newName.getReferences().forEach(ref->{
+                    String oldRefValue = ref.getValue();
+                    String newRefValue;
+                    if(referencesToCopy.containsKey(oldRefValue)){
+                        newRefValue= referencesToCopy.get(oldRefValue);
+                    } else {
+                        newRefValue=UUID.randomUUID().toString();
+                        referencesToCopy.put(ref.getValue(), newRefValue);
+                    }
+                    newRefs.add(UUID.fromString(newRefValue));
+                    log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
+                });
+                newName.setReferenceUuids(newRefs);
+                newName.displayName=false;//substance probably had a display name already; if not, user can make a change  later
+                target.addName( newName);
+
+                processLog.accept(String.format("Adding Name %s;", n.name));
+            } catch (IOException e) {
+                log.error("error copying name", e);
+                processLog.accept(String.format("Error adding Name %s;", n.name));
+                throw new RuntimeException(e);
+            }
+
+
+        });
+    }
 }

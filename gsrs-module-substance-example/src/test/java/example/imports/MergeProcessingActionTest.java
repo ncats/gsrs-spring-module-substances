@@ -4,6 +4,7 @@ import example.GsrsModuleSubstanceApplication;
 import gsrs.dataexchange.processingactions.MergeProcessingAction;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.services.PrincipalServiceImpl;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
@@ -30,7 +31,6 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     @Autowired
     private StructureIndexerService indexer;
 
-
     @Autowired
     private PrincipalServiceImpl principalService;
 
@@ -38,7 +38,10 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     public void clearIndexers() throws IOException {
         indexer.removeAll();
         principalService.clearCache();
+        AutowireHelper.getInstance().autowireAndProxy(action);
     }
+
+    MergeProcessingAction action = new MergeProcessingAction();
 
     @Test
     public void testMergeNames() {
@@ -73,7 +76,6 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -85,19 +87,6 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     @Test
     public void testMergeStructures() {
 
-        String cleanMolfile ="\n" +
-                "  ACCLDraw03062319102D\n" +
-                "\n" +
-                "  5  3  0  0  0  0  0  0  0  0999 V2000\n" +
-                "    2.6138   -5.4326    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    3.6517   -4.8689    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    3.6827   -3.6879    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    4.6591   -5.4863    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    7.7500   -3.9500    0.0000 Na  0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  1  0  0  0  0\n" +
-                "  2  3  2  0  0  0  0\n" +
-                "  2  4  1  0  0  0  0\n" +
-                "M  END\n";
         String disorganizedMolfile = "\n" +
                 "  ACCLDraw03062319112D\n" +
                 "\n" +
@@ -139,12 +128,11 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         ChemicalSubstance mergedChemical = (ChemicalSubstance) output;
         Assertions.assertTrue(!mergedChemical.getStructure().smiles.contains("+")
             && !mergedChemical.getStructure().smiles.contains("-"));
-        mergedChemical.moieties.stream().noneMatch(moi->moi.structure.smiles.contains("-") || moi.structure.smiles.contains("+"));
+        Assertions.assertTrue(mergedChemical.moieties.stream().noneMatch(moi->moi.structure.smiles.contains("-") || moi.structure.smiles.contains("+")));
     }
 
     @Test
@@ -177,12 +165,11 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         ChemicalSubstance mergedChemical = (ChemicalSubstance) output;
         Assertions.assertTrue(mergedChemical.getStructure().smiles.contains("+")
                 && mergedChemical.getStructure().smiles.contains("-"));
-        mergedChemical.moieties.stream().allMatch(moi->moi.structure.smiles.contains("-") || moi.structure.smiles.contains("+"));
+        Assertions.assertTrue(mergedChemical.moieties.stream().allMatch(moi->moi.structure.smiles.contains("-") || moi.structure.smiles.contains("+")));
     }
 
     @Test
@@ -226,7 +213,6 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) /*&& n.displayName== n2.displayName*/ &&
@@ -276,7 +262,6 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         Assertions.assertTrue(chemical1.names.stream().allMatch(n->output.names.stream().anyMatch(n2->n.name.equals(n2.name) && /*n.displayName== n2.displayName &&*/
@@ -316,12 +301,11 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
         Map<String, Object> mergeSettings = new HashMap<>();
         mergeSettings.put("mergeNames", "true");
-Map<String, Object> parms = new HashMap<>();
+        Map<String, Object> parms = new HashMap<>();
         parms.put("mergeSettings", mergeSettings);
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -368,7 +352,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.names.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -421,7 +404,6 @@ Map<String, Object> parms = new HashMap<>();
         List<String> namesNotExpected = Collections.singletonList("putrecine");
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals( chemical2.names.size()+1, output.names.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -453,7 +435,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.codes.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -486,7 +467,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(chemical2.getCodes().size()+2, output.codes.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -530,7 +510,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( chemical1, chemical2, parms, logger);
         Assertions.assertEquals(4,output.codes.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -574,7 +553,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( concept1, concept2, parms, logger);
         Assertions.assertEquals(4,output.codes.size());
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
@@ -615,7 +593,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( proteinSource, proteinExisting, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertTrue( proteinSource.references.stream().allMatch(r-> output.references.stream().anyMatch(r2-> r2.docType.equals(r.docType) && r2.citation.equals(r.citation))));
@@ -659,7 +636,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( proteinSource, proteinExisting, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertTrue( proteinSource.references.stream().allMatch(r-> output.references.stream().anyMatch(r2-> r2.docType.equals(r.docType) && r2.citation.equals(r.citation))));
@@ -696,7 +672,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( proteinSource, proteinExisting, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertEquals( proteinExisting.references.size(), output.references.size());
@@ -748,7 +723,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstance, nucleicAcidSubstance2, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
 
@@ -804,7 +778,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstance, nucleicAcidSubstance2, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
 
@@ -865,7 +838,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstance, nucleicAcidSubstance2, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertEquals(3, output.properties.size());
@@ -929,7 +901,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstance, nucleicAcidSubstance2, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
 
@@ -950,7 +921,6 @@ Map<String, Object> parms = new HashMap<>();
         String sequence="ACTGTCGCTTCAGCCAGGCTGCGGAGCGGACGGACGCGCCTGGTGCCCCGGGGAGGGGCGCCACCGGGGGAGGAGGAGGAGGAGAAGGTGGAGAGGAAGAGACGCCCCCTCTGCCCGAGACCTCTCAAGGCCCTGACCTCAGGGGCCAGGGCACTGACAGGACAGGAGAGCCAAGTTCCTCCACTTGGGCTGCCCGAAGAGGCCGCGACC";
         builder.addDnaSubunit(sequence);
 
-        List<String> propertyToCopy = Collections.singletonList("Color");
         String nameValue="ATP binding cassette subfamily D member 1";
         Name newName = new Name(nameValue);
         newName.addReference(ref1);
@@ -987,7 +957,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstance, nucleicAcidSubstance2, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
 
@@ -1058,7 +1027,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstanceSource, nucleicAcidSubstanceExisting, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
 
@@ -1126,7 +1094,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstanceSource, nucleicAcidSubstanceExisting, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertEquals(0, output.relationships.size());
@@ -1189,7 +1156,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstanceSource, nucleicAcidSubstanceExisting, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
 
@@ -1253,7 +1219,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Substance output = action.process( nucleicAcidSubstanceSource, nucleicAcidSubstanceExisting, parms, logger);
         System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
         Assertions.assertEquals(0, output.notes.size());
@@ -1269,7 +1234,6 @@ Map<String, Object> parms = new HashMap<>();
 
         StringBuilder buildMessage = new StringBuilder();
         Consumer<String> logger = buildMessage::append;
-        MergeProcessingAction action = new MergeProcessingAction();
         Map<String, Object> mergeSettings = new HashMap<>();
         mergeSettings.put("mergeModifications", true);
         mergeSettings.put("mergeModificationsMergeStructuralModifications", true);
