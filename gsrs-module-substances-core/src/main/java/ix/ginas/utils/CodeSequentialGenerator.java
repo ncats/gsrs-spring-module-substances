@@ -1,52 +1,64 @@
 package ix.ginas.utils;
 
-import java.util.Comparator;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
-
-import gov.nih.ncats.common.util.SingleThreadCounter;
+import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.module.substance.services.CodeEntityService;
-import gsrs.services.GroupService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.repository.CodeRepository;
-import gsrs.repository.GroupRepository;
-import ix.core.models.Group;
 import ix.ginas.models.v1.Code;
-import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.Objects;
+/*
+  See UniqueCodeGenerator.
+
+  Creates a code/id value that has a number part and suffix part.
+  When a substance is created:
+
+     a) get the next code id number part by looking in the database to find the highest number part previously used with the suffix.
+     b) insert a code row with configured code system, type primary, and the code value generated.
+
+  The code id number part must be less than or equal to max.
+  The length parameter should  >= # of possible digits + the length of the suffix.
+  for example if max = 9999999 and suffix equal AB then length should be 9.
+  If you don't specify a length the default will be Long.MAX_VALUE
+
+  Configure like so:
+	gsrs.entityProcessors +={
+		"entityClassName" = "ix.ginas.models.v1.Substance",
+		"processor" = "gsrs.module.substance.processors.UniqueCodeGenerator",
+		"with"=  {
+			"name": "Some Name",
+			"codesystem"="SOMECODESYSTEM",
+			"suffix"="ZZ",
+			"length"=5,
+			"padding"=true,
+			"max"=999
+		}
+	}
+ */
+
 @Slf4j
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
 
-    private static final String GROUP_PROTECTED = "protected";
+	private static final String GROUP_PROTECTED = "protected";
+	public static final Long DEFAULT_MAX = Long.MAX_VALUE;
 
-    @Autowired
+	@Autowired
 	private CodeRepository codeRepository;
 
 	@Autowired
 	private CodeEntityService codeEntityService;
-	
-	@Autowired
-	private PlatformTransactionManager  transactionManager;
 
-	
-
-	
-	private final CachedSupplier<AtomicLong> lastNum;
 	private String codeSystem;
 	private String name;
+	private Long max;
 
 	public CodeRepository getCodeRepository() {
 		return codeRepository;
@@ -64,52 +76,51 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		this.codeSystem = codeSystem;
 	}
 
-	protected Comparator<String> getCodeSystemComparator(){
-		return Comparator.comparing(code-> Long.parseLong(code.replaceAll(suffix+"$", "")));
-	}
 	@JsonCreator
-	public CodeSequentialGenerator(@JsonProperty("name") String name,
-								   @JsonProperty("len") int len,
-								   @JsonProperty("suffix") String suffix,
-								   @JsonProperty("padding") boolean padding,
-								   @JsonProperty("codeSystem") String codeSystem) {
+	public CodeSequentialGenerator( @JsonProperty("name") String name,
+					@JsonProperty("len") int len,
+					@JsonProperty("suffix") String suffix,
+					@JsonProperty("padding") boolean padding,
+					@JsonProperty("max") Long max,
+					@JsonProperty("codeSystem") String codeSystem) {
+
 		super(len, suffix, padding);
+		if(max==null) { max=DEFAULT_MAX; }
+
+		this.max = max;
+		if(suffix==null) { this.suffix= "";}
+		if(!this.getClass().equals(LegacyCodeSequentialGenerator.class)) {
+            // Legacy could be an extension of this class, and if so these checks aren't appropriate.
+			if (len < 1) {
+				this.setLen(String.valueOf(this.max).length() + this.suffix.length());
+			}
+			if (!(this.getLen() >= String.valueOf(this.max).length() + this.suffix.length())) {
+				Sneak.sneakyThrow(new Exception("The len value should be greater than or equal to the number of max's digits + the number of characters in the suffix. "
+				+ String.format("These values are %s %s %s", this.getLen(), String.valueOf(this.max).length(), this.suffix.length())));
+			}
+		}
 		this.name = name;
+
+		// I don't get an NPE with a null code system.
+		// Should we have an exception if codeSystem is null?
 		this.codeSystem = codeSystem;
-		this.lastNum = CachedSupplier.runOnce(this::findHighestValueCode);
 	}
 
+	public boolean checkNextNumberWithinRange(Long nextNumber, Long maxNumber)  {
+		Objects.requireNonNull(nextNumber, "Value for nextNumber can not be null");
+		Objects.requireNonNull(maxNumber, "Value for maxNumber can not be null");
+		return (nextNumber>-1 && nextNumber<=maxNumber);
+	}
 
-		
-		protected AtomicLong findHighestValueCode() {
-		    //this method must be in transaction so the underlying connection for the stream stays open
-		    //for the stream.
-		    //
-		    log.debug("Starting to find highest Value Codesystem");
-		    
-		    TransactionTemplate txTemplate = new TransactionTemplate(transactionManager);
-		    txTemplate.setReadOnly(true);
-		    txTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_REPEATABLE_READ);
-		    return txTemplate.execute(status -> {
-				SingleThreadCounter counter = new SingleThreadCounter();
-		        try (Stream<String> codesByCodeSystemAndCodeLike = getCodeRepository().findCodeByCodeSystemAndCodeLike(codeSystem, "%" + suffix)) {
-	                String lastCode = codesByCodeSystemAndCodeLike
-//	                        .map(Code::getCode)
-				//TODO fix this. It's inefficient and also probably a source of lots of issues
-				.peek(c->{
-					int currentCount = counter.increment().getAsInt();
-					if((currentCount  % 1000) ==0){
-						log.debug("find max code count at " + currentCount);
-					}
-				})
-	                        .max(getCodeSystemComparator())
-	                        .orElse("0" + suffix);
+	public boolean checkCodeIdLength(String codeId) {
+		// codeId is made from nextNumber + suffix
+		// codeId length must be less than or equal to (max.length + suffix.length)
+		Objects.requireNonNull(codeId, "Value for codeId can not be null");
+		Objects.requireNonNull(this.max, "Value for max number can not be null");
+		int maxNumberLength = String.valueOf(this.max).length();
+		return codeId.length() <= this.getLen() && codeId.length() <= maxNumberLength + this.suffix.length();
+	}
 
-		        log.debug("found highest value codesystem");
-	                return new AtomicLong(Long.parseLong(lastCode.replaceAll(suffix + "$", "")));
-	            }
-		    });
-		}
 	@Override
 	public String getName() {
 		return name;
@@ -117,18 +128,49 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 
 	@Override
 	public long getNextNumber() {
-		return lastNum.getSync().incrementAndGet();
+		long nextNumber = 1L;
+		try {
+			nextNumber = codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan(codeSystem, "%" + suffix, max)
+			.longValue()
+			+ 1L;
+		} catch (Exception e) {
+		}
+		if (!checkNextNumberWithinRange(nextNumber, this.max)) {
+			// TODO: Is there a better option?
+			return Sneak.sneakyThrow(new Exception("The value for nextNumber is out of range."));
+		}
+		return nextNumber;
 	}
 	
-	public Code getCode(){
+	public Code getCode() {
 		Code c = new Code();
-		c.codeSystem=this.codeSystem;
-		c.code=this.generateID();
-		c.type="PRIMARY";
-		return c;
+		try {
+			c.codeSystem=this.codeSystem;
+			c.code = this.generateID();
+			c.type="PRIMARY";
+			if(!checkCodeIdLength(c.code)) {
+				throw new Exception("Code id generated from database failed string length check.");
+			}
+			return c;
+		} catch (Throwable t) {
+			return Sneak.sneakyThrow(new Exception("Exception getting code in CodeSequentialGenerator"));
+		}
 	}
-	public Code addCode(Substance s){
-		return codeEntityService.createNewSystemCode(s, this.codeSystem,c-> this.generateID(),GROUP_PROTECTED);
+
+	public Code addCode(Substance s) {
+		try {
+			return codeEntityService.createNewSystemCode(s, this.codeSystem, c -> this.generateID(), GROUP_PROTECTED);
+		} catch (Throwable t) {
+			return Sneak.sneakyThrow(new Exception("Throwing exception in addCode in CodeSequentialGenerator. " + ((t.getCause()!=null)?t.getCause():"")));
+		}
+	}
+
+	public Long getMax() {
+		return max;
+	}
+
+	public void setMax(Long max) {
+		this.max = max;
 	}
 
 	@Override
@@ -138,7 +180,4 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 		}
 		return false;
 	}
-	
-	
-
 }
