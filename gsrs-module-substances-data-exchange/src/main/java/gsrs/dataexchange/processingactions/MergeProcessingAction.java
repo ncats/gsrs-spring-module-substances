@@ -7,6 +7,7 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.module.substance.importers.model.MergeProcessingActionParameters;
 import gsrs.module.substance.repository.SubstanceRepository;
+import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.*;
@@ -128,7 +129,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                     log.trace("omitting name '{}' because it was not on the list of specific names", n.name);
                 }else {
                     if(mergeParameters.getMergeNamesSkipNameMatches()){
-                        List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_NameIgnoreCase(n.name);
+                        List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_NameIgnoreCase(n.name.toUpperCase());
                         if( !sr.isEmpty()){
                             log.info("skipping name {} because it is used elsewhere AND a merge setting prohibits this", n.name);
                             processLog.accept(String.format("skipping name %s because it is used elsewhere AND a merge setting prohibits this", n.name));

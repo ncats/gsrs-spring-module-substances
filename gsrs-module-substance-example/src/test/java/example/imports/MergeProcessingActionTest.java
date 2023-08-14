@@ -6,6 +6,7 @@ import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.services.PrincipalServiceImpl;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.core.EntityFetcher;
 import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -527,6 +528,158 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         });
         Assertions.assertTrue(output.codes.stream().allMatch(c-> c.getReferences().isEmpty() || c.getReferences().stream().anyMatch(cr->output.references.stream().anyMatch(ref->ref.uuid.toString().equalsIgnoreCase(cr.term)))));
         Assertions.assertTrue(output.codes.stream().filter(c->c.codeSystem.equals( casCodeNoRef.codeSystem) && c.code.equals(casCodeNoRef.code)).allMatch(c2->c2.getReferences().isEmpty()));
+    }
+
+    //mergeNamesSkipNameMatches
+    @Test
+    public void testMergeNamesMergeNamesSkipNameMatches() throws Exception {
+        String nameToUseOnce ="the other name";
+        //first, build and save a substance with a name that will be a duplicate
+        SubstanceBuilder conceptBuilder = new SubstanceBuilder();
+        Reference substanceOneReference = new Reference();
+        substanceOneReference.docType="CATALOG";
+        substanceOneReference.citation="Value specific to substance 0";
+        substanceOneReference.publicDomain= true;
+        substanceOneReference.tags.add(new Keyword("PUBLIC_DOMAIN_RELEASE"));
+        Name conceptName = new Name();
+        conceptName.type="cn";
+        conceptName.languages.add(new Keyword("en"));
+        conceptName.addReference(substanceOneReference);
+        conceptName.name=nameToUseOnce;
+        conceptBuilder.addName(conceptName);
+        UUID conceptId=UUID.randomUUID();
+        conceptBuilder.setUUID(conceptId);
+        substanceRepository.saveAndFlush(conceptBuilder.build());
+
+        EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, conceptId);
+        Optional<Substance> substance = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCNCCC");
+        String nameToMerge="Chemical Name that Belongs";
+
+        Name name1 = new Name();
+        name1.name="N-Propylputrescine";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        builder.addName(name1);
+
+        Name name2 = new Name();
+        name2.name="1,4-Butanediamine, N-propyl-";
+        name2.languages.add(new Keyword("de"));
+        name2.displayName=false;
+        builder.addName(name2);
+        builder.addName("Stuff");
+        builder.addCode("CHEMBL", "CHEMBL46257");
+
+        Name name3 = new Name();
+        name3.name=nameToMerge;
+        name3.languages.add(new Keyword("en"));
+        name3.displayName=false;
+        builder.addName(name3);
+        Name name4= new Name();
+        name4.name=nameToUseOnce;
+        name4.type="cn";
+        name4.displayName=false;
+        name4.languages.add(new Keyword("en"));
+        builder.addName(name4);
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
+        Name name2Clone =eics.fromJson(name2.toJson());
+        builder2.addName(name2Clone);
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
+        mergeSettings.put("mergeNames_skipNameMatches", "true");
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("mergeSettings", mergeSettings);
+
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        //Assertions.assertEquals( chemical2.names.size()+1, output.names.size());
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        Assertions.assertTrue(output.names.stream().anyMatch(n->n.name.equals(nameToMerge)));
+        Assertions.assertTrue(output.names.stream().noneMatch(n-> n.name.equals( nameToUseOnce)));
+    }
+
+    @Test
+    public void testMergeNamesMergeNamesSkipNameMatches2() throws Exception {
+        String nameToUseOnce ="the other name";
+        //first, build and save a substance with a name that will be a duplicate
+        SubstanceBuilder conceptBuilder = new SubstanceBuilder();
+        Reference substanceOneReference = new Reference();
+        substanceOneReference.docType="CATALOG";
+        substanceOneReference.citation="Value specific to substance 0";
+        substanceOneReference.publicDomain= true;
+        substanceOneReference.tags.add(new Keyword("PUBLIC_DOMAIN_RELEASE"));
+        Name conceptName = new Name();
+        conceptName.type="cn";
+        conceptName.languages.add(new Keyword("en"));
+        conceptName.addReference(substanceOneReference);
+        conceptBuilder.addName(nameToUseOnce);
+
+        substanceRepository.saveAndFlush(conceptBuilder.build());
+
+        ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
+        builder.setStructureWithDefaultReference("NCCCCNCCC");
+        String nameToMerge="Chemical Name that Belongs";
+
+        Name name1 = new Name();
+        name1.name="N-Propylputrescine";
+        name1.languages.add(new Keyword("en"));
+        name1.displayName=true;
+        builder.addName(name1);
+
+        Name name2 = new Name();
+        name2.name="1,4-Butanediamine, N-propyl-";
+        name2.languages.add(new Keyword("de"));
+        name2.displayName=false;
+        builder.addName(name2);
+        builder.addName("Stuff");
+        builder.addCode("CHEMBL", "CHEMBL46257");
+
+        Name name3 = new Name();
+        name3.name=nameToMerge;
+        name3.languages.add(new Keyword("en"));
+        name3.displayName=false;
+        builder.addName(name3);
+        Name name4= new Name();
+        name4.name=nameToUseOnce;
+        name4.type="cn";
+        name4.displayName=false;
+        name4.languages.add(new Keyword("en"));
+        builder.addName(name4);
+        ChemicalSubstance chemical1 = builder.build();
+
+        ChemicalSubstanceBuilder builder2= new ChemicalSubstanceBuilder();
+        builder2.setStructureWithDefaultReference("OCCCCO");
+        builder2.addName("1,4-BUTANEDIOL");
+        EntityUtils.EntityInfo<Name> eics= EntityUtils.getEntityInfoFor(Name.class);
+        Name name2Clone =eics.fromJson(name2.toJson());
+        builder2.addName(name2Clone);
+        builder2.addCode("CHEMBL", "CHEMBL171623");
+        ChemicalSubstance chemical2 = builder2.build();
+
+        Map<String, Object> mergeSettings = new HashMap<>();
+        mergeSettings.put("mergeNames", "true");
+        mergeSettings.put("mergeNames_skipNameMatches", "false");
+        Map<String, Object> parms = new HashMap<>();
+        parms.put("mergeSettings", mergeSettings);
+
+        List<String> namesNotExpected = Collections.singletonList("putrecine");
+        StringBuilder buildMessage = new StringBuilder();
+        Consumer<String> logger = buildMessage::append;
+        Substance output = action.process( chemical1, chemical2, parms, logger);
+        System.out.printf("message: %s; type: %s", buildMessage, output.substanceClass);
+        Assertions.assertTrue(output.names.stream().anyMatch(n->n.name.equals(nameToMerge)));
+        Assertions.assertTrue(output.names.stream().anyMatch(n->n.name.equals((nameToUseOnce))));
     }
 
     @Test
