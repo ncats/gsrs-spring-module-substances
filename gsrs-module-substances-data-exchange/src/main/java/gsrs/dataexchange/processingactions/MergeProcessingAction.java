@@ -45,6 +45,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
         Map<String, String> referencesToCopy = new HashMap<>();//UUIDs
 
         if( mergeParameters.getCopyStructure()) {
+            log.trace("copying structure");
             if(existing.substanceClass== Substance.SubstanceClass.chemical && source.substanceClass== Substance.SubstanceClass.chemical){
                 GinasChemicalStructure structure= ((ChemicalSubstance)source).getStructure();
                 EntityUtils.EntityInfo<GinasChemicalStructure> eics= EntityUtils.getEntityInfoFor(GinasChemicalStructure.class);
@@ -64,7 +65,8 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                         log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
                     });
                     copiedStructure.setReferenceUuids(newRefs);
-                    copiedStructure.setId(UUID.randomUUID());
+                    copiedStructure.setId(((ChemicalSubstance) existing).getStructure().id);
+                    copiedStructure.version= ((ChemicalSubstance) existing).getStructure().version;
                     ((ChemicalSubstanceBuilder)builder).setStructure(copiedStructure);
 
                 } catch (IOException e) {
