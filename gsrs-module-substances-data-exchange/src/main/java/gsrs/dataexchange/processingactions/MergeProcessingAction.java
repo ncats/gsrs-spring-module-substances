@@ -7,7 +7,6 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.module.substance.importers.model.MergeProcessingActionParameters;
 import gsrs.module.substance.repository.SubstanceRepository;
-import ix.core.EntityFetcher;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.*;
 import ix.ginas.models.v1.*;
@@ -430,6 +429,8 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             case chemical:
                 ChemicalSubstanceBuilder chemicalSubstanceBuilder= builder.asChemical();
                 chemicalSubstanceBuilder.setStructure( ((ChemicalSubstance)substance).getStructure());
+                log.trace("builder structure id {}, version{}",
+                    chemicalSubstanceBuilder.build().getStructure().id, chemicalSubstanceBuilder.build().getStructure().version);
                 return chemicalSubstanceBuilder;
             case protein:
                 ProteinSubstanceBuilder proteinSubstanceBuilder= builder.asProtein();
@@ -450,6 +451,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             case polymer:
                 PolymerSubstanceBuilder polymerSubstanceBuilder= builder.asPolymer();
                 polymerSubstanceBuilder.setPolymer(((PolymerSubstance)substance).polymer);
+                return polymerSubstanceBuilder;
             default:
                 return builder;
         }

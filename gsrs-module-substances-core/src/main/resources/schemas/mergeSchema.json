@@ -72,10 +72,15 @@
       "type": "boolean",
       "title": "Merge Properties"
     },
-    "mergePropertiesPropertyUniqueness": {
+    "mergeProperties_PropertyUniqueness": {
       "comments": "Skip copying a property with the same name as an existing property of the existing substance",
       "type": "boolean",
-      "title": "Property Name Uniqueness"
+      "title": "Property Name Uniqueness",
+      "visibleIf": {
+        "mergeProperties": [
+          true
+        ]
+      }
     },
     "mergeProperties_specificPropertyNames": {
       "comments": "Names of specific properties to copy",

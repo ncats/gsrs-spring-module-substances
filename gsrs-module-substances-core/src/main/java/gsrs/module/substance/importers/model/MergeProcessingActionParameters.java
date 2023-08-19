@@ -96,7 +96,7 @@ public class MergeProcessingActionParameters {
      * Property Name Uniqueness
      * <p>
      */
-    @JsonProperty("mergePropertiesPropertyUniqueness")
+    @JsonProperty("mergeProperties_PropertyUniqueness")
     private Boolean mergePropertiesPropertyUniqueness = false;
     /**
      * Specific Properties to Include
