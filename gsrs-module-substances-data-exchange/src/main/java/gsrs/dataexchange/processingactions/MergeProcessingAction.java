@@ -429,6 +429,7 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
             case chemical:
                 ChemicalSubstanceBuilder chemicalSubstanceBuilder= builder.asChemical();
                 chemicalSubstanceBuilder.setStructure( ((ChemicalSubstance)substance).getStructure());
+                ((ChemicalSubstance)substance).moieties.forEach(m->chemicalSubstanceBuilder.addMoiety(m));
                 log.trace("builder structure id {}, version{}",
                     chemicalSubstanceBuilder.build().getStructure().id, chemicalSubstanceBuilder.build().getStructure().version);
                 return chemicalSubstanceBuilder;
@@ -572,7 +573,6 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 processLog.accept(String.format("Error adding Name %s;", n.name));
                 throw new RuntimeException(e);
             }
-
 
         });
     }

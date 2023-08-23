@@ -168,14 +168,6 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
                 result = GsrsEntityService.ProcessResult.ofCreation(creationResult);
                 result.setEntityId(creationResult.getCreatedEntity().uuid);
             } else {
-                if( substance instanceof ChemicalSubstance) {
-                    ChemicalSubstance chem = (ChemicalSubstance)substance;
-                    if(chem.getStructure()!= null) {
-                        log.trace("going to update chemical with structure id {} and version {}", chem.getStructure().id, chem.getStructure().version);
-                    } else {
-                        log.trace("structure not found");
-                    }
-                }
                 GsrsEntityService.UpdateResult<Substance> updateResult = substanceEntityService.updateEntity(substance.toFullJsonNode());
                 result = GsrsEntityService.ProcessResult.ofUpdate(updateResult);
                 if(updateResult.getUpdatedEntity() !=null ) {
