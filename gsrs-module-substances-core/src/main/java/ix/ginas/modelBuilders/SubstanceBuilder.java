@@ -74,7 +74,11 @@ Creating overload with correct spelling but leaving incorrect spelling in place 
 	protected <S extends Substance> SubstanceBuilder(AbstractSubstanceBuilder<S,?> builder){
 	    this.andThen = (s)-> (Substance) builder.andThen.apply((S) s);
 	}
-	
+
+	public SpecifiedSubstanceGroup1SubstanceBuilder asSpecifiedSubstanceGroup1(){
+		return new SpecifiedSubstanceGroup1SubstanceBuilder(this).setSubstanceClass(SubstanceClass.specifiedSubstanceG1);
+	}
+
     public static <S extends Substance, B extends AbstractSubstanceBuilder<S,B>> B  from(String json) throws IOException{
         return from(mapper.readTree(json));
     }

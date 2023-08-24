@@ -3,6 +3,7 @@ package example.imports;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.dataexchange.processingactions.MergeProcessingAction;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
+import gsrs.service.GsrsEntityService;
 import gsrs.services.PrincipalServiceImpl;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +29,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+@WithMockUser(username = "admin", roles = "Admin")
 public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
@@ -549,7 +552,8 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         conceptBuilder.addName(conceptName);
         UUID conceptId=UUID.randomUUID();
         conceptBuilder.setUUID(conceptId);
-        substanceRepository.saveAndFlush(conceptBuilder.build());
+        GsrsEntityService.CreationResult<Substance> creationResult = substanceEntityService.createEntity(conceptBuilder.build().toFullJsonNode(),
+                true);
 
         EntityUtils.Key skey = EntityUtils.Key.of(Substance.class, conceptId);
         Optional<Substance> substance = EntityFetcher.of(skey).getIfPossible().map(o->(Substance)o);

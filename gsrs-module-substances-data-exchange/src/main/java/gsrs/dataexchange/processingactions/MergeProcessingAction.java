@@ -81,8 +81,10 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 if( existing.references.stream().anyMatch(r2->r2.docType!=null && r2.docType.equals(r.docType) && r2.citation!=null
                         && r2.citation.equals(r.citation))){
                     processLog.accept(String.format("Reference %s/%s was already present;", r.docType, r.citation));
+                    log.trace( "Reference {}/{} was already present;", r.docType, r.citation);
                 } else {
                     EntityUtils.EntityInfo<Reference> eics= EntityUtils.getEntityInfoFor(Reference.class);
+                    log.trace( "Reference {}/{} will be added;", r.docType, r.citation);
                     try {
                         Reference newReference= eics.fromJson(mapper.writeValueAsString(r));
                         builder.addReference(newReference);
@@ -427,6 +429,10 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
                 PolymerSubstanceBuilder polymerSubstanceBuilder= builder.asPolymer();
                 polymerSubstanceBuilder.setPolymer(((PolymerSubstance)substance).polymer);
                 return polymerSubstanceBuilder;
+            case specifiedSubstanceG1:
+                SpecifiedSubstanceGroup1SubstanceBuilder ssg1Builder = builder.asSpecifiedSubstanceGroup1();
+                ssg1Builder.setSpecifiedSubstance(((SpecifiedSubstanceGroup1Substance)substance).specifiedSubstance);
+                return ssg1Builder;
             default:
                 return builder;
         }
