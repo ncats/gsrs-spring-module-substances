@@ -94,7 +94,17 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
         ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->
         {
             if (total != null) {
-                l.message("Processed:" + sofar + " of " + total);
+                StringBuilder message = new StringBuilder();
+                message.append("Processed: ");
+                message.append(sofar);
+                message.append(" of ");
+                message.append(total);
+
+                if(total>0) {
+                    double percentage = (double)sofar /(double)total * 100;
+                    message.append(String.format(" (%.2f %%)", percentage));
+                }
+                l.message(message.toString());
             } else {
                 l.message("Processed:" + sofar);
             }
@@ -117,13 +127,17 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                         executor.submit(() -> {
                             try {
                                 Substance fullSubstance = (Substance) EntityFetcher.of(EntityUtils.Key.of(Substance.class, s.getUuid())).call();
+                                log.trace("retrieved substance");
                                 listen.preRecordProcess(s);
+                                log.trace("finished preRecordProcess");
                                 adminService.runAs(adminAuth, (Runnable) () -> {
                                     substanceSynchronizer.fixSubstanceReferences(fullSubstance, out::println, refUuidCodeSystem,
                                             refApprovalIdCodeSystem);
+                                    log.trace("finished fixSubstanceReferences");
                                     listen.recordProcessed(s);
+                                    log.trace("recordProcessed");
                                 });
-                            } catch (Throwable ex) {
+                            } catch (Exception ex) {
                                 log.error("error processing record {}", s.uuid, ex);
                                 l.message("Error processing references for " + s.uuid + " error: " + ex.getMessage());
                                 listen.error(ex);

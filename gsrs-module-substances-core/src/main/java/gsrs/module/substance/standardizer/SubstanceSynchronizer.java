@@ -108,7 +108,8 @@ public class SubstanceSynchronizer {
             log.info("resolveSubstanceReference called with null parameter");
             return substanceReferenceState;
         }
-        if (substanceRepository.exists(substanceReference) && substanceReference.refuuid!=null && substanceReference.refuuid.length()>0
+        if ( substanceRepository.exists(substanceReference) && substanceReference.refuuid!=null && substanceReference.refuuid.length()>0
+                && substanceRepository.existsById(UUID.fromString(substanceReference.refuuid))
                 && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)) !=null
                 && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).getUuid() !=null
                 && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).getUuid().toString().equals(substanceReference.refuuid)) {
