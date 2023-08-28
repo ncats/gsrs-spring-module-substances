@@ -66,9 +66,9 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
     SubstanceSynchronizer substanceSynchronizer;
 
     @JsonIgnore
-    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
+    private final static DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE;
 
-    private final String name = "substance_reference_report";
+    private final static String name = "substance_reference_report";
 
     private Map<UUID, CountDownLatch> latchMap = new ConcurrentHashMap<>();
     private Map<UUID, TaskProgress> listenerMap = new ConcurrentHashMap<>();
@@ -121,12 +121,11 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
             txRead.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             txRead.executeWithoutResult(t -> {
                 try (PrintStream out = makePrintStream(writeFile)) {
-
-                    substanceRepository.streamAll().parallel().forEach(s -> {
-                        log.trace("starting substance {}", s.getUuid().toString());
+                    substanceRepository.getAllIds().forEach(s -> {
                         executor.submit(() -> {
                             try {
-                                Substance fullSubstance = (Substance) EntityFetcher.of(EntityUtils.Key.of(Substance.class, s.getUuid())).call();
+                                log.trace("starting retrieval of substance {}", s.toString());
+                                Substance fullSubstance = (Substance) EntityFetcher.of(EntityUtils.Key.of(Substance.class, s)).call();
                                 log.trace("retrieved substance");
                                 listen.preRecordProcess(s);
                                 log.trace("finished preRecordProcess");
@@ -138,8 +137,8 @@ public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
                                     log.trace("recordProcessed");
                                 });
                             } catch (Exception ex) {
-                                log.error("error processing record {}", s.uuid, ex);
-                                l.message("Error processing references for " + s.uuid + " error: " + ex.getMessage());
+                                log.error("error processing record {}", s, ex);
+                                l.message("Error processing references for " + s + " error: " + ex.getMessage());
                                 listen.error(ex);
                             }
                         });
