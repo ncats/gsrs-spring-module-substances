@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "mergeCodes",
         "mergeCodes_specificSystems",
         "mergeProperties",
-        "mergePropertiesPropertyUniqueness",
+        "mergeProperties_PropertyUniqueness",
         "mergeProperties_specificPropertyNames",
         "mergeNotes",
         "mergeNotesNoteUniqueness",
@@ -49,15 +49,15 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeReferences")
-    private Boolean mergeReferences = false;
+    private Boolean mergeReferences=false;
     /**
      * Merge Names
      * <p>
      */
     @JsonProperty("mergeNames")
-    private Boolean mergeNames = false;
+    private Boolean mergeNames=false;
     /**
-     * Specific Names to Include
+     * Specific Names to include
      * <p>
      */
     @JsonProperty("mergeNames_specificNames")
@@ -67,21 +67,21 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeNames_skipNameMatches")
-    private Boolean mergeNamesSkipNameMatches = true;
+    private Boolean mergeNamesSkipNameMatches=false;
     /**
      * Merge only Names that have a standardized name match within the matching substance
      * <p>
      */
     @JsonProperty("mergeNames_mergeNamesOnStdName")
-    private Boolean mergeNamesMergeNamesOnStdName = false;
+    private Boolean mergeNamesMergeNamesOnStdName=false;
     /**
      * Merge Codes
      * <p>
      */
     @JsonProperty("mergeCodes")
-    private Boolean mergeCodes = false;
+    private Boolean mergeCodes=false;
     /**
-     * Specific Code Systems to Include
+     * Specific Code Systems to include
      * <p>
      */
     @JsonProperty("mergeCodes_specificSystems")
@@ -91,15 +91,15 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeProperties")
-    private Boolean mergeProperties = false;
+    private Boolean mergeProperties=false;
     /**
      * Property Name Uniqueness
      * <p>
      */
     @JsonProperty("mergeProperties_PropertyUniqueness")
-    private Boolean mergePropertiesPropertyUniqueness = false;
+    private Boolean mergePropertiesPropertyUniqueness=false;
     /**
-     * Specific Properties to Include
+     * Specific Properties to include
      * <p>
      */
     @JsonProperty("mergeProperties_specificPropertyNames")
@@ -109,61 +109,61 @@ public class MergeProcessingActionParameters {
      * <p>
      */
     @JsonProperty("mergeNotes")
-    private Boolean mergeNotes = false;
+    private Boolean mergeNotes=false;
     /**
      * Note uniqueness
      * <p>
      */
     @JsonProperty("mergeNotesNoteUniqueness")
-    private Boolean mergeNotesNoteUniqueness = false;
+    private Boolean mergeNotesNoteUniqueness=false;
     /**
      * Merge Relationships
      * <p>
      */
     @JsonProperty("mergeRelationships")
-    private Boolean mergeRelationships = false;
+    private Boolean mergeRelationships=false;
     /**
      * Relationship Uniqueness
      * <p>
      */
     @JsonProperty("mergeRelationshipsRelationshipUniqueness")
-    private Boolean mergeRelationshipsRelationshipUniqueness = false;
+    private Boolean mergeRelationshipsRelationshipUniqueness=false;
     /**
-     * Copy modifications from new substance into existing substance
+     * Merge Modifications
      * <p>
      */
     @JsonProperty("mergeModifications")
-    private Boolean mergeModifications = false;
+    private Boolean mergeModifications=false;
     /**
      * Merge Structural Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergeStructuralModifications")
-    private Boolean mergeModificationsMergeStructuralModifications = false;
+    private Boolean mergeModificationsMergeStructuralModifications=false;
     /**
      * Merge Agent Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergeAgentModifications")
-    private Boolean mergeModificationsMergeAgentModifications = false;
+    private Boolean mergeModificationsMergeAgentModifications=false;
     /**
      * Merge Physical Modifications
      * <p>
      */
     @JsonProperty("mergeModificationsMergePhysicalModifications")
-    private Boolean mergeModificationsMergePhysicalModifications = false;
+    private Boolean mergeModificationsMergePhysicalModifications=false;
     /**
      * Skip Leveling References
      * <p>
      */
     @JsonProperty("skipLevelingReferences")
-    private Boolean skipLevelingReferences = false;
+    private Boolean skipLevelingReferences=false;
     /**
-     * Copy chemical structure
+     * Copy Chemical Structure
      * <p>
      */
     @JsonProperty("copyStructure")
-    private Boolean copyStructure = false;
+    private Boolean copyStructure=false;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new LinkedHashMap<String, Object>();
 
@@ -204,7 +204,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Specific Names to Include
+     * Specific Names to include
      * <p>
      */
     @JsonProperty("mergeNames_specificNames")
@@ -213,7 +213,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Specific Names to Include
+     * Specific Names to include
      * <p>
      */
     @JsonProperty("mergeNames_specificNames")
@@ -276,7 +276,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Specific Code Systems to Include
+     * Specific Code Systems to include
      * <p>
      */
     @JsonProperty("mergeCodes_specificSystems")
@@ -285,7 +285,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Specific Code Systems to Include
+     * Specific Code Systems to include
      * <p>
      */
     @JsonProperty("mergeCodes_specificSystems")
@@ -315,7 +315,7 @@ public class MergeProcessingActionParameters {
      * Property Name Uniqueness
      * <p>
      */
-    @JsonProperty("mergePropertiesPropertyUniqueness")
+    @JsonProperty("mergeProperties_PropertyUniqueness")
     public Boolean getMergePropertiesPropertyUniqueness() {
         return mergePropertiesPropertyUniqueness;
     }
@@ -324,13 +324,13 @@ public class MergeProcessingActionParameters {
      * Property Name Uniqueness
      * <p>
      */
-    @JsonProperty("mergePropertiesPropertyUniqueness")
+    @JsonProperty("mergeProperties_PropertyUniqueness")
     public void setMergePropertiesPropertyUniqueness(Boolean mergePropertiesPropertyUniqueness) {
         this.mergePropertiesPropertyUniqueness = mergePropertiesPropertyUniqueness;
     }
 
     /**
-     * Specific Properties to Include
+     * Specific Properties to include
      * <p>
      */
     @JsonProperty("mergeProperties_specificPropertyNames")
@@ -339,7 +339,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Specific Properties to Include
+     * Specific Properties to include
      * <p>
      */
     @JsonProperty("mergeProperties_specificPropertyNames")
@@ -420,7 +420,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Copy modifications from new substance into existing substance
+     * Merge Modifications
      * <p>
      */
     @JsonProperty("mergeModifications")
@@ -429,7 +429,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Copy modifications from new substance into existing substance
+     * Merge Modifications
      * <p>
      */
     @JsonProperty("mergeModifications")
@@ -510,7 +510,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Copy chemical structure
+     * Copy Chemical Structure
      * <p>
      */
     @JsonProperty("copyStructure")
@@ -519,7 +519,7 @@ public class MergeProcessingActionParameters {
     }
 
     /**
-     * Copy chemical structure
+     * Copy Chemical Structure
      * <p>
      */
     @JsonProperty("copyStructure")

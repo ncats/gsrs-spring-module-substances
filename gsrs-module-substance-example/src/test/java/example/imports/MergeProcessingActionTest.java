@@ -30,7 +30,7 @@ import java.util.function.Consumer;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
-public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEntityTest {
+class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     private StructureIndexerService indexer;
@@ -39,7 +39,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     private PrincipalServiceImpl principalService;
 
     @BeforeEach
-    public void clearIndexers() throws IOException {
+    void clearIndexers() throws IOException {
         indexer.removeAll();
         principalService.clearCache();
         AutowireHelper.getInstance().autowireAndProxy(action);
@@ -48,7 +48,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     MergeProcessingAction action = new MergeProcessingAction();
 
     @Test
-    public void testMergeNames() {
+    void testMergeNames() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -89,7 +89,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeStructures() {
+    void testMergeStructures() {
 
         String disorganizedMolfile = "\n" +
                 "  ACCLDraw03062319112D\n" +
@@ -140,7 +140,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeStructuresReverse() {
+    void testMergeStructuresReverse() {
 
         String smilesNoCharge="[Na].CC(=O)O";
         String smilesWithCharges ="[Na+].CC(=O)[O-]";
@@ -177,7 +177,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNamesIncludeReferences() {
+    void testMergeNamesIncludeReferences() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -228,7 +228,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNamesIncludeReferencesWhenBlocked() {
+    void testMergeNamesIncludeReferencesWhenBlocked() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -274,7 +274,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNamesHTML() {
+    void testMergeNamesHTML() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -321,7 +321,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     The same name has been added to 2 substances; automatic filtering prevents it from being added twice to the output
      */
     @Test
-    public void testMergeNamesDuplicates() throws Exception {
+    void testMergeNamesDuplicates() throws Exception {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -364,7 +364,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNamesSpecific() throws Exception {
+    void testMergeNamesSpecific() throws Exception {
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
         String nameToMerge="Chemical Name that Belongs";
@@ -416,7 +416,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeCodes() {
+    void testMergeCodes() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -446,7 +446,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeCodesSpecific() {
+    void testMergeCodesSpecific() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -480,7 +480,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeCodesWithReferences() {
+    void testMergeCodesWithReferences() {
 
         ChemicalSubstanceBuilder builder= new ChemicalSubstanceBuilder();
         builder.setStructureWithDefaultReference("NCCCCN");
@@ -535,7 +535,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
     //mergeNamesSkipNameMatches
     @Test
-    public void testMergeNamesMergeNamesSkipNameMatches() throws Exception {
+    void testMergeNamesMergeNamesSkipNameMatches() throws Exception {
         String nameToUseOnce ="the other name";
         //first, build and save a substance with a name that will be a duplicate
         SubstanceBuilder conceptBuilder = new SubstanceBuilder();
@@ -614,7 +614,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNamesMergeNamesSkipNameMatches2() throws Exception {
+    void testMergeNamesMergeNamesSkipNameMatches2() throws Exception {
         String nameToUseOnce ="the other name";
         //first, build and save a substance with a name that will be a duplicate
         SubstanceBuilder conceptBuilder = new SubstanceBuilder();
@@ -687,7 +687,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNamesAndCodes() {
+    void testMergeNamesAndCodes() {
 
         SubstanceBuilder builder= new SubstanceBuilder();
         builder.addName("putrecine");
@@ -719,7 +719,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeReferences() {
+    void testMergeReferences() {
 
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -756,7 +756,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeReferencesWithUrl() {
+    void testMergeReferencesWithUrl() {
 
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -799,7 +799,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeReferencesNegative() {
+    void testMergeReferencesNegative() {
         ProteinSubstanceBuilder builderSource= new ProteinSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="A0JP26";
@@ -835,7 +835,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeProperty1() {
+    void testMergeProperty1() {
 
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -890,7 +890,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     2 properties in source; will be copied based on setting
      */
     @Test
-    public void testMergeProperty2() {
+    void testMergeProperty2() {
 
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -945,7 +945,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     2 properties have the same name (different value) - setting does not block duplicates
      */
     @Test
-    public void testMergeProperty3() {
+    void testMergeProperty3() {
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -1004,7 +1004,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     2 properties have the same name (different value) - setting blocks duplicates
      */
     @Test
-    public void testMergeProperty4() {
+    void testMergeProperty4() {
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -1052,7 +1052,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
         NucleicAcidSubstance nucleicAcidSubstance2 = builder2.build();
         Map<String, Object> mergeSettings = new HashMap<>();
         mergeSettings.put("mergeProperties", true);
-        mergeSettings.put("mergePropertiesPropertyUniqueness", true);
+        mergeSettings.put("mergeProperties_PropertyUniqueness", true);
         Map<String, Object> parms = new HashMap<>();
         parms.put("mergeSettings", mergeSettings);
 
@@ -1068,7 +1068,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 2 properties in source; 1 will be copied based on settings
  */
     @Test
-    public void testMergeProperty5() {
+    void testMergeProperty5() {
 
         NucleicAcidSubstanceBuilder builder= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
@@ -1123,7 +1123,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
 
 
     @Test
-    public void testMergeRelationships() {
+    void testMergeRelationships() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -1192,7 +1192,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeRelationshipNegative() {
+    void testMergeRelationshipNegative() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -1257,7 +1257,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNotes() {
+    void testMergeNotes() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -1321,7 +1321,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void testMergeNotesNegative() {
+    void testMergeNotesNegative() {
         NucleicAcidSubstanceBuilder builderSource= new NucleicAcidSubstanceBuilder();
         Reference ref1 = new Reference();
         ref1.citation="215";
@@ -1382,7 +1382,7 @@ public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEnti
     }
 
     @Test
-    public void mergeMods1Test() throws IOException {
+    void mergeMods1Test() throws IOException {
         File proteinFile =new ClassPathResource("testJSON/YYD6UT8T47.json").getFile();
         ProteinSubstanceBuilder builder =SubstanceBuilder.from(proteinFile);
         ProteinSubstance proteinSubstanceSource= builder.build();

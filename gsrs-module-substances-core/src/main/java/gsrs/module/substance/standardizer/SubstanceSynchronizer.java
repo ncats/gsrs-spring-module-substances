@@ -108,17 +108,12 @@ public class SubstanceSynchronizer {
             log.info("resolveSubstanceReference called with null parameter");
             return substanceReferenceState;
         }
-        if ( substanceRepository.exists(substanceReference) && substanceReference.refuuid!=null && substanceReference.refuuid.length()>0
-                && substanceRepository.existsById(UUID.fromString(substanceReference.refuuid))
-                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)) !=null
-                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).getUuid() !=null
-                && substanceRepository.getOne(UUID.fromString(substanceReference.refuuid)).getUuid().toString().equals(substanceReference.refuuid)) {
+        if ( substanceReferenceExists(substanceReference)) {
             return SubstanceReferenceState.ALREADY_RESOLVED;
         }
-        //Substance idMatch= substanceRepository.getOne(UUID.fromString(substanceReference.refuuid));
         EntityFetcher fetcher = EntityFetcher.of(EntityUtils.Key.of(Substance.class, substanceReference.refuuid));
         Optional<Substance> idMatch =fetcher.getIfPossible();
-        if( idMatch.isPresent() && idMatch.get().uuid!=null && idMatch.get().uuid.toString().equals(substanceReference.refuuid)) {
+        if(idMatchWorks(idMatch, substanceReference.refuuid)) {
             log.trace("found substance by UUID");
             substanceReference.wrappedSubstance=idMatch.get();
             substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
@@ -162,19 +157,17 @@ public class SubstanceSynchronizer {
                 List<Substance> approvalIdMatches = ValidationUtils.findSubstancesByCode(refApprovalIdCodeSystem,
                         substanceReference.approvalID, transactionManager, searchService);
                 if (approvalIdMatches != null && !approvalIdMatches.isEmpty()) {
-                    if (approvalIdMatches.size() > 1) {
                         String message = String.format("More than one record found with Approval ID code %s and code system %s. Using first matching record",
-                                substanceReference.refuuid, refApprovalIdCodeSystem);
+                              substanceReference.refuuid, refApprovalIdCodeSystem);
                         log.warn(message);
                         actionRecorder.accept(message);
-                    }
-                    substanceReference.refuuid = approvalIdMatches.get(0).uuid.toString();
-                    substanceReference.wrappedSubstance=approvalIdMatches.get(0);
-                    currentReferenceResolved = true;
-                    substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
-                    String message = String.format("Resolved record UUID %s/Approval ID %s by code (code system %s)",
+                        substanceReference.refuuid = approvalIdMatches.get(0).uuid.toString();
+                        substanceReference.wrappedSubstance=approvalIdMatches.get(0);
+                        currentReferenceResolved = true;
+                        substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
+                        String newMessage = String.format("Resolved record UUID %s/Approval ID %s by code (code system %s)",
                             substanceReference.refuuid, substanceReference.approvalID, refApprovalIdCodeSystem);
-                    actionRecorder.accept(message);
+                        actionRecorder.accept(newMessage);
                 }
             }
         }
@@ -183,23 +176,29 @@ public class SubstanceSynchronizer {
             List<Substance> nameMatches = ValidationUtils.findSubstancesByName(substanceReference.refPname, transactionManager,
                     searchService);
             if (nameMatches != null && !nameMatches.isEmpty()) {
-                if (nameMatches.size() > 1) {
-                    String message = String.format("More than one record found with Name %s. Using first matching record",
-                            substanceReference.refPname);
-                    log.warn(message);
-                    actionRecorder.accept(message);
-                }
+                String message = String.format("More than one record found with Name %s. Using first matching record",
+                         substanceReference.refPname);
+                log.warn(message);
+                actionRecorder.accept(message);
                 substanceReference.refuuid = nameMatches.get(0).uuid.toString();
                 substanceReference.wrappedSubstance= nameMatches.get(0);
                 substanceReferenceState = SubstanceReferenceState.JUST_RESOLVED;
-                String message = String.format("Resolved record UUID %s/name %s by name",
+                String newMessage = String.format("Resolved record UUID %s/name %s by name",
                         substanceReference.refuuid, substanceReference.refPname);
-                actionRecorder.accept(message);
+                actionRecorder.accept(newMessage);
             }
         }
         return substanceReferenceState;
     }
 
+    private boolean substanceReferenceExists(SubstanceReference reference) {
+        return substanceRepository.exists(reference) && reference.refuuid!=null && reference.refuuid.length()>0
+                && substanceRepository.existsById(UUID.fromString(reference.refuuid));
+    }
+
+    private boolean idMatchWorks(Optional<Substance> possibleSubstance, String requiredId) {
+        return possibleSubstance.isPresent() && possibleSubstance.get().uuid!=null && possibleSubstance.get().uuid.toString().equals(requiredId);
+    }
     private List<Tuple<GinasAccessControlled, SubstanceReference>> getBaseRefs(Substance substance) {
         //at the moment, polymers are the old substance where calling the correct method makes a difference
         if (substance instanceof PolymerSubstance) {

@@ -21,7 +21,7 @@
       "items": {
         "type": "string"
       },
-      "title": "Specific Names to Include",
+      "title": "Specific Names to include",
       "visibleIf": {
         "mergeNames": [
           true
@@ -60,7 +60,7 @@
         "items": {
           "type": "string"
         },
-        "title": "Specific Code Systems to Include",
+        "title": "Specific Code Systems to include",
         "visibleIf": {
           "mergeCodes": [
             true
@@ -88,7 +88,7 @@
       "items": {
         "type": "string"
       },
-      "title": "Specific Properties to Include",
+      "title": "Specific Properties to include",
       "visibleIf": {
         "mergeProperties": [
           true
@@ -128,7 +128,7 @@
     "mergeModifications": {
       "comments": "Copy modifications from new substance into existing substance (see separate selections for Agent, Structural and Physical)",
       "type": "boolean",
-      "title": "Copy modifications from new substance into existing substance"
+      "title": "Merge Modifications"
     },
     "mergeModificationsMergeStructuralModifications": {
       "comments": "When merging modifications, include structural modifications",
@@ -168,7 +168,7 @@
     "copyStructure" : {
       "comments": "Copy the chemical structure (molfile) from the new substance into the existing substance",
       "type" : "boolean",
-      "title":"Copy chemical structure"
+      "title":"Copy Chemical Structure"
     }
   },
   "required": [],
