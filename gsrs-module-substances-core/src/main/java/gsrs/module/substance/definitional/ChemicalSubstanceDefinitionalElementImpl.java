@@ -1,16 +1,22 @@
 package gsrs.module.substance.definitional;
 
 import gsrs.module.substance.services.DefinitionalElementImplementation;
+import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
+import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 @Slf4j
 public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalElementImplementation {
+
+    @Autowired
+    private StructureProcessor structureProcessor;
 
     private List<String> stereoUsingOpticalActivities = Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC");
 
@@ -27,6 +33,13 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
             //shouldn't happen unless we get invalid submission
             return;
         }
+        if(structure.properties.isEmpty()) {
+            log.warn("instrumenting structure to avoid error on substance {}",
+                    (chemicalSubstance.getUuid() !=null ? chemicalSubstance.getUuid() : "[ID not available]"));
+            Util.printAllExecutingStackTraces();
+            structure = structureProcessor.instrument(chemicalSubstance.getStructure().toChemical(), true);
+        }
+
         log.debug("starting computeDefinitionalElements (ChemicalSubstance)");
         consumer.accept(DefinitionalElement.of("structure.properties.hash1",
                 structure.getStereoInsensitiveHash(), 1));
