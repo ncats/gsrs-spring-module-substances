@@ -58,6 +58,8 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     private Class entityServiceClass;
 
+    private JsonNode parameters;
+
     @Override
     public String getAdapterName() {
         return null;
@@ -139,7 +141,12 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     @Override
     public void setInputParameters(JsonNode parameters) {
+        this.parameters=parameters;
+    }
 
+    @Override
+    public JsonNode getInputParameters() {
+        return this.parameters;
     }
 
     @Override
