@@ -21,7 +21,7 @@ import java.util.UUID;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles="Admin")
-public class ChemicalChangesTest extends AbstractSubstanceJpaFullStackEntityTest {
+class ChemicalChangesTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     protected SubstanceEntityService substanceEntityService;
@@ -32,7 +32,7 @@ public class ChemicalChangesTest extends AbstractSubstanceJpaFullStackEntityTest
     }
 
     @Test
-    public void testStructureChange() throws Exception {
+    void testStructureChange() throws Exception {
         String molfileBefore ="\n" +
                 "  ACCLDraw09052318012D\n" +
                 "\n" +
