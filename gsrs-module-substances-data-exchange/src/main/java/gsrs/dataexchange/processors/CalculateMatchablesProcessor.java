@@ -49,25 +49,18 @@ public class CalculateMatchablesProcessor implements EntityProcessor<Substance> 
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
     @Override
-    public void prePersist(Substance obj) {
-        //EntityProcessor.super.prePersist(obj);
+    public void postPersist(Substance obj) {
         log.trace("prePersist");
         recalculateMatchablesFor(obj);
     }
 
     @Override
-    public void preRemove(Substance obj) {
-        log.trace("preRemove");
+    public void postRemove(Substance obj) {
+        log.trace("postRemove");
         TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
         log.trace("got tx " + tx);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx.executeWithoutResult(x->keyValueMappingRepository.deleteByRecordId(obj.uuid));
-    }
-
-    @Override
-    public void preUpdate(Substance obj) {
-        log.trace("preUpdate");
-        //recalculateMatchablesFor(obj);
     }
 
     @Override

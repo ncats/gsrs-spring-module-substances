@@ -314,6 +314,7 @@ public class Structure extends BaseModel {
     @PrePersist
     @PreUpdate
     public void modified() {
+        log.warn("in modified, id: {} version: {}", this.id, this.version);
         this.lastEdited = TimeUtil.getCurrentDate();
         if(atropisomerism==null){
             atropisomerism= NYU.No;

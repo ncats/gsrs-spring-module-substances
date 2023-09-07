@@ -17,6 +17,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import gsrs.module.substance.SubstanceEntityService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -79,6 +80,9 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
     private TestGsrsValidatorFactory factory;
+
+    @Autowired
+    protected SubstanceEntityService substanceEntityService;
 
     private String fileName = "rep18.gsrs";
 

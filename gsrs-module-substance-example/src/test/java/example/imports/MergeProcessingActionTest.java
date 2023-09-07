@@ -91,20 +91,6 @@ class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEntityTest 
     @Test
     void testMergeStructures() {
 
-        String disorganizedMolfile = "\n" +
-                "  ACCLDraw03062319112D\n" +
-                "\n" +
-                "  5  3  0  0  0  0  0  0  0  0999 V2000\n" +
-                "    2.1450   -8.2451    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    3.6517   -4.8689    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    1.5265   -2.1879    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    7.7216  -12.9550    0.0000 O   0  5  0  0  0  0  0  0  0  0  0  0\n" +
-                "    7.7500   -3.9500    0.0000 Na  0  3  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  1  0  0  0  0\n" +
-                "  2  3  2  0  0  0  0\n" +
-                "  2  4  1  0  0  0  0\n" +
-                "M  CHG  2   4  -1   5   1\n" +
-                "M  END\n";
         String smilesNoCharge="[Na].CC(=O)O";
         String smilesWithCharges ="[Na+].CC(=O)[O-]";
 
