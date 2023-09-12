@@ -10,6 +10,7 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 
 import javax.persistence.*;
@@ -28,6 +29,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "ix_ginas_moiety", indexes = {@Index(name = "moiety_owner_index", columnList = "owner_uuid")})
 @SingleParent
+@Slf4j
 //@JsonIgnoreProperties({ "id" })
 public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
 	public static String JSON_NULL="JSON_NULL";
@@ -35,6 +37,17 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 	 * The UUID of this moiety
 	 */
 
+	@Override
+	public void forceUpdate()  {
+		log.warn("starting forceUpdate().  version:{}", this.structure.version);
+		super.forceUpdate();
+		if(this.structure.version==0 || this.structure.version==1){
+
+			this.structure.id=null;
+			this.uuid=null;
+			log.warn("setting id and uuid to null");
+		}
+	}
 	@Type(type = "uuid-char" )
 	@Column(length =40, updatable = false, unique = true)
 	public UUID uuid;

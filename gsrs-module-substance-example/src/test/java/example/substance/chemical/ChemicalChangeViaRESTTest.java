@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -12,6 +13,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.*;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.web.client.RestTemplate;
+
+import java.util.Collections;
+import java.util.UUID;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles="Admin")
@@ -97,7 +101,7 @@ class ChemicalChangeViaRESTTest extends AbstractSubstanceJpaFullStackEntityTest{
                 "   10.6162  -19.7045    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
                 "   11.7794  -19.9096    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
                 "   12.3338  -18.8669    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "   22.9936  -12.4371    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   22.9937  -12.4382    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
                 "  1  2  1  0  0  0  0\n" +
                 "  2  3  1  0  0  0  0\n" +
                 "  3  4  1  0  0  0  0\n" +
@@ -170,6 +174,8 @@ class ChemicalChangeViaRESTTest extends AbstractSubstanceJpaFullStackEntityTest{
                 "M  END\n";
 
         actualSubstance.getStructure().molfile= methylatedMolfile;
+        Moiety moiety= actualSubstance.getMoieties().get(0);
+        moiety.structure.id=UUID.randomUUID();
         RestTemplate restTemplate2 = new RestTemplate();
         String updateUrl="http://localhost:8080/api/v1/substances";
         HttpHeaders headers = new HttpHeaders();
@@ -180,11 +186,5 @@ class ChemicalChangeViaRESTTest extends AbstractSubstanceJpaFullStackEntityTest{
         ResponseEntity<Substance> result= restTemplate2.exchange(updateUrl, HttpMethod.PUT,  request, Substance.class);
         Assertions.assertEquals(HttpStatus.OK, result.getStatusCode());
 
-        /*ChemicalSubstance substance = (ChemicalSubstance) JsonSubstanceFactory.makeSubstance(mapper.readTree(json.getBody()));
-
-        substance.getStructure().molfile=methylatedMolfile;
-        Assertions.assertEquals(substanceid, substance.getUuid().toString());*/
-
-        //restTemplate2.p
     }
 }

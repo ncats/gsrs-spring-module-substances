@@ -362,6 +362,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 Object o =  ewchanged.getValue();
                                 if(o instanceof ForceUpdatableModel) {
                                     //Maybe don't do twice? IDK.
+                                    log.warn("skipped call to forceUpdate");
                                     ((ForceUpdatableModel)o).forceUpdate();
                                 }
 
