@@ -184,6 +184,7 @@ public class HtmlStdNameStandardizerTest {
 
     /*
     This unit test fails within IntelliJ but passes at the command line
+    This test requires JDK v 17
      */
     @Test
     public void testNkfdNormalization() {
