@@ -9,13 +9,18 @@ import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.List;
 import java.util.function.Consumer;
 
 @Slf4j
 public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<Substance> {
 
- 	@Autowired
+	@Value("${gsrs.clinicaltrial.ivm.search.max.fetch:20000}")
+	private Integer maxFetchSize;
+
+	@Autowired
 	public ClinicalTrialsUSApi clinicalTrialsUSApi;
 
 	@Override
@@ -28,8 +33,7 @@ public class SubstanceClinicalUSTrialIndexValueMaker implements IndexValueMaker<
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
         try{
-
-        	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
+        	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(maxFetchSize).simpleSearchOnly(true).build();
 
 			SearchResult<ClinicalTrialUSDTO> searchResult = clinicalTrialsUSApi.search(searchRequest);
 
