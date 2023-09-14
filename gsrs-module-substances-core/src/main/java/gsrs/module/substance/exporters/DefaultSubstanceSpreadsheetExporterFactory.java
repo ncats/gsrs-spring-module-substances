@@ -132,7 +132,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     	Map<Column, ColumnValueRecipe<Substance>> defaultRecipeMap= new LinkedHashMap<>();
 
 
-        // UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM EPA CompTox CATALOG_OF_LIFE ITIS NCBI PLANTS GRIN MPNS INN_ID DAILYMED MF INCHIKEY SMILES INGREDIENT_TYPE
+        // UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM EPA_CompTox CATALOG_OF_LIFE ITIS NCBI PLANTS GRIN MPNS INN_ID DAILYMED MF INCHIKEY SMILES INGREDIENT_TYPE
 
     	defaultRecipeMap.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
     	defaultRecipeMap.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
