@@ -132,7 +132,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     	Map<Column, ColumnValueRecipe<Substance>> defaultRecipeMap= new LinkedHashMap<>();
 
 
-    	//UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM ITIS NCBI PLANTS GRIN MPNS INN_ID MF INCHIKEY SMILES INGREDIENT_TYPE 
+        // UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM EPA_CompTox CATALOG_OF_LIFE ITIS NCBI PLANTS GRIN MPNS INN_ID DAILYMED MF INCHIKEY SMILES INGREDIENT_TYPE
 
     	defaultRecipeMap.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
     	defaultRecipeMap.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
@@ -157,6 +157,9 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     	defaultRecipeMap.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
     	defaultRecipeMap.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
 
+        defaultRecipeMap.put(DefaultColumns.EPA_CompTox, new CodeSystemRecipe(DefaultColumns.EPA_CompTox, "EPA CompTox"));
+        defaultRecipeMap.put(DefaultColumns.CATALOGUE_OF_LIFE, ParentSourceMaterialRecipeWrapper.wrap(new CodeSystemRecipe(DefaultColumns.CATALOGUE_OF_LIFE, "CATALOGUE OF LIFE"),params.getScrubber()));
+
     	defaultRecipeMap.put(DefaultColumns.ITIS, ParentSourceMaterialRecipeWrapper.wrap(new CodeSystemRecipe(DefaultColumns.ITIS, "ITIS"),params.getScrubber()));
     	defaultRecipeMap.put(DefaultColumns.NCBI, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.NCBI, "NCBI TAXONOMY"),params.getScrubber()));
     	defaultRecipeMap.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")
@@ -167,6 +170,8 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
     	defaultRecipeMap.put(DefaultColumns.INN, new CodeSystemRecipe(DefaultColumns.INN, "INN").replaceColumnName(DefaultColumns.INN.name(),"INN_ID"));
     	defaultRecipeMap.put(DefaultColumns.USAN, new CodeSystemRecipe(DefaultColumns.USAN, "USAN").replaceColumnName(DefaultColumns.USAN.name(),"USAN_ID"));
+
+        defaultRecipeMap.put(DefaultColumns.DAILYMED, new CodeSystemRecipe(DefaultColumns.DAILYMED, "DAILYMED"));
 
     	defaultRecipeMap.put(DefaultColumns.FORMULA, createRestrictableRecipe(Substance.class,DefaultColumns.FORMULA, (s, pubOnly,cell) -> {
     		if (s instanceof ChemicalSubstance) {
