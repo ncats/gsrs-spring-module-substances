@@ -19,6 +19,9 @@ public interface NameRepository extends GsrsVersionedRepository<Name, UUID> {
     //TODO: use summary object
     @Query("select s from Name s where s.owner.uuid = ?1 and s.displayName = true")
     Optional<Name> findDisplayNameByOwnerID(UUID uuid);
+
+    @Query("select s from Name s where s.owner.uuid = ?1")
+    List<Name> findNameByOwnerIDDisplayNameTrue(UUID uuid);
     
     List<Name> findByNameIgnoreCase(String name);
 

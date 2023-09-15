@@ -144,8 +144,9 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             //How best to do this?
             //For now use explicit query
             NameRepository nr= StaticContextAccessor.getBean(NameRepository.class);
-            ref.refPname = nr.findDisplayNameByOwnerID(getUuid()).map(nn->nn.getName())
-                             .orElse("NO NAME");
+            ref.refPname = nr.findNameByOwnerIDDisplayNameTrue(getUuid()).stream().map(nn->nn.getName())
+                    .findFirst()
+                    .orElse("NO NAME");
             
             //This is reasonable to have done, but it's not the way references work
             //now. The substance class is set to be a reference if it's a reference.
@@ -154,6 +155,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             
             return ref;
         }
+
+
     }
     
     @Query("select s from Substance s")
