@@ -5,6 +5,7 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.*;
 import ix.utils.UUIDUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Example;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -144,7 +145,9 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             //How best to do this?
             //For now use explicit query
             NameRepository nr= StaticContextAccessor.getBean(NameRepository.class);
-            ref.refPname = nr.findNameByOwnerIDDisplayNameTrue(getUuid()).stream().map(nn->nn.getName())
+            ref.refPname = nr.findNameByOwnerIDDisplayNameTrue(getUuid()).stream()
+                    .filter(n->n.displayName)
+                    .map(nn->nn.getName())
                     .findFirst()
                     .orElse("NO NAME");
             

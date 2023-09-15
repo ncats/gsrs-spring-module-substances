@@ -1,17 +1,11 @@
 package example.substance.validation;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -30,9 +24,6 @@ import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.ChemicalDuplicateFinder;
-import ix.utils.Util;
-
-import static org.junit.Assert.*;
 
 @WithMockUser(username = "admin", roles="Admin")
 //@Disabled("substance repository query doesn't work yet")
@@ -98,7 +89,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         Structure structure = structureProcessor.instrument(s.getStructure().toChemical(), true);
         s.getStructure().updateStructureFields(structure);
 
-        assertTrue(sut.findPossibleDuplicatesFor(s.asSubstanceReference()).isEmpty());
+        Assertions.assertTrue(sut.findPossibleDuplicatesFor(s.asSubstanceReference()).isEmpty());
     }
 
     @Test
@@ -118,7 +109,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         assertCreated(json);
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = new ChemicalSubstanceBuilder()
@@ -130,15 +121,14 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         s2.getStructure().updateStructureFields( structureProcessor.instrument(s2.getStructure().toChemical(), true));
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference());
-        assertEquals(Arrays.asList(uuid.toString()),
-                possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toList()));
+        Assertions.assertEquals(Collections.singletonList(uuid.toString()), possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toList()));
     }
     @Test
-    public void loadOneRecordWithMoieityAndSearchForItShouldFindIt() throws IOException {
+    public void loadOneRecordWithMoieityAndSearchForItShouldFindIt() {
         UUID uuid = createAndPersistChemicalSubstanceWithMoietyStructures("[Na+][Cl-]", "C1CC=CC=C1");
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = new ChemicalSubstanceBuilder()
@@ -150,8 +140,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         s2.getStructure().updateStructureFields( structureProcessor.instrument(s2.getStructure().toChemical(), true));
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference());
-        assertEquals(Arrays.asList(uuid.toString()),
-                possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toList()));
+        Assertions.assertEquals(Collections.singletonList(uuid.toString()), possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toList()));
     }
     @Test
     public void searchForOurselvesShouldNotFindDuplicate(){
@@ -170,12 +159,12 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         Substance saved = assertCreated(json);
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(saved.asSubstanceReference());
-        assertTrue(possibleDuplicatesFor.isEmpty());
+        Assertions.assertTrue(possibleDuplicatesFor.isEmpty());
     }
 
     @Test
@@ -184,13 +173,13 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(
                 substanceRepository.findSummaryByUuid(uuid).get().toSubstanceReference());
-        assertTrue(possibleDuplicatesFor.isEmpty());
+        Assertions.assertTrue(possibleDuplicatesFor.isEmpty());
     }
 
     @Test
@@ -217,7 +206,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         s2.getStructure().properties = structure2.properties;
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference());
-        assertTrue(possibleDuplicatesFor.isEmpty());
+        Assertions.assertTrue(possibleDuplicatesFor.isEmpty());
     }
 
     private UUID createAndPersistChemicalSubstanceWithStructure(String smiles){
@@ -285,15 +274,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference());
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(5, results.size());
-        assertEquals(uuids, results);
+        Assertions.assertEquals(5, results.size());
+        Assertions.assertEquals(uuids, results);
     }
 
     @Test
@@ -306,15 +295,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference());
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(5, results.size());
-        assertEquals(uuids, results);
+        Assertions.assertEquals(5, results.size());
+        Assertions.assertEquals(uuids, results);
     }
 
     @Test
@@ -327,15 +316,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference(), 20);
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(20, results.size());
-        results.forEach( uuid-> assertTrue(uuids.contains(uuid)));
+        Assertions.assertEquals(20, results.size());
+        results.forEach( uuid-> Assertions.assertTrue(uuids.contains(uuid)));
     }
 
     @Test
@@ -349,15 +338,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference(), 20);
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(20, results.size());
-        results.forEach( uuid-> assertTrue(uuids.contains(uuid)));
+        Assertions.assertEquals(20, results.size());
+        results.forEach( uuid-> Assertions.assertTrue(uuids.contains(uuid)));
     }
 
     @Test
@@ -370,15 +359,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference(), 3);
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(3, results.size());
-        results.forEach( uuid-> assertTrue(uuids.contains(uuid)));
+        Assertions.assertEquals(3, results.size());
+        results.forEach( uuid-> Assertions.assertTrue(uuids.contains(uuid)));
     }
 
     @Test
@@ -391,15 +380,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference(), 3);
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(3, results.size());
-        results.forEach( uuid-> assertTrue(uuids.contains(uuid)));
+        Assertions.assertEquals(3, results.size());
+        results.forEach( uuid-> Assertions.assertTrue(uuids.contains(uuid)));
     }
 
     @Test
@@ -412,15 +401,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference(), 30);
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(30, results.size());
-        results.forEach( uuid-> assertTrue(uuids.contains(uuid)));
+        Assertions.assertEquals(30, results.size());
+        results.forEach( uuid-> Assertions.assertTrue(uuids.contains(uuid)));
     }
 
     @Test
@@ -433,15 +422,15 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
 
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance s2 = createChemicalSubstanceWithStructure(smiles);
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(s2.asSubstanceReference(), 300);
         Set<String> results = possibleDuplicatesFor.stream().map(r -> r.refuuid).collect(Collectors.toSet());
-        assertEquals(300, results.size());
-        results.forEach( uuid-> assertTrue(uuids.contains(uuid)));
+        Assertions.assertEquals(300, results.size());
+        results.forEach( uuid-> Assertions.assertTrue(uuids.contains(uuid)));
     }
 
     @Test
@@ -461,7 +450,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         Substance saved = assertCreated(json);
 
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
 
         ChemicalSubstance hydrochloride = new ChemicalSubstanceBuilder()
@@ -472,7 +461,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         //have to structure process first to generate hashes
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(hydrochloride.asSubstanceReference());
-        assertTrue(possibleDuplicatesFor.isEmpty());
+        Assertions.assertTrue(possibleDuplicatesFor.isEmpty());
     }
 
     @Test
@@ -490,7 +479,7 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         JsonNode json = EntityFactory.EntityMapper.JSON_DIFF_ENTITY_MAPPER().toJsonNode(s);
         Substance saved = assertCreated(json);
 
-        assertTrue(keywordRepository.count() > 0);
+        Assertions.assertTrue(keywordRepository.count() > 0);
 
         ChemicalSubstance iodide = new ChemicalSubstanceBuilder()
                 .setUUID(UUID.randomUUID())
@@ -500,7 +489,9 @@ public class DuplicateChemicalStructureFinderTest extends AbstractSubstanceJpaEn
         iodide.getStructure().updateStructureFields(structureProcessor.instrument(iodide.getStructure().toChemical(), true));
 
         List<SubstanceReference> possibleDuplicatesFor = sut.findPossibleDuplicatesFor(iodide.asSubstanceReference());
-        assertFalse(possibleDuplicatesFor.isEmpty());
+        //iodide is considered a 'common fragment' as of August 2023 and a duplicate search is avoided.
+        // Therefore, we will not find duplicates
+        Assertions.assertTrue(possibleDuplicatesFor.isEmpty());
     }
 
 }
