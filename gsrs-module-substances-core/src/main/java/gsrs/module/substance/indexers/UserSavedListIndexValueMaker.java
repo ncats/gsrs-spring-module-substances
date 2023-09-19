@@ -2,15 +2,16 @@ package gsrs.module.substance.indexers;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 import gsrs.repository.KeyUserListRepository;
 import gsrs.repository.PrincipalRepository;
-import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.KeyUserList;
-import ix.core.models.Principal;
 import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
@@ -32,6 +33,11 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
     public Class<Substance> getIndexedEntityClass() {
         return Substance.class;
     }
+	
+	@Override
+	public Set<String> getFieldNames(){
+		return Stream.of("User List").collect(Collectors.toSet());
+	}
 	
 	
 	@Override
