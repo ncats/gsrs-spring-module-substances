@@ -40,7 +40,7 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 		try {
 			String key = EntityWrapper.of(substance).getKey().toRootKey().getIdString();
 	
-			List<KeyUserList> list = keyUserListRepository.getAllListNamesFromKey(key);	
+			List<KeyUserList> list = keyUserListRepository.getAllListNamesFromKey(key, getIndexedEntityClass().getName());	
 		
 			list.forEach(listName -> {			
 				String value = UserSavedListService.getIndexedValue(listName.principal.username, listName.listName);				
