@@ -35,27 +35,25 @@ public final class HtmlUtil {
 
         public void head(Node node, int depth) {
             if (depth > 0) {
-                String resHtml = dst.html();
-                int resHtmlLen = resHtml.getBytes(StandardCharsets.UTF_8).length;
-                if (maxLen <= resHtmlLen) {
-                    if (node instanceof Element) {
-                        cur.remove();
-                    }
-                    throw new IllegalStateException();
-                }
+                int resHtmlLen = dst.html().getBytes(StandardCharsets.UTF_8).length;
+                int nodeHtmlLen = node.outerHtml().getBytes(StandardCharsets.UTF_8).length;
+                int maxNodeLen = maxLen - resHtmlLen;
                 if (node instanceof Element) {
-                    Element curElement = (Element) node;
-                    if (safetags.contains(curElement.tagName())) {
-                        cur = cur.appendElement(curElement.tagName());
+                    String tagName = ((Element) node).tagName();
+                    if (safetags.contains(tagName)) {
+                        nodeHtmlLen = tagName.length() * 2 + 5;
+                        if (resHtmlLen + nodeHtmlLen > maxLen) {
+                            throw new IllegalStateException();
+                        } else {
+                            cur = cur.appendElement(tagName);
+                        }
                     }
                 } else if (node instanceof TextNode) {
                     String parentTag = ((Element)node.parent()).tagName();
                     if (safetags.contains(parentTag) || (parentTag == "body" && depth == 1)) {
                         String curText = ((TextNode) node).getWholeText();
-                        int nodeHtmlLen = node.outerHtml().getBytes(StandardCharsets.UTF_8).length;
-                        if (nodeHtmlLen + resHtmlLen > maxLen) {
+                        if (resHtmlLen + nodeHtmlLen > maxLen) {
                             StringBuilder sb = new StringBuilder(curText);
-                            int maxNodeLen = maxLen - resHtmlLen;
                             sb.setLength(maxNodeLen + 1);
                             while (sb.toString().getBytes(StandardCharsets.UTF_8).length > maxNodeLen) {
                                 sb.setLength(sb.length() - 1);
