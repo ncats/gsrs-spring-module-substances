@@ -42,7 +42,7 @@ public class HtmlNameStandardizer extends AbstractNameStandardizer{
 
     @Override
     public ReplacementResult standardize(String input) {
-        ReplacementResult result = new ReplacementResult(input.trim(), new ArrayList<>());
+        ReplacementResult result = new ReplacementResult(input != null ? input.trim() : null, new ArrayList<>());
         if (input != null && input.length() != 0) {
             String suffix = "";
             if(removeUnprintables){
