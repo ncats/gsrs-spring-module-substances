@@ -10,19 +10,28 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
 import gsrs.module.substance.repository.StructureRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.services.SubstanceStructureSearchService;
 import gsrs.payload.PayloadController;
 import gsrs.springUtils.StaticContextAccessor;
+import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
+import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.*;
+import ix.ginas.utils.validation.ValidationUtils;
 import ix.utils.UUIDUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
@@ -40,6 +49,7 @@ import java.util.*;
  * All these legacy routes will redirect to their api/v1 counterparts.
  */
 @RestController
+@Slf4j
 public class LegacyGinasAppController {
 
 //    @Autowired
@@ -68,13 +78,24 @@ public class LegacyGinasAppController {
     @Autowired
     private SubstanceController substanceController;
 
+    @Autowired
+    private StructureProcessor structureProcessor;
+
+    @Autowired
+    private SubstanceLegacySearchService legacySearchService;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     //POST        /register/duplicateCheck          ix.ginas.controllers.GinasFactory.validateChemicalDuplicates
     @PostMapping({"register/duplicateCheck", "/ginas/app/register/duplicateCheck"})
     @Transactional(readOnly = true)
     public List<ValidationMessage> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
+        return handleDuplcateCheck(updatedEntityJson);
+/*
         SubstanceEntityService substanceService = StaticContextAccessor.getBean(SubstanceEntityService.class);
         return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION()).getValidationMessages();
+*/
     }
     
     @PostMapping({"upload", "/ginas/app/upload", "/upload"})
@@ -324,5 +345,75 @@ public class LegacyGinasAppController {
             attributes.addAttribute("q", q);
             attributes.addAttribute("max", max);
             return new ModelAndView("/api/v1/substances/suggest/" + field);
+    }
+
+    private List<ValidationMessage> handleDuplcateCheck(JsonNode updatedEntityJson) throws Exception {
+        String molfile=updatedEntityJson.get("structure").get("molfile").asText();
+        log.trace("handleDuplicateCheck found molfile {}", molfile);
+        Structure structure = structureProcessor.instrument(molfile);
+
+        int defaultTop=10;
+        int skipZero =0;
+        String structureSearchType="flex";
+
+        String sins=structure.getStereoInsensitiveHash();
+        log.trace("StereoInsensitiveHash: {}", sins);
+        String hash= "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+        log.trace("query: {}", hash);
+        SearchRequest.Builder builder = new SearchRequest.Builder()
+                .query(hash)
+                .kind(Substance.class);
+        builder.top(defaultTop);
+        builder.skip(skipZero);
+        SearchRequest searchRequest = builder.build();
+
+        SearchResult result = null;
+        try {
+            result = legacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions() );
+        } catch (Exception e) {
+            log.error("Error running search for duplicates", e);
+            return new ArrayList<>();
+        }
+        SearchResult fresult=result;
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setReadOnly(true);
+        List results = transactionTemplate.execute(stauts -> {
+            //the top and skip settings  look wrong, because we're not skipping
+            //anything, but it's actually right,
+            //because the original request did the skipping.
+            //This mechanism should probably be worked out
+            //better, as it's not consistent.
+
+            //Note that the SearchResult uses a LazyList,
+            //but this is copying to a real list, this will
+            //trigger direct fetches from the lazylist.
+            //With proper caching there should be no further
+            //triggered fetching after this.
+
+            String viewType="complete";
+            if("key".equals(viewType)){
+                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
+                fresult.copyKeysTo(klist, 0, defaultTop, true);
+                return klist;
+            }else{
+                List tlist = new ArrayList<>(defaultTop);
+                fresult.copyTo(tlist, 0, defaultTop, true);
+                return tlist;
+            }
+        });
+
+        List<ValidationMessage> messages = new ArrayList<>();
+        results.forEach(r -> {
+            Substance duplicate = (Substance) r;
+            GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(
+                    String.format("Record %s appears to be a duplicate", duplicate.getName()));
+            message.addLink(ValidationUtils.createSubstanceLink(duplicate.asSubstanceReference()));
+            messages.add(message);
+        });
+        if (messages.isEmpty()) {
+            messages.add(GinasProcessingMessage.SUCCESS_MESSAGE("Structure is unique"));
+        }
+        return messages;
     }
 }
