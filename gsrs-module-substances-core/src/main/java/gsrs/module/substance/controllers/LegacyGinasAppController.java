@@ -348,9 +348,15 @@ public class LegacyGinasAppController {
     }
 
     private List<ValidationMessage> handleDuplcateCheck(JsonNode updatedEntityJson) throws Exception {
+        if( !updatedEntityJson.hasNonNull("structure") || !updatedEntityJson.get("structure").hasNonNull("molfile")) {
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
+        }
         String molfile=updatedEntityJson.get("structure").get("molfile").asText();
         log.trace("handleDuplicateCheck found molfile {}", molfile);
         Structure structure = structureProcessor.instrument(molfile);
+        if( structure.toChemical().getAtomCount()==0) {
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
+        }
 
         int defaultTop=10;
         int skipZero =0;
