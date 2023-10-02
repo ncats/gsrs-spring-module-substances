@@ -22,6 +22,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
@@ -48,8 +49,7 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
         l.message("Clearing out old values");
         keyValueMappingRepository.deleteByDataLocation(DATA_SOURCE_MAIN);
 
-        ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->
-        {
+        ProcessListener listen = ProcessListener.onCountChange((sofar, total) ->{
             if (total != null)
             {
                 l.message("Recalculated:" + sofar + " of " + total);
@@ -68,41 +68,47 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer
 
         }
 
-        TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-        log.trace("got tx " + tx);
-        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        List<UUID>allIDs = substanceRepository.getAllIds();
+        List<UUID> allIDs = substanceRepository.getAllIds();
         listen.totalRecordsToProcess(allIDs.size());
-        tx.executeWithoutResult(
-                a-> allIDs.stream().parallel().forEach( uuid -> {
-                    try {
-                        log.trace("looking at substance " + uuid);
-                        EntityUtils.Key substanceKey = EntityUtils.Key.of(Substance.class, uuid);
-                        Optional<?> retrieved =EntityFetcher.of(substanceKey).getIfPossible();
-                        if(retrieved.isPresent()) {
-                            Substance s = (Substance) retrieved.get();
-                            List<MatchableKeyValueTuple> matchables = substanceStagingAreaEntityService.extractKVM(s);
-                            matchables.forEach(kv -> {
-                                log.trace("going to store KeyValueMapping with key {} and value '{}' qualifier: {}, instance id: {}; location: {}",
-                                        kv.getKey(), kv.getValue(), kv.getQualifier(), s.uuid.toString(), DATA_SOURCE_MAIN);
-                                KeyValueMapping mapping = new KeyValueMapping();
-                                mapping.setKey(kv.getKey());
-                                mapping.setValue(kv.getValue());
-                                mapping.setQualifier(kv.getQualifier());
-                                mapping.setRecordId(s.uuid);
-                                mapping.setEntityClass(SUBSTANCE_CLASS);
-                                mapping.setDataLocation(DATA_SOURCE_MAIN);
-                                //mapping.tidy();
-                                keyValueMappingRepository.saveAndFlush(mapping);
-                            });
-                            listen.recordProcessed(s);
-                        } else {
-                            log.warn("error retrieving substance with ID {}", uuid);
-                        }
-                    } catch (IllegalStateException ignore){
-                        log.warn("error processing record {}; continuing to next.", uuid);
-                    }
-                }));
+        allIDs.parallelStream().forEach( uuid -> {
+        	try {
+                log.trace("looking at substance " + uuid);
+                EntityUtils.Key substanceKey = EntityUtils.Key.of(Substance.class, uuid);
+                Optional<?> retrieved =EntityFetcher.of(substanceKey).getIfPossible();
+                if(retrieved.isPresent()) {
+                    Substance s = (Substance) retrieved.get();
+                    List<MatchableKeyValueTuple> matchables = substanceStagingAreaEntityService.extractKVM(s);
+                    List<KeyValueMapping> kvmaps = matchables.stream().map(kv -> {
+                        log.trace("going to store KeyValueMapping with key {} and value '{}' qualifier: {}, instance id: {}; location: {}",
+                                kv.getKey(), kv.getValue(), kv.getQualifier(), s.uuid.toString(), DATA_SOURCE_MAIN);
+                        KeyValueMapping mapping = new KeyValueMapping();
+                        mapping.setKey(kv.getKey());
+                        mapping.setValue(kv.getValue());
+                        mapping.setQualifier(kv.getQualifier());
+                        mapping.setRecordId(s.uuid);
+                        mapping.setEntityClass(SUBSTANCE_CLASS);
+                        mapping.setDataLocation(DATA_SOURCE_MAIN);
+                        return mapping;
+                    })
+                    .collect(Collectors.toList());
+
+                    //mapping.tidy();
+                    TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+                    log.trace("got tx " + tx);
+                    tx.executeWithoutResult(a->{
+                    	keyValueMappingRepository.saveAll(kvmaps);
+                    	keyValueMappingRepository.flush();
+                    });
+                    
+                    listen.recordProcessed(s);
+                } else {
+                    log.warn("error retrieving substance with ID {}", uuid);
+                }
+        	} catch (IllegalStateException ignore){
+                log.warn("error processing record {}; continuing to next.", uuid);
+            }
+        });
+        
     }
 
     @Override
