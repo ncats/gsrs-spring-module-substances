@@ -74,7 +74,7 @@ public class LegacyGinasAppController {
     @Transactional(readOnly = true)
     public List<ValidationMessage> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
         SubstanceEntityService substanceService = StaticContextAccessor.getBean(SubstanceEntityService.class);
-        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION()).getValidationMessages();
+        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DUPLICATE_CHECK()).getValidationMessages();
     }
     
     @PostMapping({"upload", "/ginas/app/upload", "/upload"})

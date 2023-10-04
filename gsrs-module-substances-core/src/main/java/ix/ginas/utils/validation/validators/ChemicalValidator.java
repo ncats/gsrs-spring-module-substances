@@ -1,12 +1,13 @@
 package ix.ginas.utils.validation.validators;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.controller.GsrsControllerUtil;
-import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
-import ix.core.models.Value;
+import ix.core.search.SearchRequest;
+import ix.core.search.SearchResult;
 import ix.core.validator.ExceptionValidationMessage;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationMessage;
@@ -21,8 +22,9 @@ import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -43,6 +45,11 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 	@Autowired
     private EntityLinks entityLinks;
 
+    @Autowired
+    private SubstanceLegacySearchService legacySearchService;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 	private boolean allow0AtomStructures = false;
 
     private boolean allowV3000Molfiles = false;
@@ -68,7 +75,8 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     
     @Override
     public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory c) {
-        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)) {
+        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)
+            || ValidatorCategory.CATEGORY_DUPLICATE_CHECK().equals(c)) {
             return true;
         }else {
             return false;
@@ -109,8 +117,16 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         String payload = cs.getStructure().molfile;
         if (payload != null) {
 
-
-
+            if( objold==null && cs.uuid==null && cs.names.isEmpty() && cs.references.isEmpty()) {
+                log.trace("Looks like a duplicate check");
+                try {
+                     handleDuplcateCheck(cs.toFullJsonNode()).forEach(callback::addMessage);
+                     return;
+                } catch (Exception e) {
+                    log.error("Error performing duplicate check");
+                    throw new RuntimeException(e);
+                }
+            }
 
             try {
                 ix.ginas.utils.validation.PeptideInterpreter.Protein p = PeptideInterpreter
@@ -394,5 +410,79 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         this.allowV3000Molfiles = allowV3000Molfiles;
     }
 
+    private List<ValidationMessage> handleDuplcateCheck(JsonNode updatedEntityJson) throws Exception {
+        if( !updatedEntityJson.hasNonNull("structure") || !updatedEntityJson.get("structure").hasNonNull("molfile")) {
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
+        }
+        String molfile=updatedEntityJson.get("structure").get("molfile").asText();
+        log.trace("handleDuplicateCheck found molfile {}", molfile);
+        Structure structure = structureProcessor.instrument(molfile);
+        if( structure.toChemical().getAtomCount()==0) {
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
+        }
 
+        int defaultTop=10;
+        int skipZero =0;
+        String structureSearchType="flex";
+
+        String sins=structure.getStereoInsensitiveHash();
+        log.trace("StereoInsensitiveHash: {}", sins);
+        String hash= "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+        log.trace("query: {}", hash);
+        SearchRequest.Builder builder = new SearchRequest.Builder()
+                .query(hash)
+                .kind(Substance.class);
+        builder.top(defaultTop);
+        builder.skip(skipZero);
+        SearchRequest searchRequest = builder.build();
+
+        SearchResult result = null;
+        try {
+            result = legacySearchService.search(searchRequest.getQuery(), searchRequest.getOptions() );
+        } catch (Exception e) {
+            log.error("Error running search for duplicates", e);
+            return new ArrayList<>();
+        }
+        SearchResult fresult=result;
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setReadOnly(true);
+        List results = transactionTemplate.execute(stauts -> {
+            //the top and skip settings  look wrong, because we're not skipping
+            //anything, but it's actually right,
+            //because the original request did the skipping.
+            //This mechanism should probably be worked out
+            //better, as it's not consistent.
+
+            //Note that the SearchResult uses a LazyList,
+            //but this is copying to a real list, this will
+            //trigger direct fetches from the lazylist.
+            //With proper caching there should be no further
+            //triggered fetching after this.
+
+            String viewType="complete";
+            if("key".equals(viewType)){
+                List<ix.core.util.EntityUtils.Key> klist=new ArrayList<>(Math.min(fresult.getCount(),1000));
+                fresult.copyKeysTo(klist, 0, defaultTop, true);
+                return klist;
+            }else{
+                List tlist = new ArrayList<>(defaultTop);
+                fresult.copyTo(tlist, 0, defaultTop, true);
+                return tlist;
+            }
+        });
+
+        List<ValidationMessage> messages = new ArrayList<>();
+        results.forEach(r -> {
+            Substance duplicate = (Substance) r;
+            GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(
+                    String.format("Record %s appears to be a duplicate", duplicate.getName()));
+            message.addLink(ValidationUtils.createSubstanceLink(duplicate.asSubstanceReference()));
+            messages.add(message);
+        });
+        if (messages.isEmpty()) {
+            messages.add(GinasProcessingMessage.SUCCESS_MESSAGE("Structure is unique"));
+        }
+        return messages;
+    }
 }
