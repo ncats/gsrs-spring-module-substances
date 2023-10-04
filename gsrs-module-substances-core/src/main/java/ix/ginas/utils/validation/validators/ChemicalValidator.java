@@ -135,7 +135,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             Structure struc = structureProcessor.instrument(payload, moieties, true); 
 
             if(!payload.contains("M  END")){
-                //not a mol convert it
+                //not a mol c`onvert it
                 //struc is already standardized
                 callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(
                         "structure should always be specified as mol file converting to format to mol automatically").appliableChange(true),
