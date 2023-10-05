@@ -53,8 +53,10 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
         if( chemicalSubstance.getStructure()==null || chemicalSubstance.getStructure().molfile==null) {
             return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
         }
-        String molfile = chemicalSubstance.getStructure().molfile;
-        Structure structure = structureProcessor.instrument(molfile);
+        Structure structure = (chemicalSubstance.getStructure().getStereoInsensitiveHash()!=null &&
+                chemicalSubstance.getStructure().getStereoInsensitiveHash().length()>0) ? chemicalSubstance.getStructure()
+                : structureProcessor.instrument(chemicalSubstance.getStructure().molfile);
+
         if (structure.toChemical().getAtomCount() == 0) {
             return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure with at least one atom"));
         }
@@ -69,9 +71,10 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
         log.trace("query: {}", hash);
         SearchRequest.Builder builder = new SearchRequest.Builder()
                 .query(hash)
-                .kind(Substance.class);
-        builder.top(defaultTop);
-        builder.skip(skipZero);
+                .simpleSearchOnly(true)
+                .kind(Substance.class)
+                .top(defaultTop)
+                .skip(skipZero);
         SearchRequest searchRequest = builder.build();
 
         SearchResult result;
