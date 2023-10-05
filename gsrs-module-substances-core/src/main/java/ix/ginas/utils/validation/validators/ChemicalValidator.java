@@ -1,18 +1,11 @@
 package ix.ginas.utils.validation.validators;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
-import ix.core.validator.ExceptionValidationMessage;
-import ix.core.validator.GinasProcessingMessage;
-import ix.core.validator.ValidationMessage;
-import ix.core.validator.ValidatorCallback;
-import ix.core.validator.ValidatorCategory;
+import ix.core.validator.*;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.ChemUtils;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
@@ -23,9 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
