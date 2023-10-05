@@ -37,25 +37,26 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         ChemicalSubstance cs = (ChemicalSubstance) objnew;
-
-        if (cs.getStructure() == null) {
-            return;
-        }
-
-        handleDuplcateCheck(cs).forEach(callback::addMessage);
+        handleDuplicateCheck(cs).forEach(callback::addMessage);
     }
 
     @Override
     public boolean supportsCategory(Substance substance, Substance olds, ValidatorCategory c) {
-        return substance instanceof ChemicalSubstance && (ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)
-                || ValidatorCategory.CATEGORY_DUPLICATE_CHECK().equals(c));
+        //this validator runs in the case of an explicit duplicate check while registering a chemical
+        // AND during full validation.  In some cases, it will provide the same results as the SubstanceUniquenessValidator
+        // in other cases, it will find missed duplicates
+        return substance instanceof ChemicalSubstance && (ValidatorCategory.CATEGORY_DUPLICATE_CHECK().equals(c)
+            || ValidatorCategory.CATEGORY_ALL().equals(c));
     }
 
-    private List<ValidationMessage> handleDuplcateCheck(ChemicalSubstance chemicalSubstance) {
+    private List<ValidationMessage> handleDuplicateCheck(ChemicalSubstance chemicalSubstance) {
+        if( chemicalSubstance.getStructure()==null || chemicalSubstance.getStructure().molfile==null) {
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
+        }
         String molfile = chemicalSubstance.getStructure().molfile;
         Structure structure = structureProcessor.instrument(molfile);
         if (structure.toChemical().getAtomCount() == 0) {
-            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure with at least one atom"));
         }
 
         int defaultTop = 10;
@@ -63,7 +64,8 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
 
         String sins = structure.getStereoInsensitiveHash();
         log.trace("StereoInsensitiveHash: {}", sins);
-        String hash = "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+        String hash = "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+        //removed this clause from the query because we want to exclude moiety matches " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins +
         log.trace("query: {}", hash);
         SearchRequest.Builder builder = new SearchRequest.Builder()
                 .query(hash)
@@ -83,7 +85,7 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setReadOnly(true);
-        List results = transactionTemplate.execute(stauts -> {
+        List<Object> results = transactionTemplate.execute(stauts -> {
             //the top and skip settings  look wrong, because we're not skipping
             //anything, but it's actually right,
             //because the original request did the skipping.
@@ -96,12 +98,13 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
             //With proper caching there should be no further
             //triggered fetching after this.
 
-            List tlist = new ArrayList<>(defaultTop);
+            List<Object> tlist = new ArrayList<>(defaultTop);
             fresult.copyTo(tlist, 0, defaultTop, true);
             return tlist;
         });
 
         List<ValidationMessage> messages = new ArrayList<>();
+        assert results!=null;
         results.forEach(r -> {
             Substance duplicate = (Substance) r;
             GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(

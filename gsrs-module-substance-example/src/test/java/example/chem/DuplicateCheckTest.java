@@ -1,7 +1,6 @@
 package example.chem;
 
 import example.GsrsModuleSubstanceApplication;
-import gsrs.module.substance.controllers.LegacyGinasAppController;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
@@ -15,6 +14,7 @@ import ix.core.validator.ValidationMessage;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.utils.validation.validators.ChemicalUniquenessValidator;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +26,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.util.List;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
@@ -75,9 +76,11 @@ class DuplicateCheckTest extends AbstractSubstanceJpaFullStackEntityTest {
         builder.setStructure(ginasChemicalStructure);
         builder.addName("ALTERNATIVE DEFINITION for [ACLERASTIDE] duplicate");
         ChemicalSubstance chemicalSubstance = builder.build();
-        LegacyGinasAppController controller = new LegacyGinasAppController();
-        AutowireHelper.getInstance().autowireAndProxy(controller);
-        List<ValidationMessage> messages = controller.duplicateCheck(chemicalSubstance.toFullJsonNode());
+        ChemicalUniquenessValidator validator = new ChemicalUniquenessValidator();
+        AutowireHelper.getInstance().autowireAndProxy(validator);
+        Method uniquenessCheckMethod = validator.getClass().getDeclaredMethod("handleDuplicateCheck", ChemicalSubstance.class);
+        uniquenessCheckMethod.setAccessible(true);
+        List<ValidationMessage> messages = (List<ValidationMessage>) uniquenessCheckMethod.invoke(validator, chemicalSubstance);
         Assertions.assertEquals(1, messages.size());
         Assertions.assertTrue(messages.stream().anyMatch(m->m.getMessage().contains("appears to be a duplicate")));
     }
@@ -91,9 +94,11 @@ class DuplicateCheckTest extends AbstractSubstanceJpaFullStackEntityTest {
         builder.setStructure(ginasChemicalStructure);
         builder.addName("hexaphosphorcyclohexane");
         ChemicalSubstance chemicalSubstance = builder.build();
-        LegacyGinasAppController controller = new LegacyGinasAppController();
-        AutowireHelper.getInstance().autowireAndProxy(controller);
-        List<ValidationMessage> messages = controller.duplicateCheck(chemicalSubstance.toFullJsonNode());
+        ChemicalUniquenessValidator validator = new ChemicalUniquenessValidator();
+        AutowireHelper.getInstance().autowireAndProxy(validator);
+        Method uniquenessCheckMethod = validator.getClass().getDeclaredMethod("handleDuplicateCheck", ChemicalSubstance.class);
+        uniquenessCheckMethod.setAccessible(true);
+        List<ValidationMessage> messages = (List<ValidationMessage>) uniquenessCheckMethod.invoke(validator, chemicalSubstance);
         Assertions.assertEquals(1, messages.size());
         Assertions.assertTrue(messages.stream().anyMatch(m->m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.SUCCESS)));
     }
@@ -103,9 +108,11 @@ class DuplicateCheckTest extends AbstractSubstanceJpaFullStackEntityTest {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("no structure");
         ChemicalSubstance chemicalSubstance = builder.build();
-        LegacyGinasAppController controller = new LegacyGinasAppController();
-        AutowireHelper.getInstance().autowireAndProxy(controller);
-        List<ValidationMessage> messages = controller.duplicateCheck(chemicalSubstance.toFullJsonNode());
+        ChemicalUniquenessValidator validator = new ChemicalUniquenessValidator();
+        AutowireHelper.getInstance().autowireAndProxy(validator);
+        Method uniquenessCheckMethod = validator.getClass().getDeclaredMethod("handleDuplicateCheck", ChemicalSubstance.class);
+        uniquenessCheckMethod.setAccessible(true);
+        List<ValidationMessage> messages = (List<ValidationMessage>) uniquenessCheckMethod.invoke(validator, chemicalSubstance);
         Assertions.assertEquals(1, messages.size());
         Assertions.assertTrue(messages.stream().anyMatch(m->m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.ERROR)));
     }
