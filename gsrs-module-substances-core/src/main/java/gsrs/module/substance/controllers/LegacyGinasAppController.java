@@ -32,6 +32,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Some heavily used API calls in GSRS 2.x did not get moved over to a `api/v1` route
@@ -74,7 +75,9 @@ public class LegacyGinasAppController {
     @Transactional(readOnly = true)
     public List<ValidationMessage> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
         SubstanceEntityService substanceService = StaticContextAccessor.getBean(SubstanceEntityService.class);
-        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DUPLICATE_CHECK()).getValidationMessages();
+        List<ValidationMessage> messages=substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DUPLICATE_CHECK()).getValidationMessages();
+        //remove any "substance is valid" messages because they don't apply here
+        return messages.stream().filter(m->!m.getMessage().equals("Substance is valid")).collect(Collectors.toList());
     }
     
     @PostMapping({"upload", "/ginas/app/upload", "/upload"})

@@ -75,8 +75,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     
     @Override
     public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory c) {
-        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)
-            || ValidatorCategory.CATEGORY_DUPLICATE_CHECK().equals(c)) {
+        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)) {
             return true;
         }else {
             return false;
@@ -116,17 +115,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
         String payload = cs.getStructure().molfile;
         if (payload != null) {
-
-            if( objold==null && cs.uuid==null && cs.names.isEmpty() && cs.references.isEmpty()) {
-                log.trace("Looks like a duplicate check");
-                try {
-                     handleDuplcateCheck(cs.toFullJsonNode()).forEach(callback::addMessage);
-                     return;
-                } catch (Exception e) {
-                    log.error("Error performing duplicate check");
-                    throw new RuntimeException(e);
-                }
-            }
 
             try {
                 ix.ginas.utils.validation.PeptideInterpreter.Protein p = PeptideInterpreter
@@ -221,7 +209,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
             ValidationUtils.validateReference(s,cs.getStructure(), callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
 
-            validateStructureDuplicates(cs, callback);
+            //validateStructureDuplicates(cs, callback);
         } else {
             callback.addMessage(GinasProcessingMessage
                     .ERROR_MESSAGE("Chemical substance must have a valid chemical structure"));
