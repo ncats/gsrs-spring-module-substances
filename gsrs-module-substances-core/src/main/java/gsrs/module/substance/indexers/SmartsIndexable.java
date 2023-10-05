@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class SmartsIndexable {
-
-
-    private String SMARTS;
     private String name;
+    private String SMARTS;
 }
