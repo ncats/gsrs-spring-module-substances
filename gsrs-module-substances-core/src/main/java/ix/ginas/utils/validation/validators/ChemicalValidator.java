@@ -9,7 +9,6 @@ import ix.core.validator.*;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.ChemUtils;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
-import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -34,17 +33,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 	@Autowired
     private ReferenceRepository referenceRepository;
 
-	@Autowired
-    private ChemicalDuplicateFinder chemicalDuplicateFinder;
-
-	@Autowired
-    private EntityLinks entityLinks;
-
-    @Autowired
-    private SubstanceLegacySearchService legacySearchService;
-
-    @Autowired
-    private PlatformTransactionManager transactionManager;
 	private boolean allow0AtomStructures = false;
 
     private boolean allowV3000Molfiles = false;
@@ -229,35 +217,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 //        }
         //TODO noop for now pushed to 2.3.7 until we find out more for GSRS-914
     }
-
-    private void validateStructureDuplicates(
-            ChemicalSubstance cs, ValidatorCallback callback) {
-        if(chemicalDuplicateFinder==null)return;
-        try {
-
-            List<SubstanceReference> sr = chemicalDuplicateFinder.findPossibleDuplicatesFor(cs.asSubstanceReference());
-
-            if (sr != null && !sr.isEmpty()) {
-                
-                //the duplicate check object should handle filtering out ourselves so don't need to check anymore
-
-                GinasProcessingMessage mes;
-                if(sr.size() > 1){
-                    mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has " + sr.size() + " possible duplicates:");
-                }else{
-                    mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate: " + sr.get(0).refuuid);
-                }
-                for (SubstanceReference s : sr) {
-                    mes.addLink(ValidationUtils.createSubstanceLink(s));
-                    
-                }
-                callback.addMessage(mes);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     private void validateChemicalStructure(
             GinasChemicalStructure oldstr, Structure newstr,
