@@ -6,6 +6,7 @@ import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.Role;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.DefHashCalcRequirements;
@@ -92,6 +93,5 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 			}
 		}
 	}
-    
 
 }
