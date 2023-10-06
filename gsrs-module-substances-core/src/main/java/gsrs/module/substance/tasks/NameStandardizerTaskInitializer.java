@@ -239,41 +239,29 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                     tx.setReadOnly(false);
 
                     tx.executeWithoutResult(c-> {
+                        GsrsEntityProcessorListener b =  StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
                         if (disabledHistory && disabledHooks) {
-                            System.out.println("Case 1 both disabled");
+                            // Case 1 both disabled History and Hooks
                             epa.runWithDisabledHistory(()-> {
-                                System.out.println("Before runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
-                                GsrsEntityProcessorListener b =  StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
-                                System.out.println("The processorId is: " + b.getProcessorId());
-                                b.setTempString( Thread.currentThread().getName());
                                 b.runWithDisabledHooks(()->{
-                                    System.out.println("After runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
-                                    System.out.println("The processorId is: " + b.getProcessorId());
+                                    // System.out.println("After runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
+                                    // System.out.println("The processorId is: " + b.getProcessorId());
+                                    // b.setTempString( Thread.currentThread().getName());
                                     saveWork(em, name);
-                                }); // HOOKS
-                            }); // HISTORY
+                                });
+                            });
                         } else if (disabledHistory) {
-                            System.out.println("Case 2 only disabled history");
+                            // Case 2 only disabledHistory
                             epa.runWithDisabledHistory(()-> {
-                                System.out.println("Before runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
-                                GsrsEntityProcessorListener b =  StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
-                                System.out.println("The processorId is: " + b.getProcessorId());
-                                b.setTempString( Thread.currentThread().getName());
                                 saveWork(em, name);
-                            }); // HISTORY
+                            });
                         } else if (disabledHooks) {
-                            System.out.println("Case 3 only disabled hooks");
-                            System.out.println("Before runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
-                            GsrsEntityProcessorListener b =  StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
-                            System.out.println("The processorId is: " + b.getProcessorId());
-                            b.setTempString( Thread.currentThread().getName());
+                            // Case 3 only disabledHooks
                             b.runWithDisabledHooks(()->{
-                                System.out.println("After runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
-                                System.out.println("The processorId is: " + b.getProcessorId());
                                 saveWork(em, name);
                             }); // HOOKS
                         } else {
-                            System.out.println("Case 4 neither disabled");
+                            // Case 4 neither disabled
                             saveWork(em, name);
                         }
                     }); // executeWithoutResult
@@ -282,7 +270,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                 }
             }
             l.message(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
-            log.info(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
+            log.trace(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
         });
     }
 
