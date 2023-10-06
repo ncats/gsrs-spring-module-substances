@@ -166,12 +166,12 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         // It will use supplied path if outputPath is specified in the task config.
         // On single Tomcat, it may be best to use a full path for the supplied path.
         return FilePathParserUtils.getFileParserBuilder()
-        .suppliedFilePath(outputPath)
-        .defaultFilePath("reports/" + name + "-%DATE% %TIME%.txt")
-        .dateFormatter(formatter)
-        .timeFormatter(formatterTime)
-        .build()
-        .getFile();
+            .suppliedFilePath(outputPath)
+            .defaultFilePath("reports/" + name + "-%DATE% %TIME%.txt")
+            .dateFormatter(formatter)
+            .timeFormatter(formatterTime)
+            .build()
+            .getFile();
     }
 
     private boolean standardizeName(Name name, PrintStream printStream){
@@ -293,7 +293,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
     private PrintStream makePrintStream(File writeFile) throws IOException {
         return new PrintStream(
-        new BufferedOutputStream(new FileOutputStream(writeFile)),
-        false, STANDARD_FILE_ENCODING);
+            new BufferedOutputStream(new FileOutputStream(writeFile)),
+            false, STANDARD_FILE_ENCODING);
     }
 }
