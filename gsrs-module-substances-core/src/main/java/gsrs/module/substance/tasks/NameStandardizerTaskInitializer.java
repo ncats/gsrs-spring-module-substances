@@ -246,7 +246,6 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                                 b.runWithDisabledHooks(()->{
                                     // System.out.println("After runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
                                     // System.out.println("The processorId is: " + b.getProcessorId());
-                                    // b.setTempString( Thread.currentThread().getName());
                                     saveWork(em, name);
                                 });
                             });
