@@ -74,7 +74,7 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
                         Optional<int[]> matches= searcher.search(chemical.toChemical());
                         if( matches.isPresent() && matches.get().length>0) {
                             log.trace("chemical matches smarts with name {}", i.getName());
-                            consumer.accept(IndexableValue.simpleFacetStringValue (FACET_NAME_PREFIX+ i.getName(), "true"));
+                            //consumer.accept(IndexableValue.simpleFacetStringValue (FACET_NAME_PREFIX+ i.getName(), "true"));
                             consumer.accept(IndexableValue.simpleFacetStringValue(FACET_NAME_FULL, i.getName()));
                             break;
                         } else {
@@ -83,7 +83,6 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
                         log.trace("after indexing");
                     }
                 }
-
             });
         }
     }
