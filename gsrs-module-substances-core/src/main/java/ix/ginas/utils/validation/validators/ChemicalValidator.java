@@ -105,8 +105,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                 if (p != null && !p.getSubunits().isEmpty()
                         && p.getSubunits().get(0).getSequence().length() > 2) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:["
-                                    + p.toString() + "]");
+                            .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:[%s]", p.toString());
                     callback.addMessage(mes);
                 }
             } catch (Exception e) {
@@ -186,7 +185,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 //            ChemUtils.checkChargeBalance(cs.structure, gpm);
             if (cs.getStructure().charge != 0) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE("Structure is not charged balanced, net charge of: " + cs.getStructure().charge);
+                        .WARNING_MESSAGE("Structure is not charged balanced, net charge of: %s", cs.getStructure().charge);
                 callback.addMessage(mes);
             }
 

@@ -46,7 +46,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		List<FragmentVocabularyTerm> invalidUpdateTerms =newCV.getTerms().stream()
 				.filter(term-> term instanceof FragmentVocabularyTerm)
 				.map(term->(FragmentVocabularyTerm)term)
-				.filter(term->!Optional.ofNullable(term.getFragmentStructure()).isPresent() 
+				.filter(term->!Optional.ofNullable(term.getFragmentStructure()).isPresent()
 						|| !Optional.ofNullable(term.getDisplay()).isPresent()
 						|| !Optional.ofNullable(term.getValue()).isPresent())
 				.collect(Collectors.toList());
@@ -60,48 +60,48 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 		Map<String, List<String>> hashLookup = newCV.getTerms().stream()
 		.filter(term-> term instanceof FragmentVocabularyTerm)
-		.map(key->(FragmentVocabularyTerm)key)		
+		.map(key->(FragmentVocabularyTerm)key)
 		.map(f->Tuple.of(getHash(f), f.getValue()))
 		.filter(t->t.k().isPresent())
 		.map(Tuple.kmap(k->k.get()))
 		.collect(Tuple.toGroupedMap());
-				
-		List<FragmentVocabularyTerm> addedOrUpdatedTerms = new ArrayList<FragmentVocabularyTerm>(); 
+
+		List<FragmentVocabularyTerm> addedOrUpdatedTerms = new ArrayList<FragmentVocabularyTerm>();
 		addedOrUpdatedTerms.addAll(changes.addedTerms);
-		addedOrUpdatedTerms.addAll(changes.updatedTerms);		
-		addedOrUpdatedTerms.forEach(term -> chemicalValidation(term, hashLookup, callback));		
+		addedOrUpdatedTerms.addAll(changes.updatedTerms);
+		addedOrUpdatedTerms.forEach(term -> chemicalValidation(term, hashLookup, callback));
 	}
 	
 		
 	private Optional<String> getHash(FragmentVocabularyTerm term) {
 		try {
-			String inputStructure = term.getFragmentStructure().split(" ")[0];			
-			Chemical chem = Chemical.parse(inputStructure);			
-			chem = Chem.RemoveQueryAtomsForPseudoInChI(chem);			
-			return Optional.of(chem.toInchi().getKey());			
-		} catch (IOException e) {			
+			String inputStructure = term.getFragmentStructure().split(" ")[0];
+			Chemical chem = Chemical.parse(inputStructure);
+			chem = Chem.RemoveQueryAtomsForPseudoInChI(chem);
+			return Optional.of(chem.toInchi().getKey());
+		} catch (IOException e) {
 			e.printStackTrace();
 			return Optional.empty();
-		}		
-	}	
-		
-	private void chemicalValidation(FragmentVocabularyTerm term, Map<String,List<String>> lookup, ValidatorCallback callback) {		
+		}
+	}
+
+	private void chemicalValidation(FragmentVocabularyTerm term, Map<String,List<String>> lookup, ValidatorCallback callback) {
 		
 		String fragmentStructure = term.getFragmentStructure().trim();
 		Chemical chem;
 		try {
-			chem = Chemical.parse(fragmentStructure);				
-		}catch(IOException ex) {	
+			chem = Chemical.parse(fragmentStructure);
+		}catch(IOException ex) {
 			try {
 				chem = Chemical.parse(fragmentStructure.split(" ")[0]);
 				if (!Optional.ofNullable(chem).isPresent()) {
 					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-							"Illegal chemical structure format: " + term.getFragmentStructure()));
+							"Illegal chemical structure format: %s", term.getFragmentStructure()));
 					return;
 				}
 			}catch(IOException IOEx) {
 				callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-						"Illegal chemical structure format: " + term.getFragmentStructure()));
+						"Illegal chemical structure format: %s", term.getFragmentStructure()));
 				return;
 			}
 		}
@@ -111,30 +111,30 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 			smiles = chem.toSmiles();
 			// todo: may need to add warning with applicable change
 			if(!Optional.ofNullable(term.getSimplifiedStructure()).isPresent())
-				term.setSimplifiedStructure(smiles);			    
+				term.setSimplifiedStructure(smiles);
 		} catch (IOException e) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-					"Illegal chemical structure format: " + term.getFragmentStructure()));
+					"Illegal chemical structure format: %s", term.getFragmentStructure()));
 			return;
-		}			
+		}
 		
 		Optional<String> hash = getHash(term);
 		if(!hash.isPresent()) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "Illegal chemical structure format getting hash: " + term.getFragmentStructure()));
+                    "Illegal chemical structure format getting hash: %s", term.getFragmentStructure()));
 		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "This fragment structure appears to have duplicates: " + term.getFragmentStructure()));				
-		}			
+                    "This fragment structure appears to have duplicates: %s", term.getFragmentStructure()));
+		}
 	}	
 	
-	private FragmentChanges getAddedUpdatedDeletedTerms(ControlledVocabulary newCV, ControlledVocabulary oldCV) {	
+	private FragmentChanges getAddedUpdatedDeletedTerms(ControlledVocabulary newCV, ControlledVocabulary oldCV) {
 		
 		FragmentChanges fragmentChanges = new FragmentChanges();
-					
+
 		List<FragmentVocabularyTerm> termsAfterUpdate =newCV.getTerms().stream()
 				.filter(term->term instanceof FragmentVocabularyTerm)
-				.map(term->(FragmentVocabularyTerm)term)			
+				.map(term->(FragmentVocabularyTerm)term)
 				.collect(Collectors.toList());
 		
 		Optional <ControlledVocabulary> oldCVOptional = Optional.ofNullable(oldCV);
@@ -145,9 +145,9 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 		List<FragmentVocabularyTerm> termsBeforeUpdate = oldCV.getTerms().stream()
 				.filter(term-> term instanceof FragmentVocabularyTerm)
-				.map(term->(FragmentVocabularyTerm)term)				
+				.map(term->(FragmentVocabularyTerm)term)
 				.collect(Collectors.toList());
-							
+
 		termsAfterUpdate.stream().forEach(term -> {
 				Long id = term.getId();
 				FragmentVocabularyTerm originalTerm = termsBeforeUpdate.stream()
@@ -155,9 +155,9 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 					  .findAny()
 					  .orElse(null);
 				if(!Optional.ofNullable(originalTerm).isPresent()) {
-					fragmentChanges.addedTerms.add(term);						
+					fragmentChanges.addedTerms.add(term);
 				}else if(!sameVocabularyTerm(term, originalTerm)) {
-					fragmentChanges.updatedTerms.add(term);					
+					fragmentChanges.updatedTerms.add(term);
 				}});
 		
 		fragmentChanges.deletedTerms = termsBeforeUpdate.stream().filter(term -> {
@@ -170,18 +170,18 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 				return true;
 			else
 				return false;
-			}).collect(Collectors.toList());	
+			}).collect(Collectors.toList());
 		
 		return fragmentChanges;
 	}
 	
 	private boolean sameVocabularyTerm(FragmentVocabularyTerm term1, FragmentVocabularyTerm term2) {
 		
-		if( term1.getValue().equalsIgnoreCase(term2.getValue()) 
+		if( term1.getValue().equalsIgnoreCase(term2.getValue())
 			&& term1.getDisplay().equalsIgnoreCase(term2.getDisplay())
 			&& term1.getFragmentStructure().equalsIgnoreCase(term2.getFragmentStructure()))
 			return true;
 		
-		return false;		
+		return false;
 	}
 }	

@@ -124,7 +124,7 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
                 if (shouldAddExplicitTagsExtractedFromNames) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             // Note changing this message may have an impact on tests.
-                            .WARNING_MESSAGE(String.format(NAME_TAGS_WILL_BE_ADDED, TagUtilities.sortTagsHashSet(inNamesMissingFromExplicitTags).toString()))
+                            .WARNING_MESSAGE(NAME_TAGS_WILL_BE_ADDED, TagUtilities.sortTagsHashSet(inNamesMissingFromExplicitTags).toString())
                             .appliableChange(true);
                     callback.addMessage(mes, () -> {
                         for(String tagTerm: inNamesMissingFromExplicitTags) {
@@ -134,7 +134,7 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
                 } else {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             // Note changing this message may have an impact on tests.
-                            .WARNING_MESSAGE(String.format(NAME_TAGS_WILL_NOT_BE_AUTOMATICALLY_ADDED, TagUtilities.sortTagsHashSet(inNamesMissingFromExplicitTags).toString()));
+                            .WARNING_MESSAGE(NAME_TAGS_WILL_NOT_BE_AUTOMATICALLY_ADDED, TagUtilities.sortTagsHashSet(inNamesMissingFromExplicitTags).toString());
                     callback.addMessage(mes);
                 }
             }
@@ -151,7 +151,7 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
                     // log.info("Tags Validator WILL auto remove tags when not present in names.");
                     GinasProcessingMessage mes = GinasProcessingMessage
                             // Note changing this message may have an impact on tests.
-                            .WARNING_MESSAGE(String.format(EXPLICIT_TAGS_WILL_BE_REMOVED, TagUtilities.sortTagsHashSet(inExplicitTagsMissingFromNames).toString()))
+                            .WARNING_MESSAGE(EXPLICIT_TAGS_WILL_BE_REMOVED, TagUtilities.sortTagsHashSet(inExplicitTagsMissingFromNames).toString())
                             .appliableChange(true);
                     callback.addMessage(mes, () -> {
                         for (String tagTerm : inExplicitTagsMissingFromNames) {
@@ -162,7 +162,7 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
                     // log.info("Tags Validator WILL NOT auto remove tags when present in names.");
                     GinasProcessingMessage mes = GinasProcessingMessage
                             // Note changing this message may have an impact on tests.
-                            .WARNING_MESSAGE(String.format(EXPLICIT_TAGS_WILL_NOT_BE_AUTOMATICALLY_REMOVED, TagUtilities.sortTagsHashSet(inExplicitTagsMissingFromNames).toString()));
+                            .WARNING_MESSAGE(EXPLICIT_TAGS_WILL_NOT_BE_AUTOMATICALLY_REMOVED, TagUtilities.sortTagsHashSet(inExplicitTagsMissingFromNames).toString());
                     callback.addMessage(mes);
                 }
             }
