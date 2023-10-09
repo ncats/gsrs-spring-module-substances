@@ -56,6 +56,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private String description;
     private boolean disabledHistory = false;
     private boolean disabledHooks = false;
+    private boolean reportAutoflush = false;
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -110,8 +111,13 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         File pfile = abfile.getParentFile();
 
         pfile.mkdirs();
+
+        boolean canWrite = abfile.canWrite();
+        System.out.println(String.format("The Name standardizer task wants to write to the file: %s ...  This file is writeable: %s",
+        abfile.getAbsolutePath(), canWrite));
+
         log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.stdNameStandardizer.getClass().getName(),
-                this.forceRecalculationOfAll);
+            this.forceRecalculationOfAll);
         l.message("Initializing standardization");
         log.trace("Initializing standardization");
 
@@ -293,6 +299,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private PrintStream makePrintStream(File writeFile) throws IOException {
         return new PrintStream(
             new BufferedOutputStream(new FileOutputStream(writeFile)),
-            false, STANDARD_FILE_ENCODING);
+            reportAutoflush, STANDARD_FILE_ENCODING
+        );
     }
 }
+
