@@ -8,8 +8,10 @@ import java.io.PrintStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.EntityPersistAdapter;
@@ -141,12 +143,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
             Runnable mainRunnable = (Runnable) () -> {
                 try {
-                    if(threadCount!=null && threadCount>0) {
-                        ForkJoinPool pool = new ForkJoinPool(threadCount);
-                        pool.submit(() -> processNames(l, out)).get();
-                    } else {
-                        processNames(l, out);
-                    }
+                    processNames(l, out);
                 } catch (Exception ex) {
                     l.message("Error standardizing. error: " + ex.getMessage());
                 }
@@ -227,19 +224,22 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         return nameChanged;
     }
 
-    private void processNames(SchedulerPlugin.TaskListener l, PrintStream printStream){
+    private void processNames(SchedulerPlugin.TaskListener l, PrintStream printStream) {
         log.trace("starting in processNames");
-        List<String> nameIds= nameRepository.getAllUuids();
+        List<String> nameIds = nameRepository.getAllUuids();
         log.trace("total names: {}", nameIds.size());
+        // Why does this appear more than once when not included in fork join closure?
         log.info(String.format("Running NameStandardizer Task with disabledHistory=%s, disabledHooks=%s", disabledHistory, disabledHooks));
         log.info(String.format("Running NameStandardizer Task with threadCounty=%s", threadCount));
 
         EntityManager em = StaticContextAccessor.getEntityManagerFor(Name.class);
         EntityPersistAdapter epa = StaticContextAccessor.getBean(EntityPersistAdapter.class);
-        EntityUtils.EntityInfo<Name> nei= EntityUtils.getEntityInfoFor(Name.class);
+        EntityUtils.EntityInfo<Name> nei = EntityUtils.getEntityInfoFor(Name.class);
         AtomicInteger soFar = new AtomicInteger(0);
-        nameIds.parallelStream().forEach(nameId -> {
 
+
+        // A bit awkward because of the way this was previously written
+        Consumer<String> consumer = (nameId) -> {
             soFar.incrementAndGet();
             log.trace("going to fetch name with ID {}", nameId);
             /*
@@ -294,7 +294,30 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             }
             l.message(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
             log.trace(String.format("Processed %d of %d names", soFar.get(), nameIds.size()));
-        });
+        };
+
+        // Now execute what is in the above lambda
+        if(threadCount!=null && threadCount>0) {
+            ForkJoinPool pool = new ForkJoinPool(threadCount);
+            try {
+                pool.submit(() -> nameIds.parallelStream().forEach(consumer)).get();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
+            } finally {
+                if (pool != null) {
+                    pool.shutdown();
+                }
+            }
+        } else {
+            // is try catch needed?
+            try {
+                nameIds.parallelStream().forEach(consumer);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     private void saveWork(EntityManager em, Name name) {
