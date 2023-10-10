@@ -232,6 +232,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         List<String> nameIds= nameRepository.getAllUuids();
         log.trace("total names: {}", nameIds.size());
         log.info(String.format("Running NameStandardizer Task with disabledHistory=%s, disabledHooks=%s", disabledHistory, disabledHooks));
+        log.info(String.format("Running NameStandardizer Task with threadCounty=%s", threadCount));
+
         EntityManager em = StaticContextAccessor.getEntityManagerFor(Name.class);
         EntityPersistAdapter epa = StaticContextAccessor.getBean(EntityPersistAdapter.class);
         EntityUtils.EntityInfo<Name> nei= EntityUtils.getEntityInfoFor(Name.class);
