@@ -53,16 +53,15 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
 //                    Substance comp = SubstanceFactory.getFullSubstance(c.substance);
                     if (!substanceRepository.exists(c.substance)) {
                         callback.addMessage(GinasProcessingMessage
-                                .WARNING_MESSAGE("Mixture substance references \""
-                                        + c.substance.getName()
-                                        + "\" which is not yet registered"));
+                                .WARNING_MESSAGE("Mixture substance references \"%s\" which is not yet registered",
+                                        c.substance.getName()));
                     }
                     //add returns false if it's already present so we don't need to do the contains() check before add
                     if (!mixtureIDs.add(c.substance.refuuid)) {
 
                         callback.addMessage(GinasProcessingMessage
-                                .ERROR_MESSAGE("Cannot reference the same mixture substance twice in a mixture:\""
-                                        + c.substance.refPname + "\""));
+                                .ERROR_MESSAGE("Cannot reference the same mixture substance twice in a mixture:\"%s\"",
+                                        c.substance.refPname));
                     }
                 }
 

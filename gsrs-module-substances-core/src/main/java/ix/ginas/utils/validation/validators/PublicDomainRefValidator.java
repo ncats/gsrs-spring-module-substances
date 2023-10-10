@@ -27,15 +27,15 @@ public class PublicDomainRefValidator implements ValidatorPlugin<Substance> {
                     .isPresent();
             if (!allowed) {
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Public records must have a PUBLIC DOMAIN reference with a '"
-                                    + Reference.PUBLIC_DOMAIN_REF + "' tag"));
+                            .ERROR_MESSAGE("Public records must have a PUBLIC DOMAIN reference with a '%s' tag",
+                                    Reference.PUBLIC_DOMAIN_REF));
 
             }
             objnew.getDisplayName().ifPresent(dn->{
                 if(!dn.isPublic()){
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Display name \"" + dn.getName() + "\""
-                                    + " must be public if the full record is public."));
+                            .ERROR_MESSAGE("Display name \"%s\" must be public if the full record is public.",
+                                    dn.getName()));
                 }
             });
         }

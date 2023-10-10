@@ -29,8 +29,7 @@ public class UnknownSubstanceClassValidator extends AbstractValidatorPlugin<Subs
                 break;
             default:
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE("Substance class \"" + s.substanceClass
-                                + "\" is not valid"));
+                        .ERROR_MESSAGE("Substance class \"%s\" is not valid", s.substanceClass));
                 break;
         }
     }

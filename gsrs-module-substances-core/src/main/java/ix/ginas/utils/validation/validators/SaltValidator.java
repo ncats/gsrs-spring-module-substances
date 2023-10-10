@@ -93,14 +93,14 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
 
             if (!smilesWithoutMatch.isEmpty()) {
                 smilesWithoutMatch.forEach(s -> {
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Each fragment should be present as a separate record in the database. Please register: " + s));
+                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Each fragment should be present as a separate record in the database. Please register: %s", s));
                 });
             }
             if (!smilesWithPartialMatch.isEmpty()) {
                 smilesWithPartialMatch.forEach(s -> {
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("This fragment is present as a separate record in the database but in a different form. Please register: "
-                            + s + " as an individual substance"));
-
+                    callback.addMessage(
+                        GinasProcessingMessage.WARNING_MESSAGE(
+                            "This fragment is present as a separate record in the database but in a different form. Please register: %s as an individual substance", s));
                 });
             }
 

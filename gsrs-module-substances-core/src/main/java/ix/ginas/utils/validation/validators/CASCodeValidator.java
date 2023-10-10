@@ -27,8 +27,7 @@ public class CASCodeValidator extends AbstractValidatorPlugin<Substance> {
             if ("CAS".equals(cd.codeSystem)) {
                 if (performFormatCheck && !CASUtilities.isValidCas(cd.code)) {
                     GinasProcessingMessage mesWarn = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    String.format("CAS Number %s does not have the expected format. (Verify the check digit.)", cd.code));
+                            .WARNING_MESSAGE("CAS Number %s does not have the expected format. (Verify the check digit.)", cd.code);
 
                     callback.addMessage(mesWarn);
                 }
@@ -44,8 +43,7 @@ public class CASCodeValidator extends AbstractValidatorPlugin<Substance> {
                     }
                     if (!found) {
                         GinasProcessingMessage mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Must specify STN reference for CAS");
+                                .WARNING_MESSAGE("Must specify STN reference for CAS");
 
                         callback.addMessage(mes, () -> {
                             Reference newRef = new Reference();
