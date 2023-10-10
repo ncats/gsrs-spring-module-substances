@@ -120,11 +120,11 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         File abfile = writeFile.getAbsoluteFile();
         File pfile = abfile.getParentFile();
 
-        pfile.mkdirs();
+        boolean fileCreated = pfile.mkdirs();
 
         boolean canWrite = abfile.canWrite();
-        System.out.println(String.format("The Name standardizer task wants to write to the file: %s ...  This file is writeable: %s",
-        abfile.getAbsolutePath(), canWrite));
+
+        log.info(String.format("The Name standardizer task wants to write to the file: %s ...  This file is writeable: %s", abfile.getAbsolutePath(), canWrite));
 
         log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.stdNameStandardizer.getClass().getName(),
             this.forceRecalculationOfAll);
@@ -141,7 +141,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         try (PrintStream out = makePrintStream(writeFile)){
             out.print("Existing standardized name\tNew standardized name\tMessage\n");
 
-            Runnable mainRunnable = (Runnable) () -> {
+            Runnable mainRunnable = () -> {
                 try {
                     processNames(l, out);
                 } catch (Exception ex) {
@@ -268,8 +268,6 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                             // Case 1 both disabled History and Hooks
                             epa.runWithDisabledHistory(() -> {
                                 b.runWithDisabledHooks(() -> {
-                                    // System.out.println("After runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
-                                    // System.out.println("The processorId is: " + b.getProcessorId());
                                     saveWork(em, name);
                                 });
                             });
@@ -301,10 +299,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             ForkJoinPool pool = new ForkJoinPool(threadCount);
             try {
                 pool.submit(() -> nameIds.parallelStream().forEach(consumer)).get();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
+            } catch (InterruptedException|ExecutionException e) {
+                log.error("Error executing parallel stream with fork pool. " + e.getMessage());
             } finally {
                 if (pool != null) {
                     pool.shutdown();
@@ -315,6 +311,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             try {
                 nameIds.parallelStream().forEach(consumer);
             } catch (Exception e) {
+                log.error("Error executing parallel stream without fork pool. " + e.getMessage());
                 throw new RuntimeException(e);
             }
         }
