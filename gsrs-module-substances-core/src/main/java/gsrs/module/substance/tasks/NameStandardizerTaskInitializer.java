@@ -8,6 +8,7 @@ import java.io.PrintStream;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import gov.nih.ncats.common.util.TimeUtil;
@@ -57,6 +58,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private boolean disabledHistory = false;
     private boolean disabledHooks = false;
     private boolean reportAutoflush = false;
+    private Integer threadCount = 3;
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -90,6 +92,11 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         }
     }
 
+    @JsonProperty("threadCount")
+    public void setThreadCount(Integer count) {
+        threadCount=count;
+    }
+
     private void initIfNeeded() {
         try {
             if(stdNameStandardizer==null) {
@@ -101,6 +108,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             log.warn("trouble instantiating name standardizer", e);
         }
     }
+
 
     @Override
     public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
@@ -130,13 +138,20 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
         try (PrintStream out = makePrintStream(writeFile)){
             out.print("Existing standardized name\tNew standardized name\tMessage\n");
-            adminService.runAs(adminAuth, (Runnable) () -> {
+
+            Runnable mainRunnable = (Runnable) () -> {
                 try {
-                    processNames(l, out);
+                    if(threadCount!=null && threadCount>0) {
+                        ForkJoinPool pool = new ForkJoinPool(threadCount);
+                        pool.submit(() -> processNames(l, out)).get();
+                    } else {
+                        processNames(l, out);
+                    }
                 } catch (Exception ex) {
                     l.message("Error standardizing. error: " + ex.getMessage());
                 }
-            });
+            };
+            adminService.runAs(adminAuth, mainRunnable);
         } catch (Exception ee) {
             log.error("Error generating standard names: ", ee);
             l.message("ERROR:" + ee.getMessage());
@@ -221,7 +236,8 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         EntityPersistAdapter epa = StaticContextAccessor.getBean(EntityPersistAdapter.class);
         EntityUtils.EntityInfo<Name> nei= EntityUtils.getEntityInfoFor(Name.class);
         AtomicInteger soFar = new AtomicInteger(0);
-        nameIds.parallelStream().forEach(nameId->{
+        nameIds.parallelStream().forEach(nameId -> {
+
             soFar.incrementAndGet();
             log.trace("going to fetch name with ID {}", nameId);
             /*
@@ -231,25 +247,25 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
             */
             EntityUtils.Key key = EntityUtils.Key.ofStringId(nei, nameId);
             Optional<Name> nameOpt = EntityFetcher.of(key).getIfPossible().map(n -> (Name) n);
-            if( !nameOpt.isPresent()){
+            if (!nameOpt.isPresent()) {
                 log.info("No name found with ID {}", nameId);
                 return;
             }
             Name name = nameOpt.get();
             log.trace("processing name with ID {}", name.uuid.toString());
             // If this method (standardizeName) ends up mutating the name, then we do the following steps
-            if(standardizeName(name, printStream) ) {
+            if (standardizeName(name, printStream)) {
                 try {
                     log.trace("resaving name {}", name.getName());
                     TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
                     tx.setReadOnly(false);
 
-                    tx.executeWithoutResult(c-> {
-                        GsrsEntityProcessorListener b =  StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
+                    tx.executeWithoutResult(c -> {
+                        GsrsEntityProcessorListener b = StaticContextAccessor.getBean(GsrsEntityProcessorListener.class);
                         if (disabledHistory && disabledHooks) {
                             // Case 1 both disabled History and Hooks
-                            epa.runWithDisabledHistory(()-> {
-                                b.runWithDisabledHooks(()->{
+                            epa.runWithDisabledHistory(() -> {
+                                b.runWithDisabledHooks(() -> {
                                     // System.out.println("After runWithDisabledHooks, the Thread name is " + Thread.currentThread().getName());
                                     // System.out.println("The processorId is: " + b.getProcessorId());
                                     saveWork(em, name);
@@ -257,12 +273,12 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
                             });
                         } else if (disabledHistory) {
                             // Case 2 only disabledHistory
-                            epa.runWithDisabledHistory(()-> {
+                            epa.runWithDisabledHistory(() -> {
                                 saveWork(em, name);
                             });
                         } else if (disabledHooks) {
                             // Case 3 only disabledHooks
-                            b.runWithDisabledHooks(()->{
+                            b.runWithDisabledHooks(() -> {
                                 saveWork(em, name);
                             }); // HOOKS
                         } else {
