@@ -58,7 +58,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
     private boolean disabledHistory = false;
     private boolean disabledHooks = false;
     private boolean reportAutoflush = false;
-    private Integer threadCount = 3;
+    private Integer threadCount = -1;
 
     @Autowired
     private SubstanceRepository substanceRepository;
