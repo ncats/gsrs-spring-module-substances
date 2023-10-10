@@ -174,13 +174,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         public static SimpleStandardizer ADD_HYDROGENS() {
             return (c)->{
                 // TODO:
-                // In CDK, this doesn't generate coordinates for the Hs, meaning you have to have an additional
-                // clean call. Also, this method doesn't do anything for query molecules in CDK.
-                //
-                // Both of the above problems will need to be fixed for this to work well.
+                // In CDK, this doesn't generate coordinates for query molecules.
+		// We will need to fix this eventually.
                 //
 
                 c.makeHydrogensExplicit();
+
+		// TODO this should probably only happen when needed, but
+		// this will fix the CDK issue of 0,0,0 Hs
+		ChemAligner.align2DClean(c);
+		    
                 return c;
             };
         }
