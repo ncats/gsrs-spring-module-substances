@@ -124,7 +124,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
         boolean canWrite = abfile.canWrite();
 
-        log.info(String.format("The Name standardizer task wants to write to the file: %s ...  This file is writeable: %s", abfile.getAbsolutePath(), canWrite));
+        // log.info(String.format("The Name standardizer task wants to write to the file: %s ...  This file is writeable: %s", abfile.getAbsolutePath(), canWrite));
 
         log.trace("Going to instantiate standardizer with name {}; forceRecalculationOfAll {}", this.stdNameStandardizer.getClass().getName(),
             this.forceRecalculationOfAll);
