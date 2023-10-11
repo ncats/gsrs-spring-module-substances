@@ -18,9 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Slf4j
 public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substance> {
@@ -60,6 +58,8 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
         if (structure.toChemical().getAtomCount() == 0) {
             return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure with at least one atom"));
         }
+
+        Optional<UUID> substanceId = chemicalSubstance.getUuid() !=null ? Optional.of(chemicalSubstance.getUuid()) : Optional.empty();
 
         int defaultTop = 10;
         int skipZero = 0;
@@ -110,10 +110,12 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
         assert results!=null;
         results.forEach(r -> {
             Substance duplicate = (Substance) r;
-            GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(
-                    "Record %s appears to be a duplicate", duplicate.getName());
-            message.addLink(ValidationUtils.createSubstanceLink(duplicate.asSubstanceReference()));
-            messages.add(message);
+            if(!substanceId.isPresent() || !substanceId.get().equals(duplicate.getUuid())) {
+                GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(
+                        "Record %s appears to be a duplicate", duplicate.getName());
+                message.addLink(ValidationUtils.createSubstanceLink(duplicate.asSubstanceReference()));
+                messages.add(message);
+            }
         });
         if (messages.isEmpty()) {
             messages.add(GinasProcessingMessage.SUCCESS_MESSAGE("Structure is unique"));
