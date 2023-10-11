@@ -14,9 +14,8 @@ import java.util.function.Consumer;
 @Slf4j
 public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
-    private static final String FACET_NAME_PREFIX ="Structure_Facet_";
-
     private static final String FACET_NAME_FULL ="StructureFacet";
+
     private final String DEFAULT_CONFIG_DATA = "nitro_[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]€nitroso_[NX2]=[OX1]";
 
     private Map<String, LinkedHashMap<Integer, String>> namedSmarts;
@@ -59,36 +58,48 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
+        if( !(substance instanceof ChemicalSubstance)) {
+            return;
+        }
+
         if(!setupComplete) {
             completeSetup();
             setupComplete=true;
         }
-        if( substance instanceof ChemicalSubstance) {
             ChemicalSubstance chemical = (ChemicalSubstance) substance;
             indexables.forEach(i->{
                 log.trace("Looking for chemical matches using smarts with name {}", i.getName());
-                for(String smarts : i.getSMARTSList()) {
+                boolean foundMatchWithCurrentIdea =false;
+                for(int item = 0; item< i.getSMARTSList().size() && !foundMatchWithCurrentIdea; item++) {
+                    String smarts = i.getSMARTSList().get(item);
                     Optional<MolSearcher> optSearcher= MolSearcherFactory.create(smarts);
                     if( optSearcher.isPresent()) {
                         MolSearcher searcher= optSearcher.get();
                         Optional<int[]> matches= searcher.search(chemical.toChemical());
                         if( matches.isPresent() && matches.get().length>0) {
-                            log.trace("chemical matches smarts with name {}", i.getName());
-                            //consumer.accept(IndexableValue.simpleFacetStringValue (FACET_NAME_PREFIX+ i.getName(), "true"));
-                            consumer.accept(IndexableValue.simpleFacetStringValue(FACET_NAME_FULL, i.getName()));
-                            break;
-                        } else {
-                            consumer.accept(IndexableValue.simpleFacetStringValue(FACET_NAME_PREFIX+ i.getName(), "false"));
+                            foundMatchWithCurrentIdea=true;
                         }
-                        log.trace("after indexing");
                     }
                 }
+                if( foundMatchWithCurrentIdea) {
+                    log.trace("chemical matches smarts with name {}", i.getName());
+                    consumer.accept(IndexableValue.simpleFacetStringValue(FACET_NAME_FULL, i.getName()));
+
+                }
+                log.trace("after indexing");
             });
-        }
     }
 
     public void setNamedSmarts(Map<String, LinkedHashMap<Integer, String>> namedSmarts) {
         this.namedSmarts = namedSmarts;
+    }
+
+    public List<SmartsIndexable> getIndexables() {
+        return indexables;
+    }
+
+    public void setIndexables(List<SmartsIndexable> indexables) {
+        this.indexables = indexables;
     }
 
 }
