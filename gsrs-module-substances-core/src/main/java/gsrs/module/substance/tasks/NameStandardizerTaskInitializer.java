@@ -185,7 +185,7 @@ public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
         // On single Tomcat, it may be best to use a full path for the supplied path.
         return FilePathParserUtils.getFileParserBuilder()
             .suppliedFilePath(outputPath)
-            .defaultFilePath("reports/" + name + "-%DATE% %TIME%.txt")
+            .defaultFilePath("reports/" + name + "-%DATE%@%TIME%.txt")
             .dateFormatter(formatter)
             .timeFormatter(formatterTime)
             .build()
