@@ -112,7 +112,7 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
             Substance duplicate = (Substance) r;
             if(!substanceId.isPresent() || !substanceId.get().equals(duplicate.getUuid())) {
                 GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(
-                        "Record %s appears to be a duplicate", duplicate.getName());
+                        "Record %s is a potential duplicate", duplicate.getName());
                 message.addLink(ValidationUtils.createSubstanceLink(duplicate.asSubstanceReference()));
                 messages.add(message);
             }
