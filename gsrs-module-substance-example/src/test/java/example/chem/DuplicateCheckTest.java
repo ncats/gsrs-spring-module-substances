@@ -82,7 +82,7 @@ class DuplicateCheckTest extends AbstractSubstanceJpaFullStackEntityTest {
         uniquenessCheckMethod.setAccessible(true);
         List<ValidationMessage> messages = (List<ValidationMessage>) uniquenessCheckMethod.invoke(validator, chemicalSubstance);
         Assertions.assertEquals(1, messages.size());
-        Assertions.assertTrue(messages.stream().anyMatch(m->m.getMessage().contains("appears to be a duplicate")));
+        Assertions.assertTrue(messages.stream().anyMatch(m->m.getMessage().contains("is a potential duplicate")));
     }
 
     @Test
@@ -115,6 +115,44 @@ class DuplicateCheckTest extends AbstractSubstanceJpaFullStackEntityTest {
         List<ValidationMessage> messages = (List<ValidationMessage>) uniquenessCheckMethod.invoke(validator, chemicalSubstance);
         Assertions.assertEquals(1, messages.size());
         Assertions.assertTrue(messages.stream().anyMatch(m->m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.ERROR)));
+    }
+
+    @Test
+    void testFindDuplicatesForSodium() throws Exception {
+        String molfile = "\\n  ACCLDraw10162318502D\\n\\n  1  0  0  0  0  0  0  0  0  0999 V2000\\n   12.8125  -10.5938    0.0000 Na  0  3  0  0  0  0  0  0  0  0  0  0\\nM  CHG  1   1   1\\nM  END";
+        String smiles = "[Na+]";
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        Structure structure = structureProcessor.instrument(smiles);
+        GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(structure);
+        builder.setStructure(ginasChemicalStructure);
+        builder.addName("sodium");
+        ChemicalSubstance chemicalSubstance = builder.build();
+        ChemicalUniquenessValidator validator = new ChemicalUniquenessValidator();
+        AutowireHelper.getInstance().autowireAndProxy(validator);
+        Method uniquenessCheckMethod = validator.getClass().getDeclaredMethod("handleDuplicateCheck", ChemicalSubstance.class);
+        uniquenessCheckMethod.setAccessible(true);
+        validator.setSearchMoietiesAlongWithStructure(true);
+        List<ValidationMessage> messages = (List<ValidationMessage>) uniquenessCheckMethod.invoke(validator, chemicalSubstance);
+        Assertions.assertEquals(3, messages.size());
+    }
+
+    @Test
+    void testFindDuplicatesForSodiumNot() throws Exception {
+        String molfile = "\\n  ACCLDraw10162315002D\\n\\n  1  0  0  0  0  0  0  0  0  0999 V2000\\n   12.8125  -10.5938    0.0000 Na  0  0  0  0  0  0  0  0  0  0  0  0\\nM  END";
+        String smiles = "[Na+]";
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        Structure structure = structureProcessor.instrument(smiles);
+        GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(structure);
+        builder.setStructure(ginasChemicalStructure);
+        builder.addName("sodium");
+        ChemicalSubstance chemicalSubstance = builder.build();
+        ChemicalUniquenessValidator validator = new ChemicalUniquenessValidator();
+        AutowireHelper.getInstance().autowireAndProxy(validator);
+        Method uniquenessCheckMethod = validator.getClass().getDeclaredMethod("handleDuplicateCheck", ChemicalSubstance.class);
+        uniquenessCheckMethod.setAccessible(true);
+        validator.setSearchMoietiesAlongWithStructure(false);
+        List<ValidationMessage> messages = (List<ValidationMessage>) uniquenessCheckMethod.invoke(validator, chemicalSubstance);
+        Assertions.assertEquals(1, messages.size());
     }
 
 }
