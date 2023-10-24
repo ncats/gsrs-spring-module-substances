@@ -33,7 +33,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private SubstanceRepository substanceRepository;
     // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
     boolean extractLocators = false;
-    private boolean duplicateNameIsError = false;
 
     // Keep consistent with NamesUtilities
     // This and other replacers should be handled later in a new NameStandardizer class similar to HTMLNameStandardizer
@@ -258,16 +257,9 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 Set<String> names = nameSetByLanguage.computeIfAbsent(language, k->new HashSet<>());
                 if(!names.add(uppercasedName)){
                     GinasProcessingMessage mes;
-                    log.trace("duplicateNameIsError: {}", duplicateNameIsError);
-                    if (duplicateNameIsError) {
-                        mes = GinasProcessingMessage
-                                .ERROR_MESSAGE("Name '%s' is a duplicate name in the record.", name)
-                                .markPossibleDuplicate();
-                    } else {
-                        mes = GinasProcessingMessage
+                    mes = GinasProcessingMessage
                                 .WARNING_MESSAGE("Name '%s' is a duplicate name in the record.", name)
                                 .markPossibleDuplicate();
-                    }
                     callback.addMessage(mes);
                 }
 
@@ -299,14 +291,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
         }
 
-    }
-
-    public boolean isDuplicateNameIsError() {
-        return duplicateNameIsError;
-    }
-
-    public void setDuplicateNameIsError(boolean duplicateNameIsError) {
-        this.duplicateNameIsError = duplicateNameIsError;
     }
 
     public void setReplaceSingleLinefeedPrecededByCertainCharactersWithBlank(boolean replaceSingleLinefeedPrecededByCertainCharactersWithBlank) {
