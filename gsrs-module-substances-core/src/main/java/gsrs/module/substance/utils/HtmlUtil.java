@@ -54,9 +54,15 @@ public final class HtmlUtil {
                         String curText = ((TextNode) node).getWholeText();
                         if (resHtmlLen + nodeHtmlLen > maxLen) {
                             StringBuilder sb = new StringBuilder(curText);
-                            sb.setLength(maxNodeLen + 1);
-                            while (sb.toString().getBytes(StandardCharsets.UTF_8).length > maxNodeLen) {
+                            int curHtmlLen = maxNodeLen + 1;
+                            sb.setLength(curHtmlLen);
+                            sb.setLength(sb.length() - (Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4));
+                            sb.setLength(sb.length() - (Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3));
+                            while (curHtmlLen > maxNodeLen) {
                                 sb.setLength(sb.length() - 1);
+                                curHtmlLen = sb.toString().getBytes(StandardCharsets.UTF_8).length;
+                                curHtmlLen += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
+                                curHtmlLen += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
                             }
                             cur.appendText(sb.toString());
                             throw new IllegalStateException();
