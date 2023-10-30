@@ -281,7 +281,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get()..getName().equalsIgnoreCase(n.getName())
+            if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
                 &&  (s.changeReason==null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
