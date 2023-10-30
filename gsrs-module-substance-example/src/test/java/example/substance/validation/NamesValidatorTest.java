@@ -22,26 +22,11 @@ import java.util.HashSet;
 public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     /*
-    Confirm correct legacy behavior - duplicate names -> error
-     */
-    @Test
-    public void testValidation() {
-        NamesValidator validator = new NamesValidator();
-        validator.setDuplicateNameIsError(true);
-        validator= AutowireHelper.getInstance().autowireAndProxy(validator);
-        ChemicalSubstance chemical =createSimpleChemicalDuplicateNames();
-        ValidationResponse<Substance> response = validator.validate(chemical, null);
-        Assertions.assertEquals(1, response.getValidationMessages().stream()
-                .filter(m -> m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.ERROR)).count());
-    }
-
-    /*
     Confirm correct new (January 2023) behavior - duplicate names -> warning
      */
     @Test
     public void testValidationNoErrors() {
         NamesValidator validator = new NamesValidator();
-        //validator.setDuplicateNameIsError(true);
         validator= AutowireHelper.getInstance().autowireAndProxy(validator);
         ChemicalSubstance chemical =createSimpleChemicalDuplicateNames();
         ValidationResponse<Substance> response = validator.validate(chemical, null);

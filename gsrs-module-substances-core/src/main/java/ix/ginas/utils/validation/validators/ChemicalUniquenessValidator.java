@@ -31,6 +31,8 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
     @Autowired
     private SubstanceLegacySearchService legacySearchService;
 
+    private boolean searchMoietiesAlongWithStructure =true;
+
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
@@ -67,6 +69,9 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
         String sins = structure.getStereoInsensitiveHash();
         log.trace("StereoInsensitiveHash: {}", sins);
         String hash = "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+        if(searchMoietiesAlongWithStructure) {
+            hash += "  OR ( root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + "  )";
+        }
         //removed this clause from the query because we want to exclude moiety matches " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins +
         log.trace("query: {}", hash);
         SearchRequest.Builder builder = new SearchRequest.Builder()
@@ -121,6 +126,10 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
             messages.add(GinasProcessingMessage.SUCCESS_MESSAGE("Structure is unique"));
         }
         return messages;
+    }
+
+    public void setSearchMoietiesAlongWithStructure(boolean searchMoietiesAlongWithStructure) {
+        this.searchMoietiesAlongWithStructure = searchMoietiesAlongWithStructure;
     }
 
 }
