@@ -74,7 +74,7 @@ public class StructureRecalcTaskInitializer extends ScheduledTaskInitializer{
                     try{
                         adminService.runAs(adminAuth, (Runnable)() -> {
                             TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                            //tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+//                            tx.setPropagationBehavior(TransactionDefinition.);
                             try {
                                 tx.executeWithoutResult(status -> {
                                     structureRepository.findById(id).ifPresent(s -> {

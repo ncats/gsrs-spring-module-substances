@@ -41,6 +41,7 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer{
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
+    
     SubstanceStagingAreaEntityService substanceStagingAreaEntityService = new SubstanceStagingAreaEntityService();
 
     @Autowired
