@@ -1405,7 +1405,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 rendererOptions.changeSettings(newDisplay);
             }
 
-
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
 
@@ -1476,6 +1475,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 renderer.setShadowVisible(false);
             }
 
+            if (fullRendererOptions.isAddBorder()) {
+            	renderer.setBorderVisible(true);
+            	if(fullRendererOptions.getColorBorder()!=null) {
+            		renderer.setBorderColorARGB(fullRendererOptions.getColorBorder());	
+            	}            	
+            }
+            
+            if (fullRendererOptions.getColorBg()!=null) {
+            	renderer.setBorderColorARGB(fullRendererOptions.getColorBg());            	
+            }
+            
+
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             if (parameters != null && parameters.hasValuesForAll()) {
@@ -1520,6 +1531,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             boolean hasRgroups=hasRGroups(c);
             int rgroupColor=1;
 
+            
             if(hasRgroups){
                 if(fuse){
                     compColor=colorChemicalComponents(c);
@@ -1604,6 +1616,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 //			}
 //		}
         boolean r=false;
+
+        
         for(Atom ca:c.getAtoms()){
             if(ca.getRGroupIndex().isPresent()){
                 r= true;
@@ -1613,6 +1627,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 String alias = ca.getAlias().orElse("");
                 if(alias.startsWith("_R")){
                     ca.setRGroup(Integer.parseInt(alias.replace("_R", "")));
+                    r= true;
+                }else if(alias.startsWith("R")){
+                    ca.setRGroup(Integer.parseInt(alias.replace("R", "")));
                     r= true;
                 }
             }

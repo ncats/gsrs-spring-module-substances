@@ -1,6 +1,8 @@
 package gsrs.module.substance.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.MolwitchException;
 import gsrs.cache.GsrsCache;
@@ -296,7 +298,35 @@ public class LegacyGinasAppController {
         Chemical c = Chemical.parse(input);
         if(!c.getSource().get().getType().includesCoordinates()){
             try {
+            	// If it's an in-line format, there's an extra cleanup step
+            	// we do to avoid an issue with parsing some query forms
+            	// TODO: this is really a hack because molwitch-cdk considers any
+            	// molecule with a * to be query-based, and turns lots of
+            	// other atoms inside into query atoms. This makes some downstream
+            	// renderer calculations not work well. The solution here is
+            	// to actually parse * atoms as Helium atoms and give them a * alias.
+            	// Since this is only used for rendering, it tends to be okay.
+            	// If this were ever used for "real" calculations we'd need to do
+            	// something more thorough.
+            	String potentialCXSmarts = c.getSource().get().getData();
+            	
+            	if(potentialCXSmarts.contains("*")) {
+            		//this means there's a query atom
+            		potentialCXSmarts = potentialCXSmarts.replace("[*]", "[He:17]");
+            		potentialCXSmarts = potentialCXSmarts.replace("*", "[He:17]");
+            		c=Chemical.parse(potentialCXSmarts);
+            		c.atoms().filter(at->at.getAtomToAtomMap().isPresent() && at.getAtomToAtomMap().getAsInt()==17)
+            		 .filter(at->"He".equals(at.getSymbol()))
+            		 .forEach(at->{
+            			 Atom aa=at;
+            			 if(!aa.getAlias().isPresent()) {
+            				 aa.setAlias("*");
+            				 aa.setAtomToAtomMap(0);
+            			 }
+            		 });
+            	}
                 c.generateCoordinates();
+                 
             } catch (MolwitchException e) {
                 throw new IOException("error generating coordinates",e);
             }
