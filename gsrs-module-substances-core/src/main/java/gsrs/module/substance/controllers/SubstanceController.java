@@ -1611,8 +1611,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             else{
                 //r=true;
                 String alias = ca.getAlias().orElse("");
-                if(alias.startsWith("_R")){
+		    
+		    // TODO: it appears that CDK-molwitch doesn't properly set/get Rgroups
+		    // over about R40, so this will break for cases where we use R90,R91 and R92
+		    // for the NA locants.
+		    
+                if(alias.startsWith("_R")){		
                     ca.setRGroup(Integer.parseInt(alias.replace("_R", "")));
+                    r= true;
+                }else if(alias.startsWith("R")){
+                    ca.setRGroup(Integer.parseInt(alias.replace("R", "")));
                     r= true;
                 }
             }
