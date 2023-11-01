@@ -55,9 +55,14 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
     @Override
     public Chemical standardize(Chemical orig, Supplier<String> molSupplier, Consumer<Value> valueConsumer) throws IOException {
 
-//        if(true){
-//            return orig;
-//        }
+    	// This is currently a no-op for now. The inchi standardizer appears to have some
+    	// bugs that are not well understood.
+    	// In general it's not actually needed, since we tend to use the inchi hasher which will already do a pre-standardization step.
+    	// 
+    	
+        if(true){
+            return orig;
+        }
         if(orig.getAtomCount() > maxNumberOfAtoms || orig.hasPseudoAtoms()){
             return orig;
         }
