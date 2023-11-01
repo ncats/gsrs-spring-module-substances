@@ -30,7 +30,10 @@ public class InchiStructureHasher implements StructureHasher {
             stringBuilder.setCharAt(layerOffset, '_');
             stringBuilder.setCharAt(stringBuilder.length()-2, '_');
             String underscoredInsteadOfDash = stringBuilder.toString();
-            keyValueConsumer.accept(Structure.H_InChI_Key, underscoredInsteadOfDash);
+            
+            // This used to use the underscore version for the "real" inchikey,
+            // but switching to use the dash form now.
+            keyValueConsumer.accept(Structure.H_InChI_Key, key);
             keyValueConsumer.accept(Structure.H_EXACT_HASH, underscoredInsteadOfDash);
             keyValueConsumer.accept(Structure.H_STEREO_INSENSITIVE_HASH, connectionOnly);
         }catch(IOException e){
