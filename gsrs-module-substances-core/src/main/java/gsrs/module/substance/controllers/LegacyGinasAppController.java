@@ -325,7 +325,23 @@ public class LegacyGinasAppController {
             			 }
             		 });
             	}
-                c.generateCoordinates();
+            	
+            	// It turns out that generating coordinates for a
+            	// structure with 2 charged species in CDK, for some reason
+            	// fails. Looks like it has something to do with trying to put charges near each other
+            	// to imply ionic interaction? Either way, adding 1 new free-floating moiety fixes this,
+            	// and layout can be generated then
+            	
+            	
+            	try {
+            		c.generateCoordinates();	
+            	}catch(Exception e) {
+            		Atom aa=c.addAtom("C");
+            		c.generateCoordinates();
+            		c.removeAtom(aa);
+            	}
+                
+                
                  
             } catch (MolwitchException e) {
                 throw new IOException("error generating coordinates",e);

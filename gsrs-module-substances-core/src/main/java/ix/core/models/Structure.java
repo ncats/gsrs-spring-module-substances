@@ -450,7 +450,7 @@ public class Structure extends BaseModel {
             for (Value val : this.properties) {
                 if(val==null) continue;
                 if (Structure.H_InChI_Key.equals(val.label)) {
-                    return Objects.toString(val.getValue());
+                    return Objects.toString(val.getValue()).replaceAll("_", "-");                    
                 }
             }
             return getInChIKeyAndThrow();
