@@ -2,7 +2,9 @@ package gsrs.module.substance;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,9 +12,12 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.molwitch.renderer.ARGBColor;
+import gov.nih.ncats.molwitch.renderer.ColorPalette;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import lombok.Builder;
 import lombok.Data;
@@ -51,7 +56,8 @@ public class RendererOptionsConfig {
         public FullRenderOptions copy() {
             return toBuilder()
             		.build();
-        } 
+        }
+        
         public FullRenderOptionsBuilder toBuilder(){
         	return FullRenderOptions.builder()
             		.options(options.copy())

@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import gov.nih.ncats.molvec.internal.util.CachedSupplier;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
+import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions.FullRenderOptionsBuilder;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
@@ -39,7 +40,7 @@ public class GSRSRendererConfiguration {
 		if(list!=null) {
 			for(Map m:list.values()) {
 				String name = m.getOrDefault("name", "").toString();
-				FullRenderOptions base = FullRenderOptions.builder().build();
+				FullRenderOptionsBuilder baseBuilder = FullRenderOptions.builder();
 				if(name==null || name.length()==0) {
 					log.error("Render settings must have names, gsrs.renderers.list[%i] does not have a name. That render config will be skipped.", i);
 					continue;
@@ -53,20 +54,40 @@ public class GSRSRendererConfiguration {
 				
 				if(renderer.get("preset")!=null) {
 					String preset=renderer.get("preset").toString();
-					base=renderMap.getOrDefault(preset, getFullRendererOptionsByName(preset).orElse(null));
-					if(base==null) {
+					
+					FullRenderOptions opt=Optional.ofNullable(renderMap.get(preset)).orElseGet(()->getDefaultRendererOptionsByName(preset).orElse(null));
+					
+						
+					if(opt==null) {
 						log.warn("Render settings preset '%s' not found as a valid preset. The default render config will be used instead.", preset);					
-						base = FullRenderOptions.builder().build();
+						opt = FullRenderOptions.builder().build();
 					}
+					baseBuilder=opt.toBuilder();
 				}
 				Map<String,Object> options = (Map<String,Object>) renderer.get("options");
 				if(options!=null) {
-					
+					RendererOptions ropts= baseBuilder.build().getOptions();
+					ropts=ropts.changeSettings(options);
+					baseBuilder=baseBuilder.options(ropts);					
 				}
 				
+				FullRenderOptionsBuilder baseBuilderFinal = baseBuilder;
+				
+				Optional.ofNullable(renderer.get("add-shadow")).ifPresent(ss->{
+					baseBuilderFinal.showShadow("true".equalsIgnoreCase(ss.toString()));
+				});
+				Optional.ofNullable(renderer.get("add-border")).ifPresent(ss->{
+					baseBuilderFinal.addBorder("true".equalsIgnoreCase(ss.toString()));
+				});
+				Optional.ofNullable(renderer.get("color-bg")).ifPresent(ss->{
+					baseBuilderFinal.colorBg(ss.toString());
+				});
+				Optional.ofNullable(renderer.get("color-border")).ifPresent(ss->{
+					baseBuilderFinal.colorBorder(ss.toString());
+				});
 				
 				
-				renderMap.put(name,base);
+				renderMap.put(name,baseBuilderFinal.build());
 				i++;
 			}
 		}
