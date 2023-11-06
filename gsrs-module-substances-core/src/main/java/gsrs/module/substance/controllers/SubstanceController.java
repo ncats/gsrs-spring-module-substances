@@ -1487,6 +1487,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 //            }
             
 
+            if (fullRendererOptions.isAddBorder()) {
+            	renderer.setBorderVisible(true);
+            	if(fullRendererOptions.getColorBorder()!=null) {
+            		renderer.setBorderColorARGB(fullRendererOptions.getColorBorder());	
+            	}            	
+            }
+            
+            if (fullRendererOptions.getColorBg()!=null) {
+            	renderer.setBorderColorARGB(fullRendererOptions.getColorBg());            	
+            }
+            
+
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             if (parameters != null && parameters.hasValuesForAll()) {
