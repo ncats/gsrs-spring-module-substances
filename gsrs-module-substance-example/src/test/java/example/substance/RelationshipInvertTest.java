@@ -380,7 +380,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         assertEquals(1, createInverseEvents.size());
         assertEquals(TryToCreateInverseRelationshipEvent.builder()
                 .relationshipIdToInvert(updatedSubstance.relationships.get(0).uuid)
-                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
+                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING_DEEP_CHECK)
                 .fromSubstance(UUID.fromString(uuidA))
                 .toSubstance(updatedSubstance.uuid)
                 .originatorUUID(updatedSubstance.relationships.get(0).uuid)

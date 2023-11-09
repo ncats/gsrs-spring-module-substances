@@ -98,7 +98,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	            if (otherSubstanceReference != null && otherSubstanceReference.refuuid !=null) {
 	                event.setFromSubstance(UUID.fromString(otherSubstanceReference.refuuid));
 	            }
-	            event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING);
+	            event.setCreationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING_DEEP_CHECK);
 	            eventPublisher.publishEvent(event);
 
 	        });

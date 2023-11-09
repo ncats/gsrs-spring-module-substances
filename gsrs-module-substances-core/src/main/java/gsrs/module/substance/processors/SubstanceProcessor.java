@@ -105,7 +105,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             if(owner!=null) {
                 eventPublisher.publishEvent(
                         TryToCreateInverseRelationshipEvent.builder()
-                                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
+                                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING_DEEP_CHECK)
                                 .originatorUUID(UUID.fromString(r.originatorUuid))
                                 .toSubstance(owner.uuid)
                                 .fromSubstance(obj.uuid)
