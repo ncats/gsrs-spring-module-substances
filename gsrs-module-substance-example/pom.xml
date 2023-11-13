@@ -215,7 +215,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.14-SNAPSHOT</version>
+            <version>1.0.14</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
