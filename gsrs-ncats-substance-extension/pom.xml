@@ -15,6 +15,7 @@
     <artifactId>gsrs-ncats-substance-extension</artifactId>
     <modelVersion>4.0.0</modelVersion>
     <build>
+        <!-- Uncomment this for maven public release deployment
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -46,7 +47,7 @@
                     </execution>
                 </executions>
             </plugin>
-        </plugins>
+        </plugins> -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>

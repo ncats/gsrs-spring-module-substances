@@ -35,6 +35,7 @@
                 <target>8</target>
             </configuration>
         </plugin>
+        <!-- Uncomment this for maven public release deployment
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
@@ -64,7 +65,7 @@
                     </goals>
                 </execution>
             </executions>
-        </plugin>
+        </plugin> -->
     </plugins>
 	    <!--
 <plugins><plugin>
