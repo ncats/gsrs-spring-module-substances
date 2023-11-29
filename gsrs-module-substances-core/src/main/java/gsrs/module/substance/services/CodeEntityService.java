@@ -294,5 +294,9 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
         return c;
     }
 
+	@Override
+	public List<UUID> getIDs() {
+		return repository.getAllIDs();
+	}
 
 }

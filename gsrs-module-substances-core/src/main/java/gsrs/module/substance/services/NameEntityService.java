@@ -241,7 +241,10 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
         return Optional.empty();
     }
 
-
-
+    @Override
+	public List<UUID> getIDs() {
+		List<UUID> IDs = repository.getAllIDs();
+		return IDs;
+	}
 
 }

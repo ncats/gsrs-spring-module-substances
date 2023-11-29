@@ -28,5 +28,8 @@ public interface NameRepository extends GsrsVersionedRepository<Name, UUID> {
 
     @Query("select n.uuid from Name n")
     List<String> getAllUuids();
+    
+    @Query("select n.uuid from Name n")
+    List<UUID> getAllIDs();
 
 }
