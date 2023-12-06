@@ -11,6 +11,7 @@ import ix.ginas.models.v1.Substance;
 import gov.hhs.gsrs.applications.api.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -19,6 +20,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class SubstanceApplicationIndexValueMaker implements IndexValueMaker<Substance> {
+
+	@Value("${gsrs.application.ivm.search.max.fetch:20000}")
+	private Integer maxFetchSize;
 
 	@Autowired
 	public ApplicationsApi applicationsApi;
@@ -32,7 +36,7 @@ public class SubstanceApplicationIndexValueMaker implements IndexValueMaker<Subs
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
 
         try{
-			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
+			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(maxFetchSize).simpleSearchOnly(true).build();
 			SearchResult<ApplicationAllDTO> searchResult = applicationsApi.search(searchRequest);
 			List<ApplicationAllDTO> appList = searchResult.getContent();
 

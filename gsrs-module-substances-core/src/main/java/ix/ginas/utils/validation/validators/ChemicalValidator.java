@@ -1,29 +1,25 @@
 package ix.ginas.utils.validation.validators;
 
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.controller.GsrsControllerUtil;
-import gsrs.controller.hateoas.GsrsLinkUtil;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
-import ix.core.models.Value;
-import ix.core.validator.ExceptionValidationMessage;
-import ix.core.validator.GinasProcessingMessage;
-import ix.core.validator.ValidationMessage;
-import ix.core.validator.ValidatorCallback;
-import ix.core.validator.ValidatorCategory;
+import ix.core.validator.*;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.ChemUtils;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
-import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
+import org.springframework.transaction.PlatformTransactionManager;
 
-import javax.persistence.EntityManager;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -36,12 +32,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
 	@Autowired
     private ReferenceRepository referenceRepository;
-
-	@Autowired
-    private ChemicalDuplicateFinder chemicalDuplicateFinder;
-
-	@Autowired
-    private EntityLinks entityLinks;
 
 	private boolean allow0AtomStructures = false;
 
@@ -109,17 +99,13 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         String payload = cs.getStructure().molfile;
         if (payload != null) {
 
-
-
-
             try {
                 ix.ginas.utils.validation.PeptideInterpreter.Protein p = PeptideInterpreter
                         .getAminoAcidSequence(cs.getStructure().molfile);
                 if (p != null && !p.getSubunits().isEmpty()
                         && p.getSubunits().get(0).getSequence().length() > 2) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:["
-                                    + p.toString() + "]");
+                            .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:[%s]", p.toString());
                     callback.addMessage(mes);
                 }
             } catch (Exception e) {
@@ -199,13 +185,13 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 //            ChemUtils.checkChargeBalance(cs.structure, gpm);
             if (cs.getStructure().charge != 0) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE("Structure is not charged balanced, net charge of: " + cs.getStructure().charge);
+                        .WARNING_MESSAGE("Structure is not charged balanced, net charge of: %s", cs.getStructure().charge);
                 callback.addMessage(mes);
             }
 
             ValidationUtils.validateReference(s,cs.getStructure(), callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
 
-            validateStructureDuplicates(cs, callback);
+            //validateStructureDuplicates(cs, callback);
         } else {
             callback.addMessage(GinasProcessingMessage
                     .ERROR_MESSAGE("Chemical substance must have a valid chemical structure"));
@@ -230,35 +216,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 //        }
         //TODO noop for now pushed to 2.3.7 until we find out more for GSRS-914
     }
-
-    private void validateStructureDuplicates(
-            ChemicalSubstance cs, ValidatorCallback callback) {
-        if(chemicalDuplicateFinder==null)return;
-        try {
-
-            List<SubstanceReference> sr = chemicalDuplicateFinder.findPossibleDuplicatesFor(cs.asSubstanceReference());
-
-            if (sr != null && !sr.isEmpty()) {
-                
-                //the duplicate check object should handle filtering out ourselves so don't need to check anymore
-
-                GinasProcessingMessage mes;
-                if(sr.size() > 1){
-                    mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has " + sr.size() + " possible duplicates:");
-                }else{
-                    mes = GinasProcessingMessage.WARNING_MESSAGE("Structure has 1 possible duplicate: " + sr.get(0).refuuid);
-                }
-                for (SubstanceReference s : sr) {
-                    mes.addLink(ValidationUtils.createSubstanceLink(s));
-                    
-                }
-                callback.addMessage(mes);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
 
     private void validateChemicalStructure(
             GinasChemicalStructure oldstr, Structure newstr,
@@ -393,6 +350,5 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     public void setAllowV3000Molfiles(boolean allowV3000Molfiles) {
         this.allowV3000Molfiles = allowV3000Molfiles;
     }
-
 
 }

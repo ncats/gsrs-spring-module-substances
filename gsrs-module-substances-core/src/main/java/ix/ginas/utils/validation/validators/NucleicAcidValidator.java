@@ -99,9 +99,9 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             //for now just null/blank need to confer with stakeholders if validation is needed or not
             if(su.sequence == null || su.sequence.trim().isEmpty()){
                 if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)){
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("subunit at position " + (i +1) + " is blank. This is allowed but discouraged for incomplete nucleic acid records."));
+                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("subunit at position %s is blank. This is allowed but discouraged for incomplete nucleic acid records.", (i +1)));
                 }else {
-                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("subunit at position " + (i +1) + " is blank"));
+                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("subunit at position %s is blank", (i +1)));
                 }
             }
         }
@@ -111,8 +111,8 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 .getNumberOfUnspecifiedSugarSites(cs);
         if (unspSugars != 0) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Nucleic Acid substance must have every base specify a sugar fragment. Missing "
-                            + unspSugars + " sites."));
+                    .ERROR_MESSAGE("Nucleic Acid substance must have every base specify a sugar fragment. Missing %s sites.",
+                            unspSugars));
         }
 
 
@@ -120,13 +120,13 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 .getNumberOfUnspecifiedLinkageSites(cs);
         if (unspLinkages > 0) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing "
-                            + unspLinkages + " sites."));
+                    .ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing %s sites.",
+                            unspLinkages));
         }else{
             if (unspLinkages < - (subunits.size())) {
                 callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment, but sites are over-specified. Found "
-                            + (-1*unspLinkages) + " more sites than expected."));
+                    .ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment, but sites are over-specified. Found %s more sites than expected.",
+                            (-1*unspLinkages)));
             }
         }
 
@@ -182,7 +182,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 //should we remove as applicable change?
             	//TP: I'm not sure we should even warn about duplicates within a record, tbh. At least with proteins,
             	//it's quite common to have subunits that are identical in sequence within the same record.
-                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Duplicate subunit at index " + subunit.subunitIndex));
+                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Duplicate subunit at index %s", subunit.subunitIndex));
             }
 
             try {
@@ -190,7 +190,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             }catch(Exception e){
                 //invalid bases
                 callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                        "invalid nucleic acid sequence base in subunit " + subunit.subunitIndex + "  " + e.getMessage()));
+                        "invalid nucleic acid sequence base in subunit %s  %s", subunit.subunitIndex, e.getMessage()));
 
             }
         }
@@ -247,14 +247,8 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
 //         	   Payload payload = _payload.get()
 //         			                     .createPayload("Sequence Search","text/plain", su.sequence);
 //
-                String msgOne = "There is 1 substance with a similar sequence to subunit ["
-                        + suSet + "]:";
-                
-                String msgMult = "There are ? substances with a similar sequence to subunit ["
-                        + suSet + "]:";
-                
                 List<Function<String,List<Tuple<Double,Tuple<NucleicAcidSubstance, Subunit>>>>> searchers = new ArrayList<>();
-                
+
                 //Simplified searcher, using lucene direct index
                 searchers.add(seq->{
                 	try{
@@ -313,18 +307,15 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
 //                             l.text = "(Perform similarity search on subunit ["
 //                                     + su.subunitIndex + "])";
 
-                             String warnMessage=msgOne;
-                             
+                             String msgMod = "is 1 substance";
                              if(suResults.size()>1){
-                            	 warnMessage = msgMult.replace("?", suResults.size() +"");
+                                    msgMod = "are " + suResults.size() + " substances";
                              }
-                             
+
                              GinasProcessingMessage dupMessage = GinasProcessingMessage
-                                     .WARNING_MESSAGE(warnMessage);
+                                     .WARNING_MESSAGE("There %s with a similar sequence to subunit [%s]:", msgMod, suSet);
 //                             dupMessage.addLink(l);
-                             
-                             
-                             
+
                              suResults.stream()
                                       .map(t->t.withKSortOrder(d->d))
                                       .sorted()
@@ -360,8 +351,8 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
         } catch (Exception e) {
         	log.error("Problem executing duplicate search function", e);
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Error performing seqeunce search on Nucleic Acid:"
-                            + e.getMessage()));
+                    .ERROR_MESSAGE("Error performing seqeunce search on Nucleic Acid:",
+                            e.getMessage()));
         }
     }
 

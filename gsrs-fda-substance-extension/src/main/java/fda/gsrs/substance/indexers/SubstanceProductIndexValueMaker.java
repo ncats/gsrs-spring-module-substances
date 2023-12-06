@@ -12,6 +12,7 @@ import gov.hhs.gsrs.products.api.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,9 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substance> {
+
+	@Value("${gsrs.product.ivm.search.max.fetch:20000}")
+	private Integer maxFetchSize;
 
 	@Autowired
 	public ProductsApi productsApi;
@@ -28,11 +32,11 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
 		return Substance.class;
 	}
 
-    @Override
+	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
 
         try{
-        	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
+        	SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(maxFetchSize).simpleSearchOnly(true).build();
 			SearchResult<ProductMainAllDTO> searchResult = productsApi.search(searchRequest);
 			List<ProductMainAllDTO> prodList = searchResult.getContent();
 

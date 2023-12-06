@@ -45,8 +45,8 @@ public class RemovePublicIndReferences extends AbstractValidatorPlugin<Substance
 
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    "IND-like reference:\""
-                                            + r.docType + ":" + r.citation + "\" cannot be public. Setting to protected.")
+                                    "IND-like reference:\"%s:%s\" cannot be public. Setting to protected.",
+                                            r.docType, r.citation)
                             .appliableChange(true);
                     callback.addMessage(mes, ()-> makeReferenceProtected(r));
                 });

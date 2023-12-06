@@ -17,7 +17,6 @@ import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
-import ix.ginas.utils.validation.ChemicalDuplicateFinder;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
@@ -36,9 +35,11 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
         LegacyGinasAppController.class,
         NameStandardizerConfiguration.class,
-        ProxyConfiguration.class, StructureResolverService.class, StructureResolverServiceConfiguration.class,
+        ProxyConfiguration.class, 
+        GSRSRendererConfiguration.class,
+        StructureResolverService.class, StructureResolverServiceConfiguration.class,
         SubstanceDataConfiguration.class,
-        StructureResolverController.class, ChemicalDuplicateFinder.class,
+        StructureResolverController.class,
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
         ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class,

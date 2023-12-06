@@ -1,5 +1,6 @@
 package gsrs.module.substance.utils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -34,32 +35,34 @@ public final class HtmlUtil {
 
         public void head(Node node, int depth) {
             if (depth > 0) {
+                int resHtmlLen = dst.html().getBytes(StandardCharsets.UTF_8).length;
+                int nodeHtmlLen = node.outerHtml().getBytes(StandardCharsets.UTF_8).length;
+                int maxNodeLen = maxLen - resHtmlLen;
                 if (node instanceof Element) {
-                    Element curElement = (Element) node;
-                    if (safetags.contains(curElement.tagName())) {
-                        cur = cur.appendElement(curElement.tagName());
-                        String resHtml = dst.html();
-                        if (resHtml.length() > maxLen) {
-                            cur.remove();
+                    String tagName = ((Element) node).tagName();
+                    if (safetags.contains(tagName)) {
+                        nodeHtmlLen = tagName.length() * 2 + 5;
+                        if (resHtmlLen + nodeHtmlLen > maxLen) {
                             throw new IllegalStateException();
+                        } else {
+                            cur = cur.appendElement(tagName);
                         }
                     }
                 } else if (node instanceof TextNode) {
                     String parentTag = ((Element)node.parent()).tagName();
                     if (safetags.contains(parentTag) || (parentTag == "body" && depth == 1)) {
                         String curText = ((TextNode) node).getWholeText();
-                        String resHtml = dst.html();
-                        if (node.outerHtml().length() + resHtml.length() > maxLen) {
+                        if (resHtmlLen + nodeHtmlLen > maxLen) {
                             StringBuilder sb = new StringBuilder(curText);
-                            int curHtmlLength = node.outerHtml().length();
-                            if (maxLen <= resHtml.length())
-                                throw new IllegalStateException();
-                            sb.setLength(maxLen - resHtml.length() + 1);
-                            while (curHtmlLength > maxLen - resHtml.length()) {
+                            int curHtmlLen = maxNodeLen + 1;
+                            sb.setLength(curHtmlLen);
+                            sb.setLength(sb.length() - (Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4));
+                            sb.setLength(sb.length() - (Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3));
+                            while (curHtmlLen > maxNodeLen) {
                                 sb.setLength(sb.length() - 1);
-                                curHtmlLength = sb.length();
-                                curHtmlLength += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
-                                curHtmlLength += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
+                                curHtmlLen = sb.toString().getBytes(StandardCharsets.UTF_8).length;
+                                curHtmlLen += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
+                                curHtmlLen += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
                             }
                             cur.appendText(sb.toString());
                             throw new IllegalStateException();
@@ -83,7 +86,7 @@ public final class HtmlUtil {
         srcDoc.outputSettings().prettyPrint(false);
 
         int maxLength = len-3; //for final ...
-        
+
         Document dstDoc = Document.createShell(srcDoc.baseUri());
         dstDoc.outputSettings().prettyPrint(false);
         dstDoc.outputSettings().charset("UTF-8");
@@ -96,7 +99,7 @@ public final class HtmlUtil {
         } catch (IllegalStateException ex) {}
 
         String htmlReturn = dst.html();
-        if(htmlReturn.length()>= (maxLength)){
+        if(htmlReturn.length() < s.length() && htmlReturn.length() <= maxLength){
             return htmlReturn + "...";
         }else{
             return htmlReturn;

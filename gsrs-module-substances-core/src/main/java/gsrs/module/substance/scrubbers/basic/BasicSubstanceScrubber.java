@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.Predicate;
 
 import gov.nih.ncats.common.stream.StreamUtil;
@@ -454,32 +455,41 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
         if( scrubberSettings.getRemoveNotes()){
             log.trace("deleting notes");
-            dc.delete("$['notes'][?]", (ctx)->{
-            	Map code=ctx.item(Map.class);
-            	Object o=code.get("access");
-                return o == null || !o.toString().contains(TO_FORCE_KEEP);
-            });
+            JSONArray testArray = dc.read("$['notes']");
+            if( !testArray.isEmpty()) {
+                dc.delete("$['notes'][?]", (ctx) -> {
+                    Map code = ctx.item(Map.class);
+                    Object o = code.get("access");
+                    return o == null || !o.toString().contains(TO_FORCE_KEEP);
+                });
+            }
         }
 
         if( scrubberSettings.getRemoveChangeReason()){
-            dc.delete("$.changeReason");
+            safeDelete(dc,"$.changeReason");
+            //dc.delete("$.changeReason");
         }
 
         if(scrubberSettings.getRemoveDates()) {
-            dc.delete("$..lastEdited");
-            dc.delete("$..created");
+            safeDelete(dc, "$..lastEdited");
+            //dc.delete("$..lastEdited");
+            safeDelete(dc, "$..created");
+            //dc.delete("$..created");
         }
         if(scrubberSettings.getAuditInformationCleanup()) {
         	if(scrubberSettings.getAuditInformationCleanupDeidentifyAuditUser()) {
-        		dc.delete("$..lastEditedBy");
-        		dc.delete("$..createdBy");
-        		dc.delete("$..approvedBy");
+                safeDelete(dc,"$..lastEditedBy");
+                //dc.delete("$..lastEditedBy");
+                safeDelete(dc,"$..createdBy");
+                //dc.delete("$..createdBy");
+                safeDelete(dc,"$..approvedBy");
+                //dc.delete("$..approvedBy");
         	}else if(scrubberSettings.getAuditInformationCleanupNewAuditorValue()!=null) {
         		String newAuditor = scrubberSettings.getAuditInformationCleanupNewAuditorValue();
 
-        		dc.set("$..lastEditedBy", newAuditor);
-        		dc.set("$..createdBy", newAuditor);
-        		dc.set("$..approvedBy", newAuditor);
+        		safeSet(dc,"$..lastEditedBy", newAuditor);
+        		safeSet(dc,"$..createdBy", newAuditor);
+        		safeSet(dc,"$..approvedBy", newAuditor);
         	}
         }
 
@@ -502,47 +512,27 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 return false;
             };
             log.trace("Before code delete");
-            dc.delete("$['codes'][?]",codeSystemPredicate);
+            JSONArray testArray = dc.read("$['codes']");
+            if(!testArray.isEmpty()) {
+                dc.delete("$['codes'][?]", codeSystemPredicate);
+            }
         }
 
-
-        dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+        safeDelete(dc, "$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+/*
+        JSONArray testObject =dc.read("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+        if(testObject.isEmpty()) {
+            log.trace("About to delete access expression");
+            dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
+        }
+*/
 
         if( scrubberSettings.removeStdNames) {
             log.trace("Removing std names");
-            dc.delete("$..stdName");
+            safeDelete(dc, "$..stdName");
+            //dc.delete("$..stdName");
         }
         return dc.jsonString();
-    }
-
-
-    public String testAll(String json){
-        DocumentContext dc = JsonPath.parse(json);
-        //"$..[?]",
-        String output;
-        try{
-            output= dc.read("$..[?]['access']", (s)-> {
-
-                log.trace("item class: {}; root: {}", s.item().getClass().getName(), s.root().getClass().getName());
-                if( s.item().getClass().equals(JSONArray.class)){
-                    JSONArray array = s.item(JSONArray.class);
-                    if( array == null) {
-                        log.trace("item null");
-                    } else {
-                        log.trace("array size: {}",array.size());
-                        array.forEach(a-> log.trace("element type: {}", a.getClass().getName()));
-                    }
-
-                }
-                //log.trace(s.item());
-                return true;
-            });
-        }
-        catch (Exception ex){
-            System.err.println("Error: " + ex.getMessage());
-            output="error!";
-        }
-        return output;
     }
 
     public boolean isElementOnList(Object object, List<String> approximateNames) {
@@ -867,7 +857,23 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
         return Optional.empty();
     }
-    
+
+    private void safeDelete(DocumentContext doc, String itemToDelete){
+        try{
+            doc.delete(itemToDelete);
+        }catch( PathNotFoundException ignore){
+
+        }
+    }
+
+    private void safeSet(DocumentContext doc, String itemToSet, String newValue){
+        try{
+            doc.set(itemToSet, newValue);
+        }catch( PathNotFoundException ignore){
+
+        }
+    }
+
     public static void main(String[] args) {
     	log.trace("main method");
     }

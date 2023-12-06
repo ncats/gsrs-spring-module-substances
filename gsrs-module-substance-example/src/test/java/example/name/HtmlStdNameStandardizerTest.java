@@ -184,11 +184,13 @@ public class HtmlStdNameStandardizerTest {
 
     /*
     This unit test fails within IntelliJ but passes at the command line
+    This test requires JDK v 17
      */
     @Test
     public void testNkfdNormalization() {
+        //fixed expected value 26 June 2023 MAM
         String input = "𝐸₃éé👍!";
-        String expected = "?3EE?!";
+        String expected = "E3EE?!";
         String actual = standardizer.standardize(input).getResult();
         Assertions.assertEquals(expected, actual); //, "Because of removing Unprintable characters first"
     }
