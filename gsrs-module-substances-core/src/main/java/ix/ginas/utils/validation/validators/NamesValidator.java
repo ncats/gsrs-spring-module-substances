@@ -33,6 +33,9 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private SubstanceRepository substanceRepository;
     // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
     boolean extractLocators = false;
+    private boolean duplicateNameIsError = false;
+
+    private String caseSearchType = "Explicit";
 
     // Keep consistent with NamesUtilities
     // This and other replacers should be handled later in a new NameStandardizer class similar to HTMLNameStandardizer
@@ -105,7 +108,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
         boolean preferred = false;
         int display = 0;
         Iterator<Name> nameIterator = s.names.iterator();
-        while(nameIterator.hasNext()){
+        while (nameIterator.hasNext()) {
             Name n = nameIterator.next();
             if (n == null) {
                 GinasProcessingMessage mes = GinasProcessingMessage
@@ -120,7 +123,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 continue;
 
             }
-            if(n.getName() ==null){
+            if (n.getName() == null) {
                 callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("name can not be null"));
                 continue;
             }
@@ -140,13 +143,13 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 // shown which name(s) have been changed in the warning.
                 TagUtilities.BracketExtraction be = TagUtilities.getBracketExtraction(n.getName());
                 List<String> locators = be.getTagTerms();
-                if(!locators.isEmpty()){
+                if (!locators.isEmpty()) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
                                     "Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:%s",
-                                            locators.toString())
+                                    locators.toString())
                             .appliableChange(true);
-                    callback.addMessage(mes, ()->{
+                    callback.addMessage(mes, () -> {
                         for (String loc : locators) {
                             // Name is changed to just the namePart!
                             n.name = be.getNamePart();
@@ -182,7 +185,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             for (Replacer r : replacers.get()) {
                 //check for Null
                 String name = n.getName();
-                if(name!=null && r.matches(name)) {
+                if (name != null && r.matches(name)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
                                     r.getMessage(name))
@@ -191,17 +194,17 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
                 }
             }
-            if(n.getAccess().isEmpty()){
+            if (n.getAccess().isEmpty()) {
                 boolean hasPublicReference = n.getReferences().stream()
-                        .map(r->r.getValue())
-                        .map(r->s.getReferenceByUUID(r))
+                        .map(r -> r.getValue())
+                        .map(r -> s.getReferenceByUUID(r))
                         .filter(Objects::nonNull)
-                        .filter(r->r.isPublic())
-                        .filter(r->r.isPublicDomain())
+                        .filter(r -> r.isPublic())
+                        .filter(r -> r.isPublicDomain())
                         .findAny()
                         .isPresent();
 
-                if(!hasPublicReference){
+                if (!hasPublicReference) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .ERROR_MESSAGE("The name :\"%s\" needs an unprotected reference marked \"Public Domain\" in order to be made public.",
                                     n.getName());
@@ -238,12 +241,12 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
         Map<String, Set<String>> nameSetByLanguage = new HashMap<>();
 
-        Optional<Name> oldDisplayName= (objold!=null && objold.names !=null) ? objold.names.stream().filter(n->n!=null && n.displayName).findFirst() : Optional.empty();
-        LogUtil.trace(()->String.format("oldDisplayName: present: %b; value: %s", oldDisplayName.isPresent(),
+        Optional<Name> oldDisplayName = (objold != null && objold.names != null) ? objold.names.stream().filter(n -> n != null && n.displayName).findFirst() : Optional.empty();
+        LogUtil.trace(() -> String.format("oldDisplayName: present: %b; value: %s", oldDisplayName.isPresent(),
                 oldDisplayName.isPresent() ? oldDisplayName.get().getName() : ""));
 
         for (Name n : s.names) {
-            if( n==null || n.getName() == null) {
+            if (n == null || n.getName() == null) {
                 //skip over null names
                 continue;
             }
@@ -251,38 +254,39 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             Iterator<Keyword> iter = n.languages.iterator();
             String uppercasedName = name.toUpperCase();
 
-            while(iter.hasNext()){
+            while (iter.hasNext()) {
                 String language = iter.next().getValue();
 //				System.out.println("language for " + n + "  = " + language);
-                Set<String> names = nameSetByLanguage.computeIfAbsent(language, k->new HashSet<>());
-                if(!names.add(uppercasedName)){
+                Set<String> names = nameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
+                if (!names.add(uppercasedName)) {
                     GinasProcessingMessage mes;
                     mes = GinasProcessingMessage
-                                .WARNING_MESSAGE("Name '%s' is a duplicate name in the record.", name)
-                                .markPossibleDuplicate();
+                            .WARNING_MESSAGE("Name '%s' is a duplicate name in the record.", name)
+                            .markPossibleDuplicate();
                     callback.addMessage(mes);
                 }
 
             }
             //nameSet.add(n.getName());
             try {
-                List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_NameIgnoreCase(n.name);
+                List<SubstanceRepository.SubstanceSummary> sr = (!this.caseSearchType.equalsIgnoreCase("IMPLICIT"))
+                        ? substanceRepository.findByNames_NameIgnoreCase(n.name)
+                        : substanceRepository.findByNames_NameIgnoreCaseImplicit(n.name);
                 if (sr != null && !sr.isEmpty()) {
                     SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
                     if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
                         GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE("Name '%s' collides (possible duplicate) with existing name for substance:", n.name)
-                               //TODO katzelda Feb 2021: add link back
-                                . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
-                                ;
+                                //TODO katzelda Feb 2021: add link back
+                                .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
                         callback.addMessage(mes);
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
-                &&  (s.changeReason==null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
+            if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
+                    && (s.changeReason == null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
                                 "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
@@ -290,8 +294,16 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 callback.addMessage(mes);
             }
         }
-
     }
+
+    public String getCaseSearchType() {
+        return caseSearchType;
+    }
+
+    public void setCaseSearchType(String caseSearchType) {
+        this.caseSearchType = caseSearchType;
+    }
+
 
     public void setReplaceSingleLinefeedPrecededByCertainCharactersWithBlank(boolean replaceSingleLinefeedPrecededByCertainCharactersWithBlank) {
         this.replaceSingleLinefeedPrecededByCertainCharactersWithBlank = replaceSingleLinefeedPrecededByCertainCharactersWithBlank;
