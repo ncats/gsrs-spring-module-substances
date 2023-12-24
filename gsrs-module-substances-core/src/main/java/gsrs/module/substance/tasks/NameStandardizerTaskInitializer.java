@@ -36,12 +36,14 @@ import gsrs.security.AdminService;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.ginas.models.v1.Name;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.persistence.EntityManager;
 
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class NameStandardizerTaskInitializer extends ScheduledTaskInitializer {
 
     private String regenerateNameValue = "";
