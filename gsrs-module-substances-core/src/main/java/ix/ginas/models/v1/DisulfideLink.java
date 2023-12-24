@@ -7,8 +7,8 @@ import ix.core.models.Indexable;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSimplifiedSubData;
 
-import javax.persistence.CascadeType;
-import javax.persistence.OneToOne;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.OneToOne;
 import java.util.ArrayList;
 import java.util.List;
 

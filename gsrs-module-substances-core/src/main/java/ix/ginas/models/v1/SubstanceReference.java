@@ -11,7 +11,7 @@ import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.SubstanceReferenceEntityListener;
 import ix.ginas.models.utils.JSONEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 @Entity

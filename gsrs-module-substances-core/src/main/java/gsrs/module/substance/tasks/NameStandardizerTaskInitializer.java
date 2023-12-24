@@ -38,7 +38,7 @@ import ix.ginas.models.v1.Name;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 @Slf4j
 @Data

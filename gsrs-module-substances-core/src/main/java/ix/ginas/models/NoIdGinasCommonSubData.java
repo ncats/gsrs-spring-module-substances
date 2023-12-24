@@ -10,10 +10,10 @@ import ix.ginas.models.serialization.ReferenceSetSerializer;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 
-import javax.persistence.Convert;
-import javax.persistence.MappedSuperclass;
-import javax.persistence.PreUpdate;
-import javax.persistence.Transient;
+import jakarta.persistence.Convert;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Transient;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
