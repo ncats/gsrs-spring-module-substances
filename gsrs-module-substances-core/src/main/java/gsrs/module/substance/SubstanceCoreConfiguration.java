@@ -72,8 +72,8 @@ public class SubstanceCoreConfiguration {
         @Override
         public void customize(TomcatServletWebServerFactory factory) {
             factory.addConnectorCustomizers((TomcatConnectorCustomizer) connector -> {
-                connector.setAttribute("relaxedPathChars", "<>[\\]^`{|}");
-                connector.setAttribute("relaxedQueryChars", "<>[\\]^`{|}");
+                connector.setProperty("relaxedPathChars", "<>[\\]^`{|}");
+                connector.setProperty("relaxedQueryChars", "<>[\\]^`{|}");
             });
         }
     }

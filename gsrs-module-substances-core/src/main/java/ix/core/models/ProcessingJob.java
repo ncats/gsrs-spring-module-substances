@@ -18,7 +18,7 @@ import ix.core.processing.RecordPersisterFactory;
 import ix.core.stats.Statistics;
 import org.springframework.data.annotation.CreatedBy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.IOException;
 import java.util.*;
 

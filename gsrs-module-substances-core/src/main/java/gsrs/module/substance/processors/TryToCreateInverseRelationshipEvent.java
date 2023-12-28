@@ -32,6 +32,7 @@ public class TryToCreateInverseRelationshipEvent {
     private UUID originatorUUID;
     private UUID relationshipIdToInvert;
 
+    @Builder.Default
     private CreationMode creationMode = CreationMode.CREATE_IF_MISSING;
 
     private UUID newRelationshipId;

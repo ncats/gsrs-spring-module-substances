@@ -15,7 +15,7 @@ import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.serialization.IntArrayDeserializer;
 import ix.ginas.models.serialization.IntArraySerializer;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

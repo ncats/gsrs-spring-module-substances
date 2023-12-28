@@ -2,7 +2,7 @@ package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonView;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
