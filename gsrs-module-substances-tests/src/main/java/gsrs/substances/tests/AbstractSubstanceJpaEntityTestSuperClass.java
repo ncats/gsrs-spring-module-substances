@@ -328,7 +328,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
      * @throws IOException if there is a problem parsing the file.
      */
     protected List<GsrsEntityService.CreationResult<Substance>> loadGsrsFile(File gsrsFile) throws IOException {
-        return loadGsrsFile(gsrsFile, null);
+        return loadGsrsFile(gsrsFile, new Substance.SubstanceClass[] {});
     }
         /**
          * Load the specially formatted GSRS format file (often with {@code .gsrs} extension although some
