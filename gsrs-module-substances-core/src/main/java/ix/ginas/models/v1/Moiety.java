@@ -30,18 +30,16 @@ import java.util.UUID;
 @SingleParent
 //@JsonIgnoreProperties({ "id" })
 public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
-	public static String JSON_NULL="JSON_NULL";
-	/**
-	 * The UUID of this moiety
-	 */
+    public static String JSON_NULL="JSON_NULL";
+    /**
+     * The UUID of this moiety
+     */
 
-	@Type(type = "uuid-char" )
-	@Column(length =40, updatable = false, unique = true)
-	public UUID uuid;
+    public UUID uuid;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
-	@ParentReference
+    @ParentReference
     private ChemicalSubstance owner;
 
     public ChemicalSubstance getOwner(){
