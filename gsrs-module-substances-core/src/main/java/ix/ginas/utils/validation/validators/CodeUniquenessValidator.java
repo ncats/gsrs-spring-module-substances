@@ -36,6 +36,7 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
             Code cd = codesIter.next();
 
             if (!cd.type.equalsIgnoreCase("PRIMARY")
+                    || cd.isClassification()
                     || (singletonCodeSystems != null && !singletonCodeSystems.contains(cd.codeSystem))) {
                 log.trace(String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
                 continue;
@@ -50,11 +51,7 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
 
                 if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "Code '"
-                                    + cd.code
-                                    + "'[" + cd.codeSystem
-                                    + "] collides (possible duplicate) with existing code & codeSystem for substance:")
+                            .WARNING_MESSAGE("Code '%s'[%s] collides (possible duplicate) with existing code & codeSystem for substance:", cd.code, cd.codeSystem)
                             //                               TODO katelda Feb 2021 : add link support back!
                             .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
                     callback.addMessage(mes);

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1-SNAPSHOT</version>
+        <version>3.1.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -18,7 +18,7 @@
     </properties>
 
     <build>
-<plugins>
+    <plugins>
        <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
@@ -27,15 +27,46 @@
                 <argLine>-Xmx3500m</argLine>
            </configuration>
         </plugin>
-    <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
-        <configuration>
-            <source>8</source>
-            <target>8</target>
-        </configuration>
-    </plugin>
-</plugins>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+                <source>8</source>
+                <target>8</target>
+            </configuration>
+        </plugin>
+        <!-- Uncomment this for maven public release deployment
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2.1</version>
+            <executions>
+                <execution>
+                    <id>attach-sources</id>
+                    <goals>
+                        <goal>jar-no-fork</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin>
+        <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <configuration>
+                <additionalparam>-Xdoclint:none</additionalparam>
+                <additionalOptions>-Xdoclint:none</additionalOptions>
+                <additionalJOption>-Xdoclint:none</additionalJOption>
+            </configuration>
+            <executions>
+                <execution>
+                    <id>attach-javadocs</id>
+                    <goals>
+                        <goal>jar</goal>
+                    </goals>
+                </execution>
+            </executions>
+        </plugin> -->
+    </plugins>
 	    <!--
 <plugins><plugin>
 <groupId>org.apache.maven.plugins</groupId>
@@ -215,7 +246,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.12-SNAPSHOT</version>
+            <version>1.0.14</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -299,13 +330,13 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-data-exchange</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>${gsrs.substance.version}</version>
             <scope>test</scope>
         </dependency>
         <!--dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>3.1.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency-->
 

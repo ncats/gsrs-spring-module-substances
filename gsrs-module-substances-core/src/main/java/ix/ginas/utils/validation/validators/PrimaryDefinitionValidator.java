@@ -33,7 +33,7 @@ public class PrimaryDefinitionValidator extends AbstractValidatorPlugin<Substanc
             Substance subAlternative = substanceRepository.findBySubstanceReference(relsub);
             if(subAlternative ==null){
                 //does not exist
-                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("alternative definition not found " + relsub.refPname));
+                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("alternative definition not found %s", relsub.refPname));
             }else if (subAlternative.isPrimaryDefinition()) {
                 callback.addMessage(GinasProcessingMessage
                         .ERROR_MESSAGE("Primary definitions cannot be alternative definitions for other Primary definitions"));

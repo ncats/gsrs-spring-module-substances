@@ -54,22 +54,23 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                 }else if (!(cd.code+"").trim().equals(cd.code+"")) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    "'Code' '" + cd.code + "' should not have trailing or leading whitespace. Code will be trimmed to '" + cd.code.trim() + "'")
+                                    "'Code' '%s' should not have trailing or leading whitespace. Code will be trimmed to '%s'",
+                                    cd.code, cd.code.trim())
                             .appliableChange(true);
                     callback.addMessage(mes, ()-> cd.code=(cd.code+"").trim());
 
                 }
-                
+
                 if (!ValidationUtils.isEffectivelyNull(cd.codeText) && !(cd.codeText+"").trim().equals(cd.codeText+"")) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    "'Code comment' '" + cd.codeText + "' should not have trailing or leading whitespace. Code will be trimmed to '" 
-                                            + cd.codeText.trim() + "'")
+                                    "'Code comment' '%s' should not have trailing or leading whitespace. Code will be trimmed to '%s'",
+                                    cd.codeText, cd.codeText.trim())
                             .appliableChange(true);
                     callback.addMessage(mes, ()-> cd.codeText=(cd.codeText+"").trim());
                 }
 
-                
+
             if (ValidationUtils.isEffectivelyNull(cd.codeSystem)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .ERROR_MESSAGE(
@@ -80,8 +81,8 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                 } else if (!(cd.codeSystem+"").trim().equals(cd.codeSystem+"")) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    "'Code system' '" + cd.codeSystem + "' should not have trailing or leading whitespace. Code will be trimmed to '" 
-                                            + cd.codeSystem.trim() + "'")
+                                    "'Code system' '%s' should not have trailing or leading whitespace. Code will be trimmed to '%s'",
+                                    cd.codeSystem, cd.codeSystem.trim())
                             .appliableChange(true);
                     callback.addMessage(mes, ()-> cd.codeSystem=(cd.codeSystem+"").trim());
                 }
@@ -106,21 +107,18 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 //            String debug = String.format("code system: %s, code: %s; comments: %s; type: %s", 
 //                    cd.codeSystem, cd.code, cd.comments, cd.type);
 //            log.trace(debug);
-            
+
             try {
                  if( containsLeadingTrailingSpaces(cd.comments) ) {
                      cd.comments=cd.comments.trim();
                      GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
-                                        "Code '"
-                                                + cd.code
-                                                + "'[" +cd.codeSystem
-                                                + "] "
-                                        + "code text: " +  cd.comments  +" contains one or more leading/trailing blanks that will be removed")
+                                        "Code '%s'[%s] code text: %s contains one or more leading/trailing blanks that will be removed",
+                                        cd.code, cd.codeSystem, cd.comments)
                                 .appliableChange(true);
                      callback.addMessage(mes);
                 }
-                
+
             } catch (Exception e) {
                 e.printStackTrace();
             }

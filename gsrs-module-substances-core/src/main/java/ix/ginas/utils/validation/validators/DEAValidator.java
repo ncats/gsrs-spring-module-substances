@@ -30,8 +30,7 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
         String deaSchedule = deaDataTable.getDeaScheduleForChemical(chemical);
         if( deaNumber !=null) {
             GinasProcessingMessage mesWarn = GinasProcessingMessage
-                    .WARNING_MESSAGE(
-                            String.format("This substance has DEA schedule: %s", deaSchedule));
+                    .WARNING_MESSAGE("This substance has DEA schedule: %s", deaSchedule);
             if( deaDataTable.assignCodeForDea(substanceNew, deaNumber)){
                 mesWarn.appliableChange(true);
             }

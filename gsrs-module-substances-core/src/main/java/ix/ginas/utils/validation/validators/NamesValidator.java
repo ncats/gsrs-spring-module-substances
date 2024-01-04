@@ -33,7 +33,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private SubstanceRepository substanceRepository;
     // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
     boolean extractLocators = false;
-    private boolean duplicateNameIsError = false;
 
     // Keep consistent with NamesUtilities
     // This and other replacers should be handled later in a new NameStandardizer class similar to HTMLNameStandardizer
@@ -139,13 +138,13 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 // because bracketted tag terms are removed from the Name.name string in the process.
                 // The warning may not be sufficiently explanatory to the user as he/she is not
                 // shown which name(s) have been changed in the warning.
-                TagUtilities.BracketExtraction be = TagUtilities.getBracketExtraction(n.name);
+                TagUtilities.BracketExtraction be = TagUtilities.getBracketExtraction(n.getName());
                 List<String> locators = be.getTagTerms();
                 if(!locators.isEmpty()){
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    "Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:"
-                                            + locators.toString())
+                                    "Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:%s",
+                                            locators.toString())
                             .appliableChange(true);
                     callback.addMessage(mes, ()->{
                         for (String loc : locators) {
@@ -204,7 +203,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
                 if(!hasPublicReference){
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .ERROR_MESSAGE("The name :\"" + n.getName() + "\" needs an unprotected reference marked \"Public Domain\" in order to be made public.");
+                            .ERROR_MESSAGE("The name :\"%s\" needs an unprotected reference marked \"Public Domain\" in order to be made public.",
+                                    n.getName());
                     callback.addMessage(mes);
                 }
             }
@@ -220,9 +220,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
         }
         if (display == 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .INFO_MESSAGE(
-                            "Substances should have exactly one (1) display name, Default to using:"
-                                    + s.getName()).appliableChange(true);
+                    .INFO_MESSAGE("Substances should have exactly one (1) display name, Default to using:%s", s.getName())
+                    .appliableChange(true);
             callback.addMessage(mes, () -> {
                 if (!s.names.isEmpty()) {
                     Name.sortNames(s.names);
@@ -233,8 +232,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
         }
         if (display > 1) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .ERROR_MESSAGE("Substance should not have more than one (1) display name. Found "
-                            + display);
+                    .ERROR_MESSAGE("Substance should not have more than one (1) display name. Found %s", display);
             callback.addMessage(mes);
         }
 
@@ -242,7 +240,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
         Optional<Name> oldDisplayName= (objold!=null && objold.names !=null) ? objold.names.stream().filter(n->n!=null && n.displayName).findFirst() : Optional.empty();
         LogUtil.trace(()->String.format("oldDisplayName: present: %b; value: %s", oldDisplayName.isPresent(),
-                oldDisplayName.isPresent() ? oldDisplayName.get().name : ""));
+                oldDisplayName.isPresent() ? oldDisplayName.get().getName() : ""));
 
         for (Name n : s.names) {
             if( n==null || n.getName() == null) {
@@ -259,22 +257,9 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 Set<String> names = nameSetByLanguage.computeIfAbsent(language, k->new HashSet<>());
                 if(!names.add(uppercasedName)){
                     GinasProcessingMessage mes;
-                    log.trace("duplicateNameIsError: {}", duplicateNameIsError);
-                    if (duplicateNameIsError) {
-                        mes = GinasProcessingMessage
-                                .ERROR_MESSAGE(
-                                        "Name '"
-                                                + name
-                                                + "' is a duplicate name in the record.")
+                    mes = GinasProcessingMessage
+                                .WARNING_MESSAGE("Name '%s' is a duplicate name in the record.", name)
                                 .markPossibleDuplicate();
-                    } else {
-                        mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Name '"
-                                                + name
-                                                + "' is a duplicate name in the record.")
-                                .markPossibleDuplicate();
-                    }
                     callback.addMessage(mes);
                 }
 
@@ -286,10 +271,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                     SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
                     if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
                         GinasProcessingMessage mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Name '"
-                                                + n.name
-                                                + "' collides (possible duplicate) with existing name for substance:")
+                                .WARNING_MESSAGE("Name '%s' collides (possible duplicate) with existing name for substance:", n.name)
                                //TODO katzelda Feb 2021: add link back
                                 . addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()))
                                 ;
@@ -299,27 +281,16 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().name.equalsIgnoreCase(n.name)
+            if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
                 &&  (s.changeReason==null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE(
-                                "Preferred Name has been changed from '"
-                                        + oldDisplayName.get().name
-                                        + "' to '"
-                                        + n.name
-                                        + "'. Please confirm that this change is intentional by submitting.");
+                                "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
+                                oldDisplayName.get().getName(), n.getName());
                 callback.addMessage(mes);
             }
         }
 
-    }
-
-    public boolean isDuplicateNameIsError() {
-        return duplicateNameIsError;
-    }
-
-    public void setDuplicateNameIsError(boolean duplicateNameIsError) {
-        this.duplicateNameIsError = duplicateNameIsError;
     }
 
     public void setReplaceSingleLinefeedPrecededByCertainCharactersWithBlank(boolean replaceSingleLinefeedPrecededByCertainCharactersWithBlank) {

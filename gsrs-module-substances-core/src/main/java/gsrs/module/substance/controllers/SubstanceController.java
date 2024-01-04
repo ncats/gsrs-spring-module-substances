@@ -174,13 +174,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         public static SimpleStandardizer ADD_HYDROGENS() {
             return (c)->{
                 // TODO:
-                // In CDK, this doesn't generate coordinates for the Hs, meaning you have to have an additional
-                // clean call. Also, this method doesn't do anything for query molecules in CDK.
-                //
-                // Both of the above problems will need to be fixed for this to work well.
+                // In CDK, this doesn't generate coordinates for query molecules.
+		// We will need to fix this eventually.
                 //
 
                 c.makeHydrogensExplicit();
+
+		// TODO this should probably only happen when needed, but
+		// this will fix the CDK issue of 0,0,0 Hs
+		ChemAligner.align2DClean(c);
+		    
                 return c;
             };
         }
@@ -1402,7 +1405,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 rendererOptions.changeSettings(newDisplay);
             }
 
-
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
 
@@ -1472,6 +1474,30 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             if (!fullRendererOptions.isShowShadow()) {
                 renderer.setShadowVisible(false);
             }
+//
+//            if (fullRendererOptions.isAddBorder()) {
+//            	renderer.setBorderVisible(true);
+//            	if(fullRendererOptions.getColorBorder()!=null) {
+//            		renderer.setBorderColorARGB(fullRendererOptions.getColorBorder());	
+//            	}            	
+//            }
+//            
+//            if (fullRendererOptions.getColorBg()!=null) {
+//            	renderer.setBorderColorARGB(fullRendererOptions.getColorBg());            	
+//            }
+            
+
+            if (fullRendererOptions.isAddBorder()) {
+            	renderer.setBorderVisible(true);
+            	if(fullRendererOptions.getColorBorder()!=null) {
+            		renderer.setBorderColorARGB(fullRendererOptions.getColorBorder());	
+            	}            	
+            }
+            
+            if (fullRendererOptions.getColorBg()!=null) {
+            	renderer.setBorderColorARGB(fullRendererOptions.getColorBg());            	
+            }
+            
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
@@ -1517,6 +1543,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             boolean hasRgroups=hasRGroups(c);
             int rgroupColor=1;
 
+            
             if(hasRgroups){
                 if(fuse){
                     compColor=colorChemicalComponents(c);
@@ -1601,6 +1628,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 //			}
 //		}
         boolean r=false;
+
+        
         for(Atom ca:c.getAtoms()){
             if(ca.getRGroupIndex().isPresent()){
                 r= true;
@@ -1610,6 +1639,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 String alias = ca.getAlias().orElse("");
                 if(alias.startsWith("_R")){
                     ca.setRGroup(Integer.parseInt(alias.replace("_R", "")));
+                    r= true;
+                }else if(alias.startsWith("R")){
+                    ca.setRGroup(Integer.parseInt(alias.replace("R", "")));
                     r= true;
                 }
             }

@@ -85,10 +85,9 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                 if (su.subunitIndex == null) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    "Protein subunit (at "
-                                    + (i + 1)
-                                    + " position) has no subunit index, defaulting to:"
-                                    + (i + 1)).appliableChange(true);
+                                    "Protein subunit (at %s position) has no subunit index, defaulting to:%s",
+                                    (i + 1), (i + 1))
+                                    .appliableChange(true);
                     Integer newValue = i + 1;
                     callback.addMessage(mes, () -> su.subunitIndex = newValue);
 
@@ -98,10 +97,10 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                 //for now just null/blank need to confer with stakeholders if amino acid validation is needed or not
                 if (su.sequence == null || su.sequence.trim().isEmpty()) {
                     if (Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
-                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("subunit at position " + (i + 1) + " is blank. This is allowed but discouraged for incomplete protein records."));
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("subunit at position %s is blank. This is allowed but discouraged for incomplete protein records.", (i + 1)));
                     }
                     else {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("subunit at position " + (i + 1) + " is blank"));
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("subunit at position %s is blank", (i + 1)));
                     }
                 }
             }
@@ -112,9 +111,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
             List<Site> sites = l.getSites();
             if (sites.size() != 2) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .ERROR_MESSAGE("Disulfide Link \""
-                                + sites.toString() + "\" has "
-                                + sites.size() + " sites, should have 2");
+                        .ERROR_MESSAGE("Disulfide Link \"%s\" has %s sites, should have 2",
+                                sites.toString(), sites.size());
                 callback.addMessage(mes);
             }
             else {
@@ -122,17 +120,14 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                     String res = cs.protein.getResidueAt(s);
                     if (res == null) {
                         GinasProcessingMessage mes = GinasProcessingMessage
-                                .ERROR_MESSAGE("Site \"" + s.toString()
-                                        + "\" does not exist");
+                                .ERROR_MESSAGE("Site \"%s\" does not exist", s.toString());
                         callback.addMessage(mes);
                     }
                     else {
                         if (!res.equalsIgnoreCase("C")) {
                             GinasProcessingMessage mes = GinasProcessingMessage
-                                    .ERROR_MESSAGE("Site \""
-                                            + s.toString()
-                                            + "\" in disulfide link is not a Cysteine, found: \""
-                                            + res + "\"");
+                                    .ERROR_MESSAGE("Site \"%s\" in disulfide link is not a Cysteine, found: \"%s\"",
+                                            s.toString(), res);
                             callback.addMessage(mes);
                         }
                     }
@@ -158,8 +153,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 
         if (unknownRes.size() > 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .WARNING_MESSAGE("Protein has unknown amino acid residues: "
-                            + unknownRes.toString());
+                    .WARNING_MESSAGE("Protein has unknown amino acid residues: %s",
+                            unknownRes.toString());
             callback.addMessage(mes);
         }
         mwFormulaContribution.getMessages().forEach(m -> callback.addMessage(m));
@@ -169,15 +164,16 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
             Property calculatedMolWeight = molWeightCalculatorProperties.calculateMolWeightProperty(tot, low, high, lowLimit, highLimit);
             GinasProcessingMessage mes = GinasProcessingMessage
                     .WARNING_MESSAGE(
-                            "Protein has no molecular weight, defaulting to calculated value of: "
-                            + calculatedMolWeight.getValue()).appliableChange(true);
+                            "Protein has no molecular weight, defaulting to calculated value of: %s",
+                            calculatedMolWeight.getValue())
+                    .appliableChange(true);
             callback.addMessage(mes, () -> {
 
                 cs.properties.add(calculatedMolWeight);
                 if (!unknownRes.isEmpty()) {
                     GinasProcessingMessage mes2 = GinasProcessingMessage
-                            .WARNING_MESSAGE("Calculated protein weight questionable, due to unknown amino acid residues: "
-                                    + unknownRes.toString());
+                            .WARNING_MESSAGE("Calculated protein weight questionable, due to unknown amino acid residues: %s",
+                                    unknownRes.toString());
                     callback.addMessage(mes2);
                 }
             });
@@ -204,10 +200,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                     double avgoff = delta / len;  commented out per discussion with Tyler 29 June 2020 */
                     if (Math.abs(pdiff) > valueTolerance) {
                         callback.addMessage(GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        String.format("Calculated weight [%.2f] is greater than %.2f%s off of given weight [%.2f]",
-                                                tot, tolerance, "%",
-                                                p.getValue().average)));
+                                .WARNING_MESSAGE("Calculated weight [%.2f] is greater than %.2f%s off of given weight [%.2f]",
+                                                tot, tolerance, "%", p.getValue().average));
                         //katzelda May 2018 - turn off appliable change since there isn't anything to change it to.
 //                                    .appliableChange(true));
                     }
@@ -225,15 +219,16 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 
             GinasProcessingMessage mes = GinasProcessingMessage
                     .WARNING_MESSAGE(
-                            "Protein has no molecular formula property, defaulting to calculated value of: "
-                            + mwFormulaContribution.getFormula()).appliableChange(true);
+                            "Protein has no molecular formula property, defaulting to calculated value of: %s",
+                            mwFormulaContribution.getFormula())
+                    .appliableChange(true);
             callback.addMessage(mes, () -> {
 
                 cs.properties.add(ProteinUtils.makeMolFormulaProperty(mwFormulaContribution.getFormula()));
                 if (!unknownRes.isEmpty()) {
                     GinasProcessingMessage mes2 = GinasProcessingMessage
-                            .WARNING_MESSAGE("Calculated protein formula questionable due to unknown amino acid residues: "
-                                    + unknownRes.toString());
+                            .WARNING_MESSAGE("Calculated protein formula questionable due to unknown amino acid residues: %s",
+                                    unknownRes.toString());
                     callback.addMessage(mes2);
                 }
             });
@@ -305,12 +300,6 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                             /*payload = _payload.get()
                                     .createPayload("Sequence Search", "text/plain", su.sequence);*/
 
-                            String msgOne = "There is 1 substance with a similar sequence to subunit ["
-                                    + suSet + "]:";
-
-                            String msgMult = "There are ? substances with a similar sequence to subunit ["
-                                    + suSet + "]:";
-
                             List<Function<String, List<Tuple<Double, Tuple<ProteinSubstance, Subunit>>>>> searchers = new ArrayList<>();
 
                             //Simplified searcher, using lucene direct index
@@ -366,14 +355,13 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 //                                        l.text = "(Perform similarity search on subunit ["
 //                                                + su.subunitIndex + "])";
 
-                                        String warnMessage = msgOne;
-
-                                        if (suResults.size() > 1) {
-                                            warnMessage = msgMult.replace("?", suResults.size() + "");
+                                        String msgMod = "is 1 substance";
+                                        if(suResults.size()>1){
+                                            msgMod = "are " + suResults.size() + " substances";
                                         }
 
                                         GinasProcessingMessage dupMessage = GinasProcessingMessage
-                                                .WARNING_MESSAGE(warnMessage);
+                                                .WARNING_MESSAGE("There %s with a similar sequence to subunit [%s]:", msgMod, suSet);
 //                                        dupMessage.addLink(l);
 
                                         suResults.stream()
