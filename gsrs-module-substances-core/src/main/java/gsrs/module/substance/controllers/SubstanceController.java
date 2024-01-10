@@ -771,6 +771,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             Optional.ofNullable(httpServletRequest.getParameterValues("order")).ifPresent(ss->{
                 attributes.asMap().putIfAbsent("order", ss);
             });
+
+            Optional.ofNullable(httpServletRequest.getParameterValues("view")).ifPresent(ss->{
+                attributes.asMap().putIfAbsent("view", ss[0]);
+            });
+
             Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
             //TODO: find a way to make this not be a redirect. If we remove redirect now
             // it will actually get rid of the extra parameters, and result in a null search
