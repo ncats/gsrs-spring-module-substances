@@ -269,9 +269,10 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
             //nameSet.add(n.getName());
             try {
-                List<SubstanceRepository.SubstanceSummary> sr = (!this.caseSearchType.equalsIgnoreCase("IMPLICIT"))
+                List<SubstanceRepository.SubstanceSummary> sr =
+                        (!this.caseSearchType.equalsIgnoreCase("IMPLICIT"))
                         ? substanceRepository.findByNames_NameIgnoreCase(n.name)
-                        : substanceRepository.findByNames_NameIgnoreCaseImplicit(n.name);
+                        : substanceRepository.findByNames_Name(n.name);
                 if (sr != null && !sr.isEmpty()) {
                     SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
                     if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
@@ -281,7 +282,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                                 .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
                         callback.addMessage(mes);
                     }
-                }
+                    }
             } catch (Exception e) {
                 e.printStackTrace();
             }

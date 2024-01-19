@@ -61,6 +61,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     @Query("select s from Substance s join s.names n where  n.name = ?1")
     List<SubstanceSummary> findByNames_NameIgnoreCaseImplicit(String name);
 
+    List<SubstanceSummary> findByNames_Name(String name);
+
     List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
 
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
