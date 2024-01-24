@@ -647,6 +647,38 @@ public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
+    public void proteinMolFormulaDisulfidesTest() {
+        ProteinSubstance proteinSubstance = new ProteinSubstance();
+        Protein protein = new Protein();
+        Subunit subunit1= new  Subunit();
+        protein.subunits = new ArrayList<>();
+        protein.subunits.add(subunit1);
+        subunit1.sequence =
+                "CMMC";
+        // M  	C5H11NO2S
+        // C    C3H7NO2S
+        // expected formula for entire thing before disulfides: (C (5*2 + 3*2) H (11*2 + 7*2 -2) N (2 + 2) O (2+2*2 -1)
+        //      C 16    H (22+14-3*2) N 4 O (2*2 +2*2 - 3)
+        //  C 16    H 30 N 4    O 5
+        // -2 H for one disulfide
+        // C16H28N4O5S4
+
+        DisulfideLink disulfideLink = new DisulfideLink();
+        List<Site> sitesDisulfide = new ArrayList<>();
+        sitesDisulfide.add(new Site(1, 1));
+        sitesDisulfide.add(new Site(1, 4));
+        disulfideLink.setSites(sitesDisulfide);
+        protein.setDisulfideLinks(Collections.singletonList(disulfideLink));
+        proteinSubstance.setProtein(protein);
+
+        Set<String> unknownResidues = new HashSet<>();
+
+        MolecularWeightAndFormulaContribution contribution=ProteinUtils.generateProteinWeightAndFormula(substanceRepository,
+                proteinSubstance, unknownResidues);
+        assertEquals("C16H28N4O5S4", contribution.getFormula());
+    }
+
+    @Test
     public void aparaginePeptideMolFormulaTest() {
         ProteinSubstance proteinSubstance = new ProteinSubstance();
         Protein protein = new Protein();
