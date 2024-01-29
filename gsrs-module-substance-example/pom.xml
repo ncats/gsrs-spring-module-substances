@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1</version>
+        <version>3.1.0.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -333,13 +333,6 @@
             <version>${gsrs.substance.version}</version>
             <scope>test</scope>
         </dependency>
-        <!--dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-core</artifactId>
-            <version>3.1-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency-->
-
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
