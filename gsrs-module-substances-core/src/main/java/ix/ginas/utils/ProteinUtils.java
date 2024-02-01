@@ -325,7 +325,7 @@ public class ProteinUtils
                 total, makeFormulaFromMap(formulaCounts), disulfideContribution));
         total -= disulfideContribution;
         int numberOfHydrogensToRemove = getNumberOfHydrogensToRemoveForDisulfides(ps.protein);
-        log.warn("numberOfHydrogensToRemove: {}", numberOfHydrogensToRemove);
+        log.trace("numberOfHydrogensToRemove: {}", numberOfHydrogensToRemove);
         Map<String, SingleThreadCounter> formulaMapWithContrib[] =new Map[1];
         formulaMapWithContrib[0]=formulaCounts;
         if (ps.hasModifications() && ps.modifications.structuralModifications.size() > 0) {
