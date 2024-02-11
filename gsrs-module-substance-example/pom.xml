@@ -204,7 +204,7 @@
 
         <dependency>
             <groupId>com.h2database</groupId>
-            <artifactId>h2</artifactId>           	
+            <artifactId>h2</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -331,7 +331,6 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-data-exchange</artifactId>
             <version>${gsrs.substance.version}</version>
-            <scope>test</scope>
         </dependency>
         <!--dependency>
             <groupId>gov.nih.ncats</groupId>
