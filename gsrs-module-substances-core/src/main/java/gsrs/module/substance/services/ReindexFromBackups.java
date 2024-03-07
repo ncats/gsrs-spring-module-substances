@@ -187,7 +187,7 @@ public class ReindexFromBackups implements ReindexService{
                                                     // however, you could argue there SHOULD be a controller for them
                                                     if (seen.add(keyString)) {
                                                         //is this a good idea ?
-                                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped));
+                                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped), false, false);
                                                         eventConsumer.accept(event);
                                                     }
                                                 } catch (Throwable t) {

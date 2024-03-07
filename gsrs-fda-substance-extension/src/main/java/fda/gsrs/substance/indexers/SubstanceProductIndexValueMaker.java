@@ -31,6 +31,11 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
 	public Class<Substance> getIndexedEntityClass() {
 		return Substance.class;
 	}
+	
+	@Override
+	public boolean isExternal() {
+		return true;
+	} 
 
 	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {

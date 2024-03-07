@@ -26,6 +26,11 @@ public class SubstanceClinicalEuropeTrialIndexValueMaker implements IndexValueMa
 	public Class<Substance> getIndexedEntityClass() {
 		return Substance.class;
 	}
+	
+	@Override
+	public boolean isExternal() {
+		return true;
+	} 
 
 	private static final long[] countBuckets = new long[]{1,2,3,4,5,10,15,20,25,30,40,50,75,100,250,500,1000,2000,3000,5000};
 

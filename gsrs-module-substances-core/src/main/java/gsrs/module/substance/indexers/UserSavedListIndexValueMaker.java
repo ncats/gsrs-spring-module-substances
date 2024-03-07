@@ -39,6 +39,12 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 		return Stream.of("User List").collect(Collectors.toSet());
 	}
 	
+	//Todo for Lihui:  Remove after testing
+	@Override
+	public boolean isExternal() {
+		return true;
+	}
+	//Todo for Lihui:  Remove after testing
 	
 	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
