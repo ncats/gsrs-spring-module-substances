@@ -38,7 +38,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         Map<String, Object> oneAdapter = new HashMap<>();
         oneAdapter.put("importAdapterFactoryClass", "gsrs.module.substance.importers.SDFImportAdapterFactory");
         oneAdapter.put("order", 1000);
-        oneAdapter.put("key", "SDFImportAdapterFactory");
+        oneAdapter.put("parentKey", "SDFImportAdapterFactory");
         oneAdapter.put("adapterName", "NSRS SDF Adapter");
         oneAdapter.put("extensions", Arrays.asList("sdf", "sd"));
         oneAdapter.put("parameters", buildConfigParameters());
