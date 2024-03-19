@@ -19,6 +19,11 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.NaturalId;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+
 
 import javax.persistence.*;
 import java.util.*;
@@ -29,6 +34,7 @@ import java.util.*;
                                         @Index(name = "name_owner_index", columnList = "owner_uuid")})
 @SingleParent
 @IndexableRoot
+@Indexed
 public class Name extends CommonDataElementOfCollection {
 	
 	
@@ -122,15 +128,18 @@ public class Name extends CommonDataElementOfCollection {
     @JSONEntity(title = "Name", isRequired = true)
     @Column(nullable=false, length=1024)
     @Indexable(name="Name", suggest=true)
+    @FullTextField()
     public String name;
 
     @Lob
     @Basic(fetch= FetchType.EAGER)
     @JsonIgnore
+    @FullTextField()
     public String fullName;
     
     @Lob
     @Basic(fetch= FetchType.EAGER)
+    @FullTextField()
     //@JsonView(BeanViews.JsonDiff.class)  commenting this out to make the stdName field easier to see
 	@Indexable(name="Standardized Name", suggest=true)
 	public String stdName;
@@ -138,6 +147,7 @@ public class Name extends CommonDataElementOfCollection {
     
     @JSONEntity(title = "Name Type", format = JSONConstants.CV_NAME_TYPE, values = "JSONConstants.ENUM_NAMETYPE")
     @Column(length=32)
+    @KeywordField()
     public String type="cn";
     
     @JSONEntity(title = "Domains", format = "table", itemsTitle = "Domain", itemsFormat = JSONConstants.CV_NAME_DOMAIN)

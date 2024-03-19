@@ -74,6 +74,12 @@ import ix.ginas.models.serialization.PrincipalSerializer;
 import ix.ginas.models.utils.JSONEntity;
 import lombok.extern.slf4j.Slf4j;
 
+import org.hibernate.annotations.NaturalId;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.KeywordField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.FullTextField;
+import org.hibernate.search.mapper.pojo.mapping.definition.annotation.Indexed;
+
+@Indexed
 @Backup
 @JSONEntity(name = "substance", title = "Substance")
 @Entity
@@ -362,6 +368,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @JSONEntity(title = "Approval ID", isReadOnly = true)
     @Column(length = 20, name="approval_id")
     @Indexable(suggest = true, name = "Approval ID", sortable=true)
+    @KeywordField()
     public String approvalID;
 
     // TODO in original schema, this field is missing its items: String

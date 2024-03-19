@@ -28,6 +28,7 @@ import gsrs.events.BeginReindexEvent;
 import gsrs.events.EndReindexEvent;
 import gsrs.events.IncrementReindexEvent;
 import gsrs.events.ReindexEntityEvent;
+import gsrs.indexer.HibernateIndexer;
 import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import ix.core.models.BackupEntity;
@@ -54,6 +55,8 @@ public class ReindexFromBackups implements ReindexService{
     @Autowired
     PlatformTransactionManager transactionManager;
 
+    @Autowired
+    private HibernateIndexer indexer;
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
@@ -84,6 +87,7 @@ public class ReindexFromBackups implements ReindexService{
     @Override
     @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public void execute(Object id, SchedulerPlugin.TaskListener l) throws IOException {
+        indexer.indexPersistedData("ix.ginas.models.v1.Substance");
         l.message("Initializing reindexing");
 
         //this is all handled now by Spring events
