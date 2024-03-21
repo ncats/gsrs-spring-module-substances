@@ -29,16 +29,17 @@ import java.util.Objects;
   If you don't specify a length the default will be Long.MAX_VALUE
 
   Configure like so:
-	gsrs.entityProcessors +={
+	gsrs.entityProcessors.list.UniqueCodeGenerator = {
 		"entityClassName" = "ix.ginas.models.v1.Substance",
 		"processor" = "gsrs.module.substance.processors.UniqueCodeGenerator",
-		"with"=  {
-			"name": "Some Name",
+		"order" = 1200,
+		"with" = {
+			"name" = "Some Name",
 			"codesystem"="SOMECODESYSTEM",
-			"suffix"="ZZ",
-			"length"=5,
-			"padding"=true,
-			"max"=999
+			"suffix" = "ZZ",
+			"length" = 5,
+			"padding" = true,
+			"max" = 999
 		}
 	}
  */
