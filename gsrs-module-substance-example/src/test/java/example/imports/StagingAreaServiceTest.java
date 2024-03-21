@@ -29,14 +29,14 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
 
     @BeforeEach
     public void setup() throws NoSuchFieldException, IllegalAccessException {
-        // gsrs.matchableCalculators.substances.KEY =
+        // gsrs.matchableCalculators.substances.list.KEY =
 
 
         if( stagingAreaService == null ){
             log.trace("setting up staging area service");
             stagingAreaService = new DefaultStagingAreaService();
             stagingAreaService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaService);
-            Map<String, Map<String, Map<String, Object>>> matchableCalculatorConfig = new HashMap<>();
+            Map<String, Map<String, Map<String, Map<String, Object>>>> matchableCalculatorConfig = new HashMap<>();
             Map<String, Map<String, Object>> configs = new HashMap<>();
             Map<String, Object> casExtractor = new HashMap<>();
             casExtractor.put("matchableCalculationClass", CASNumberMatchableExtractor.class);
@@ -63,8 +63,9 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
             Map<String, Object> uuidExtractor = new HashMap<>();
             uuidExtractor.put("matchableCalculationClass", UUIDMatchableExtractor.class);
             configs.put("UUIDMatchableExtractor", uuidExtractor);
-            matchableCalculatorConfig.put("substances", configs);
-
+            matchableCalculatorConfig.put("substances",
+               new HashMap<String, Map<String, Map<String, Object>>>(){{ put("list", configs);}}
+            );
             SubstanceStagingAreaEntityService stagingAreaEntityService = new SubstanceStagingAreaEntityService();
             stagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaEntityService);
             Field factoryConfigField= stagingAreaEntityService.getClass().getDeclaredField("gsrsFactoryConfiguration");

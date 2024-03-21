@@ -34,7 +34,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         String substanceContext = "substances";
         //build up a complete configuration
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
-        Map<String, Map<String, Map<String, Object>>> adapterConfig = new HashMap<>();
+        Map<String, Map<String, Map<String, Map<String, Object>>>> adapterConfig = new HashMap<>();
         Map<String, Object> oneAdapter = new HashMap<>();
         oneAdapter.put("importAdapterFactoryClass", "gsrs.module.substance.importers.SDFImportAdapterFactory");
         oneAdapter.put("order", 1000);
@@ -45,10 +45,10 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         oneAdapter.put("stagingAreaServiceClass", gsrs.stagingarea.service.DefaultStagingAreaService.class);
         oneAdapter.put("entityServiceClass", "gsrs.dataexchange.SubstanceStagingAreaEntityService");
         Map<String, Map<String, Object>> adapters = new HashMap<>();
-        // ix.ginas.export.exporterfactories.substances.SdfExporterFactory =
+        // ix.ginas.export.exporterfactories.substances.list.SdfExporterFactory =
         adapters.put("SDFImportAdapterFactory", oneAdapter);
-
-        adapterConfig.put(substanceContext, adapters);
+        adapterConfig.put(substanceContext, null);
+        adapterConfig.get(substanceContext).put("list", adapters);
         config.setImportAdapterFactories(adapterConfig);
         ConfigBasedGsrsImportAdapterFactoryFactory factoryFactory = new ConfigBasedGsrsImportAdapterFactoryFactory();
         Field configField = factoryFactory.getClass().getDeclaredField("gsrsFactoryConfiguration"); //gsrs.imports.ConfigBasedGsrsImportAdapterFactoryFactory.
