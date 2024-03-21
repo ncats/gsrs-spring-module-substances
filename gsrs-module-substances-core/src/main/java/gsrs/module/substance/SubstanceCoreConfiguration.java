@@ -19,6 +19,7 @@ import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
+import ix.ginas.utils.SubstanceFieldNameDecoratorConfiguration;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -57,6 +58,7 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         GsrsProcessingStrategyFactory.class,
         GsrsProcessingStrategyFactoryConfiguration.class,
         ImportMetadataLegacySearchService.class,
+        SubstanceFieldNameDecoratorConfiguration.class,
         SubstanceSynchronizer.class
 })
 public class SubstanceCoreConfiguration {
