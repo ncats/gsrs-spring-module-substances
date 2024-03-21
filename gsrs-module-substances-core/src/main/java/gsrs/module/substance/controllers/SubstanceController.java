@@ -31,8 +31,6 @@ import javax.validation.constraints.NotBlank;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
@@ -742,8 +740,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-            String sins=structure.getStereoInsensitiveHash();
-            hash= "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+            hash= makeFlexSearch(structure);
+            log.trace("search hash: {}", hash);
+                    //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
 
         if(hash !=null){
@@ -1858,5 +1857,30 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 
-}
+    public String makeFlexSearch(Structure structure) {
+        String sins=structure.getStereoInsensitiveHash();
+        return "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + makeFlexSearchMoietyClauses(structure) + ")";
+    }
 
+    public String makeFlexSearchMoietyClauses(Structure structure) {
+
+        List<Structure> moieties = new ArrayList<>();
+        try {
+            structureProcessor.taskFor(structure.molfile)
+                    .components(moieties)
+                    .standardize(false)
+                    .build()
+                    .instrument()
+                    .getStructure();
+            log.trace(" created {} moieties", moieties.size());
+            return moieties.stream()
+                    .map(m->{
+                        return "(root_moieties_properties_STEREO_INSENSITIVE_HASH:\""  + m.getStereoInsensitiveHash() + "\")";
+                    })
+                    .collect(Collectors.joining(" AND "));
+        } catch (Exception e) {
+            log.error("Error constructing query: ", e);
+            throw new RuntimeException(e);
+        }
+    }
+}
