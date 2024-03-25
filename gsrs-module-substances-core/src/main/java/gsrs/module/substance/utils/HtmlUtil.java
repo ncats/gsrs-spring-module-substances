@@ -20,7 +20,7 @@ import org.jsoup.select.NodeVisitor;
  * Created by epuzanov on 7/25/22.
  */
 public final class HtmlUtil {
-    private static final Set<String> safetags = Stream.of("i", "small", "sub", "sup").collect(Collectors.toSet());
+    private static final Set<String> safetags = Stream.of("br", "i", "small", "sub", "sup").collect(Collectors.toSet());
     private static class TruncateVisitor implements NodeVisitor {
         private int maxLen = 0;
         private Element dst;
