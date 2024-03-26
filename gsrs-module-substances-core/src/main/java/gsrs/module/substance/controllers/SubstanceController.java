@@ -1859,7 +1859,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     public String makeFlexSearch(Structure structure) {
         String sins=structure.getStereoInsensitiveHash();
-        return "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + makeFlexSearchMoietyClauses(structure) + ")";
+        return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" OR " + makeFlexSearchMoietyClauses(structure) + ")";
     }
 
     public String makeFlexSearchMoietyClauses(Structure structure) {
@@ -1873,11 +1873,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     .instrument()
                     .getStructure();
             log.trace(" created {} moieties", moieties.size());
-            return moieties.stream()
+            String moietySearchString= moieties.stream()
                     .map(m->{
-                        return "(root_moieties_properties_STEREO_INSENSITIVE_HASH:\""  + m.getStereoInsensitiveHash() + "\")";
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
+                        sb.append(m.getStereoInsensitiveHash());
+                        sb.append("\"");
+                        return sb.toString();
                     })
                     .collect(Collectors.joining(" AND "));
+            if( moieties.size() > 1) {
+                moietySearchString = "(" + moietySearchString + ")";
+            }
+            return moietySearchString;
         } catch (Exception e) {
             log.error("Error constructing query: ", e);
             throw new RuntimeException(e);

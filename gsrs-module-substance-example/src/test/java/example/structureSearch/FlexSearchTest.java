@@ -131,12 +131,13 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
         String hash=  controller.makeFlexSearch(structureStd);
-        log.trace("search hash: {}", hash);
+        System.out.printf("search hash: %s\n", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .query(hash)
                 .build();
         List<Substance> substances = getSearchList(request);
+        System.out.println("Flex search hits:");
         substances.forEach(s-> System.out.printf("ID %s - %s\n", s.uuid, s.getName()));
 
         int expectedNumber = 7;
@@ -147,17 +148,12 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @WithMockUser(value = "admin", roles = "Admin")
     public void runFlexSearchQuerySodiumTartrate() throws Exception {
         String structureSmiles = "C(C(C(=O)[O-])O)(C(=O)O)O.[Na+]";
-        //String molfileSource = "molfiles/sodium_tartarate.mol";
+        String molfileSource = "molfiles/sodium_tartarate.mol";
 
-        //File molfile = new ClassPathResource(molfileSource).getFile();
+        File molfile = new ClassPathResource(molfileSource).getFile();
         UUID uuid = UUID.randomUUID();
-        ChemicalSubstance substance= new ChemicalSubstanceBuilder()
-                .setStructureWithDefaultReference(structureSmiles)
-                .addName("Sodium tartrate")
-                .setUUID(uuid)
-                .build();
 
-        Structure structureStd = structureProcessor.taskFor(substance.getStructure().molfile)
+        Structure structureStd = structureProcessor.taskFor(Files.readString(molfile.toPath()))
                 .standardize(true)
                 .build()
                 .instrument()
