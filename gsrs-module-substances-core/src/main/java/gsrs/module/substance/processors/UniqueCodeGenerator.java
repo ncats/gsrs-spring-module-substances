@@ -41,6 +41,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         int length = (Integer) with.get("length");
         boolean padding = (Boolean) with.get("padding");
         Boolean useLegacy = (Boolean) with.get("useLegacy");
+        Map<Integer, String> groups = (Map<Integer, String>) with.get("groups");
         Long maxValue;
         try {
             maxValue = Long.parseLong(String.valueOf(with.get("max")));
@@ -60,7 +61,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
                 });
             } else {
                 seqGen = CachedSupplier.runOnce(()->{
-                    CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, max, codeSystem);
+                    CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, max, codeSystem, groups);
                     return AutowireHelper.getInstance().autowireAndProxy(gen);
 
                 });
