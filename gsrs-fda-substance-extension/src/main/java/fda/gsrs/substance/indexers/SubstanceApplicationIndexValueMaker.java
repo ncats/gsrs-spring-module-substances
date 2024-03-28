@@ -7,15 +7,17 @@ import gsrs.springUtils.AutowireHelper;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.Substance;
-
+import ix.utils.Util;
 import gov.hhs.gsrs.applications.api.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -33,9 +35,14 @@ public class SubstanceApplicationIndexValueMaker implements IndexValueMaker<Subs
 	}
 	
 	@Override
-	public boolean isExternal() {
-		return true;
+	public Set<String> getTags(){
+		return Util.toSet("external","applications");		
 	} 
+	
+	@Override	
+	public Set<String> getFieldNames(){
+		return Util.toSet("Application Status","Application Center","Application Type");
+	}
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {

@@ -17,6 +17,7 @@ import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.v1.Substance;
+import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -36,15 +37,13 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 	
 	@Override
 	public Set<String> getFieldNames(){
-		return Stream.of("User List").collect(Collectors.toSet());
+		return Util.toSet("User List");
 	}
-	
-	//Todo for Lihui:  Remove after testing
+		
 	@Override
-	public boolean isExternal() {
-		return true;
+	public Set<String> getTags(){
+		return Util.toSet("user_list");
 	}
-	//Todo for Lihui:  Remove after testing
 	
 	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {

@@ -7,7 +7,7 @@ import gsrs.springUtils.AutowireHelper;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.Substance;
-
+import ix.utils.Util;
 import gov.hhs.gsrs.products.api.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -33,9 +34,14 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
 	}
 	
 	@Override
-	public boolean isExternal() {
-		return true;
+	public Set<String> getTags(){
+		return Util.toSet("external","product");		
 	} 
+	
+	@Override	
+	public Set<String> getFieldNames(){
+		return Util.toSet("Product Type","Product Ingredient Type","Product Dosage Form");
+	}
 
 	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
