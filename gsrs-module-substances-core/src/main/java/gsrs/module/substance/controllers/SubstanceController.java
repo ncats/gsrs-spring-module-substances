@@ -6,7 +6,19 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -16,18 +28,11 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
-import gsrs.module.substance.comparators.ExportingSubstanceComparator;
-import gsrs.module.substance.utils.ImageInfo;
-import gsrs.module.substance.utils.ImageUtilities;
-import gsrs.services.PrincipalServiceImpl;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.stagingarea.model.ImportData;
-import gsrs.stagingarea.service.StagingAreaService;
-import ix.core.models.*;
-import ix.ginas.models.v1.*;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
@@ -73,6 +78,7 @@ import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
+import gsrs.module.substance.comparators.ExportingSubstanceComparator;
 import gsrs.module.substance.expanders.basic.BasicRecordExpanderFactory;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
@@ -84,11 +90,17 @@ import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.module.substance.utils.ImageInfo;
+import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
+import gsrs.services.PrincipalServiceImpl;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.stagingarea.model.ImportData;
+import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.EntityFetcher;
 import ix.core.chem.Chem;
 import ix.core.chem.ChemAligner;
@@ -96,6 +108,10 @@ import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
 import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
+import ix.core.models.Payload;
+import ix.core.models.Structure;
+import ix.core.models.StructureRenderingParameters;
+import ix.core.models.Text;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResultContext;
 import ix.core.search.bulk.ResultListRecordGenerator;
@@ -105,6 +121,23 @@ import ix.core.util.EntityUtils.Key;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.exporters.SpecificExporterSettings;
+import ix.ginas.models.v1.AgentModification;
+import ix.ginas.models.v1.Amount;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Component;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Material;
+import ix.ginas.models.v1.Mixture;
+import ix.ginas.models.v1.Moiety;
+import ix.ginas.models.v1.PolymerClassification;
+import ix.ginas.models.v1.Property;
+import ix.ginas.models.v1.SpecifiedSubstanceComponent;
+import ix.ginas.models.v1.StructuralModification;
+import ix.ginas.models.v1.StructurallyDiverse;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.SubstanceReference;
+import ix.ginas.models.v1.Subunit;
+import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil.TypedCallable;
@@ -122,6 +155,8 @@ import lombok.extern.slf4j.Slf4j;
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
+	
+
 	
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
@@ -644,6 +679,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 httpRequest,
                 attributes);
     }
+    
 
     @GetGsrsRestApiMapping("/structureSearch")
     public Object structureSearchGet(
@@ -735,6 +771,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             Optional.ofNullable(httpServletRequest.getParameterValues("order")).ifPresent(ss->{
                 attributes.asMap().putIfAbsent("order", ss);
             });
+
+            Optional.ofNullable(httpServletRequest.getParameterValues("view")).ifPresent(ss->{
+                attributes.asMap().putIfAbsent("view", ss[0]);
+            });
+
             Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
             //TODO: find a way to make this not be a redirect. If we remove redirect now
             // it will actually get rid of the extra parameters, and result in a null search
@@ -1733,7 +1774,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private Map<String, Boolean> computeDisplayMap(Structure struc, int size, Chemical c) {
         Map<String, Boolean> newDisplay = new HashMap<>();
         newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS_AS_RELATIVE.name(),
-                Structure.Stereo.RACEMIC.equals(struc.stereoChemistry));
+                Structure.Stereo.RACEMIC.equals(struc.stereoChemistry) ||
+                Structure.Optical.PLUS_MINUS.equals(struc.stereoChemistry)
+                );
 
 
         if(!Structure.Optical.UNSPECIFIED.equals(struc.opticalActivity)
