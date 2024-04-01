@@ -127,6 +127,11 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
+            <version>${gsrs.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-core</artifactId>
             <version>${gsrs.substance.version}</version>
             <exclusions>
@@ -331,7 +336,7 @@
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-data-exchange</artifactId>
             <version>${gsrs.substance.version}</version>
-            <scope>test</scope>
+            <!--scope>test</scope-->
         </dependency>
         <!--dependency>
             <groupId>gov.nih.ncats</groupId>
