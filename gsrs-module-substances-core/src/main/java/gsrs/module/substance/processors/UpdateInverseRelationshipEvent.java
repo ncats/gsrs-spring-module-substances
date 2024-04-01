@@ -39,7 +39,7 @@ public class UpdateInverseRelationshipEvent {
     	// set the from substance AND to substance to be the same, causing unintentional self-referencing
     	// relationships. This is fixed in 3.0.3.
         return TryToCreateInverseRelationshipEvent.builder()
-         .creationMode(CreationMode.CREATE_IF_MISSING)
+         .creationMode(CreationMode.CREATE_IF_MISSING_DEEP_CHECK)
          .relationshipIdToInvert(relationshipIdThatWasUpdated)
          .originatorUUID(originatorUUID)
          .fromSubstance(substanceIdToUpdate)

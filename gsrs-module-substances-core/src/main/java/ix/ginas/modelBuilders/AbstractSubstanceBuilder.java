@@ -421,9 +421,14 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
     }
 
     public T addRelationshipTo(Substance relatedSubstance, String type){
+        return addRelationshipTo(relatedSubstance,type,(rr)->{});
+    }
+    public T addRelationshipTo(Substance relatedSubstance, String type, Consumer<Relationship> mutate){
         Relationship rel = new Relationship();
         rel.type = type;
         rel.relatedSubstance = relatedSubstance.asSubstanceReference();
+        mutate.accept(rel);
+        
         return addRelationship(rel);
     }
 

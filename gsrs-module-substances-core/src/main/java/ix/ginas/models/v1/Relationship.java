@@ -12,8 +12,12 @@ import ix.ginas.models.utils.JSONEntity;
 import ix.ginas.models.utils.RelationshipUtil;
 
 import javax.persistence.*;
+
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 @JSONEntity(title = "Relationship", isFinal = true)
@@ -184,6 +188,28 @@ public class Relationship extends /*CommonDataElementOfCollection */ GinasCommon
     public boolean isEquivalentBaseRelationship(Relationship other){
     	if (other.type.equals(this.type) && other.relatedSubstance.isEquivalentTo(this.relatedSubstance)) {
 			return true;
+		}
+    	return false;
+    }
+    
+    @JsonIgnore
+    public boolean isEquivalentFullRelationship(Relationship other){
+    	if (other.isEquivalentBaseRelationship(this)) {
+    		if(		(other.comments+"").equals(this.comments+"") && 
+    				(other.qualification+"").equals(this.qualification+"") && 
+    				(other.interactionType+"").equals(this.interactionType+"") && 
+    				(Optional.ofNullable(other.amount).map(oa -> oa.toString()).orElse("")
+    						.equals(
+    				 Optional.ofNullable(this.amount).map(oa -> oa.toString()).orElse("")))) {
+    			if((this.mediatorSubstance==null && other.mediatorSubstance==null)) {
+    				return true;
+    			}else if(this.mediatorSubstance!=null && other.mediatorSubstance!=null) {
+    				return this.mediatorSubstance.isEquivalentTo(other.mediatorSubstance);
+    			}else {
+    				return false;
+    			}
+    			
+    		}
 		}
     	return false;
     }
