@@ -33,7 +33,7 @@ public class TryToCreateInverseRelationshipEvent {
     private UUID relationshipIdToInvert;
 
     @Builder.Default
-    private CreationMode creationMode = CreationMode.CREATE_IF_MISSING;
+    private CreationMode creationMode = CreationMode.CREATE_IF_MISSING_DEEP_CHECK;
 
     private UUID newRelationshipId;
 
@@ -43,7 +43,18 @@ public class TryToCreateInverseRelationshipEvent {
             @Override
             public boolean shouldAdd(Relationship r, Substance from, Substance to){
                 for (Relationship rOld : from.relationships) {
-                    if (r.type.equals(rOld.type) && r.relatedSubstance.isEquivalentTo(rOld.relatedSubstance)) {
+                    if (r.isEquivalentBaseRelationship(rOld)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        },
+        CREATE_IF_MISSING_DEEP_CHECK{
+            @Override
+            public boolean shouldAdd(Relationship r, Substance from, Substance to){
+                for (Relationship rOld : from.relationships) {
+                    if (r.isEquivalentFullRelationship(rOld)) {
                         return false;
                     }
                 }

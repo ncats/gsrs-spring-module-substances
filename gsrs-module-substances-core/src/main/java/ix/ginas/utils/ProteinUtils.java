@@ -324,6 +324,8 @@ public class ProteinUtils
         log.trace(String.format("basic MW: %.2f; basic formula: %s; disulfideContribution: %.2f",
                 total, makeFormulaFromMap(formulaCounts), disulfideContribution));
         total -= disulfideContribution;
+        int numberOfHydrogensToRemove = getNumberOfHydrogensToRemoveForDisulfides(ps.protein);
+        log.trace("numberOfHydrogensToRemove: {}", numberOfHydrogensToRemove);
         Map<String, SingleThreadCounter> formulaMapWithContrib[] =new Map[1];
         formulaMapWithContrib[0]=formulaCounts;
         if (ps.hasModifications() && ps.modifications.structuralModifications.size() > 0) {
@@ -413,6 +415,10 @@ public class ProteinUtils
             log.debug("no mods to consider");
         }
 
+        if( formulaMapWithContrib[0].containsKey("H")) {
+            log.trace("going to remove {} H atoms for disulfide bonds", numberOfHydrogensToRemove);
+            formulaMapWithContrib[0].get("H").decrement(numberOfHydrogensToRemove);
+        }
         log.trace(String.format("final total: %.2f; highTotal: %.2f; lowTotal: %.2f; highLimitTotal: %.2f; lowLimitTotal: %.2f", total,
                 highTotal, lowTotal, highLimitTotal, lowLimitTotal));
         result = new MolecularWeightAndFormulaContribution(total, ps.substanceClass.toString(), formulaMapWithContrib[0]);
@@ -736,6 +742,12 @@ public class ProteinUtils
         return (protein != null && protein.getDisulfideLinks() != null)
                 ? protein.getDisulfideLinks().size() * HYDROGEN_MOLECULAR_WEIGHT
                 : 0.0d;
+    }
+
+    public static int getNumberOfHydrogensToRemoveForDisulfides(Protein protein) {
+        return (protein != null && protein.getDisulfideLinks() != null)
+                ? 2 * protein.getDisulfideLinks().size()
+                : 0;
     }
 
     public static Map<String,SingleThreadCounter> subtractFormulas(Map<String,SingleThreadCounter> minuend, Map<String,SingleThreadCounter> subtrahend){

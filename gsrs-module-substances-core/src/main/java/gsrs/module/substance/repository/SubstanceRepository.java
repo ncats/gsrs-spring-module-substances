@@ -56,6 +56,15 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 
     List<SubstanceSummary> findByNames_NameIgnoreCase(String name);
 
+    //use an explicit query to prevent Hibernate from inserting a call to UPPER() which
+    // slows down processing on some RDBMSs
+    @Query("select s from Substance s join s.names n where  n.name = ?1")
+    List<SubstanceSummary> findByNames_NameIgnoreCaseImplicit(String name);
+
+    List<SubstanceSummary> findByNames_Name(String name);
+
+    List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
+
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 

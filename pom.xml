@@ -12,7 +12,7 @@
         <module>gsrs-module-substances-api</module>
         <module>gsrs-module-substances-dto</module>
         <module>gsrs-module-substances-tests</module>
-	<module>gsrs-ncats-substance-extension</module>
+        <module>gsrs-ncats-substance-extension</module>
         <module>gsrs-module-substances-data-exchange</module>
     </modules>
     <parent>
