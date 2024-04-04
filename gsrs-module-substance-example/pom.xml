@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1</version>
+        <version>3.1.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -246,7 +246,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.14</version>
+            <version>1.0.16</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -336,7 +336,7 @@
         <!--dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-core</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>3.1.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency-->
 

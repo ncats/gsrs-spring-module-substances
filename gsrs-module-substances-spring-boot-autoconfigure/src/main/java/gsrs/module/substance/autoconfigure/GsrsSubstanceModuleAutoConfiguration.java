@@ -172,4 +172,10 @@ public class GsrsSubstanceModuleAutoConfiguration {
     public RelationshipService relationshipService(){
         return new RelationshipService();
     }
+
+    @Bean
+    @ConditionalOnMissingBean(EntityManagerSubstanceKeyResolver.class)
+    public EntityManagerSubstanceKeyResolver entityManagerSubstanceKeyResolverService(){
+        return new EntityManagerSubstanceKeyResolver();
+    }
 }
