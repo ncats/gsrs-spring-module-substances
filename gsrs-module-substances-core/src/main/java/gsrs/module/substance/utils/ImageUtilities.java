@@ -8,8 +8,16 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -17,6 +25,12 @@ import java.util.regex.Pattern;
 
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
+import org.apache.batik.anim.dom.SVGDOMImplementation;
+import org.apache.batik.util.XMLResourceDescriptor;
+import org.apache.batik.svggen.SVGGraphics2D;
+import org.w3c.dom.Document;
 
 @Slf4j
 public class ImageUtilities {
@@ -130,8 +144,31 @@ public class ImageUtilities {
         return resizedImage;
     }
 
+    /*
+    Based on ideas from Perplexity and Baeldung
+     */
     public static byte[] handleResizeForSvg(byte[] inputImageData, int newW, int newH){
-        //todo: make this really do something
+        log.trace("starting handleResizeForSvg");
+        try {
+            SAXSVGDocumentFactory factory = new SAXSVGDocumentFactory(XMLResourceDescriptor.getXMLParserClassName());
+            Document svgDocument = factory.createDocument("http://www.w3.org/2000/svg", new ByteArrayInputStream(inputImageData));
+            svgDocument.getDocumentElement().setAttribute("width", Integer.toString(newW));
+            svgDocument.getDocumentElement().setAttribute("height", Integer.toString(newH));
+            DOMSource source = new DOMSource(svgDocument);
+            TransformerFactory factory1 = TransformerFactory.newInstance();
+            Transformer transformer = factory1.newTransformer();
+            StringWriter writer = new StringWriter();
+            StreamResult result  = new StreamResult(writer);
+            transformer.transform(source, result);
+            byte[] retReady = writer.toString().getBytes(Charset.defaultCharset());
+            log.trace("completed resize");
+            return retReady;
+        }catch (IOException | TransformerConfigurationException ex) {
+            log.error("Error resizing SVG {}", ex);
+        } catch (TransformerException e) {
+            throw new RuntimeException(e);
+        }
+        //in case of error, return the input
         return inputImageData;
     }
 
