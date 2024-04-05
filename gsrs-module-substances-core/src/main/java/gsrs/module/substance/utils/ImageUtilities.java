@@ -27,9 +27,7 @@ import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
-import org.apache.batik.anim.dom.SVGDOMImplementation;
 import org.apache.batik.util.XMLResourceDescriptor;
-import org.apache.batik.svggen.SVGGraphics2D;
 import org.w3c.dom.Document;
 
 @Slf4j
@@ -160,7 +158,7 @@ public class ImageUtilities {
             StringWriter writer = new StringWriter();
             StreamResult result  = new StreamResult(writer);
             transformer.transform(source, result);
-            byte[] retReady = writer.toString().getBytes(Charset.defaultCharset());
+            byte[] retReady = writer.toString().getBytes(StandardCharsets.UTF_8);
             log.trace("completed resize");
             return retReady;
         }catch (IOException | TransformerConfigurationException ex) {
