@@ -3,6 +3,7 @@ package ix.ginas.utils.validation.validators;
 
 import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.module.substance.utils.HtmlUtil;
 import ix.core.models.Keyword;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
@@ -114,6 +115,16 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                      GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
                                         "Code '%s'[%s] code text: %s contains one or more leading/trailing blanks that will be removed",
+                                        cd.code, cd.codeSystem, cd.comments)
+                                .appliableChange(true);
+                     callback.addMessage(mes);
+                }
+
+                if(cd.comments!=null && !cd.comments.isEmpty() && !HtmlUtil.isValid(cd.comments)) {
+                     cd.comments=HtmlUtil.clean(cd.comments, "UTF-8");
+                     GinasProcessingMessage mes = GinasProcessingMessage
+                                .WARNING_MESSAGE(
+                                        "Code '%s'[%s] code text: %s contains one or more forbidden html tags that will be removed",
                                         cd.code, cd.codeSystem, cd.comments)
                                 .appliableChange(true);
                      callback.addMessage(mes);
