@@ -120,7 +120,7 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                      callback.addMessage(mes);
                 }
 
-                if(!HtmlUtil.isValid(cd.comments)) {
+                if(cd.comments!=null && !cd.comments.isEmpty() && !HtmlUtil.isValid(cd.comments)) {
                      cd.comments=HtmlUtil.clean(cd.comments, "UTF-8");
                      GinasProcessingMessage mes = GinasProcessingMessage
                                 .WARNING_MESSAGE(
