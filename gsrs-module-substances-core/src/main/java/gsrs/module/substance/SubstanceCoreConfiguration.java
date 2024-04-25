@@ -12,6 +12,7 @@ import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.standardizer.SubstanceSynchronizer;
+import gsrs.module.substance.tasks.DatabaseIndexSyncTask;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
@@ -51,6 +52,7 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ConsoleFilterService.class,
         BulkSearchService.class,
         UserSavedListService.class,
+        DatabaseIndexSyncTask.class,
         SubstanceMatchViewGenerator.class,        
         SubstanceResultListRecordGenerator.class,
         SubstanceSequenceFileSupportService.class,
