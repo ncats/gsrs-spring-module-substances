@@ -34,16 +34,20 @@ public interface SubstanceSequenceSearchService {
     class SequenceSearchRequest{
         private String q;
         private SequenceIndexer.CutoffType type;
-        private Double cutoff = 0.8D;
-        private Integer top = 10;
-        private Integer skip=0;
-        private Integer fdim = 10;
         private String field;
+        private String order;
+        @Builder.Default
+        private Double cutoff = 0.8D;
+        @Builder.Default
+        private Integer top = 10;
+        @Builder.Default
+        private Integer skip=0;
+        @Builder.Default
+        private Integer fdim = 10;
+        @Builder.Default
         private String seqType = "Protein";
 //        private double identity = 0.5D;
 //        private SequenceSearchType searchType = SequenceSearchType.GLOBAL;
-        private String order;
-       
 
         public SanitizedSequenceSearchRequest sanitize() throws IOException {
             return new SanitizedSequenceSearchRequest(this);

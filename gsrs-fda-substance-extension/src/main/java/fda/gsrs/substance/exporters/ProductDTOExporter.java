@@ -10,7 +10,7 @@ import ix.ginas.models.v1.Substance;
 
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.Query;
+import jakarta.persistence.Query;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;

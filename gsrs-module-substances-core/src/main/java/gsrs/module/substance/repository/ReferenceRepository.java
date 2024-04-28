@@ -16,7 +16,7 @@ import java.util.UUID;
 public interface ReferenceRepository extends GsrsVersionedRepository<Reference, UUID> {
 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
-    @Query("select s from Reference s where CONCAT(s.uuid, '') like ?1%")
+    @Query("select s from Reference s where SUBSTRING(s.uuid, 1, 8) = ?1")
     List<Reference> findByUuidStartingWith(String partialUUID);
     
     @Query("select r.id from Reference r")

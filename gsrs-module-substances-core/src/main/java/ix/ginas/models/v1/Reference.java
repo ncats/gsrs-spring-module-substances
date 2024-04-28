@@ -17,7 +17,7 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;

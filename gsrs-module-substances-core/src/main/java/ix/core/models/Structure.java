@@ -21,13 +21,11 @@ import ix.ginas.models.converters.StereoConverter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.IOException;
 import java.util.*;
 
@@ -39,13 +37,9 @@ import java.util.*;
 @Slf4j
 public class Structure extends BaseModel {
 
-
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
+    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by basic hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
-    @Column(length =40, updatable = false)
     public UUID id;
 
     @Version
