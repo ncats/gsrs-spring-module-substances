@@ -15,11 +15,14 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+
+import static gov.nih.ncats.molwitch.spi.ChemicalImplFactory.applyParameters;
 
 @Slf4j
 @Component
@@ -35,6 +38,9 @@ public class StructureProcessor {
     private Integer complexityCutoff;
 
     private Integer maxUndefined;
+
+    private List<String> processedFactoryClasses =  new ArrayList<>();
+
     @Autowired
     public StructureProcessor(StructureStandardizer standardizer, StructureHasher hasher) {
         this.standardizer = standardizer;
@@ -132,7 +138,6 @@ public class StructureProcessor {
         instrument (struc, components, mol, true);
     }
 
-
     /**
      * All instrument calls lead to this one
      * @param settings
@@ -142,16 +147,25 @@ public class StructureProcessor {
         Collection<Structure> components = settings.getComponents();
         Chemical mol = settings.getChemical().copy();
         if( maxUndefined !=null || complexityCutoff !=null ){
-            log.trace("applying ChemicalImpl parameters.  maxUndefined: {} complexityCutoff: {}", maxUndefined, complexityCutoff);
-            Map<String,Object> parameters = new HashMap<>();
-            if( maxUndefined != null) {
-                parameters.put("maxUndefined", maxUndefined);
-            }
-            if( complexityCutoff != null) {
-                parameters.put("complexityCutoff", complexityCutoff);
-            }
-            log.trace("about to call ChemicalImplFactory.applyParameters");
-            ChemicalImplFactory.applyParameters(parameters);
+            Class factoryClass = mol.getImpl().getFactoryClass();
+            if( !processedFactoryClasses.contains(factoryClass.getName())) {
+                log.trace("applying ChemicalImpl parameters.  maxUndefined: {} complexityCutoff: {}", maxUndefined, complexityCutoff);
+                Map<String, Object> parameters = new HashMap<>();
+                if (maxUndefined != null) {
+                    parameters.put("maxUndefined", maxUndefined);
+                }
+                if (complexityCutoff != null) {
+                    parameters.put("complexityCutoff", complexityCutoff);
+                }
+                log.trace("about to call ChemicalImplFactory.applyParameters using reflection");
+                try {
+                    Method applyParameterMethod = factoryClass.getDeclaredMethod("applyParameters", Map.class);
+                    applyParameterMethod.invoke(factoryClass, parameters);
+                } catch (Exception ex) {
+                    log.error("Error calling method on class {}", factoryClass.getName(), ex);
+                }
+                processedFactoryClasses.add(factoryClass.getName());
+            } else { log.trace("class {} has already been set-up", factoryClass.getName());}
         } else {
             log.trace("no parameters. mol is {}", mol.getClass().getName());
         }
