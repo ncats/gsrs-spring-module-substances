@@ -39,7 +39,7 @@ public class DatabaseIndexSyncTask {
 			return;
 		}
 		
-		Set<String> syncEntities = Stream.of(entityString.split(",")).collect(Collectors.toSet());
+		Set<String> syncEntities = Stream.of(entityString.split(",")).map(entity->entity.trim()).collect(Collectors.toSet());
 		syncEntities.retainAll(allowedEntities);
 		if(syncEntities.size()==0) {
 			log.info("No allowed entities defined for the database and index sync scheduler.");
