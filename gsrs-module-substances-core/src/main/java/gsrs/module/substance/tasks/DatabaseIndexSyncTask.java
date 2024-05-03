@@ -1,64 +1,119 @@
 package gsrs.module.substance.tasks;
 
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 
+import gsrs.controller.AbstractLegacyTextSearchGsrsEntityController;
+import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
+import gsrs.springUtils.StaticContextAccessor;
 import ix.utils.Util;
-import jdk.internal.joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Component
 @ConditionalOnProperty(name = "entity.database.index.sync.scheduler.enabled", havingValue = "true")
 public class DatabaseIndexSyncTask {
-		
-	@Value("${server.port}")
-	private int serverPort;
-	
-	@Value("${server.url.prefix}")
-	private String urlPrefix;
-	
-	@Value("${database.index.sync.scheduler.entities}")
-	private String entityString;
-	
+			
+	@Value("${database.index.sync.scheduler.entities:}")
+	private String entityString;	
 	@Value("${database.index.sync.scheduler.cron}")
 	private String cron;
 	
-	private final Set<String> allowedEntities = Util.toSet("substances", "codes", "names");	
-			
+	private final Set<String> allowedEntities = Util.toSet("Code","ControlledVocabulary","Name", "Reference","Substance",
+			"Product","Application","ApplicationAll","ClinicalTrialUS","ClinicalTrialEurope");
+				
 	@Scheduled(cron= "${database.index.sync.scheduler.cron}")	
 	public void runSyncTask() {
 		
-		String [] syncEntities = entityString.split(",");
-		if(syncEntities.length==0)
+		if(entityString.length()==0) {
+			log.info("No entities defined for the database and index sync scheduler.");
 			return;
+		}
 		
+		Set<String> syncEntities = Stream.of(entityString.split(",")).collect(Collectors.toSet());
+		syncEntities.retainAll(allowedEntities);
+		if(syncEntities.size()==0) {
+			log.info("No allowed entities defined for the database and index sync scheduler.");
+			return;
+		}
+				
 		for(String entity: syncEntities) {
-			if(!allowedEntities.contains(entity.toLowerCase()))
+			
+			System.out.println("Sync entity class: " + entity);
+			String entityClassName = generateEntityClassName(entity);
+			
+			if(entityClassName.isEmpty()) {
+				log.warn("Illegal entity class: " + entity + " in database and index sync scheduler.");
 				continue;
-			String synUrl = generateUrl(urlPrefix, entity);
-			System.out.println(synUrl);
-			RestTemplate restTemplate = new RestTemplate();
-	    	ResponseEntity<Object> response  =  restTemplate.postForEntity(synUrl,null,Object.class);
-	    	if(!response.getStatusCode().is2xxSuccessful()) {
-	    		log.warn("Sync job for " + entity+ " failed.");
-	    	}
-		}	
+			}
+			
+			Class<?> entityClass;			
+			log.info("Entity class: " + entityClassName);
+				
+			try {
+				entityClass = Class.forName(entityClassName);
+			} catch (ClassNotFoundException e) {
+				log.warn("Entity class is not found: " + entityClassName);
+				continue;
+			}
+			
+			GsrsEntityToControllerMapper mapper = StaticContextAccessor.getBean(GsrsEntityToControllerMapper.class);
+	        if(mapper ==null){
+	            continue;
+	        }
+	        Optional<Class> controllerOpt = mapper.getControllerFor(entityClass);
+	        if(!controllerOpt.isPresent()) {
+	        	continue;
+	        }
+	      		
+			AbstractLegacyTextSearchGsrsEntityController searchController = (AbstractLegacyTextSearchGsrsEntityController) StaticContextAccessor.getBean(controllerOpt.get());
+			try {
+				searchController.syncIndexesWithDatabase();
+			} catch (JsonProcessingException e) {
+				log.error("Error in database and index sync scheduler: " + entityClassName);
+				e.printStackTrace();
+				continue;
+			}					
+
+		}
 	}
 	
-	private String generateUrl(String urlPrefix, String entity) {
-		if(urlPrefix.isEmpty() || entity.isEmpty())
-			return Strings.EMPTY;
-		if(urlPrefix.endsWith("/"))
-			return urlPrefix + entity + "/@databaseIndexSync";
-		else 
-			return urlPrefix + "/" + entity + "/@databaseIndexSync";
+	private String generateEntityClassName(String entity) {
+		final String coreEntitiesPrefix = "ix.ginas.models.v1.";
+		final String applicationClassName = "gov.hhs.gsrs.application.application.models.Application";
+		final String applicationAllClassName = "gov.hhs.gsrs.application.applicationall.models.ApplicationAll";
+		final String productClassName = "gov.hhs.gsrs.products.product.models.Product";
+		final String clinicalTrialUSClassName = "gov.hhs.gsrs.clinicaltrial.us.models.ClinicalTrialUS";
+		final String clinicalTrialEuropeClassName = "gov.hhs.gsrs.clinicaltrial.europe.models.ClinicalTrialEurope";		
+		
+		switch(entity) {
+		case "Code":
+		case "ControlledVocabulary":
+		case "Name":
+		case "Reference":
+		case "Substance":
+			return coreEntitiesPrefix + entity;
+		case "Application":
+			return applicationClassName;  
+		case "ApplicationAll":
+			return applicationAllClassName;
+		case "Product":
+			return productClassName;
+		case "ClinicalTrialUS":
+			return clinicalTrialUSClassName;
+		case "ClinicalTrialEurope":
+			return clinicalTrialEuropeClassName;
+		default: 
+			return "";
+		}		
 	}
 }
