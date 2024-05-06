@@ -2,7 +2,6 @@ package ix.core.chem;
 
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
-import gov.nih.ncats.molwitch.spi.ChemicalImplFactory;
 import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.models.Text;
@@ -10,34 +9,23 @@ import ix.core.models.Value;
 import ix.ginas.utils.ChemUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static gov.nih.ncats.molwitch.spi.ChemicalImplFactory.applyParameters;
-
 @Slf4j
 @Component
-@Configuration
-@ConfigurationProperties("gsrs.structure.processing")
 public class StructureProcessor {
 
 
     private StructureStandardizer standardizer;
 
     private StructureHasher hasher;
-
-    private Integer complexityCutoff;
-
-    private Integer maxUndefined;
 
     private List<String> processedFactoryClasses =  new ArrayList<>();
 
@@ -146,8 +134,8 @@ public class StructureProcessor {
         Structure struc = settings.getStructure();
         Collection<Structure> components = settings.getComponents();
         Chemical mol = settings.getChemical().copy();
-        if( maxUndefined !=null || complexityCutoff !=null ){
-            Class factoryClass = mol.getImpl().getFactoryClass();
+        /*if( maxUndefined !=null || complexityCutoff !=null ){
+            Class factoryClass = ImplUtil.getChemicalImplFactory().getClass();
             if( !processedFactoryClasses.contains(factoryClass.getName())) {
                 log.trace("applying ChemicalImpl parameters.  maxUndefined: {} complexityCutoff: {}", maxUndefined, complexityCutoff);
                 Map<String, Object> parameters = new HashMap<>();
@@ -168,7 +156,7 @@ public class StructureProcessor {
             } else { log.trace("class {} has already been set-up", factoryClass.getName());}
         } else {
             log.trace("no parameters. mol is {}", mol.getClass().getName());
-        }
+        }*/
 
         boolean standardize = settings.isStandardize();
         boolean query = settings.isQuery();
@@ -498,21 +486,4 @@ public class StructureProcessor {
         }
         return "deadbeef";
     }
-
-    public Integer getComplexityCutoff() {
-        return complexityCutoff;
-    }
-
-    public void setComplexityCutoff(Integer complexityCutoff) {
-        this.complexityCutoff = complexityCutoff;
-    }
-
-    public Integer getMaxUndefined() {
-        return maxUndefined;
-    }
-
-    public void setMaxUndefined(Integer maxUndefined) {
-        this.maxUndefined = maxUndefined;
-    }
-
 }
