@@ -27,8 +27,6 @@ public class StructureProcessor {
 
     private StructureHasher hasher;
 
-    private List<String> processedFactoryClasses =  new ArrayList<>();
-
     @Autowired
     public StructureProcessor(StructureStandardizer standardizer, StructureHasher hasher) {
         this.standardizer = standardizer;
