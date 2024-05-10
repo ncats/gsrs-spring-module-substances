@@ -15,6 +15,7 @@ import gsrs.module.substance.standardizer.SubstanceSynchronizer;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
+import ix.core.chem.StructureProcessorConfiguration;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
@@ -36,7 +37,7 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
         LegacyGinasAppController.class,
         NameStandardizerConfiguration.class,
-        ProxyConfiguration.class, 
+        ProxyConfiguration.class,
         GSRSRendererConfiguration.class,
         StructureResolverService.class, StructureResolverServiceConfiguration.class,
         SubstanceDataConfiguration.class,
@@ -44,14 +45,14 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
         ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class,
-            //legacy bulk load 
+            //legacy bulk load
         SubstanceBulkLoadService.class, SubstanceBulkLoadServiceConfiguration.class, SubstanceLegacyBulkLoadController.class,
         ProcessingJobController.class, ProcessingJobEntityService.class,
         //used by bulk loader
         ConsoleFilterService.class,
         BulkSearchService.class,
         UserSavedListService.class,
-        SubstanceMatchViewGenerator.class,        
+        SubstanceMatchViewGenerator.class,
         SubstanceResultListRecordGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
@@ -59,7 +60,8 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         GsrsProcessingStrategyFactoryConfiguration.class,
         ImportMetadataLegacySearchService.class,
         SubstanceFieldNameDecoratorConfiguration.class,
-        SubstanceSynchronizer.class
+        SubstanceSynchronizer.class,
+        StructureProcessorConfiguration.class
 })
 public class SubstanceCoreConfiguration {
 
