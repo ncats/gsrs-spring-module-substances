@@ -5,33 +5,32 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Component;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import gsrs.controller.AbstractLegacyTextSearchGsrsEntityController;
 import gsrs.controller.hateoas.GsrsEntityToControllerMapper;
+import gsrs.scheduledTasks.ScheduledTaskInitializer;
+import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-@Component
-@ConditionalOnProperty(name = "entity.database.index.sync.scheduler.enabled", havingValue = "true")
-public class DatabaseIndexSyncTask {
-			
-	@Value("${database.index.sync.scheduler.entities:}")
-	private String entityString;	
+public class DatabaseIndexSyncTaskInitializer extends ScheduledTaskInitializer{
 
+	private String entityString;
+	
+    @JsonProperty("entityString")
+    public void setEntityString(String entities) {
+        this.entityString = entities;
+    }
+	
 	
 	private final Set<String> supportedEntities = Util.toSet("Code","ControlledVocabulary","Name", "Reference","Substance");
-				
-	@Scheduled(cron= "${database.index.sync.scheduler.cron}")	
-	public void runSyncTask() {
-		
+	
+	@Override
+    public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
 		if(entityString.length()==0) {
 			log.info("No entities defined for the database and index sync scheduler.");
 			return;
@@ -85,4 +84,10 @@ public class DatabaseIndexSyncTask {
 	private String generateEntityClassName(String entity) {
 		return "ix.ginas.models.v1." + entity;		
 	}
+
+	@Override
+	public String getDescription() {
+		return "Reindex entities in backup tables that are not in indexes";
+	}
+
 }
