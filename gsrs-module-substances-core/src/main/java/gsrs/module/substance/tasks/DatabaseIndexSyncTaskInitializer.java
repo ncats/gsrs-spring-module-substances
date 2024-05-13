@@ -21,16 +21,16 @@ public class DatabaseIndexSyncTaskInitializer extends ScheduledTaskInitializer{
 
 	private String entityString;
 	
-    @JsonProperty("entityString")
-    public void setEntityString(String entities) {
-        this.entityString = entities;
-    }
+	@JsonProperty("entityString")
+	public void setEntityString(String entities) {
+		this.entityString = entities;
+	}
 	
 	
 	private final Set<String> supportedEntities = Util.toSet("Code","ControlledVocabulary","Name", "Reference","Substance");
 	
 	@Override
-    public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
+	public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
 		if(entityString.length()==0) {
 			log.info("No entities defined for the database and index sync scheduler.");
 			return;
