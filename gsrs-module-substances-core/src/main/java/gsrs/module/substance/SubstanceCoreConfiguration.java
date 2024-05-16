@@ -15,6 +15,7 @@ import gsrs.module.substance.standardizer.SubstanceSynchronizer;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
+import ix.core.chem.StructureProcessorConfiguration;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
@@ -57,7 +58,8 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         GsrsProcessingStrategyFactory.class,
         GsrsProcessingStrategyFactoryConfiguration.class,
         ImportMetadataLegacySearchService.class,
-        SubstanceSynchronizer.class
+        SubstanceSynchronizer.class,
+        StructureProcessorConfiguration.class
 })
 public class SubstanceCoreConfiguration {
 
