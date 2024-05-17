@@ -1,5 +1,6 @@
 package ix.ginas.utils;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -74,7 +75,7 @@ public class LegacyCodeSequentialGenerator extends CodeSequentialGenerator {
 								   @JsonProperty("suffix") String suffix,
 								   @JsonProperty("padding") boolean padding,
 								   @JsonProperty("codeSystem") String codeSystem) {
-		super(name, len, suffix, padding, null, codeSystem);
+		super(name, len, suffix, padding, null, codeSystem, Collections.singletonMap(Integer.valueOf(0), GROUP_PROTECTED));
 		this.name = name;
 		this.codeSystem = codeSystem;
 		this.lastNum = CachedSupplier.runOnce(this::findHighestValueCode);

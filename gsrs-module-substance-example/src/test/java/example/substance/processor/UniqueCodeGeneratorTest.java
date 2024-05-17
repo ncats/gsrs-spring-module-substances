@@ -11,6 +11,7 @@ import gsrs.module.substance.processors.UniqueCodeGenerator;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.EntityProcessor;
+import ix.core.models.Group;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
@@ -100,7 +101,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         boolean padding = true;
         String codeSystem = "Codes R Us";
         Long max = Long.MAX_VALUE;
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem);
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
@@ -117,7 +118,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         boolean padding = true;
         String codeSystem = "Codes R Us";
         Long max = Long.MAX_VALUE;
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem);
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
@@ -132,7 +133,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         boolean padding = true;
         String codeSystem = "";
         Long max = Long.MAX_VALUE;
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem);
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
@@ -149,7 +150,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             // should null be allowed/handled?
             String codeSystem = "Codes R Us1";
             Long max = 1L;
-            CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem);
+            CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
             ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
@@ -163,7 +164,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             // should null be allowed/handled?
             String codeSystem = "Codes R Us1";
             Long max = 1L;
-            CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem);
+            CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
             ChemicalSubstance substance = getAnotherSubstanceFromFile("660YQ98I10");
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
@@ -179,7 +180,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         boolean padding = true;
         Long max = null;
         String codeSystem = "Codes R Us";
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem);
+        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
         assertEquals(codeGenerator.getMax(), codeGenerator.DEFAULT_MAX);
@@ -239,6 +240,43 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         uniqueCodeGenerator.prePersist(substance);
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystemName)));
+    }
+
+    @Test
+    public void testPublicCode() {
+        Map<String, Object> instantiationMap = new HashMap<>();
+        instantiationMap.put("name", "whatever");
+        instantiationMap.put("suffix", "OO");
+        instantiationMap.put("length", String.valueOf(Long.MAX_VALUE).length()+2);
+        instantiationMap.put("codesystem", codeSystemName);
+        instantiationMap.put("padding", true);
+        instantiationMap.put("max", Long.MAX_VALUE);
+        UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
+        AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
+        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        uniqueCodeGenerator.prePersist(substance);
+        Assertions.assertTrue(substance.codes.stream().filter(c -> c.codeSystem.equals(codeSystemName)).findFirst().get().isPublic());
+    }
+
+    @Test
+    public void testNonPublicCode() {
+        Map<String, Object> instantiationMap = new HashMap<>();
+        instantiationMap.put("name", "whatever");
+        instantiationMap.put("suffix", "OO");
+        instantiationMap.put("length", String.valueOf(Long.MAX_VALUE).length()+2);
+        instantiationMap.put("codesystem", codeSystemName);
+        instantiationMap.put("padding", true);
+        instantiationMap.put("max", Long.MAX_VALUE);
+        Map<Integer, String> groupsMap = new HashMap<>();
+        groupsMap.put(0, "protected");
+        groupsMap.put(1, "admin");
+        instantiationMap.put("groups", groupsMap);
+        UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
+        AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
+        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        uniqueCodeGenerator.prePersist(substance);
+        assertEquals(new HashSet<Group>(Arrays.asList(new Group("protected"), new Group("admin"))),
+            substance.codes.stream().filter(c -> c.codeSystem.equals(codeSystemName)).findFirst().get().getAccess());
     }
 
     @Test

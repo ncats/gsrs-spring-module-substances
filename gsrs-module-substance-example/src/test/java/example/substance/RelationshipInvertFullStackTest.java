@@ -659,6 +659,66 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         
     }
     
+    
+    @Test
+    public void add2SubstancesWithNoRelationshipThenAdd2RelationshipsOfSameTypeWithDifferentQualifiersShouldResultInBiDirectionalRelationshipsWithExpectedOriginiatorUUID()   throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        String foo_bar = "foo->bar";
+        String bar_foo = "bar->foo";
+        
+        new SubstanceBuilder()
+                .addName("sub1")
+                .setUUID(uuid1)
+                .buildJsonAnd(this::assertCreatedAPI);
+        new SubstanceBuilder()
+            .addName("sub2")
+            .setUUID(uuid2)
+            .buildJsonAnd(this::assertCreatedAPI);
+       
+
+            Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+            assertEquals("1", sub1Fetched.version);
+
+            Substance sub2Fetched = substanceEntityService.get(uuid2).get();
+            assertEquals("1", sub2Fetched.version);
+
+
+            sub1Fetched.toBuilder()
+                    .addRelationshipTo(sub2Fetched, foo_bar, relnew1->relnew1.interactionType="Test123")
+                    .addRelationshipTo(sub2Fetched, foo_bar, relnew2->relnew2.interactionType="Test456")
+                    .buildJsonAnd(this::assertUpdatedAPI);
+
+
+            sub1Fetched = substanceEntityService.get(uuid1).get();
+            assertEquals("2", sub1Fetched.version);
+
+            sub2Fetched = substanceEntityService.get(uuid2).get();
+//            assertEquals("2", sub2Fetched.version);
+
+            assertEquals(2, sub1Fetched.relationships.size());
+            assertEquals(2, sub2Fetched.relationships.size());
+
+            assertEquals(uuid2.toString(), sub1Fetched.relationships.get(0).relatedSubstance.refuuid);
+            assertEquals(foo_bar, sub1Fetched.relationships.get(0).type);
+
+            assertEquals(uuid2.toString(), sub1Fetched.relationships.get(1).relatedSubstance.refuuid);
+            assertEquals(foo_bar, sub1Fetched.relationships.get(1).type);
+
+            String oid1 = sub1Fetched.relationships.get(0).originatorUuid;
+            String oid2 = sub2Fetched.relationships.get(0).originatorUuid;
+            assertEquals(uuid1.toString(), sub2Fetched.relationships.get(0).relatedSubstance.refuuid);
+            assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
+            assertEquals(oid1, oid2);
+            
+            String oid1b = sub1Fetched.relationships.get(1).originatorUuid;
+            String oid2b = sub2Fetched.relationships.get(1).originatorUuid;
+            assertEquals(uuid1.toString(), sub2Fetched.relationships.get(1).relatedSubstance.refuuid);
+            assertEquals(bar_foo, sub2Fetched.relationships.get(1).type);
+            assertEquals(oid1b, oid2b);
+        
+    }
+    
     /*
      * 1. Create a new alternative definition and link back to some primary definition
         1.1. Confirm it makes the new alt record [yes]

@@ -93,7 +93,8 @@ public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullSta
         (String) m.get("suffix"),
         (boolean) m.get("padding"),
         (Long) m.get("max"),
-        (String) m.get("codeSystem")
+        (String) m.get("codeSystem"),
+        null
         );
         assertEquals(2, codeGenerator.getLen());
     }
@@ -115,7 +116,8 @@ public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullSta
             (String) m.get("suffix"),
             (boolean) m.get("padding"),
             (Long) m.get("max"),
-            (String) m.get("codeSystem")
+            (String) m.get("codeSystem"),
+            null
             );
         } catch (Exception e)  {
             message = e.getMessage();
@@ -139,7 +141,8 @@ public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullSta
         (String) m.get("suffix"),
         (boolean) m.get("padding"),
         (Long) m.get("max"),
-        (String) m.get("codeSystem")
+        (String) m.get("codeSystem"),
+        null
         );
         assertTrue(codeGenerator.checkNextNumberWithinRange(3L, (Long) m.get("max")));
         assertTrue(codeGenerator.checkNextNumberWithinRange(4L, (Long) m.get("max")));
@@ -179,7 +182,8 @@ public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullSta
         (String)m.get("suffix"),
         (boolean)m.get("padding"),
         (Long)m.get("max"),
-        (String)m.get("codeSystem")
+        (String)m.get("codeSystem"),
+        null
         );
 
         UUID uuid1 = UUID.randomUUID();
@@ -231,7 +235,8 @@ public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullSta
             (String)m.get("suffix"),
             (boolean)m.get("padding"),
             (Long)m.get("max"),
-            (String)m.get("codeSystem")
+            (String)m.get("codeSystem"),
+            null
         );
         AutowireHelper.getInstance().autowire(codeGenerator);
         UUID uuid1 = UUID.randomUUID();
@@ -287,7 +292,8 @@ public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullSta
             (String) m.get("suffix"),
             (boolean) m.get("padding"),
             (Long) m.get("max"),
-            (String) m.get("codeSystem")
+            (String) m.get("codeSystem"),
+            null
         );
         AutowireHelper.getInstance().autowire(codeGenerator);
 
@@ -410,7 +416,8 @@ public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullSta
         (String) m.get("suffix"),
         (boolean) m.get("padding"),
         (Long) m.get("max"),
-        (String) m.get("codeSystem")
+        (String) m.get("codeSystem"),
+        null
         );
         AutowireHelper.getInstance().autowire(codeGenerator);
 

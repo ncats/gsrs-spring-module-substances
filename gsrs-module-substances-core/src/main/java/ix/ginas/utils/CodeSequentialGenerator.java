@@ -32,14 +32,14 @@ import java.util.Objects;
 	gsrs.entityProcessors.list.UniqueCodeGenerator = {
 		"entityClassName" = "ix.ginas.models.v1.Substance",
 		"processor" = "gsrs.module.substance.processors.UniqueCodeGenerator",
-		"order" = 1200,
-		"with" = {
-			"name" = "Some Name",
+		"with"=  {
+			"name": "Some Name",
 			"codesystem"="SOMECODESYSTEM",
-			"suffix" = "ZZ",
-			"length" = 5,
-			"padding" = true,
-			"max" = 999
+			"suffix"="ZZ",
+			"length"=5,
+			"padding"=true,
+			"max"=999,
+			"groups"=["protected"]
 		}
 	}
  */
@@ -48,7 +48,6 @@ import java.util.Objects;
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
 
-	private static final String GROUP_PROTECTED = "protected";
 	public static final Long DEFAULT_MAX = Long.MAX_VALUE;
 
 	@Autowired
@@ -60,6 +59,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	private String codeSystem;
 	private String name;
 	private Long max;
+	private String[] groups;
 
 	public CodeRepository getCodeRepository() {
 		return codeRepository;
@@ -83,13 +83,15 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 					@JsonProperty("suffix") String suffix,
 					@JsonProperty("padding") boolean padding,
 					@JsonProperty("max") Long max,
-					@JsonProperty("codeSystem") String codeSystem) {
+					@JsonProperty("codeSystem") String codeSystem,
+					@JsonProperty("groups") Map<Integer, String> groups) {
 
 		super(len, suffix, padding);
 		if(max==null) { max=DEFAULT_MAX; }
 
 		this.max = max;
 		if(suffix==null) { this.suffix= "";}
+		this.groups = (groups != null) ? groups.values().stream().toArray(String[]::new) : null;
 		if(!this.getClass().equals(LegacyCodeSequentialGenerator.class)) {
             // Legacy could be an extension of this class, and if so these checks aren't appropriate.
 			if (len < 1) {
@@ -160,7 +162,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 
 	public Code addCode(Substance s) {
 		try {
-			return codeEntityService.createNewSystemCode(s, this.codeSystem, c -> this.generateID(), GROUP_PROTECTED);
+			return codeEntityService.createNewSystemCode(s, this.codeSystem, c -> this.generateID(), this.groups);
 		} catch (Throwable t) {
 			return Sneak.sneakyThrow(new Exception("Throwing exception in addCode in CodeSequentialGenerator. " + ((t.getCause()!=null)?t.getCause():"")));
 		}
