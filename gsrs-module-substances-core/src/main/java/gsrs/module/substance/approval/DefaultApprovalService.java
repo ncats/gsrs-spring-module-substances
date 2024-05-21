@@ -125,6 +125,26 @@ public class DefaultApprovalService implements ApprovalService{
     }
 
     /**
+     * Check if the given Substance is approvable by the user invoking this method.
+     * @param s the Substance to approve.
+     * @return a true if the user invoking this method is able to approve given Substance.
+     */
+    @Override
+    public boolean isApprovable(Substance s) {
+        String userName = GsrsSecurityUtils.getCurrentUsername().orElse(null);
+        if (userName == null) {
+            return false;
+        }
+        try {
+            defaultApprovalValidation(s, userName);
+            extraApprovalValidation(s, userName);
+            return true;
+        } catch (ApprovalException ex) {
+            return false;
+        }
+    }
+
+    /**
      * Try to approve the given Substance.  The user invoking this method
      * must have Approver Role.
      * @param s the Substance to approve.
