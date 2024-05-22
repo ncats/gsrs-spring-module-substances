@@ -114,13 +114,16 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer{
 
                             //mapping.tidy();
                             TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                            log.trace("got tx " + tx);
+                            log.trace("got tx {}; size of kvmaps: {}", tx, kvmaps.size());
                             tx.executeWithoutResult(a->{
                             	keyValueMappingRepository.saveAll(kvmaps);
+                                log.trace("saved kvmaps");
                             	keyValueMappingRepository.flush();
+                                log.trace("flushed keyValueMappingRepository");
                             });
                             
                             listen.recordProcessed(s);
+                            log.trace("called recordProcessed");
                         } else {
                             log.warn("error retrieving substance with ID {}", uuid);
                         }
@@ -132,6 +135,7 @@ public class CalculateMatchablesScheduledTask extends ScheduledTaskInitializer{
             };
         	
         	if(threadCount!=null && threadCount>0) {
+                log.trace("threadcount: {}", threadCount);
         		forkJoinPool = new ForkJoinPool(threadCount);
         		forkJoinPool.submit(r).get();
         	}else {
