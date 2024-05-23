@@ -190,7 +190,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             }
 
             ChemUtils.checkSgroups(cs.getStructure(), callback);
-            
+
             ValidationUtils.validateReference(s,cs.getStructure(), callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
 
             //validateStructureDuplicates(cs, callback);
