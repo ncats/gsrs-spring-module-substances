@@ -96,7 +96,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-renderer</artifactId>
-            <version>1.0.16</version>
+            <version>${molwitch-renderer.version}</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -264,7 +264,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.7</version>
+            <version>${molwitch.version}</version>
         </dependency>
 
         <dependency>
