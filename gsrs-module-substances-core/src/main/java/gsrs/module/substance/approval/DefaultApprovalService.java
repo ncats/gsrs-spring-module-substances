@@ -13,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -38,13 +40,24 @@ public class DefaultApprovalService implements ApprovalService{
 
     private PrincipalRepository principalRepository;
 
+    private Map<String, Boolean> validators;
+
     @Autowired
     public DefaultApprovalService(SubstanceApprovalIdGenerator approvalIdGenerator,
                                   SubstanceRepository substanceRepository,
-                                  PrincipalRepository principalRepository) {
+                                  PrincipalRepository principalRepository,
+                                  Map<String, Boolean> validators) {
         this.approvalIdGenerator = approvalIdGenerator;
         this.substanceRepository = substanceRepository;
         this.principalRepository = principalRepository;
+        Map<String, Boolean> vMap = new HashMap<String, Boolean>();
+        vMap.put("allowLastEditor", validators.getOrDefault("allowLastEditor", Boolean.FALSE));
+        vMap.put("allowCreator", validators.getOrDefault("allowCreator", Boolean.FALSE));
+        vMap.put("allowNonPrimary", validators.getOrDefault("allowNonPrimary", Boolean.FALSE));
+        vMap.put("allowConcept", validators.getOrDefault("allowConcept", Boolean.FALSE));
+        vMap.put("allowDependsOnNonPresent", validators.getOrDefault("allowDependsOnNonPresent", Boolean.FALSE));
+        vMap.put("allowDependsOnNonApproved", validators.getOrDefault("allowDependsOnNonApproved", Boolean.FALSE));
+        this.validators = vMap;
     }
 
     /**
@@ -100,24 +113,26 @@ public class DefaultApprovalService implements ApprovalService{
             throw new ApprovalException(
                     "There is no last editor associated with this record. One must be present to allow approval. Please contact your system administrator.");
         } else {
-            if (s.lastEditedBy.username.equals(usernameOfApprover)) {
-                throw new ApprovalException(
+            if (validators.get("allowLastEditor") == Boolean.FALSE && s.lastEditedBy.username.equals(usernameOfApprover)) {
+                if (!(validators.get("allowCreator") == Boolean.TRUE && s.createdBy != null && s.createdBy.username.equals(usernameOfApprover))) {
+                    throw new ApprovalException(
                         "You cannot approve a substance if you are the last editor of the substance.");
+                }
             }
         }
-        if (!s.isPrimaryDefinition()) {
+        if (validators.get("allowNonPrimary") == Boolean.FALSE && !s.isPrimaryDefinition()) {
             throw new ApprovalException("Cannot approve non-primary definitions.");
         }
-        if (Substance.SubstanceClass.concept.equals(s.substanceClass)) {
+        if (validators.get("allowConcept") == Boolean.FALSE && Substance.SubstanceClass.concept.equals(s.substanceClass)) {
             throw new ApprovalException("Cannot approve non-substance concepts.");
         }
         for (SubstanceReference sr : s.getDependsOnSubstanceReferences()) {
             Optional<SubstanceRepository.SubstanceSummary> s2 = substanceRepository.findSummaryBySubstanceReference(sr);
-            if (!s2.isPresent()) {
+            if (validators.get("allowDependsOnNonPresent") == Boolean.FALSE && !s2.isPresent()) {
                 throw new IllegalStateException("Cannot approve substance that depends on " + sr.toString()
                         + " which is not found in database.");
             }
-            if (!s2.get().isValidated()) {
+            if (validators.get("allowDependsOnNonApproved") == Boolean.FALSE && !s2.get().isValidated()) {
                 throw new IllegalStateException(
                         "Cannot approve substance that depends on " + sr.toString() + " which is not approved.");
             }
