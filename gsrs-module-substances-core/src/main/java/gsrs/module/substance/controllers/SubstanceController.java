@@ -1036,6 +1036,17 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
+    @GetGsrsRestApiMapping(value={"({id})/@isApprovable", "/{id}/@isApprovable" })
+    public ResponseEntity isApprovableGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
+        Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
+
+        if(!substance.isPresent()){
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+        boolean approvable = approvalService.isApprovable(substance.get());
+        return new ResponseEntity<>(String.valueOf(approvable), HttpStatus.OK);
+    }
+
     @Transactional
     @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
     @hasApproverRole
