@@ -39,7 +39,7 @@
         <log4j2.version>2.17.2</log4j2.version>
         <molwitch.version>0.6.8</molwitch.version>
         <molwitch-cdk.version>1.0.19</molwitch-cdk.version>
-        <molwitch-renderer.version>1.0.16</molwitch-renderer.version>
+        <molwitch-renderer.version>1.0.17</molwitch-renderer.version>
     </properties>
 
     <licenses>
