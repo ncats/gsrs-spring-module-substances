@@ -102,7 +102,7 @@ public class Structure extends BaseModel {
         public static final Stereo UNKNOWN = new Stereo("UNKNOWN");
         
 		private String stereoType;
-        
+
         public Stereo(String stereo){
         	this.stereoType=stereo;
         }
