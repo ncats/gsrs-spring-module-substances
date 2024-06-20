@@ -32,21 +32,21 @@ public class DatabaseIndexSyncTaskInitializer extends ScheduledTaskInitializer{
 	@Override
 	public void run(SchedulerPlugin.JobStats stats, SchedulerPlugin.TaskListener l) {
 		if(entityString.length()==0) {
-			log.error("DatabaseIndexSyncTask: No entities defined for the database and index sync scheduler.");
+			log.info("DatabaseIndexSyncTask: No entities defined for the database and index sync scheduler.");
 			return;
 		}
 		
 		Set<String> syncEntities = Stream.of(entityString.split(",")).map(entity->entity.trim()).collect(Collectors.toSet());
 		syncEntities.retainAll(supportedEntities);
 		if(syncEntities.size()==0) {
-			log.error("DatabaseIndexSyncTask: No allowed entities defined for the database and index sync scheduler.");
+			log.info("DatabaseIndexSyncTask: No allowed entities defined for the database and index sync scheduler.");
 			return;
 		}
 				
 		for(String entity: syncEntities) {
 						
 			String entityClassName = generateEntityClassName(entity);
-			log.error("DatabaseIndexSyncTask: Entity class: " + entityClassName);
+			log.info("DatabaseIndexSyncTask: Entity class: " + entityClassName);
 			
 			if(entityClassName.isEmpty()) {
 				log.error("Illegal entity class: " + entity + " in database and index sync scheduler.");
