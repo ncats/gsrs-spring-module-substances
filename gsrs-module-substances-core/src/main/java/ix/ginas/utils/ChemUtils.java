@@ -171,8 +171,11 @@ public class ChemUtils {
 			callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(messageText.toString()));
 		}
 	}
-	
-	
+
+	public static void checkSgroups(Structure oldstr, ValidatorCallback callback) {
+		List<String> sgroupWarnings = oldstr.toChemical().getImpl().getSGroupWarnings();
+		sgroupWarnings.forEach(w-> callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(w)));
+	}
 	
 	public static List<Bond> getNeighborBonds(Chemical c, Bond cb){
 		List<Bond> bonds = new ArrayList<>();
