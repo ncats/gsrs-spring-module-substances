@@ -203,7 +203,7 @@ public class ValidationUtils {
 					Reference dbReference = referenceRepository.getOne(UUID.fromString(ref.getValue()));
 					if(dbReference !=null) {
 						callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-								"Reference  type: \"%s\" citation: \"%s\"  uuid \"%s\" not found on substance.",
+								"Reference type: \"%s\" citation: \"%s\" uuid \"%s\" not found on substance.",
 								dbReference.docType, dbReference.citation, ref.getValue()));
 					}else{
 					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference \"%s\" not found on substance.",

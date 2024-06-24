@@ -513,7 +513,7 @@ public class Structure extends BaseModel {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("SMILES parsing error: %s", e.getMessage()));
             }
         
         }else{
@@ -521,7 +521,7 @@ public class Structure extends BaseModel {
                 c = Chemical.parseMol(molfile);
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("Molfile parsing error: %s", e.getMessage()));
             }
         }
 
