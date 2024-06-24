@@ -77,9 +77,10 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		try {
 			String inputStructure = term.getFragmentStructure().split(" ")[0];
 			Chemical chem = Chemical.parse(inputStructure);
-			chem = Chem.RemoveQueryAtomsForPseudoInChI(chem);
+			chem = Chem.RemoveQueryFeaturesForPseudoInChI(chem);
 			return Optional.of(chem.toInchi().getKey());
-		} catch (IOException e) {
+		} catch (Exception e) {
+			log.error("Error processing fragment structure {}", term.getFragmentStructure());
 			e.printStackTrace();
 			return Optional.empty();
 		}
@@ -108,11 +109,12 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 		String smiles;
 		try {
-			smiles = chem.toSmiles();
+			Chemical cleanChemical = Chem.RemoveQueryFeaturesForPseudoInChI(chem);
+			smiles = cleanChemical.toSmiles();
 			// todo: may need to add warning with applicable change
 			if(!Optional.ofNullable(term.getSimplifiedStructure()).isPresent())
 				term.setSimplifiedStructure(smiles);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
 					"Illegal chemical structure format: %s", term.getFragmentStructure()));
 			return;

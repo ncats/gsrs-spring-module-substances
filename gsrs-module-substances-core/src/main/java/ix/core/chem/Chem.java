@@ -1,14 +1,12 @@
 package ix.core.chem;
 
 import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.models.Structure;
 import ix.core.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import ix.core.chem.ChemCleaner;
-
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -31,7 +29,7 @@ public class Chem {
         }
     }
     
-    public static Chemical RemoveQueryAtomsForPseudoInChI(Chemical c) {
+    public static Chemical RemoveQueryFeaturesForPseudoInChI(Chemical c) {
         Chemical chemicalToUse = c;
         if(c.hasQueryAtoms() || c.atoms().filter(at->"A".equals(at.getSymbol())).count()>0){
             chemicalToUse = c.copy();
@@ -39,13 +37,26 @@ public class Chem {
                     .filter(at->at.isQueryAtom() || "A".equals(at.getSymbol()))
                     .forEach(a->{
                         a.setAtomicNumber(2);
+                        //verify that this is setting a symbol as well
+                        a.setAlias("He");
                         a.setMassNumber(6);
                     });
         }
+        Chemical processBonds = chemicalToUse.copy();
+        //temporary diagnostics
+        /*System.out.println("total bonds: " + processBonds.getBondCount());
+        processBonds.bonds().forEach(b->{
+            System.out.printf("bond: %s; atom 1: %s; atom 2: %s\n", b.getBondType(), b.getAtom1().getSymbol(),  b.getAtom2().getSymbol() );});*/
         try{
-            return Chemical.parse(ChemCleaner.removeSGroupsAndLegacyAtomLists(chemicalToUse.toMol()));
+            Chemical finalChem= Chemical.parse(ChemCleaner.removeSGroupsAndLegacyAtomLists(processBonds.toMol()));
+            finalChem.bonds().filter(b->b.getBondType() == null || b.getBondType().equals(Bond.BondType.SINGLE_OR_DOUBLE) || b.getBondType().equals(b))
+                    .forEach(b->{
+                        b.setBondType(Bond.BondType.SINGLE);
+
+                    });
+            return finalChem;
         }catch(Exception e){
-            return chemicalToUse;
+            return processBonds;
         }
     }
 

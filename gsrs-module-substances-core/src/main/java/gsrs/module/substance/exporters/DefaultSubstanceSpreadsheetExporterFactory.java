@@ -200,7 +200,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
     			try {
     				Chemical chem = s.toChemical();
-    				cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(chem))
+    				cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(chem))
     						.getKey()
     						.replace("InChIKey=", ""));
     			} catch (Exception e) {
