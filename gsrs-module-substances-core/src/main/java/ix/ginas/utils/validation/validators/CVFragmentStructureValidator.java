@@ -127,6 +127,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "This fragment structure appears to have duplicates: %s", term.getFragmentStructure()));
+			log.warn("Duplicate: {}", hash.get());
 		}
 	}	
 	
@@ -165,7 +166,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		fragmentChanges.deletedTerms = termsBeforeUpdate.stream().filter(term -> {
 			Long id = term.getId();
 			FragmentVocabularyTerm newTerm = termsAfterUpdate.stream()
-				  .filter(oTerm -> oTerm.getId().equals(id))
+				  .filter(oTerm -> (oTerm.getId()!=null && oTerm.getId().equals(id)))
 				  .findAny()
 				  .orElse(null);
 			if(!Optional.ofNullable(newTerm).isPresent())
