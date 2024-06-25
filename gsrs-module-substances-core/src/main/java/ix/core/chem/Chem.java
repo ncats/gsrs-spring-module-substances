@@ -61,10 +61,11 @@ public class Chem {
 
             finalChem.bonds().filter(b->b.getBondType() == null || b.getBondType().equals(Bond.BondType.SINGLE_OR_DOUBLE) || b.isQueryBond())
                     .forEach(b->{
+                        log.trace("about to replace bond {}", b);
                         b.setBondType(Bond.BondType.SINGLE);
                     });
             try {
-                log.trace("RemoveQueryFeaturesForPseudoInChI about to return molfile {}", chemicalToUse.toMol());
+                log.trace("RemoveQueryFeaturesForPseudoInChI about to return molfile {}", finalChem.toMol());
             } catch (IOException e) {
                 log.error("Error generating mol from Chemical");
             }
