@@ -14,14 +14,28 @@ public class VocabFragmentCleanupTest {
 
     @Test
     void testQueryFeatures() throws IOException {
+        //test like we have a vocabulary term here
         FragmentVocabularyTerm fragmentVocabularyTerm = new FragmentVocabularyTerm();
-        fragmentVocabularyTerm.setFragmentStructure("[*]N[C@@H](CS[*])C([*])=O |$_R1;;;;;_R3;;_R2;$|");
+        fragmentVocabularyTerm.setFragmentStructure("[*]N[C@@H](CS[*])C([*])=O |$_R1;;;;;_R3;;_R2;$|"); //_R...  - atom alias
         String inputStructure = fragmentVocabularyTerm.getFragmentStructure().split(" ")[0];
+        //todo: include optional square brackets around *...
+        //  2 replacements
+
+        String lexicallyCleaned = inputStructure.replace("*", "6He");
+        System.out.printf("lexicallyCleaned: %s\n", lexicallyCleaned);
+
         Chemical chem = Chemical.parse(inputStructure);
         chem = Chem.RemoveQueryFeaturesForPseudoInChI(chem);
-        String inchiKey = chem.toInchi().getKey();
-        log.debug("Created InChIKey: {}", inchiKey);
-        Assertions.assertTrue(inchiKey.length()>0);
+        String processedSmiles = chem.toSmiles();
+        System.out.printf("processedSmiles: %s\n", processedSmiles);
+        String inChIKey = chem.toInchi().getKey();
+
+        String expectedInChIKey =getInChiKey(lexicallyCleaned);// "OTIPWSTYBNONSP-CQOJXGFHSA-N";
+        log.debug("Created InChIKey: {}", inChIKey);
+        Assertions.assertEquals(expectedInChIKey, inChIKey);
+        String molfile = chem.toMol();
+        System.out.printf("molfile:\n %s\n", molfile);
+        Assertions.assertFalse(molfile.contains("*"));
     }
 
     @Test
@@ -36,4 +50,16 @@ public class VocabFragmentCleanupTest {
         Assertions.assertTrue(smiles.length()>0);
     }
 
+
+    @Test
+    void testParsing0() {
+        String testSmiles = "OP([*])([*])=O";
+
+    }
+
+    private String getInChiKey(String smiles) throws IOException {
+        Chemical chem = Chemical.parse(smiles);
+        String inChIKey = chem.toInchi().getKey();
+        return inChIKey;
+    }
 }
