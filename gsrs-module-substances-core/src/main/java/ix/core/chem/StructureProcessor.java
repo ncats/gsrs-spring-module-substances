@@ -353,7 +353,13 @@ public class StructureProcessor {
 
 
         Chem.setFormula(struc);
-        struc.setMwt(mol.getMass());
+        try {
+            struc.setMwt(mol.getMass());
+        } catch (Exception ignore){
+            //todo: deal with getMass for query atoms
+            //exception swallowed based on discussion between T. Peryea and M. Miller 27 June 2024
+        }
+
 
         if(!query){
             try {

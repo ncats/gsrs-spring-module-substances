@@ -7,6 +7,7 @@ import ix.core.models.Structure;
 import ix.core.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -31,10 +32,16 @@ public class Chem {
     
     public static Chemical RemoveQueryFeaturesForPseudoInChI(Chemical c) {
         Chemical chemicalToUse = c;
-        if(c.hasQueryAtoms() || c.atoms().filter(at->"A".equals(at.getSymbol())).count()>0){
+        /*try {
+            log.trace("RemoveQueryFeaturesForPseudoInChI processing molfile c {}", c.toMol());
+        } catch (IOException e) {
+            log.error("Error generating mol from Chemical");
+        }*/
+        if(c.hasQueryAtoms() || c.atoms().filter(at->("A".equals(at.getSymbol()) || "*".equals(at.getSymbol()) || "R".equals(at.getSymbol()))).count()>0){
             chemicalToUse = c.copy();
             chemicalToUse.atoms()
-                    .filter(at->at.isQueryAtom() || "A".equals(at.getSymbol()))
+                    .filter(at-> at.getSymbol() == null || "A".equals(at.getSymbol()) || "*".equals(at.getSymbol())
+                            || "R".equals(at.getSymbol()))//isQueryAtom returns true
                     .forEach(a->{
                         a.setAtomicNumber(2);
                         //verify that this is setting a symbol as well
@@ -43,16 +50,12 @@ public class Chem {
                     });
         }
         Chemical processBonds = chemicalToUse.copy();
-        //temporary diagnostics
-        /*System.out.println("total bonds: " + processBonds.getBondCount());
-        processBonds.bonds().forEach(b->{
-            System.out.printf("bond: %s; atom 1: %s; atom 2: %s\n", b.getBondType(), b.getAtom1().getSymbol(),  b.getAtom2().getSymbol() );});*/
         try{
             Chemical finalChem= Chemical.parse(ChemCleaner.removeSGroupsAndLegacyAtomLists(processBonds.toMol()));
-            finalChem.bonds().filter(b->b.getBondType() == null || b.getBondType().equals(Bond.BondType.SINGLE_OR_DOUBLE) || b.getBondType().equals(b))
+            finalChem.bonds().filter(b->b.getBondType() == null || b.getBondType().equals(Bond.BondType.SINGLE_OR_DOUBLE) || b.isQueryBond())
                     .forEach(b->{
+                        log.trace("about to replace bond {}", b);
                         b.setBondType(Bond.BondType.SINGLE);
-
                     });
             return finalChem;
         }catch(Exception e){
