@@ -73,7 +73,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 	}
 	
 		
-	private Optional<String> getHash(FragmentVocabularyTerm term) {
+	public static Optional<String> getHash(FragmentVocabularyTerm term) {
 		try {
 			String inputStructure = term.getFragmentStructure().split(" ")[0];
 			Chemical chem = Chemical.parse(inputStructure);

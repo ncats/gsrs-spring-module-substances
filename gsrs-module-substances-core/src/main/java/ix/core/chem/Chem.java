@@ -32,11 +32,11 @@ public class Chem {
     
     public static Chemical RemoveQueryFeaturesForPseudoInChI(Chemical c) {
         Chemical chemicalToUse = c;
-        try {
+        /*try {
             log.trace("RemoveQueryFeaturesForPseudoInChI processing molfile c {}", c.toMol());
         } catch (IOException e) {
             log.error("Error generating mol from Chemical");
-        }
+        }*/
         if(c.hasQueryAtoms() || c.atoms().filter(at->("A".equals(at.getSymbol()) || "*".equals(at.getSymbol()) || "R".equals(at.getSymbol()))).count()>0){
             chemicalToUse = c.copy();
             chemicalToUse.atoms()
