@@ -66,6 +66,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @BeforeEach
     public void clearIndexers() throws IOException {
         if( !loadedData) {
+            log.trace("starting to load data");
             SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
             AutowireHelper.getInstance().autowire(hashIndexer);
             testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
@@ -95,15 +96,16 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                     .setUUID(uuid)
                     .build();
 
+        log.trace("created query substance");
         Structure structureStd = structureProcessor.taskFor(substance.getStructure().molfile)
                 .standardize(true)
                 .build()
                 .instrument()
                 .getStructure();
-        String sins= structureStd.getStereoInsensitiveHash();
+        log.trace("created structureStd");
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
-        //"( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " +
+        log.trace("created and wired controller");
 
         String hash=  controller.makeFlexSearchMoietyClauses(structureStd) + ")";
         log.trace("search hash: {}", hash);
@@ -131,14 +133,14 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
         String hash=  controller.makeFlexSearch(structureStd);
-        System.out.printf("search hash: %s\n", hash);
+        log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
                 .query(hash)
                 .build();
         List<Substance> substances = getSearchList(request);
-        System.out.println("Flex search hits:");
-        substances.forEach(s-> System.out.printf("ID %s - %s\n", s.uuid, s.getName()));
+        log.trace("Flex search hits:");
+        substances.forEach(s-> log.trace("ID {} - {}", s.uuid, s.getName()));
 
         int expectedNumber = 7;
         assertEquals(expectedNumber, substances.size());
@@ -148,7 +150,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @WithMockUser(value = "admin", roles = "Admin")
     public void runFlexSearchQuerySodiumTartrate() throws Exception {
         String structureSmiles = "C(C(C(=O)[O-])O)(C(=O)O)O.[Na+]";
-        String molfileSource = "molfiles/sodium_tartarate.mol";
+        String molfileSource = "molfiles/sodium_tartrate.mol";
 
         File molfile = new ClassPathResource(molfileSource).getFile();
         UUID uuid = UUID.randomUUID();
@@ -169,7 +171,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .query(hash)
                 .build();
         List<Substance> substances = getSearchList(request);
-        substances.forEach(s-> System.out.printf("ID %s - %s\n", s.uuid, s.getName()));
+        substances.forEach(s-> log.trace("ID {} - {}", s.uuid, s.getName()));
 
         int expectedNumber = 3;
         assertEquals(expectedNumber, substances.size());
