@@ -73,13 +73,14 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 	}
 	
 		
-	private Optional<String> getHash(FragmentVocabularyTerm term) {
+	public static Optional<String> getHash(FragmentVocabularyTerm term) {
 		try {
 			String inputStructure = term.getFragmentStructure().split(" ")[0];
 			Chemical chem = Chemical.parse(inputStructure);
-			chem = Chem.RemoveQueryAtomsForPseudoInChI(chem);
+			chem = Chem.RemoveQueryFeaturesForPseudoInChI(chem);
 			return Optional.of(chem.toInchi().getKey());
-		} catch (IOException e) {
+		} catch (Exception e) {
+			log.error("Error processing fragment structure {}", term.getFragmentStructure());
 			e.printStackTrace();
 			return Optional.empty();
 		}
@@ -108,11 +109,12 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 		String smiles;
 		try {
-			smiles = chem.toSmiles();
+			Chemical cleanChemical = Chem.RemoveQueryFeaturesForPseudoInChI(chem);
+			smiles = cleanChemical.toSmiles();
 			// todo: may need to add warning with applicable change
 			if(!Optional.ofNullable(term.getSimplifiedStructure()).isPresent())
 				term.setSimplifiedStructure(smiles);
-		} catch (IOException e) {
+		} catch (Exception e) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
 					"Illegal chemical structure format: %s", term.getFragmentStructure()));
 			return;
@@ -125,6 +127,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "This fragment structure appears to have duplicates: %s", term.getFragmentStructure()));
+			log.warn("Duplicate: {}", hash.get());
 		}
 	}	
 	
@@ -163,7 +166,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		fragmentChanges.deletedTerms = termsBeforeUpdate.stream().filter(term -> {
 			Long id = term.getId();
 			FragmentVocabularyTerm newTerm = termsAfterUpdate.stream()
-				  .filter(oTerm -> oTerm.getId().equals(id))
+				  .filter(oTerm -> (oTerm.getId()!=null && oTerm.getId().equals(id)))
 				  .findAny()
 				  .orElse(null);
 			if(!Optional.ofNullable(newTerm).isPresent())
