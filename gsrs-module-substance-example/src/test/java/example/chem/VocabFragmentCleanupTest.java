@@ -133,7 +133,7 @@ public class VocabFragmentCleanupTest {
         try {
             processedSmiles= cleanedChemical.toSmiles();
         }catch (NullPointerException npe) {
-            log.error("Error creating output SMILES from pased {}", inputSmiles);
+            log.error("Error creating output SMILES from input {}", inputSmiles);
         }
         log.debug("processedSmiles: {}", processedSmiles);
         String inChIKey = cleanedChemical.toInchi().getKey();
