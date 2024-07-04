@@ -75,7 +75,7 @@ So, you should check the BDNUMs not by monitoring the code object itself
         //or if it has been removed (in which case we alrady added an error above for that)
         if(primaries !=null && primaries.size() > 1){
            //2. If there are 2 or more BDNUMs where both are type "PRIMARY", throw an error.
-           callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Can not have more than 1 PRIMARY BDNUM but have : %s", primaries));
+           callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Cannot have more than 1 PRIMARY BDNUM but have : %s", primaries));
         }
 
     }
