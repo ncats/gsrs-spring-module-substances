@@ -123,4 +123,9 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
     public Page page(Pageable pageable) {
         return processingJobRepository.findAll(pageable);
     }
+
+	@Override
+	public List<Long> getIDs() {		
+		return processingJobRepository.getAllIDs();
+	}
 }

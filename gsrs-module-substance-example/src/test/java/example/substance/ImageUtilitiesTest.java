@@ -139,6 +139,11 @@ public class ImageUtilitiesTest {
             assert resizedBytes != null;
             Files.write(basicFile.toPath(), resizedBytes);
             Assertions.assertTrue(resizedBytes.length>0);
+            String resizedSvgText = new String(resizedBytes);
+            String widthString = "width=\"200\"";
+            Assertions.assertTrue(resizedSvgText.contains(widthString));
+            String heightString = "height=\"100\"";
+            Assertions.assertTrue(resizedSvgText.contains(heightString));
         }
         catch (IOException e) {
             System.err.printf ("Failed while reading bytes from %s: %s", imagePath, e.getMessage());

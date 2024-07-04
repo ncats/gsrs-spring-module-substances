@@ -9,12 +9,14 @@ import gsrs.springUtils.AutowireHelper;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.Substance;
+import ix.utils.Util;
 import ix.ginas.models.v1.Code;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Set;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -28,10 +30,20 @@ public class SubstanceProductIndexValueMaker implements IndexValueMaker<Substanc
     @Autowired
     public ProductsApi productsApi;
 
-    @Override
-    public Class<Substance> getIndexedEntityClass() {
-        return Substance.class;
-    }
+	@Override
+	public Class<Substance> getIndexedEntityClass() {
+		return Substance.class;
+	}
+	
+	@Override
+	public Set<String> getTags(){
+		return Util.toSet("external","product");		
+	} 
+	
+	@Override	
+	public Set<String> getFieldNames(){
+		return Util.toSet("Product Type","Product Ingredient Type","Product Dosage Form");
+	}
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {

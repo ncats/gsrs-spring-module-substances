@@ -833,7 +833,7 @@ public class PolymerDecode {
 	 */
 
 	private static String encodePseudoInchiKey(Chemical c) throws IOException{
-		Chemical chemicalToUse = Chem.RemoveQueryAtomsForPseudoInChI(c);
+		Chemical chemicalToUse = Chem.RemoveQueryFeaturesForPseudoInChI(c);
 		return chemicalToUse.toInchi().getKey();
 	}
 
