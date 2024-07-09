@@ -1062,10 +1062,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 			GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {return approvalTransactions(s,error);});
 			if(error[0] !=null){
 				return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
-	        }
+			}
 			if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
 				return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
-	        }
+			}
 			//katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
 			return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
 		} catch (Exception e) {			
