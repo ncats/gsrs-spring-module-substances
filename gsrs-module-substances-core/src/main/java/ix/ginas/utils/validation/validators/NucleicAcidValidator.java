@@ -99,9 +99,9 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             //for now just null/blank need to confer with stakeholders if validation is needed or not
             if(su.sequence == null || su.sequence.trim().isEmpty()){
                 if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)){
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("subunit at position %s is blank. This is allowed but discouraged for incomplete nucleic acid records.", (i +1)));
+                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Subunit at position %s is blank. This is allowed but discouraged for incomplete nucleic acid records.", (i +1)));
                 }else {
-                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("subunit at position %s is blank", (i +1)));
+                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Subunit at position %s is blank", (i +1)));
                 }
             }
         }
@@ -190,7 +190,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             }catch(Exception e){
                 //invalid bases
                 callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                        "invalid nucleic acid sequence base in subunit %s  %s", subunit.subunitIndex, e.getMessage()));
+                        "Invalid nucleic acid sequence base in subunit %s %s", subunit.subunitIndex, e.getMessage()));
 
             }
         }
@@ -351,7 +351,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
         } catch (Exception e) {
         	log.error("Problem executing duplicate search function", e);
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Error performing seqeunce search on Nucleic Acid:",
+                    .ERROR_MESSAGE("Error performing seqeunce search on Nucleic Acid:%s",
                             e.getMessage()));
         }
     }
