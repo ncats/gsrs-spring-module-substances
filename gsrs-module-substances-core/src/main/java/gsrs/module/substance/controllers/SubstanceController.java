@@ -1046,10 +1046,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(String.valueOf(approvable), HttpStatus.OK);
     }
 
-    @Transactional
+    
     @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
     @hasApproverRole
-    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
+    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters){
 
         Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
 
@@ -1057,31 +1057,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return getGsrsControllerConfiguration().handleNotFound(queryParameters);
         }
         String[] error = new String[1];
-        GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {
-            //The approval will throw an exception which we can propagate up
-            //the result has other fields but we don't need to use them right now since we return the whole substance
-            // but if we change the API to just have the approval specific update we have all that's needed in this result obj
-
-            try {
-                ApprovalService.ApprovalResult result = approvalService.approve(s);
-
-                return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
-            } catch (ApprovalService.ApprovalException e) {
-                error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
-                return Optional.empty();
-            }
-        });
-
-        if(error[0] !=null){
-            return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
-        }
-        if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
-            return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
-        }
-        //katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
-        return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
+		try {
+			GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {return approvalTransactions(s,error);});
+			if(error[0] !=null){
+				return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
+			}
+			if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
+				return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
+			}
+			//katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
+			return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
+		} catch (Exception e) {			
+			return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance", queryParameters);
+		}        
     }
 
+    
+    @Transactional
+    private Optional<?> approvalTransactions(Substance substance, String[] error) throws Exception {   	
+            try {
+                ApprovalService.ApprovalResult result = approvalService.approve(substance);
+                return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
+            } catch (ApprovalService.ApprovalException e) {
+                error[0] = "error approving substance " + substance.getBestId() + ": " + e.getMessage();
+                return Optional.empty();
+            }    	
+    }
+    
     @Builder
     @Data
     public static class StructureToRender{
