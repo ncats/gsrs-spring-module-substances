@@ -43,7 +43,11 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
 
         log.debug("old version = " +objold.version +  " new version = " + objnew.version);
         if(!objold.version.equals(objnew.version)){
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Substance version '" + objnew.version +  "', does not match the stored version '" +  objold.version +"', record may have been changed while being updated"));
+            callback.addMessage(
+                GinasProcessingMessage
+                    .ERROR_MESSAGE(
+                        "Substance version '%s', does not match the stored version '%s', record may have been changed while being updated",
+                        objnew.version, objold.version));
         }
         UserProfile up =auditorAware.getCurrentAuditor()
                 .map(p->userProfileRepository.findByUser_UsernameIgnoreCase(p.username))
@@ -75,23 +79,23 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
                     //GSRS-638 removing an approval ID makes the new id null
                     if (objnew.approvalID == null) {
                         callback.addMessage(GinasProcessingMessage
-                                .WARNING_MESSAGE("The approvalID for the record has been removed. Was ('" + objold.approvalID
-                                        + "'). This is strongly discouraged."));
+                                .WARNING_MESSAGE("The approvalID for the record has been removed. Was ('%s'). This is strongly discouraged.",
+                                                objold.approvalID));
                     } else {
                         if(!substanceApprovalIdGenerator.isValidId(objnew.approvalID)){
                             callback.addMessage(GinasProcessingMessage
-                                    .ERROR_MESSAGE("The approvalID for the record has changed. Was ('" + objold.approvalID
-                                            + "') but now is ('" + objnew.approvalID + "'). This approvalID is either a duplicate or invalid."));
+                                    .ERROR_MESSAGE("The approvalID for the record has changed. Was ('%s') but now is ('%s'). This approvalID is either a duplicate or invalid.",
+                                                objold.approvalID, objnew.approvalID));
                         } else {
                             callback.addMessage(GinasProcessingMessage
-                                    .WARNING_MESSAGE("The approvalID for the record has changed. Was ('" + objold.approvalID
-                                            + "') but now is ('" + objnew.approvalID + "'). This is strongly discouraged."));
+                                    .WARNING_MESSAGE("The approvalID for the record has changed. Was ('%s') but now is ('%s'). This is strongly discouraged.",
+                                                objold.approvalID, objnew.approvalID));
                         }
                     }
                 } else{
-                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                            "The approvalID for the record has changed. Was ('" + objold.approvalID + "') but now is ('"
-                                    + objnew.approvalID + "'). This is not allowed, except by an admin."));
+                    callback.addMessage(GinasProcessingMessage
+                            .ERROR_MESSAGE("The approvalID for the record has changed. Was ('%s') but now is ('%s'). This is not allowed, except by an admin.",
+                                    objold.approvalID, objnew.approvalID));
                 }
 
             }

@@ -41,13 +41,22 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
             return smiles;
         }
         try {
-            return s.toChemical().toSmiles(CANONICAL_SMILES_SPEC);
+            Chemical tChem = s.toChemical();
+            return tChem.toSmiles(CANONICAL_SMILES_SPEC);
         } catch (Exception e) {
-            //something happend when converting to chemical fallback to passed in mol?
+            //something happened when converting to chemical fallback to passed in mol?
             try{
-               return Chemical.parseMol(mol).toSmiles(CANONICAL_SMILES_SPEC);
+                log.trace("first attempt at SMILES failed");
+                Chemical tChem2=Chemical.parseMol(mol);
+                return tChem2.toSmiles(CANONICAL_SMILES_SPEC);
             }catch (Exception e2) {
-                return null;
+                try {
+                    log.trace("previous attempts to generate a canonical SMILES failed; now, going to generate regular SMILES");
+                    return s.toChemical().toSmiles();
+                } catch (IOException ex) {
+                    log.error("Last strategy to generate SMILES failed");
+                    return null;
+                }
             }
         }
     }
@@ -55,9 +64,14 @@ public class InchiStandardizer extends AbstractStructureStandardizer {
     @Override
     public Chemical standardize(Chemical orig, Supplier<String> molSupplier, Consumer<Value> valueConsumer) throws IOException {
 
-//        if(true){
-//            return orig;
-//        }
+    	// This is currently a no-op for now. The inchi standardizer appears to have some
+    	// bugs that are not well understood.
+    	// In general it's not actually needed, since we tend to use the inchi hasher which will already do a pre-standardization step.
+    	// 
+    	
+        if(true){
+            return orig;
+        }
         if(orig.getAtomCount() > maxNumberOfAtoms || orig.hasPseudoAtoms()){
             return orig;
         }

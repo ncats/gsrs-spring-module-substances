@@ -44,7 +44,9 @@ public class RelationshipModificationValidator extends AbstractValidatorPlugin<S
 			        .filter(t->t.v()!=null)
 			        .filter(t->isChanged(t.v(),t.k())) //has changed
 			        .forEach(t->{
-			        	callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Relationship \"" + t.v().toSimpleString() + "\" can not be updated by non-admin users."));
+			        	callback.addMessage(GinasProcessingMessage
+                                                    .ERROR_MESSAGE("Relationship \"%s\" can not be updated by non-admin users.",
+                                                            t.v().toSimpleString()));
 			        });
 	    	       
 			        

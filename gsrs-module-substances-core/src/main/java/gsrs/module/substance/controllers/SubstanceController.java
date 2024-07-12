@@ -6,7 +6,19 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -16,18 +28,11 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
-import gsrs.module.substance.comparators.ExportingSubstanceComparator;
-import gsrs.module.substance.utils.ImageInfo;
-import gsrs.module.substance.utils.ImageUtilities;
-import gsrs.services.PrincipalServiceImpl;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.stagingarea.model.ImportData;
-import gsrs.stagingarea.service.StagingAreaService;
-import ix.core.models.*;
-import ix.ginas.models.v1.*;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
@@ -73,6 +78,7 @@ import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.approval.ApprovalService;
+import gsrs.module.substance.comparators.ExportingSubstanceComparator;
 import gsrs.module.substance.expanders.basic.BasicRecordExpanderFactory;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.repository.ChemicalSubstanceRepository;
@@ -84,11 +90,17 @@ import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.module.substance.utils.ImageInfo;
+import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
+import gsrs.services.PrincipalServiceImpl;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.stagingarea.model.ImportData;
+import gsrs.stagingarea.service.StagingAreaService;
 import ix.core.EntityFetcher;
 import ix.core.chem.Chem;
 import ix.core.chem.ChemAligner;
@@ -96,6 +108,10 @@ import ix.core.chem.ChemCleaner;
 import ix.core.chem.PolymerDecode;
 import ix.core.chem.StructureProcessor;
 import ix.core.controllers.EntityFactory;
+import ix.core.models.Payload;
+import ix.core.models.Structure;
+import ix.core.models.StructureRenderingParameters;
+import ix.core.models.Text;
 import ix.core.search.SearchOptions;
 import ix.core.search.SearchResultContext;
 import ix.core.search.bulk.ResultListRecordGenerator;
@@ -105,6 +121,23 @@ import ix.core.util.EntityUtils.Key;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.exporters.RecordScrubberFactory;
 import ix.ginas.exporters.SpecificExporterSettings;
+import ix.ginas.models.v1.AgentModification;
+import ix.ginas.models.v1.Amount;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Component;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Material;
+import ix.ginas.models.v1.Mixture;
+import ix.ginas.models.v1.Moiety;
+import ix.ginas.models.v1.PolymerClassification;
+import ix.ginas.models.v1.Property;
+import ix.ginas.models.v1.SpecifiedSubstanceComponent;
+import ix.ginas.models.v1.StructuralModification;
+import ix.ginas.models.v1.StructurallyDiverse;
+import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.SubstanceReference;
+import ix.ginas.models.v1.Subunit;
+import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.seqaln.SequenceIndexer;
 import ix.utils.CallableUtil.TypedCallable;
@@ -122,6 +155,8 @@ import lombok.extern.slf4j.Slf4j;
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
+	
+
 	
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
@@ -174,13 +209,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         public static SimpleStandardizer ADD_HYDROGENS() {
             return (c)->{
                 // TODO:
-                // In CDK, this doesn't generate coordinates for the Hs, meaning you have to have an additional
-                // clean call. Also, this method doesn't do anything for query molecules in CDK.
-                //
-                // Both of the above problems will need to be fixed for this to work well.
+                // In CDK, this doesn't generate coordinates for query molecules.
+		// We will need to fix this eventually.
                 //
 
                 c.makeHydrogensExplicit();
+
+		// TODO this should probably only happen when needed, but
+		// this will fix the CDK issue of 0,0,0 Hs
+		ChemAligner.align2DClean(c);
+		    
                 return c;
             };
         }
@@ -641,6 +679,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 httpRequest,
                 attributes);
     }
+    
 
     @GetGsrsRestApiMapping("/structureSearch")
     public Object structureSearchGet(
@@ -732,6 +771,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             Optional.ofNullable(httpServletRequest.getParameterValues("order")).ifPresent(ss->{
                 attributes.asMap().putIfAbsent("order", ss);
             });
+
+            Optional.ofNullable(httpServletRequest.getParameterValues("view")).ifPresent(ss->{
+                attributes.asMap().putIfAbsent("view", ss[0]);
+            });
+
             Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
             //TODO: find a way to make this not be a redirect. If we remove redirect now
             // it will actually get rid of the extra parameters, and result in a null search
@@ -992,10 +1036,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
-    @Transactional
+    @GetGsrsRestApiMapping(value={"({id})/@isApprovable", "/{id}/@isApprovable" })
+    public ResponseEntity isApprovableGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
+        Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
+
+        if(!substance.isPresent()){
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+        boolean approvable = approvalService.isApprovable(substance.get());
+        return new ResponseEntity<>(String.valueOf(approvable), HttpStatus.OK);
+    }
+
+    
     @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
     @hasApproverRole
-    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
+    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters){
 
         Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
 
@@ -1003,31 +1058,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return getGsrsControllerConfiguration().handleNotFound(queryParameters);
         }
         String[] error = new String[1];
-        GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {
-            //The approval will throw an exception which we can propagate up
-            //the result has other fields but we don't need to use them right now since we return the whole substance
-            // but if we change the API to just have the approval specific update we have all that's needed in this result obj
-
-            try {
-                ApprovalService.ApprovalResult result = approvalService.approve(s);
-
-                return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
-            } catch (ApprovalService.ApprovalException e) {
-                error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
-                return Optional.empty();
-            }
-        });
-
-        if(error[0] !=null){
-            return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
-        }
-        if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
-            return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
-        }
-        //katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
-        return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
+		try {
+			GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {return approvalTransactions(s,error);});
+			if(error[0] !=null){
+				return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
+			}
+			if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
+				return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
+			}
+			//katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
+			return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
+		} catch (Exception e) {			
+			return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance", queryParameters);
+		}        
     }
 
+    
+    @Transactional
+    private Optional<?> approvalTransactions(Substance substance, String[] error) throws Exception {   	
+            try {
+                ApprovalService.ApprovalResult result = approvalService.approve(substance);
+                return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
+            } catch (ApprovalService.ApprovalException e) {
+                error[0] = "error approving substance " + substance.getBestId() + ": " + e.getMessage();
+                return Optional.empty();
+            }    	
+    }
+    
     @Builder
     @Data
     public static class StructureToRender{
@@ -1402,7 +1459,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 rendererOptions.changeSettings(newDisplay);
             }
 
-
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
 
@@ -1472,6 +1528,30 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             if (!fullRendererOptions.isShowShadow()) {
                 renderer.setShadowVisible(false);
             }
+//
+//            if (fullRendererOptions.isAddBorder()) {
+//            	renderer.setBorderVisible(true);
+//            	if(fullRendererOptions.getColorBorder()!=null) {
+//            		renderer.setBorderColorARGB(fullRendererOptions.getColorBorder());	
+//            	}            	
+//            }
+//            
+//            if (fullRendererOptions.getColorBg()!=null) {
+//            	renderer.setBorderColorARGB(fullRendererOptions.getColorBg());            	
+//            }
+            
+
+            if (fullRendererOptions.isAddBorder()) {
+            	renderer.setBorderVisible(true);
+            	if(fullRendererOptions.getColorBorder()!=null) {
+            		renderer.setBorderColorARGB(fullRendererOptions.getColorBorder());	
+            	}            	
+            }
+            
+            if (fullRendererOptions.getColorBg()!=null) {
+            	renderer.setBorderColorARGB(fullRendererOptions.getColorBg());            	
+            }
+            
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
@@ -1517,6 +1597,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             boolean hasRgroups=hasRGroups(c);
             int rgroupColor=1;
 
+            
             if(hasRgroups){
                 if(fuse){
                     compColor=colorChemicalComponents(c);
@@ -1601,6 +1682,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 //			}
 //		}
         boolean r=false;
+
+        
         for(Atom ca:c.getAtoms()){
             if(ca.getRGroupIndex().isPresent()){
                 r= true;
@@ -1610,6 +1693,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 String alias = ca.getAlias().orElse("");
                 if(alias.startsWith("_R")){
                     ca.setRGroup(Integer.parseInt(alias.replace("_R", "")));
+                    r= true;
+                }else if(alias.startsWith("R")){
+                    ca.setRGroup(Integer.parseInt(alias.replace("R", "")));
                     r= true;
                 }
             }
@@ -1701,7 +1787,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private Map<String, Boolean> computeDisplayMap(Structure struc, int size, Chemical c) {
         Map<String, Boolean> newDisplay = new HashMap<>();
         newDisplay.put(RendererOptions.DrawOptions.DRAW_STEREO_LABELS_AS_RELATIVE.name(),
-                Structure.Stereo.RACEMIC.equals(struc.stereoChemistry));
+                Structure.Stereo.RACEMIC.equals(struc.stereoChemistry) ||
+                Structure.Optical.PLUS_MINUS.equals(struc.stereoChemistry)
+                );
 
 
         if(!Structure.Optical.UNSPECIFIED.equals(struc.opticalActivity)

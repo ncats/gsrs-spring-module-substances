@@ -324,6 +324,8 @@ public class ProteinUtils
         log.trace(String.format("basic MW: %.2f; basic formula: %s; disulfideContribution: %.2f",
                 total, makeFormulaFromMap(formulaCounts), disulfideContribution));
         total -= disulfideContribution;
+        int numberOfHydrogensToRemove = getNumberOfHydrogensToRemoveForDisulfides(ps.protein);
+        log.trace("numberOfHydrogensToRemove: {}", numberOfHydrogensToRemove);
         Map<String, SingleThreadCounter> formulaMapWithContrib[] =new Map[1];
         formulaMapWithContrib[0]=formulaCounts;
         if (ps.hasModifications() && ps.modifications.structuralModifications.size() > 0) {
@@ -348,9 +350,8 @@ public class ProteinUtils
                         //There is no computable fragment to use
                         log.info("No usable molecular weight contribution from structural modification fragment: " + mod.molecularFragment.refuuid);
                         messages.add(
-                                GinasProcessingMessage.WARNING_MESSAGE(
-                                        String.format("Structural modification will not affect the molecular weight because %s has no associated molecular weight",
-                                                mod.molecularFragment.refPname)));
+                                GinasProcessingMessage.WARNING_MESSAGE("Structural modification will not affect the molecular weight because %s has no associated molecular weight",
+                                                mod.molecularFragment.refPname));
                     }
                     else if (contribution.getMw() > 0 || (contribution.getMwHigh() > 0 && contribution.getMwLow() > 0)) {
                         //removeWater(contribution.getFormulaMap()); 1 December 2020 MAM no need for this
@@ -403,9 +404,8 @@ public class ProteinUtils
                 }
                 else {
                     log.trace("extent other than complete: " + mod.extent);
-                    messages.add(GinasProcessingMessage.WARNING_MESSAGE(
-                            String.format("Note: structural modification with extent '%s' will not be counted toward the molecular weight",
-                                    mod.extent != null ? mod.extent : "[missing]")));
+                    messages.add(GinasProcessingMessage.WARNING_MESSAGE("Note: structural modification with extent '%s' will not be counted toward the molecular weight",
+                                    mod.extent != null ? mod.extent : "[missing]"));
                 }
             }
         }
@@ -413,6 +413,10 @@ public class ProteinUtils
             log.debug("no mods to consider");
         }
 
+        if( formulaMapWithContrib[0].containsKey("H")) {
+            log.trace("going to remove {} H atoms for disulfide bonds", numberOfHydrogensToRemove);
+            formulaMapWithContrib[0].get("H").decrement(numberOfHydrogensToRemove);
+        }
         log.trace(String.format("final total: %.2f; highTotal: %.2f; lowTotal: %.2f; highLimitTotal: %.2f; lowLimitTotal: %.2f", total,
                 highTotal, lowTotal, highLimitTotal, lowLimitTotal));
         result = new MolecularWeightAndFormulaContribution(total, ps.substanceClass.toString(), formulaMapWithContrib[0]);
@@ -674,15 +678,14 @@ public class ProteinUtils
             log.trace("contribution: " + ((contribution == null) ? "null" : "not null"));
             if ((mwHigh != null && mwHigh > 0) || (mwHighLimit != null && mwHighLimit > 0)
                     || (mwLow != null && mwLow > 0) || (mwLowLimit != null && mwLowLimit > 0)) {
-                contribution.getMessages().add(GinasProcessingMessage.WARNING_MESSAGE(
-                        String.format("Using range of molecular weights for substance %s in structural modification",
-                                referencedSubstance.getName())));
+                contribution.getMessages().add(GinasProcessingMessage.WARNING_MESSAGE("Using range of molecular weights for substance %s in structural modification",
+                                referencedSubstance.getName()));
             }
         }
         else {
             GinasProcessingMessage warning = GinasProcessingMessage.WARNING_MESSAGE(
-                    String.format("Structural modification molecular fragment %s has no average molecular weight and will not be used in the molecular weight calculation",
-                            referencedSubstance.getApprovalIDDisplay()));
+                            "Structural modification molecular fragment %s has no average molecular weight and will not be used in the molecular weight calculation",
+                            referencedSubstance.getApprovalIDDisplay());
             contribution = new MolecularWeightAndFormulaContribution(referencedSubstance.substanceClass.name(), warning);
         }
         log.trace("containsStarAtom: " + containsStarAtom);
@@ -736,6 +739,12 @@ public class ProteinUtils
         return (protein != null && protein.getDisulfideLinks() != null)
                 ? protein.getDisulfideLinks().size() * HYDROGEN_MOLECULAR_WEIGHT
                 : 0.0d;
+    }
+
+    public static int getNumberOfHydrogensToRemoveForDisulfides(Protein protein) {
+        return (protein != null && protein.getDisulfideLinks() != null)
+                ? 2 * protein.getDisulfideLinks().size()
+                : 0;
     }
 
     public static Map<String,SingleThreadCounter> subtractFormulas(Map<String,SingleThreadCounter> minuend, Map<String,SingleThreadCounter> subtrahend){

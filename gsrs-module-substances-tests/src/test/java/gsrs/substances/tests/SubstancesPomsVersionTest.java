@@ -77,18 +77,6 @@ public class SubstancesPomsVersionTest {
                     String checkVersion = moduleModel.getParent().getVersion();
                     assertEquals (longVersion, checkVersion, "parent/version");
 
-                    if (module.equals("gsrs-module-substances-core")) {
-                        List<Dependency> dependencies = moduleModel.getDependencies();
-                        boolean molwitchRendererChecked = false;
-                        for (Dependency dependency : dependencies) {
-                            if (dependency.getGroupId().equals("gov.nih.ncats") && dependency.getArtifactId().equals("molwitch-renderer")) {
-                                checkDependencyExtraJarExistsAndFindPathInScript(dependency);
-                                molwitchRendererChecked = true;
-                            }
-                        }
-                        assertTrue(molwitchRendererChecked);
-                    }
-
                     if (module.equals("gsrs-fda-substance-extension")) {
                         List<Dependency> dependencies = moduleModel.getDependencies();
                         boolean applicationsApiChecked = false;

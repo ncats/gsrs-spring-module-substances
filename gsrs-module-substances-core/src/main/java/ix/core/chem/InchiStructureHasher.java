@@ -3,6 +3,7 @@ package ix.core.chem;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.InChiResult;
 import ix.core.models.Structure;
+import ix.ginas.utils.ChemUtils;
 
 import java.io.IOException;
 import java.util.function.BiConsumer;
@@ -17,7 +18,9 @@ public class InchiStructureHasher implements StructureHasher {
         try{
             String key=null;
             if(chem.getAtomCount()>0) {
-                InChiResult result = chem.toInchi();
+                Chemical cleaned = chem.copy();
+                cleaned =Chem.RemoveQueryFeaturesForPseudoInChI(cleaned);
+                InChiResult result = cleaned.toInchi();
                 key = result.getKey();    
             }else {
                 key = "MOSFIJXAXDLOML-UHFFFAOYSA-N";
@@ -30,7 +33,10 @@ public class InchiStructureHasher implements StructureHasher {
             stringBuilder.setCharAt(layerOffset, '_');
             stringBuilder.setCharAt(stringBuilder.length()-2, '_');
             String underscoredInsteadOfDash = stringBuilder.toString();
-            keyValueConsumer.accept(Structure.H_InChI_Key, underscoredInsteadOfDash);
+            
+            // This used to use the underscore version for the "real" inchikey,
+            // but switching to use the dash form now.
+            keyValueConsumer.accept(Structure.H_InChI_Key, key);
             keyValueConsumer.accept(Structure.H_EXACT_HASH, underscoredInsteadOfDash);
             keyValueConsumer.accept(Structure.H_STEREO_INSENSITIVE_HASH, connectionOnly);
         }catch(IOException e){

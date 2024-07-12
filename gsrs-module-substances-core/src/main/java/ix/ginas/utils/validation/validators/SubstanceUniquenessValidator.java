@@ -2,10 +2,9 @@ package ix.ginas.utils.validation.validators;
 
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.security.GsrsSecurityUtils;
-import ix.core.models.Role;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
+import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.DefHashCalcRequirements;
@@ -59,15 +58,8 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 		if (fullMatches.size() > 0) {
 			for (int i = 0; i < fullMatches.size(); i++) {
 				Substance possibleMatch = fullMatches.get(i);
-
-				String messageText = String.format("Substance %s (ID: %s) appears to be a full duplicate\n",
+				GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE("Substance %s (ID: %s) appears to be a full duplicate",
 								possibleMatch.getName(), possibleMatch.uuid);
-				GinasProcessingMessage mes;
-				if( oldSubstance == null && !GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate, Role.SuperDataEntry)) {
-					mes= GinasProcessingMessage.ERROR_MESSAGE(messageText);
-				}else{
-					mes= GinasProcessingMessage.WARNING_MESSAGE(messageText);
-				}
                 mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
 				//.createSubstanceLink((possibleMatch));
 				callback.addMessage(mes);
@@ -80,11 +72,10 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 			if (matches.size() > 0) {
 				for (int i = 0; i < matches.size(); i++) {
 					Substance possibleMatch = matches.get(i);
-					String message = String.format("Substance %s (ID: %s) is a possible duplicate\n",
+					log.debug("in SubstanceUniquenessValidator before message creation");
+					GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE("Substance %s (ID: %s) is a possible duplicate",
 									possibleMatch.getName(), possibleMatch.uuid);
-					log.debug("in SubstanceUniquenessValidator, creating warning with message " + message);
-					GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(message);
-					log.debug("in SubstanceUniquenessValidator after message creation");
+					log.debug("in SubstanceUniquenessValidator, created warning with message " + mes.getMessage());
 					  mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
 					//mes.addLink(GinasUtils.createSubstanceLink(possibleMatch));
 					callback.addMessage(mes);
@@ -92,6 +83,5 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 			}
 		}
 	}
-    
 
 }

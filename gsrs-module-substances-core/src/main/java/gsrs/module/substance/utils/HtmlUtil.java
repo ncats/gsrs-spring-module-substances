@@ -20,7 +20,7 @@ import org.jsoup.select.NodeVisitor;
  * Created by epuzanov on 7/25/22.
  */
 public final class HtmlUtil {
-    private static final Set<String> safetags = Stream.of("i", "small", "sub", "sup").collect(Collectors.toSet());
+    private static final Set<String> safetags = Stream.of("br", "i", "small", "sub", "sup").collect(Collectors.toSet());
     private static class TruncateVisitor implements NodeVisitor {
         private int maxLen = 0;
         private Element dst;
@@ -54,8 +54,19 @@ public final class HtmlUtil {
                         String curText = ((TextNode) node).getWholeText();
                         if (resHtmlLen + nodeHtmlLen > maxLen) {
                             StringBuilder sb = new StringBuilder(curText);
-                            sb.setLength(maxNodeLen + 1);
-                            while (sb.toString().getBytes(StandardCharsets.UTF_8).length > maxNodeLen) {
+                            int curHtmlLen = maxNodeLen;
+                            sb.setLength(curHtmlLen);
+                            curHtmlLen += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
+                            curHtmlLen += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
+                            while (curHtmlLen > maxNodeLen) {
+                                char lastChar = sb.charAt(sb.length() - 1);
+                                if (lastChar == '&') {
+                                    curHtmlLen = curHtmlLen - 5;
+                                } else if (lastChar == '<' || lastChar == '>') {
+                                    curHtmlLen = curHtmlLen - 4;
+                                } else {
+                                    curHtmlLen = curHtmlLen - 1;
+                                }
                                 sb.setLength(sb.length() - 1);
                             }
                             cur.appendText(sb.toString());
@@ -78,6 +89,9 @@ public final class HtmlUtil {
     public static String truncate(String s, int len){
         Document srcDoc = Parser.parseBodyFragment(s, "");
         srcDoc.outputSettings().prettyPrint(false);
+        if (srcDoc.body().html().length() <= len) {
+            return srcDoc.body().html();
+        }
 
         int maxLength = len-3; //for final ...
 
@@ -92,12 +106,7 @@ public final class HtmlUtil {
             t.traverse(v, srcDoc.body());
         } catch (IllegalStateException ex) {}
 
-        String htmlReturn = dst.html();
-        if(htmlReturn.length() < s.length() && htmlReturn.length() <= maxLength){
-            return htmlReturn + "...";
-        }else{
-            return htmlReturn;
-        }
+        return dst.html() + "...";
     }
 
     public static String clean(String content, String charset) {

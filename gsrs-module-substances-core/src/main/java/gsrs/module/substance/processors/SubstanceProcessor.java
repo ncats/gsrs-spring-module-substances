@@ -105,7 +105,7 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             if(owner!=null) {
                 eventPublisher.publishEvent(
                         TryToCreateInverseRelationshipEvent.builder()
-                                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING)
+                                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING_DEEP_CHECK)
                                 .originatorUUID(UUID.fromString(r.originatorUuid))
                                 .toSubstance(owner.uuid)
                                 .fromSubstance(obj.uuid)
@@ -159,109 +159,109 @@ public class SubstanceProcessor implements EntityProcessor<Substance> {
             // Tyler Oct 4 2021: It turns out setting the propagation settings helps isolate the session/
             // transactions okay. We may need to basic to things like this in the future:
             // transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            
-            Relationship r1=s.getPrimaryDefinitionRelationships().get();
-            boolean worthChecking = false;
-            if(newInsert || r1.isDirty() || r1.relatedSubstance.isDirty() || r1.lastEdited==null || 
-                    (r1.lastEdited!=null && r1.lastEdited.getTime()>TimeUtil.getCurrentTimeMillis()-60000)) {
-                worthChecking=true;
-            }
-            
-            if(worthChecking ) {
+
+            if( s.getPrimaryDefinitionRelationships().isPresent()) {
+                Relationship r1 = s.getPrimaryDefinitionRelationships().get();
+                boolean worthChecking = false;
+                if (newInsert || r1.isDirty() || r1.relatedSubstance.isDirty() || r1.lastEdited == null ||
+                        (r1.lastEdited != null && r1.lastEdited.getTime() > TimeUtil.getCurrentTimeMillis() - 60000)) {
+                    worthChecking = true;
+                }
+
+                if (worthChecking) {
 
 
 //                List<Substance> realPrimarysubs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
-                  //Note: trying to isolate in a transaction with propagation settings
-                  // DOES prevent transaction problems.
-                            TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-                            transactionTemplate.setReadOnly(true);
-                            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                            List<Substance> realPrimarysubs= transactionTemplate.execute(status->{
-                                List<Substance> subs= substanceRepository.findSubstancesWithAlternativeDefinition(s);
-                                return subs;
+                    //Note: trying to isolate in a transaction with propagation settings
+                    // DOES prevent transaction problems.
+                    TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+                    transactionTemplate.setReadOnly(true);
+                    transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    List<Substance> realPrimarysubs = transactionTemplate.execute(status -> {
+                        List<Substance> subs = substanceRepository.findSubstancesWithAlternativeDefinition(s);
+                        return subs;
+                    });
+
+
+                    log.debug("Got some relationships:" + realPrimarysubs.size());
+                    Set<String> oldprimary = new HashSet<String>();
+                    for (Substance pri : realPrimarysubs) {
+                        oldprimary.add(pri.getUuid().toString());
+                    }
+
+
+                    SubstanceReference sr = s.getPrimaryDefinitionReference();
+                    if (sr != null) {
+
+                        log.debug("Enforcing bidirectional relationship");
+                        //remove old references
+                        for (final Substance oldPri : realPrimarysubs) {
+                            if (oldPri == null) {
+                                continue;
+                            }
+                            //no need to remove the same relationship
+                            if (oldPri.getUuid().toString().equals(sr.refuuid)) {
+                                skipSaving = true;
+                                continue;
+                            }
+                            log.debug("Removing stale bidirectional relationships");
+
+
+                            transactionTemplate2.executeWithoutResult(stat -> {
+                                entityPersistAdapter.performChangeOn(oldPri, obj -> {
+                                    List<Relationship> related = obj.removeAlternativeSubstanceDefinitionRelationship(s);
+                                    for (Relationship r : related) {
+                                        relationshipRepository.delete(r);
+                                    }
+                                    obj.forceUpdate();
+                                    substanceRepository.saveAndFlush(obj);
+
+                                    return Optional.of(obj);
+                                });
                             });
 
 
-
-
-
-                log.debug("Got some relationships:" + realPrimarysubs.size());
-                Set<String> oldprimary = new HashSet<String>();
-                for(Substance pri:realPrimarysubs){
-                    oldprimary.add(pri.getUuid().toString());
-                }
-
-
-                SubstanceReference sr = s.getPrimaryDefinitionReference();
-                if (sr != null) {
-
-                    log.debug("Enforcing bidirectional relationship");
-                    //remove old references
-                    for(final Substance oldPri: realPrimarysubs){
-                        if(oldPri ==null){
-                            continue;
                         }
-                        //no need to remove the same relationship
-                        if(oldPri.getUuid().toString().equals(sr.refuuid)) {
-                            skipSaving=true;
-                            continue;
-                        }
-                        log.debug("Removing stale bidirectional relationships");
-
-                       
-                        transactionTemplate2.executeWithoutResult(stat->{
-                            entityPersistAdapter.performChangeOn(oldPri, obj->{
-                                List<Relationship> related=obj.removeAlternativeSubstanceDefinitionRelationship(s);
-                                for(Relationship r:related){
-                                    relationshipRepository.delete(r);
-                                }
-                                obj.forceUpdate();
-                                substanceRepository.saveAndFlush(obj);
-
-                                return Optional.of(obj);
-                            }); 
-                        });
-                        
-
-
-                    }
-                    if(!skipSaving) {
-                        log.debug("Expanding reference");
-                        Substance subPrimary=null;
-                        try{
-                            subPrimary= transactionTemplate.execute(status->{
-                                return substanceRepository.findBySubstanceReference(sr);
-                            }); 
-                        }catch(Exception e){
-                            e.printStackTrace();
-                        }
-
-                        if (subPrimary != null) {
-                            log.debug("Got parent sub, which is:" + EntityWrapper.of(subPrimary).getKey());
-                            if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
-
-                                log.debug("Going to save");
-                                Substance pri=subPrimary;
-                                transactionTemplate2.executeWithoutResult(stat->{
-                                    entityPersistAdapter.performChangeOn(pri, obj -> {
-                                        if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
-                                            log.info("Saving alt definition, now has:"
-                                                    + obj.getAlternativeDefinitionReferences().size());
-                                        }
-                                        obj.forceUpdate();
-                                        substanceRepository.saveAndFlush(obj);
-                                        return Optional.of(obj);
-                                    });
+                        if (!skipSaving) {
+                            log.debug("Expanding reference");
+                            Substance subPrimary = null;
+                            try {
+                                subPrimary = transactionTemplate.execute(status -> {
+                                    return substanceRepository.findBySubstanceReference(sr);
                                 });
-                               
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
 
+                            if (subPrimary != null) {
+                                log.debug("Got parent sub, which is:" + EntityWrapper.of(subPrimary).getKey());
+                                if (SubstanceDefinitionType.PRIMARY.equals(subPrimary.definitionType)) {
+
+                                    log.debug("Going to save");
+                                    Substance pri = subPrimary;
+                                    transactionTemplate2.executeWithoutResult(stat -> {
+                                        entityPersistAdapter.performChangeOn(pri, obj -> {
+                                            if (!obj.addAlternativeSubstanceDefinitionRelationship(s)) {
+                                                log.info("Saving alt definition, now has:"
+                                                        + obj.getAlternativeDefinitionReferences().size());
+                                            }
+                                            obj.forceUpdate();
+                                            substanceRepository.saveAndFlush(obj);
+                                            return Optional.of(obj);
+                                        });
+                                    });
+
+
+                                }
                             }
                         }
-                    }
 
-                }else{
-                    log.error("Persist error. Alternative definition has no primary relationship");
+                    } else {
+                        log.error("Persist error. Alternative definition has no primary relationship");
+                    }
                 }
+            } else {
+                log.warn("primary definitional relationship is missing");
             }
         }
 

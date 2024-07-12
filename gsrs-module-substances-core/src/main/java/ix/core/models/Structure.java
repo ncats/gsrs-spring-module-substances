@@ -15,16 +15,12 @@ import ix.core.AbstractValueDeserializer;
 import ix.core.EntityMapperOptions;
 import ix.core.chem.Chem;
 import ix.core.chem.ChemCleaner;
-import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.converters.StereoConverter;
-import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import javax.persistence.*;
@@ -106,7 +102,7 @@ public class Structure extends BaseModel {
         public static final Stereo UNKNOWN = new Stereo("UNKNOWN");
         
 		private String stereoType;
-        
+
         public Stereo(String stereo){
         	this.stereoType=stereo;
         }
@@ -450,7 +446,7 @@ public class Structure extends BaseModel {
             for (Value val : this.properties) {
                 if(val==null) continue;
                 if (Structure.H_InChI_Key.equals(val.label)) {
-                    return Objects.toString(val.getValue());
+                    return Objects.toString(val.getValue()).replaceAll("_", "-");                    
                 }
             }
             return getInChIKeyAndThrow();
@@ -463,7 +459,7 @@ public class Structure extends BaseModel {
     @JsonIgnore
     @Transient
     public String getInChIKeyAndThrow() throws Exception{
-       return Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(toChemical()), true).getKey();
+       return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(toChemical()), true).getKey();
 
     }
 
@@ -471,7 +467,7 @@ public class Structure extends BaseModel {
     @JsonIgnore
     @Transient
     public String getInChIAndThrow() throws Exception{
-        return Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(toChemical()), true).getInchi();
+        return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(toChemical()), true).getInchi();
 
     }
 
@@ -513,7 +509,7 @@ public class Structure extends BaseModel {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("SMILES parsing error: %s", e.getMessage()));
             }
         
         }else{
@@ -521,7 +517,7 @@ public class Structure extends BaseModel {
                 c = Chemical.parseMol(molfile);
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("Molfile parsing error: %s", e.getMessage()));
             }
         }
 

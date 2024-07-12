@@ -99,10 +99,9 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 												return;
 										}
 								}
-								String message= createDiffMessage(diff);
-								callback.addMessage(GinasProcessingMessage
-										.WARNING_MESSAGE(message));
-								log.trace("in DefinitionalHashValidator, appending message " + message);
+								GinasProcessingMessage gpm = createDiffMessage(diff);
+								callback.addMessage(gpm);
+								log.trace("in DefinitionalHashValidator, appending message " + gpm.getMessage());
 						} else {
 								log.trace("diffs empty ");
 						}
@@ -122,7 +121,7 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 			return result;
 		}
 		
-		private String createDiffMessage(List<DefinitionalElements.DefinitionalElementDiff> diffs) {
+		private GinasProcessingMessage createDiffMessage(List<DefinitionalElements.DefinitionalElementDiff> diffs) {
 			List<String> messageParts = new ArrayList();
 			for(DefinitionalElements.DefinitionalElementDiff d : diffs){
 				switch(d.getOp()) {
@@ -140,15 +139,11 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 						break;
 				}
 			}
-			String message;
 			if(messageParts.size() == 1) {
-				message ="A definitional change has been made: " +
-					messageParts.get(0) +" please reaffirm.  ";
-			} else {
-				message ="Definitional changes have been made: " +
-					String.join("; ", messageParts) +"; please reaffirm.  ";
+				return GinasProcessingMessage.WARNING_MESSAGE("A definitional change has been made: %s please reaffirm.",
+					messageParts.get(0));
 			}
-
-			return message;
+			return GinasProcessingMessage.WARNING_MESSAGE("Definitional changes have been made: %s; please reaffirm.",
+				String.join("; ", messageParts));
 		}
 }

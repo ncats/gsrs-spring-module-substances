@@ -58,7 +58,7 @@ public class ChemUtils {
 		for (Atom atom : c.getAtoms()) {
 			if (atom.hasValenceError()) {
 				GinasProcessingMessage mes = GinasProcessingMessage
-								.WARNING_MESSAGE("Valence Error on " + atom.getSymbol() + " atom (" + (atom.getAtomIndexInParent() + 1) + ") ");
+								.WARNING_MESSAGE("Valence Error on %s atom (%s)", atom.getSymbol(), (atom.getAtomIndexInParent() + 1));
 				gpm.add(mes);
 			}
 		}
@@ -73,7 +73,7 @@ public class ChemUtils {
 	public static void checkChargeBalance(Structure newstr, List<GinasProcessingMessage> gpm) {
 		if (newstr.charge != 0) {
 			GinasProcessingMessage mes = GinasProcessingMessage
-							.WARNING_MESSAGE("Structure is not charge-balanced, net charge of: " + newstr.charge);
+							.WARNING_MESSAGE("Structure is not charge-balanced, net charge of: %s", newstr.charge);
 			gpm.add(mes);
 		}
 	}
