@@ -9,7 +9,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 class SmartsIndexValueMakerTest {
@@ -24,7 +26,7 @@ class SmartsIndexValueMakerTest {
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("nitro") && i.value().equals("true")));
+        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("StructureFacet") && i.value().equals("nitro")));
     }
 
     @Test
@@ -37,7 +39,24 @@ class SmartsIndexValueMakerTest {
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("nitro") && i.value().equals("false")));
+        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("StructureFacet") && i.value().equals("false")));
+    }
+
+    @Test
+    void testCarboxylateGroup() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.addName("Nitrobenzene");
+        builder.setStructureWithDefaultReference("c1ccccc1C(=O)O");
+        ChemicalSubstance nitrobenzene = builder.build();
+
+        SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
+        Map<String, String> config = new HashMap<>();
+        String acidGroupName = "carboxlic acid";
+        config.put(acidGroupName, "C(O)=O");
+        indexer.setRawNamedSmarts(config);
+        List<IndexableValue> indexedValues= new ArrayList<>();
+        indexer.createIndexableValues(nitrobenzene, indexedValues::add);
+        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("StructureFacet") && i.value().equals(acidGroupName)));
     }
 
 }

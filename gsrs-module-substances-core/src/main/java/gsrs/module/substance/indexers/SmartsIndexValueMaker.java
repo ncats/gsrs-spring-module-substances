@@ -18,7 +18,7 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
     private final String DEFAULT_CONFIG_DATA = "nitro_[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]€nitroso_[NX2]=[OX1]";
 
-    private Map<String, LinkedHashMap<Integer, String>> namedSmarts;
+    private Map<String, String> rawNamedSmarts;
 
     List<SmartsIndexable> indexables;
 
@@ -27,9 +27,10 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
     private void completeSetup(){
         log.trace("completeSetup");
         indexables = new ArrayList<>();
-        if( namedSmarts==null || this.namedSmarts.entrySet().isEmpty()) {
+
+        if( rawNamedSmarts==null || this.rawNamedSmarts.entrySet().isEmpty()) {
             String usableConfig = DEFAULT_CONFIG_DATA;
-            log.trace("using alternate config {}", usableConfig);
+            log.trace("using default config {}", usableConfig);
             String[] tokens = usableConfig.split("\\€");
             for(String token : tokens) {
                 String[] parts = token.split("\\_");
@@ -40,11 +41,12 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
         }
         else {
             log.trace("using real config");
-            for (Map.Entry<String, LinkedHashMap<Integer, String>> entry : namedSmarts.entrySet()) {
+            for (Map.Entry<String, String> entry : rawNamedSmarts.entrySet()) {
                 String fragmentName = entry.getKey();
-                LinkedHashMap<Integer, String> listOfSmarts = entry.getValue();
+                String rawSmartsList = entry.getValue();
+                String[] listOfSmarts = rawSmartsList.split("\\€");
                 log.trace("handling smarts set with name {}", fragmentName);
-                List<String> smartsList = new ArrayList<>(listOfSmarts.values());
+                List<String> smartsList = Arrays.asList(listOfSmarts);
                 SmartsIndexable indexable = new SmartsIndexable(fragmentName, smartsList);
                 indexables.add(indexable);
             }
@@ -90,8 +92,8 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
             });
     }
 
-    public void setNamedSmarts(Map<String, LinkedHashMap<Integer, String>> namedSmarts) {
-        this.namedSmarts = namedSmarts;
+    public void setRawNamedSmarts(Map<String, String> newRawNamedSmarts) {
+        this.rawNamedSmarts = newRawNamedSmarts;
     }
 
     public List<SmartsIndexable> getIndexables() {
