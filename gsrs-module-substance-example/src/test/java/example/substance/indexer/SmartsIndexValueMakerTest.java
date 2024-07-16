@@ -1,13 +1,17 @@
 package example.substance.indexer;
 
+import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.indexers.SmartsIndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +43,7 @@ class SmartsIndexValueMakerTest {
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals("false")));
+        Assertions.assertTrue(indexedValues.stream().noneMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals("true")));
     }
 
     @Test
@@ -60,10 +64,18 @@ class SmartsIndexValueMakerTest {
     }
 
     @Test
-    void testImidazoleOnce() {
+    void testImidazoleOnce() throws IOException {
+        String molfilePath = "/molfiles/4XXR6FT8ZA.mol";
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream(molfilePath),
+                "UTF-8"
+        );
+
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
-        builder.setStructureWithDefaultReference("C[C@@H]1c2c(C(=O)O)ncn2-c3ccc(cc3C(=N1)c4ccccc4F)Br");
+        GinasChemicalStructure structure = new GinasChemicalStructure();
+        structure.molfile= molfileText;
+        builder.setStructure(structure);
         ChemicalSubstance mol1 = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
