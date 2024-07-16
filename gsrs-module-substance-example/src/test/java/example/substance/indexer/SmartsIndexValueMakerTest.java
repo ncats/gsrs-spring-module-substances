@@ -26,7 +26,7 @@ class SmartsIndexValueMakerTest {
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("StructureFacet") && i.value().equals("nitro")));
+        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals("nitro")));
     }
 
     @Test
@@ -39,7 +39,7 @@ class SmartsIndexValueMakerTest {
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("StructureFacet") && i.value().equals("false")));
+        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals("false")));
     }
 
     @Test
@@ -56,7 +56,24 @@ class SmartsIndexValueMakerTest {
         indexer.setRawNamedSmarts(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains("StructureFacet") && i.value().equals(acidGroupName)));
+        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals(acidGroupName)));
     }
 
+    @Test
+    void testImidazoleOnce() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.addName("MIDD-0301");
+        builder.setStructureWithDefaultReference("C[C@@H]1c2c(C(=O)O)ncn2-c3ccc(cc3C(=N1)c4ccccc4F)Br");
+        ChemicalSubstance mol1 = builder.build();
+
+        SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
+        Map<String, String> config = new HashMap<>();
+        String moleculeName = "imidazole";
+        config.put(moleculeName, "c1cnc[nH]1€C1=CN=CN1");
+        indexer.setRawNamedSmarts(config);
+        List<IndexableValue> indexedValues= new ArrayList<>();
+        indexer.createIndexableValues(mol1, indexedValues::add);
+        Assertions.assertEquals(1,
+                indexedValues.stream().filter(v->v.name().equals(SmartsIndexValueMaker.FACET_NAME_FULL) && v.value().equals(moleculeName) ).count());
+    }
 }

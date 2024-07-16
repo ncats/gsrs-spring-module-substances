@@ -14,32 +14,29 @@ import java.util.function.Consumer;
 @Slf4j
 public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
-    private static final String FACET_NAME_FULL ="StructureFacet";
+    public static final String FACET_NAME_FULL ="Structure Facet";
 
     private final String DEFAULT_CONFIG_DATA = "nitro_[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]€nitroso_[NX2]=[OX1]";
 
     private Map<String, String> rawNamedSmarts;
 
+    private String rawRawNamedSmarts;
+
     List<SmartsIndexable> indexables;
 
     private boolean setupComplete=false;
+
+    private String NAME_TO_VALUE_DELIM = "₠";
+
+    private String SET_TO_SET_DELIM = "¥";
+
+    private String VALUE_TO_VALUE_DELIM = "€";
 
     private void completeSetup(){
         log.trace("completeSetup");
         indexables = new ArrayList<>();
 
-        if( rawNamedSmarts==null || this.rawNamedSmarts.entrySet().isEmpty()) {
-            String usableConfig = DEFAULT_CONFIG_DATA;
-            log.trace("using default config {}", usableConfig);
-            String[] tokens = usableConfig.split("\\€");
-            for(String token : tokens) {
-                String[] parts = token.split("\\_");
-
-                SmartsIndexable indexable = new SmartsIndexable(parts[0], Collections.singletonList( parts[1]));
-                indexables.add(indexable);
-            }
-        }
-        else {
+        if(rawNamedSmarts != null && rawNamedSmarts.size() >0) {
             log.trace("using real config");
             for (Map.Entry<String, String> entry : rawNamedSmarts.entrySet()) {
                 String fragmentName = entry.getKey();
@@ -48,6 +45,30 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
                 log.trace("handling smarts set with name {}", fragmentName);
                 List<String> smartsList = Arrays.asList(listOfSmarts);
                 SmartsIndexable indexable = new SmartsIndexable(fragmentName, smartsList);
+                indexables.add(indexable);
+            }
+        }  else if( rawRawNamedSmarts != null && rawRawNamedSmarts.length() >0 ) {
+            log.trace("using long-string config");
+            String[] rawSmartsSet = rawRawNamedSmarts.split(SET_TO_SET_DELIM);
+            for( String rawSmarts : rawSmartsSet){
+                String[] parts = rawSmarts.split(NAME_TO_VALUE_DELIM);
+                String fragmentName = parts[0];
+                String rawSmartsList = parts[1];
+                String[] listOfSmarts = rawSmartsList.split("\\€");
+                log.trace("handling smarts set with name {}", fragmentName);
+                List<String> smartsList = Arrays.asList(listOfSmarts);
+                SmartsIndexable indexable = new SmartsIndexable(fragmentName, smartsList);
+                indexables.add(indexable);
+            }
+        } else {
+            String usableConfig = DEFAULT_CONFIG_DATA;
+            log.trace("using default config {}", usableConfig);
+            String[] tokens = usableConfig.split("\\€");
+            for(String token : tokens) {
+                String[] parts = token.split("\\_");
+
+                SmartsIndexable indexable = new SmartsIndexable(parts[0], Collections.singletonList( parts[1]));
+                log.trace("indexable with {} and {}", parts[0], parts[1]);
                 indexables.add(indexable);
             }
         }
@@ -93,7 +114,13 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
     }
 
     public void setRawNamedSmarts(Map<String, String> newRawNamedSmarts) {
+        log.trace("setRawNamedSmarts with value {}", newRawNamedSmarts);
         this.rawNamedSmarts = newRawNamedSmarts;
+    }
+
+    public void setRawRawNamedSmarts(String newRawRawNamedSmarts) {
+        log.trace("setRawRawNamedSmarts with value {}", newRawRawNamedSmarts);
+        this.rawRawNamedSmarts = newRawRawNamedSmarts;
     }
 
     public List<SmartsIndexable> getIndexables() {
