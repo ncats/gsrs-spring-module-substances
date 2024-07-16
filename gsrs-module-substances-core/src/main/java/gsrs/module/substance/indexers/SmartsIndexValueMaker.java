@@ -76,7 +76,7 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
         }
             ChemicalSubstance chemical = (ChemicalSubstance) substance;
             indexables.forEach(i->{
-                log.trace("Looking for chemical matches using smarts with name {}", i.getName());
+                log.trace("Looking for chemical matches using smarts with name {} with {} SMARTS patterns to match", i.getName(), i.getSMARTSList().size());
                 boolean foundMatchWithCurrentIdea =false;
                 for(int item = 0; item< i.getSMARTSList().size() && !foundMatchWithCurrentIdea; item++) {
                     String smarts = i.getSMARTSList().get(item);
