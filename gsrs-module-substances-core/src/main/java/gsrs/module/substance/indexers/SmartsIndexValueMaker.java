@@ -20,8 +20,6 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
     private Map<String, String> rawNamedSmarts;
 
-    private String rawRawNamedSmarts;
-
     List<SmartsIndexable> indexables;
 
     private boolean setupComplete=false;
@@ -41,19 +39,6 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
             for (Map.Entry<String, String> entry : rawNamedSmarts.entrySet()) {
                 String fragmentName = entry.getKey();
                 String rawSmartsList = entry.getValue();
-                String[] listOfSmarts = rawSmartsList.split("\\€");
-                log.trace("handling smarts set with name {}", fragmentName);
-                List<String> smartsList = Arrays.asList(listOfSmarts);
-                SmartsIndexable indexable = new SmartsIndexable(fragmentName, smartsList);
-                indexables.add(indexable);
-            }
-        }  else if( rawRawNamedSmarts != null && rawRawNamedSmarts.length() >0 ) {
-            log.trace("using long-string config");
-            String[] rawSmartsSet = rawRawNamedSmarts.split(SET_TO_SET_DELIM);
-            for( String rawSmarts : rawSmartsSet){
-                String[] parts = rawSmarts.split(NAME_TO_VALUE_DELIM);
-                String fragmentName = parts[0];
-                String rawSmartsList = parts[1];
                 String[] listOfSmarts = rawSmartsList.split("\\€");
                 log.trace("handling smarts set with name {}", fragmentName);
                 List<String> smartsList = Arrays.asList(listOfSmarts);
@@ -116,11 +101,6 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
     public void setRawNamedSmarts(Map<String, String> newRawNamedSmarts) {
         log.trace("setRawNamedSmarts with value {}", newRawNamedSmarts);
         this.rawNamedSmarts = newRawNamedSmarts;
-    }
-
-    public void setRawRawNamedSmarts(String newRawRawNamedSmarts) {
-        log.trace("setRawRawNamedSmarts with value {}", newRawRawNamedSmarts);
-        this.rawRawNamedSmarts = newRawRawNamedSmarts;
     }
 
     public List<SmartsIndexable> getIndexables() {
