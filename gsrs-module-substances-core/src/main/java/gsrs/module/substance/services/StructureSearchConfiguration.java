@@ -13,4 +13,5 @@ public class StructureSearchConfiguration {
     private boolean includePolymers;
     private boolean includeModifications;
     private boolean includeMixtures;
+    private boolean flexSearchNoStereo;
 }
