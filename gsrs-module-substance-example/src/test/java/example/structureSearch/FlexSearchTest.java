@@ -107,9 +107,36 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         AutowireHelper.getInstance().autowireAndProxy(controller);
         log.trace("created and wired controller");
 
-        String hash=  controller.makeFlexSearchMoietyClauses(structureStd) + ")";
+        String hash=  controller.makeFlexSearchMoietyClauses(structureStd, false) + ")";
         log.trace("search hash: {}", hash);
         assertTrue(hash.contains("root_moieties_properties_STEREO_INSENSITIVE_HASH"));
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void generateFlexPlusSearchQuery() throws Exception {
+        String structure = "C(C(C(=O)O)O)(C(=O)O)O";
+        UUID uuid = UUID.randomUUID();
+        ChemicalSubstance substance= new ChemicalSubstanceBuilder()
+                .setStructureWithDefaultReference(structure)
+                .addName("Tartaric acid")
+                .setUUID(uuid)
+                .build();
+
+        log.trace("created query substance");
+        Structure structureStd = structureProcessor.taskFor(substance.getStructure().molfile)
+                .standardize(true)
+                .build()
+                .instrument()
+                .getStructure();
+        log.trace("created structureStd");
+        SubstanceController controller = new SubstanceController();
+        AutowireHelper.getInstance().autowireAndProxy(controller);
+        log.trace("created and wired controller");
+
+        String hash=  controller.makeFlexSearchMoietyClauses(structureStd, true) + ")";
+        log.trace("search hash: {}", hash);
+        assertTrue(hash.contains("root_moieties_properties_EXACT_HASH"));
     }
 
     @Test
@@ -132,7 +159,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash=  controller.makeFlexSearch(structureStd);
+        String hash=  controller.makeFlexSearch(structureStd, false);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -164,7 +191,34 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash=  controller.makeFlexSearch(structureStd);
+        String hash=  controller.makeFlexSearch(structureStd, false);
+        log.trace("search hash: {}", hash);
+        SearchRequest request = new SearchRequest.Builder()
+                .kind(Substance.class)
+                .query(hash)
+                .build();
+        List<Substance> substances = getSearchList(request);
+        substances.forEach(s-> log.trace("ID {} - {}", s.uuid, s.getName()));
+
+        int expectedNumber = 3;
+        assertEquals(expectedNumber, substances.size());
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void runFlexPlusSearchQuerySodiumTartrate() throws Exception {
+        String molfileSource = "molfiles/sodium_tartrate.mol";
+        File molfile = new ClassPathResource(molfileSource).getFile();
+        Structure structureStd = structureProcessor.taskFor(Files.readString(molfile.toPath()))
+                .standardize(true)
+                .build()
+                .instrument()
+                .getStructure();
+        String sins= structureStd.getStereoInsensitiveHash();
+        SubstanceController controller = new SubstanceController();
+        AutowireHelper.getInstance().autowireAndProxy(controller);
+
+        String hash = controller.makeFlexSearch(structureStd,true);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
