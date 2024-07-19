@@ -31,8 +31,6 @@ import javax.validation.constraints.NotBlank;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
@@ -740,10 +738,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
-        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
+        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+            || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-            String sins=structure.getStereoInsensitiveHash();
-            hash= "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+            hash= makeFlexSearch(structure, (sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS));
+            log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
+                    //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
 
         if(hash !=null){
@@ -1871,5 +1871,47 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 
-}
+    public String makeFlexSearch(Structure structure, boolean plus) {
+        String sins= plus ? structure.getExactHash() : structure.getStereoInsensitiveHash();
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("(");
+        stringBuilder.append( plus ? "root_structure_properties_EXACT_HASH" : "root_structure_properties_STEREO_INSENSITIVE_HASH");
+        stringBuilder.append(":\"");
+        stringBuilder.append(sins);
+        stringBuilder.append("\" OR ");
+        stringBuilder.append(makeFlexSearchMoietyClauses(structure, plus));
+        stringBuilder.append(")");
+        return stringBuilder.toString();
+        //return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" OR " + makeFlexSearchMoietyClauses(structure, plus) + ")";
+    }
 
+    public String makeFlexSearchMoietyClauses(Structure structure, boolean plus) {
+
+        List<Structure> moieties = new ArrayList<>();
+        try {
+            structureProcessor.taskFor(structure.molfile)
+                    .components(moieties)
+                    .standardize(false)
+                    .build()
+                    .instrument()
+                    .getStructure();
+            log.trace(" created {} moieties", moieties.size());
+            String moietySearchString= moieties.stream()
+                    .map(m->{
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(plus ? "root_moieties_properties_EXACT_HASH:\"" :  "root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
+                        sb.append(plus ? m.getExactHash() : m.getStereoInsensitiveHash());
+                        sb.append("\"");
+                        return sb.toString();
+                    })
+                    .collect(Collectors.joining(" AND "));
+            if( moieties.size() > 1) {
+                moietySearchString = "(" + moietySearchString + ")";
+            }
+            return moietySearchString;
+        } catch (Exception e) {
+            log.error("Error constructing query: ", e);
+            throw new RuntimeException(e);
+        }
+    }
+}
