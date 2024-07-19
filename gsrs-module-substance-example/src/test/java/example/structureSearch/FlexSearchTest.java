@@ -176,22 +176,18 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Test
     @WithMockUser(value = "admin", roles = "Admin")
     public void runFlexSearchQuerySodiumTartrate() throws Exception {
-        String structureSmiles = "C(C(C(=O)[O-])O)(C(=O)O)O.[Na+]";
         String molfileSource = "molfiles/sodium_tartrate.mol";
 
         File molfile = new ClassPathResource(molfileSource).getFile();
-        UUID uuid = UUID.randomUUID();
-
         Structure structureStd = structureProcessor.taskFor(Files.readString(molfile.toPath()))
                 .standardize(true)
                 .build()
                 .instrument()
                 .getStructure();
-        String sins= structureStd.getStereoInsensitiveHash();
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash=  controller.makeFlexSearch(structureStd, false);
+        String hash = controller.makeFlexSearch(structureStd, false);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -214,7 +210,6 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .build()
                 .instrument()
                 .getStructure();
-        String sins= structureStd.getStereoInsensitiveHash();
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
@@ -225,9 +220,10 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .query(hash)
                 .build();
         List<Substance> substances = getSearchList(request);
+        log.trace("search results: (total: {})", substances.size());
         substances.forEach(s-> log.trace("ID {} - {}", s.uuid, s.getName()));
 
-        int expectedNumber = 3;
+        int expectedNumber = 1;
         assertEquals(expectedNumber, substances.size());
     }
 

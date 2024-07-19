@@ -1874,6 +1874,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     public String makeFlexSearch(Structure structure, boolean plus) {
         String sins= plus ? structure.getExactHash() : structure.getStereoInsensitiveHash();
         StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("(");
         stringBuilder.append( plus ? "root_structure_properties_EXACT_HASH" : "root_structure_properties_STEREO_INSENSITIVE_HASH");
         stringBuilder.append(":\"");
         stringBuilder.append(sins);
