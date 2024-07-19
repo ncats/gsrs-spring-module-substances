@@ -742,7 +742,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
             hash= makeFlexSearch(structure, (sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS));
-            log.trace("search hash: {}", hash);
+            log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
                     //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
 
