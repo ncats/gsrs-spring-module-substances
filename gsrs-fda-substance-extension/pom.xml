@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1-SNAPSHOT</version>
+        <version>3.1.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -139,7 +139,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>products-api</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>3.1.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -168,7 +168,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>clinical-trials-api</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>3.1.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -193,4 +193,39 @@
             </exclusions>
         </dependency>
     </dependencies>
+    <!-- Uncomment this for maven public release deployment
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <configuration>
+                    <additionalparam>-Xdoclint:none</additionalparam>
+                    <additionalOptions>-Xdoclint:none</additionalOptions>
+                    <additionalJOption>-Xdoclint:none</additionalJOption>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build> -->
 </project>

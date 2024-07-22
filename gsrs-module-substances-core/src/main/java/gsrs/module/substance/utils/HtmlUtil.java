@@ -1,5 +1,6 @@
 package gsrs.module.substance.utils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -19,7 +20,7 @@ import org.jsoup.select.NodeVisitor;
  * Created by epuzanov on 7/25/22.
  */
 public final class HtmlUtil {
-    private static final Set<String> safetags = Stream.of("i", "small", "sub", "sup").collect(Collectors.toSet());
+    private static final Set<String> safetags = Stream.of("br", "i", "small", "sub", "sup").collect(Collectors.toSet());
     private static class TruncateVisitor implements NodeVisitor {
         private int maxLen = 0;
         private Element dst;
@@ -34,32 +35,39 @@ public final class HtmlUtil {
 
         public void head(Node node, int depth) {
             if (depth > 0) {
+                int resHtmlLen = dst.html().getBytes(StandardCharsets.UTF_8).length;
+                int nodeHtmlLen = node.outerHtml().getBytes(StandardCharsets.UTF_8).length;
+                int maxNodeLen = maxLen - resHtmlLen;
                 if (node instanceof Element) {
-                    Element curElement = (Element) node;
-                    if (safetags.contains(curElement.tagName())) {
-                        cur = cur.appendElement(curElement.tagName());
-                        String resHtml = dst.html();
-                        if (resHtml.length() > maxLen) {
-                            cur.remove();
+                    String tagName = ((Element) node).tagName();
+                    if (safetags.contains(tagName)) {
+                        nodeHtmlLen = tagName.length() * 2 + 5;
+                        if (resHtmlLen + nodeHtmlLen > maxLen) {
                             throw new IllegalStateException();
+                        } else {
+                            cur = cur.appendElement(tagName);
                         }
                     }
                 } else if (node instanceof TextNode) {
                     String parentTag = ((Element)node.parent()).tagName();
                     if (safetags.contains(parentTag) || (parentTag == "body" && depth == 1)) {
                         String curText = ((TextNode) node).getWholeText();
-                        String resHtml = dst.html();
-                        if (node.outerHtml().length() + resHtml.length() > maxLen) {
+                        if (resHtmlLen + nodeHtmlLen > maxLen) {
                             StringBuilder sb = new StringBuilder(curText);
-                            int curHtmlLength = node.outerHtml().length();
-                            if (maxLen <= resHtml.length())
-                                throw new IllegalStateException();
-                            sb.setLength(maxLen - resHtml.length() + 1);
-                            while (curHtmlLength > maxLen - resHtml.length()) {
+                            int curHtmlLen = maxNodeLen;
+                            sb.setLength(curHtmlLen);
+                            curHtmlLen += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
+                            curHtmlLen += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
+                            while (curHtmlLen > maxNodeLen) {
+                                char lastChar = sb.charAt(sb.length() - 1);
+                                if (lastChar == '&') {
+                                    curHtmlLen = curHtmlLen - 5;
+                                } else if (lastChar == '<' || lastChar == '>') {
+                                    curHtmlLen = curHtmlLen - 4;
+                                } else {
+                                    curHtmlLen = curHtmlLen - 1;
+                                }
                                 sb.setLength(sb.length() - 1);
-                                curHtmlLength = sb.length();
-                                curHtmlLength += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
-                                curHtmlLength += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
                             }
                             cur.appendText(sb.toString());
                             throw new IllegalStateException();
@@ -81,9 +89,12 @@ public final class HtmlUtil {
     public static String truncate(String s, int len){
         Document srcDoc = Parser.parseBodyFragment(s, "");
         srcDoc.outputSettings().prettyPrint(false);
+        if (srcDoc.body().html().length() <= len) {
+            return srcDoc.body().html();
+        }
 
         int maxLength = len-3; //for final ...
-        
+
         Document dstDoc = Document.createShell(srcDoc.baseUri());
         dstDoc.outputSettings().prettyPrint(false);
         dstDoc.outputSettings().charset("UTF-8");
@@ -95,12 +106,7 @@ public final class HtmlUtil {
             t.traverse(v, srcDoc.body());
         } catch (IllegalStateException ex) {}
 
-        String htmlReturn = dst.html();
-        if(htmlReturn.length()>= (maxLength)){
-            return htmlReturn + "...";
-        }else{
-            return htmlReturn;
-        }
+        return dst.html() + "...";
     }
 
     public static String clean(String content, String charset) {

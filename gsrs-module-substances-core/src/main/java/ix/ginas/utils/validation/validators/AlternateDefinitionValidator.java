@@ -36,8 +36,8 @@ public class AlternateDefinitionValidator extends AbstractValidatorPlugin<Substa
         } else {
             if (s.relationships.size() > 1) {
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE("Alternative definitions may only have 1 relationship (to the parent definition), found:"
-                                + s.relationships.size()));
+                        .ERROR_MESSAGE("Alternative definitions may only have 1 relationship (to the parent definition), found:%s",
+                                s.relationships.size()));
             } else {
                 SubstanceReference sr = s.getPrimaryDefinitionReference();
                 if (sr == null) {
@@ -47,26 +47,18 @@ public class AlternateDefinitionValidator extends AbstractValidatorPlugin<Substa
                     Substance subPrimary = substanceRepository.findBySubstanceReference(sr);
                     if (subPrimary == null) {
                         callback.addMessage(GinasProcessingMessage
-                                .ERROR_MESSAGE("Primary definition for '"
-                                        + sr.refPname
-                                        + "' ("
-                                        + sr.refuuid + ") not found"));
+                                .ERROR_MESSAGE("Primary definition for '%s' (%s) not found",
+                                        sr.refPname, sr.refuuid));
                     } else {
                         if (subPrimary.definitionType != Substance.SubstanceDefinitionType.PRIMARY) {
                             callback.addMessage(GinasProcessingMessage
-                                    .ERROR_MESSAGE("Cannot add alternative definition for '"
-                                            + sr.refPname
-                                            + "' ("
-                                            + sr.refuuid
-                                            + "). That definition is not primary."));
+                                    .ERROR_MESSAGE("Cannot add alternative definition for '%s' (%s). That definition is not primary.",
+                                            sr.refPname, sr.refuuid));
                         } else {
                             if (subPrimary.substanceClass == Substance.SubstanceClass.concept) {
                                 callback.addMessage(GinasProcessingMessage
-                                        .ERROR_MESSAGE("Cannot add alternative definition for '"
-                                                + sr.refPname
-                                                + "' ("
-                                                + sr.refuuid
-                                                + "). That definition is not definitional substance record."));
+                                        .ERROR_MESSAGE("Cannot add alternative definition for '%s' (%s). That definition is not definitional substance record.",
+                                                sr.refPname, sr.refuuid));
                             } else {
                              //Everything is okay   
                             }

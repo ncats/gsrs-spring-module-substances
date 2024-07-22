@@ -440,20 +440,6 @@ public class BasicSubstanceScrubberTests {
     }
 
     @Test
-    public void testJson() {
-        String currentSmiles="c1ccccc1";
-        ChemicalSubstance chemical = SubstanceTestUtil.makeChemicalSubstance(currentSmiles);
-        String  json = chemical.toFullJsonNode().toString();
-        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
-
-        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
-        String result=scrubber.testAll(json);
-        System.out.println(result);
-        Assertions.assertTrue(1==1);
-
-    }
-
-    @Test
     public void testScrubSubstance3() {
         Subunit proteinSubunit = new Subunit();
         proteinSubunit.sequence="MAMVTGGWGGPGGDTNGVDKAGGYPRAAEDDSASPPGAASDAEPGDEERPGLQVDCVVCGDKSSGKHYGVFTCEGCKSFFKRSIRRNLSYTCRSNRDCQDQHHRNQCQYCRLKKCFRVGMRKEAVQRGRIPHSLPGAVAASSGSPPGSALAAVASGGDLFPGQPVSELIAQLLRAEPYPAAAGRFGAGGGAAGAVLGIDNVCELAARLLFSTVEWARHAPFFPELPVADQVALLRLSWSELFVLNAAQAALPLHTAPLLAAAGLHAAPMAAERAVAFMDQVRAFQEQVDKLGRLQVDSAEYGCLKAIALFTPDACGLSDPAHVESLQEKAQVALTEYVRAQYPSQPQRFGRLLLRLPALRAVPASLISQLFFMRLVGKTPIETLIRDMLLSGSTFNWPYGSGQ";

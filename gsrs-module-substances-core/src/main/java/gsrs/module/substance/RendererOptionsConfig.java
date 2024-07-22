@@ -2,24 +2,37 @@ package gsrs.module.substance;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
+import gov.nih.ncats.molwitch.renderer.ARGBColor;
+import gov.nih.ncats.molwitch.renderer.ColorPalette;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import lombok.Builder;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 @Configuration
 @Data
+@Slf4j
 public class RendererOptionsConfig {
 
 
+	@Autowired
+	GSRSRendererConfiguration rendererConf;
+	
+	
     @Value("${substance.renderer.configPath:#{null}}")
     private String rendererOptionsJsonFilePath;
     @Value("${substance.renderer.style:#{null}}")
@@ -34,23 +47,37 @@ public class RendererOptionsConfig {
         private RendererOptions options;
         @Builder.Default
         private boolean showShadow=true;
+        @Builder.Default
+        private boolean addBorder=false;
+        private String colorBg;
+        private String colorBorder;
         
         
         public FullRenderOptions copy() {
-            return FullRenderOptions.builder().options(options.copy()).showShadow(showShadow).build();
+            return toBuilder()
+            		.build();
+        }
+        
+        public FullRenderOptionsBuilder toBuilder(){
+        	return FullRenderOptions.builder()
+            		.options(options.copy())
+            		.showShadow(showShadow)
+            		.addBorder(addBorder)
+            		.colorBg(colorBg)
+            		.colorBorder(colorBorder);
         }
     }
     
     private CachedSupplier<FullRenderOptions> rendererSupplier = CachedSupplier.of(()->{
         if(legacyStyle !=null){
-            FullRenderOptions opt = getRendererOptionsByName(legacyStyle);
+            FullRenderOptions opt = rendererConf.getFullRendererOptionsByName(legacyStyle).orElse(null);
             
             if(opt !=null){
                 return opt;
             }
         }
         if(style !=null){
-            FullRenderOptions opt = getRendererOptionsByName(style);
+        	FullRenderOptions opt = rendererConf.getFullRendererOptionsByName(style).orElse(null);
             if(opt !=null){
                 return opt;
             }
@@ -60,9 +87,11 @@ public class RendererOptionsConfig {
             Resource optionsJson = new ClassPathResource(rendererOptionsJsonFilePath);
             if(optionsJson !=null) {
                 try (InputStream in = optionsJson.getInputStream()) {
-                    return FullRenderOptions.builder().options(mapper.readValue(in, RendererOptions.class)).build();
+                	RendererOptions options= RendererOptions.createFromMap((Map<String, ?>) mapper.readValue(in, Map.class));
+                	
+                    return FullRenderOptions.builder().options(options).build();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error("Error deserializing renderer options");
                 }
             }
         }
@@ -73,24 +102,4 @@ public class RendererOptionsConfig {
         return rendererSupplier.get();
     }
 
-    private FullRenderOptions getRendererOptionsByName(String name){
-        if(name !=null && !("CONF".equalsIgnoreCase(name))) {
-            if ("INN".equalsIgnoreCase(name)) {
-                return FullRenderOptions.builder().options(RendererOptions.createINNLike()).build();
-            }
-            if ("USP".equalsIgnoreCase(name)) {
-                return FullRenderOptions.builder().options(RendererOptions.createUSPLike())
-                        .showShadow(false)
-                        .build();
-            }
-            if ("DEFAULT".equalsIgnoreCase(name)) {
-                return FullRenderOptions.builder().options(RendererOptions.createDefault()).build();
-            }
-            String lowerName = name.toLowerCase();
-            if (lowerName.contains("ball") && lowerName.contains("stick")) {
-                return FullRenderOptions.builder().options(RendererOptions.createBallAndStick()).build();
-            }
-        }
-        return null;
-    }
 }

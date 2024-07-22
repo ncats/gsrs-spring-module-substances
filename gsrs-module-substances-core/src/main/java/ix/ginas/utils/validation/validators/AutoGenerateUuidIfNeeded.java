@@ -15,7 +15,7 @@ public class AutoGenerateUuidIfNeeded extends AbstractValidatorPlugin<Substance>
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         if (s.getUuid() == null) {
         	UUID uuid = UUID.randomUUID();
-            callback.addMessage(GinasProcessingMessage.INFO_MESSAGE("Substance has no UUID, will generate uuid:\"" + uuid + "\""),
+            callback.addMessage(GinasProcessingMessage.INFO_MESSAGE("Substance has no UUID, will generate uuid:\"%s\"", uuid),
                     ()->s.setUuid(uuid));
         }
     }

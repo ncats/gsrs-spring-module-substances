@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface ApprovalService {
 
+    boolean isApprovable(Substance s);
+
     ApprovalResult approve(Substance s) throws ApprovalException;
 
     @Data

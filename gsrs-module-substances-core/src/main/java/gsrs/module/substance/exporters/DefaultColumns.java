@@ -23,8 +23,8 @@ public enum DefaultColumns implements Column {
     USDA_PLANTS,
     INN,
     USAN,
-    EC, 
-    NCI_THESAURUS, 
+    EC,
+    NCI_THESAURUS,
     PROTEIN_SEQUENCE,
     NUCLEIC_ACID_SEQUENCE,
     RECORD_ACCESS_GROUPS,
@@ -32,6 +32,8 @@ public enum DefaultColumns implements Column {
     PUBCHEM,
     MPNS,
     GRIN,
-    INGREDIENT_TYPE
-
+    INGREDIENT_TYPE,
+    DAILYMED,
+    EPA_CompTox,
+    CATALOGUE_OF_LIFE,
 }

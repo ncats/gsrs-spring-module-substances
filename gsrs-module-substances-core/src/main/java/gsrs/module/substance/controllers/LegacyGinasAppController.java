@@ -1,6 +1,8 @@
 package gsrs.module.substance.controllers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
+import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.MolwitchException;
 import gsrs.cache.GsrsCache;
@@ -32,6 +34,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Some heavily used API calls in GSRS 2.x did not get moved over to a `api/v1` route
@@ -74,7 +79,9 @@ public class LegacyGinasAppController {
     @Transactional(readOnly = true)
     public List<ValidationMessage> duplicateCheck(@RequestBody JsonNode updatedEntityJson) throws Exception {
         SubstanceEntityService substanceService = StaticContextAccessor.getBean(SubstanceEntityService.class);
-        return substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DEFINITION()).getValidationMessages();
+        List<ValidationMessage> messages=substanceService.validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_DUPLICATE_CHECK()).getValidationMessages();
+        //remove any "substance is valid" messages because they don't apply here
+        return messages.stream().filter(m->!m.getMessage().equals("Substance is valid")).collect(Collectors.toList());
     }
     
     @PostMapping({"upload", "/ginas/app/upload", "/upload"})
@@ -91,6 +98,16 @@ public class LegacyGinasAppController {
         return payloadController.handleFileUpload(file, queryParameters);
 
     }
+
+    // are the slashes right, needed?
+    public final Pattern ID_PATTERN = Pattern.compile("[a-f0-9\\-]+");
+
+    private boolean checkId(String id)  {
+        if (id == null) return false;
+        Matcher matcher = ID_PATTERN.matcher(id);
+        return matcher.find();
+    }
+
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
     // ix.ginas.controllers.GinasApp.structureExport(id: String, format: String, context: String ?= null)
     @GetMapping({"export/{id:[a-f0-9\\-]+}.{format}","/ginas/app/export/{id:[a-f0-9\\-]+}.{format}"})
@@ -101,6 +118,10 @@ public class LegacyGinasAppController {
                               @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                               HttpServletRequest httpRequest, RedirectAttributes attributes,
                                   @RequestParam Map<String, String> queryParameters){
+        if (!checkId(id)) {
+            // This is to satisfy Snyk security analysis, probably never gets here if annotation works.
+            return gsrsControllerConfiguration.handleBadRequest(400, "Badly formatted id in url placeholder", null);
+        }
         if("mol".equalsIgnoreCase(format) || "sdf".equalsIgnoreCase(format) ||
                 "smi".equalsIgnoreCase(format) ||  "smiles".equalsIgnoreCase(format) ) {
             //TODO: use cache where possible here
@@ -293,7 +314,51 @@ public class LegacyGinasAppController {
         Chemical c = Chemical.parse(input);
         if(!c.getSource().get().getType().includesCoordinates()){
             try {
-                c.generateCoordinates();
+            	// If it's an in-line format, there's an extra cleanup step
+            	// we do to avoid an issue with parsing some query forms
+            	// TODO: this is really a hack because molwitch-cdk considers any
+            	// molecule with a * to be query-based, and turns lots of
+            	// other atoms inside into query atoms. This makes some downstream
+            	// renderer calculations not work well. The solution here is
+            	// to actually parse * atoms as Helium atoms and give them a * alias.
+            	// Since this is only used for rendering, it tends to be okay.
+            	// If this were ever used for "real" calculations we'd need to do
+            	// something more thorough.
+            	String potentialCXSmarts = c.getSource().get().getData();
+            	
+            	if(potentialCXSmarts.contains("*")) {
+            		//this means there's a query atom
+            		potentialCXSmarts = potentialCXSmarts.replace("[*]", "[He:17]");
+            		potentialCXSmarts = potentialCXSmarts.replace("*", "[He:17]");
+            		c=Chemical.parse(potentialCXSmarts);
+            		c.atoms().filter(at->at.getAtomToAtomMap().isPresent() && at.getAtomToAtomMap().getAsInt()==17)
+            		 .filter(at->"He".equals(at.getSymbol()))
+            		 .forEach(at->{
+            			 Atom aa=at;
+            			 if(!aa.getAlias().isPresent()) {
+            				 aa.setAlias("*");
+            				 aa.setAtomToAtomMap(0);
+            			 }
+            		 });
+            	}
+            	
+            	// It turns out that generating coordinates for a
+            	// structure with 2 charged species in CDK, for some reason
+            	// fails. Looks like it has something to do with trying to put charges near each other
+            	// to imply ionic interaction? Either way, adding 1 new free-floating moiety fixes this,
+            	// and layout can be generated then
+            	
+            	
+            	try {
+            		c.generateCoordinates();	
+            	}catch(Exception e) {
+            		Atom aa=c.addAtom("C");
+            		c.generateCoordinates();
+            		c.removeAtom(aa);
+            	}
+                
+                
+                 
             } catch (MolwitchException e) {
                 throw new IOException("error generating coordinates",e);
             }

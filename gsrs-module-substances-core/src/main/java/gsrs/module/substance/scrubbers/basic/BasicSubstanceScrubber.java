@@ -535,36 +535,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return dc.jsonString();
     }
 
-
-    public String testAll(String json){
-        DocumentContext dc = JsonPath.parse(json);
-        //"$..[?]",
-        String output;
-        try{
-            output= dc.read("$..[?]['access']", (s)-> {
-
-                log.trace("item class: {}; root: {}", s.item().getClass().getName(), s.root().getClass().getName());
-                if( s.item().getClass().equals(JSONArray.class)){
-                    JSONArray array = s.item(JSONArray.class);
-                    if( array == null) {
-                        log.trace("item null");
-                    } else {
-                        log.trace("array size: {}",array.size());
-                        array.forEach(a-> log.trace("element type: {}", a.getClass().getName()));
-                    }
-
-                }
-                //log.trace(s.item());
-                return true;
-            });
-        }
-        catch (Exception ex){
-            System.err.println("Error: " + ex.getMessage());
-            output="error!";
-        }
-        return output;
-    }
-
     public boolean isElementOnList(Object object, List<String> approximateNames) {
         String[] nameParts=object.getClass().getName().split("\\.");
         String switchName=nameParts[nameParts.length-1].toUpperCase(Locale.ROOT);

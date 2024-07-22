@@ -60,13 +60,13 @@ public class CodeFormatValidator extends AbstractValidatorPlugin<Substance>
                         //find ? or matches?
                         if(!matcher.find()){
                             callback.addMessage(GinasProcessingMessage
-                                    .WARNING_MESSAGE(String.format("Code %s does not match pattern %s for system %s", c.getCode(), codeSystemRegex, vt1.getValue())));
+                                    .WARNING_MESSAGE("Code %s does not match pattern %s for system %s", c.getCode(), codeSystemRegex, vt1.getValue()));
                         }
                     }
                 }
             }
         } catch (IOException e) {
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("could not validate CV"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Could not validate CV"));
         }
     }
 

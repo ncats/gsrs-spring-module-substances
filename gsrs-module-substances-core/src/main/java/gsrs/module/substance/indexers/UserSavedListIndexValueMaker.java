@@ -2,20 +2,22 @@ package gsrs.module.substance.indexers;
 
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.beans.factory.annotation.Autowired;
 
 import gsrs.repository.KeyUserListRepository;
 import gsrs.repository.PrincipalRepository;
-import gsrs.security.GsrsSecurityUtils;
 import ix.core.models.KeyUserList;
-import ix.core.models.Principal;
 import ix.core.search.bulk.UserSavedListService;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.ginas.models.v1.Substance;
+import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -33,6 +35,15 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
         return Substance.class;
     }
 	
+	@Override
+	public Set<String> getFieldNames(){
+		return Util.toSet("User List");
+	}
+		
+	@Override
+	public Set<String> getTags(){
+		return Util.toSet("user_list");
+	}
 	
 	@Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
@@ -40,7 +51,7 @@ public class UserSavedListIndexValueMaker implements IndexValueMaker<Substance> 
 		try {
 			String key = EntityWrapper.of(substance).getKey().toRootKey().getIdString();
 	
-			List<KeyUserList> list = keyUserListRepository.getAllListNamesFromKey(key);	
+			List<KeyUserList> list = keyUserListRepository.getAllListNamesFromKey(key, getIndexedEntityClass().getName());	
 		
 			list.forEach(listName -> {			
 				String value = UserSavedListService.getIndexedValue(listName.principal.username, listName.listName);				

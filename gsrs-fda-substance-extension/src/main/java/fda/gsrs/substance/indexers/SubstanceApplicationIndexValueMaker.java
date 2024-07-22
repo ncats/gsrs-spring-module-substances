@@ -7,18 +7,24 @@ import gsrs.springUtils.AutowireHelper;
 import ix.core.search.text.IndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.Substance;
-
+import ix.utils.Util;
 import gov.hhs.gsrs.applications.api.*;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class SubstanceApplicationIndexValueMaker implements IndexValueMaker<Substance> {
+
+	@Value("${gsrs.application.ivm.search.max.fetch:20000}")
+	private Integer maxFetchSize;
 
 	@Autowired
 	public ApplicationsApi applicationsApi;
@@ -27,12 +33,22 @@ public class SubstanceApplicationIndexValueMaker implements IndexValueMaker<Subs
 	public Class<Substance> getIndexedEntityClass() {
 		return Substance.class;
 	}
+	
+	@Override
+	public Set<String> getTags(){
+		return Util.toSet("external","applications");		
+	} 
+	
+	@Override	
+	public Set<String> getFieldNames(){
+		return Util.toSet("Application Status","Application Center","Application Type");
+	}
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
 
         try{
-			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(1000000).simpleSearchOnly(true).build();
+			SearchRequest searchRequest = SearchRequest.builder().q("entity_link_substances:\"" + substance.uuid + "\"").top(maxFetchSize).simpleSearchOnly(true).build();
 			SearchResult<ApplicationAllDTO> searchResult = applicationsApi.search(searchRequest);
 			List<ApplicationAllDTO> appList = searchResult.getContent();
 

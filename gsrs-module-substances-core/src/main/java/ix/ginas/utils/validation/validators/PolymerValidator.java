@@ -101,12 +101,8 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     if (mentioned != null) {
                         if (!contained.containsAll(mentioned)) {
                             callback.addMessage(GinasProcessingMessage
-                                    .ERROR_MESSAGE("Mentioned attachment points '"
-                                            + mentioned.toString()
-                                            + "' in unit '"
-                                            + u.label
-                                            + "' are not all found in actual connecitons '"
-                                            + contained.toString() + "'. "));
+                                    .ERROR_MESSAGE("Mentioned attachment points '%s' in unit '%s' are not all found in actual connecitons '%s'.",
+                                            mentioned.toString(), u.label, contained.toString()));
                         }
                     }
                     Map<String, LinkedHashSet<String>> mymap = u
@@ -125,9 +121,8 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     Set<String> leftovers = new HashSet<String>(rgroupMentions);
                     leftovers.removeAll(rgroupsWithMappings);
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Mentioned attachment point(s) '"
-                                    + leftovers.toString()
-                                    + "' cannot be found "));
+                            .ERROR_MESSAGE("Mentioned attachment point(s) '%s' cannot be found",
+                                    leftovers.toString()));
                 }
 
                 Map<String, String> newConnections = new HashMap<String, String>();
@@ -137,9 +132,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     if (!connections.contains(c[1] + "-" + c[0])) {
                         GinasProcessingMessage gp = GinasProcessingMessage
                                 .WARNING_MESSAGE(
-                                        "Connection '"
-                                                + con
-                                                + "' does not have inverse connection. This can be created.")
+                                        "Connection '%s' does not have inverse connection. This can be created.", con)
                                 .appliableChange(true);
 
                         callback.addMessage(gp, ()-> {
@@ -176,7 +169,6 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
 
             ValidationUtils.validateReference(cs, cs.polymer, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
         }
-        
     }
 
     private static boolean isNull(GinasChemicalStructure gcs) {

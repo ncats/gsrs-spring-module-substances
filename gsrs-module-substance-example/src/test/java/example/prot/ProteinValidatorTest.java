@@ -12,15 +12,12 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.ProteinUtils;
 import ix.ginas.utils.validation.validators.ProteinValidator;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,27 +33,12 @@ import static org.junit.Assert.assertTrue;
  *
  * @author mitch miller
  */
-@WithMockUser(username = "admin", roles = "Admin")
+@Slf4j
 public class ProteinValidatorTest extends AbstractSubstanceJpaEntityTest
 {
 
     @Autowired
     private TestGsrsValidatorFactory factory;
-
-    public ProteinValidatorTest() {
-    }
-
-    @BeforeClass
-    public static void setUpClass() {
-    }
-
-    @AfterClass
-    public static void tearDownClass() {
-    }
-
-    @Before
-    public void setUp() {
-    }
 
     private boolean configured = false;
 
@@ -70,10 +52,6 @@ public class ProteinValidatorTest extends AbstractSubstanceJpaEntityTest
             factory.addValidator("substances", config);
             configured = true;
         }
-    }
-
-    @After
-    public void tearDown() {
     }
 
     @Test
@@ -150,10 +128,10 @@ public class ProteinValidatorTest extends AbstractSubstanceJpaEntityTest
         JsonNode toSubmit = proteinSubstance.toFullJsonNode();
         ValidationResponse response = substanceEntityService.validateEntity(toSubmit);
         Stream<ValidationMessage> s1 = response.getValidationMessages().stream();
+        //s1.forEach(m-> log.trace(" type: {} text: {}", m.getMessageType(), m.getMessage()));
+
         assertTrue(s1
-                .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR)
-                .map(ValidationMessage::getMessage)
-                .filter(m -> m.contains("subunit at position "))
+                .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR && m.getMessage().toLowerCase().contains("subunit at position "))
                 .findAny().isPresent());
 
     }
@@ -173,10 +151,9 @@ public class ProteinValidatorTest extends AbstractSubstanceJpaEntityTest
         JsonNode toSubmit = proteinSubstance.toFullJsonNode();
         ValidationResponse response = substanceEntityService.validateEntity(toSubmit);
         Stream<ValidationMessage> s1 = response.getValidationMessages().stream();
+        log.trace("validation messages:");
         assertTrue(s1
-                .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING)
-                .map(ValidationMessage::getMessage)
-                .filter(m -> m.contains("subunit at position 1 is blank"))
+                .filter(m -> m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING && m.getMessage().contains("Subunit at position 1 is blank"))
                 .findAny().isPresent());
     }
 

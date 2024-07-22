@@ -160,12 +160,12 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                 log.trace("stdName: " + name.stdName);
                 if (!stdNameStandardizer.isStandardized(name.stdName)) {
                     warnedAboutThisNameStandardization =true;
-                    String message = String.format("Standardized name does not meet standards.  This name may contain one or more non-allowed character: '%s'",
-                            name.stdName);
                     if( invalidStdNameBehavior== InvalidStdNameBehavior.error) {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(message));
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'",
+                            name.stdName));
                     }else {
-                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'",
+                            name.stdName));
                     }
                 }
                 log.trace("warningOnMismatch: " + warningOnMismatch);
@@ -187,10 +187,12 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                             if (!name.name.equals(oldRegularName)) {
                                 if (wasNull) {
                                     if (warningOnMismatch) {
-                                        String message = String.format("Previous standardized name '%s' does not agree with newly generated standardized name '%s'. Newly generated standardized name will be used.",
-                                                name.stdName, newlyStandardizedName);
-                                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message).appliableChange(true)
-                                        );
+                                        callback.addMessage(
+                                            GinasProcessingMessage
+                                                .WARNING_MESSAGE(
+                                                    "Previous standardized name '%s' does not agree with newly generated standardized name '%s'. Newly generated standardized name will be used.",
+                                                    name.stdName, newlyStandardizedName)
+                                                .appliableChange(true));
                                         name.stdName = newlyStandardizedName;
                                     }
                                     else {
@@ -199,9 +201,11 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                                 }
                                 else {
                                     if (warningOnMismatch) {
-                                        String message = String.format("Previous standardized name '%s' does not agree with newly generated standardized name '%s'. Keeping previous standardized name. Remove standardized name to regenerate instead.",
-                                                name.stdName, newlyStandardizedName);
-                                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
+                                        callback.addMessage(
+                                            GinasProcessingMessage
+                                                .WARNING_MESSAGE(
+                                                    "Previous standardized name '%s' does not agree with newly generated standardized name '%s'. Keeping previous standardized name. Remove standardized name to regenerate instead.",
+                                                    name.stdName, newlyStandardizedName));
                                     }
                                 }
                             }
@@ -214,9 +218,10 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                     }
                     else {
                         if (warningOnMismatch && !warnedAboutThisNameStandardization) {
-                            String message = String.format("Provided standardized name '%s' does not agree with newly standardized name '%s'. Provided standardized name will be used.",
-                                    name.stdName, newlyStandardizedName);
-                            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(message));
+                            callback.addMessage(
+                                GinasProcessingMessage
+                                    .WARNING_MESSAGE("Provided standardized name '%s' does not agree with newly standardized name '%s'. Provided standardized name will be used.",
+                                    name.stdName, newlyStandardizedName));
                         }
                     }
                 }
@@ -245,8 +250,8 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
             log.trace(debugMessage);
 
             if (!minimallyStandardizedName.getResult().equals(n.name) || minimallyStandardizedName.getReplacementNotes().size() > 0) {
-                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(String.format("Name %s minimally standardized to %s",
-                        n.name, minimallyStandardizedName.getResult()));
+                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE("Name %s minimally standardized to %s",
+                        n.name, minimallyStandardizedName.getResult());
                 mes.appliableChange(true);
                 callback.addMessage(mes, () -> {
                     n.name = minimallyStandardizedName.getResult();

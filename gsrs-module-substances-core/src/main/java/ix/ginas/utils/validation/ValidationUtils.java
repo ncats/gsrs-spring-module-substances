@@ -91,7 +91,7 @@ public class ValidationUtils {
 
 			if(!hasPublicReference){
 				GinasProcessingMessage mes = GinasProcessingMessage
-						.ERROR_MESSAGE(namer.apply(data) + " needs an unprotected reference marked \"Public Domain\" in order to be made public.");
+						.ERROR_MESSAGE("%s needs an unprotected reference marked \"Public Domain\" in order to be made public.", namer.apply(data));
 				gpm.add(mes);
 				strat.processMessage(mes);
 			}
@@ -115,15 +115,15 @@ public class ValidationUtils {
 			GinasProcessingMessage gpmerr = null;
 			if (onemptyref == ReferenceAction.FAIL) {
 				gpmerr = GinasProcessingMessage.ERROR_MESSAGE(
-						data.toString() + " needs at least 1 reference")
+						"%s needs at least 1 reference", data.toString())
 						.appliableChange(true);
 			} else if (onemptyref == ReferenceAction.WARN) {
 				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
+						"%s needs at least 1 reference", data.toString())
 						.appliableChange(true);
 			} else {
 				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
+						"%s needs at least 1 reference", data.toString())
 						.appliableChange(true);
 			}
 
@@ -142,8 +142,8 @@ public class ValidationUtils {
 			for (Keyword ref : references) {
 				Reference r = s.getReferenceByUUID(ref.getValue());
 				if (r == null) {
-					gpm.add(GinasProcessingMessage.ERROR_MESSAGE("Reference \""
-							+ ref.getValue() + "\" not found on substance."));
+					gpm.add(GinasProcessingMessage.ERROR_MESSAGE("Reference \"%s\" not found on substance.",
+							ref.getValue()));
 					worked = false;
 				}
 			}
@@ -169,17 +169,17 @@ public class ValidationUtils {
 			GinasProcessingMessage gpmerr = null;
 			if (onemptyref == ReferenceAction.FAIL) {
 				gpmerr = GinasProcessingMessage.ERROR_MESSAGE(
-						data.toString() + " needs at least 1 reference")
+						"%s needs at least 1 reference", data.toString())
 						.appliableChange(true);
 				worked.set(false);
 			} else if (onemptyref == ReferenceAction.WARN) {
 				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
+						"%s needs at least 1 reference", data.toString())
 						.appliableChange(true);
 				worked.set(false);
 			} else {
 				gpmerr = GinasProcessingMessage.WARNING_MESSAGE(
-						data.toString() + " needs at least 1 reference")
+						"%s needs at least 1 reference", data.toString())
 						.appliableChange(true);
 				worked.set(false);
 			}
@@ -202,12 +202,12 @@ public class ValidationUtils {
 					//GSRS-933 more informative error message if you can find the Reference
 					Reference dbReference = referenceRepository.getOne(UUID.fromString(ref.getValue()));
 					if(dbReference !=null) {
-						callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference  type: \"" + dbReference.docType +
-								"\" citation: \"" + dbReference.citation + "\"  uuid \""
-								+ ref.getValue() + "\" not found on substance."));
+						callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+								"Reference type: \"%s\" citation: \"%s\" uuid \"%s\" not found on substance.",
+								dbReference.docType, dbReference.citation, ref.getValue()));
 					}else{
-					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference \""
-							+ ref.getValue() + "\" not found on substance."));
+					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Reference \"%s\" not found on substance.",
+							ref.getValue()));
 					}
 					worked.set(false);
 				}
@@ -1031,8 +1031,8 @@ public class ValidationUtils {
 						.getNumberOfUnspecifiedSugarSites(cs);
 				if (unspSugars != 0) {
 					gpm.add(GinasProcessingMessage
-							.ERROR_MESSAGE("Nucleic Acid substance must have every base specify a sugar fragment. Missing "
-									+ unspSugars + " sites."));
+							.ERROR_MESSAGE("Nucleic Acid substance must have every base specify a sugar fragment. Missing %s sites.",
+									unspSugars));
 				}
 
 				int unspLinkages = NucleicAcidUtils
@@ -1040,8 +1040,8 @@ public class ValidationUtils {
 				//This is meant to say you can't be MISSING a link between 2 sugars in an NA
 				if (unspLinkages >0) {
 					gpm.add(GinasProcessingMessage
-							.ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing "
-									+ unspLinkages + " sites."));
+							.ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing %s sites.",
+									unspLinkages));
 					//Typically you can't also have an extra link (on the 5' end), but it's allowed
 				}else if(unspLinkages < 0 && unspLinkages >= -cs.nucleicAcid.subunits.size()){
 					gpm.add(GinasProcessingMessage
