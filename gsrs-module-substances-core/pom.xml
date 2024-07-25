@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -249,7 +249,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-spring-boot-autoconfigure</artifactId>
-            <version>${gsrs.version}</version>
+            <version>3.1.2-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -316,7 +316,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-dto</artifactId>
-            <version>3.1.1-SNAPSHOT</version>
+            <version>3.1.2-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

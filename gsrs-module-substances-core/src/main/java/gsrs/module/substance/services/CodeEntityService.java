@@ -9,7 +9,7 @@ import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.module.substance.events.CodeCreatedEvent;
 import gsrs.module.substance.events.CodeUpdatedEvent;
 import gsrs.module.substance.repository.CodeRepository;
-import gsrs.service.AbstractGsrsEntityService;
+import gsrs.service.AbstractGsrsRetrievalEntityService;
 import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.Group;
@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
-public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
+public class CodeEntityService extends AbstractGsrsRetrievalEntityService<Code, UUID> {
     public static final String  CONTEXT = "codes";
 
     private static final String SYSTEM_GENERATED_CODE = "System Generated Code";
@@ -131,21 +131,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
         return repository.findAll(pageable);
     }
 
-    @Override
-    public void delete(UUID id) {
-        repository.deleteById(id);
-    }
 
-    @Override
-    @Transactional
-    protected Code update(Code substance) {
-//        controlledVocabulary.
-
-        //first bump version?
-        substance.forceUpdate();
-
-        return repository.save(getEntityManager().merge(substance));
-    }
 
     @Override
     protected AbstractEntityUpdatedEvent<Code> newUpdateEvent(Code updatedEntity) {

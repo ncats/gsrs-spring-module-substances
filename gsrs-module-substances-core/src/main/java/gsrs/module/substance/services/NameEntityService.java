@@ -20,6 +20,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
+@Slf4j
 public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     public static final String  CONTEXT = "names";
 
@@ -126,12 +128,16 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     @Override
     @Transactional
     protected Name update(Name substance) {
+        throw new RuntimeException("Update a name by updating the parent substance!");
+/*
+        log.warn("Updating name ({}) via low-level call.", substance.name);
 //        controlledVocabulary.
 
         //first bump version?
         substance.forceUpdate();
 
         return repository.save(getEntityManager().merge(substance));
+*/
     }
 
     @Override
