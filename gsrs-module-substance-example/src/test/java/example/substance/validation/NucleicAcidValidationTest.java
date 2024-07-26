@@ -366,6 +366,19 @@ public class NucleicAcidValidationTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
+    public void getActualSugarSiteCount2Test() throws Exception {
+        log.trace("starting getActualSugarSiteCountTest");
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);
+        File jsonFile =new ClassPathResource("testJSON/5ba799f2-2834-4b02-8ed7-d426ecc68ce3_cleaned.json").getFile();
+        JsonNode substanceAsJson=  mapper.readTree(jsonFile);
+        NucleicAcidSubstance substance= mapper.convertValue(substanceAsJson, NucleicAcidSubstance.class);
+        int expectedSugarCount= 45;
+        int actual = NucleicAcidUtils.getActualSugarSiteCount(substance);
+        Assertions.assertEquals(expectedSugarCount, actual);
+    }
+
+    @Test
     public void getBaseCountTest() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,false);

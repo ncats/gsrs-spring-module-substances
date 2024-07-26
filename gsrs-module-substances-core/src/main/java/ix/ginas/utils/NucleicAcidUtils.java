@@ -27,6 +27,7 @@ public class NucleicAcidUtils {
 		int ssites=0;
 		for(Sugar s:nas.nucleicAcid.getSugars()){
 			ssites+=s.getSites().size();
+			s.getSites().forEach(i->log.trace("site subunit {}, res: {} ", i.subunitIndex, i.residueIndex));
 			log.warn("site total for {} = {}", s.getSugar(), s.getSites().size());
 		}
 		return ssites;
