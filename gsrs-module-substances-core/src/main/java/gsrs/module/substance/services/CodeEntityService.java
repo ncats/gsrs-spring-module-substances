@@ -9,7 +9,7 @@ import gsrs.events.AbstractEntityUpdatedEvent;
 import gsrs.module.substance.events.CodeCreatedEvent;
 import gsrs.module.substance.events.CodeUpdatedEvent;
 import gsrs.module.substance.repository.CodeRepository;
-import gsrs.service.AbstractGsrsRetrievalEntityService;
+import gsrs.service.AbstractGsrsEntityService;
 import gsrs.services.GroupService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.Group;
@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
-public class CodeEntityService extends AbstractGsrsRetrievalEntityService<Code, UUID> {
+public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     public static final String  CONTEXT = "codes";
 
     private static final String SYSTEM_GENERATED_CODE = "System Generated Code";
@@ -131,7 +131,17 @@ public class CodeEntityService extends AbstractGsrsRetrievalEntityService<Code, 
         return repository.findAll(pageable);
     }
 
+    @Override
+    public void delete(UUID id) {
+        throw new RuntimeException("Please update the Substance when deleting a Code to ensure correct processing");
+        //repository.deleteById(id);
+    }
 
+    @Override
+    @Transactional
+    protected Code update(Code substance) {
+        throw new RuntimeException("Please update the Substance when modifying a Code to ensure correct processing");
+    }
 
     @Override
     protected AbstractEntityUpdatedEvent<Code> newUpdateEvent(Code updatedEntity) {
@@ -183,12 +193,7 @@ public class CodeEntityService extends AbstractGsrsRetrievalEntityService<Code, 
 
     @Override
     protected Code create(Code substance) {
-        try {
-            return repository.saveAndFlush(substance);
-        }catch(Throwable t){
-            t.printStackTrace();
-            throw t;
-        }
+        throw new RuntimeException("Please update the Substance when creating a Code to ensure correct processing");
     }
 
     @Override
@@ -268,7 +273,7 @@ public class CodeEntityService extends AbstractGsrsRetrievalEntityService<Code, 
                 c.addRestrictGroup(g);
             }
         }
-        
+
         substance.addCode(c);
         c.addReference(r, substance);
 
@@ -276,13 +281,17 @@ public class CodeEntityService extends AbstractGsrsRetrievalEntityService<Code, 
         c.clearDirtyFields();
         r.clearDirtyFields();
         substance.clearDirtyFields();
-        
+
         return c;
     }
 
-	@Override
-	public List<UUID> getIDs() {
-		return repository.getAllIDs();
-	}
+    @Override
+    public List<UUID> getIDs() {
+        return repository.getAllIDs();
+    }
 
+    @Override
+    public boolean isReadOnly() {
+        return false;
+    }
 }

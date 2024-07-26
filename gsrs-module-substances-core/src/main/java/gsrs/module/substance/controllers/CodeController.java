@@ -6,7 +6,7 @@ import gsrs.controller.IdHelpers;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.services.CodeEntityService;
 import gsrs.repository.EditRepository;
-import gsrs.service.GsrsRetrievalEntityService;
+import gsrs.service.GsrsEntityService;
 import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.models.v1.Code;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +43,7 @@ public class CodeController extends EtagLegacySearchEntityController<CodeControl
     }
 
     @Override
-    public GsrsRetrievalEntityService<Code, UUID> getEntityService() {
+    public GsrsEntityService<Code, UUID> getEntityService() {
         return codeEntityService;
     }
 

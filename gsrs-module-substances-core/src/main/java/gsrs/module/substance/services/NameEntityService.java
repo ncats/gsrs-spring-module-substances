@@ -122,13 +122,13 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     public void delete(UUID id) {
-        repository.deleteById(id);
+        throw new RuntimeException("Please update the Substance when deleting a Name to ensure correct processing");
     }
 
     @Override
     @Transactional
     protected Name update(Name substance) {
-        throw new RuntimeException("Update a name by updating the parent substance!");
+        throw new RuntimeException("Please update the Substance when updating a Name to ensure correct processing");
 /*
         log.warn("Updating name ({}) via low-level call.", substance.name);
 //        controlledVocabulary.
@@ -190,12 +190,15 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     protected Name create(Name substance) {
+        throw new RuntimeException("Please update the Substance when creating a Name to ensure correct processing");
+/*
         try {
             return repository.saveAndFlush(substance);
         }catch(Throwable t){
             t.printStackTrace();
             throw t;
         }
+*/
     }
 
     @Override
@@ -253,4 +256,8 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 		return IDs;
 	}
 
+    @Override
+    public boolean isReadOnly(){
+        return true;
+    }
 }
