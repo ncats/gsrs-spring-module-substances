@@ -1,0 +1,518 @@
+{
+	"created": 1721941342290,
+	"createdBy": "MITCH",
+	"lastEdited": 1721941342290,
+	"lastEditedBy": "MITCH",
+	"deprecated": false,
+	"uuid": "5ba799f2-2834-4b02-8ed7-d426ecc68ce3",
+	"definitionType": "PRIMARY",
+	"definitionLevel": "COMPLETE",
+	"substanceClass": "nucleicAcid",
+	"status": "pending",
+	"version": "1",
+	"names": [
+		{
+			"created": 1721941345492,
+			"createdBy": "MITCH",
+			"lastEdited": 1721941345492,
+			"lastEditedBy": "MITCH",
+			"deprecated": false,
+			"uuid": "9f9ada82-7bd9-4568-8228-545cd1fb6325",
+			"name": "Bogus Nucleic Acid",
+			"type": "cn",
+			"domains": [],
+			"languages": [
+				"en"
+			],
+			"nameJurisdiction": [],
+			"nameOrgs": [],
+			"preferred": false,
+			"displayName": true,
+			"references": [
+				"7b3b2e65-af56-4527-a59e-adcf950080ca"
+			],
+			"access": []
+		}
+	],
+	"codes": [],
+	"modifications": {
+		"created": 1721941345462,
+		"createdBy": "MITCH",
+		"lastEdited": 1721941345462,
+		"lastEditedBy": "MITCH",
+		"deprecated": false,
+		"uuid": "7aeaa8de-1793-4991-a858-bf3b37bb519b",
+		"agentModifications": [],
+		"physicalModifications": [],
+		"structuralModifications": [],
+		"references": [],
+		"access": []
+	},
+	"notes": [],
+	"properties": [],
+	"relationships": [],
+	"references": [
+		{
+			"created": 1721941345496,
+			"createdBy": "MITCH",
+			"lastEdited": 1721941345496,
+			"lastEditedBy": "MITCH",
+			"deprecated": false,
+			"uuid": "7b3b2e65-af56-4527-a59e-adcf950080ca",
+			"citation": "99999",
+			"docType": "SRS_LOCATOR",
+			"publicDomain": true,
+			"tags": [
+				"bogus"
+			],
+			"access": []
+		}
+	],
+	"tags": [],
+	"nucleicAcid": {
+		"created": 1721941345469,
+		"createdBy": "MITCH",
+		"lastEdited": 1721941346107,
+		"lastEditedBy": "MITCH",
+		"deprecated": false,
+		"uuid": "7d4ec87c-acf7-498f-8f88-17665e45c408",
+		"linkages": [
+			{
+				"created": 1721941345473,
+				"createdBy": "MITCH",
+				"lastEdited": 1721941345473,
+				"lastEditedBy": "MITCH",
+				"deprecated": false,
+				"uuid": "dcbde31b-5212-4152-ba04-005d7a5dc883",
+				"linkage": "P",
+				"sites": [
+					{
+						"subunitIndex": 1,
+						"residueIndex": 2
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 3
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 4
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 5
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 6
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 7
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 8
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 9
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 10
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 11
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 12
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 13
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 14
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 15
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 16
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 17
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 18
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 19
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 20
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 21
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 22
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 23
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 24
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 25
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 26
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 27
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 28
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 29
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 30
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 31
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 32
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 33
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 34
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 35
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 36
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 37
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 38
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 39
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 40
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 41
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 42
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 43
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 44
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 45
+					}
+				],
+				"sitesShorthand": "1_2-1_45",
+				"references": [],
+				"access": []
+			}
+		],
+		"subunits": [
+			{
+				"created": 1721941345483,
+				"createdBy": "MITCH",
+				"lastEdited": 1721941345483,
+				"lastEditedBy": "MITCH",
+				"deprecated": false,
+				"uuid": "cf6138da-60c8-4b1f-b1c6-b967c2d096f1",
+				"sequence": "ATTTCCCGGGGGAAAAAGGGGGGGGGGGCCCCCCCCCACCAATTT",
+				"subunitIndex": 1,
+				"length": 45,
+				"references": [],
+				"access": []
+			}
+		],
+		"sugars": [
+			{
+				"sites": [
+					{
+						"subunitIndex": 1,
+						"residueIndex": 23
+					}
+				],
+				"sugar": "eR"
+			},
+			{
+				"sites": [
+					{
+						"subunitIndex": 1,
+						"residueIndex": 1
+					}
+				],
+				"sugar": "fR"
+			},
+			{
+				"created": 1721941345487,
+				"createdBy": "MITCH",
+				"lastEdited": 1721941345487,
+				"lastEditedBy": "MITCH",
+				"deprecated": false,
+				"uuid": "633defc8-f889-4424-a20b-6838d88f5420",
+				"sugar": "12ddR",
+				"sites": [
+					{
+						"subunitIndex": 1,
+						"residueIndex": 2
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 3
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 4
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 5
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 6
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 7
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 8
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 9
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 10
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 11
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 12
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 13
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 14
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 15
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 16
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 17
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 18
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 19
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 20
+					}
+				],
+				"sitesShorthand": "1_1-1_20",
+				"references": [],
+				"access": []
+			},
+			{
+				"created": 1721941345486,
+				"createdBy": "MITCH",
+				"lastEdited": 1721941345486,
+				"lastEditedBy": "MITCH",
+				"deprecated": false,
+				"uuid": "f0d5da1d-8623-4eda-b8cc-e06c780df797",
+				"sugar": "REA",
+				"sites": [
+					{
+						"subunitIndex": 1,
+						"residueIndex": 21
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 22
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 24
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 25
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 26
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 27
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 28
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 29
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 30
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 31
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 32
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 33
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 34
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 35
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 36
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 37
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 38
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 39
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 40
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 41
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 42
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 43
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 44
+					},
+					{
+						"subunitIndex": 1,
+						"residueIndex": 45
+					}
+				],
+				"sitesShorthand": "1_21-1_45",
+				"references": [],
+				"access": []
+			}
+		],
+		"nucleicAcidSubType": [],
+		"references": [
+			"7b3b2e65-af56-4527-a59e-adcf950080ca"
+		],
+		"access": []
+	},
+	"_name": "Bogus Nucleic Acid",
+	"_approvalIDDisplay": "pending record",
+	"access": [
+		"protected"
+	],
+	"_self": "http://localhost:8081/api/v1/substances(5ba799f2-2834-4b02-8ed7-d426ecc68ce3)?view=full"
+}

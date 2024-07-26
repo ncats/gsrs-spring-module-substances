@@ -4,9 +4,11 @@ import ix.ginas.models.v1.Linkage;
 import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.Subunit;
 import ix.ginas.models.v1.Sugar;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
 
+@Slf4j
 public class NucleicAcidUtils {
 	public static int getBaseCount(NucleicAcidSubstance nas){
 		int l=0;
@@ -21,9 +23,11 @@ public class NucleicAcidUtils {
 		return getBaseCount(nas);
 	}
 	public static int getActualSugarSiteCount(NucleicAcidSubstance nas){
+		log.warn("starting getActualSugarSiteCount");
 		int ssites=0;
 		for(Sugar s:nas.nucleicAcid.getSugars()){
 			ssites+=s.getSites().size();
+			log.warn("site total for {} = {}", s.getSugar(), s.getSites().size());
 		}
 		return ssites;
 	}
