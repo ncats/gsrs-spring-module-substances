@@ -23,6 +23,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
+@Slf4j
 public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     public static final String  CONTEXT = "codes";
 
@@ -133,6 +135,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @Override
     public void delete(UUID id) {
+        log.error("unsupported operation");
         throw new RuntimeException("Please update the Substance when deleting a Code to ensure correct processing");
         //repository.deleteById(id);
     }
@@ -140,6 +143,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     @Override
     @Transactional
     protected Code update(Code substance) {
+        log.error("unsupported operation");
         throw new RuntimeException("Please update the Substance when modifying a Code to ensure correct processing");
     }
 
@@ -292,6 +296,6 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @Override
     public boolean isReadOnly() {
-        return false;
+        return true;
     }
 }

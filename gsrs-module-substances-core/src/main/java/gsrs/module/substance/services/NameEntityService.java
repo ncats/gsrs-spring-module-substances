@@ -122,12 +122,14 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     public void delete(UUID id) {
+        log.error("unsupported delete");
         throw new RuntimeException("Please update the Substance when deleting a Name to ensure correct processing");
     }
 
     @Override
     @Transactional
     protected Name update(Name substance) {
+        log.error("unsupported update");
         throw new RuntimeException("Please update the Substance when updating a Name to ensure correct processing");
 /*
         log.warn("Updating name ({}) via low-level call.", substance.name);
