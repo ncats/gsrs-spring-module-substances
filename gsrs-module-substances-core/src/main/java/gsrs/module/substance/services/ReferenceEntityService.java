@@ -128,18 +128,15 @@ public class ReferenceEntityService extends AbstractGsrsEntityService<Reference,
     @Override
     public void delete(UUID id) {
         log.error("unsupported operation");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
         throw new RuntimeException("Please update the Substance when deleting a Reference to ensure correct processing");
     }
 
     @Override
     @Transactional
     protected Reference update(Reference substance) {
-//        controlledVocabulary.
-
-        //first bump version?
-        substance.forceUpdate();
-
-        return repository.save(getEntityManager().merge(substance));
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
+        throw new RuntimeException("Please update the Substance when updating a Reference to ensure correct processing");
     }
 
     @Override
@@ -192,12 +189,7 @@ public class ReferenceEntityService extends AbstractGsrsEntityService<Reference,
 
     @Override
     protected Reference create(Reference substance) {
-        try {
-            return repository.saveAndFlush(substance);
-        }catch(Throwable t){
-            t.printStackTrace();
-            throw t;
-        }
+        throw new RuntimeException("Please update the Substance when creating a Reference to ensure correct processing");
     }
 
     @Override

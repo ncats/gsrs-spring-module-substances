@@ -136,14 +136,15 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     @Override
     public void delete(UUID id) {
         log.error("unsupported operation");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
         throw new RuntimeException("Please update the Substance when deleting a Code to ensure correct processing");
-        //repository.deleteById(id);
     }
 
     @Override
     @Transactional
     protected Code update(Code substance) {
         log.error("unsupported operation");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
         throw new RuntimeException("Please update the Substance when modifying a Code to ensure correct processing");
     }
 
@@ -197,6 +198,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @Override
     protected Code create(Code substance) {
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
         throw new RuntimeException("Please update the Substance when creating a Code to ensure correct processing");
     }
 

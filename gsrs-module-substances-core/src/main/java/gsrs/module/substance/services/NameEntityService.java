@@ -123,6 +123,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     @Override
     public void delete(UUID id) {
         log.error("unsupported delete");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
         throw new RuntimeException("Please update the Substance when deleting a Name to ensure correct processing");
     }
 
@@ -130,6 +131,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     @Transactional
     protected Name update(Name substance) {
         log.error("unsupported update");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
         throw new RuntimeException("Please update the Substance when updating a Name to ensure correct processing");
 /*
         log.warn("Updating name ({}) via low-level call.", substance.name);
@@ -192,15 +194,8 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     protected Name create(Name substance) {
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
         throw new RuntimeException("Please update the Substance when creating a Name to ensure correct processing");
-/*
-        try {
-            return repository.saveAndFlush(substance);
-        }catch(Throwable t){
-            t.printStackTrace();
-            throw t;
-        }
-*/
     }
 
     @Override
@@ -260,6 +255,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     public boolean isReadOnly(){
+        //prevents creation, update or deletion of the Name without the substance
         return true;
     }
 }
