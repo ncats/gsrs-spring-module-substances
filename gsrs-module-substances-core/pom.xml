@@ -329,5 +329,10 @@
             <artifactId>batik-svg-dom</artifactId>
             <version>1.17</version>
         </dependency>
+        <dependency>
+            <groupId>gov.fda.gsrs</groupId>
+            <artifactId>Featureize-Nitrosamines</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 </project>
