@@ -9,10 +9,18 @@ import java.util.Map;
 import gov.fda.gsrs.ndsri.FeaturizeNitrosamine;
 import gov.fda.gsrs.ndsri.FeaturizeNitrosamine.FeatureJob;
 import gov.fda.gsrs.ndsri.FeaturizeNitrosamine.FeatureResponse;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 public class FeatureUtils {
     public static List<Map<String, String>> calculateFeatures(Chemical chemical) throws Exception{
-        FeatureJob fj = new FeatureJob(chemical);
+        FeatureJob fj;
+        try{
+            fj = FeatureJob.forOneNitrosamine(chemical);
+        } catch (Exception ex) {
+            log.info("forOneNitrosamine failed; using regular constructor");
+            fj = new FeatureJob(chemical);
+        }
 
         List<FeatureResponse> resp = FeaturizeNitrosamine.fingerprintNitrosamine(fj);
 
@@ -20,6 +28,8 @@ public class FeatureUtils {
         resp.forEach(r->{
             Map<String, String> ret = new HashMap<>();
             r.getFeatureSet().entrySet().forEach(e-> ret.put(e.getKey(), e.getValue()));
+            ret.put("categoryScore", Integer.toString( r.getCategoryScore()));
+            ret.put("sumOfScores", Integer.toString(r.getSumOfScores()));
             maps.add(ret);
         });
         return maps;
