@@ -966,6 +966,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         boolean isQuery="query".equalsIgnoreCase(mode);
 
+        boolean appendFeatures = queryParameters.containsKey("appendNNOFeatures") && queryParameters.get("appendNNOFeatures").equalsIgnoreCase("true");
 
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
@@ -1005,6 +1006,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 saveTempStructure(struc);
                 node.put("structure", mapper.valueToTree(struc));
                 node.put("moieties", an);
+                if( appendFeatures) {
+                    log.trace("going to append nitrosamine features");
+                    appendFeatureStuff(struc.toChemical(), node);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1020,6 +1025,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
             }
+
             return new ResponseEntity<>(node, HttpStatus.OK);
 
         } catch (Exception ex) {
@@ -1089,14 +1095,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 //saveTempStructure(struc);
                 node.put("structure", mapper.valueToTree(struc));
                 node.put("moieties", an);
-                List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(struc.toChemical());
-                ArrayNode featureArrayNode = mapper.createArrayNode();
-                featureList.forEach(features ->{
-                    ObjectNode oneSet = mapper.createObjectNode();
-                    features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
-                    featureArrayNode.add(oneSet);
-                });
-                node.put("featureList", featureArrayNode);
+                appendFeatureStuff(struc.toChemical(), node);
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -1995,5 +1994,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             log.error("Error constructing query: ", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private void appendFeatureStuff(Chemical chemical, ObjectNode topLevelNode ) throws Exception {
+        log.trace("in appendFeatureStuff");
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(chemical);
+        ArrayNode featureArrayNode = mapper.createArrayNode();
+        featureList.forEach(features ->{
+            ObjectNode oneSet = mapper.createObjectNode();
+            features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
+            featureArrayNode.add(oneSet);
+        });
+        topLevelNode.put("featureList", featureArrayNode);
     }
 }

@@ -30,6 +30,7 @@ public class FeatureUtils {
             r.getFeatureSet().entrySet().forEach(e-> ret.put(e.getKey(), e.getValue()));
             ret.put("categoryScore", Integer.toString( r.getCategoryScore()));
             ret.put("sumOfScores", Integer.toString(r.getSumOfScores()));
+            ret.put("type", r.getType());
             maps.add(ret);
         });
         return maps;
