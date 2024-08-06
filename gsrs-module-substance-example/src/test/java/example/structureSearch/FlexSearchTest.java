@@ -1,10 +1,12 @@
 package example.structureSearch;
 
 import example.GsrsModuleSubstanceApplication;
+import gov.nih.ncats.molwitch.Chemical;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.controllers.SubstanceController;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
+import gsrs.module.substance.utils.ChemicalUtils;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
@@ -59,6 +61,9 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private SubstanceLegacySearchService searchService;
 
+    @Autowired
+    private ChemicalUtils chemicalUtils;
+
     private String fileName = "testdumps/tartrate_set.gsrs";
 
     private boolean loadedData = false;
@@ -107,7 +112,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         AutowireHelper.getInstance().autowireAndProxy(controller);
         log.trace("created and wired controller");
 
-        String hash=  controller.makeFlexSearchMoietyClauses(structureStd, false) + ")";
+        String hash=  controller.makeFlexSearchMoietyClauses(structureStd) + ")";
         log.trace("search hash: {}", hash);
         assertTrue(hash.contains("root_moieties_properties_STEREO_INSENSITIVE_HASH"));
     }
@@ -134,9 +139,9 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         AutowireHelper.getInstance().autowireAndProxy(controller);
         log.trace("created and wired controller");
 
-        String hash=  controller.makeFlexSearchMoietyClauses(structureStd, true) + ")";
+        String hash=  controller.makeFlexSearchMoietyClauses(structureStd) + ")";
         log.trace("search hash: {}", hash);
-        assertTrue(hash.contains("root_moieties_properties_EXACT_HASH"));
+        assertTrue(hash.contains("root_moieties_properties_STEREO_INSENSITIVE_HASH"));
     }
 
     @Test
@@ -155,11 +160,10 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .build()
                 .instrument()
                 .getStructure();
-        String sins= structureStd.getStereoInsensitiveHash();
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash=  controller.makeFlexSearch(structureStd, false);
+        String hash=  controller.makeFlexSearch(structureStd);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -177,7 +181,6 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @WithMockUser(value = "admin", roles = "Admin")
     public void runFlexSearchQuerySodiumTartrate() throws Exception {
         String molfileSource = "molfiles/sodium_tartrate.mol";
-
         File molfile = new ClassPathResource(molfileSource).getFile();
         Structure structureStd = structureProcessor.taskFor(Files.readString(molfile.toPath()))
                 .standardize(true)
@@ -187,7 +190,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash = controller.makeFlexSearch(structureStd, false);
+        String hash = controller.makeFlexSearch(structureStd);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -210,10 +213,14 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .build()
                 .instrument()
                 .getStructure();
+        Chemical cleanedChemical = chemicalUtils.stripSalts(structureStd.toChemical());
+        Structure cleanedStructure = new Structure();
+        cleanedStructure.molfile = cleanedChemical.toMol();
+
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash = controller.makeFlexSearch(structureStd,true);
+        String hash = controller.makeFlexSearch(cleanedStructure);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -223,7 +230,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         log.trace("search results: (total: {})", substances.size());
         substances.forEach(s-> log.trace("ID {} - {}", s.uuid, s.getName()));
 
-        int expectedNumber = 1;
+        int expectedNumber = 7;
         assertEquals(expectedNumber, substances.size());
     }
 
