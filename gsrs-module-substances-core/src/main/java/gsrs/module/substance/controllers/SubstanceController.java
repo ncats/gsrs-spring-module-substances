@@ -28,6 +28,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.utils.ChemicalUtils;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -170,6 +171,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	
     @Autowired
     private PrincipalServiceImpl principalService;
+
+    @Autowired
+    private ChemicalUtils chemicalUtils;
 
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -353,7 +357,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private ApprovalService approvalService;
-
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -740,8 +743,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
+            if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
+                log.trace("running a flex plus search - remove salts");
+
+                Structure copy = new GinasChemicalStructure();
+                copy.molfile = structure.molfile;
+                Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+                //make another Structure, without salt
+                Structure saltStripped = new Structure();
+                saltStripped.molfile = clean.toMol();
+                hash = makeFlexSearch(saltStripped);
+            } else {
+                hash= makeFlexSearch(structure);
+            }
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-            hash= makeFlexSearch(structure, (sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS));
+
             log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
                     //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
@@ -1871,21 +1887,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 
-    public String makeFlexSearch(Structure structure, boolean plus) {
-        String sins= plus ? structure.getExactHash() : structure.getStereoInsensitiveHash();
+    public String makeFlexSearch(Structure structure) {
+        String sins= structure.getStereoInsensitiveHash();
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("(");
-        stringBuilder.append( plus ? "root_structure_properties_EXACT_HASH" : "root_structure_properties_STEREO_INSENSITIVE_HASH");
+        stringBuilder.append(  "root_structure_properties_STEREO_INSENSITIVE_HASH");
         stringBuilder.append(":\"");
         stringBuilder.append(sins);
         stringBuilder.append("\" OR ");
-        stringBuilder.append(makeFlexSearchMoietyClauses(structure, plus));
+        stringBuilder.append(makeFlexSearchMoietyClauses(structure));
         stringBuilder.append(")");
         return stringBuilder.toString();
         //return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" OR " + makeFlexSearchMoietyClauses(structure, plus) + ")";
     }
 
-    public String makeFlexSearchMoietyClauses(Structure structure, boolean plus) {
+    public String makeFlexSearchMoietyClauses(Structure structure) {
 
         List<Structure> moieties = new ArrayList<>();
         try {
@@ -1899,8 +1915,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             String moietySearchString= moieties.stream()
                     .map(m->{
                         StringBuilder sb = new StringBuilder();
-                        sb.append(plus ? "root_moieties_properties_EXACT_HASH:\"" :  "root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
-                        sb.append(plus ? m.getExactHash() : m.getStereoInsensitiveHash());
+                        sb.append("root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
+                        sb.append( m.getStereoInsensitiveHash());
                         sb.append("\"");
                         return sb.toString();
                     })
@@ -1914,4 +1930,5 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             throw new RuntimeException(e);
         }
     }
+
 }
