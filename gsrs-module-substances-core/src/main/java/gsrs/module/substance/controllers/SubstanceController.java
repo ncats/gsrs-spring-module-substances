@@ -28,6 +28,7 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +39,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -980,6 +982,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         boolean isQuery="query".equalsIgnoreCase(mode);
 
+        boolean appendFeatures = queryParameters.containsKey("appendNNOFeatures") && queryParameters.get("appendNNOFeatures").equalsIgnoreCase("true");
 
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
@@ -1019,6 +1022,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 saveTempStructure(struc);
                 node.put("structure", mapper.valueToTree(struc));
                 node.put("moieties", an);
+                if( appendFeatures) {
+                    log.trace("going to append nitrosamine features");
+                    appendFeatureStuff(struc.toChemical(), node);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1034,6 +1041,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
             }
+
             return new ResponseEntity<>(node, HttpStatus.OK);
 
         } catch (Exception ex) {
@@ -1044,6 +1052,79 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
+    @PostGsrsRestApiMapping("/interpretFeatures")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Object> interpretStructureFeatures(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
+        String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
+                .orElse("NONE")
+                .split(",");
+        SimpleStandardizer simpStd=Arrays.stream(standardize)
+                .filter(s->!s.equals("NONE"))
+                .map(val->val.toUpperCase())
+                .map(val->StructureStandardizerPresets.value(val))
+                .filter(v->v.isPresent())
+                .map(v->v.get())
+                .map(std->std.getStandardizer())
+                .reduce(SimpleStandardizer::and).orElse(null);
+
+        String mode = Optional.ofNullable(queryParameters.get("mode"))
+                .orElse("basic");
+
+        boolean isQuery="query".equalsIgnoreCase(mode);
+
+
+        try {
+            String payload = ChemCleaner.getCleanMolfile(mol);
+            List<Structure> moieties = new ArrayList<>();
+            ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
+            ObjectNode node = mapper.createObjectNode();
+            try {
+                Structure struc = structureProcessor.taskFor(payload)
+                        .components(moieties)
+                        .standardize(false)
+                        .query(isQuery)
+                        .build()
+                        .instrument()
+                        .getStructure();
+                // don't standardize!
+                // we should be really use the PersistenceQueue to do this
+                // so that it doesn't block
+                // in fact, it probably shouldn't be saving this at all
+                if (payload.contains("\n") && payload.contains("M  END")) {
+                    struc.molfile = payload;
+                }
+
+                if(simpStd!=null) {
+                    struc.molfile=simpStd.standardize(struc.molfile);
+                }
+
+                ArrayNode an = mapper.createArrayNode();
+                for (Structure m : moieties) {
+                    saveTempStructure(m);
+                    ObjectNode on = mapper.valueToTree(m);
+                    Amount c1 = Moiety.intToAmount(m.count);
+                    JsonNode amt = mapper.valueToTree(c1);
+                    on.set("countAmount", amt);
+                    an.add(on);
+                }
+                //TODO: fill in calculation
+                //saveTempStructure(struc);
+                node.put("structure", mapper.valueToTree(struc));
+                node.put("moieties", an);
+                appendFeatureStuff(struc.toChemical(), node);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return new ResponseEntity<>(node, HttpStatus.OK);
+
+        } catch (Exception ex) {
+            log.error("Can't process payload", ex);
+            return new ResponseEntity<>("Can't process mol payload",
+                    this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.INTERNAL_SERVER_ERROR, queryParameters));
+        }
+
+    }
     public void saveTempStructure(Structure s) {
         if (s.id == null){
             s.id = UUID.randomUUID();
@@ -1931,4 +2012,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
     }
 
+    private void appendFeatureStuff(Chemical chemical, ObjectNode topLevelNode ) throws Exception {
+        log.trace("in appendFeatureStuff");
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(chemical);
+        ArrayNode featureArrayNode = mapper.createArrayNode();
+        featureList.forEach(features ->{
+            ObjectNode oneSet = mapper.createObjectNode();
+            features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
+            featureArrayNode.add(oneSet);
+        });
+        topLevelNode.put("featureList", featureArrayNode);
+    }
 }
