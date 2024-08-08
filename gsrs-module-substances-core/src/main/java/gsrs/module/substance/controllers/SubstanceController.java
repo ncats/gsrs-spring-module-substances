@@ -2016,12 +2016,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         log.trace("in appendFeatureStuff");
         ObjectMapper mapper = new ObjectMapper();
         List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(chemical);
+        ObjectNode allFeatures = mapper.createObjectNode();
         ArrayNode featureArrayNode = mapper.createArrayNode();
         featureList.forEach(features ->{
             ObjectNode oneSet = mapper.createObjectNode();
             features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
             featureArrayNode.add(oneSet);
         });
-        topLevelNode.put("featureList", featureArrayNode);
+        allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
+        topLevelNode.put("featureList", allFeatures);
     }
 }
