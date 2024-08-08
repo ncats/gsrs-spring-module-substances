@@ -4,6 +4,8 @@ package ix.core.chem;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
 import ix.core.models.Structure;
+import jdk.jpackage.internal.Log;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
  *
  *
  */
+@Slf4j
 public class PolymerDecode {
 	private static final String FRAGMENT = "FRAGMENT";
 	private static final String MOIETY = "MOIETY";
@@ -250,7 +253,11 @@ public class PolymerDecode {
 					}else{
 						newca.setAtomicNumber(ca.getAtomicNumber());
 					}
-					newca.setChirality(ca.getChirality());
+					try {
+						newca.setChirality(ca.getChirality());
+					}catch (Exception ex) {
+						log.error("Error setting chirality on polymer: {}", ex);
+					}
 					newca.setMassNumber(ca.getMassNumber());
 					newca.setCharge(ca.getCharge());
 					newca.setAtomCoordinates(ca.getAtomCoordinates());
