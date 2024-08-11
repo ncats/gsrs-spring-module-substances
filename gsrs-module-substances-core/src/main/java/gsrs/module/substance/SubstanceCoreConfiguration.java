@@ -46,7 +46,9 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
         ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class,
             //legacy bulk load
-        SubstanceBulkLoadService.class, SubstanceBulkLoadServiceConfiguration.class, SubstanceLegacyBulkLoadController.class,
+        SubstanceBulkLoadService.class, SubstanceBulkLoadServiceConfiguration.class,
+SubstanceLegacyBulkLoadController.class,
+SubstanceEasyLegacyBulkLoadController.class,
         ProcessingJobController.class, ProcessingJobEntityService.class,
         //used by bulk loader
         ConsoleFilterService.class,
