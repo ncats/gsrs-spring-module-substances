@@ -20,13 +20,14 @@ public class SubstancePropertyExporterFactory implements ExporterFactory {
         return onlyDefining;
     }
 
+
     public void setOnlyDefining(boolean onlyDefining) {
         this.onlyDefining = onlyDefining;
     }
 
     private boolean onlyDefining;
 
-    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("spf", "Substance Property File, SD File (.spf)"));
+    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("spf", "Substance Property File(.spf)"));
     @Override
     public boolean supports(Parameters params) {
         return "spf".equals(params.getFormat().getExtension());
