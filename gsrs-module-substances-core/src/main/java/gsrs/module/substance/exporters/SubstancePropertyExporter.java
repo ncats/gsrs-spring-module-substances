@@ -84,8 +84,9 @@ public class SubstancePropertyExporter implements Exporter<Substance> {
                     outputBuilder.append(p.getValue().nonNumericValue);
                 }
             }
-            outputBuilder.append("\n");
+            if( line.get() < exportables.size()) outputBuilder.append("\n");
         });
+
         out.write(outputBuilder.toString());
         out.newLine();
     }
