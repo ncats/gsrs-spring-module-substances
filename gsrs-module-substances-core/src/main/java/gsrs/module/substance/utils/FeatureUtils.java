@@ -18,8 +18,11 @@ public class FeatureUtils {
         try{
             fj = FeatureJob.forOneNitrosamine(chemical);
         } catch (Exception ex) {
-            log.info("forOneNitrosamine failed; using regular constructor");
-            fj = new FeatureJob(chemical);
+            //log.info("forOneNitrosamine failed; using regular constructor");
+            //fj = new FeatureJob(chemical);
+
+            //For now, don't generate properties unless it's a legitimate NNO
+            return new ArrayList<>();
         }
 
         List<FeatureResponse> resp = FeaturizeNitrosamine.fingerprintNitrosamine(fj);
