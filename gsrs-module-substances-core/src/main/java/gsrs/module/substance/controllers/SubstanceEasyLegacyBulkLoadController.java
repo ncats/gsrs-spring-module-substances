@@ -89,10 +89,17 @@ public class SubstanceEasyLegacyBulkLoadController {
         if (f.getAbsolutePath() != null ) {
             if(f.exists()) {
 //                int parallelism = Runtime.getRuntime().availableProcessors();
-                int parallelism = 2;
+                int parallelism = 6;
+//                when there is more than one thread getting "THROWABLE(s)"
+//                # throwables = threads - 1
+//                may be related to PrincipalServiceImpl and transaction syncronization ?
+
 
                 List<Future> tasks = new ArrayList<>();
            //      ExecutorService executorService = Executors.newFixedThreadPool(parallelism);
+
+
+
                 ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(parallelism, 5);
 
 
@@ -100,7 +107,8 @@ public class SubstanceEasyLegacyBulkLoadController {
 
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(f.getAbsolutePath()))))) {
                     reader.lines().forEach(l -> {
-                        Authentication auth = adminService.getAnyAdmin();
+                        final Authentication auth = adminService.getCurrentAdminAuth();
+
                         Future task = executorService.submit(() -> {
                             adminService.runAs(auth,
                                 (Runnable) ()->{
