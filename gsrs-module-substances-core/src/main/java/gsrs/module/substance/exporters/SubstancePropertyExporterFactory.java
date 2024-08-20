@@ -16,21 +16,11 @@ public class SubstancePropertyExporterFactory implements ExporterFactory {
 
     public static final String DEFINING_PARAMETER_NAME ="onlyDefining";
 
-    public boolean isOnlyDefining() {
-        return onlyDefining;
-    }
+    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("properties.txt", "Substance Property File(.properties.txt)"));
 
-
-    public void setOnlyDefining(boolean onlyDefining) {
-        this.onlyDefining = onlyDefining;
-    }
-
-    private boolean onlyDefining;
-
-    private static final Set<OutputFormat> formats = Collections.singleton( new OutputFormat("spf", "Substance Property File(.spf)"));
     @Override
     public boolean supports(Parameters params) {
-        return "spf".equals(params.getFormat().getExtension());
+        return "properties.txt".equals(params.getFormat().getExtension());
     }
 
     @Override
@@ -41,7 +31,6 @@ public class SubstancePropertyExporterFactory implements ExporterFactory {
     @Override
     public Exporter createNewExporter(OutputStream out, Parameters params) throws IOException {
         SubstancePropertyExporter exporter = new SubstancePropertyExporter(out, params);
-        exporter.setOnlyDefining(this.onlyDefining);
         return exporter;
     }
 

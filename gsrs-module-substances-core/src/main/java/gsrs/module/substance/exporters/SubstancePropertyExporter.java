@@ -32,6 +32,9 @@ public class SubstancePropertyExporter implements Exporter<Substance> {
 
     public SubstancePropertyExporter(OutputStream outputStream, ExporterFactory.Parameters parameters) {
         this.out = new BufferedWriter(new OutputStreamWriter(outputStream));
+        if( parameters.detailedParameters().get("onlyDefining") != null && parameters.detailedParameters().get("onlyDefining").booleanValue()) {
+            setOnlyDefining(true);
+        }
         this.exportParameters = parameters;
     }
 
