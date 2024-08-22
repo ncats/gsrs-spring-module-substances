@@ -42,7 +42,6 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 	@Override
     public void validate(ControlledVocabulary newCV, ControlledVocabulary oldCV, ValidatorCallback callback) {
-		
 		List<FragmentVocabularyTerm> invalidUpdateTerms =newCV.getTerms().stream()
 				.filter(term-> term instanceof FragmentVocabularyTerm)
 				.map(term->(FragmentVocabularyTerm)term)
@@ -57,7 +56,41 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		}
 		
 		FragmentChanges changes = getAddedUpdatedDeletedTerms(newCV, oldCV);
-		
+
+		List<String> duplicateValues = new ArrayList<>();
+		List<String> duplicateDisplays = new ArrayList<>();
+		List<String> duplicateDescriptions = new ArrayList<>();
+		for(int i = 0; i < newCV.getTerms().size(); i++) {
+			for( int j = i+1; j < newCV.getTerms().size(); j++ ) {
+				if( newCV.getTerms().get(i).description != null
+				&& newCV.getTerms().get(j).description != null
+				&& newCV.getTerms().get(i).description.equalsIgnoreCase(newCV.getTerms().get(j).description)){
+					duplicateDescriptions.add(newCV.getTerms().get(i).description);
+				}
+				if(	newCV.getTerms().get(i).display != null
+						&& newCV.getTerms().get(j).display != null
+						&& newCV.getTerms().get(i).display.equalsIgnoreCase(newCV.getTerms().get(j).display)){
+					duplicateDisplays.add(newCV.getTerms().get(i).display);
+				}
+				if( newCV.getTerms().get(i).value != null
+					&& newCV.getTerms().get(j).value != null
+					&& newCV.getTerms().get(i).value.equalsIgnoreCase(newCV.getTerms().get(j).value)){
+					duplicateValues.add(newCV.getTerms().get(i).value);
+				}
+			}
+		}
+		if( !duplicateDescriptions.isEmpty() ){
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("These descriptions occur in more than one term: "
+			+ String.join("; ", duplicateDescriptions)));
+		}
+		if( !duplicateDisplays.isEmpty() ){
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("These displays occur in more than one term: "
+					+ String.join("; ", duplicateDisplays)));
+		}
+		if( !duplicateValues.isEmpty() ){
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("These values occur in more than one term: "
+					+ String.join("; ", duplicateValues)));
+		}
 		Map<String, List<String>> hashLookup = newCV.getTerms().stream()
 		.filter(term-> term instanceof FragmentVocabularyTerm)
 		.map(key->(FragmentVocabularyTerm)key)
