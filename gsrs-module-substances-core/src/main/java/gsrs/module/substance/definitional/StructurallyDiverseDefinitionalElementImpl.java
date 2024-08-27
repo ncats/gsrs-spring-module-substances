@@ -149,6 +149,20 @@ public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalE
 
             }
 
+            if(substance.structurallyDiverse.infraSpecificType != null && substance.structurallyDiverse.infraSpecificType.length() > 0) {
+                DefinitionalElement infraspecificTypeElement = DefinitionalElement.of("structurallyDiverse.infraSpecificType",
+                        substance.structurallyDiverse.infraSpecificType.toUpperCase(), 1);
+                log.trace("adding infraspecificType");
+                consumer.accept(infraspecificTypeElement);
+            }
+
+            if(substance.structurallyDiverse.infraSpecificName != null && substance.structurallyDiverse.infraSpecificName.length() > 0) {
+                DefinitionalElement infraspecificNameElement = DefinitionalElement.of("structurallyDiverse.infraSpecificName",
+                    substance.structurallyDiverse.infraSpecificName.toUpperCase(), 1);
+                log.trace("adding infraspecificName");
+                consumer.accept(infraspecificNameElement);
+            }
+
             if( substance.properties != null ) {
                 for(Property property : substance.properties) {
                     if(property.isDefining() && property.getValue() != null) {
