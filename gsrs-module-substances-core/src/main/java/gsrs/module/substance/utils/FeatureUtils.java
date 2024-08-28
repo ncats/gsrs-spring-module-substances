@@ -19,7 +19,15 @@ public class FeatureUtils {
             if( response.isPresent()){
                 FeatureResponse r = response.get();
                 Map<String, String> ret = new HashMap<>();
-                r.getFeatureSet().entrySet().forEach(e-> ret.put(e.getKey(), e.getValue()));
+                r.getFeatureSet().entrySet()
+			         .stream()
+			//TODO make configurable, but for now just remove YES/NO features and 0-score features
+			//************************************************
+			         .filter(e-> !(""+e.getValue()).equals("0"))
+			         .filter(e-> !(""+e.getValue()).equals("NO"))
+			         .filter(e-> !(""+e.getValue()).equals("YES"))
+			//************************************************
+			         .forEach(e-> ret.put(e.getKey(), e.getValue()));
                 ret.put("potencyCategory", Integer.toString( r.getCategoryScore()));
                 ret.put("potencyScore", Integer.toString(r.getSumOfScores()));
 	            if(r.getCategoryScore()==5){
