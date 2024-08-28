@@ -28,10 +28,10 @@ public class FeatureUtils {
 			         .filter(e-> !(""+e.getValue()).equals("YES"))
 			//************************************************
 			         .forEach(e-> ret.put(e.getKey(), e.getValue()));
-                ret.put("potencyCategory", Integer.toString( r.getCategoryScore()));
-                ret.put("potencyScore", Integer.toString(r.getSumOfScores()));
+                ret.put("Potency Category", Integer.toString( r.getCategoryScore()));
+                ret.put("Potency Score", Integer.toString(r.getSumOfScores()));
 	            if(r.getCategoryScore()==5){
- 		            ret.put("potencyScore", "none");
+ 		            ret.put("Potency Score", "none");
 	            }
                 ret.put("type", r.getType());
                 maps.add(ret);
