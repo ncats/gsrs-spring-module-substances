@@ -20,8 +20,11 @@ public class FeatureUtils {
                 FeatureResponse r = response.get();
                 Map<String, String> ret = new HashMap<>();
                 r.getFeatureSet().entrySet().forEach(e-> ret.put(e.getKey(), e.getValue()));
-                ret.put("categoryScore", Integer.toString( r.getCategoryScore()));
-                ret.put("sumOfScores", Integer.toString(r.getSumOfScores()));
+                ret.put("potencyCategory", Integer.toString( r.getCategoryScore()));
+                ret.put("potencyScore", Integer.toString(r.getSumOfScores()));
+	            if(r.getCategoryScore()==5){
+ 		            ret.put("potencyScore", "none");
+	            }
                 ret.put("type", r.getType());
                 maps.add(ret);
             }
