@@ -4,6 +4,7 @@ package gsrs.module.substance.controllers;
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.security.AdminService;
 import ix.ginas.models.v1.Substance;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.TransactionTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -64,7 +65,7 @@ public class SubstanceEasyLegacyBulkLoadController {
 //    private  Authentication auth;
 
     SubstanceEasyLegacyBulkLoadController(
-        // AdminService adminService
+    // AdminService adminService
     ){
         this.adminService = adminService;
         // Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -95,8 +96,9 @@ public class SubstanceEasyLegacyBulkLoadController {
 //                may be related to PrincipalServiceImpl and transaction syncronization ?
 
 
-                List<Future> tasks = new ArrayList<>();
-           //      ExecutorService executorService = Executors.newFixedThreadPool(parallelism);
+//                List<Future> tasks = new ArrayList<>();
+                List tasks = Collections.synchronizedList(new ArrayList());
+                //      ExecutorService executorService = Executors.newFixedThreadPool(parallelism);
 
 
 
@@ -107,27 +109,28 @@ public class SubstanceEasyLegacyBulkLoadController {
 
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(f.getAbsolutePath()))))) {
                     reader.lines().forEach(l -> {
-                        final Authentication auth = adminService.getCurrentAdminAuth();
+                        final Authentication auth = adminService.getAnyAdmin();
 
                         Future task = executorService.submit(() -> {
+
                             adminService.runAs(auth,
-                                (Runnable) ()->{
-                                    System.out.println("AUTH: "  + auth.toString());
-                                    _countrun.incrementAndGet();
+                            (Runnable) ()->{
+                                System.out.println("AUTH: "  + auth.toString());
+                                _countrun.incrementAndGet();
 
 
-                                    //  processItem(l, auth, transactionTemplate);
+                                //  processItem(l, auth, transactionTemplate);
 
-                                    long threadId = Thread.currentThread().getId();
-                                    System.out.println("Thread # " + threadId + " is doing this task");
-                                    String[] cols = l.split(SEP);
-                                    try {
-                                        transactionTemplate.executeWithoutResult(status -> {
-                                            _countpi.incrementAndGet();
-                                            try {
-                                                JsonNode json = MAPPER.readTree(cols[2]);
-                                                // Substance s =
-                                                substanceEntityService.createEntity(json, true); //.getCreatedEntity();
+                                long threadId = Thread.currentThread().getId();
+                                System.out.println("Thread # " + threadId + " is doing this task");
+                                String[] cols = l.split(SEP);
+                                try {
+                                    transactionTemplate.executeWithoutResult(status -> {
+                                        _countpi.incrementAndGet();
+                                        try {
+                                            JsonNode json = MAPPER.readTree(cols[2]);
+                                            // Substance s =
+                                            substanceEntityService.createEntity(json, true); //.getCreatedEntity();
 //                                                if (s != null) {
 //                                                    String uuid = s.uuid.toString();
 //                                                    uuid = (uuid == null) ? "UUID_NULL" : uuid;
@@ -135,23 +138,31 @@ public class SubstanceEasyLegacyBulkLoadController {
 //                                                } else {
 //                                                    System.out.println("Loaded: " + "SUBSTANCE_NULL");
 //                                                }
-                                            } catch (IOException e) {
-                                                System.out.println(e.getMessage());
-                                                status.setRollbackOnly();
-                                            }
-                                        });
-                                    } catch (Throwable t) {
-                                        long threadId2 = Thread.currentThread().getId();
-                                        System.out.println("THROWABLE -- " + "Thread # " + threadId  + " ... " + t.getMessage());
-                                    }
-                                    System.out.println("Auth Service");
-                                    System.out.println(auth.toString());
 
-                           });
+                                        } catch (IOException e) {
+                                            System.out.println(e.getMessage());
+                                            status.setRollbackOnly();
+                                        }
+                                    });
+                                } catch (Throwable t) {
+                                    long threadId2 = Thread.currentThread().getId();
+                                    System.out.println("THROWABLE -- " + "Thread # " + threadId  + " ... " + t.getMessage());
+                                }
+                                System.out.println("Auth Service");
+                                System.out.println(auth.toString());
+
+                            });
                         });
                         tasks.add(task);
                     });
 
+                    synchronized (tasks) {
+                        for (Future task: (List<Future>) tasks) {
+                            task.get();
+                        }
+                    }
+
+/*
                     for (Future task : tasks) {
                         try {
                             task.get();
@@ -161,11 +172,16 @@ public class SubstanceEasyLegacyBulkLoadController {
                             e.printStackTrace();
                         }
                     }
+*/
                     System.out.println("_countrun:" + _countrun);
                     System.out.println("_countpi:" + _countpi);
 
-               } catch (IOException e) {
+                } catch (IOException e) {
                     System.out.println("IO Exception during buffered read ...");
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
 
             }else{
