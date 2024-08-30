@@ -62,6 +62,15 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
                     log.debug("structure.opticalActivity.toString(): " + structure.opticalActivity.toString());
                 }
             }
+            //adding 'additional stereochemistry' as requested 30 August 2024
+            if(structure.atropisomerism!= null
+                    && "YES".equalsIgnoreCase(structure.atropisomerism.toString())
+                    && structure.stereoComments!=null
+                    && structure.stereoComments.trim().length()>0){
+                log.trace("additional/stereoComments stereochemistry to def hash for structure");
+                consumer.accept(DefinitionalElement.of("structure.properties.stereoComments",
+                        structure.stereoComments, 2));
+            }
         }
       
         if( chemicalSubstance.moieties != null) {
@@ -81,6 +90,14 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
                     consumer.accept(DefinitionalElement.of("moiety[" + mh + "].opticalActivity",
                             m.structure.opticalActivity.toString(), 2));
                     log.debug("m.structure.opticalActivity.toString(): " + m.structure.opticalActivity.toString());
+                }
+                //adding 'additional stereochemistry' as requested 30 August 2024
+                if(m.structure.atropisomerism!= null
+                        && "YES".equalsIgnoreCase(m.structure.atropisomerism.toString())
+                        && m.structure.stereoComments.trim().length()>0){
+                    log.trace("additional/stereoComments stereochemistry to def hash for moiety structure");
+                    consumer.accept(DefinitionalElement.of("moiety[" + mh + "].properties.stereoComments",
+                            m.structure.stereoComments, 2));
                 }
                 consumer.accept(DefinitionalElement.of("moiety[" + mh + "].countAmount",
                         m.getCountAmount().toString(), 2));
