@@ -97,10 +97,10 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                 //for now just null/blank need to confer with stakeholders if amino acid validation is needed or not
                 if (su.sequence == null || su.sequence.trim().isEmpty()) {
                     if (Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
-                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("subunit at position %s is blank. This is allowed but discouraged for incomplete protein records.", (i + 1)));
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Subunit at position %s is blank. This is allowed but discouraged for incomplete protein records.", (i + 1)));
                     }
                     else {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("subunit at position %s is blank", (i + 1)));
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Subunit at position %s is blank", (i + 1)));
                     }
                 }
             }
@@ -398,8 +398,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
         } catch (Exception e) {
             log.error("Problem executing duplicate search function", e);
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Error performing seqeunce search on protein:"
-                            + e.getMessage()));
+                    .ERROR_MESSAGE("Error performing seqeunce search on protein:%s",
+                            e.getMessage()));
         }
     }
 

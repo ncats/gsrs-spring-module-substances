@@ -101,7 +101,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     if (mentioned != null) {
                         if (!contained.containsAll(mentioned)) {
                             callback.addMessage(GinasProcessingMessage
-                                    .ERROR_MESSAGE("Mentioned attachment points '%s' in unit '%s' are not all found in actual connecitons '%s'. ",
+                                    .ERROR_MESSAGE("Mentioned attachment points '%s' in unit '%s' are not all found in actual connecitons '%s'.",
                                             mentioned.toString(), u.label, contained.toString()));
                         }
                     }
@@ -121,7 +121,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     Set<String> leftovers = new HashSet<String>(rgroupMentions);
                     leftovers.removeAll(rgroupsWithMappings);
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Mentioned attachment point(s) '%s' cannot be found ",
+                            .ERROR_MESSAGE("Mentioned attachment point(s) '%s' cannot be found",
                                     leftovers.toString()));
                 }
 

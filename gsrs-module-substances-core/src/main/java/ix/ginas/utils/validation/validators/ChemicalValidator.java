@@ -124,7 +124,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                 //not a mol convert it
                 //struc is already standardized
                 callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(
-                        "structure should always be specified as mol file converting to format to mol automatically").appliableChange(true),
+                        "Structure should always be specified as mol file converting to format to mol automatically").appliableChange(true),
                         () -> {
                     try {
                         cs.setStructure(cs.getStructure().copy());

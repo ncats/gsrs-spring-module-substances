@@ -62,10 +62,7 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
                 }
 
                 if (!parsed) {
-                	messages.add(GinasProcessingMessage.WARNING_MESSAGE("Unknown property \""
-                            +property+"\" while parsing "
-                            +bean+"; skipping it.."));
-                	
+                    messages.add(GinasProcessingMessage.WARNING_MESSAGE("Unknown property \"%s\" while parsing %s; skipping it..", property, bean));
                     log.debug("Unknown property \""
                                 +property+"\" while parsing "
                                 +bean+"; skipping it..");
@@ -74,7 +71,7 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
                 }
             }
             catch (Exception ex) {
-            	messages.add(GinasProcessingMessage.ERROR_MESSAGE("Error parsing substance JSON:" + ex.getMessage()));
+            	messages.add(GinasProcessingMessage.ERROR_MESSAGE("Error parsing substance JSON:%s", ex.getMessage()));
                 ex.printStackTrace();
             }
             return true;
