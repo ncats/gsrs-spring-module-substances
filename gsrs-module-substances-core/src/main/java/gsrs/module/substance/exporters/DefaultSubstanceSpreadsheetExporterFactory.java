@@ -166,9 +166,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     			.replaceColumnName(DefaultColumns.USDA_PLANTS.name(),"PLANTS"),params.getScrubber()
     			));
 
-        defaultRecipeMap.put(DefaultColumns.POWO, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.POWO, "POWO")
-        .replaceColumnName(DefaultColumns.POWO.name(),"POWO"),params.getScrubber()
-        ));
+        defaultRecipeMap.put(DefaultColumns.POWO, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.POWO, "POWO"),params.getScrubber()));
 
 
     	defaultRecipeMap.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN"),params.getScrubber()));
