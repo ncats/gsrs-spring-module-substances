@@ -133,9 +133,12 @@ public class ChemicalUtils {
         log.warn("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
         saltData = new HashMap<>();
         try {
+            log.trace("configured salt file {}", structureHandlingConfiguration.getSaltFilePath());
             File file = new File(structureHandlingConfiguration.getSaltFilePath());
+            log.trace("looking for salt file {}", file.getAbsolutePath());
             Assert.assertTrue("input salt data file must exist!", file.exists());
             List<String> lines = Files.readAllLines(file.toPath());
+            log.trace("read {} lines", lines.size());
             for (String line : lines) {
                 String[] lineParts = line.split("\\t");
                 saltData.put(lineParts[0], lineParts[1]);
