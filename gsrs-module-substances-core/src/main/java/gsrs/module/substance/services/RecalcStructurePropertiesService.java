@@ -36,4 +36,8 @@ public class RecalcStructurePropertiesService {
         structureRepository.save(s);
         valueRepository.deleteAll(toDelete);
     }
+
+    public void recalcStructurePropertiesWithoutSaving(Structure s) {
+        Structure newStructure = structureProcessor.instrument(s.molfile);
+    }
 }

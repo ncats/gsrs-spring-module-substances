@@ -69,7 +69,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
     Substance findByModifications_Uuid(UUID uuid);
-    
+
 
     @Query("select s from Substance s JOIN s.relationships r where r.uuid = ?1")
     Substance findByRelationships_Uuid(UUID uuid);

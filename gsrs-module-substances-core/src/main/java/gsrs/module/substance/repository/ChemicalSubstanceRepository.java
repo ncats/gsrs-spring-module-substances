@@ -19,4 +19,7 @@ public interface ChemicalSubstanceRepository extends GsrsVersionedRepository<Che
     ChemicalSubstance findByStructure_Id(UUID structureId);
     List<ChemicalSubstance> findByStructure_PropertiesIn(List<Keyword> keywords);
     List<ChemicalSubstance> findByMoieties_Structure_PropertiesIn(List<Keyword> keywords);
+
+    @Query("select s.uuid from Substance s")
+    List<UUID> getAllIds();
 }
