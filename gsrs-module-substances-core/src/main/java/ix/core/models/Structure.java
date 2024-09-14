@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
+import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
 import gov.nih.ncats.molwitch.io.CtTableCleaner;
@@ -456,6 +457,27 @@ public class Structure extends BaseModel {
     	}
     }
 
+
+    @JsonProperty("_inchiKeySet")
+    @Transient
+    public String getInChIKeySet() {
+        try{
+            if(this.stereoChemistry.equals(Stereo.RACEMIC) && this.opticalActivity.equals(Optical.PLUS_MINUS)) {
+                ?>?????
+            }
+            for (Value val : this.properties) {
+                if(val==null) continue;
+                if (Structure.H_InChI_Key.equals(val.label)) {
+                    return Objects.toString(val.getValue()).replaceAll("_", "-");
+                }
+            }
+            return getInChIKeyAndThrow();
+        }catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     @JsonIgnore
     @Transient
     public String getInChIKeyAndThrow() throws Exception{
@@ -566,4 +588,9 @@ public class Structure extends BaseModel {
         }
         return this.stereoChemistry.toString();
     }
+
+    private boolean hasAnyStereoBond() {
+        return !this.toChemical().bonds().allMatch(b->b.getStereo().equals(Bond.Stereo.NONE));
+    }
+
 }
