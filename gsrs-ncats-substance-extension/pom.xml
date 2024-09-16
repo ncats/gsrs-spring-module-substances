@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.1</version>
     </parent>
     <properties>
         <!--java.version>11</java.version-->
@@ -15,7 +15,7 @@
     <artifactId>gsrs-ncats-substance-extension</artifactId>
     <modelVersion>4.0.0</modelVersion>
     <build>
-        <!-- Uncomment this for maven public release deployment
+        <!-- Uncomment this for maven public release deployment start 
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -37,6 +37,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>
@@ -48,6 +49,7 @@
                 </executions>
             </plugin>
         </plugins> -->
+        <!-- Uncomment this for maven public release deployment end -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
