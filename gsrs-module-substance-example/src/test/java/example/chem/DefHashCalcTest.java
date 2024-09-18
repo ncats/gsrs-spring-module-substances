@@ -7,11 +7,15 @@ import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -85,4 +89,56 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
         definitionalElements.forEach(de-> System.out.printf("key: %s = %s\n", de.getKey(), de.getValue()));
         Assertions.assertTrue(definitionalElements.stream().anyMatch(de->de.getKey().equals(opticalActivityKey)));
     }
+
+
+    @Test
+    public void testStereoCommentsInDefinitionalHashCalcPos() throws Exception {
+        String additionalStereochemistryKey="structure.properties.stereoComments";
+        String dataFileName ="R0NL28355M.json";
+        File proteinFile = new ClassPathResource("testJSON/" + dataFileName).getFile();
+        ChemicalSubstanceBuilder builder = SubstanceBuilder.from(proteinFile);
+
+        ChemicalSubstance chem =builder.build();
+        System.out.printf("atropisomerism: %s\n", chem.getStructure().atropisomerism);
+        ChemicalSubstanceDefinitionalElementImpl defHashCalculator = new ChemicalSubstanceDefinitionalElementImpl();
+        List<DefinitionalElement> definitionalElements = new ArrayList<>();
+        defHashCalculator.computeDefinitionalElements(chem, definitionalElements::add);
+        definitionalElements.forEach(de-> System.out.printf("key: %s = %s\n", de.getKey(), de.getValue()));
+        Assertions.assertTrue(definitionalElements.stream().anyMatch(de->de.getKey().equals(additionalStereochemistryKey)));
+    }
+
+    @Test
+    public void testStereoCommentsInDefinitionalHashCalcNeg() throws Exception {
+        String additionalStereochemistryKey="structure.properties.stereoComments";
+        String dataFileName ="R0NL28355M.json";
+        File proteinFile = new ClassPathResource("testJSON/" + dataFileName).getFile();
+        ChemicalSubstanceBuilder builder = SubstanceBuilder.from(proteinFile);
+
+        ChemicalSubstance chem =builder.build();
+        chem.getStructure().atropisomerism= Structure.NYU.No;
+        System.out.printf("atropisomerism: %s\n", chem.getStructure().atropisomerism);
+        ChemicalSubstanceDefinitionalElementImpl defHashCalculator = new ChemicalSubstanceDefinitionalElementImpl();
+        List<DefinitionalElement> definitionalElements = new ArrayList<>();
+        defHashCalculator.computeDefinitionalElements(chem, definitionalElements::add);
+        definitionalElements.forEach(de-> System.out.printf("key: %s = %s\n", de.getKey(), de.getValue()));
+        Assertions.assertFalse(definitionalElements.stream().anyMatch(de->de.getKey().equals(additionalStereochemistryKey)));
+    }
+
+    @Test
+    public void testStereoCommentsInDefinitionalHashCalcNeg2() throws Exception {
+        String additionalStereochemistryKey="structure.properties.stereoComments";
+        String dataFileName ="R0NL28355M.json";
+        File proteinFile = new ClassPathResource("testJSON/" + dataFileName).getFile();
+        ChemicalSubstanceBuilder builder = SubstanceBuilder.from(proteinFile);
+
+        ChemicalSubstance chem =builder.build();
+        chem.getStructure().stereoComments = null;
+        ChemicalSubstanceDefinitionalElementImpl defHashCalculator = new ChemicalSubstanceDefinitionalElementImpl();
+        List<DefinitionalElement> definitionalElements = new ArrayList<>();
+        defHashCalculator.computeDefinitionalElements(chem, definitionalElements::add);
+        definitionalElements.forEach(de-> System.out.printf("key: %s = %s\n", de.getKey(), de.getValue()));
+        Assertions.assertFalse(definitionalElements.stream().anyMatch(de->de.getKey().equals(additionalStereochemistryKey)));
+    }
+
+
 }
