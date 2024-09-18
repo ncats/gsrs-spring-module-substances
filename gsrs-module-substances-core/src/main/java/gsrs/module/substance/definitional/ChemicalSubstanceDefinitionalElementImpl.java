@@ -18,7 +18,7 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
     @Autowired
     private StructureProcessor structureProcessor;
 
-    private List<String> stereoUsingOpticalActivities = Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC");
+    private List<String> stereoUsingOpticalActivities = Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC", "RACEMIC");
 
     @Override
     public boolean supports(Object s) {
