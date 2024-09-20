@@ -21,6 +21,7 @@ public enum DefaultColumns implements Column {
     ITIS,
     NCBI,
     USDA_PLANTS,
+    POWO,
     INN,
     USAN,
     EC,
