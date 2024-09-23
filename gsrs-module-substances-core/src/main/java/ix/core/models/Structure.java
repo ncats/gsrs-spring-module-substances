@@ -464,6 +464,7 @@ public class Structure extends BaseModel {
         try{
             if(this.stereoChemistry.equals(Stereo.RACEMIC) && this.opticalActivity.equals(Optical.PLUS_MINUS)) {
                 ?>?????
+                this.toChemical().getExtendedTetrahedrals()
             }
             for (Value val : this.properties) {
                 if(val==null) continue;
