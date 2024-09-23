@@ -65,28 +65,5 @@ public class SSG1DefinitionalElementImpl implements DefinitionalElementImplement
         }
 
         addPropertiesToDefHash(ssg1, consumer, log::debug);
-        if( ssg1.properties != null ) {
-            for(Property property : ssg1.properties) {
-                if(property.isDefining() && property.getValue() != null) {
-                    String defElementName = String.format("properties.%s.value",
-                            property.getName());
-                    DefinitionalElement propertyValueDefElement =
-                            DefinitionalElement.of(defElementName, property.getValue().toString(), 2);
-                    consumer.accept(propertyValueDefElement);
-                    log.debug("added def element for property " + defElementName);
-                    for(Parameter parameter : property.getParameters()) {
-                        defElementName = String.format("properties.%s.parameters.%s.value",
-                                property.getName(), parameter.getName());
-                        if( parameter.getValue() != null) {
-                            DefinitionalElement propertyParamValueDefElement =
-                                    DefinitionalElement.of(defElementName,
-                                            parameter.getValue().toString(), 2);
-                            consumer.accept(propertyParamValueDefElement);
-                            log.debug("added def element for property parameter " + defElementName);
-                        }
-                    }
-                }
-            }
-        }
     }
 }

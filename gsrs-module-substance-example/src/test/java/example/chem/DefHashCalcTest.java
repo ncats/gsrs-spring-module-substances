@@ -4,16 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.definitional.ChemicalSubstanceDefinitionalElementImpl;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.definitional.MixtureDefinitionalElementImpl;
+import gsrs.module.substance.definitional.StructurallyDiverseDefinitionalElementImpl;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.MixtureSubstanceBuilder;
+import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.MixtureSubstance;
+import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -109,6 +112,23 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
         definitionalElement.computeDefinitionalElements(mixtureSubstance, definitionalElements::add);
         definitionalElements.forEach(de-> log.trace("key: {} = {}", de.getKey(), de.getValue()));
         Assertions.assertTrue(definitionalElements.stream().anyMatch(de->de.getKey().equals(propertyElementName)));
+    }
+
+    @Test
+    public void testPropertiesInDefinitionalHashStrDiv() throws Exception {
+        String propertyElementNameDefining = "properties.DEGREE OF REACTION.value";
+        String propertyElementNameNotDefining = "properties.ABSORBING POWER.value";
+        File strDivSubFile = new ClassPathResource("testJSON/28927b6a-6b0d-4733-a1a4-b2b38a569daa_props.json").getFile();
+        StructurallyDiverseSubstanceBuilder builder = SubstanceBuilder.from(strDivSubFile);
+        StructurallyDiverseSubstance structurallyDiverseSubstance = builder.build();
+        StructurallyDiverseDefinitionalElementImpl definitionalElement = new StructurallyDiverseDefinitionalElementImpl();
+        AutowireHelper.getInstance().autowireAndProxy(definitionalElement);
+
+        List<DefinitionalElement> definitionalElements = new ArrayList<>();
+        definitionalElement.computeDefinitionalElements(structurallyDiverseSubstance, definitionalElements::add);
+        definitionalElements.forEach(de-> log.trace("key: {} = {}", de.getKey(), de.getValue()));
+        Assertions.assertEquals(1, definitionalElements.stream().filter(de->de.getKey().equals(propertyElementNameDefining)).count());
+        Assertions.assertEquals(0, definitionalElements.stream().filter(de->de.getKey().equals(propertyElementNameNotDefining)).count());
     }
 
 }
