@@ -72,5 +72,6 @@ public class MixtureDefinitionalElementImpl implements DefinitionalElementImplem
             definitionalElementFactory.addDefinitionalElementsFor(mixtureSubstance.modifications, consumer);
 
         }
+        addPropertiesToDefHash(mixtureSubstance, consumer, log::trace );
     }
 }

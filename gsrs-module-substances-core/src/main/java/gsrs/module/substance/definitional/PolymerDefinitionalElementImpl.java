@@ -105,6 +105,7 @@ public class PolymerDefinitionalElementImpl implements DefinitionalElementImplem
 
             }
 
+            addPropertiesToDefHash(polymerSubstance, consumer, log::debug);
             if (polymerSubstance.properties != null) {
                 for (Property property : polymerSubstance.properties) {
                     if (property.isDefining() && property.getValue() != null) {

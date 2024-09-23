@@ -64,6 +64,7 @@ public class SSG1DefinitionalElementImpl implements DefinitionalElementImplement
 
         }
 
+        addPropertiesToDefHash(ssg1, consumer, log::debug);
         if( ssg1.properties != null ) {
             for(Property property : ssg1.properties) {
                 if(property.isDefining() && property.getValue() != null) {

@@ -3,18 +3,28 @@ package example.chem;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.definitional.ChemicalSubstanceDefinitionalElementImpl;
 import gsrs.module.substance.definitional.DefinitionalElement;
+import gsrs.module.substance.definitional.MixtureDefinitionalElementImpl;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import ix.ginas.modelBuilders.MixtureSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.MixtureSubstance;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
@@ -85,4 +95,20 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
         definitionalElements.forEach(de-> System.out.printf("key: %s = %s\n", de.getKey(), de.getValue()));
         Assertions.assertTrue(definitionalElements.stream().anyMatch(de->de.getKey().equals(opticalActivityKey)));
     }
+
+    @Test
+    public void testPropertiesInDefinitionalHashMixtures() throws Exception {
+        String propertyElementName = "properties.HYDROPHILLIC-LIPOPHILLIC BALANCE (HLB).value";
+        File mixtureFile = new ClassPathResource("testJSON/SURFHOPe C-1811_mixture.json").getFile();
+        MixtureSubstanceBuilder builder = SubstanceBuilder.from(mixtureFile);
+        MixtureSubstance mixtureSubstance = builder.build();
+        MixtureDefinitionalElementImpl definitionalElement = new MixtureDefinitionalElementImpl();
+        AutowireHelper.getInstance().autowireAndProxy(definitionalElement);
+
+        List<DefinitionalElement> definitionalElements = new ArrayList<>();
+        definitionalElement.computeDefinitionalElements(mixtureSubstance, definitionalElements::add);
+        definitionalElements.forEach(de-> log.trace("key: {} = {}", de.getKey(), de.getValue()));
+        Assertions.assertTrue(definitionalElements.stream().anyMatch(de->de.getKey().equals(propertyElementName)));
+    }
+
 }
