@@ -27,6 +27,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import javax.persistence.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 //@MappedSuperclass
 @Entity
@@ -458,12 +459,11 @@ public class Structure extends BaseModel {
     }
 
 
-    @JsonProperty("_inchiKeySet")
+    /*@JsonProperty("_inchiKeySet")
     @Transient
     public String getInChIKeySet() {
         try{
             if(this.stereoChemistry.equals(Stereo.RACEMIC) && this.opticalActivity.equals(Optical.PLUS_MINUS)) {
-                ?>?????
                 this.toChemical().getExtendedTetrahedrals()
             }
             for (Value val : this.properties) {
@@ -477,7 +477,7 @@ public class Structure extends BaseModel {
             e.printStackTrace();
             return null;
         }
-    }
+    }*/
 
     @JsonIgnore
     @Transient
@@ -486,6 +486,35 @@ public class Structure extends BaseModel {
 
     }
 
+    @JsonProperty("_inchiKeySet")
+    @Transient
+    public List<String> getInChIKeysAndThrow() {
+
+        log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}", this.stereoChemistry);
+        try {
+
+        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString()))) {
+            //handle non-epimers
+            return Collections.singletonList(getInChIKey());
+        }
+        List<Chemical> epimers = toChemical().getImpl().permuteEpimers();
+        return epimers.stream()
+                .map(c -> {
+                    try {
+                        return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(c), true).getKey();
+                    } catch (IOException e) {
+                        log.warn("Error calculating InChIKey", e);
+                        return null;
+                    }
+                }).filter(i -> i != null)
+                //.collect(Collectors.joining("\\n"));
+                .collect(Collectors.toList());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return Collections.singletonList("[Error]");
+        }
+    }
 
     @JsonIgnore
     @Transient
