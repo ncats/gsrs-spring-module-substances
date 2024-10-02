@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.1.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -20,7 +20,7 @@
                     <target>8</target>
                 </configuration>
             </plugin>
-            <!-- Uncomment this for maven public release deployment
+            <!-- Uncomment this for maven public release deployment start
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
@@ -37,7 +37,7 @@
              <plugin>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok-maven-plugin</artifactId>
-                <version>1.18.0.0</version>
+                <version>1.18.20.0</version>
                 <configuration>
                     <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
                     <outputDirectory>${project.build.directory}/delombok</outputDirectory>
@@ -60,6 +60,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>
@@ -70,6 +71,7 @@
                     </execution>
                 </executions>
             </plugin> -->
+            <!-- Uncomment this for maven public release deployment end-->
         </plugins>
     </build>
 
@@ -316,7 +318,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-dto</artifactId>
-            <version>3.1.1-SNAPSHOT</version>
+            <version>${gsrs.substance.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
