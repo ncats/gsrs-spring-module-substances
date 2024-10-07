@@ -2026,4 +2026,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
         topLevelNode.put("featureList", allFeatures);
     }
+
+    private boolean isFeatureMapSuitableForInclusion(Map<String, String> map) {
+        if(map.containsKey("type") && map.get("type"))
+    }
 }
