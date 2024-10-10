@@ -6,6 +6,7 @@ import ix.core.models.Keyword;
 import ix.ginas.models.v1.Parameter;
 import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -163,28 +164,6 @@ public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalE
                 consumer.accept(infraspecificNameElement);
             }
 
-            if( substance.properties != null ) {
-                for(Property property : substance.properties) {
-                    if(property.isDefining() && property.getValue() != null) {
-                        String defElementName = String.format("properties.%s.value",
-                                property.getName());
-                        DefinitionalElement propertyValueDefElement =
-                                DefinitionalElement.of(defElementName, property.getValue().toString(), 2);
-                        consumer.accept(propertyValueDefElement);
-                        log.trace("added def element for property " + defElementName);
-                        for(Parameter parameter : property.getParameters()) {
-                            defElementName = String.format("properties.%s.parameters.%s.value",
-                                    property.getName(), parameter.getName());
-                            if( parameter.getValue() != null) {
-                                DefinitionalElement propertyParamValueDefElement =
-                                        DefinitionalElement.of(defElementName,
-                                                parameter.getValue().toString(), 2);
-                                consumer.accept(propertyParamValueDefElement);
-                                log.trace("added def element for property parameter " + defElementName);
-                            }
-                        }
-                    }
-                }
-            }
+            addPropertiesToDefHash(substance, consumer, log::trace );
     }
 }
