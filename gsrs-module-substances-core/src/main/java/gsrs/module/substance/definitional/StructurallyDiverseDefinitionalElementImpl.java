@@ -32,6 +32,7 @@ public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalE
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
+        DefinitionalElementImplementation.super.computeDefinitionalElements(s, consumer);
             StructurallyDiverseSubstance substance = (StructurallyDiverseSubstance) s;
 
 		/*
@@ -163,7 +164,5 @@ public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalE
                 log.trace("adding infraspecificName");
                 consumer.accept(infraspecificNameElement);
             }
-
-            addPropertiesToDefHash(substance, consumer, log::trace );
     }
 }

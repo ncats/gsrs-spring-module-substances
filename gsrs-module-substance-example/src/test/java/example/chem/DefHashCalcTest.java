@@ -13,10 +13,7 @@ import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.MixtureSubstanceBuilder;
 import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.MixtureSubstance;
-import ix.ginas.models.v1.StructurallyDiverseSubstance;
+import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -25,6 +22,7 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Slf4j
@@ -131,4 +129,90 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertEquals(0, definitionalElements.stream().filter(de->de.getKey().equals(propertyElementNameNotDefining)).count());
     }
 
+    @Test
+    public void testTwoChemicalsNoDefPropertiesEqual() throws Exception {
+        String opticalActivityKey="structure.properties.opticalActivity";
+        String structureJson = "{\n" +
+                "    \"opticalActivity\": \"UNSPECIFIED\",\n" +
+                "    \"molfile\": \"\\n  ACCLDraw07282209012D\\n\\n  5  4  0  0  0  0  0  0  0  0999 V2000\\n   10.5000   -8.5938    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   11.5229   -8.0032    0.0000 C   0  0  3  0  0  0  0  0  0  0  0  0\\n   11.5229   -6.8217    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0\\n   12.5460   -8.5939    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   13.5692   -8.0032    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  2  4  1  0  0  0  0\\n  4  5  1  0  0  0  0\\nM  END\",\n" +
+                "    \"stereoCenters\": 1,\n" +
+                "    \"definedStereo\": 0,\n" +
+                "    \"ezCenters\": 0,\n" +
+                "    \"charge\": 0,\n" +
+                "    \"mwt\": 92.56726,\n" +
+                "    \"count\": 1,\n" +
+                "    \"stereochemistry\": \"RACEMIC\"\n" +
+                "}\n" +
+                "";
+        ObjectMapper om = new ObjectMapper();
+        Structure rawStructure = om.readValue(structureJson, Structure.class);
+        Structure instrumentedStructure =structureProcessor.instrument(rawStructure.toChemical(), true);
+        GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(instrumentedStructure);
+
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chem =builder
+                .setStructure(ginasChemicalStructure)
+                .addName("2-chlorobutane")
+                .build();
+        ChemicalSubstanceDefinitionalElementImpl defHashCalculator = new ChemicalSubstanceDefinitionalElementImpl();
+        List<DefinitionalElement> definitionalElements = new ArrayList<>();
+        defHashCalculator.computeDefinitionalElements(chem, definitionalElements::add);
+
+        ChemicalSubstance chem2 = builder
+                .setStructure(ginasChemicalStructure)
+                .addName("2-chlorobutane")
+                .build();
+        List<DefinitionalElement> definitionalElements2 = new ArrayList<>();
+        defHashCalculator.computeDefinitionalElements(chem2, definitionalElements2::add);
+        Assertions.assertArrayEquals(definitionalElements.toArray(), definitionalElements2.toArray());
+    }
+
+    @Test
+    public void testTwoChemicalsDefPropertiesNotEqual() throws Exception {
+        String opticalActivityKey="structure.properties.opticalActivity";
+        String structureJson = "{\n" +
+                "    \"opticalActivity\": \"UNSPECIFIED\",\n" +
+                "    \"molfile\": \"\\n  ACCLDraw07282209012D\\n\\n  5  4  0  0  0  0  0  0  0  0999 V2000\\n   10.5000   -8.5938    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   11.5229   -8.0032    0.0000 C   0  0  3  0  0  0  0  0  0  0  0  0\\n   11.5229   -6.8217    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0\\n   12.5460   -8.5939    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   13.5692   -8.0032    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  2  4  1  0  0  0  0\\n  4  5  1  0  0  0  0\\nM  END\",\n" +
+                "    \"stereoCenters\": 1,\n" +
+                "    \"definedStereo\": 0,\n" +
+                "    \"ezCenters\": 0,\n" +
+                "    \"charge\": 0,\n" +
+                "    \"mwt\": 92.56726,\n" +
+                "    \"count\": 1,\n" +
+                "    \"stereochemistry\": \"RACEMIC\"\n" +
+                "}\n" +
+                "";
+        ObjectMapper om = new ObjectMapper();
+        Structure rawStructure = om.readValue(structureJson, Structure.class);
+        Structure instrumentedStructure =structureProcessor.instrument(rawStructure.toChemical(), true);
+        GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(instrumentedStructure);
+
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chem =builder
+                .setStructure(ginasChemicalStructure)
+                .addName("2-chlorobutane")
+                .build();
+        ChemicalSubstanceDefinitionalElementImpl defHashCalculator = new ChemicalSubstanceDefinitionalElementImpl();
+        List<DefinitionalElement> definitionalElements = new ArrayList<>();
+        defHashCalculator.computeDefinitionalElements(chem, definitionalElements::add);
+
+        ChemicalSubstance chem2 = builder
+                .setStructure(ginasChemicalStructure)
+                .addName("2-chlorobutane")
+                .build();
+        Property definingBoilingPoint = new Property();
+        definingBoilingPoint.setName("Boiling Point");
+        definingBoilingPoint.setType("Physical");
+        Amount bpAmout = new Amount();
+        bpAmout.average = 70d;
+        bpAmout.units = "degrees C";
+
+        definingBoilingPoint.setValue(bpAmout);
+        definingBoilingPoint.setDefining(true);
+        chem2.properties.add(definingBoilingPoint);
+
+        List<DefinitionalElement> definitionalElements2 = new ArrayList<>();
+        defHashCalculator.computeDefinitionalElements(chem2, definitionalElements::add);
+        Assertions.assertFalse(Arrays.equals(definitionalElements.toArray(), definitionalElements2.toArray()));
+    }
 }

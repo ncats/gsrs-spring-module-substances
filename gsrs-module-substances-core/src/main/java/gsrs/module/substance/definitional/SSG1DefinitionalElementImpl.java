@@ -27,6 +27,7 @@ public class SSG1DefinitionalElementImpl implements DefinitionalElementImplement
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
+        DefinitionalElementImplementation.super.computeDefinitionalElements(s, consumer);
         SpecifiedSubstanceGroup1Substance ssg1 = (SpecifiedSubstanceGroup1Substance) s;
 
         if(ssg1.specifiedSubstance.constituents != null) {
@@ -63,7 +64,5 @@ public class SSG1DefinitionalElementImpl implements DefinitionalElementImplement
             definitionalElementFactory.addDefinitionalElementsFor(ssg1.modifications, consumer);
 
         }
-
-        addPropertiesToDefHash(ssg1, consumer, log::debug);
     }
 }

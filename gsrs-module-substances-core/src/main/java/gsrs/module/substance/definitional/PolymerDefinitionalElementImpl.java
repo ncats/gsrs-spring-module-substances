@@ -36,6 +36,7 @@ public class PolymerDefinitionalElementImpl implements DefinitionalElementImplem
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
+        DefinitionalElementImplementation.super.computeDefinitionalElements(s, consumer);
         PolymerSubstance polymerSubstance = (PolymerSubstance)s;
 
         Polymer polymer = polymerSubstance.polymer;
@@ -105,7 +106,6 @@ public class PolymerDefinitionalElementImpl implements DefinitionalElementImplem
 
             }
 
-            addPropertiesToDefHash(polymerSubstance, consumer, log::debug);
         }
     }
 }
