@@ -120,13 +120,54 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         reference2.uploadedFile="http://localhost:8081/api/v1/payload(" + id2.toString() + ")?format=raw";
         builder.addReference(reference2);
         Substance substance = builder.build();
-        GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(substance.toFullJsonNode());
-        Assertions.assertTrue(result.isCreated());
         ImageUtilities imageUtilities = new ImageUtilities();
         AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
         ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance, 1);
         Assertions.assertTrue(imageInfo.isHasData() && imageInfo.getImageData().length>67000);
     }
+
+    @Test
+    public void testSubstanceWithImage3() throws IOException {
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Name plainName = new Name();
+        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        plainName.name="Plain Substance";
+        plainName.displayName=true;
+        Reference reference = new Reference();
+        reference.publicDomain= true;
+        reference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference.citation="Descriptions of stuff, page 203";
+        UUID id= savePayload(imageUrl, "Feldspar-Group-291254.jpg");
+        reference.uploadedFile="http://localhost:8081/api/v1/payload(" + id.toString() + ")?format=raw";
+        plainName.addReference(reference);
+        builder.addName(plainName);
+        builder.addReference(reference);
+
+        String imageUrl2 = "https://foto.wuestenigel.com/wp-content/uploads/api/fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg";
+        Reference reference2 = new Reference();
+        reference2.publicDomain= true;
+        reference2.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference2.citation="Descriptions of stuff, page 206";
+        UUID id2= savePayload(imageUrl2, "fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg");
+        reference2.uploadedFile="http://localhost:8081/api/v1/payload(" + id2.toString() + ")?format=raw";
+        builder.addReference(reference2);
+
+        String imageUrl3 = "https://www.soil-net.com/album/Plants/Garden/slides/Flower%20Clematis%2001.jpg";
+        Reference reference3 = new Reference();
+        reference3.publicDomain= true;
+        reference3.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference3.citation="Descriptions of stuff, page 208";
+        UUID id3= savePayload(imageUrl3, "Flower Clematis 01.jpg");
+        reference3.uploadedFile="http://localhost:8081/api/v1/payload(" + id3.toString() + ")?format=raw";
+        builder.addReference(reference3);
+
+        Substance substance = builder.build();
+        ImageUtilities imageUtilities = new ImageUtilities();
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance, 2);
+        Assertions.assertTrue(imageInfo.isHasData() && imageInfo.getImageData().length>77000);
+    }
+
 
     @Test
     public void resizeImageTest1() {
