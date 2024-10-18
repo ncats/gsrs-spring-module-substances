@@ -18,10 +18,13 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,32 +50,34 @@ public class ImageUtilities {
     Look for a reference with the indicated tag and an uploaded file URL.
     Read the data from the URL and return it
      */
-    public ImageInfo getSubstanceImage(Substance substance){
+    public ImageInfo getSubstanceImage(Substance substance, Integer imageNumber){
         log.trace("starting in getSubstanceImage");
-        for (Reference ref : substance.references) {
-            if(isImageReference(ref)) {
-                log.trace("reference found with image tag.  uploadedFile: {}", ref.uploadedFile);
-                String payloadId = getPayloadIdFromUrl(ref.uploadedFile);
-                if( payloadId ==null || payloadId.length()==0) {
-                    log.warn("found null/empty payload id from {}", ref.uploadedFile);
-                    continue;
-                }
-                Optional<Payload> payload= payloadRepository.findById(UUID.fromString( payloadId));
-                if(!payload.isPresent()) {
-                    log.warn("found null/empty payload from {}", payloadId);
-                    continue;
-                }
-                Optional<byte[]> fileData;
-                try {
-                    fileData = getBytesFromPayloadId(UUID.fromString(payloadId), Math.toIntExact(payload.get().size));
-                    if(fileData.isPresent()) {
-                        log.trace("going to call getMimeTypeFromUrl with ref.uploadedFile: {}", ref.uploadedFile);
-                        return new ImageInfo(true, fileData.get(), payload.get().mimeType);
+        List<ImageInfo> images =
+        substance.references.stream()
+                .filter(r->isImageReference(r))
+                .map(r->getPayloadIdFromUrl(r.uploadedFile))
+                .filter(p->p != null && p.length() >0)
+                .map(id->payloadRepository.findById(UUID.fromString(id)))
+                .filter(Optional::isPresent)
+                .map( p->p.get())
+                .map(p->{
+                    try {
+                        Optional<byte[]> fileData = getBytesFromPayloadId(p.id, Math.toIntExact(p.size));
+                        return new ImageInfo(true, fileData.get(), p.mimeType);
+                    } catch (IOException e) {
+                        log.error("Error retrieving payload/image: {}", e.getMessage());
+                        throw new RuntimeException(e);
                     }
-                } catch (IOException e) {
-                    log.error("Error reading image data from {}", ref.uploadedFile);
-                    throw new RuntimeException(e);
-                }
+                })
+                .collect(Collectors.toList());
+
+        if( !images.isEmpty() ) {
+            if( images.size()==1 || imageNumber==0)  {
+                return images.get(0);
+            }
+            int numberToLookUp = imageNumber % images.size();
+            if( numberToLookUp> 0 && numberToLookUp< images.size()) {
+                return images.get(numberToLookUp);
             }
         }
         return new ImageInfo(false,null,null);

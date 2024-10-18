@@ -1301,6 +1301,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
+                         @RequestParam(value = "imageNumber", required = false, defaultValue = "0") Integer imageNumber,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
 
         int[] amaps = null;
@@ -1314,8 +1315,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             if(s2r != null && s2r.substanceKey !=null &&
                     !(queryParameters.get("forceDefaultImage") !=null &&queryParameters.get("forceDefaultImage").equalsIgnoreCase("TRUE"))) {
-                log.trace("going to call getSpecificImageForSubstance");
-                ImageInfo imageInfo = getSpecificImageForSubstance(s2r.substanceKey);
+                log.trace("going to call getSpecificImageForSubstance. imageNumber: {}", imageNumber);
+                ImageInfo imageInfo = getSpecificImageForSubstance(s2r.substanceKey, imageNumber);
                 if (imageInfo.isHasData() && imageInfo.getImageData().length > 0) {
                     String formatToUse = format;
                     if (imageInfo.getFormat() != null && imageInfo.getFormat().trim().length() > 0) {
@@ -1505,12 +1506,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
-    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey){
+    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey, Integer imageNumber){
         Optional<Substance> substance = EntityFetcher.of(substanceKey).getIfPossible().map(o->(Substance)o);
         if(substance.isPresent()) {
             ImageUtilities imageUtilities = new ImageUtilities();
             imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
-            return imageUtilities.getSubstanceImage(substance.get());
+            return imageUtilities.getSubstanceImage(substance.get(), imageNumber);
         }
         return new ImageInfo(false, null, null);
     }
