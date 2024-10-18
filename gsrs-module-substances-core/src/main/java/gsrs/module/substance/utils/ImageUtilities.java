@@ -76,7 +76,7 @@ public class ImageUtilities {
                 return images.get(0);
             }
             int numberToLookUp = imageNumber % images.size();
-            if( numberToLookUp> 0 && numberToLookUp< images.size()) {
+            if( numberToLookUp >= 0 && numberToLookUp < images.size()) {
                 return images.get(numberToLookUp);
             }
         }

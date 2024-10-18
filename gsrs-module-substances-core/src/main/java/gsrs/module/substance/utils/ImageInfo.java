@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 @NoArgsConstructor
 public class ImageInfo {
 
-    private boolean hasData;
-    private byte[] imageData;
-    private String format;
+    private boolean hasData = false;
+    private byte[] imageData = null;
+    private String format = null;
 }

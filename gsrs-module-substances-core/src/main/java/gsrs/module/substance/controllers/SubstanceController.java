@@ -177,6 +177,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private ChemicalUtils chemicalUtils;
 
+    private int IMAGE_NUMBER_USE_DEFAULT= -1;
+
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
 
@@ -1316,7 +1318,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             if(s2r != null && s2r.substanceKey !=null &&
                     !(queryParameters.get("forceDefaultImage") !=null &&queryParameters.get("forceDefaultImage").equalsIgnoreCase("TRUE"))) {
                 log.trace("going to call getSpecificImageForSubstance. imageNumber: {}", imageNumber);
-                ImageInfo imageInfo = getSpecificImageForSubstance(s2r.substanceKey, imageNumber);
+                ImageInfo imageInfo = imageNumber == IMAGE_NUMBER_USE_DEFAULT ? new ImageInfo()
+                        : getSpecificImageForSubstance(s2r.substanceKey, imageNumber);
                 if (imageInfo.isHasData() && imageInfo.getImageData().length > 0) {
                     String formatToUse = format;
                     if (imageInfo.getFormat() != null && imageInfo.getFormat().trim().length() > 0) {
