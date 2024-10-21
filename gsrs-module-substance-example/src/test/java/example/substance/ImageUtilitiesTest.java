@@ -28,8 +28,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UncheckedIOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.util.UUID;
@@ -123,6 +121,8 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         ImageUtilities imageUtilities = new ImageUtilities();
         AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
         ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance, 1);
+        byte[] imageData = getImageData(imageUrl2);
+        Assertions.assertArrayEquals(imageData, imageInfo.getImageData());
         Assertions.assertTrue(imageInfo.isHasData() && imageInfo.getImageData().length>67000);
     }
 
@@ -165,7 +165,8 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         ImageUtilities imageUtilities = new ImageUtilities();
         AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
         ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance, 2);
-        Assertions.assertTrue(imageInfo.isHasData() && imageInfo.getImageData().length>77000);
+        byte[] imageData = getImageData(imageUrl3);
+        Assertions.assertArrayEquals(imageData, imageInfo.getImageData());
     }
 
 
@@ -285,9 +286,24 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
                 return payloadService.createPayload(resourceName, "ignore",
                         in, PayloadService.PayloadPersistType.TEMP);
             } catch (Exception e) {
+                System.err.println("error creating payload from URL: " + e.getMessage());
                 throw new RuntimeException(e);
             }
         });
         return payload.id;
     }
+
+    private byte[] getImageData(String imageUrl){
+        byte[] imageBytes = null;
+        try {
+            URL url = new URL(imageUrl);
+            InputStream in = url.openStream();
+            imageBytes=in.readAllBytes();
+        } catch (Exception e) {
+            System.err.println("error getting size from URL: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return imageBytes;
+    }
+
 }
