@@ -28,17 +28,18 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.module.substance.utils.FeatureUtils;
+import gsrs.module.substance.utils.ChemicalUtils;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
-import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.Environment;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -172,6 +173,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	
     @Autowired
     private PrincipalServiceImpl principalService;
+
+    @Autowired
+    private ChemicalUtils chemicalUtils;
 
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -355,7 +359,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private ApprovalService approvalService;
-
 
     @Override
     protected LegacyGsrsSearchService<Substance> getlegacyGsrsSearchService() {
@@ -740,10 +743,25 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
-        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX){
+        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+            || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
+            if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
+                log.trace("running a flex plus search - remove salts");
+
+                Structure copy = new GinasChemicalStructure();
+                copy.molfile = structure.molfile;
+                Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+                //make another Structure, without salt
+                Structure saltStripped = new Structure();
+                saltStripped.molfile = clean.toMol();
+                hash = makeFlexSearch(saltStripped);
+            } else {
+                hash= makeFlexSearch(structure);
+            }
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-            String sins=structure.getStereoInsensitiveHash();
-            hash= "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+
+            log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
+                    //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
 
         if(hash !=null){
@@ -964,6 +982,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         boolean isQuery="query".equalsIgnoreCase(mode);
 
+        boolean appendFeatures = queryParameters.containsKey("appendNNOFeatures") && queryParameters.get("appendNNOFeatures").equalsIgnoreCase("true");
 
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
@@ -1003,6 +1022,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 saveTempStructure(struc);
                 node.put("structure", mapper.valueToTree(struc));
                 node.put("moieties", an);
+                if( appendFeatures) {
+                    log.trace("going to append nitrosamine features");
+                    appendFeatureStuff(struc.toChemical(), node);
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -1018,6 +1041,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
             }
+
             return new ResponseEntity<>(node, HttpStatus.OK);
 
         } catch (Exception ex) {
@@ -1028,6 +1052,79 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
+    @PostGsrsRestApiMapping("/interpretFeatures")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Object> interpretStructureFeatures(@NotBlank @RequestBody String mol, @RequestParam Map<String, String> queryParameters){
+        String[] standardize = Optional.ofNullable(queryParameters.get("standardize"))
+                .orElse("NONE")
+                .split(",");
+        SimpleStandardizer simpStd=Arrays.stream(standardize)
+                .filter(s->!s.equals("NONE"))
+                .map(val->val.toUpperCase())
+                .map(val->StructureStandardizerPresets.value(val))
+                .filter(v->v.isPresent())
+                .map(v->v.get())
+                .map(std->std.getStandardizer())
+                .reduce(SimpleStandardizer::and).orElse(null);
+
+        String mode = Optional.ofNullable(queryParameters.get("mode"))
+                .orElse("basic");
+
+        boolean isQuery="query".equalsIgnoreCase(mode);
+
+
+        try {
+            String payload = ChemCleaner.getCleanMolfile(mol);
+            List<Structure> moieties = new ArrayList<>();
+            ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
+            ObjectNode node = mapper.createObjectNode();
+            try {
+                Structure struc = structureProcessor.taskFor(payload)
+                        .components(moieties)
+                        .standardize(false)
+                        .query(isQuery)
+                        .build()
+                        .instrument()
+                        .getStructure();
+                // don't standardize!
+                // we should be really use the PersistenceQueue to do this
+                // so that it doesn't block
+                // in fact, it probably shouldn't be saving this at all
+                if (payload.contains("\n") && payload.contains("M  END")) {
+                    struc.molfile = payload;
+                }
+
+                if(simpStd!=null) {
+                    struc.molfile=simpStd.standardize(struc.molfile);
+                }
+
+                ArrayNode an = mapper.createArrayNode();
+                for (Structure m : moieties) {
+                    saveTempStructure(m);
+                    ObjectNode on = mapper.valueToTree(m);
+                    Amount c1 = Moiety.intToAmount(m.count);
+                    JsonNode amt = mapper.valueToTree(c1);
+                    on.set("countAmount", amt);
+                    an.add(on);
+                }
+                //TODO: fill in calculation
+                //saveTempStructure(struc);
+                node.put("structure", mapper.valueToTree(struc));
+                node.put("moieties", an);
+                appendFeatureStuff(struc.toChemical(), node);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return new ResponseEntity<>(node, HttpStatus.OK);
+
+        } catch (Exception ex) {
+            log.error("Can't process payload", ex);
+            return new ResponseEntity<>("Can't process mol payload",
+                    this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.INTERNAL_SERVER_ERROR, queryParameters));
+        }
+
+    }
     public void saveTempStructure(Structure s) {
         if (s.id == null){
             s.id = UUID.randomUUID();
@@ -1036,10 +1133,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
-    @Transactional
+    @GetGsrsRestApiMapping(value={"({id})/@isApprovable", "/{id}/@isApprovable" })
+    public ResponseEntity isApprovableGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
+        Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
+
+        if(!substance.isPresent()){
+            return getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+        boolean approvable = approvalService.isApprovable(substance.get());
+        return new ResponseEntity<>(String.valueOf(approvable), HttpStatus.OK);
+    }
+
+    
     @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
     @hasApproverRole
-    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters) throws Exception {
+    public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters){
 
         Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
 
@@ -1047,31 +1155,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return getGsrsControllerConfiguration().handleNotFound(queryParameters);
         }
         String[] error = new String[1];
-        GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {
-            //The approval will throw an exception which we can propagate up
-            //the result has other fields but we don't need to use them right now since we return the whole substance
-            // but if we change the API to just have the approval specific update we have all that's needed in this result obj
-
-            try {
-                ApprovalService.ApprovalResult result = approvalService.approve(s);
-
-                return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
-            } catch (ApprovalService.ApprovalException e) {
-                error[0] = "error approving substance " + substance.get().getBestId() + ": " + e.getMessage();
-                return Optional.empty();
-            }
-        });
-
-        if(error[0] !=null){
-            return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
-        }
-        if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
-            return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
-        }
-        //katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
-        return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
+		try {
+			GsrsEntityService.UpdateResult<Substance> savedVersion = getEntityService().updateEntity(substance.get(), (s) -> {return approvalTransactions(s,error);});
+			if(error[0] !=null){
+				return getGsrsControllerConfiguration().handleBadRequest(400, error[0], queryParameters);
+			}
+			if(savedVersion.getStatus() != GsrsEntityService.UpdateResult.STATUS.UPDATED){
+				return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance " + substanceUUIDOrName, queryParameters);
+			}
+			//katzelda Nov 24 2021: @approval response in 2.x always returns full json no matter what the view says
+			return new ResponseEntity<>(savedVersion.getUpdatedEntity().toFullJsonNode(), HttpStatus.OK);
+		} catch (Exception e) {			
+			return getGsrsControllerConfiguration().handleBadRequest(400, "error trying to approve substance", queryParameters);
+		}        
     }
 
+    
+    @Transactional
+    private Optional<?> approvalTransactions(Substance substance, String[] error) throws Exception {   	
+            try {
+                ApprovalService.ApprovalResult result = approvalService.approve(substance);
+                return Optional.of(substanceRepository.saveAndFlush(result.getSubstance()));
+            } catch (ApprovalService.ApprovalException e) {
+                error[0] = "error approving substance " + substance.getBestId() + ": " + e.getMessage();
+                return Optional.empty();
+            }    	
+    }
+    
     @Builder
     @Data
     public static class StructureToRender{
@@ -1858,5 +1968,62 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 
-}
+    public String makeFlexSearch(Structure structure) {
+        String sins= structure.getStereoInsensitiveHash();
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append("(");
+        stringBuilder.append(  "root_structure_properties_STEREO_INSENSITIVE_HASH");
+        stringBuilder.append(":\"");
+        stringBuilder.append(sins);
+        stringBuilder.append("\" OR ");
+        stringBuilder.append(makeFlexSearchMoietyClauses(structure));
+        stringBuilder.append(")");
+        return stringBuilder.toString();
+        //return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" OR " + makeFlexSearchMoietyClauses(structure, plus) + ")";
+    }
 
+    public String makeFlexSearchMoietyClauses(Structure structure) {
+
+        List<Structure> moieties = new ArrayList<>();
+        try {
+            structureProcessor.taskFor(structure.molfile)
+                    .components(moieties)
+                    .standardize(false)
+                    .build()
+                    .instrument()
+                    .getStructure();
+            log.trace(" created {} moieties", moieties.size());
+            String moietySearchString= moieties.stream()
+                    .map(m->{
+                        StringBuilder sb = new StringBuilder();
+                        sb.append("root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
+                        sb.append( m.getStereoInsensitiveHash());
+                        sb.append("\"");
+                        return sb.toString();
+                    })
+                    .collect(Collectors.joining(" AND "));
+            if( moieties.size() > 1) {
+                moietySearchString = "(" + moietySearchString + ")";
+            }
+            return moietySearchString;
+        } catch (Exception e) {
+            log.error("Error constructing query: ", e);
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void appendFeatureStuff(Chemical chemical, ObjectNode topLevelNode ) throws Exception {
+        log.trace("in appendFeatureStuff");
+        ObjectMapper mapper = new ObjectMapper();
+        List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(chemical);
+        ObjectNode allFeatures = mapper.createObjectNode();
+        ArrayNode featureArrayNode = mapper.createArrayNode();
+        featureList.forEach(features ->{
+            ObjectNode oneSet = mapper.createObjectNode();
+            features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
+            featureArrayNode.add(oneSet);
+        });
+        allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
+        topLevelNode.put("featureList", allFeatures);
+    }
+}

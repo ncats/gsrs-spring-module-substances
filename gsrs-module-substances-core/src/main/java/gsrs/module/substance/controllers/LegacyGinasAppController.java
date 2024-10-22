@@ -34,6 +34,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -96,6 +98,16 @@ public class LegacyGinasAppController {
         return payloadController.handleFileUpload(file, queryParameters);
 
     }
+
+    // are the slashes right, needed?
+    public final Pattern ID_PATTERN = Pattern.compile("[a-f0-9\\-]+");
+
+    private boolean checkId(String id)  {
+        if (id == null) return false;
+        Matcher matcher = ID_PATTERN.matcher(id);
+        return matcher.find();
+    }
+
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
     // ix.ginas.controllers.GinasApp.structureExport(id: String, format: String, context: String ?= null)
     @GetMapping({"export/{id:[a-f0-9\\-]+}.{format}","/ginas/app/export/{id:[a-f0-9\\-]+}.{format}"})
@@ -106,6 +118,10 @@ public class LegacyGinasAppController {
                               @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                               HttpServletRequest httpRequest, RedirectAttributes attributes,
                                   @RequestParam Map<String, String> queryParameters){
+        if (!checkId(id)) {
+            // This is to satisfy Snyk security analysis, probably never gets here if annotation works.
+            return gsrsControllerConfiguration.handleBadRequest(400, "Badly formatted id in url placeholder", null);
+        }
         if("mol".equalsIgnoreCase(format) || "sdf".equalsIgnoreCase(format) ||
                 "smi".equalsIgnoreCase(format) ||  "smiles".equalsIgnoreCase(format) ) {
             //TODO: use cache where possible here

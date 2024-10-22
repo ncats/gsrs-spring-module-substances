@@ -124,7 +124,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
             }
             if (n.getName() == null) {
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("name can not be null"));
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Name can not be null"));
                 continue;
             }
             if (n.preferred) {
@@ -188,7 +188,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 if (name != null && r.matches(name)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
-                                    r.getMessage(name))
+                                    r.getMessage("%s"), name)
                             .appliableChange(true);
                     callback.addMessage(mes, () -> n.setName(r.fix(name)));
 

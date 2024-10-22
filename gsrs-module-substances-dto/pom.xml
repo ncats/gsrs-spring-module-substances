@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.1.1</version>
     </parent>
 
 
@@ -33,7 +33,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.7</version>
+            <version>0.6.8</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -64,6 +64,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>

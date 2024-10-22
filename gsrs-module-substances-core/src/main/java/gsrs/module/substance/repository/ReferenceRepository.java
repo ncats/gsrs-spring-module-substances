@@ -19,6 +19,6 @@ public interface ReferenceRepository extends GsrsVersionedRepository<Reference, 
     @Query("select s from Reference s where CONCAT(s.uuid, '') like ?1%")
     List<Reference> findByUuidStartingWith(String partialUUID);
     
-    @Query("select r.id from Reference r")
+    @Query("select r.uuid from Reference r")
     List<UUID> getAllIDs();
 }

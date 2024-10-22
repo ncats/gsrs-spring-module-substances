@@ -3,7 +3,6 @@ package gsrs.module.substance.utils;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.Bond;
-import ix.ginas.models.v1.GinasChemicalStructure;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -11,6 +10,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
+@Deprecated
 public class ChemicalUtils {
     private final static String electroneglist=
             "H	hydrogen	2.2	non-metal\n" +
@@ -248,8 +248,8 @@ public class ChemicalUtils {
         return changed;
     }
 
-    public static Chemical stripSalts3(Chemical inputChemical, Map<String, String> salts) {
-        List<Chemical> chemicals = new ArrayList();
+    public static Chemical stripSalts(Chemical inputChemical, Map<String, String> salts) {
+        List<Chemical> chemicals = new ArrayList<>();
         inputChemical.getConnectedComponents().forEach(c ->
         {
             String componentInchiKey = "";
@@ -268,7 +268,7 @@ public class ChemicalUtils {
         {
             return chemicals.get(0);
         }
-        if (chemicals.size() > 0)
+        if (!chemicals.isEmpty())
         {
             int maxAtoms = 0;
             int indexOfMaxAtoms = -1;
@@ -286,8 +286,4 @@ public class ChemicalUtils {
         return null;
     }
 
-    private void experiment() {
-        Chemical c = new Chemical();
-        Atom a = c.getAtom(1);
-    }
 }

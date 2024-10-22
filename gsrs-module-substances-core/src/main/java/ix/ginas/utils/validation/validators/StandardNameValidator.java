@@ -161,10 +161,10 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                 if (!stdNameStandardizer.isStandardized(name.stdName)) {
                     warnedAboutThisNameStandardization =true;
                     if( invalidStdNameBehavior== InvalidStdNameBehavior.error) {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Standardized name does not meet standards.  This name may contain one or more non-allowed character: '%s'",
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'",
                             name.stdName));
                     }else {
-                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Standardized name does not meet standards.  This name may contain one or more non-allowed character: '%s'",
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'",
                             name.stdName));
                     }
                 }
