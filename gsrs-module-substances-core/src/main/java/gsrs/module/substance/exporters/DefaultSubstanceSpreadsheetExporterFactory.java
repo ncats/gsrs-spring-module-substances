@@ -157,7 +157,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     	defaultRecipeMap.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
     	defaultRecipeMap.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
 
-        // In controlled vocab, the display is SMSID, but the value is SMS_ID, want report column to be SMSID
+        // In controlled vocab, the display is SMSID, but the value is SMS_ID, want report column header to be SMSID
         defaultRecipeMap.put(DefaultColumns.SMSID, new CodeSystemRecipe(DefaultColumns.SMSID, "SMS_ID").replaceColumnName(DefaultColumns.SMSID
         .name(),"SMSID"));
 
