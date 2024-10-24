@@ -30,9 +30,10 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
        The JSON looks like this:
        [{"codeSystem":"XYZ","url":"http://some.url.com/$CODE$"},  {...}]
     2) Configure like so:
-    gsrs.entityProcessors +=  {
+    gsrs.entityProcessors.list.CodeProcessor = {
         "class":"ix.ginas.models.v1.Substance",
         "processor":"gsrs.module.substance.processors.CodeProcessor",
+        "order": 1000,
         "with": {
             "class":"gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator",
             "json":{

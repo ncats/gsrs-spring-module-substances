@@ -106,6 +106,7 @@ public class ConfigurableMolweightProcessorTest extends AbstractSubstanceJpaEnti
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("benzene")
                 .setStructureWithDefaultReference("C[N+](C)(C)C.[O-]C(=O)c1ccc2ncccc2c1");
+        // test fails here, seems to be cdk layout error
         ChemicalSubstance chemical = builder.build();
         processor.prePersist(chemical);
         Property mwProp = chemical.properties.stream()
