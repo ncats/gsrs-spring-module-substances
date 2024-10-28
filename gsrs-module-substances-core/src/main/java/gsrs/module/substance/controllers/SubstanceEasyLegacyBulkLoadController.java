@@ -75,6 +75,7 @@ public class SubstanceEasyLegacyBulkLoadController {
     @hasAdminRole
     @GetMapping("/api/v1/testLoad4")
     public ResponseEntity<String> testLoad4(){
+        System.out.println("Starting testLoad4");
         String resultString = "hello 4";
         final TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
