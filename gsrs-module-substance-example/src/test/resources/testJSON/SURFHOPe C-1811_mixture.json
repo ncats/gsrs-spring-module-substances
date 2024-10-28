@@ -1,0 +1,195 @@
+{
+	"deprecated": false,
+	"definitionType": "PRIMARY",
+	"definitionLevel": "COMPLETE",
+	"substanceClass": "mixture",
+	"status": "pending",
+	"names": [
+		{
+			"references": [
+				"9a03fb0b-f473-0e4c-47e4-5f5f91748eb1"
+			],
+			"access": [],
+			"languages": [
+				"en"
+			],
+			"type": "cn",
+			"name": "Sucrose stearate (HLB 11)",
+			"displayName": true,
+			"nameOrgs": [
+				{
+					"nameOrg": "BAN"
+				}
+			]
+		},
+		{
+			"references": [
+				"6bc5629f-4183-6271-4c9f-7dc9b38165f9"
+			],
+			"access": [],
+			"languages": [
+				"en"
+			],
+			"type": "cn",
+			"name": "SURFHOPe C-1811",
+			"displayName": false
+		},
+		{
+			"references": [
+				"9a03fb0b-f473-0e4c-47e4-5f5f91748eb1"
+			],
+			"access": [],
+			"languages": [
+				"en"
+			],
+			"type": "cn",
+			"name": "Sucrose sequipalmitostearate (HLB 11)"
+		},
+		{
+			"references": [
+				"6bc5629f-4183-6271-4c9f-7dc9b38165f9"
+			],
+			"access": [],
+			"languages": [
+				"en"
+			],
+			"type": "cn",
+			"name": "Surfhope SE Cosme C-1811",
+			"displayName": false
+		}
+	],
+	"codes": [
+		{
+			"references": [
+				"755dd19f-ee8b-8153-6554-6846415a133a"
+			],
+			"access": [],
+			"code": "25168-73-4",
+			"type": "GENERIC (FAMILY)",
+			"codeSystem": "CAS"
+		}
+	],
+	"notes": [],
+	"properties": [
+		{
+			"value": {
+				"average": "11",
+				"type": "EXACT"
+			},
+			"references": [
+				"6bc5629f-4183-6271-4c9f-7dc9b38165f9"
+			],
+			"access": [],
+			"name": "HYDROPHILLIC-LIPOPHILLIC BALANCE (HLB)",
+			"propertyType": "PHYSICAL",
+			"defining": true
+		}
+	],
+	"relationships": [],
+	"references": [
+		{
+			"tags": [],
+			"access": [],
+			"docType": "STN (SCIFINDER)",
+			"citation": "STN",
+			"publicDomain": true,
+			"uuid": "755dd19f-ee8b-8153-6554-6846415a133a"
+		},
+		{
+			"tags": [],
+			"access": [],
+			"docType": "MANUFACTURER PRODUCT DESCRIPTION",
+			"url": "https://www.pharmacompass.com/pAssets/pdf/edqm/application/JRS-Pharma-LLP-edqm-application-1457952389.pdf",
+			"citation": "https://www.pharmacompass.com/pAssets/pdf/edqm/application/JRS-Pharma-LLP-edqm-application-1457952389.pdf",
+			"publicDomain": true,
+			"uuid": "6bc5629f-4183-6271-4c9f-7dc9b38165f9"
+		},
+		{
+			"deprecated": false,
+			"uuid": "9a03fb0b-f473-0e4c-47e4-5f5f91748eb1",
+			"citation": "SRS",
+			"docType": "SRS",
+			"publicDomain": true,
+			"tags": [
+				"PUBLIC_DOMAIN_RELEASE"
+			],
+			"access": []
+		}
+	],
+	"tags": [],
+	"mixture": {
+		"deprecated": false,
+		"uuid": "ff244317-9e59-3b8f-548e-3f4b9fe94161",
+		"components": [
+			{
+				"deprecated": false,
+				"uuid": "915c7458-30d1-f6e1-acbb-0dffdc1a44ad",
+				"type": "MUST_BE_PRESENT",
+				"substance": {
+					"deprecated": false,
+					"uuid": "a56a9250-17ed-61fc-5c18-e0c34e556398",
+					"refPname": "SUCROSE, 6-STEARATE",
+					"refuuid": "6eefb92b-e55d-4e27-8730-5880a236ca4f",
+					"substanceClass": "reference",
+					"approvalID": "114S1GA41U",
+					"linkingID": "114S1GA41U",
+					"name": "SUCROSE, 6-STEARATE",
+					"references": [],
+					"access": []
+				},
+				"references": [],
+				"access": []
+			},
+			{
+				"deprecated": false,
+				"uuid": "7c40417f-e68a-b952-dd39-3e9a3e383cc0",
+				"type": "MUST_BE_PRESENT",
+				"substance": {
+					"deprecated": false,
+					"uuid": "1b087160-2ab6-887f-2b8a-20a46089c6cb",
+					"refPname": "SUCROSE, 6'-STEARATE",
+					"refuuid": "efded1a3-de59-4642-b74b-79fc2a65005f",
+					"substanceClass": "reference",
+					"approvalID": "J7MT237SNW",
+					"linkingID": "J7MT237SNW",
+					"name": "SUCROSE, 6'-STEARATE",
+					"references": [],
+					"access": []
+				},
+				"references": [],
+				"access": []
+			},
+			{
+				"deprecated": false,
+				"uuid": "da434958-79f6-c2bf-81b4-1a050289c324",
+				"type": "MUST_BE_PRESENT",
+				"substance": {
+					"deprecated": false,
+					"uuid": "0a558e0c-3b5f-2e3e-c3e0-ce76b0139294",
+					"refPname": "SUCROSE, 1-STEARATE",
+					"refuuid": "a8db9c64-9fca-4cec-80d4-5daa7111ff03",
+					"substanceClass": "reference",
+					"approvalID": "58RP7JU52K",
+					"linkingID": "58RP7JU52K",
+					"name": "SUCROSE, 1-STEARATE",
+					"references": [],
+					"access": []
+				},
+				"references": [],
+				"access": []
+			}
+		],
+		"references": [
+			"9a03fb0b-f473-0e4c-47e4-5f5f91748eb1"
+		],
+		"access": []
+	},
+	"_approvalIDDisplay": "274KW0O50M",
+	"access": [],
+	"_self": "https://gsrs.preprod.fda.gov/api/v1/substances(91c883d0-b404-4252-8c50-6896e7df0bfb)?view=full",
+	"modifications": {
+		"agentModifications": [],
+		"structuralModifications": [],
+		"physicalModifications": []
+	}
+}

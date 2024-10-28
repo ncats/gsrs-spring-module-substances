@@ -1,16 +1,23 @@
 package gsrs.module.substance.utils;
 
 import gov.nih.ncats.molwitch.Atom;
-import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.Bond;
+import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.StructureHandlingConfiguration;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
-@Deprecated
+@Component
 public class ChemicalUtils {
     private final static String electroneglist=
             "H	hydrogen	2.2	non-metal\n" +
@@ -115,6 +122,36 @@ public class ChemicalUtils {
                     "Fm	fermium	1.3	metal\n" +
                     "Md	mendelevium	1.3	metal\n" +
                     "No	nobelium	1.3	metal";
+
+    @Autowired
+    private StructureHandlingConfiguration structureHandlingConfiguration;
+
+    private Map<String, String> saltData;
+
+    @PostConstruct
+    private void setUpSalts() {
+        if( structureHandlingConfiguration.getSaltFilePath() == null ) {
+            log.warn("ChemicalUtils - setUpSalts not initialized");
+            return;
+        }
+        log.trace("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
+        saltData = new HashMap<>();
+        try {
+            File file = new File(structureHandlingConfiguration.getSaltFilePath());
+            Assert.assertTrue("input salt data file must exist!", file.exists());
+            List<String> lines = Files.readAllLines(file.toPath());
+            for (String line : lines) {
+                String[] lineParts = line.split("\\t");
+                saltData.put(lineParts[0], lineParts[1]);
+            }
+        }
+        catch (Exception ex){
+            log.error("Error loading salt data {}", ex.getMessage());
+            ex.printStackTrace();
+        }
+        log.warn("completed loading of salt data -- {} records", saltData.keySet().size());
+    }
+
     public static class MetalicNature{
         enum ATOM_METAL_TYPE{
             METAL,
@@ -153,9 +190,9 @@ public class ChemicalUtils {
             }
 
             String symbol=parts[0];
-            MetalicNature.ATOM_METAL_TYPE atype=MetalicNature.ATOM_METAL_TYPE.METALLIOD;
+            MetalicNature.ATOM_METAL_TYPE atype= MetalicNature.ATOM_METAL_TYPE.METALLIOD;
             try{
-                atype=MetalicNature.ATOM_METAL_TYPE.valueOf(parts[3].toUpperCase().replace("-", ""));
+                atype= MetalicNature.ATOM_METAL_TYPE.valueOf(parts[3].toUpperCase().replace("-", ""));
             }catch(Exception e){
 
             }
@@ -248,7 +285,7 @@ public class ChemicalUtils {
         return changed;
     }
 
-    public static Chemical stripSalts(Chemical inputChemical, Map<String, String> salts) {
+    public Chemical stripSalts(Chemical inputChemical) {
         List<Chemical> chemicals = new ArrayList<>();
         inputChemical.getConnectedComponents().forEach(c ->
         {
@@ -259,7 +296,7 @@ public class ChemicalUtils {
             catch(IOException ex) {
                 log.error("Error computing inchi for fragment ", ex);
             }
-            if (!salts.containsKey(componentInchiKey))
+            if (!saltData.containsKey(componentInchiKey))
             {
                 chemicals.add(c);
             }

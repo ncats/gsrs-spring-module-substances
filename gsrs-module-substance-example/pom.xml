@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.1.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -31,11 +31,11 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
             <configuration>
-                <source>8</source>
-                <target>8</target>
+                <source>11</source>
+                <target>11</target>
             </configuration>
         </plugin>
-        <!-- Uncomment this for maven public release deployment
+        <!-- Uncomment this for maven public release deployment start
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-source-plugin</artifactId>
@@ -56,6 +56,7 @@
                 <additionalparam>-Xdoclint:none</additionalparam>
                 <additionalOptions>-Xdoclint:none</additionalOptions>
                 <additionalJOption>-Xdoclint:none</additionalJOption>
+                <release>11</release>
             </configuration>
             <executions>
                 <execution>
@@ -66,6 +67,7 @@
                 </execution>
             </executions>
         </plugin> -->
+        <!-- Uncomment this for maven public release deployment end -->
     </plugins>
 	    <!--
 <plugins><plugin>
@@ -252,7 +254,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.19</version>
+            <version>1.0.21</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -333,12 +335,6 @@
             <version>0.4.0</version>
             <type>pom</type>
         </dependency>
-        <!--dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-core</artifactId>
-            <version>3.1.1-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency-->
 
         <dependency>
             <groupId>commons-io</groupId>

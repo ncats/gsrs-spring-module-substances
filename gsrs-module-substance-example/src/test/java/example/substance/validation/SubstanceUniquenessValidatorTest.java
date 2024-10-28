@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
 
+import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -203,6 +204,34 @@ public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullSt
         ValidationResponse response = validator.validate(protein, null);
         Assertions.assertTrue( response.getValidationMessages().stream().noneMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
     }
+
+    @Test
+    public void testSameStrDiv() {
+        log.trace("Starting in testSameStrDiv");
+        String name ="N5WWR36MDJ";
+        String completeDuplicateMessage= "appears to be a full duplicate";
+        StructurallyDiverseSubstance structurallyDiverseSubstance = (StructurallyDiverseSubstance) getSubstanceFromFile(name);
+        structurallyDiverseSubstance.uuid= UUID.randomUUID();
+        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
+        AutowireHelper.getInstance().autowire(validator);
+        ValidationResponse response = validator.validate(structurallyDiverseSubstance, null);
+        Assertions.assertTrue( response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
+    }
+
+    @Test
+    public void testDiffStrDiv() {
+        log.trace("Starting in testSameStrDiv");
+        String name ="N5WWR36MDJ";
+        String completeDuplicateMessage= "appears to be a full duplicate";
+        StructurallyDiverseSubstance structurallyDiverseSubstance = (StructurallyDiverseSubstance) getSubstanceFromFile(name);
+        structurallyDiverseSubstance.uuid= UUID.randomUUID();
+        structurallyDiverseSubstance.structurallyDiverse.infraSpecificType =structurallyDiverseSubstance.structurallyDiverse.infraSpecificType+ " Other";
+        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
+        AutowireHelper.getInstance().autowire(validator);
+        ValidationResponse response = validator.validate(structurallyDiverseSubstance, null);
+        Assertions.assertFalse( response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
+    }
+
 
     private ChemicalSubstance getChemicalSubstanceFromFile(String name) {
         try {
