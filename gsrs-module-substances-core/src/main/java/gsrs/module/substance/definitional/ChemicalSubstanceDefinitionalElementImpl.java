@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 @Slf4j
@@ -18,7 +19,8 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
     @Autowired
     private StructureProcessor structureProcessor;
 
-    private List<String> stereoUsingOpticalActivities = Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC", "RACEMIC");
+    private List<String> stereoUsingOpticalActivities = Collections.singletonList("UNKNOWN");
+    //changed to UNKNOWN based on Slack conversation on 29 Oct 2024 Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC", "RACEMIC");
 
     @Override
     public boolean supports(Object s) {
