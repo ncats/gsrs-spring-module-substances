@@ -1,7 +1,9 @@
 package gsrs.module.substance.utils;
 
 import gov.nih.ncats.molwitch.Chemical;
+import gsrs.module.substance.StructureHandlingConfiguration;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -18,10 +20,14 @@ import java.util.List;
 @Slf4j
 public class TautomerUtils {
 
+    @Autowired
+    private StructureHandlingConfiguration structureHandlingConfiguration;
+
     private String RESOLVER_BASE = "https://opendata.ncats.nih.gov/resolver/";
 
     public List<String> getTautomerSmiles(Chemical chemical) throws IOException {
-        String url = RESOLVER_BASE+ "tautomers?structure=" + URLEncoder.encode(chemical.toSmiles(), Charset.defaultCharset());
+        String url = structureHandlingConfiguration.getResolverBaseUrl() + "tautomers?structure=" + URLEncoder.encode(chemical.toSmiles(), Charset.defaultCharset());
+        log.trace("in getTautomerSmiles url: {}", url);
         String response= getFullResponse(url);
         if(response.contains("|")) {
             String trimmed  = response.split("\t")[1];
