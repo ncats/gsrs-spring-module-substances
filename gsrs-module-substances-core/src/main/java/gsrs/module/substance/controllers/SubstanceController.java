@@ -21,6 +21,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,6 +29,8 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gov.nih.ncats.common.Tuple;
+import gsrs.controller.*;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
@@ -69,11 +72,6 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
@@ -178,6 +176,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private ChemicalUtils chemicalUtils;
 
     private int IMAGE_NUMBER_USE_DEFAULT= -1;
+
+    private String IMAGE_STORED_WITH_REFERENCE = "Image stored with substance reference";
 
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -1415,6 +1415,76 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(bdat.dat, headers, HttpStatus.OK);
 
     }
+
+    @GetGsrsRestApiMapping({"/totalImages({ID})", "/totalImages/{ID}"})
+    public ResponseEntity<Object> totalImages(@PathVariable("ID") String idOrSmiles,
+                             @RequestParam(value = "version", required = false) String version,
+                             @RequestParam Map<String, String> queryParameters) throws Exception {
+        ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
+        if( !UUIDUtil.isUUID(idOrSmiles)){
+            topOfOutput.put("message", "invalid input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()-> getSubstanceAndStructure(idOrSmiles,version));
+        Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        if(substance.isPresent()) {
+            ImageUtilities imageUtilities = new ImageUtilities();
+            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+            List<ImageInfo> imageInfos = imageUtilities.getSubstanceImageInfos(substance.get());
+            topOfOutput.put("totalImages", imageInfos.size());
+            status = HttpStatus.OK;
+        } else {
+            topOfOutput.put("totalImages", 0);
+        }
+        return new ResponseEntity<>( GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), status);
+    }
+
+    @GetGsrsRestApiMapping({"/listImages({ID})", "/listImages/{ID}"})
+    public ResponseEntity<Object> listImages(@PathVariable("ID") String idOrSmiles,
+                             @RequestParam(value = "version", required = false) String version,
+                             @RequestParam Map<String, String> queryParameters) throws Exception {
+        ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
+        if( !UUIDUtil.isUUID(idOrSmiles)){
+            topOfOutput.put("message", "invalid input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        assert UUIDUtil.isUUID(idOrSmiles);
+        StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
+            return getSubstanceAndStructure(idOrSmiles,version);
+        });
+        Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
+        ArrayNode outputList = JsonNodeFactory.instance.arrayNode();
+        if(substance.isPresent()) {
+            ImageUtilities imageUtilities = new ImageUtilities();
+            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+            List<ImageInfo> imageInfos = imageUtilities.getSubstanceImageInfos(substance.get());
+            AtomicInteger imageOrdinal =new AtomicInteger(0);
+            imageInfos.forEach(imageInfo -> {
+                //build a URL based on the parameters we received
+                //render(782ffd25-f1ca-41b4-b5de-85b5b5df16d0)?format=svg&size=450&stereo=false&cache-control=bo8ykiezn3y&imageNumber=
+                StringBuilder urlBuilder = new StringBuilder();
+                urlBuilder.append("render(");
+                urlBuilder.append(idOrSmiles);
+                urlBuilder.append(")?");
+                queryParameters.entrySet().forEach(entry->{
+                    urlBuilder.append(entry.getKey().equalsIgnoreCase("imageFormat") ? "format": entry.getKey());
+                    urlBuilder.append("=");
+                    urlBuilder.append(entry.getValue());
+                    urlBuilder.append("&");
+                });
+                urlBuilder.append("imageNumber=");
+                urlBuilder.append(imageOrdinal.getAndIncrement());
+                ObjectNode node = JsonNodeFactory.instance.objectNode();
+                node.put("url", urlBuilder.toString());
+                node.put("outputType", IMAGE_STORED_WITH_REFERENCE);
+                outputList.add(node);
+           });
+        }
+        topOfOutput.put("imagesFound", outputList);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.OK);
+    }
+
     private static void renderInner(ChemicalRenderer renderer, Chemical chem, int minWidth, int maxWidth, int minHeight, int maxHeight,
                                     double bondLength, String format, ByteArrayOutputStream bos)
             throws IOException {

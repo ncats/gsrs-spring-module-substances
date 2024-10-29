@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import net.coobird.thumbnailator.Thumbnails;
+import org.apache.batik.gvt.ImageNode;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
@@ -52,25 +53,7 @@ public class ImageUtilities {
      */
     public ImageInfo getSubstanceImage(Substance substance, Integer imageNumber){
         log.trace("starting in getSubstanceImage");
-        List<ImageInfo> images =
-        substance.references.stream()
-                .filter(r->isImageReference(r))
-                .map(r->getPayloadIdFromUrl(r.uploadedFile))
-                .filter(p->p != null && p.length() >0)
-                .map(id->payloadRepository.findById(UUID.fromString(id)))
-                .filter(Optional::isPresent)
-                .map( p->p.get())
-                .map(p->{
-                    try {
-                        Optional<byte[]> fileData = getBytesFromPayloadId(p.id, Math.toIntExact(p.size));
-                        return new ImageInfo(true, fileData.get(), p.mimeType);
-                    } catch (IOException e) {
-                        log.error("Error retrieving payload/image: {}", e.getMessage());
-                        throw new RuntimeException(e);
-                    }
-                })
-                .collect(Collectors.toList());
-
+        List<ImageInfo> images =getSubstanceImageInfos(substance);
         if( !images.isEmpty() ) {
             if( images.size()==1 || imageNumber==0)  {
                 return images.get(0);
@@ -81,6 +64,29 @@ public class ImageUtilities {
             }
         }
         return new ImageInfo(false,null,null);
+    }
+
+    public List<ImageInfo> getSubstanceImageInfos(Substance substance){
+        log.trace("starting in getSubstanceImageInfos");
+        List<ImageInfo> images =
+                substance.references.stream()
+                        .filter(r->isImageReference(r))
+                        .map(r->getPayloadIdFromUrl(r.uploadedFile))
+                        .filter(p->p != null && p.length() >0)
+                        .map(id->payloadRepository.findById(UUID.fromString(id)))
+                        .filter(Optional::isPresent)
+                        .map( p->p.get())
+                        .map(p->{
+                            try {
+                                Optional<byte[]> fileData = getBytesFromPayloadId(p.id, Math.toIntExact(p.size));
+                                return new ImageInfo(true, fileData.get(), p.mimeType);
+                            } catch (IOException e) {
+                                log.error("Error retrieving payload/image: {}", e.getMessage());
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .collect(Collectors.toList());
+        return images;
     }
 
     private String getPayloadIdFromUrl(String url) {
