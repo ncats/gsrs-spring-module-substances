@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -169,9 +170,50 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         Assertions.assertArrayEquals(imageData, imageInfo.getImageData());
     }
 
+    @Test
+    public void testSubstanceWithImagesList() throws IOException {
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Name plainName = new Name();
+        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        plainName.name="Plain Substance";
+        plainName.displayName=true;
+        Reference reference = new Reference();
+        reference.publicDomain= true;
+        reference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference.citation="Descriptions of stuff, page 203";
+        UUID id= savePayload(imageUrl, "Feldspar-Group-291254.jpg");
+        reference.uploadedFile="http://localhost:8081/api/v1/payload(" + id.toString() + ")?format=raw";
+        plainName.addReference(reference);
+        builder.addName(plainName);
+        builder.addReference(reference);
+
+        String imageUrl2 = "https://foto.wuestenigel.com/wp-content/uploads/api/fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg";
+        Reference reference2 = new Reference();
+        reference2.publicDomain= true;
+        reference2.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference2.citation="Descriptions of stuff, page 206";
+        UUID id2= savePayload(imageUrl2, "fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg");
+        reference2.uploadedFile="http://localhost:8081/api/v1/payload(" + id2.toString() + ")?format=raw";
+        builder.addReference(reference2);
+
+        String imageUrl3 = "https://www.soil-net.com/album/Plants/Garden/slides/Flower%20Clematis%2001.jpg";
+        Reference reference3 = new Reference();
+        reference3.publicDomain= true;
+        reference3.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference3.citation="Descriptions of stuff, page 208";
+        UUID id3= savePayload(imageUrl3, "Flower Clematis 01.jpg");
+        reference3.uploadedFile="http://localhost:8081/api/v1/payload(" + id3.toString() + ")?format=raw";
+        builder.addReference(reference3);
+
+        Substance substance = builder.build();
+        ImageUtilities imageUtilities = new ImageUtilities();
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        List<ImageInfo> imageInfo= imageUtilities.getSubstanceImageInfos(substance);
+        Assertions.assertEquals(3, imageInfo.size());
+    }
 
     @Test
-    public void resizeImageTest1() {
+  public void resizeImageTest1() {
         String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         try {
             URL fileUrl = new URL(imageUrl);
