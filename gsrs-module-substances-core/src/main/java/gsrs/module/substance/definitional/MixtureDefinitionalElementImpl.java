@@ -30,7 +30,8 @@ public class MixtureDefinitionalElementImpl implements DefinitionalElementImplem
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
-        log.trace("performAddition of mixture substance");
+        log.trace("computeDefinitionalElements of mixture substance");
+        DefinitionalElementImplementation.super.computeDefinitionalElements(s, consumer);
         MixtureSubstance mixtureSubstance = (MixtureSubstance)s;
         Mixture mix = mixtureSubstance.mixture;
         if (mix != null && !mix.components.isEmpty()) {

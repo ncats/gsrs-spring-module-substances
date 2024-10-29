@@ -132,7 +132,7 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     	Map<Column, ColumnValueRecipe<Substance>> defaultRecipeMap= new LinkedHashMap<>();
 
 
-        // UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM EPA_CompTox CATALOG_OF_LIFE ITIS NCBI PLANTS GRIN MPNS INN_ID DAILYMED MF INCHIKEY SMILES INGREDIENT_TYPE
+        // UUID, APPROVAL_ID, PT, RN, EC, NCIT, RXCUI PUBCHEM SMSID EPA_CompTox CATALOG_OF_LIFE ITIS NCBI PLANTS POWO GRIN MPNS INN_ID DAILYMED MF INCHIKEY SMILES INGREDIENT_TYPE
 
     	defaultRecipeMap.put(DefaultColumns.UUID, SingleColumnValueRecipe.create(DefaultColumns.UUID, (s, cell) -> cell.write(s.getOrGenerateUUID())));
     	defaultRecipeMap.put(DefaultColumns.APPROVAL_ID, SingleColumnValueRecipe.create(DefaultColumns.APPROVAL_ID, (s, cell) -> cell.writeString(s.getApprovalID())));
@@ -157,6 +157,10 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     	defaultRecipeMap.put(DefaultColumns.RXCUI, new CodeSystemRecipe(DefaultColumns.RXCUI, "RXCUI"));
     	defaultRecipeMap.put(DefaultColumns.PUBCHEM, new CodeSystemRecipe(DefaultColumns.PUBCHEM, "PUBCHEM"));
 
+        // In controlled vocab, the display is SMSID, but the value is SMS_ID, want report column header to be SMSID
+        defaultRecipeMap.put(DefaultColumns.SMSID, new CodeSystemRecipe(DefaultColumns.SMSID, "SMS_ID").replaceColumnName(DefaultColumns.SMSID
+        .name(),"SMSID"));
+
         defaultRecipeMap.put(DefaultColumns.EPA_CompTox, new CodeSystemRecipe(DefaultColumns.EPA_CompTox, "EPA CompTox"));
         defaultRecipeMap.put(DefaultColumns.CATALOGUE_OF_LIFE, ParentSourceMaterialRecipeWrapper.wrap(new CodeSystemRecipe(DefaultColumns.CATALOGUE_OF_LIFE, "CATALOGUE OF LIFE"),params.getScrubber()));
 
@@ -165,6 +169,10 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
     	defaultRecipeMap.put(DefaultColumns.USDA_PLANTS, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.USDA_PLANTS, "USDA PLANTS")
     			.replaceColumnName(DefaultColumns.USDA_PLANTS.name(),"PLANTS"),params.getScrubber()
     			));
+
+        defaultRecipeMap.put(DefaultColumns.POWO, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.POWO, "POWO"),params.getScrubber()));
+
+
     	defaultRecipeMap.put(DefaultColumns.GRIN, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.GRIN, "GRIN"),params.getScrubber()));
     	defaultRecipeMap.put(DefaultColumns.MPNS, ParentSourceMaterialRecipeWrapper.wrap( new CodeSystemRecipe(DefaultColumns.MPNS, "MPNS"),params.getScrubber()));
 
