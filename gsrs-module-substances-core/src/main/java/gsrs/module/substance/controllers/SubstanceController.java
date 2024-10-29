@@ -29,7 +29,6 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
-import gov.nih.ncats.common.Tuple;
 import gsrs.controller.*;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
@@ -1422,10 +1421,15 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                              @RequestParam Map<String, String> queryParameters) throws Exception {
         ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
         if( !UUIDUtil.isUUID(idOrSmiles)){
-            topOfOutput.put("message", "invalid input");
+            topOfOutput.put("message", "Invalid input");
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
         }
         StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()-> getSubstanceAndStructure(idOrSmiles,version));
+        if( s2r == null) {
+            log.warn("No data found for input");
+            topOfOutput.put("message", "No data found for input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
         Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
         HttpStatus status = HttpStatus.BAD_REQUEST;
         if(substance.isPresent()) {
@@ -1446,13 +1450,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                              @RequestParam Map<String, String> queryParameters) throws Exception {
         ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
         if( !UUIDUtil.isUUID(idOrSmiles)){
+            log.warn("in listImages,input is not UUID");
             topOfOutput.put("message", "invalid input");
             return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
         }
-        assert UUIDUtil.isUUID(idOrSmiles);
+
         StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
             return getSubstanceAndStructure(idOrSmiles,version);
         });
+        if(s2r == null) {
+            log.warn("No data found for input");
+            topOfOutput.put("message", "No data found for input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
         Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
         ArrayNode outputList = JsonNodeFactory.instance.arrayNode();
         if(substance.isPresent()) {

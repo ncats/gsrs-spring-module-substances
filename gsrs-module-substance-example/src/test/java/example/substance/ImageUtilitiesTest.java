@@ -94,7 +94,7 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
     }
 
     @Test
-    public void testSubstanceWithImage2() throws IOException {
+    public void testSubstanceWithImage2() {
         SubstanceBuilder builder = new SubstanceBuilder();
         Name plainName = new Name();
         String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
@@ -128,7 +128,7 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
     }
 
     @Test
-    public void testSubstanceWithImage3() throws IOException {
+    public void testSubstanceWithImage3(){
         SubstanceBuilder builder = new SubstanceBuilder();
         Name plainName = new Name();
         String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
@@ -171,7 +171,7 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
     }
 
     @Test
-    public void testSubstanceWithImagesList() throws IOException {
+    public void testSubstanceWithImagesList(){
         SubstanceBuilder builder = new SubstanceBuilder();
         Name plainName = new Name();
         String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
