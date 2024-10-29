@@ -6,6 +6,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,8 +32,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
 import gsrs.controller.*;
-import gsrs.module.substance.utils.FeatureUtils;
-import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.module.substance.utils.*;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -88,9 +89,6 @@ import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
-import gsrs.module.substance.utils.ImageInfo;
-import gsrs.module.substance.utils.ImageUtilities;
-import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
@@ -176,7 +174,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     private int IMAGE_NUMBER_USE_DEFAULT= -1;
 
-    private String IMAGE_STORED_WITH_REFERENCE = "Image stored with substance reference";
+    private static final String IMAGE_STORED_WITH_REFERENCE = "Image stored with substance reference";
+    private static final String IMAGE_FOR_TAUTOMER = "Automatically generated tautomer";
 
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -1470,6 +1469,26 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
             List<ImageInfo> imageInfos = imageUtilities.getSubstanceImageInfos(substance.get());
             AtomicInteger imageOrdinal =new AtomicInteger(0);
+            if( imageInfos.isEmpty() && substance.get() instanceof ChemicalSubstance) {
+                TautomerUtils tautomerUtils = new TautomerUtils();
+                AutowireHelper.getInstance().autowireAndProxy(tautomerUtils);
+                List<String> tautomericSmiles= tautomerUtils.getTautomerSmiles( substance.get().toChemical());
+                tautomericSmiles.forEach(s->{
+                    StringBuilder urlBuilder = new StringBuilder();
+                    urlBuilder.append("render(");
+                    urlBuilder.append(URLEncoder.encode(s, Charset.defaultCharset()));
+                    urlBuilder.append(")?");
+                    appendParametersToStringBuilder(urlBuilder, queryParameters);
+                    //remove '&' from the end of the string
+                    if(urlBuilder.charAt(urlBuilder.length()-1) == '&') {
+                       urlBuilder.setLength(urlBuilder.length()-1);
+                    }
+                    ObjectNode node = JsonNodeFactory.instance.objectNode();
+                    node.put("url", urlBuilder.toString());
+                    node.put("outputType", IMAGE_FOR_TAUTOMER);
+                    outputList.add(node);
+                });
+            }
             imageInfos.forEach(imageInfo -> {
                 //build a URL based on the parameters we received
                 //render(782ffd25-f1ca-41b4-b5de-85b5b5df16d0)?format=svg&size=450&stereo=false&cache-control=bo8ykiezn3y&imageNumber=
@@ -1477,12 +1496,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 urlBuilder.append("render(");
                 urlBuilder.append(idOrSmiles);
                 urlBuilder.append(")?");
-                queryParameters.entrySet().forEach(entry->{
-                    urlBuilder.append(entry.getKey().equalsIgnoreCase("imageFormat") ? "format": entry.getKey());
-                    urlBuilder.append("=");
-                    urlBuilder.append(entry.getValue());
-                    urlBuilder.append("&");
-                });
+                appendParametersToStringBuilder(urlBuilder, queryParameters);
                 urlBuilder.append("imageNumber=");
                 urlBuilder.append(imageOrdinal.getAndIncrement());
                 ObjectNode node = JsonNodeFactory.instance.objectNode();
@@ -2109,5 +2123,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         });
         allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
         topLevelNode.put("featureList", allFeatures);
+    }
+
+    private void appendParametersToStringBuilder(StringBuilder stringBuilder, Map<String, String> parameters) {
+        parameters.entrySet().forEach(entry->{
+            stringBuilder.append(entry.getKey().equalsIgnoreCase("imageFormat") ? "format": entry.getKey());
+            stringBuilder.append("=");
+            stringBuilder.append(entry.getValue());
+            stringBuilder.append("&");
+        });
     }
 }
