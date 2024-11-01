@@ -23,11 +23,15 @@ public class TautomerUtils {
     @Autowired
     private StructureHandlingConfiguration structureHandlingConfiguration;
 
-    private String RESOLVER_BASE = "https://opendata.ncats.nih.gov/resolver/";
-
     public List<String> getTautomerSmiles(Chemical chemical) throws IOException {
         String url = structureHandlingConfiguration.getResolverBaseUrl() + "tautomers?structure=" + URLEncoder.encode(chemical.toSmiles(), Charset.defaultCharset());
         log.trace("in getTautomerSmiles url: {}", url);
+        if( structureHandlingConfiguration.getResolverBaseUrl() == null
+                || structureHandlingConfiguration.getResolverBaseUrl().isEmpty()
+                || structureHandlingConfiguration.getResolverBaseUrl().equalsIgnoreCase("none") ) {
+            log.info("no configured resolver URL");
+            return Collections.emptyList();
+        }
         String response= getFullResponse(url);
         if(response.contains("|")) {
             String trimmed  = response.split("\t")[1];
