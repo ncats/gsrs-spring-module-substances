@@ -130,7 +130,11 @@ public class ChemicalUtils {
 
     @PostConstruct
     private void setUpSalts() {
-        log.warn("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
+        if( structureHandlingConfiguration.getSaltFilePath() == null ) {
+            log.warn("ChemicalUtils - setUpSalts not initialized");
+            return;
+        }
+        log.trace("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
         saltData = new HashMap<>();
         try {
             File file = new File(structureHandlingConfiguration.getSaltFilePath());

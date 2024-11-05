@@ -31,6 +31,7 @@ public enum DefaultColumns implements Column {
     RECORD_ACCESS_GROUPS,
     RXCUI,
     PUBCHEM,
+    SMSID,
     MPNS,
     GRIN,
     INGREDIENT_TYPE,
