@@ -17,8 +17,6 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
-import org.jsoup.Jsoup;
-import org.jsoup.select.Elements;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -323,6 +321,7 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         }
     }
 
+    //This test may break if Kew Gardens changes its web site
     @Test
     public void testParsingIdeaPos(){
         String expression = "div[class=c-gallery__image-container first-image] img";
@@ -339,13 +338,10 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
                 "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:518033-1",
                 "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77184820-1");
         Assertions.assertTrue(urlsWithImages.stream().allMatch(u->{
-            System.out.printf("testing URL %s\n", u);
             String html = TautomerUtils.getFullResponse(u);
-            System.out.printf("got HTML %s\n", html);
             String data = null;
             try {
                 data = ImageUtilities.extractImageElementText(html, expression);
-                System.out.printf("got data %s\n", data);
                 return data.contains("jpg");
             } catch (Exception e) {
                 System.err.println("Error parsing data: " + e.getMessage());
@@ -354,6 +350,7 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         }));
     }
 
+    //This test may break if Kew Gardens changes its web site
     @Test
     public void testParsingIdeaNeg(){
         String expression = "div[class=c-gallery__image-container first-image] img";
