@@ -10,6 +10,7 @@ import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
@@ -372,6 +373,19 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
             }
         }));
     }
+
+    @Test
+    public void testExtractImageElementText() throws IOException {
+        String dataFileNameStrDivWithPowo = "testJSON/RK3A4BAR48.json";
+        File substanceJsonFile = new ClassPathResource(dataFileNameStrDivWithPowo).getFile();
+        StructurallyDiverseSubstanceBuilder builder= SubstanceBuilder.from(substanceJsonFile);
+        Substance substance = builder.build();
+        ImageUtilities imageUtilities = new ImageUtilities();
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        ImageInfo image = imageUtilities.getSubstanceImage(substance, 0);
+        Assertions.assertTrue(image.isHasData() && image.getFormat().equals("jpg"));
+    }
+
     private UUID savePayload(String urlSource, String resourceName) {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);

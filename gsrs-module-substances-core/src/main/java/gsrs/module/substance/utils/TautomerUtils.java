@@ -71,4 +71,20 @@ public class TautomerUtils {
         return sb.toString();
     }
 
+    public static byte[] getFullBinaryResponse(String urlString){
+        try {
+            URL url = new URL(urlString);
+            InputStream is = url.openStream();
+            return is.readAllBytes();
+
+        } catch (MalformedURLException e) {
+            log.error("erroneous URL", e);
+            e.printStackTrace();
+        } catch (IOException e) {
+            log.error("error in processing", e);
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 }

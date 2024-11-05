@@ -42,7 +42,8 @@ public class ImageUtilities {
 
     public static final String SUBSTANCE_IMAGE_REFERENCE_TYPE = "IMAGE REFERENCE";
     public static final String PLANTS_OF_THE_WORLD = "POWO";
-    public static final String KEW_PARSING_EXPRESSION ="div[class=c-gallery__image-container first-image] img";;
+    public static final String KEW_PARSING_EXPRESSION ="div[class=c-gallery__image-container first-image] img";
+    private static final String AMBIGUOUS_RESPONSE = "ambiguous";
 
     @Autowired
     private PayloadRepository payloadRepository;
@@ -73,9 +74,19 @@ public class ImageUtilities {
             log.trace("str div with POWO");
             Optional<Code> powoCode = substance.codes.stream().filter(c->c.codeSystem.equalsIgnoreCase(PLANTS_OF_THE_WORLD)).findFirst();
             if( powoCode.isPresent() ) {
-                log.trace("going to retrieve and return POWO image");
-                String data=TautomerUtils.getFullResponse(powoCode.get().url);
-                return new ImageInfo(true, data.getBytes(), "jpg");
+                //POWO codes refer to Kew Gardens
+                log.trace("going to retrieve and return POWO image. initial URL: {}", powoCode.get().url);
+                String kewPageData=TautomerUtils.getFullResponse(powoCode.get().url);
+                String imageUrl = extractImageElementText(kewPageData, KEW_PARSING_EXPRESSION);
+                if( imageUrl.startsWith("//")) {
+                    imageUrl = powoCode.get().url.substring(0, powoCode.get().url.indexOf(":")+1) + imageUrl;
+                    log.trace("image url: {}", imageUrl);
+                }
+
+                if( imageUrl!=null && !imageUrl.equals(AMBIGUOUS_RESPONSE) ) {
+                    byte[] imageData = TautomerUtils.getFullBinaryResponse(imageUrl);
+                    return new ImageInfo(imageData!=null, imageData,imageUrl.substring(imageUrl.lastIndexOf('.')+1));
+                }
             }
         }
         return new ImageInfo(false,null,null);
@@ -205,10 +216,10 @@ public class ImageUtilities {
         Elements elements= doc.body().select(expression);
         if(elements.size() == 1) {
             if( elements.get(0).nodeName().equalsIgnoreCase("img")) {
-                return elements.get(0).toString();
+                return elements.get(0).attr("src");
             }
             return elements.get(0).select("img").toString();
         }
-        return "multiple";
+        return AMBIGUOUS_RESPONSE;
     }
 }
