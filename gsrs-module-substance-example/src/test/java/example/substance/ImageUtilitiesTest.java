@@ -338,15 +338,15 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
                 "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:601892-1",
                 "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:518033-1",
                 "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77184820-1");
-        List<String> urlsWithoutImages = Arrays.asList("https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60450766-2",
-                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77091396-1",
-                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:171238-2");
         Assertions.assertTrue(urlsWithImages.stream().allMatch(u->{
+            System.out.printf("testing URL %s\n", u);
             String html = TautomerUtils.getFullResponse(u);
+            System.out.printf("got HTML %s\n", html);
             String data = null;
             try {
                 data = ImageUtilities.extractImageElementText(html, expression);
-                return data.contains("img");
+                System.out.printf("got data %s\n", data);
+                return data.contains("jpg");
             } catch (Exception e) {
                 System.err.println("Error parsing data: " + e.getMessage());
                 return false;

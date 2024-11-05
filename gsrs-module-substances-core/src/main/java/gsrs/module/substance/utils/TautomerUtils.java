@@ -60,7 +60,7 @@ public class TautomerUtils {
                 sb.append(line);
             }
             br.close();
-
+            is.close();
         } catch (MalformedURLException e) {
             log.error("erroneous URL", e);
             e.printStackTrace();
@@ -75,8 +75,9 @@ public class TautomerUtils {
         try {
             URL url = new URL(urlString);
             InputStream is = url.openStream();
-            return is.readAllBytes();
-
+            byte[] binaryData= is.readAllBytes();
+            is.close();
+            return binaryData;
         } catch (MalformedURLException e) {
             log.error("erroneous URL", e);
             e.printStackTrace();
