@@ -3,6 +3,7 @@ package gsrs.module.substance.utils;
 import gsrs.repository.PayloadRepository;
 import gsrs.service.PayloadService;
 import ix.core.models.Payload;
+import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
 
 import net.coobird.thumbnailator.Thumbnails;
 import org.apache.batik.gvt.ImageNode;
+import org.jsoup.Jsoup;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
@@ -38,6 +41,8 @@ import org.w3c.dom.Document;
 public class ImageUtilities {
 
     public static final String SUBSTANCE_IMAGE_REFERENCE_TYPE = "IMAGE REFERENCE";
+    public static final String PLANTS_OF_THE_WORLD = "POWO";
+    public static final String KEW_PARSING_EXPRESSION ="div[class=c-gallery__image-container first-image] img";;
 
     @Autowired
     private PayloadRepository payloadRepository;
@@ -61,6 +66,16 @@ public class ImageUtilities {
             int numberToLookUp = imageNumber % images.size();
             if( numberToLookUp >= 0 && numberToLookUp < images.size()) {
                 return images.get(numberToLookUp);
+            }
+        }
+        if(substance.substanceClass == Substance.SubstanceClass.structurallyDiverse
+                && substance.codes.stream().anyMatch(c->c.codeSystem.equalsIgnoreCase(PLANTS_OF_THE_WORLD))) {
+            log.trace("str div with POWO");
+            Optional<Code> powoCode = substance.codes.stream().filter(c->c.codeSystem.equalsIgnoreCase(PLANTS_OF_THE_WORLD)).findFirst();
+            if( powoCode.isPresent() ) {
+                log.trace("going to retrieve and return POWO image");
+                String data=TautomerUtils.getFullResponse(powoCode.get().url);
+                return new ImageInfo(true, data.getBytes(), "jpg");
             }
         }
         return new ImageInfo(false,null,null);
@@ -185,4 +200,15 @@ public class ImageUtilities {
         return ( ref.uploadedFile != null && ref.uploadedFile.length()>0  && ref.docType.equalsIgnoreCase(SUBSTANCE_IMAGE_REFERENCE_TYPE));
     }
 
+    public static String extractImageElementText(String rawDocument, String expression){
+        org.jsoup.nodes.Document doc = Jsoup.parse(rawDocument);
+        Elements elements= doc.body().select(expression);
+        if(elements.size() == 1) {
+            if( elements.get(0).nodeName().equalsIgnoreCase("img")) {
+                return elements.get(0).toString();
+            }
+            return elements.get(0).select("img").toString();
+        }
+        return "multiple";
+    }
 }

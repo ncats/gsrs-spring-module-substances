@@ -4,6 +4,7 @@ import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
+import gsrs.module.substance.utils.TautomerUtils;
 import gsrs.repository.PayloadRepository;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
@@ -15,6 +16,8 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.select.Elements;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +33,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -318,6 +322,56 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         }
     }
 
+    @Test
+    public void testParsingIdeaPos(){
+        String expression = "div[class=c-gallery__image-container first-image] img";
+
+        List<String> urlsWithImages = Arrays.asList("https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:261815-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60450240-2",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:171100-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:486985-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:330907-2",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:732601-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:854128-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:837530-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:601892-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:518033-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77184820-1");
+        List<String> urlsWithoutImages = Arrays.asList("https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60450766-2",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77091396-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:171238-2");
+        Assertions.assertTrue(urlsWithImages.stream().allMatch(u->{
+            String html = TautomerUtils.getFullResponse(u);
+            String data = null;
+            try {
+                data = ImageUtilities.extractImageElementText(html, expression);
+                return data.contains("img");
+            } catch (Exception e) {
+                System.err.println("Error parsing data: " + e.getMessage());
+                return false;
+            }
+        }));
+    }
+
+    @Test
+    public void testParsingIdeaNeg(){
+        String expression = "div[class=c-gallery__image-container first-image] img";
+
+        List<String> urlsWithoutImages = Arrays.asList("https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60450766-2",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77091396-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:171238-2");
+        Assertions.assertTrue(urlsWithoutImages.stream().allMatch(u->{
+            String html = TautomerUtils.getFullResponse(u);
+            String data = null;
+            try {
+                data = ImageUtilities.extractImageElementText(html, expression);
+                return !data.contains("img");
+            } catch (Exception e) {
+                System.err.println("Error parsing data: " + e.getMessage());
+                return false;
+            }
+        }));
+    }
     private UUID savePayload(String urlSource, String resourceName) {
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -348,4 +402,4 @@ public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest 
         return imageBytes;
     }
 
-}
+ }
