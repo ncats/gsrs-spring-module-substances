@@ -33,33 +33,33 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
             log.trace("setting up staging area service");
             stagingAreaService = new DefaultStagingAreaService();
             stagingAreaService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaService);
-            Map<String, List<Map<String, Object>>> matchableCalculatorConfig = new HashMap<>();
-            List<Map<String, Object>> configs = new ArrayList<>();
+            Map<String, Map<String, Map<String, Object>>> matchableCalculatorConfig = new HashMap<>();
+            Map<String, Map<String, Object>> configs = new HashMap<>();
             Map<String, Object> casExtractor = new HashMap<>();
             casExtractor.put("matchableCalculationClass", CASNumberMatchableExtractor.class);
             LinkedHashMap<String, Object> config= new LinkedHashMap<>();
             config.put("casCodeSystems", Arrays.asList("CAS", "CASNo", "CASNumber"));
             casExtractor.put("config", config);
-            configs.add(casExtractor);
+            configs.put("CASNumberMatchableExtractor", casExtractor);
 
             Map<String, Object> namesExtractor = new HashMap<>();
             namesExtractor.put("matchableCalculationClass", AllNamesMatchableExtractor.class);
-            configs.add(namesExtractor);
+            configs.put("AllNamesMatchableExtractor", namesExtractor);
 
             Map<String, Object> defHashExtractor = new HashMap<>();
             defHashExtractor.put("matchableCalculationClass", DefinitionalHashMatchableExtractor.class);
-            configs.add(defHashExtractor);
+            configs.put("DefinitionalHashMatchableExtractor", defHashExtractor);
 
             Map<String, Object> selectedCodesExtractor = new HashMap<>();
             selectedCodesExtractor.put("matchableCalculationClass", SelectedCodesMatchableExtractor.class);
             LinkedHashMap<String, Object> config2= new LinkedHashMap<>();
             config2.put("codeSystems", Arrays.asList("CAS", "ChemBL", "NCI", "NSC", "EINECS"));
             selectedCodesExtractor.put("config", config2);
-            configs.add(selectedCodesExtractor);
+            configs.put("SelectedCodesMatchableExtractor", selectedCodesExtractor);
 
             Map<String, Object> uuidExtractor = new HashMap<>();
             uuidExtractor.put("matchableCalculationClass", UUIDMatchableExtractor.class);
-            configs.add(uuidExtractor);
+            configs.put("UUIDMatchableExtractor", uuidExtractor);
             matchableCalculatorConfig.put("substances", configs);
 
             SubstanceStagingAreaEntityService stagingAreaEntityService = new SubstanceStagingAreaEntityService();
@@ -67,7 +67,9 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
             Field factoryConfigField= stagingAreaEntityService.getClass().getDeclaredField("gsrsFactoryConfiguration");
             factoryConfigField.setAccessible(true);
             GsrsFactoryConfiguration factoryConfiguration= (GsrsFactoryConfiguration) factoryConfigField.get(stagingAreaEntityService);
-            factoryConfiguration.setMatchableCalculators(matchableCalculatorConfig);
+            Map<String,Map<String, Map<String,Map<String, Object>>>> oneUp = new HashMap<>();
+            oneUp.put("matchableCalculatorConfig", matchableCalculatorConfig);
+            factoryConfiguration.setMatchableCalculators(oneUp);
             stagingAreaService.registerEntityService(stagingAreaEntityService);
         }
     }
