@@ -12,4 +12,6 @@ import org.springframework.context.annotation.Configuration;
 public class StructureHandlingConfiguration {
 
     private String saltFilePath;
+
+    private String resolverBaseUrl;
 }

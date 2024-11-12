@@ -1,7 +1,16 @@
 package example.substance;
 
+import example.GsrsModuleSubstanceApplication;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
+import gsrs.module.substance.utils.TautomerUtils;
+import gsrs.repository.PayloadRepository;
+import gsrs.service.GsrsEntityService;
+import gsrs.service.PayloadService;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
@@ -9,18 +18,37 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.test.context.support.WithMockUser;
+import ix.core.models.Payload;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
 
 @Slf4j
-public class ImageUtilitiesTest {
+@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+@WithMockUser(username = "admin", roles = "Admin")
+public class ImageUtilitiesTest extends AbstractSubstanceJpaFullStackEntityTest {
+
+    @Autowired
+    protected SubstanceEntityService substanceEntityService;
+
+    @Autowired
+    private PayloadRepository payloadRepository;
+
+    @Autowired
+    public PayloadService payloadService;
 
     @Test
     public void testSubstanceWithoutImage(){
@@ -39,34 +67,156 @@ public class ImageUtilitiesTest {
         builder.addReference(reference);
         Substance substance = builder.build();
         ImageUtilities imageUtilities = new ImageUtilities();
-        ImageInfo imageInfo = imageUtilities.getSubstanceImage(substance);
+        ImageInfo imageInfo = imageUtilities.getSubstanceImage(substance, 0);
         Assertions.assertFalse(imageInfo.isHasData());
     }
 
-    @Disabled
     @Test
-    public void testSubstanceWithImage() {
+    public void testSubstanceWithImage() throws IOException {
+        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         SubstanceBuilder builder = new SubstanceBuilder();
         Name plainName = new Name();
         plainName.name="Plain Substance";
         plainName.displayName=true;
-
         Reference reference = new Reference();
         reference.publicDomain= true;
-        reference.docType="Image Reference";
+        reference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
         reference.citation="Descriptions of stuff, page 203";
-        reference.uploadedFile="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         plainName.addReference(reference);
         builder.addName(plainName);
         builder.addReference(reference);
+        UUID id= savePayload(imageUrl, "Feldspar-Group-291254.jpg");
+        reference.uploadedFile="http://localhost:8081/api/v1/payload(" + id.toString() + ")?format=raw";
         Substance substance = builder.build();
+        GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(substance.toFullJsonNode());
+        Assertions.assertTrue(result.isCreated());
         ImageUtilities imageUtilities = new ImageUtilities();
-        ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance);
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance, 0);
         Assertions.assertTrue(imageInfo.isHasData() && imageInfo.getImageData().length>0);
     }
 
     @Test
-    public void resizeImageTest1() {
+    public void testSubstanceWithImage2() {
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Name plainName = new Name();
+        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        plainName.name="Plain Substance";
+        plainName.displayName=true;
+        Reference reference = new Reference();
+        reference.publicDomain= true;
+        reference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference.citation="Descriptions of stuff, page 203";
+        UUID id= savePayload(imageUrl, "Feldspar-Group-291254.jpg");
+        reference.uploadedFile="http://localhost:8081/api/v1/payload(" + id.toString() + ")?format=raw";
+        plainName.addReference(reference);
+        builder.addName(plainName);
+        builder.addReference(reference);
+
+        String imageUrl2 = "https://foto.wuestenigel.com/wp-content/uploads/api/fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg";
+        Reference reference2 = new Reference();
+        reference2.publicDomain= true;
+        reference2.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference2.citation="Descriptions of stuff, page 206";
+        UUID id2= savePayload(imageUrl2, "fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg");
+        reference2.uploadedFile="http://localhost:8081/api/v1/payload(" + id2.toString() + ")?format=raw";
+        builder.addReference(reference2);
+        Substance substance = builder.build();
+        ImageUtilities imageUtilities = new ImageUtilities();
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance, 1);
+        byte[] imageData = getImageData(imageUrl2);
+        Assertions.assertArrayEquals(imageData, imageInfo.getImageData());
+        Assertions.assertTrue(imageInfo.isHasData() && imageInfo.getImageData().length>67000);
+    }
+
+    @Test
+    public void testSubstanceWithImage3(){
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Name plainName = new Name();
+        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        plainName.name="Plain Substance";
+        plainName.displayName=true;
+        Reference reference = new Reference();
+        reference.publicDomain= true;
+        reference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference.citation="Descriptions of stuff, page 203";
+        UUID id= savePayload(imageUrl, "Feldspar-Group-291254.jpg");
+        reference.uploadedFile="http://localhost:8081/api/v1/payload(" + id.toString() + ")?format=raw";
+        plainName.addReference(reference);
+        builder.addName(plainName);
+        builder.addReference(reference);
+
+        String imageUrl2 = "https://foto.wuestenigel.com/wp-content/uploads/api/fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg";
+        Reference reference2 = new Reference();
+        reference2.publicDomain= true;
+        reference2.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference2.citation="Descriptions of stuff, page 206";
+        UUID id2= savePayload(imageUrl2, "fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg");
+        reference2.uploadedFile="http://localhost:8081/api/v1/payload(" + id2.toString() + ")?format=raw";
+        builder.addReference(reference2);
+
+        String imageUrl3 = "https://www.soil-net.com/album/Plants/Garden/slides/Flower%20Clematis%2001.jpg";
+        Reference reference3 = new Reference();
+        reference3.publicDomain= true;
+        reference3.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference3.citation="Descriptions of stuff, page 208";
+        UUID id3= savePayload(imageUrl3, "Flower Clematis 01.jpg");
+        reference3.uploadedFile="http://localhost:8081/api/v1/payload(" + id3.toString() + ")?format=raw";
+        builder.addReference(reference3);
+
+        Substance substance = builder.build();
+        ImageUtilities imageUtilities = new ImageUtilities();
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        ImageInfo imageInfo= imageUtilities.getSubstanceImage(substance, 2);
+        byte[] imageData = getImageData(imageUrl3);
+        Assertions.assertArrayEquals(imageData, imageInfo.getImageData());
+    }
+
+    @Test
+    public void testSubstanceWithImagesList(){
+        SubstanceBuilder builder = new SubstanceBuilder();
+        Name plainName = new Name();
+        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        plainName.name="Plain Substance";
+        plainName.displayName=true;
+        Reference reference = new Reference();
+        reference.publicDomain= true;
+        reference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference.citation="Descriptions of stuff, page 203";
+        UUID id= savePayload(imageUrl, "Feldspar-Group-291254.jpg");
+        reference.uploadedFile="http://localhost:8081/api/v1/payload(" + id.toString() + ")?format=raw";
+        plainName.addReference(reference);
+        builder.addName(plainName);
+        builder.addReference(reference);
+
+        String imageUrl2 = "https://foto.wuestenigel.com/wp-content/uploads/api/fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg";
+        Reference reference2 = new Reference();
+        reference2.publicDomain= true;
+        reference2.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference2.citation="Descriptions of stuff, page 206";
+        UUID id2= savePayload(imageUrl2, "fresh-salad-with-a-mixture-of-different-lettuce-and-arugula-in-a-black-bowl.jpeg");
+        reference2.uploadedFile="http://localhost:8081/api/v1/payload(" + id2.toString() + ")?format=raw";
+        builder.addReference(reference2);
+
+        String imageUrl3 = "https://www.soil-net.com/album/Plants/Garden/slides/Flower%20Clematis%2001.jpg";
+        Reference reference3 = new Reference();
+        reference3.publicDomain= true;
+        reference3.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        reference3.citation="Descriptions of stuff, page 208";
+        UUID id3= savePayload(imageUrl3, "Flower Clematis 01.jpg");
+        reference3.uploadedFile="http://localhost:8081/api/v1/payload(" + id3.toString() + ")?format=raw";
+        builder.addReference(reference3);
+
+        Substance substance = builder.build();
+        ImageUtilities imageUtilities = new ImageUtilities();
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        List<ImageInfo> imageInfo= imageUtilities.getSubstanceImageInfos(substance);
+        Assertions.assertEquals(3, imageInfo.size());
+    }
+
+    @Test
+  public void resizeImageTest1() {
         String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         try {
             URL fileUrl = new URL(imageUrl);
@@ -170,4 +320,97 @@ public class ImageUtilitiesTest {
             Assertions.fail("error processing image fails test");
         }
     }
-}
+
+    //This test may break if Kew Gardens changes its web site
+    @Test
+    public void testParsingIdeaPos(){
+        String expression = "div[class=c-gallery__image-container first-image] img";
+
+        List<String> urlsWithImages = Arrays.asList("https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:261815-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60450240-2",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:171100-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:486985-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:330907-2",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:732601-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:854128-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:837530-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:601892-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:518033-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77184820-1");
+        Assertions.assertTrue(urlsWithImages.stream().allMatch(u->{
+            String html = TautomerUtils.getFullResponse(u);
+            String data = null;
+            try {
+                data = ImageUtilities.extractImageElementText(html, expression);
+                return data.contains("jpg");
+            } catch (Exception e) {
+                System.err.println("Error parsing data: " + e.getMessage());
+                return false;
+            }
+        }));
+    }
+
+    //This test may break if Kew Gardens changes its web site
+    @Test
+    public void testParsingIdeaNeg(){
+        String expression = "div[class=c-gallery__image-container first-image] img";
+
+        List<String> urlsWithoutImages = Arrays.asList("https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:60450766-2",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:77091396-1",
+                "https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:171238-2");
+        Assertions.assertTrue(urlsWithoutImages.stream().allMatch(u->{
+            String html = TautomerUtils.getFullResponse(u);
+            String data = null;
+            try {
+                data = ImageUtilities.extractImageElementText(html, expression);
+                return !data.contains("img");
+            } catch (Exception e) {
+                System.err.println("Error parsing data: " + e.getMessage());
+                return false;
+            }
+        }));
+    }
+
+    @Test
+    public void testExtractImageElementText() throws IOException {
+        String dataFileNameStrDivWithPowo = "testJSON/RK3A4BAR48.json";
+        File substanceJsonFile = new ClassPathResource(dataFileNameStrDivWithPowo).getFile();
+        StructurallyDiverseSubstanceBuilder builder= SubstanceBuilder.from(substanceJsonFile);
+        Substance substance = builder.build();
+        ImageUtilities imageUtilities = new ImageUtilities();
+        AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+        ImageInfo image = imageUtilities.getSubstanceImage(substance, 0);
+        Assertions.assertTrue(image.isHasData() && image.getFormat().equals("jpg"));
+    }
+
+    private UUID savePayload(String urlSource, String resourceName) {
+        TransactionTemplate tx = new TransactionTemplate(transactionManager);
+        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        Payload payload = tx.execute(status -> {
+            try {
+                URL url = new URL(urlSource);
+                InputStream in = url.openStream();
+                return payloadService.createPayload(resourceName, "ignore",
+                        in, PayloadService.PayloadPersistType.TEMP);
+            } catch (Exception e) {
+                System.err.println("error creating payload from URL: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+        });
+        return payload.id;
+    }
+
+    private byte[] getImageData(String imageUrl){
+        byte[] imageBytes = null;
+        try {
+            URL url = new URL(imageUrl);
+            InputStream in = url.openStream();
+            imageBytes=in.readAllBytes();
+        } catch (Exception e) {
+            System.err.println("error getting size from URL: " + e.getMessage());
+            throw new RuntimeException(e);
+        }
+        return imageBytes;
+    }
+
+ }

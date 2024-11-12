@@ -6,6 +6,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -21,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,8 +31,8 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
-import gsrs.module.substance.utils.FeatureUtils;
-import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.controller.*;
+import gsrs.module.substance.utils.*;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -69,11 +72,6 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
@@ -91,9 +89,6 @@ import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
-import gsrs.module.substance.utils.ImageInfo;
-import gsrs.module.substance.utils.ImageUtilities;
-import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
@@ -176,6 +171,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private ChemicalUtils chemicalUtils;
+
+    private int IMAGE_NUMBER_USE_DEFAULT= -1;
+
+    private static final String IMAGE_STORED_WITH_REFERENCE = "Image stored with substance reference";
+    private static final String IMAGE_FOR_TAUTOMER = "Automatically generated tautomer";
 
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -1301,6 +1301,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
+                         @RequestParam(value = "imageNumber", required = false, defaultValue = "0") Integer imageNumber,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
 
         int[] amaps = null;
@@ -1314,8 +1315,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             if(s2r != null && s2r.substanceKey !=null &&
                     !(queryParameters.get("forceDefaultImage") !=null &&queryParameters.get("forceDefaultImage").equalsIgnoreCase("TRUE"))) {
-                log.trace("going to call getSpecificImageForSubstance");
-                ImageInfo imageInfo = getSpecificImageForSubstance(s2r.substanceKey);
+                log.trace("going to call getSpecificImageForSubstance. imageNumber: {}", imageNumber);
+                ImageInfo imageInfo = imageNumber == IMAGE_NUMBER_USE_DEFAULT ? new ImageInfo()
+                        : getSpecificImageForSubstance(s2r.substanceKey, imageNumber);
                 if (imageInfo.isHasData() && imageInfo.getImageData().length > 0) {
                     String formatToUse = format;
                     if (imageInfo.getFormat() != null && imageInfo.getFormat().trim().length() > 0) {
@@ -1411,6 +1413,102 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(bdat.dat, headers, HttpStatus.OK);
 
     }
+
+    @GetGsrsRestApiMapping({"/totalImages({ID})", "/totalImages/{ID}"})
+    public ResponseEntity<Object> totalImages(@PathVariable("ID") String idOrSmiles,
+                             @RequestParam(value = "version", required = false) String version,
+                             @RequestParam Map<String, String> queryParameters) throws Exception {
+        ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
+        if( !UUIDUtil.isUUID(idOrSmiles)){
+            topOfOutput.put("message", "Invalid input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()-> getSubstanceAndStructure(idOrSmiles,version));
+        if( s2r == null) {
+            log.warn("No data found for input");
+            topOfOutput.put("message", "No data found for input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
+        HttpStatus status = HttpStatus.BAD_REQUEST;
+        if(substance.isPresent()) {
+            ImageUtilities imageUtilities = new ImageUtilities();
+            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+            List<ImageInfo> imageInfos = imageUtilities.getSubstanceImageInfos(substance.get());
+            topOfOutput.put("totalImages", imageInfos.size());
+            status = HttpStatus.OK;
+        } else {
+            topOfOutput.put("totalImages", 0);
+        }
+        return new ResponseEntity<>( GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), status);
+    }
+
+    @GetGsrsRestApiMapping({"/listImages({ID})", "/listImages/{ID}"})
+    public ResponseEntity<Object> listImages(@PathVariable("ID") String idOrSmiles,
+                             @RequestParam(value = "version", required = false) String version,
+                             @RequestParam Map<String, String> queryParameters) throws Exception {
+        ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
+        if( !UUIDUtil.isUUID(idOrSmiles)){
+            log.warn("in listImages,input is not UUID");
+            topOfOutput.put("message", "invalid input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+
+        StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
+            return getSubstanceAndStructure(idOrSmiles,version);
+        });
+        if(s2r == null) {
+            log.warn("No data found for input");
+            topOfOutput.put("message", "No data found for input");
+            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
+        }
+        Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
+        ArrayNode outputList = JsonNodeFactory.instance.arrayNode();
+        if(substance.isPresent()) {
+            ImageUtilities imageUtilities = new ImageUtilities();
+            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
+            List<ImageInfo> imageInfos = imageUtilities.getSubstanceImageInfos(substance.get());
+            AtomicInteger imageOrdinal =new AtomicInteger(0);
+            if( imageInfos.isEmpty() && substance.get() instanceof ChemicalSubstance) {
+                TautomerUtils tautomerUtils = new TautomerUtils();
+                AutowireHelper.getInstance().autowireAndProxy(tautomerUtils);
+                List<String> tautomericSmiles= tautomerUtils.getTautomerSmiles( substance.get().toChemical());
+                tautomericSmiles.forEach(s->{
+                    StringBuilder urlBuilder = new StringBuilder();
+                    urlBuilder.append("render(");
+                    urlBuilder.append(URLEncoder.encode(s, Charset.defaultCharset()));
+                    urlBuilder.append(")?");
+                    appendParametersToStringBuilder(urlBuilder, queryParameters);
+                    //remove '&' from the end of the string
+                    if(urlBuilder.charAt(urlBuilder.length()-1) == '&') {
+                       urlBuilder.setLength(urlBuilder.length()-1);
+                    }
+                    ObjectNode node = JsonNodeFactory.instance.objectNode();
+                    node.put("url", urlBuilder.toString());
+                    node.put("outputType", IMAGE_FOR_TAUTOMER);
+                    outputList.add(node);
+                });
+            }
+            imageInfos.forEach(imageInfo -> {
+                //build a URL based on the parameters we received
+                //render(782ffd25-f1ca-41b4-b5de-85b5b5df16d0)?format=svg&size=450&stereo=false&cache-control=bo8ykiezn3y&imageNumber=
+                StringBuilder urlBuilder = new StringBuilder();
+                urlBuilder.append("render(");
+                urlBuilder.append(idOrSmiles);
+                urlBuilder.append(")?");
+                appendParametersToStringBuilder(urlBuilder, queryParameters);
+                urlBuilder.append("imageNumber=");
+                urlBuilder.append(imageOrdinal.getAndIncrement());
+                ObjectNode node = JsonNodeFactory.instance.objectNode();
+                node.put("url", urlBuilder.toString());
+                node.put("outputType", IMAGE_STORED_WITH_REFERENCE);
+                outputList.add(node);
+           });
+        }
+        topOfOutput.put("imagesFound", outputList);
+        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.OK);
+    }
+
     private static void renderInner(ChemicalRenderer renderer, Chemical chem, int minWidth, int maxWidth, int minHeight, int maxHeight,
                                     double bondLength, String format, ByteArrayOutputStream bos)
             throws IOException {
@@ -1505,12 +1603,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
-    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey){
+    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey, Integer imageNumber){
         Optional<Substance> substance = EntityFetcher.of(substanceKey).getIfPossible().map(o->(Substance)o);
         if(substance.isPresent()) {
             ImageUtilities imageUtilities = new ImageUtilities();
             imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
-            return imageUtilities.getSubstanceImage(substance.get());
+            return imageUtilities.getSubstanceImage(substance.get(), imageNumber);
         }
         return new ImageInfo(false, null, null);
     }
@@ -2025,5 +2123,14 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         });
         allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
         topLevelNode.put("featureList", allFeatures);
+    }
+
+    private void appendParametersToStringBuilder(StringBuilder stringBuilder, Map<String, String> parameters) {
+        parameters.entrySet().forEach(entry->{
+            stringBuilder.append(entry.getKey().equalsIgnoreCase("imageFormat") ? "format": entry.getKey());
+            stringBuilder.append("=");
+            stringBuilder.append(entry.getValue());
+            stringBuilder.append("&");
+        });
     }
 }
