@@ -56,6 +56,7 @@ public class ChemicalRenderingFullStackTest  extends AbstractSubstanceJpaFullSta
                 null,
                 null,
                 false,
+                0,
                 new HashMap<String, String>()))
                 .getBody();
         String xml = Arrays.stream(new String(bod2).split("\n"))

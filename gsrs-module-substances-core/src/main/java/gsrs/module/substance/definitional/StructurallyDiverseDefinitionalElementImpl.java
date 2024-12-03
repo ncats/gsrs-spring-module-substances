@@ -6,6 +6,7 @@ import ix.core.models.Keyword;
 import ix.ginas.models.v1.Parameter;
 import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
+import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -31,6 +32,7 @@ public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalE
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
+        DefinitionalElementImplementation.super.computeDefinitionalElements(s, consumer);
             StructurallyDiverseSubstance substance = (StructurallyDiverseSubstance) s;
 
 		/*
@@ -149,28 +151,18 @@ public class StructurallyDiverseDefinitionalElementImpl implements DefinitionalE
 
             }
 
-            if( substance.properties != null ) {
-                for(Property property : substance.properties) {
-                    if(property.isDefining() && property.getValue() != null) {
-                        String defElementName = String.format("properties.%s.value",
-                                property.getName());
-                        DefinitionalElement propertyValueDefElement =
-                                DefinitionalElement.of(defElementName, property.getValue().toString(), 2);
-                        consumer.accept(propertyValueDefElement);
-                        log.trace("added def element for property " + defElementName);
-                        for(Parameter parameter : property.getParameters()) {
-                            defElementName = String.format("properties.%s.parameters.%s.value",
-                                    property.getName(), parameter.getName());
-                            if( parameter.getValue() != null) {
-                                DefinitionalElement propertyParamValueDefElement =
-                                        DefinitionalElement.of(defElementName,
-                                                parameter.getValue().toString(), 2);
-                                consumer.accept(propertyParamValueDefElement);
-                                log.trace("added def element for property parameter " + defElementName);
-                            }
-                        }
-                    }
-                }
+            if(substance.structurallyDiverse.infraSpecificType != null && substance.structurallyDiverse.infraSpecificType.length() > 0) {
+                DefinitionalElement infraspecificTypeElement = DefinitionalElement.of("structurallyDiverse.infraSpecificType",
+                        substance.structurallyDiverse.infraSpecificType.toUpperCase(), 1);
+                log.trace("adding infraspecificType");
+                consumer.accept(infraspecificTypeElement);
+            }
+
+            if(substance.structurallyDiverse.infraSpecificName != null && substance.structurallyDiverse.infraSpecificName.length() > 0) {
+                DefinitionalElement infraspecificNameElement = DefinitionalElement.of("structurallyDiverse.infraSpecificName",
+                    substance.structurallyDiverse.infraSpecificName.toUpperCase(), 1);
+                log.trace("adding infraspecificName");
+                consumer.accept(infraspecificNameElement);
             }
     }
 }

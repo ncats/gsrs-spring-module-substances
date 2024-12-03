@@ -10,8 +10,8 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="example.chem" level="TRACE">
-        <appender-ref ref="STDOUT" />
+    <logger name="example.prot" level="TRACE" additivity="false">
+        <appender-ref ref="STDOUT"  />
     </logger>
 
     <logger name="ix.core.chem" level="TRACE">

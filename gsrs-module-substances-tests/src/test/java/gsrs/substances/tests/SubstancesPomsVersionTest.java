@@ -22,9 +22,9 @@ public class SubstancesPomsVersionTest {
 
     // Set to true when testing in IDE
     boolean turnOffPomParameterCheck = false;
-
-    String shortVersion;
-    String longVersion;
+    String starterModuleVersion;
+    String substancesModuleVersion;
+    String otherModuleVersion;
     String rootDir;
     String propertiesFile;
     String installExtraJarsScriptText;
@@ -40,11 +40,14 @@ public class SubstancesPomsVersionTest {
 
         try {
             Properties properties = PomUtilities.readPomVersionProperties(rootDir + "/" + propertiesFile);
-            shortVersion = properties.getProperty("project.shortVersion");
-            longVersion = properties.getProperty("project.longVersion");
-            assertNotNull(shortVersion);
-            System.out.println("shortVersion: " + shortVersion);
-            System.out.println("longVersion: " + longVersion);
+
+
+            starterModuleVersion = properties.getProperty("sm.pomversiontest.starterModuleVersion");
+            substancesModuleVersion = properties.getProperty("sm.pomversiontest.substancesModuleVersion");
+            assertNotNull(starterModuleVersion);
+            assertNotNull(substancesModuleVersion);
+            System.out.println("starterModuleVersion: " + starterModuleVersion);
+            System.out.println("substancesModuleVersion: " + substancesModuleVersion);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -66,8 +69,8 @@ public class SubstancesPomsVersionTest {
             rootModel = PomUtilities.readPomToModel(rootDir + "/pom.xml");
             Properties properties = rootModel.getProperties();
             System.out.println("> checking root");
-            assertEquals( longVersion, rootModel.getVersion(), "version");
-            assertEquals(longVersion, properties.getProperty("gsrs.version"), "gsrs.version:");
+            assertEquals( substancesModuleVersion, rootModel.getVersion(), "version");
+            assertEquals(starterModuleVersion, properties.getProperty("gsrs.version"), "gsrs.version:");
             List<String> modules = rootModel.getModules();
             for (String module : modules) {
                 System.out.println("> checking "+ module);
@@ -75,7 +78,7 @@ public class SubstancesPomsVersionTest {
                 try {
                     moduleModel = PomUtilities.readPomToModel(rootDir + "/" + module + "/pom.xml");
                     String checkVersion = moduleModel.getParent().getVersion();
-                    assertEquals (longVersion, checkVersion, "parent/version");
+                    assertEquals (substancesModuleVersion, checkVersion, "parent/version");
 
                     if (module.equals("gsrs-fda-substance-extension")) {
                         List<Dependency> dependencies = moduleModel.getDependencies();

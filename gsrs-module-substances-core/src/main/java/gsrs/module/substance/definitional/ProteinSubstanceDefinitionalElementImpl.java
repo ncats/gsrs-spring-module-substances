@@ -54,7 +54,7 @@ public class ProteinSubstanceDefinitionalElementImpl implements DefinitionalElem
 
     @Override
     public void computeDefinitionalElements(Object substance, Consumer<DefinitionalElement> consumer) {
-
+        DefinitionalElementImplementation.super.computeDefinitionalElements(substance, consumer);
         ProteinSubstance proteinSubstance = (ProteinSubstance)substance;
         //this implementation is different than the version in GSRS 2.x in that
         //the old version made a copy of the ProteinSubstance to reorder the subunits and all corresponding  Sites

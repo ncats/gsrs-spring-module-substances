@@ -84,6 +84,7 @@ public class SubstanceStructureSearchService {
         SUBSTRUCTURE("sub"),
         SIMILARITY("sim"),
         FLEX("flex"),
+        FLEX_PLUS("flexplus"),
         EXACT("exact")
         ;
 
@@ -155,7 +156,8 @@ public class SubstanceStructureSearchService {
         
         public boolean isHashSearch() {
             if(type==null)return false;
-            return this.type.equals(StructureSearchType.EXACT) || this.type.equals(StructureSearchType.FLEX);
+            return this.type.equals(StructureSearchType.EXACT) || this.type.equals(StructureSearchType.FLEX)
+                    || this.type.equals(StructureSearchType.FLEX_PLUS);
         }
 
         public static String getDefaultField() {
@@ -357,5 +359,9 @@ public class SubstanceStructureSearchService {
             }
             return null;
         }
+    }
+
+    public boolean isFlexSearchNoStereo() {
+        return this.structureSearchConfiguration.isFlexSearchNoStereo();
     }
 }

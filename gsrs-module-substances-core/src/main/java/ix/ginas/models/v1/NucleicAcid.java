@@ -25,6 +25,7 @@ public class NucleicAcid extends GinasCommonSubData {
 	
 	@JsonIgnore
 	@OneToOne(cascade= CascadeType.ALL)
+			@MapsId
 	Modifications modifications = new Modifications();
 	
 	@JSONEntity(title = "Nucleic Acid Type", format = JSONConstants.CV_NUCLEIC_ACID_TYPE)
