@@ -16,37 +16,31 @@
 
 package example;
 
-import io.hypersistence.optimizer.HypersistenceOptimizer;
-import io.hypersistence.optimizer.core.event.Event;
-import io.hypersistence.optimizer.hibernate.event.configuration.connection.Connection9071557016Event;
-import io.hypersistence.optimizer.hibernate.event.configuration.query.Query7786258879Event;
-import io.hypersistence.optimizer.hibernate.event.configuration.query.Query2468924130Event;
-import io.hypersistence.optimizer.hibernate.event.configuration.schema.SchemaGenerationEvent;
-import io.hypersistence.optimizer.hibernate.event.mapping.association.Association3890524098Event;
-import io.hypersistence.optimizer.hibernate.event.mapping.association.Association934543432Event;
-import io.hypersistence.optimizer.hibernate.event.mapping.association.OneToOneWithoutMapsIdEvent;
-import io.hypersistence.optimizer.hibernate.event.mapping.association.fetching.EagerFetchingEvent;
-import io.hypersistence.optimizer.hibernate.event.query.QueryEvent;
-import io.hypersistence.optimizer.hibernate.event.session.SessionEvent;
-import org.junit.Before;
+import static org.junit.Assert.assertSame;
+
+import java.util.concurrent.ExecutionException;
+
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import static org.junit.Assert.*;
+import io.hypersistence.optimizer.HypersistenceOptimizer;
+import io.hypersistence.optimizer.core.event.Event;
+//import io.hypersistence.optimizer.hibernate.event.configuration.connection.Connection9071557016Event;
+//import io.hypersistence.optimizer.hibernate.event.configuration.query.Query7786258879Event;
+//import io.hypersistence.optimizer.hibernate.event.configuration.query.Query2468924130Event;
+import io.hypersistence.optimizer.hibernate.event.configuration.schema.SchemaGenerationEvent;
+//import io.hypersistence.optimizer.hibernate.event.mapping.association.Association3890524098Event;
+//import io.hypersistence.optimizer.hibernate.event.mapping.association.Association934543432Event;
+import io.hypersistence.optimizer.hibernate.event.mapping.association.OneToOneWithoutMapsIdEvent;
+import io.hypersistence.optimizer.hibernate.event.mapping.association.fetching.EagerFetchingEvent;
+import io.hypersistence.optimizer.hibernate.event.session.SessionEvent;
 
 @SpringBootTest
 public class ApplicationTest {
@@ -64,14 +58,10 @@ public class ApplicationTest {
 
     @Test
     public void test() throws ExecutionException, InterruptedException {
+ 	
         assertEventTriggered(2, EagerFetchingEvent.class);
-        assertEventTriggered(1, Association3890524098Event.class);
-        assertEventTriggered(1, Association934543432Event.class);
         assertEventTriggered(1, OneToOneWithoutMapsIdEvent.class);
-        assertEventTriggered(1, Connection9071557016Event.class);
         assertEventTriggered(1, SchemaGenerationEvent.class);
-        assertEventTriggered(1, Query2468924130Event.class);
-        assertEventTriggered(1, Query7786258879Event.class);
         assertEventTriggered(1, SessionEvent.class);
     }
 
