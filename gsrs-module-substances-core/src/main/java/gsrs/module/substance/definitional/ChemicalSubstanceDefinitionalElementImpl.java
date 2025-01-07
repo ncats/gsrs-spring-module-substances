@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 @Slf4j
@@ -18,7 +19,8 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
     @Autowired
     private StructureProcessor structureProcessor;
 
-    private List<String> stereoUsingOpticalActivities = Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC");
+    private List<String> stereoUsingOpticalActivities = Collections.singletonList("UNKNOWN");
+    //changed to UNKNOWN based on Slack conversation on 29 Oct 2024 Arrays.asList( "UNKNOWN", "MIXED", "EPIMERIC", "RACEMIC");
 
     @Override
     public boolean supports(Object s) {
@@ -63,6 +65,15 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
                     log.debug("structure.opticalActivity.toString(): " + structure.opticalActivity.toString());
                 }
             }
+            //adding 'additional stereochemistry' as requested 30 August 2024
+            if(structure.atropisomerism!= null
+                    && "YES".equalsIgnoreCase(structure.atropisomerism.toString())
+                    && structure.stereoComments!=null
+                    && structure.stereoComments.trim().length()>0){
+                log.trace("additional/stereoComments stereochemistry to def hash for structure");
+                consumer.accept(DefinitionalElement.of("structure.properties.stereoComments",
+                        structure.stereoComments, 2));
+            }
         }
       
         if( chemicalSubstance.moieties != null) {
@@ -82,6 +93,14 @@ public class ChemicalSubstanceDefinitionalElementImpl implements DefinitionalEle
                     consumer.accept(DefinitionalElement.of("moiety[" + mh + "].opticalActivity",
                             m.structure.opticalActivity.toString(), 2));
                     log.debug("m.structure.opticalActivity.toString(): " + m.structure.opticalActivity.toString());
+                }
+                //adding 'additional stereochemistry' as requested 30 August 2024
+                if(m.structure.atropisomerism!= null
+                        && "YES".equalsIgnoreCase(m.structure.atropisomerism.toString())
+                        && m.structure.stereoComments.trim().length()>0){
+                    log.trace("additional/stereoComments stereochemistry to def hash for moiety structure");
+                    consumer.accept(DefinitionalElement.of("moiety[" + mh + "].properties.stereoComments",
+                            m.structure.stereoComments, 2));
                 }
                 consumer.accept(DefinitionalElement.of("moiety[" + mh + "].countAmount",
                         m.getCountAmount().toString(), 2));

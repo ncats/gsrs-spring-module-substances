@@ -334,7 +334,7 @@
         <dependency>
             <groupId>gov.fda.gsrs</groupId>
             <artifactId>Featureize-Nitrosamines</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
+            <version>0.0.4-SNAPSHOT</version>
         </dependency>
     </dependencies>
 </project>
