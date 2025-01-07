@@ -7,6 +7,7 @@ import gsrs.module.substance.StructureHandlingConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -137,12 +138,16 @@ public class ChemicalUtils {
         log.trace("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
         saltData = new HashMap<>();
         try {
-            File file = new File(structureHandlingConfiguration.getSaltFilePath());
-            Assert.assertTrue("input salt data file must exist!", file.exists());
+            String path = structureHandlingConfiguration.getSaltFilePath();
+            log.info("Trying to read salt file at path: " + path);
+            File file = new ClassPathResource(path).getFile();
+            Assert.assertTrue("input salt data file must exist! The path was: " + path, file.exists());
             List<String> lines = Files.readAllLines(file.toPath());
             for (String line : lines) {
-                String[] lineParts = line.split("\\t");
-                saltData.put(lineParts[0], lineParts[1]);
+                if (line.matches(".*\\w.*")) {
+                    String[] lineParts = line.split("\\t");
+                    saltData.put(lineParts[0], lineParts[1]);
+                }
             }
         }
         catch (Exception ex){

@@ -114,6 +114,7 @@ public class ExampleValueMakerTest extends AbstractSubstanceJpaEntityTest {
 		    		
 				})
 				.generateNewUUID()
+				// test fails here, seems to be cdk layout error
 				.build();
 		
 		this.testIndexableValuesHasFacet(childSub, ExampleValueMaker.MOIETY_TYPE_FACET, ExampleValueMaker.CHILD_SUBSTANCE_RELATIONSHIP);
