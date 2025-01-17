@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -47,7 +47,7 @@
         </dependency>
 
     </dependencies>
-    <!-- Uncomment this for maven public release deployment
+    <!-- Uncomment this for maven public release deployment start
     <build>
         <plugins>
             <plugin>
@@ -79,4 +79,5 @@
             </plugin>            
         </plugins>
     </build> -->
+    <!-- Uncomment this for maven public release deployment start end-->
 </project>

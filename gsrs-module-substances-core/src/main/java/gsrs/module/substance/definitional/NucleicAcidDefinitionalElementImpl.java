@@ -29,6 +29,7 @@ public class NucleicAcidDefinitionalElementImpl implements DefinitionalElementIm
 
     @Override
     public void computeDefinitionalElements(Object substance, Consumer<DefinitionalElement> consumer) {
+        DefinitionalElementImplementation.super.computeDefinitionalElements(substance, consumer);
         NucleicAcidSubstance nucleicAcidSubstance = (NucleicAcidSubstance) substance;
         if(nucleicAcidSubstance.nucleicAcid ==null || nucleicAcidSubstance.nucleicAcid.subunits ==null){
             return;
@@ -75,10 +76,8 @@ public class NucleicAcidDefinitionalElementImpl implements DefinitionalElementIm
                 }
             }
 
-
         if( nucleicAcidSubstance.modifications != null ){
             definitionalElementFactory.addDefinitionalElementsFor(nucleicAcidSubstance.modifications, consumer);
         }
-
     }
 }

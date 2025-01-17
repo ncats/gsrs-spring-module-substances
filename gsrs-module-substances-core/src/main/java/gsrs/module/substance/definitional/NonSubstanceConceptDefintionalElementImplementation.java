@@ -15,6 +15,7 @@ public class NonSubstanceConceptDefintionalElementImplementation implements Defi
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
+        DefinitionalElementImplementation.super.computeDefinitionalElements(s, consumer);
             String primaryName = "";
             for(Name name : ((Substance)s).getAllNames()) {
                 if( name.displayName ){
