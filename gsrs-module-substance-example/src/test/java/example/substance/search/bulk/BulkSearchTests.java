@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -117,7 +118,7 @@ public class BulkSearchTests extends AbstractSubstanceJpaFullStackEntityTest {
 		assertEquals(searchContent.getResultsAsList().size(),9);
 			
 		
-		BulkQuerySummary summary = (BulkQuerySummary)cache.getRaw("BulkSearchSummary/"+request.computeKey(false));
+		BulkQuerySummary summary = (BulkQuerySummary)cache.getRaw("BulkSearchSummary/"+request.computeKey(false,new ArrayList<String>()));
 			
 		
 		List<String> queriesInResult = summary.getQueries().stream().map(r->r.getSearchTerm()).collect(Collectors.toList());		
@@ -153,7 +154,7 @@ public class BulkSearchTests extends AbstractSubstanceJpaFullStackEntityTest {
 		
 		assertEquals(searchContent.getResultsAsList().size(),3);
 		
-		BulkQuerySummary summary = (BulkQuerySummary)cache.getRaw("BulkSearchSummary/"+request.computeKey(false));
+		BulkQuerySummary summary = (BulkQuerySummary)cache.getRaw("BulkSearchSummary/"+request.computeKey(false, new ArrayList<String>()));
 		List<String> queriesInResult = summary.getQueries().stream().map(r->r.getSearchTerm()).collect(Collectors.toList());
 		
 		assertEquals(queries.size(),queriesInResult.size());
