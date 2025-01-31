@@ -77,11 +77,26 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		try {
 			String inputStructure = term.getFragmentStructure().split(" ")[0];
 			Chemical chem = Chemical.parse(inputStructure);
+			//see if we get a good result without changing the structure
+			Optional<String> initialHash= getInitialHash(chem);
+			log.trace("in getHash, initialHash: {}", initialHash);
+			if(initialHash.isPresent()) {
+				return initialHash;
+			}
 			chem = Chem.RemoveQueryFeaturesForPseudoInChI(chem);
 			return Optional.of(chem.toInchi().getKey());
 		} catch (Exception e) {
 			log.error("Error processing fragment structure {}", term.getFragmentStructure());
 			e.printStackTrace();
+			return Optional.empty();
+		}
+	}
+
+	private static Optional<String> getInitialHash(Chemical chem) {
+		try {
+			return Optional.of(chem.toInchi().getKey());
+		}
+		catch(IOException ignore){
 			return Optional.empty();
 		}
 	}
@@ -127,7 +142,8 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "This fragment structure appears to have duplicates: %s", term.getFragmentStructure()));
-			log.warn("Duplicate: {}", hash.get());
+			log.warn("Duplicate: {}. matches follow", hash.get());
+			lookup.get(hash.get()).forEach(log::warn);
 		}
 	}	
 	

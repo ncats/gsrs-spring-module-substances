@@ -1,5 +1,6 @@
 package example.chem;
 
+import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.chem.Chem;
 import ix.ginas.models.v1.FragmentVocabularyTerm;
@@ -12,6 +13,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -154,6 +158,70 @@ public class VocabFragmentCleanupTest {
         Optional<String> hash= CVFragmentStructureValidator.getHash(fragmentVocabularyTerm);
         Assertions.assertTrue(hash.isPresent());
         log.trace("hash: {}", hash.get());
+    }
+
+    @Test
+    void testFaultyDuplicatesNone() {
+        FragmentVocabularyTerm fragmentVocabularyTerm1 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm1.setFragmentStructure("O[C@@H]([C@@H](O[*])[C@H](CO[*])1)[C@H](O1)[*] |$;;;;;_R92;;;;_R91;;;_R90;;$|");
+        fragmentVocabularyTerm1.setSimplifiedStructure("OC@@H]([C@@H](O[*])[C@H](CO[*])1)[C@H](O1)[*] |$;;;;;_R92;;;;_R91;;;_R90;;$|");
+        fragmentVocabularyTerm1.setValue("iR");
+        String hash1= CVFragmentStructureValidator.getHash(fragmentVocabularyTerm1).get();
+
+        FragmentVocabularyTerm fragmentVocabularyTerm2 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm2.setFragmentStructure("[*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|");
+        fragmentVocabularyTerm2.setSimplifiedStructure("[*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|");
+        fragmentVocabularyTerm2.setValue("LR");
+        String hash2= CVFragmentStructureValidator.getHash(fragmentVocabularyTerm2).get();
+        Map<String, List<String>> hashLookup = Arrays.asList(fragmentVocabularyTerm1, fragmentVocabularyTerm2).stream()
+                .filter(term-> term instanceof FragmentVocabularyTerm)
+                .map(f-> Tuple.of(CVFragmentStructureValidator.getHash(f), f.getValue()))
+                .filter(t->t.k().isPresent())
+                .map(Tuple.kmap(k->k.get()))
+                .collect(Tuple.toGroupedMap());
+        Assertions.assertEquals(1, hashLookup.get(hash1).size());
+    }
+
+    @Test
+    void testDistinguishingDifferentSmiles() {
+        FragmentVocabularyTerm fragmentVocabularyTerm1 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm1.setFragmentStructure("O[C@@H]([C@@H](O[*])[C@H](CO[*])1)[C@H](O1)[*] |$;;;;;_R92;;;;_R91;;;_R90;;$|");
+        fragmentVocabularyTerm1.setSimplifiedStructure("OC@@H]([C@@H](O[*])[C@H](CO[*])1)[C@H](O1)[*] |$;;;;;_R92;;;;_R91;;;_R90;;$|");
+        fragmentVocabularyTerm1.setValue("iR");
+        String hash1= CVFragmentStructureValidator.getHash(fragmentVocabularyTerm1).get();
+
+        FragmentVocabularyTerm fragmentVocabularyTerm2 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm2.setFragmentStructure("[*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|");
+        fragmentVocabularyTerm2.setSimplifiedStructure("[*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|");
+        fragmentVocabularyTerm2.setValue("LR");
+
+        FragmentVocabularyTerm fragmentVocabularyTerm3 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm3.setFragmentStructure("O[C@H]1[C@H]([*])O[C@H](CO[*])[C@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|");
+        fragmentVocabularyTerm3.setSimplifiedStructure("OC[C@@H](O)[C@@H](O)[C@@H](O)C=O");
+        fragmentVocabularyTerm3.setValue("R");
+        Map<String, List<String>> hashLookup = Arrays.asList(fragmentVocabularyTerm1, fragmentVocabularyTerm2, fragmentVocabularyTerm3).stream()
+                .filter(term-> term instanceof FragmentVocabularyTerm)
+                .map(f-> Tuple.of(CVFragmentStructureValidator.getHash(f), f.getValue()))
+                .filter(t->t.k().isPresent())
+                .map(Tuple.kmap(k->k.get()))
+                .collect(Tuple.toGroupedMap());
+        Assertions.assertEquals(1, hashLookup.get(hash1).size());
+    }
+
+    @Test
+    void testHaveDifferentHashes() {
+        FragmentVocabularyTerm fragmentVocabularyTerm1 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm1.setFragmentStructure("O[C@@H]([C@@H](O[*])[C@H](CO[*])1)[C@H](O1)[*] |$;;;;;_R92;;;;_R91;;;_R90;;$|");
+        fragmentVocabularyTerm1.setSimplifiedStructure("OC@@H]([C@@H](O[*])[C@H](CO[*])1)[C@H](O1)[*] |$;;;;;_R92;;;;_R91;;;_R90;;$|");
+        fragmentVocabularyTerm1.setValue("iR");
+        String hash1= CVFragmentStructureValidator.getHash(fragmentVocabularyTerm1).get();
+
+        FragmentVocabularyTerm fragmentVocabularyTerm3 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm3.setFragmentStructure("O[C@H]1[C@H]([*])O[C@H](CO[*])[C@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|");
+        fragmentVocabularyTerm3.setSimplifiedStructure("OC[C@@H](O)[C@@H](O)[C@@H](O)C=O");
+        fragmentVocabularyTerm3.setValue("R");
+        String hash3 = CVFragmentStructureValidator.getHash(fragmentVocabularyTerm3).get();
+        Assertions.assertNotEquals(hash1, hash3);
     }
 
     private String getInChiKey(String smiles) throws IOException {
