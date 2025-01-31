@@ -224,6 +224,22 @@ public class VocabFragmentCleanupTest {
         Assertions.assertNotEquals(hash1, hash3);
     }
 
+    @Test
+    void testHaveDifferentHashes2() {
+        FragmentVocabularyTerm fragmentVocabularyTerm1 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm1.setFragmentStructure("[*]OC[C@@](O[C@@H]([*])2)([C@H]([C@H]21)O[*])CO1 |$_R92;;;;;;_R90;;;;_R91;;;;$|");
+        fragmentVocabularyTerm1.setSimplifiedStructure("[*]OC[C@@](O[C@@H]([*])2)([C@H]([C@H]21)O[*])CO1 |$_R92;;;;;;_R90;;;;_R91;;;;$|");
+        fragmentVocabularyTerm1.setValue("iR");
+        String hash1= CVFragmentStructureValidator.getHash(fragmentVocabularyTerm1).get();
+
+        FragmentVocabularyTerm fragmentVocabularyTerm3 = new FragmentVocabularyTerm();
+        fragmentVocabularyTerm3.setFragmentStructure("[*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|");
+        fragmentVocabularyTerm3.setSimplifiedStructure("[*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|");
+        fragmentVocabularyTerm3.setValue("LR");
+        String hash3 = CVFragmentStructureValidator.getHash(fragmentVocabularyTerm3).get();
+        Assertions.assertNotEquals(hash1, hash3);
+    }
+
     private String getInChiKey(String smiles) throws IOException {
         Chemical chem = Chemical.parse(smiles);
         String inChIKey = chem.toInchi().getKey();
