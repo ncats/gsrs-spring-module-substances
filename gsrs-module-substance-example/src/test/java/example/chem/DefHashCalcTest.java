@@ -5,24 +5,19 @@ import gsrs.module.substance.definitional.ChemicalSubstanceDefinitionalElementIm
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.definitional.MixtureDefinitionalElementImpl;
 import gsrs.module.substance.definitional.StructurallyDiverseDefinitionalElementImpl;
-import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.modelBuilders.MixtureSubstanceBuilder;
 import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;

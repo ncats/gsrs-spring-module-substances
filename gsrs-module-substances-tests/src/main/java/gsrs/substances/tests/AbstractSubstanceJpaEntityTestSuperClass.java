@@ -154,6 +154,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
 
         @Bean
         @ConditionalOnMissingBean
+        @Primary
         public GsrsSchedulerTaskPropertiesConfiguration getGsrsSchedulerTaskPropertiesConfiguration() {
             return new GsrsSchedulerTaskPropertiesConfiguration();
         }
