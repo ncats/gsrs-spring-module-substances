@@ -1,8 +1,5 @@
 package example.substance;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
@@ -15,6 +12,7 @@ import java.util.function.Supplier;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +39,9 @@ import ix.core.chem.InchiStandardizer;
 import ix.core.chem.StructureStandardizer;
 import ix.core.models.Structure;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
@@ -60,10 +61,6 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
 
     @TestConfiguration
     public static class Configuration{
-//        @Value("${ix.core.structureIndex.atomLimit}")
-//        private int maxNumberOfAtoms = 240;
-//        @Value(value ="${ix.structure-standardizer}")
-//        private Class<? extends AbstractStructureStandardizer> standardizerClass = InchiStandardizer.class;
         @Bean
         public StructureStandardizer getStructureStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
             InchiStandardizer istd = new InchiStandardizer();
@@ -259,6 +256,40 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
 
         assertTrue(lstd.getStdCallCount()>=2, "Standardization should be called at least twice, but could be called more in some cases");
         assertEquals("root_structure_properties_EXACT_HASH:MFFMDFFZMYYVKS_SECBINFHSA_N",mockAtt.getAttributes().get("q"));
+    }
+
+
+    @Test
+    public void ensureSmilesLeadsToReasonableMolfile() throws Exception {
+
+        ObjectMapper om = new ObjectMapper();
+        String smiles = "c1ccc(cc1)P(CCCC#N)(c2ccccc2)c3ccccc3";
+        UUID uuid1 = UUID.randomUUID();
+        new SubstanceBuilder()
+                .asChemical()
+                .setStructureWithDefaultReference(smiles)
+                .addName("triphenyl-Phosphene,(3-cyanopropyl)")
+                .setUUID(uuid1)
+                .buildJsonAnd(this::assertCreatedAPI);
+
+        HttpServletRequest  mockedRequest = Mockito.mock(HttpServletRequest.class);
+        Mockito.when(mockedRequest.getRequestURI()).thenReturn("http://mock");
+        Mockito.when(mockedRequest.getRequestURL()).thenReturn(new StringBuffer("http://mock"));
+
+        LoggingStructureStandardizer lstd=(LoggingStructureStandardizer)standardizer;
+
+        lstd.reset();
+        assertEquals(0,lstd.getStdCallCount());
+
+        ResponseEntity<Object> response= substanceController.interpretStructure(smiles, new HashMap<>());
+        assertTrue(response.getBody() instanceof ObjectNode);
+        ObjectNode baseNode = (ObjectNode)response.getBody();
+        ObjectNode structureNode = (ObjectNode) baseNode.get("structure");
+        String molfile = structureNode.get("molfile").asText();
+        assertNotNull(molfile);
+        Chemical chem = Chemical.parseMol(molfile);
+        assertTrue(chem.bonds().allMatch(b->b.isQueryBond()));
+        System.out.printf("molfile=%s\n", molfile);
     }
 
 
