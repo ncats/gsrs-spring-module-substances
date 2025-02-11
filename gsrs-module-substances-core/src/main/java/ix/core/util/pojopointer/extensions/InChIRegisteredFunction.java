@@ -6,6 +6,7 @@ import ix.core.util.pojopointer.LambdaPath;
 import ix.core.util.pojopointer.extensions.InChIRegisteredFunction.InChIPath;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 @Slf4j
@@ -31,10 +32,18 @@ public class InChIRegisteredFunction implements RegisteredFunction<InChIPath, St
 	
 	@Override
 	public BiFunction<InChIPath, Structure, Optional<String>> getOperation() {
+		log.trace("getOperation");
 		return (fp, s)->{
 
 			try{
-				return Optional.ofNullable(s.getInChIKeyAndThrow());
+				List<String> firstGo = s.getInChIKeysAndThrow();
+				log.trace("firstGo: {}", firstGo);
+				if(firstGo != null && firstGo.size() > 0){
+					log.trace("firstGot produced data");
+					return Optional.of(String.join(";",firstGo));
+				}
+				log.trace("firstGot produced NO data");
+				return Optional.ofNullable(s.getInChIKey());
 			}catch(Exception e){
                 log.error("error computing inchi key of structure ID " + s.id, e);
 				throw new RuntimeException("error computing inchi key of structure ID " + s.id, e);
