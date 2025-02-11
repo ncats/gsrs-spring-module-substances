@@ -44,7 +44,7 @@ public class TagsValidator extends AbstractValidatorPlugin<Substance> {
      *
      * Without this setting, the validator will not be run on submission of a substance.
      *
-     *     gsrs.validators.substances += {
+     *     gsrs.validators.substances.list.TagsValidator = {
      *         "validatorClass" = "ix.ginas.utils.validation.validators.tags.TagsValidator",
      *         "newObjClass" = "ix.ginas.models.v1.Substance",
      *         parameters: {
