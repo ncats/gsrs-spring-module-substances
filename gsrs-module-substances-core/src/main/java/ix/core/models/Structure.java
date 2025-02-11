@@ -493,7 +493,8 @@ public class Structure extends BaseModel {
         log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}", this.stereoChemistry);
         try {
 
-        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString()))) {
+        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
+            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
             //handle non-epimers
             return Collections.singletonList(getInChIKey());
         }
