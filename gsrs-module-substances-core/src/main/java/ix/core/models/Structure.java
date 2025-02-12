@@ -517,6 +517,36 @@ public class Structure extends BaseModel {
         }
     }
 
+    @JsonProperty("_inchiSet")
+    @Transient
+    public List<String> getInChIsAndThrow() {
+
+        log.trace("in getInChIsAndThrow(), stereoChemistry: {}", this.stereoChemistry);
+        try {
+
+            if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
+                    || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
+                //handle non-epimers
+                return Collections.singletonList(getInChI());
+            }
+            List<Chemical> epimers = toChemical().getImpl().permuteEpimers();
+            return epimers.stream()
+                    .map(c -> {
+                        try {
+                            return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(c), true).getInchi();
+                        } catch (IOException e) {
+                            log.warn("Error calculating InChI", e);
+                            return null;
+                        }
+                    }).filter(i -> i != null)
+                    .collect(Collectors.toList());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return Collections.singletonList("[Error]");
+        }
+    }
+
     @JsonIgnore
     @Transient
     public String getInChIAndThrow() throws Exception{
