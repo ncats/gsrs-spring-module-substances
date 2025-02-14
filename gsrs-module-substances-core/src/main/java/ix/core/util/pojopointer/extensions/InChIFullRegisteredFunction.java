@@ -12,6 +12,7 @@ import java.util.function.BiFunction;
 @Slf4j
 public class InChIFullRegisteredFunction implements RegisteredFunction<InChIFullPath, Structure, String> {
     public static String name = "$inchi";
+    public final static String MULTIPLE_VALUE_DELIMITER = "|";
 
     public static class InChIFullPath extends LambdaPath{
         @Override
@@ -38,7 +39,7 @@ public class InChIFullRegisteredFunction implements RegisteredFunction<InChIFull
                 log.trace("firstGo: {}", firstGo);
                 if(firstGo != null && firstGo.size() > 0){
                     log.trace("firstGot produced data");
-                    return Optional.of(String.join(";",firstGo));
+                    return Optional.of(String.join(MULTIPLE_VALUE_DELIMITER, firstGo));
                 }
                 log.trace("firstGot produced NO data");
 				return Optional.ofNullable(s.getInChIAndThrow());

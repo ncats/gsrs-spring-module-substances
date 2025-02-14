@@ -498,7 +498,7 @@ public class Structure extends BaseModel {
             //handle non-epimers
             return Collections.singletonList(getInChIKey());
         }
-        List<Chemical> epimers = toChemical().getImpl().permuteEpimers();
+        List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
         return epimers.stream()
                 .map(c -> {
                     try {
@@ -529,7 +529,7 @@ public class Structure extends BaseModel {
                 //handle non-epimers
                 return Collections.singletonList(getInChI());
             }
-            List<Chemical> epimers = toChemical().getImpl().permuteEpimers();
+            List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
             return epimers.stream()
                     .map(c -> {
                         try {

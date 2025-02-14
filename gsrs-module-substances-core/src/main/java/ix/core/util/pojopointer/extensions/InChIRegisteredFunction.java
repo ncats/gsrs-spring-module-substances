@@ -12,7 +12,8 @@ import java.util.function.BiFunction;
 @Slf4j
 public class InChIRegisteredFunction implements RegisteredFunction<InChIPath, Structure, String> {
 	public static String name = "$inchikey";
-	
+	public final static String MULTIPLE_VALUE_DELIMITER = ";";
+
 	public static class InChIPath extends LambdaPath{
 		@Override
 		protected String thisURIPath() {
@@ -40,7 +41,7 @@ public class InChIRegisteredFunction implements RegisteredFunction<InChIPath, St
 				log.trace("firstGo: {}", firstGo);
 				if(firstGo != null && firstGo.size() > 0){
 					log.trace("firstGot produced data");
-					return Optional.of(String.join(";",firstGo));
+					return Optional.of(String.join(MULTIPLE_VALUE_DELIMITER, firstGo));
 				}
 				log.trace("firstGot produced NO data");
 				return Optional.ofNullable(s.getInChIKey());
