@@ -266,7 +266,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.12-SNAPSHOT</version>
+            <version>0.6.10</version>
         </dependency>
 
         <dependency>
