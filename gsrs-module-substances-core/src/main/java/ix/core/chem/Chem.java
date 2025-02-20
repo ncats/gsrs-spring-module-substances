@@ -21,6 +21,9 @@ import java.util.function.Function;
 public class Chem {
     private Chem () {}
 
+    public static final String WILDCARD_SUBSTITUTION_ATOM = "He";
+    public static final Integer WILDCARD_SUBSTITUTION_ATOM_NUMBER = 2;
+
     public static void setFormula (Structure struc) {
         try {
             struc.formula = formula (struc.toChemical(false));
@@ -32,20 +35,14 @@ public class Chem {
     
     public static Chemical RemoveQueryFeaturesForPseudoInChI(Chemical c) {
         Chemical chemicalToUse = c;
-        /*try {
-            log.trace("RemoveQueryFeaturesForPseudoInChI processing molfile c {}", c.toMol());
-        } catch (IOException e) {
-            log.error("Error generating mol from Chemical");
-        }*/
         if(c.hasQueryAtoms() || c.atoms().filter(at->("A".equals(at.getSymbol()) || "*".equals(at.getSymbol()) || "R".equals(at.getSymbol()))).count()>0){
             chemicalToUse = c.copy();
             chemicalToUse.atoms()
                     .filter(at-> at.getSymbol() == null || "A".equals(at.getSymbol()) || "*".equals(at.getSymbol())
                             || "R".equals(at.getSymbol()))//isQueryAtom returns true
                     .forEach(a->{
-                        a.setAtomicNumber(2);
-                        //verify that this is setting a symbol as well
-                        a.setAlias("He");
+                        a.setAtomicNumber(WILDCARD_SUBSTITUTION_ATOM_NUMBER);
+                        a.setAlias(WILDCARD_SUBSTITUTION_ATOM);
                         a.setMassNumber(6);
                     });
         }
