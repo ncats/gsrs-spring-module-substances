@@ -12,13 +12,13 @@
         <module>gsrs-module-substances-api</module>
         <module>gsrs-module-substances-dto</module>
         <module>gsrs-module-substances-tests</module>
-	<module>gsrs-ncats-substance-extension</module>
+        <module>gsrs-ncats-substance-extension</module>
         <module>gsrs-module-substances-data-exchange</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.4.5</version>
+        <version>2.7.18</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>gov.nih.ncats</groupId>
@@ -32,13 +32,13 @@
     </scm>
     <properties>
         <java.version>1.8</java.version>
-        <spring-cloud.version>Hoxton.SR1</spring-cloud.version>
+        <spring-cloud.version>2021.0.8</spring-cloud.version>
         <gsrs.version>3.1.2-SNAPSHOT</gsrs.version>
         <gsrs.substance.version>3.1.2-SNAPSHOT</gsrs.substance.version>
+        <spring-boot.version>2.7.18</spring-boot.version>
         <gsrs.applications-api.version>3.1.2-SNAPSHOT</gsrs.applications-api.version>
         <gsrs.clinical-trials-api.version>3.1.2-SNAPSHOT</gsrs.clinical-trials-api.version>
         <gsrs.products-api.version>3.1.2-SNAPSHOT</gsrs.products-api.version>
-        <spring-boot.version>2.4.5</spring-boot.version>
         <log4j2.version>2.17.2</log4j2.version>
     </properties>
 

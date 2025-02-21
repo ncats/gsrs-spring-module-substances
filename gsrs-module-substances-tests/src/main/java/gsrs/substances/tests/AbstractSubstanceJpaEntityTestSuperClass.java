@@ -17,6 +17,7 @@ import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 
+import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Scheduler;
@@ -149,6 +150,13 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         @Primary
         protected GsrsExportConfiguration mockGsrsExportConfiguration(){
             return mock(GsrsExportConfiguration.class);
+        }
+
+        @Bean
+        @ConditionalOnMissingBean
+        @Primary
+        public GsrsSchedulerTaskPropertiesConfiguration getGsrsSchedulerTaskPropertiesConfiguration() {
+            return new GsrsSchedulerTaskPropertiesConfiguration();
         }
 
     }
