@@ -35,7 +35,7 @@
         <gsrs.version>3.1.2-SNAPSHOT</gsrs.version>
         <gsrs.substance.version>3.1.2-SNAPSHOT</gsrs.substance.version>
         <spring-cloud.version>Hoxton.SR1</spring-cloud.version>
-        <!--spring-boot.version>2.7.18</spring-boot.version-->
+        <spring-boot.version>2.4.5</spring-boot.version>
         <gsrs.applications-api.version>3.1.2-SNAPSHOT</gsrs.applications-api.version>
         <gsrs.clinical-trials-api.version>3.1.2-SNAPSHOT</gsrs.clinical-trials-api.version>
         <gsrs.products-api.version>3.1.2-SNAPSHOT</gsrs.products-api.version>
