@@ -487,6 +487,7 @@ public class Structure extends BaseModel {
     }
 
     @JsonProperty("_inchiKeySet")
+    @JsonIgnore
     @Transient
     public List<String> getInChIKeysAndThrow() {
 
@@ -508,7 +509,6 @@ public class Structure extends BaseModel {
                         return null;
                     }
                 }).filter(i -> i != null)
-                //.collect(Collectors.joining("\\n"));
                 .collect(Collectors.toList());
         }
         catch (Exception ex) {
@@ -518,6 +518,7 @@ public class Structure extends BaseModel {
     }
 
     @JsonProperty("_inchiSet")
+    @JsonIgnore
     @Transient
     public List<String> getInChIsAndThrow() {
 
