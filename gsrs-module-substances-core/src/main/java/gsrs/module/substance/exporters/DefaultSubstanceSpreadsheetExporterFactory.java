@@ -10,6 +10,8 @@ import ix.core.chem.Chem;
 import ix.core.models.Group;
 import ix.core.models.Structure;
 import ix.core.util.EntityUtils.Key;
+import ix.core.util.pojopointer.extensions.InChIFullRegisteredFunction;
+import ix.core.util.pojopointer.extensions.InChIRegisteredFunction;
 import ix.ginas.exporters.*;
 import ix.ginas.exporters.Spreadsheet.SpreadsheetRow;
 import ix.ginas.models.v1.*;
@@ -20,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 /**
@@ -208,9 +211,13 @@ public class DefaultSubstanceSpreadsheetExporterFactory implements ExporterFacto
 
     			try {
     				Chemical chem = s.toChemical();
-    				cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(chem))
+                    InChIRegisteredFunction functionHolder = new InChIRegisteredFunction();
+                    BiFunction<InChIRegisteredFunction.InChIPath, Structure, Optional<String>> fun = functionHolder.getOperation();
+                    Optional<String> result =fun.apply(new InChIRegisteredFunction.InChIPath(), ((ChemicalSubstance) s).getStructure());
+                    cell.writeString(result.orElse(""));
+    				/*cell.writeString(Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(chem))
     						.getKey()
-    						.replace("InChIKey=", ""));
+    						.replace("InChIKey=", ""));*/
     			} catch (Exception e) {
 
     			}
