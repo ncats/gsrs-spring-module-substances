@@ -13,6 +13,7 @@ import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 /*
@@ -48,8 +49,6 @@ import java.util.Objects;
 @Slf4j
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
-
-	public static final Long DEFAULT_MAX = Long.MAX_VALUE;
 
 	@Autowired
 	private CodeRepository codeRepository;
@@ -88,10 +87,12 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 					@JsonProperty("groups") Map<Integer, String> groups) {
 
 		super(len, suffix, padding);
-		if(max==null) { max=DEFAULT_MAX; }
-
-		this.max = max;
 		if(suffix==null) { this.suffix= "";}
+		if(max==null) {
+			int counterLen = len - this.suffix.length();
+			max = counterLen < 1 ? Long.MAX_VALUE : Long.valueOf(String.join("", Collections.nCopies(counterLen, "9")));
+		}
+		this.max = max;
 		this.groups = (groups != null) ? groups.values().stream().toArray(String[]::new) : null;
 		if(!this.getClass().equals(LegacyCodeSequentialGenerator.class)) {
             // Legacy could be an extension of this class, and if so these checks aren't appropriate.
