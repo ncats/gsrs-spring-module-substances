@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonView;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-import gsrs.module.substance.SubstanceDataConfiguration;
 import gsrs.module.substance.utils.HtmlUtil;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.SingleParent;
@@ -198,12 +197,10 @@ public class Name extends CommonDataElementOfCollection {
     }
 
     private void tidyName () {
-    	int clen= SubstanceDataConfiguration.INSTANCE().getNameColumnLength();
-    	
-    	if (name.length() > clen) {
-    		fullName = name;
-    		name = HtmlUtil.truncate(name, clen);
-    	}
+        if (HtmlUtil.isTruncatable(name)) {
+            fullName = name;
+            name = HtmlUtil.truncate(name);
+        }
     }
 
     public void addLocator(Substance sub, String loc){
