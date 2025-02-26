@@ -631,7 +631,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam MultiValueMap<String,String> body,
             HttpServletRequest httpRequest,
             RedirectAttributes attributes) throws Exception {
-
+        log.trace("in structureSearchPost");
         SubstanceStructureSearchService.SearchRequest.SearchRequestBuilder rb = SubstanceStructureSearchService.SearchRequest.builder();
 
         Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
@@ -645,11 +645,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
-
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
+        log.trace("sanitizedRequest.getType(): {}", sanitizedRequest.getType());
 
-        boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT ||
-                sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX ;
+        boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS;
         Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), !isHashQuery);
         if(!structure.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), "query structure not found : " + sanitizedRequest.getQueryStructure());
@@ -657,10 +659,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
 
-
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
-        //attributes.addAttribute("q", structure.get().id.toString());
         if(qText!=null){
         	attributes.addAttribute("qText", qText);
         }
@@ -668,9 +668,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         	attributes.addAttribute("sync", true);
         }
         Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
+        log.trace("about to call structureSearchGet using {}", sanitizedRequest.getType().toString());
         return structureSearchGet(
-        		attributes.getAttribute("q").toString(),
-        		sanitizedRequest.getType().toString(),
+        		sanitizedRequest.getQueryStructure(),
+        		sanitizedRequest.getType().getValue(),
         		Optional.ofNullable(sanitizedRequest.getCutoff()).orElse(0.9),
         		sanitizedRequest.getTop(),
         		sanitizedRequest.getSkip(),
@@ -707,9 +708,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         Structure structure = structureOp.get();
 
-        
         String cleaned = CtTableCleaner.clean(structure.molfile);
-
+        log.trace("type: {}", type);
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
                 .q(cleaned)
                 .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))
@@ -720,7 +720,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 .field(field)
                 .build()
                 .sanitize();
-
+        log.trace("in structureSearchGet, sanitizedRequest.type: {}", sanitizedRequest.getType());
 
         String hash=null;
 
@@ -741,19 +741,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     .getStructure();
         }
 
-        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
-            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
+        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT
+         || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS){
+            Structure structureForSearch = structure;
+            if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS){
+                structureForSearch= stripSalts(structure);
+            }
+            hash = "root_structure_properties_EXACT_HASH:" + structureForSearch.getExactHash();
         }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
                 log.trace("running a flex plus search - remove salts");
 
-                Structure copy = new GinasChemicalStructure();
-                copy.molfile = structure.molfile;
-                Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
-                //make another Structure, without salt
-                Structure saltStripped = new Structure();
-                saltStripped.molfile = clean.toMol();
+                Structure saltStripped = stripSalts(structure);
                 hash = makeFlexSearch(saltStripped);
             } else {
                 hash= makeFlexSearch(structure);
@@ -763,7 +763,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
                     //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
-
+        log.trace("hash: {}", hash);
         if(hash !=null){
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
@@ -2025,5 +2025,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         });
         allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
         topLevelNode.put("featureList", allFeatures);
+    }
+
+    private Structure stripSalts(Structure structure) throws IOException {
+        Structure copy = new GinasChemicalStructure();
+        copy.molfile = structure.molfile;
+        Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+        Structure saltStripped= structureProcessor.instrument(clean);
+        return saltStripped;
     }
 }

@@ -101,7 +101,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         
     }
     
-    private static class MockRedirectAttributes implements RedirectAttributes{
+    public static class MockRedirectAttributes implements RedirectAttributes{
         Map<String,Object> attributes = new LinkedHashMap<>();
         
         public Map<String,Object> getAttributes(){

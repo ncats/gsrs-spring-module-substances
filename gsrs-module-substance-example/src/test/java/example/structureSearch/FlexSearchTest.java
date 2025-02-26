@@ -1,6 +1,7 @@
 package example.structureSearch;
 
 import example.GsrsModuleSubstanceApplication;
+import example.substance.FlexAndExactSearchFullStackTest;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.controllers.SubstanceController;
@@ -29,12 +30,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -232,6 +239,28 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
 
         int expectedNumber = 7;
         assertEquals(expectedNumber, substances.size());
+    }
+
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void runExactPlusSearchQuerySodiumTartrate() throws Exception {
+        String molfileSource = "molfiles/sodium_tartrate.mol";
+        File molfile = new ClassPathResource(molfileSource).getFile();
+
+        SubstanceController controller = new SubstanceController();
+        AutowireHelper.getInstance().autowireAndProxy(controller);
+
+        MultiValueMap<String,String> queryMap = new LinkedMultiValueMap<>();
+        queryMap.put("type", Collections.singletonList("exactplus"));
+        queryMap.put("q", Collections.singletonList(Files.readString(molfile.toPath())));
+
+        HttpServletRequest request = new MockHttpServletRequest();
+        RedirectAttributes redirectAttributes = new FlexAndExactSearchFullStackTest.MockRedirectAttributes();
+
+        Object results = controller.structureSearchPost(queryMap, request, redirectAttributes);
+        log.trace("search search result: {}", results);
+        assertNotNull(results);
     }
 
     private List<Substance> getSearchList(SearchRequest sr) {
