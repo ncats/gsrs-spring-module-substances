@@ -631,7 +631,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam MultiValueMap<String,String> body,
             HttpServletRequest httpRequest,
             RedirectAttributes attributes) throws Exception {
-        log.trace("in structureSearchPost");
+        log.trace("in structureSearchPost. total records: {}", substanceRepository.count());
         SubstanceStructureSearchService.SearchRequest.SearchRequestBuilder rb = SubstanceStructureSearchService.SearchRequest.builder();
 
         Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
