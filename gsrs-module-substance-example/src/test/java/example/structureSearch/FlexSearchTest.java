@@ -128,7 +128,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         AutowireHelper.getInstance().autowireAndProxy(controller);
         log.trace("created and wired controller");
 
-        String hash=  controller.makeFlexSearchMoietyClauses(structureStd) + ")";
+        String hash=  controller.makeFlexSearchMoietyClauses(structureStd, true) + ")";
         log.trace("search hash: {}", hash);
         assertTrue(hash.contains("root_moieties_properties_STEREO_INSENSITIVE_HASH"));
     }
@@ -155,7 +155,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         AutowireHelper.getInstance().autowireAndProxy(controller);
         log.trace("created and wired controller");
 
-        String hash=  controller.makeFlexSearchMoietyClauses(structureStd) + ")";
+        String hash=  controller.makeFlexSearchMoietyClauses(structureStd, true) + ")";
         log.trace("search hash: {}", hash);
         assertTrue(hash.contains("root_moieties_properties_STEREO_INSENSITIVE_HASH"));
     }
@@ -179,7 +179,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash=  controller.makeFlexSearch(structureStd);
+        String hash=  controller.makeSearch(structureStd, true);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -206,7 +206,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash = controller.makeFlexSearch(structureStd);
+        String hash = controller.makeSearch(structureStd, true);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)
@@ -236,7 +236,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash = controller.makeFlexSearch(cleanedStructure);
+        String hash = controller.makeSearch(cleanedStructure, true);
         log.trace("search hash: {}", hash);
         SearchRequest request = new SearchRequest.Builder()
                 .kind(Substance.class)

@@ -741,22 +741,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     .getStructure();
         }
 
-        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT
-         || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS){
-            Structure structureForSearch = structure;
-            if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS){
-                structureForSearch= stripSalts(structure);
-            }
-            hash = "root_structure_properties_EXACT_HASH:" + structureForSearch.getExactHash();
-        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT) {
+            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
+        } else if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS) {
+            Structure saltStrippedStructure = stripSalts(structure);
+            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
+                    + saltStrippedStructure.getExactHash();
+        } else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
                 log.trace("running a flex plus search - remove salts");
 
                 Structure saltStripped = stripSalts(structure);
-                hash = makeFlexSearch(saltStripped);
+                hash = makeSearch(saltStripped, true);
             } else {
-                hash= makeFlexSearch(structure);
+                hash= makeSearch(structure, true);
             }
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
 
@@ -1968,21 +1967,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 
-    public String makeFlexSearch(Structure structure) {
+    public String makeSearch(Structure structure, boolean flex) {
         String sins= structure.getStereoInsensitiveHash();
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("(");
-        stringBuilder.append(  "root_structure_properties_STEREO_INSENSITIVE_HASH");
+        stringBuilder.append( flex ? "root_structure_properties_STEREO_INSENSITIVE_HASH" : "root_structure_properties_EXACT_HASH");
         stringBuilder.append(":\"");
         stringBuilder.append(sins);
         stringBuilder.append("\" OR ");
-        stringBuilder.append(makeFlexSearchMoietyClauses(structure));
+        stringBuilder.append(makeFlexSearchMoietyClauses(structure, flex));
         stringBuilder.append(")");
         return stringBuilder.toString();
-        //return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" OR " + makeFlexSearchMoietyClauses(structure, plus) + ")";
     }
 
-    public String makeFlexSearchMoietyClauses(Structure structure) {
+    public String makeFlexSearchMoietyClauses(Structure structure, boolean flex) {
 
         List<Structure> moieties = new ArrayList<>();
         try {
@@ -1996,8 +1994,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             String moietySearchString= moieties.stream()
                     .map(m->{
                         StringBuilder sb = new StringBuilder();
-                        sb.append("root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
-                        sb.append( m.getStereoInsensitiveHash());
+                        sb.append( flex ? "root_moieties_properties_STEREO_INSENSITIVE_HASH:\"" : "root_moieties_properties_EXACT_HASH:\"");
+                        sb.append( flex ? m.getStereoInsensitiveHash() : m.getExactHash());
                         sb.append("\"");
                         return sb.toString();
                     })
