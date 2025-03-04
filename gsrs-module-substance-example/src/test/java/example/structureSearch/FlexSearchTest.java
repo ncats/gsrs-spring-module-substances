@@ -110,19 +110,13 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @WithMockUser(value = "admin", roles = "Admin")
     public void generateFlexSearchQuery() throws Exception {
         String structure = "C(C(C(=O)O)O)(C(=O)O)O";
-        UUID uuid = UUID.randomUUID();
-        ChemicalSubstance substance= new ChemicalSubstanceBuilder()
-                    .setStructureWithDefaultReference(structure)
-                    .addName("Tartaric acid")
-                    .setUUID(uuid)
-                    .build();
-
-        log.trace("created query substance");
-        Structure structureStd = structureProcessor.taskFor(substance.getStructure().molfile)
+        Structure structureStd = createStructure(structure, "Tartaric acid");
+                structureProcessor.taskFor(structureStd.molfile)
                 .standardize(true)
                 .build()
                 .instrument()
                 .getStructure();
+
         log.trace("created structureStd");
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
@@ -136,20 +130,8 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Test
     @WithMockUser(value = "admin", roles = "Admin")
     public void generateFlexPlusSearchQuery() throws Exception {
-        String structure = "C(C(C(=O)O)O)(C(=O)O)O";
-        UUID uuid = UUID.randomUUID();
-        ChemicalSubstance substance= new ChemicalSubstanceBuilder()
-                .setStructureWithDefaultReference(structure)
-                .addName("Tartaric acid")
-                .setUUID(uuid)
-                .build();
-
-        log.trace("created query substance");
-        Structure structureStd = structureProcessor.taskFor(substance.getStructure().molfile)
-                .standardize(true)
-                .build()
-                .instrument()
-                .getStructure();
+        String smiles = "C(C(C(=O)O)O)(C(=O)O)O";
+        Structure structureStd = createStructure(smiles, "Tartaric acid");
         log.trace("created structureStd");
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
@@ -163,19 +145,8 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Test
     @WithMockUser(value = "admin", roles = "Admin")
     public void runFlexSearchQueryTartaric() throws Exception {
-        String structure = "C(C(C(=O)O)O)(C(=O)O)O";
-        UUID uuid = UUID.randomUUID();
-        ChemicalSubstance substance= new ChemicalSubstanceBuilder()
-                .setStructureWithDefaultReference(structure)
-                .addName("Tartaric acid")
-                .setUUID(uuid)
-                .build();
-
-        Structure structureStd = structureProcessor.taskFor(substance.getStructure().molfile)
-                .standardize(true)
-                .build()
-                .instrument()
-                .getStructure();
+        String smiles = "C(C(C(=O)O)O)(C(=O)O)O";
+        Structure structureStd = createStructure(smiles, "Tartaric acid");
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
@@ -203,6 +174,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .build()
                 .instrument()
                 .getStructure();
+        structureStd = createStructure(Files.readString(molfile.toPath()),"sodium_tartrate");
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
@@ -334,5 +306,23 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
                 }
             });
         });
+    }
+
+    private Structure createStructure(String smiles, String name) throws Exception {
+        UUID uuid = UUID.randomUUID();
+        ChemicalSubstance substance= new ChemicalSubstanceBuilder()
+                .setStructureWithDefaultReference(smiles)
+                .addName(name)
+                .setUUID(uuid)
+                .build();
+
+        log.trace("created query substance");
+        Structure structureStd = structureProcessor.taskFor(substance.getStructure().molfile)
+                .standardize(true)
+                .build()
+                .instrument()
+                .getStructure();
+        log.trace("created structureStd");
+        return structureStd;
     }
 }
