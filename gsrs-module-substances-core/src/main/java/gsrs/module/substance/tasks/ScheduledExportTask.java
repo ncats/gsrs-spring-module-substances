@@ -110,13 +110,73 @@ import org.springframework.transaction.support.TransactionTemplate;
  */
 
 @Slf4j
-@Data
 public class ScheduledExportTask extends ScheduledTaskInitializer {
 
     private String description;
     private List<DestinationConfig> destinations = new ArrayList<DestinationConfig>();
     private String extension;
     private String filenameTemplate = "auto-export-$DATE$";
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getExtension() {
+        return extension;
+    }
+
+    public void setExtension(String extension) {
+        this.extension = extension;
+    }
+
+    public String getFilenameTemplate() {
+        return filenameTemplate;
+    }
+
+    public void setFilenameTemplate(String filenameTemplate) {
+        this.filenameTemplate = filenameTemplate;
+    }
+
+    public Map<String, String> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(Map<String, String> parameters) {
+        this.parameters = parameters;
+    }
+
+    public boolean isPreserveExports() {
+        return preserveExports;
+    }
+
+    public void setPreserveExports(boolean preserveExports) {
+        this.preserveExports = preserveExports;
+    }
+
+    public boolean isPublicOnly() {
+        return publicOnly;
+    }
+
+    public void setPublicOnly(boolean publicOnly) {
+        this.publicOnly = publicOnly;
+    }
+
+    public String getQuery() {
+        return query;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
     private Map<String, String> parameters = new HashMap<>();
     private boolean preserveExports = false;
     private boolean publicOnly = false;
@@ -703,7 +763,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
             throws IOException {
 
         log.trace("getExporterFor, extension: " + extension + "; pos: " + pos + "parameters: " + parameters);
-        ExporterFactory.Parameters params = createParamters(extension, publicOnly, parameters);
+        ExporterFactory.Parameters params = createParameters(extension, publicOnly, parameters);
         log.trace("create params");
 
         log.trace("gsrsExportConfiguration: " + (gsrsExportConfiguration==null ? "null" : "not null"));
@@ -717,7 +777,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return factory.createNewExporter(pos, params);
     }
 
-    protected ExporterFactory.Parameters createParamters(String extension, boolean publicOnly, Map<String, String> parameters) {
+    protected ExporterFactory.Parameters createParameters(String extension, boolean publicOnly, Map<String, String> parameters) {
         for (OutputFormat f : gsrsExportConfiguration.getAllSupportedFormats(substanceEntityService.getContext())) {
             if (extension.equals(f.getExtension())) {
                 return new DefaultParameters(f, publicOnly);
