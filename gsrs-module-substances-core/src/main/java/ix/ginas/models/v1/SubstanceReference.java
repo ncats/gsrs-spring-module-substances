@@ -2,7 +2,6 @@ package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import gsrs.module.substance.SubstanceDataConfiguration;
 import gsrs.module.substance.utils.HtmlUtil;
 import ix.core.models.Indexable;
 import ix.core.util.EntityUtils;
@@ -24,7 +23,7 @@ public class SubstanceReference extends GinasCommonSubData {
         SubstanceReference ref = new SubstanceReference();
 
         ref.refuuid = s.getOrGenerateUUID().toString();
-        ref.refPname = HtmlUtil.truncate(s.getName(), SubstanceDataConfiguration.INSTANCE().getNameColumnLength());
+        ref.refPname = HtmlUtil.truncate(s.getName());
         ref.approvalID = s.approvalID;
         ref.substanceClass = Substance.SubstanceClass.reference.toString();
         ref.wrappedSubstance = s;
@@ -156,7 +155,12 @@ public class SubstanceReference extends GinasCommonSubData {
     	
     		
     }
-    
+
+    @PrePersist
+    private void prePersist(){
+        this.refPname = HtmlUtil.truncate(this.refPname);
+    }
+
     /**
      * Tests if the referenced record is the same for the given {@link SubstanceReference}
      * as for this one. This just compares the refuuid field.
