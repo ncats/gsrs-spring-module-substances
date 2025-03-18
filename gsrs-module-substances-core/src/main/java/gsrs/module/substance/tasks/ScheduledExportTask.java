@@ -116,6 +116,32 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
     private List<DestinationConfig> destinations = new ArrayList<DestinationConfig>();
     private String extension;
     private String filenameTemplate = "auto-export-$DATE$";
+    private Map<String, String> parameters = new HashMap<>();
+    private boolean preserveExports = false;
+    private boolean publicOnly = false;
+    private String query = null;
+    private String username;
+    @JsonIgnore
+    private final Pattern PERIOD_PAT = Pattern.compile(":\\[(P[0-9YMWD]*)");
+
+    @Autowired
+    private SubstanceRepository substanceRepository;
+
+    @Autowired
+    private ExportService exportService;
+
+    @Autowired
+    private GsrsExportConfiguration gsrsExportConfiguration;
+
+    @Autowired
+    private SubstanceEntityService substanceEntityService;
+
+    @Autowired
+    private SubstanceLegacySearchService searchService;
+
+    @Autowired
+    protected PlatformTransactionManager transactionManager;
+
 
     public void setDescription(String description) {
         this.description = description;
@@ -176,33 +202,6 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
     public void setUsername(String username) {
         this.username = username;
     }
-
-    private Map<String, String> parameters = new HashMap<>();
-    private boolean preserveExports = false;
-    private boolean publicOnly = false;
-    private String query = null;
-    private String username;
-
-    @JsonIgnore
-    private final Pattern PERIOD_PAT = Pattern.compile(":\\[(P[0-9YMWD]*)");
-
-    @Autowired
-    private SubstanceRepository substanceRepository;
-
-    @Autowired
-    private ExportService exportService;
-
-    @Autowired
-    private GsrsExportConfiguration gsrsExportConfiguration;
-
-    @Autowired
-    private SubstanceEntityService substanceEntityService;
-
-    @Autowired
-    private SubstanceLegacySearchService searchService;
-
-    @Autowired
-    protected PlatformTransactionManager transactionManager;
 
     protected static class SmtpFileSystemConfigBuilder extends FileSystemConfigBuilder {
 
