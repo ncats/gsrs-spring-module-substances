@@ -686,6 +686,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
                     file.delete();
                 }
             }
+            l.complete();
             log.debug("completed handleRun");
         });
     }
