@@ -1187,34 +1187,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                                                @RequestParam Map<String, String> queryParameters,
                                                Principal principal) throws Exception {
         if( getEntityService().isReadOnly()) {
-            log.warn("detected forbidden operation in createEntity");
+            log.warn("detected forbidden operation in updateEntityWithoutValidation");
             String message = "Please use the parent object to perform this operation";
             return new ResponseEntity<>(message, this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
         }
         log.trace("in updateEntityWithoutValidation");
-        GsrsEntityService<Substance, UUID> substanceService =  getEntityService();
-        AbstractGsrsEntityService.UpdateResult<Substance> result;
-        if( substanceService instanceof SubstanceEntityService) {
-            log.trace("found expected service.");
-            SubstanceEntityService substanceEntityService = (SubstanceEntityService) substanceService;
-            result = substanceEntityService.updateEntityWithoutValidation(updatedEntityJson);
-        } else {
-            log.warn("did NOT find expected service");
-            result = getEntityService().updateEntity(updatedEntityJson);
-        }
-
-        if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
+        AbstractGsrsEntityService.UpdateResult<Substance> result = null;
+        log.trace("Will call updateEntityIgnoreValidation");
+        result = getEntityService().updateEntity(updatedEntityJson, true);
+        if( result != null && result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
             return this.getGsrsControllerConfiguration().handleNotFound(queryParameters);
         }
 
-        if(result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.ERROR){
-            log.error("Error updating substance without validation. Will now update with validation");
-            log.trace(updatedEntityJson.toPrettyString());
-            result = getEntityService().updateEntity(updatedEntityJson);
-            if( result.getStatus() == AbstractGsrsEntityService.UpdateResult.STATUS.UPDATED){
-                new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
-            }
-            return new ResponseEntity<>(result.getValidationResponse(),this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        if( result.getStatus() == AbstractGsrsEntityService.UpdateResult.STATUS.UPDATED){
+            new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
         }
         //match 200 status of old GSRS
         return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
