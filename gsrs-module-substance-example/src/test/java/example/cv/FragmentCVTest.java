@@ -15,6 +15,7 @@ import ix.core.validator.ValidationResponseBuilder;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.ControlledVocabulary;
 import ix.ginas.models.v1.FragmentControlledVocabulary;
+import ix.ginas.models.v1.FragmentVocabularyTerm;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
@@ -62,6 +63,20 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         Assertions.assertTrue(response.isValid());
     }
 
+    @Test
+    void testDifferentFragmentsHaveDifferentHashes() {
+        FragmentVocabularyTerm term1 = new FragmentVocabularyTerm();
+        term1.setFragmentStructure("O[C@@H]1[C@@H]([*])O[C@@H](CO[*])[C@@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|");
+        term1.value="LR";
+        FragmentVocabularyTerm term2 = new FragmentVocabularyTerm();
+        term2.setFragmentStructure("O[C@H]1[C@H]([*])O[C@H](CO[*])[C@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|");
+        term2.value="R";
+
+        CVFragmentStructureValidator cvFragmentStructureValidator = new CVFragmentStructureValidator();
+        String hash1 = cvFragmentStructureValidator.getHash(term1).get();
+        String hash2 = cvFragmentStructureValidator.getHash(term2).get();
+        Assertions.assertNotEquals(hash1, hash2);
+    }
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type, GsrsProcessingStrategy strategy) {
 
         ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
@@ -91,12 +106,12 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         if(type == ValidatorConfig.METHOD_TYPE.BATCH){
             builder.allowPossibleDuplicates(true);
         }
-//
         if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
             builder.allowPossibleDuplicates(true);
         }
 
         return builder;
     }
+
 
 }

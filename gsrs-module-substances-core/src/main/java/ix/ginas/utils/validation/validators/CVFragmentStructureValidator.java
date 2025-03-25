@@ -10,12 +10,15 @@ import java.util.stream.Collectors;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.chem.Chem;
+import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.ControlledVocabulary;
 import ix.ginas.models.v1.FragmentVocabularyTerm;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 
 //Ensure that specified structures are valid  
 //
@@ -31,7 +34,12 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class CVFragmentStructureValidator extends AbstractValidatorPlugin<ControlledVocabulary> {
-	
+
+	private final static int R_GROUP_ADJUSTMENT = 87;
+
+	@Autowired
+	private StructureProcessor structureProcessor;
+
 	private class FragmentChanges{
 		
 		private List<FragmentVocabularyTerm> addedTerms = new ArrayList<FragmentVocabularyTerm>();
@@ -73,10 +81,20 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 	}
 	
 		
-	public static Optional<String> getHash(FragmentVocabularyTerm term) {
+	public Optional<String> getHash(FragmentVocabularyTerm term) {
 		try {
+			Optional<String> inchiKeyOne= getInchiKeyFromComplexSmiles(term.getFragmentStructure());
+			if(inchiKeyOne.isPresent()) {
+				return inchiKeyOne;
+			}
 			String inputStructure = term.getFragmentStructure().split(" ")[0];
 			Chemical chem = Chemical.parse(inputStructure);
+			//see if we get a good result without changing the structure
+			Optional<String> initialHash= getInitialHash(chem);
+			log.trace("in getHash, initialHash: {}", initialHash);
+			if(initialHash.isPresent()) {
+				return initialHash;
+			}
 			chem = Chem.RemoveQueryFeaturesForPseudoInChI(chem);
 			return Optional.of(chem.toInchi().getKey());
 		} catch (Exception e) {
@@ -86,6 +104,40 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		}
 	}
 
+	private static Optional<String> getInitialHash(Chemical chem) {
+		try {
+			return Optional.of(chem.toInchi().getKey());
+		}
+		catch(IOException ignore){
+			return Optional.empty();
+		}
+	}
+
+	//input 'complex' because it contains both a simple SMILES string and a set of R-Group designations.
+	// for example, [*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|
+	private Optional<String> getInchiKeyFromComplexSmiles(String complexInput) {
+        Chemical initiallyParsedChemical;
+        try {
+            initiallyParsedChemical = Chemical.parse(complexInput);
+	       	initiallyParsedChemical.atoms()
+				.filter(at->at.getRGroupIndex().isPresent() && at.getRGroupIndex().getAsInt() >0)
+				.forEach(at->{
+					///Subtracting this number from an RGroup index will give us a mass number that InChI can use to
+					// differentiate atoms.  When the mass number is too high, InChI ignores it.
+					at.setMassNumber( Math.max(0, at.getRGroupIndex().getAsInt()- R_GROUP_ADJUSTMENT));
+					log.warn("r group: {}", at.getRGroupIndex().getAsInt());
+					at.setAlias(Chem.WILDCARD_SUBSTITUTION_ATOM);
+					at.setAtomicNumber(Chem.WILDCARD_SUBSTITUTION_ATOM_NUMBER);
+					at.setRGroup(0);
+				});
+			String molfile = getMolfileFromSmiles(initiallyParsedChemical.toSmiles());
+			Chemical transformedChemical= Chemical.parse(molfile);
+			return Optional.of(transformedChemical.toInchi().getKey());
+		} catch (Exception e) {
+			log.info("in transformComplexSmiles, error parsing input {}", complexInput);
+			return Optional.empty();
+		}
+    }
 	private void chemicalValidation(FragmentVocabularyTerm term, Map<String,List<String>> lookup, ValidatorCallback callback) {
 		
 		String fragmentStructure = term.getFragmentStructure().trim();
@@ -126,7 +178,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
                     "Illegal chemical structure format getting hash: %s", term.getFragmentStructure()));
 		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "This fragment structure appears to have duplicates: %s [Based on %s]", term.getFragmentStructure(), hash.get()));
+                    "This fragment structure appears to have duplicates: %s with hash: %s", term.getFragmentStructure(), hash.get()));
 			log.warn("Duplicate: {}", hash.get());
 		}
 	}	
@@ -186,5 +238,18 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 			return true;
 		
 		return false;
+	}
+
+	private String getMolfileFromSmiles(String inputSmiles) throws Exception {
+		boolean isQuery = true;
+		Structure struc = structureProcessor.taskFor(inputSmiles)
+				//.components(moieties)
+				.standardize(false)
+				.query(isQuery)
+				.build()
+				.instrument()
+				.getStructure();
+
+		return struc.molfile;
 	}
 }	
