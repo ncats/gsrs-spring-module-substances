@@ -126,7 +126,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
                     "Illegal chemical structure format getting hash: %s", term.getFragmentStructure()));
 		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "This fragment structure appears to have duplicates: %s", term.getFragmentStructure()));
+                    "This fragment structure appears to have duplicates: %s [Based on %s]", term.getFragmentStructure(), hash.get()));
 			log.warn("Duplicate: {}", hash.get());
 		}
 	}	
