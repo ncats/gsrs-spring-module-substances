@@ -34,5 +34,6 @@ public interface SubstanceEntityService extends GsrsEntityService<Substance, UUI
 
     Optional<Substance> flexLookup(String someKindOfId);
 
-    UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) throws Exception;
+    UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson);
+
 }

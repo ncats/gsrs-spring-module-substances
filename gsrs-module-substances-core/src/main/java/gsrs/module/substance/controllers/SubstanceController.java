@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,8 +29,11 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.controller.*;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.service.AbstractGsrsEntityService;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -69,11 +73,6 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
@@ -1180,7 +1179,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 return Optional.empty();
             }    	
     }
-    
+
+    @PreAuthorize("hasRole('SuperUpdate')")
+    @PutGsrsRestApiMapping("/novalid")
+    @Transactional
+    public ResponseEntity<Object> updateEntityWithoutValidation(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in updateEntityWithoutValidation");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        log.trace("in updateEntityWithoutValidation");
+        AbstractGsrsEntityService.UpdateResult<Substance> result = null;
+        log.trace("Will call updateEntityIgnoreValidation");
+        result = getEntityService().updateEntity(updatedEntityJson, true);
+        if( result != null && result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
+            return this.getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+
+        if( result.getStatus() == AbstractGsrsEntityService.UpdateResult.STATUS.UPDATED){
+            new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+        }
+        //match 200 status of old GSRS
+        return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+    }
+
     @Builder
     @Data
     public static class StructureToRender{
