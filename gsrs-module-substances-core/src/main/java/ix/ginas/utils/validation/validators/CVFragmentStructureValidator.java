@@ -45,8 +45,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		private List<FragmentVocabularyTerm> addedTerms = new ArrayList<FragmentVocabularyTerm>();
 		private List<FragmentVocabularyTerm> updatedTerms = new ArrayList<FragmentVocabularyTerm>();;
 		private List<FragmentVocabularyTerm> deletedTerms = new ArrayList<FragmentVocabularyTerm>();;
-		
-	}	
+	}
 		
 	@Override
     public void validate(ControlledVocabulary newCV, ControlledVocabulary oldCV, ValidatorCallback callback) {
@@ -83,7 +82,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 	public Optional<String> getHash(FragmentVocabularyTerm term) {
 		try {
-			Optional<String> inchiKeyOne= getInchiKeyFromComplexSmiles(term.getFragmentStructure());
+			Optional<String> inchiKeyOne= getInChIKeyFromComplexSmiles(term.getFragmentStructure());
 			if(inchiKeyOne.isPresent()) {
 				return inchiKeyOne;
 			}
@@ -115,7 +114,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 
 	//input 'complex' because it contains both a simple SMILES string and a set of R-Group designations.
 	// for example, [*]OC[C@@]12CO[C@@H]([C@H]([*])O1)[C@@H]2O[*] |$_R91;;;;;;;;_R90;;;;_R92$|
-	private Optional<String> getInchiKeyFromComplexSmiles(String complexInput) {
+	private Optional<String> getInChIKeyFromComplexSmiles(String complexInput) {
         Chemical initiallyParsedChemical;
         try {
             initiallyParsedChemical = Chemical.parse(complexInput);
@@ -130,11 +129,17 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 					at.setAtomicNumber(Chem.WILDCARD_SUBSTITUTION_ATOM_NUMBER);
 					at.setRGroup(0);
 				});
-			String molfile = getMolfileFromSmiles(initiallyParsedChemical.toSmiles());
+			String molfile;
+			try {
+				molfile =getMolfileFromSmiles(initiallyParsedChemical.toSmiles());
+			} catch(Exception errorConvertingMolfile) {
+				log.warn("Error in getMolfileFromSmiles", errorConvertingMolfile);
+				molfile = initiallyParsedChemical.toMol();
+			}
 			Chemical transformedChemical= Chemical.parse(molfile);
 			return Optional.of(transformedChemical.toInchi().getKey());
 		} catch (Exception e) {
-			log.info("in transformComplexSmiles, error parsing input {}", complexInput);
+			log.info("in getInChIKeyFromComplexSmiles, error parsing input {}", complexInput);
 			return Optional.empty();
 		}
     }
@@ -149,12 +154,12 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 				chem = Chemical.parse(fragmentStructure.split(" ")[0]);
 				if (!Optional.ofNullable(chem).isPresent()) {
 					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-							"Illegal chemical structure format: %s", term.getFragmentStructure()));
+							"Unrecognized chemical structure format: %s", term.getFragmentStructure()));
 					return;
 				}
 			}catch(IOException IOEx) {
 				callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-						"Illegal chemical structure format: %s", term.getFragmentStructure()));
+						"Unrecognized chemical structure format: %s", term.getFragmentStructure()));
 				return;
 			}
 		}
@@ -168,14 +173,14 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 				term.setSimplifiedStructure(smiles);
 		} catch (Exception e) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-					"Illegal chemical structure format: %s", term.getFragmentStructure()));
+					"Unrecognized chemical structure format: %s", term.getFragmentStructure()));
 			return;
 		}
 		
 		Optional<String> hash = getHash(term);
 		if(!hash.isPresent()) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "Illegal chemical structure format getting hash: %s", term.getFragmentStructure()));
+                    "Unparseable chemical structure format getting hash: %s", term.getFragmentStructure()));
 		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "This fragment structure appears to have duplicates: %s with hash: %s", term.getFragmentStructure(), hash.get()));

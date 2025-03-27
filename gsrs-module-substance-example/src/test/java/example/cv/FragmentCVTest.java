@@ -24,7 +24,11 @@ import ix.ginas.utils.validation.validators.CVFragmentStructureValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
@@ -32,6 +36,7 @@ import org.springframework.core.io.ClassPathResource;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
@@ -40,15 +45,22 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private GroupService groupService;
 
+    private CVFragmentStructureValidator cvFragmentStructureValidator = new CVFragmentStructureValidator();
+
+    @BeforeEach
+    public void makeSureValidatorIsReady() {
+        AutowireHelper.getInstance().autowire(cvFragmentStructureValidator);
+    }
+
     @Test
-    void processFragments() throws IOException {
-        String fileName = "cv_na.sug.22019.json";
+    void processFragmentVocabulary() throws IOException {
+        String fileName = "cv_na.sugar.test.json";
         ClassPathResource fileResource =new ClassPathResource("/testJSON/" + fileName);
         String naSugarVocabSource= FileUtils.readFileToString(fileResource.getFile());
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         ControlledVocabulary naSugarVocab = mapper.readValue(naSugarVocabSource, FragmentControlledVocabulary.class);
-        CVFragmentStructureValidator validator = new CVFragmentStructureValidator();
+
         ValidationResponse<ControlledVocabulary> response = new ValidationResponse<>(naSugarVocab);
         GsrsProcessingStrategyFactoryConfiguration pConf = new GsrsProcessingStrategyFactoryConfiguration();
         pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
@@ -57,29 +69,33 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);
         GsrsProcessingStrategy strategy = gsrsProcessingStrategyFactory.createNewStrategy("ACCEPT_APPLY_ALL_WARNINGS");
         ValidatorCallback callback = createCallbackFor(naSugarVocab, response, ValidatorConfig.METHOD_TYPE.UPDATE, strategy);
-        validator.validate(naSugarVocab, null, callback);
+        cvFragmentStructureValidator.validate(naSugarVocab, null, callback);
         System.out.printf("total messages: %d\n", response.getValidationMessages().size());
         response.getValidationMessages().forEach(System.out::println);
+        Assertions.assertEquals(0,
+        response.getValidationMessages().stream()
+                        .filter(m->m.getMessage().contains("appears to have duplicates"))
+                        .count());
         Assertions.assertTrue(response.isValid());
     }
 
-    @Test
-    void testDifferentFragmentsHaveDifferentHashes() {
+    @ParameterizedTest
+    @MethodSource("getFragments")
+    void testDifferentFragmentsHaveDifferentHashes(String termValue1, String fragmentSmiles1,
+                                                   String termValue2, String fragmentSmiles2) {
         FragmentVocabularyTerm term1 = new FragmentVocabularyTerm();
-        term1.setFragmentStructure("O[C@@H]1[C@@H]([*])O[C@@H](CO[*])[C@@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|");
-        term1.value="LR";
+        term1.setFragmentStructure(fragmentSmiles1);
+        term1.value=termValue1;
         FragmentVocabularyTerm term2 = new FragmentVocabularyTerm();
-        term2.setFragmentStructure("O[C@H]1[C@H]([*])O[C@H](CO[*])[C@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|");
-        term2.value="R";
-
-        CVFragmentStructureValidator cvFragmentStructureValidator = new CVFragmentStructureValidator();
+        term2.setFragmentStructure(fragmentSmiles2);
+        term2.value=termValue2;
         String hash1 = cvFragmentStructureValidator.getHash(term1).get();
         String hash2 = cvFragmentStructureValidator.getHash(term2).get();
         Assertions.assertNotEquals(hash1, hash2);
     }
-    protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type, GsrsProcessingStrategy strategy) {
 
-        ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
+    protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type, GsrsProcessingStrategy strategy) {
+       ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
             public void complete() {
                 if(object instanceof Substance) {
@@ -113,5 +129,12 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         return builder;
     }
 
+    private static Stream<Arguments> getFragments(){
+        return Stream.of(
+                Arguments.of("LR", "O[C@@H]1[C@@H]([*])O[C@@H](CO[*])[C@@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|",
+                        "R", "O[C@H]1[C@H]([*])O[C@H](CO[*])[C@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|"),
+                Arguments.of("LR", "[*]OC[C@@H](C[*])O[*] |$_R91;;;;;_R90;;_R92$|",
+                        "R", "[*]OC[C@H](C[*])O[*] |$_R91;;;;;_R90;;_R92$|"));
+    }
 
 }
