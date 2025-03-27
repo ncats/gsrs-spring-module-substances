@@ -94,6 +94,26 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         Assertions.assertNotEquals(hash1, hash2);
     }
 
+    @Test
+    void testParseToughSmiles() {
+        String complexSmiles = "[H]C(=O)c1ccc(cc1)C(=O)NCCCCCCO[*] |$;;;;;;;;;;;;;;;;;;;_R92$|";
+        FragmentVocabularyTerm term1 = new FragmentVocabularyTerm();
+        term1.setFragmentStructure(complexSmiles);
+        term1.value="5FBC6";
+        String hash1 = cvFragmentStructureValidator.getHash(term1).get();
+        Assertions.assertTrue(hash1.length() > 0);
+    }
+
+    @Test
+    void testParseToughSmilesKekulized() {
+        String complexSmiles = "[H]C(=O)C1=CC=C(C=C1)C(=O)NCCCCCCO[*] |$;;;;;;;;;;;;;;;;;;;_R92$|";
+        FragmentVocabularyTerm term1 = new FragmentVocabularyTerm();
+        term1.setFragmentStructure(complexSmiles);
+        term1.value="5FBC6";
+        String hash1 = cvFragmentStructureValidator.getHash(term1).get();
+        Assertions.assertTrue(hash1.length() > 0);
+    }
+
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, ValidatorConfig.METHOD_TYPE type, GsrsProcessingStrategy strategy) {
        ValidationResponseBuilder<T> builder = new ValidationResponseBuilder<T>(object, response, strategy){
             @Override
@@ -134,7 +154,9 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
                 Arguments.of("LR", "O[C@@H]1[C@@H]([*])O[C@@H](CO[*])[C@@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|",
                         "R", "O[C@H]1[C@H]([*])O[C@H](CO[*])[C@H]1O[*] |$;;;_R90;;;;;_R91;;;_R92$|"),
                 Arguments.of("LR", "[*]OC[C@@H](C[*])O[*] |$_R91;;;;;_R90;;_R92$|",
-                        "R", "[*]OC[C@H](C[*])O[*] |$_R91;;;;;_R90;;_R92$|"));
+                        "R", "[*]OC[C@H](C[*])O[*] |$_R91;;;;;_R90;;_R92$|"),
+                Arguments.of("r1", "[H]C(=O)c1ccc(cc1)C(=O)NCCCCCCO[*] |$;;;;;;;;;;;;;;;;;;;_R92$|",
+                        "r2", "[H]C(=O)c1ccc(cc1)C(=O)NCCCCCCO[*] |$;;;;;;;;;;;;;;;;;;_R92;$|"));
     }
 
 }
