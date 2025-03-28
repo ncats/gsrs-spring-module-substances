@@ -245,10 +245,13 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		return false;
 	}
 
+	/*
+	Create a molfile from a SMILES in a way that preserves stereochemistry, allowing it to transfer from
+	the atom-based representation of SMILES to the bond-based representation of molfiles.
+	 */
 	private String getMolfileFromSmiles(String inputSmiles) throws Exception {
 		boolean isQuery = true;
 		Structure struc = structureProcessor.taskFor(inputSmiles)
-				//.components(moieties)
 				.standardize(false)
 				.query(isQuery)
 				.build()
