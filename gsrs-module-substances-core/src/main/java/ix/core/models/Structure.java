@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
+import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
 import gov.nih.ncats.molwitch.io.CtTableCleaner;
@@ -26,6 +27,7 @@ import org.springframework.data.annotation.LastModifiedDate;
 import javax.persistence.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 //@MappedSuperclass
 @Entity
@@ -456,6 +458,27 @@ public class Structure extends BaseModel {
     	}
     }
 
+
+    /*@JsonProperty("_inchiKeySet")
+    @Transient
+    public String getInChIKeySet() {
+        try{
+            if(this.stereoChemistry.equals(Stereo.RACEMIC) && this.opticalActivity.equals(Optical.PLUS_MINUS)) {
+                this.toChemical().getExtendedTetrahedrals()
+            }
+            for (Value val : this.properties) {
+                if(val==null) continue;
+                if (Structure.H_InChI_Key.equals(val.label)) {
+                    return Objects.toString(val.getValue()).replaceAll("_", "-");
+                }
+            }
+            return getInChIKeyAndThrow();
+        }catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
+    }*/
+
     @JsonIgnore
     @Transient
     public String getInChIKeyAndThrow() throws Exception{
@@ -463,6 +486,67 @@ public class Structure extends BaseModel {
 
     }
 
+    @JsonProperty("_inchiKeySet")
+    @JsonIgnore
+    @Transient
+    public List<String> getInChIKeysAndThrow() {
+
+        log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}", this.stereoChemistry);
+        try {
+
+        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
+            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
+            //handle non-epimers
+            return Collections.singletonList(getInChIKey());
+        }
+        List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
+        return epimers.stream()
+                .map(c -> {
+                    try {
+                        return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(c), true).getKey();
+                    } catch (IOException e) {
+                        log.warn("Error calculating InChIKey", e);
+                        return null;
+                    }
+                }).filter(i -> i != null)
+                .collect(Collectors.toList());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return Collections.singletonList("[Error]");
+        }
+    }
+
+    @JsonProperty("_inchiSet")
+    @JsonIgnore
+    @Transient
+    public List<String> getInChIsAndThrow() {
+
+        log.trace("in getInChIsAndThrow(), stereoChemistry: {}", this.stereoChemistry);
+        try {
+
+            if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
+                    || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
+                //handle non-epimers
+                return Collections.singletonList(getInChI());
+            }
+            List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
+            return epimers.stream()
+                    .map(c -> {
+                        try {
+                            return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(c), true).getInchi();
+                        } catch (IOException e) {
+                            log.warn("Error calculating InChI", e);
+                            return null;
+                        }
+                    }).filter(i -> i != null)
+                    .collect(Collectors.toList());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return Collections.singletonList("[Error]");
+        }
+    }
 
     @JsonIgnore
     @Transient
@@ -566,4 +650,9 @@ public class Structure extends BaseModel {
         }
         return this.stereoChemistry.toString();
     }
+
+    private boolean hasAnyStereoBond() {
+        return !this.toChemical().bonds().allMatch(b->b.getStereo().equals(Bond.Stereo.NONE));
+    }
+
 }

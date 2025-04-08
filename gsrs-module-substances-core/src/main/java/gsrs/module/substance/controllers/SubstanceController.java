@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,8 +29,11 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.controller.*;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.service.AbstractGsrsEntityService;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -69,11 +73,6 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
@@ -631,7 +630,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam MultiValueMap<String,String> body,
             HttpServletRequest httpRequest,
             RedirectAttributes attributes) throws Exception {
-
+        log.trace("in structureSearchPost. total records: {}", substanceRepository.count());
         SubstanceStructureSearchService.SearchRequest.SearchRequestBuilder rb = SubstanceStructureSearchService.SearchRequest.builder();
 
         Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
@@ -645,11 +644,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
-
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
+        log.trace("sanitizedRequest.getType(): {}", sanitizedRequest.getType());
 
-        boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT ||
-                sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX ;
+        boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS;
         Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), !isHashQuery);
         if(!structure.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), "query structure not found : " + sanitizedRequest.getQueryStructure());
@@ -657,10 +658,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
 
-
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
-        //attributes.addAttribute("q", structure.get().id.toString());
         if(qText!=null){
         	attributes.addAttribute("qText", qText);
         }
@@ -668,9 +667,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         	attributes.addAttribute("sync", true);
         }
         Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
+        log.trace("about to call structureSearchGet using {}", sanitizedRequest.getType().toString());
         return structureSearchGet(
-        		attributes.getAttribute("q").toString(),
-        		sanitizedRequest.getType().toString(),
+        		sanitizedRequest.getQueryStructure(),
+        		sanitizedRequest.getType().getValue(),
         		Optional.ofNullable(sanitizedRequest.getCutoff()).orElse(0.9),
         		sanitizedRequest.getTop(),
         		sanitizedRequest.getSkip(),
@@ -707,9 +707,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         Structure structure = structureOp.get();
 
-        
         String cleaned = CtTableCleaner.clean(structure.molfile);
-
+        log.trace("type: {}", type);
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
                 .q(cleaned)
                 .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))
@@ -720,7 +719,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 .field(field)
                 .build()
                 .sanitize();
-
+        log.trace("in structureSearchGet, sanitizedRequest.type: {}", sanitizedRequest.getType());
 
         String hash=null;
 
@@ -741,29 +740,28 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     .getStructure();
         }
 
-        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
+        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT) {
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
-        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+        } else if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS) {
+            Structure saltStrippedStructure = stripSalts(structure);
+            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
+                    + saltStrippedStructure.getExactHash();
+        } else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
                 log.trace("running a flex plus search - remove salts");
 
-                Structure copy = new GinasChemicalStructure();
-                copy.molfile = structure.molfile;
-                Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
-                //make another Structure, without salt
-                Structure saltStripped = new Structure();
-                saltStripped.molfile = clean.toMol();
-                hash = makeFlexSearch(saltStripped);
+                Structure saltStripped = stripSalts(structure);
+                hash = makeSearch(saltStripped, true);
             } else {
-                hash= makeFlexSearch(structure);
+                hash= makeSearch(structure, true);
             }
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
 
             log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
                     //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
-
+        log.trace("hash: {}", hash);
         if(hash !=null){
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
@@ -1181,7 +1179,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 return Optional.empty();
             }    	
     }
-    
+
+    @PreAuthorize("hasRole('SuperUpdate')")
+    @PutGsrsRestApiMapping("/novalid")
+    @Transactional
+    public ResponseEntity<Object> updateEntityWithoutValidation(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in updateEntityWithoutValidation");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        log.trace("in updateEntityWithoutValidation");
+        AbstractGsrsEntityService.UpdateResult<Substance> result = null;
+        log.trace("Will call updateEntityIgnoreValidation");
+        result = getEntityService().updateEntity(updatedEntityJson, true);
+        if( result != null && result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
+            return this.getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+
+        if( result.getStatus() == AbstractGsrsEntityService.UpdateResult.STATUS.UPDATED){
+            new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+        }
+        //match 200 status of old GSRS
+        return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+    }
+
     @Builder
     @Data
     public static class StructureToRender{
@@ -1968,21 +1992,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 
-    public String makeFlexSearch(Structure structure) {
+    public String makeSearch(Structure structure, boolean flex) {
         String sins= structure.getStereoInsensitiveHash();
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("(");
-        stringBuilder.append(  "root_structure_properties_STEREO_INSENSITIVE_HASH");
+        stringBuilder.append( flex ? "root_structure_properties_STEREO_INSENSITIVE_HASH" : "root_structure_properties_EXACT_HASH");
         stringBuilder.append(":\"");
         stringBuilder.append(sins);
         stringBuilder.append("\" OR ");
-        stringBuilder.append(makeFlexSearchMoietyClauses(structure));
+        stringBuilder.append(makeFlexSearchMoietyClauses(structure, flex));
         stringBuilder.append(")");
         return stringBuilder.toString();
-        //return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" OR " + makeFlexSearchMoietyClauses(structure, plus) + ")";
     }
 
-    public String makeFlexSearchMoietyClauses(Structure structure) {
+    public String makeFlexSearchMoietyClauses(Structure structure, boolean flex) {
 
         List<Structure> moieties = new ArrayList<>();
         try {
@@ -1996,8 +2019,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             String moietySearchString= moieties.stream()
                     .map(m->{
                         StringBuilder sb = new StringBuilder();
-                        sb.append("root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
-                        sb.append( m.getStereoInsensitiveHash());
+                        sb.append( flex ? "root_moieties_properties_STEREO_INSENSITIVE_HASH:\"" : "root_moieties_properties_EXACT_HASH:\"");
+                        sb.append( flex ? m.getStereoInsensitiveHash() : m.getExactHash());
                         sb.append("\"");
                         return sb.toString();
                     })
@@ -2025,5 +2048,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         });
         allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
         topLevelNode.put("featureList", allFeatures);
+    }
+
+    private Structure stripSalts(Structure structure) throws IOException {
+        Structure copy = new GinasChemicalStructure();
+        copy.molfile = structure.molfile;
+        Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+        Structure saltStripped= structureProcessor.instrument(clean);
+        return saltStripped;
     }
 }

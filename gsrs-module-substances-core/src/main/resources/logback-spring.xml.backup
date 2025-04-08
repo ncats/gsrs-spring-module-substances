@@ -117,7 +117,7 @@
         <appender-ref ref="REINDEX_LOG" />
     </logger>
 
-    <root level="INFO,DEBUG,WARN,ERROR">
+    <root level="WARN,ERROR">
         <appender-ref ref="FILE"/>
     </root>
 </configuration>

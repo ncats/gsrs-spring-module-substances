@@ -183,7 +183,8 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
-        assertEquals(codeGenerator.getMax(), codeGenerator.DEFAULT_MAX);
+        assertEquals(codeGenerator.getMax(), (Long) Long.MAX_VALUE);
+
         assertEquals(codeGenerator.getLen(),String.valueOf(codeGenerator.getMax()).length()+codeGenerator.getSuffix().length());
     }
 

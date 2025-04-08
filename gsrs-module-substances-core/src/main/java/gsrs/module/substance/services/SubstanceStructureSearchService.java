@@ -85,7 +85,8 @@ public class SubstanceStructureSearchService {
         SIMILARITY("sim"),
         FLEX("flex"),
         FLEX_PLUS("flexplus"),
-        EXACT("exact")
+        EXACT("exact"),
+        EXACT_PLUS("exactplus")
         ;
 
         private final String value;
@@ -105,6 +106,11 @@ public class SubstanceStructureSearchService {
                 return null;
             }
             return lookup.computeIfAbsent(type, t->{
+                for(StructureSearchType s : values()){
+                    if(type.equalsIgnoreCase(s.value)){
+                        return s;
+                    }
+                }
                 for(StructureSearchType s : values()){
                     if(type.toLowerCase().startsWith(s.value)){
                         return s;
@@ -157,7 +163,8 @@ public class SubstanceStructureSearchService {
         public boolean isHashSearch() {
             if(type==null)return false;
             return this.type.equals(StructureSearchType.EXACT) || this.type.equals(StructureSearchType.FLEX)
-                    || this.type.equals(StructureSearchType.FLEX_PLUS);
+                    || this.type.equals(StructureSearchType.FLEX_PLUS)
+                    || this.type.equals(StructureSearchType.EXACT_PLUS);
         }
 
         public static String getDefaultField() {
