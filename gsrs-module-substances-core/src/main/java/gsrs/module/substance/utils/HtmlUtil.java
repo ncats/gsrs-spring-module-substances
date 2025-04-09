@@ -89,7 +89,7 @@ public final class HtmlUtil {
     }
 
     public static String truncate(String s){
-         return truncate(s, SubstanceDataConfiguration.INSTANCE().getNameColumnLength());
+         return s==null ? null : truncate(s, SubstanceDataConfiguration.INSTANCE().getNameColumnLength());
     }
 
     public static String truncate(String s, int len){
