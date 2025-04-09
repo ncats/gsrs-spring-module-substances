@@ -711,7 +711,10 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
             String oid2 = sub2Fetched.relationships.get(0).originatorUuid;
             assertEquals(uuid1.toString(), sub2Fetched.relationships.get(0).relatedSubstance.refuuid);
             assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
-            assertTrue(sub2Fetched.relationships.stream().anyMatch(r->r.originatorUuid.equals(oid1)) );
+            final Substance sub1FetchedFinal = sub1Fetched;
+            final Substance sub2FetchedFinal = sub2Fetched;
+            assertTrue(sub2Fetched.relationships.stream().anyMatch(r->r.originatorUuid.equals(sub1FetchedFinal.relationships.get(0).originatorUuid)));
+            assertTrue(sub2Fetched.relationships.stream().anyMatch(r->r.originatorUuid.equals(sub1FetchedFinal.relationships.get(1).originatorUuid)));
             //assertEquals(oid1, oid2);
             
             String oid1b = sub1Fetched.relationships.get(1).originatorUuid;
@@ -719,7 +722,6 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
             assertEquals(uuid1.toString(), sub2Fetched.relationships.get(1).relatedSubstance.refuuid);
             assertEquals(bar_foo, sub2Fetched.relationships.get(1).type);
             //assertEquals(oid1b, oid2b);
-            assertTrue(sub1Fetched.relationships.stream().anyMatch(r->r.originatorUuid.equals(oid2)) );
     }
     
     /*
