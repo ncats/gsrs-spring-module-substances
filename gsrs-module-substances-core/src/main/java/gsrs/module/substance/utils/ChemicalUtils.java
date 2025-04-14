@@ -128,6 +128,7 @@ public class ChemicalUtils {
     private StructureHandlingConfiguration structureHandlingConfiguration;
 
     private Map<String, String> saltData;
+    private Map<String, String> saltFirstPartData;
 
     @PostConstruct
     private void setUpSalts() {
@@ -137,6 +138,8 @@ public class ChemicalUtils {
         }
         log.trace("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
         saltData = new HashMap<>();
+        saltFirstPartData = new HashMap<>();
+        int inChIKeyLength = 27;
         try {
             String path = structureHandlingConfiguration.getSaltFilePath();
             log.info("Trying to read salt file at path: " + path);
@@ -146,7 +149,13 @@ public class ChemicalUtils {
             for (String line : lines) {
                 if (line.matches(".*\\w.*")) {
                     String[] lineParts = line.split("\\t");
+                    if(lineParts[0].length() != inChIKeyLength) {
+                        log.info("salt file lines '{}' skipped", lineParts[0]);
+                        continue;
+                    }
                     saltData.put(lineParts[0], lineParts[1]);
+                    String stereoInsensitive =lineParts[0].split("\\-")[0];
+                    saltFirstPartData.put(stereoInsensitive, lineParts[1]);
                 }
             }
         }
@@ -301,7 +310,9 @@ public class ChemicalUtils {
             catch(IOException ex) {
                 log.error("Error computing inchi for fragment ", ex);
             }
-            if (!saltData.containsKey(componentInchiKey))
+            String stereoInsensitivePart = componentInchiKey.split("\\-")[0];
+
+            if (!saltData.containsKey(componentInchiKey) && !saltFirstPartData.containsKey(stereoInsensitivePart))
             {
                 chemicals.add(c);
             }
@@ -325,7 +336,7 @@ public class ChemicalUtils {
             }
             return chemicals.get(indexOfMaxAtoms);
         }
-        return null;
+        return new Chemical();
     }
 
 }

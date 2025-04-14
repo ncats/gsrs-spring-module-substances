@@ -3,8 +3,12 @@ package example.chem;
 import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.molwitch.Chemical;
 
+import gsrs.module.substance.controllers.SubstanceController;
 import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -26,6 +30,9 @@ class SaltRemovalTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private ChemicalUtils chemicalUtils;
 
+    @Autowired
+    private StructureProcessor structureProcessor;
+
     @Test
     void testRemoveSalts() throws IOException {
 
@@ -36,6 +43,21 @@ class SaltRemovalTest extends AbstractSubstanceJpaFullStackEntityTest {
         double massAfter = cleaned.getMass();
         log.warn("formula before: {}; after: {}", chemical.getFormula(), cleaned.getFormula());
         Assertions.assertTrue(massAfter < massBefore, String.format("formula before: %s; after: %s", chemical.getFormula(), cleaned.getFormula()));
+    }
+
+    @Test
+    void testRemoveSaltsToNothing() throws Exception {
+
+        String inputSmiles = "C([C@@H]([C@@H](O)C(=O)O)O)(=O)O";
+        Structure structure = structureProcessor.taskFor(inputSmiles)
+                .standardize(true)
+                .build()
+                .instrument()
+                .getStructure();
+        SubstanceController controller = new SubstanceController();
+        AutowireHelper.getInstance().autowire(controller);
+        Structure saltStrippedStructure = controller.stripSalts(structure);
+        Assertions.assertEquals("", saltStrippedStructure.formula);
     }
 
     @ParameterizedTest

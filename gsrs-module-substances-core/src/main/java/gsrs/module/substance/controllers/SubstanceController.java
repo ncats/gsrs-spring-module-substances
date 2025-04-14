@@ -2050,10 +2050,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         topLevelNode.put("featureList", allFeatures);
     }
 
-    private Structure stripSalts(Structure structure) throws IOException {
+    public Structure stripSalts(Structure structure) throws IOException {
         Structure copy = new GinasChemicalStructure();
         copy.molfile = structure.molfile;
         Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+        if( clean == null) {
+            return new GinasChemicalStructure();
+        }
         Structure saltStripped= structureProcessor.instrument(clean);
         return saltStripped;
     }
