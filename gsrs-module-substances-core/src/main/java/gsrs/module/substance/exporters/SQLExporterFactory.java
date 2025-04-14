@@ -7,12 +7,11 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.exporters.OutputFormat;
+import ix.ginas.models.v1.Substance;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,7 +22,7 @@ import java.util.stream.Collectors;
  */
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SQLExporterFactory implements ExporterFactory {
+public class SQLExporterFactory implements ExporterFactory<Substance> {
 
     private OutputFormat format = new OutputFormat("custom.xlsx", "Custom Report (xlsx) File");
     private String stringConverter = null;

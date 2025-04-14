@@ -31,9 +31,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import javax.sql.DataSource;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveException;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.ArchiveStreamFactory;
@@ -106,7 +106,6 @@ public class SQLExporter implements Exporter<Substance> {
         }
     }
 
-    @Data
     public static class EntryConfig {
         private final String name;
         private final String sql;
@@ -124,10 +123,26 @@ public class SQLExporter implements Exporter<Substance> {
                 .setHeader(String.valueOf(m.getOrDefault("header", "")).isEmpty() ? null : String.valueOf(m.get("header")).trim().split(delimiter))
                 .setQuote(m.get("quoteChar") != null ? Character.valueOf(String.valueOf(m.get("quoteChar")).charAt(0)) : format.getQuoteCharacter())
                 .setQuoteMode(m.get("quoteMode") != null ? QuoteMode.valueOf(String.valueOf(m.get("quoteMode"))) : format.getQuoteMode())
-                .setEscape(m.get("escapeChar") != null && String.valueOf(m.get("escapeChar")).length()>0 ? Character.valueOf(String.valueOf(m.get("escapeChar")).charAt(0)) : format.getEscapeCharacter())
+                .setEscape(m.get("escapeChar") != null ? Character.valueOf(String.valueOf(m.get("escapeChar")).charAt(0)) : format.getEscapeCharacter())
                 .setNullString((String) m.getOrDefault("nullString", format.getNullString()))
                 .setRecordSeparator((String) m.getOrDefault("recordSeparator", format.getRecordSeparator()))
-                .build();
+                .get();
+        }
+
+        public String getName() {
+            return this.name;
+        }
+
+        public String getSql() {
+            return this.sql;
+        }
+
+        public Charset getEncoding() {
+            return this.encoding;
+        }
+
+        public CSVFormat getFormat() {
+            return this.format;
         }
     }
 
@@ -349,7 +364,10 @@ public class SQLExporter implements Exporter<Substance> {
                 workbook.write(this.out);
             } catch (Exception e) {
                 log.error("Exception:", e);
+            } finally {
+                workbook.close();
             }
+
             exportFile = null;
             archiverName = null;
         }
@@ -358,7 +376,7 @@ public class SQLExporter implements Exporter<Substance> {
             exportFile = new File(tmpdir, "export.arcTmp");
             try (
                 OutputStream fos = new FileOutputStream(exportFile);
-                ArchiveOutputStream aos = new ArchiveStreamFactory().createArchiveOutputStream(archiverName, fos);
+                ArchiveOutputStream<ArchiveEntry> aos = new ArchiveStreamFactory().createArchiveOutputStream(archiverName, fos);
             ) {
                 for (EntryConfig entry : files) {
                     File file = new File(tmpdir, entry.getName());
@@ -389,8 +407,10 @@ public class SQLExporter implements Exporter<Substance> {
                     cos.write(buffer, 0, len);
                 }
             }
-            exportFile.delete();
-            exportFile = null;
+            if (exportFile != null) {
+                exportFile.delete();
+                exportFile = null;
+            }
         }
 
         if (exportFile != null) {

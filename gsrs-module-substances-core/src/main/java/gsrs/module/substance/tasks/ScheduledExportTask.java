@@ -61,7 +61,6 @@ import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
 import jakarta.mail.internet.MimeMultipart;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.csv.CSVFormat;
@@ -143,6 +142,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
     protected PlatformTransactionManager transactionManager;
 
 
+    @JsonProperty(value="description")
     public void setDescription(String description) {
         this.description = description;
     }
@@ -151,6 +151,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return extension;
     }
 
+    @JsonProperty(value="extension")
     public void setExtension(String extension) {
         this.extension = extension;
     }
@@ -159,6 +160,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return filenameTemplate;
     }
 
+    @JsonProperty(value="filenameTemplate")
     public void setFilenameTemplate(String filenameTemplate) {
         this.filenameTemplate = filenameTemplate;
     }
@@ -167,6 +169,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return parameters;
     }
 
+    @JsonProperty(value="parameters")
     public void setParameters(Map<String, String> parameters) {
         this.parameters = parameters;
     }
@@ -175,6 +178,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return preserveExports;
     }
 
+    @JsonProperty(value="preserveExports")
     public void setPreserveExports(boolean preserveExports) {
         this.preserveExports = preserveExports;
     }
@@ -183,6 +187,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return publicOnly;
     }
 
+    @JsonProperty(value="publicOnly")
     public void setPublicOnly(boolean publicOnly) {
         this.publicOnly = publicOnly;
     }
@@ -191,6 +196,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return query;
     }
 
+    @JsonProperty(value="query")
     public void setQuery(String query) {
         this.query = query;
     }
@@ -199,8 +205,16 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         return username;
     }
 
+    @JsonProperty(value="username")
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    @JsonProperty(value="destinations")
+    public void setDestinations(Map<String, Map<String, String>> m) throws FileSystemException, NoSuchMethodException, URISyntaxException {
+        for (Map<String, String> value : m.values()) {
+            destinations.add(new DestinationConfig(value));
+        }
     }
 
     protected static class SmtpFileSystemConfigBuilder extends FileSystemConfigBuilder {
@@ -570,7 +584,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
                     .create(CSVFormat.RFC4180)
                     .setHeader()
                     .setSkipHeaderRecord(true)
-                    .build();
+                    .get();
                 MimeMultipart multipart = new MimeMultipart();
                 MimeBodyPart messageBodyPart;
                 String mimetype;
@@ -626,7 +640,6 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         }
     }
 
-    @Data
     private class DestinationConfig {
         private final URI uri;
         private final FileSystemOptions options;
@@ -660,15 +673,16 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
             this.options = opts;
         }
 
+        public URI getUri() {
+            return this.uri;
+        }
+
+        public FileSystemOptions getOptions() {
+            return this.options;
+        }
+
         public FileObject getFileObject(FileSystemManager manager) throws FileSystemException {
             return manager.resolveFile(uri.toString(), options);
-        }
-    }
-
-    @JsonProperty(value="destinations")
-    public void setDestinations(Map<String, Map<String, String>> m) throws FileSystemException, NoSuchMethodException, URISyntaxException {
-        for (Map<String, String> value : m.values()) {
-            destinations.add(new DestinationConfig(value));
         }
     }
 
@@ -710,11 +724,14 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
                 });
             Stream<Substance> substanceStream = getStreamSupplier();
             Stream<Substance> effectivelyFinalStream = filterStream(substanceStream, publicOnly, parameters);
+            @SuppressWarnings("unchecked")
             ExportProcess<Substance> p = exportService.createExport(emd,() -> effectivelyFinalStream);
             log.trace("p: " + (p==null ? "null" : "not null"));
             log.trace("publicOnly: " + publicOnly);
             l.message("Run export for " + extension + " extension.");
-            p.run(r->r.run(), out -> Unchecked.uncheck(() -> getExporterFor(extension, out, publicOnly, parameters)));
+            if (p != null) {
+                p.run(r->r.run(), out -> Unchecked.uncheck(() -> getExporterFor(extension, out, publicOnly, parameters)));
+            }
             return exportService.getFile(user.username, emd.getFilename());
         } catch (Exception e) {
             log.error("Error in ScheduledExportTask: " + e.getMessage());
@@ -726,7 +743,6 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
     private void uploadFile(ExportDir.ExportFile<ExportMetaData> file, SchedulerPlugin.TaskListener l) {
         l.message("Uploading file " + file.getFile().getName());
         StandardFileSystemManager manager = new StandardFileSystemManager();
-        OutputStream outputStream = null;
         LocalDate ld = TimeUtil.getCurrentLocalDate();
         String date = ld.format(DateTimeFormatter.ISO_LOCAL_DATE);
         String fname = fileNameGenerator().apply(date) + "." + extension;
@@ -767,11 +783,11 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
         log.trace("create params");
 
         log.trace("gsrsExportConfiguration: " + (gsrsExportConfiguration==null ? "null" : "not null"));
+        @SuppressWarnings("unchecked")
         ExporterFactory<Substance> factory = gsrsExportConfiguration.getExporterFor(substanceEntityService.getContext(), params);
 
         log.trace("factory: " + factory);
         if (factory == null) {
-            // TODO handle null couldn't find factory for params
             throw new IllegalArgumentException("could not find suitable factory for " + params);
         }
         return factory.createNewExporter(pos, params);
@@ -787,6 +803,7 @@ public class ScheduledExportTask extends ScheduledTaskInitializer {
 
     }
 
+    @SuppressWarnings("unchecked")
     private Stream<Substance> getStreamSupplier() throws UnsupportedEncodingException {
         if (query != null && !query.isEmpty()) {
             Matcher m = PERIOD_PAT.matcher(query);
