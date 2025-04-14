@@ -312,21 +312,17 @@ public class ChemicalUtils {
             }
             String stereoInsensitivePart = componentInchiKey.split("\\-")[0];
 
-            if (!saltData.containsKey(componentInchiKey) && !saltFirstPartData.containsKey(stereoInsensitivePart))
-            {
+            if (!saltData.containsKey(componentInchiKey) && !saltFirstPartData.containsKey(stereoInsensitivePart)){
                 chemicals.add(c);
             }
         });
-        if (chemicals.size() == 1)
-        {
+        if (chemicals.size() == 1) {
             return chemicals.get(0);
         }
-        if (!chemicals.isEmpty())
-        {
+        if (!chemicals.isEmpty()) {
             int maxAtoms = 0;
             int indexOfMaxAtoms = -1;
-            for (int i = 0; i < chemicals.size(); i++)
-            {
+            for (int i = 0; i < chemicals.size(); i++) {
                 Chemical chemical = chemicals.get(i);
                 if (chemical.getAtomCount() > maxAtoms)
                 {

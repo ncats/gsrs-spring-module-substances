@@ -744,7 +744,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
         } else if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS) {
             Structure saltStrippedStructure = stripSalts(structure);
-            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
+            log.trace("saltStrippedStructure: {}", saltStrippedStructure);
+            hash = saltStrippedStructure.formula == null || saltStrippedStructure.formula.length()==0  ?
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash()
+                    :
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
                     + saltStrippedStructure.getExactHash();
         } else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){

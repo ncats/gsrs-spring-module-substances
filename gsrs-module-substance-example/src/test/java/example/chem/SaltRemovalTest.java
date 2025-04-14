@@ -60,6 +60,21 @@ class SaltRemovalTest extends AbstractSubstanceJpaFullStackEntityTest {
         Assertions.assertEquals("", saltStrippedStructure.formula);
     }
 
+    @Test
+    void testRemoveSaltsToNothing2Fragments() throws Exception {
+
+        String inputSmiles = "C([C@@H]([C@@H](O)C(=O)O)O)(=O)[O-].[Na+]";
+        Structure structure = structureProcessor.taskFor(inputSmiles)
+                .standardize(true)
+                .build()
+                .instrument()
+                .getStructure();
+        SubstanceController controller = new SubstanceController();
+        AutowireHelper.getInstance().autowire(controller);
+        Structure saltStrippedStructure = controller.stripSalts(structure);
+        Assertions.assertEquals("", saltStrippedStructure.formula);
+    }
+
     @ParameterizedTest
     @MethodSource("inputData")
     void testSaltRemoval(String smiles, int atomCountChange) throws IOException {
