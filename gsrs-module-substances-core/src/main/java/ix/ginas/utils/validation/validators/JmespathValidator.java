@@ -79,9 +79,9 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
                 if (!results.isArray()) {
                     results = (JsonNode) new ObjectMapper().createArrayNode().add(results);
                 }
-                String[] args = StreamSupport.stream(results.spliterator(), false)
+                Object[] args = StreamSupport.stream(results.spliterator(), false)
                                             .map(JsonNode::asText)
-                                            .toArray(String[]::new);
+                                            .toArray(Object[]::new);
                 String msg = String.format(messageTemplate, args);
                 log.debug("Validation Message: " + messageId + " " + msg);
                 callback.addMessage(new GinasProcessingMessage(messageType, msg, messageId));

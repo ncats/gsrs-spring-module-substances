@@ -22,7 +22,6 @@ import ix.ginas.models.v1.Substance;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,6 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
         private final Expression<JsonNode> expression;
         private final Pattern regex;
         private final String replacement;
-        private final String delimiter;
         private final String format;
         private final boolean suggestable;
         private final boolean sortable;
@@ -64,7 +62,6 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
             this.expression = (Expression<JsonNode>) jmespath.compile(m.get("expression"));
             this.regex = Pattern.compile(m.getOrDefault("regex", ""));
             this.replacement = m.getOrDefault("replacement", "$1");
-            this.delimiter = m.getOrDefault("delimiter", "");
             this.format = m.get("format");
             this.suggestable = Boolean.valueOf(m.getOrDefault("suggestable", "false")).booleanValue();
             this.sortable = Boolean.valueOf(m.getOrDefault("sortable", "false")).booleanValue();
@@ -123,16 +120,18 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
                                 }
                             }
                         }
-                        if (format != null && !format.isEmpty()) {
-                            iv = iv.setFormat(format);
+                        if (iv != null) {
+                            if (format != null && !format.isEmpty()) {
+                                iv = iv.setFormat(format);
+                            }
+                            if (suggestable) {
+                                iv = iv.suggestable();
+                            }
+                            if (sortable) {
+                                iv = iv.setSortable();
+                            }
+                            consumer.accept(iv);
                         }
-                        if (suggestable) {
-                            iv = iv.suggestable();
-                        }
-                        if (sortable) {
-                            iv = iv.setSortable();
-                        }
-                        consumer.accept(iv);
                     }
                 }
             } catch (Exception e) {

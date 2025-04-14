@@ -9,7 +9,6 @@ import ix.ginas.models.v1.Code;
 
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -22,36 +21,61 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public class SetAccessCodeProcessor implements EntityProcessor<Code>{
 
-    private CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addGroupsIfNeeded);
+    private CachedSupplier<Void> initializer = CachedSupplier.runOnceInitializer(this::addGroupsIfNeeded);
 
     @Autowired
     private GroupService groupService;
 
-    private Map<String, Map<String, Map<Integer, String>>> with;
-    private Map<String, Set<Group>> codeSystemAccess;
-    private Set<Group> defaultAccess;
+    private final Map<String, Map<Object, Object>> with;
+    private final Map<String, Set<Group>> codeSystemAccess = new HashMap<String, Set<Group>>();
+    private final Set<Group> defaultAccess = new LinkedHashSet<Group>();
 
-    public SetAccessCodeProcessor(Map<String, Map<String, Map<Integer, String>>> with){
+    public SetAccessCodeProcessor(Map<String, Map<Object, Object>> with){
         this.with = with;
     }
 
+    public SetAccessCodeProcessor(){
+        this(new HashMap<String, Map<Object, Object>>());
+    }
+
+    public void setCodeSystemAccess(Map<Object, Object> o) {
+        this.with.put("codeSystemAccess", o);
+    }
+
+    public Map<String, Set<Group>> getCodeSystemAccess() {
+        return this.codeSystemAccess;
+    }
+
+    public void setDefaultAccess(String o) {
+        setDefaultAccess(new HashMap<Object, Object>());
+    }
+
+    public void setDefaultAccess(Map<Object, Object> o) {
+        this.with.put("defaultAccess", o);
+    }
+
+    public Set<Group> getDefaultAccess() {
+        return this.defaultAccess;
+    }
+
     public void addGroupsIfNeeded(){
-        Map<String, Set<Group>> csa = new HashMap<String, Set<Group>>();
-        for (Map.Entry<String, Map<Integer, String>> e : with.getOrDefault("codeSystemAccess", new HashMap<String, Map<Integer, String>>()).entrySet()) {
-            Set<Group> access = new LinkedHashSet<Group>();
-            Map<Integer, String> group_list = e.getValue();
-            if (group_list != null) {
-                for (String groupName : group_list.values()){
-                    access.add(groupService.registerIfAbsent(groupName));
-                }
+        defaultAccess.addAll(parseAccess(with.get("defaultAccess")));
+
+        for (Map.Entry<Object, Object> e : with.getOrDefault("codeSystemAccess", new HashMap<Object, Object>()).entrySet()) {
+            codeSystemAccess.put(String.valueOf(e.getKey()), parseAccess(e.getValue()));
+        }
+    }
+
+    private Set<Group> parseAccess(Object accessObj) {
+        Set<Group> access = new LinkedHashSet<Group>();
+        if (accessObj instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<Object, Object> accessMap = (Map<Object, Object>) accessObj;
+            for (Object groupName : accessMap.values()) {
+                access.add(groupService.registerIfAbsent(String.valueOf(groupName)));
             }
-            csa.put(e.getKey(), access);
         }
-        if (!csa.containsKey("*")) {
-            csa.put("*", new LinkedHashSet<Group>());
-        }
-        this.defaultAccess = csa.remove("*");
-        this.codeSystemAccess = csa;
+        return access;
     }
 
     @Override

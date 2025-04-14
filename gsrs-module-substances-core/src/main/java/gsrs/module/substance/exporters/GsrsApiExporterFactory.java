@@ -21,12 +21,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
@@ -44,7 +42,7 @@ import org.springframework.web.util.DefaultUriBuilderFactory;
  * Created by Egor Puzanov on 10/18/22.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class GsrsApiExporterFactory implements ExporterFactory {
+public class GsrsApiExporterFactory implements ExporterFactory<Substance> {
 
     @Autowired
     private UserProfileRepository userProfileRepository;

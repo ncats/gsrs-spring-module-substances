@@ -8,7 +8,6 @@ import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
 import gsrs.springUtils.StaticContextAccessor;
-import ix.core.EntityProcessor;
 import ix.ginas.models.GinasCommonData;
 
 import java.lang.reflect.Field;
@@ -23,7 +22,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -40,10 +38,9 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  */
 @Slf4j
-@Data
 public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
 
-    private Class entityClass;
+    private Class<? extends GinasCommonData> entityClass;
     private String description;
     private String query;
     private List<Field> resetFields;
@@ -58,13 +55,14 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+    @SuppressWarnings("unchecked")
     public UpdateEntityTaskInitializer(
         @JsonProperty("entityClass") String className,
         @JsonProperty("description") String description,
         @JsonProperty("query") String query,
         @JsonProperty("resetFields") Map<Integer, String> resetFields) {
         try {
-            this.entityClass = Class.forName(className);
+            this.entityClass = (Class<? extends GinasCommonData>) Class.forName(className);
         } catch (Exception e) {
             this.entityClass = null;
         }
@@ -151,7 +149,7 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
         return description;
     }
 
-    private int makeHash(GinasCommonData entity) {
+    private int makeHash(Object entity) {
         return (resetFields.isEmpty() ? publicFields : resetFields)
             .stream()
             .map(f->{
@@ -164,11 +162,13 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
             .collect(Collectors.joining()).hashCode();
     }
 
+    @SuppressWarnings("unchecked")
     private void processEntities(SchedulerPlugin.TaskListener l){
         String entityType = entityClass.getSimpleName();
         log.trace("starting in {} entities", entityType);
 
-        JpaRepository repository = new SimpleJpaRepository(entityClass, StaticContextAccessor.getEntityManagerFor(entityClass));
+        @SuppressWarnings({ "rawtypes" })
+        JpaRepository<Object, UUID> repository = new SimpleJpaRepository(entityClass, StaticContextAccessor.getEntityManagerFor(entityClass));
         List<UUID> uuids = StaticContextAccessor
             .getEntityManagerFor(entityClass)
             .createQuery(query, UUID.class)
@@ -180,18 +180,17 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
             soFar++;
             log.trace("processing {} entity with ID {}", entityType, uuid.toString());
             try {
-                Optional entityOpt = repository.findById(uuid);
+                Optional<Object> entityOpt = repository.findById(uuid);
                 if (!entityOpt.isPresent()) {
                     log.info("No {} entity found with ID {}", entityType, uuid.toString());
                     continue;
                 }
-                GinasCommonData entity = GinasCommonData.class.cast(entityOpt.get());
+                Object entity = entityOpt.get();
                 int hash = makeHash(entity);
                 for (Field field : resetFields) {
                     field.set(entity, null);
                 }
-                EntityProcessor ep = entityProcessorFactory.getCombinedEntityProcessorFor(entityClass.cast(entity));
-                ep.preUpdate(entityClass.cast(entity));
+                entityProcessorFactory.getCombinedEntityProcessorFor(entity).preUpdate(entity);
                 if(makeHash(entity) != hash) {
                     try {
                         log.trace("resaving {} entity {}", entityType, entity.toString());
@@ -200,8 +199,8 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
                         tx.setReadOnly(false);
                         tx.executeWithoutResult(e -> {
                             log.trace("before saveAndFlush");
-                            GinasCommonData e2 = GinasCommonData.class.cast(StaticContextAccessor.getEntityManagerFor(entityClass).merge(entity));
-                            e2.forceUpdate();
+                            Object e2 = StaticContextAccessor.getEntityManagerFor(entityClass).merge(entity);
+                            GinasCommonData.class.cast(e2).forceUpdate();
                             repository.saveAndFlush(entityClass.cast(e2));
                         });
                         log.trace("saved {} entity {}", entityType, entity.toString());

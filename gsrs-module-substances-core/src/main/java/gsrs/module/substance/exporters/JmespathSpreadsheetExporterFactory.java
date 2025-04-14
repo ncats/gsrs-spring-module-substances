@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import ix.ginas.exporters.*;
+import ix.ginas.models.v1.Substance;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -22,7 +23,7 @@ import java.util.stream.Collectors;
  */
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class JmespathSpreadsheetExporterFactory implements ExporterFactory {
+public class JmespathSpreadsheetExporterFactory implements ExporterFactory<Substance> {
 
     private OutputFormat format = new OutputFormat("custom.xlsx", "Custom Report (xlsx) File");
 

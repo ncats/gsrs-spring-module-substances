@@ -2,7 +2,6 @@ package gsrs.module.substance.exporters;
 
 import com.fasterxml.jackson.databind.ObjectWriter;
 import ix.core.controllers.EntityFactory;
-import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.Substance;
@@ -14,7 +13,6 @@ import java.io.OutputStreamWriter;
 import java.util.Date;
 import java.util.Map;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -64,7 +62,8 @@ public class GsrsApiExporter implements Exporter<Substance> {
         }
         HttpEntity<String> request = new HttpEntity<String>(jsonStr, headers);
         if (validate) {
-            ValidationResponse vr = restTemplate.postForObject("/@validate", request, ValidationResponse.class);
+            @SuppressWarnings("unchecked")
+            ValidationResponse<Substance> vr = restTemplate.postForObject("/@validate", request, ValidationResponse.class);
             if (vr.getValidationMessages().isEmpty()) throw new Exception("GSRS API not found");
             if (vr.hasError()) throw new Exception(vr.toString());
         }
@@ -87,7 +86,7 @@ public class GsrsApiExporter implements Exporter<Substance> {
                 request = makeRequest(obj);
                 restTemplate.put("/", request);
             } catch (HttpClientErrorException.NotFound ex) {
-                if (!ex.getMessage().endsWith("[{\"message\":\"not found\",\"status\":404}]")) {
+                if (!ex.getMessage().contains("\"status\":404")) {
                     throw new Exception(ex.getMessage());
                 }
                 obj.version = "1";

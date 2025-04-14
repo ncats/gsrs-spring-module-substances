@@ -8,12 +8,10 @@ import ix.ginas.models.v1.Reference;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import javax.sql.DataSource;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -24,34 +22,53 @@ import org.springframework.boot.jdbc.DataSourceBuilder;
  *
  * @author Egor Puzanov
  */
-@Data
-@Slf4j
+
+ @Slf4j
 public class DBClassificationsCodeProcessor implements EntityProcessor<Code> {
 
-    private final DataSource datasource;
-    private final String codeSystem;
-    private final String query;
+    private DataSource datasource = StaticContextAccessor.getBean(DataSource.class);
+    private String codeSystem;
+    private String query;
 
     public DBClassificationsCodeProcessor() {
         this(new HashMap<String, Object>());
     }
 
     public DBClassificationsCodeProcessor(Map<String, Object> m) {
-        String dataSourceQualifier = (String) m.get("dataSourceQualifier");
-        if (dataSourceQualifier != null && !dataSourceQualifier.isEmpty()) {
-            this.datasource = StaticContextAccessor.getBeanQualified(DataSource.class, dataSourceQualifier);
-        } else if (m.get("datasource") instanceof Map) {
-            Map<?, ?> dsconfig = (Map<?, ?>) m.get("datasource");
-            this.datasource = DataSourceBuilder.create()
-                                                .url((String)dsconfig.get("url"))
-                                                .username((String)dsconfig.get("username"))
-                                                .password((String)dsconfig.get("password"))
-                                                .build();
-        } else {
-            this.datasource = StaticContextAccessor.getBean(DataSource.class);
+        if (m.containsKey("dataSourceQualifier")) {
+            setDataSourceQualifier((String) m.get("dataSourceQualifier"));
         }
-        this.codeSystem = m.getOrDefault("codeSystem", "").toString();
-        this.query = m.getOrDefault("query", "").toString();
+        if (m.get("datasource") instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, String> dsconfig = (Map<String, String>) m.get("datasource");
+            setDatasource(dsconfig);
+        }
+        if (m.containsKey("codeSystem")) {
+            setCodeSystem((String) m.get("codeSystem"));
+        }
+        if (m.containsKey("query")) {
+            setQuery((String) m.get("query"));
+        }
+    }
+
+    public void setDataSourceQualifier(String dataSourceQualifier) {
+        this.datasource = StaticContextAccessor.getBeanQualified(DataSource.class, dataSourceQualifier);
+    }
+
+    public void setDatasource(Map<String, String> dsconfig) {
+        this.datasource = DataSourceBuilder.create()
+            .url((String)dsconfig.get("url"))
+            .username((String)dsconfig.get("username"))
+            .password((String)dsconfig.get("password"))
+            .build();
+    }
+
+    public void setCodeSystem(String codeSystem) {
+        this.codeSystem = codeSystem;
+    }
+
+    public void setQuery(String query) {
+        this.query = query;
     }
 
     @Override

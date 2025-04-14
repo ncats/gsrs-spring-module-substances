@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -32,7 +31,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  *
  * @author Egor Puzanov
  */
-@Data
+
 @Slf4j
 public class CVClassificationsCodeProcessor implements EntityProcessor<Code> {
 
@@ -42,7 +41,7 @@ public class CVClassificationsCodeProcessor implements EntityProcessor<Code> {
     @Autowired
     private PlatformTransactionManager transactionManager;
 
-    private CachedSupplier initializer = CachedSupplier.runOnceInitializer(this::addCvDomainIfNeeded);
+    private CachedSupplier<Void> initializer = CachedSupplier.runOnceInitializer(this::addCvDomainIfNeeded);
 
     private CVClassificationsCodeProcessorConfig config;
 
@@ -92,9 +91,12 @@ public class CVClassificationsCodeProcessor implements EntityProcessor<Code> {
         this(new HashMap<String, Object>());
     }
 
-    public CVClassificationsCodeProcessor(Map m) {
-        ObjectMapper mapper = new ObjectMapper();
-        config = mapper.convertValue(m, CVClassificationsCodeProcessorConfig.class);
+    public CVClassificationsCodeProcessor(Map<String, Object> m) {
+        setConfig(m);
+    }
+
+    public void setConfig(Map<String, Object> m) {
+        this.config = new ObjectMapper().convertValue(m, CVClassificationsCodeProcessorConfig.class);
     }
 
     private void addCvDomainIfNeeded() {
