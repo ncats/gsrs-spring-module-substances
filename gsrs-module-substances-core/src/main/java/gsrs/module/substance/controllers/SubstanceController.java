@@ -59,6 +59,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.fda.gsrs.ndsri.FeaturizeNitrosamine;
+import gov.fda.gsrs.ndsri.FeaturizeNitrosamine.FeatureResponse;
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Bond;
@@ -2031,5 +2033,96 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
         Structure saltStripped= structureProcessor.instrument(clean);
         return saltStripped;
+    }
+
+    @PostMapping("/evaluateSmiles")
+    public ResponseEntity<Map<String, Object>> evaluateSmiles(@RequestParam("smiles") String smiles) {
+        log.debug("Evaluating SMILES: {}", smiles);
+        try {
+            // Create a map to store the response
+            Map<String, Object> response = new HashMap<>();
+            
+            // Parse the SMILES string
+            Chemical chemical = Chemical.parse(smiles);
+            
+            // Check for multiple nitrosamine groups
+            List<Integer> nitrosamineSites = FeaturizeNitrosamine.markAllNitrosamines(chemical);
+            response.put("multipleNitrosamines", nitrosamineSites.size() > 1);
+            response.put("nitrosamineCount", nitrosamineSites.size());
+            
+            // Get the feature response
+            Optional<FeatureResponse> featureResponse = FeaturizeNitrosamine.forMostPotentNitrosamine(chemical);
+            
+            if (featureResponse.isPresent()) {
+                FeatureResponse responseData = featureResponse.get();
+                
+                // Add the response data to the map
+                response.put("potencyScore", responseData.getCategoryScore());
+                
+                // Build structure details
+                StringBuilder details = new StringBuilder();
+                details.append("Type: ").append(responseData.getType()).append("\n");
+                responseData.getFeatureSet().forEach((key, value) -> {
+                    details.append(key).append(": ").append(value).append("\n");
+                });
+                response.put("structureDetails", details.toString());
+                
+                // Determine which boxes to highlight
+                List<String> boxes = new ArrayList<>();
+                boxes.add("q1"); // Always add first question
+                
+                // Add category box based on potency score
+                int categoryScore = responseData.getCategoryScore();
+                if (categoryScore >= 5) {
+                    boxes.add("cat5-1");
+                } else if (categoryScore >= 4) {
+                    boxes.add("cat4");
+                } else if (categoryScore == 3) {
+                    boxes.add("cat3");
+                } else if (categoryScore == 2) {
+                    boxes.add("cat2");
+                } else {
+                    boxes.add("cat1");
+                }
+                
+                //if (responseData.getFeature("Alpha-Hydrogens").equals("NO")){
+                // Add additional boxes based on features
+                Optional<String> alphaHydrogens = responseData.getFeature("Alpha-Hydrogens");
+                if (alphaHydrogens.isPresent() && !alphaHydrogens.get().equals("0")) {
+                    boxes.add("q2");
+                }
+                
+                Optional<String> tertiaryAlpha = responseData.getFeature("Tertiary α-carbon");
+                if (tertiaryAlpha.isPresent() && "YES".equals(tertiaryAlpha.get())) {
+                    boxes.add("q3");
+                    boxes.add("cat5-3");
+                }
+                //}
+                // Add score boxes based on potency score
+                if (categoryScore >= 4) {
+                    boxes.add("score4");
+                } else if (categoryScore == 3) {
+                    boxes.add("score3");
+                } else if (categoryScore == 2) {
+                    boxes.add("score2");
+                } else {    
+                    boxes.add("score1");
+                }
+                
+                response.put("highlightedBoxes", boxes);
+                
+                log.debug("Successfully evaluated nitrosamine structure with potency score: {}", categoryScore);
+                return ResponseEntity.ok(response);
+            } else {
+                log.warn("No valid nitrosamine structure found for SMILES: {}", smiles);
+                response.put("error", "No valid nitrosamine structure found");
+                return ResponseEntity.ok(response);
+            }
+        } catch (Exception e) {
+            log.error("Error processing SMILES string: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error processing SMILES string: " + e.getMessage());
+            return ResponseEntity.ok(errorResponse);
+        }
     }
 }
