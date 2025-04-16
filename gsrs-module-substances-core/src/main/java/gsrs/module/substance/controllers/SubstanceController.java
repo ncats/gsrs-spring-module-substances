@@ -2035,7 +2035,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return saltStripped;
     }
 
-    @PostMapping("/evaluateSmiles")
+    @GetGsrsRestApiMapping("/evaluateSmiles")
     public ResponseEntity<Map<String, Object>> evaluateSmiles(@RequestParam("smiles") String smiles) {
         log.debug("Evaluating SMILES: {}", smiles);
         try {
