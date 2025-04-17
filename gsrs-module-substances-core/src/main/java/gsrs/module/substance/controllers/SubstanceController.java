@@ -744,22 +744,29 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
         } else if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS) {
             Structure saltStrippedStructure = stripSalts(structure);
-            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
+            log.trace("saltStrippedStructure formula: '{}'", saltStrippedStructure.formula);
+            hash = saltStrippedStructure.formula == null || saltStrippedStructure.formula.length()==0  ?
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash()
+                    :
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
                     + saltStrippedStructure.getExactHash();
         } else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
-                log.trace("running a flex plus search - remove salts");
-
                 Structure saltStripped = stripSalts(structure);
-                hash = makeSearch(saltStripped, true);
+                log.trace("running a flex plus search - remove salts. saltStripped formula: '{}'", saltStripped.formula);
+                //when we have a valid/non-blank structure after salt stripping, use it to make a full
+                // flex search.
+                // otherwise, use the original structure to make a simple search for stereo-insensitive hash
+                hash = saltStripped.formula != null && saltStripped.formula.length() > 0
+                        ?  makeSearch(saltStripped, true)
+                        : "root_structure_properties_STEREO_INSENSITIVE_HASH" + ":\"" + structure.getStereoInsensitiveHash() + "\"";
+                log.trace("flex plus hash: {}", hash);
             } else {
                 hash= makeSearch(structure, true);
             }
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-
             log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
-                    //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
         log.trace("hash: {}", hash);
         if(hash !=null){
@@ -767,6 +774,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             // Search for the hash and also add the qText (Query parameters).
             if (qText != null) {
+                log.trace("we have qText as well");
                 hash = hash + " AND (" + qText + ")";
             }
 
@@ -2050,10 +2058,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         topLevelNode.put("featureList", allFeatures);
     }
 
-    private Structure stripSalts(Structure structure) throws IOException {
+    public Structure stripSalts(Structure structure) throws IOException {
         Structure copy = new GinasChemicalStructure();
         copy.molfile = structure.molfile;
         Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+        if( clean == null) {
+            return new GinasChemicalStructure();
+        }
         Structure saltStripped= structureProcessor.instrument(clean);
         return saltStripped;
     }
