@@ -261,23 +261,10 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
 
     @Test
     public void ensureSmilesLeadsToReasonableMolfile() throws Exception {
-
+        //expect a SMILES with no query bonds to yield a molfile with no query bonds
         ObjectMapper om = new ObjectMapper();
         String smiles = "c1ccc(cc1)P(CCCC#N)(c2ccccc2)c3ccccc3";
-        UUID uuid1 = UUID.randomUUID();
-        new SubstanceBuilder()
-                .asChemical()
-                .setStructureWithDefaultReference(smiles)
-                .addName("triphenyl-Phosphene,(3-cyanopropyl)")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-
-        HttpServletRequest  mockedRequest = Mockito.mock(HttpServletRequest.class);
-        Mockito.when(mockedRequest.getRequestURI()).thenReturn("http://mock");
-        Mockito.when(mockedRequest.getRequestURL()).thenReturn(new StringBuffer("http://mock"));
-
         LoggingStructureStandardizer lstd=(LoggingStructureStandardizer)standardizer;
-
         lstd.reset();
         assertEquals(0,lstd.getStdCallCount());
 
@@ -288,7 +275,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         String molfile = structureNode.get("molfile").asText();
         assertNotNull(molfile);
         Chemical chem = Chemical.parseMol(molfile);
-        assertTrue(chem.bonds().allMatch(b->b.isQueryBond()));
+        assertTrue(chem.bonds().noneMatch(b->b.isQueryBond()));
         System.out.printf("molfile=%s\n", molfile);
     }
 

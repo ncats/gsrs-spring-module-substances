@@ -180,11 +180,11 @@ public class StructureProcessor {
         }
         //katzelda this probably isn't needed anymore since now settings.getChemical should
         //compute coords if needed ??
-        if (!mol.hasCoordinates()) {
+    if (!mol.hasCoordinates()) {
             try {
                 mol.generateCoordinates();
                 molSupplier.resetCache();
-            } catch (MolwitchException e) {
+        } catch (MolwitchException e) {
                 e.printStackTrace();
             }
         }
