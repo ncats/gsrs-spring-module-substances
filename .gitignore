@@ -45,3 +45,5 @@ gsrs-module-substance-example/src/test/resources/atomicweightdata.csv
 /gsrs-module-substance-example/src/main/resources/atomicweightdata.csv
 /gsrs-module-substance-example/src/main/resources/atomicweightdata_mod.csv
 /gsrs-module-substance-example/src/main/resources/atomicweightdataodd.csv
+.gitignore
+"gsrs-module-substances-core/src/main/java/gsrs/module/substance/controllers/NitrosamineController.java" 
