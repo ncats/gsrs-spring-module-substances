@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,8 +29,11 @@ import javax.imageio.ImageIO;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
+import gsrs.controller.*;
+import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.service.AbstractGsrsEntityService;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -71,11 +75,6 @@ import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import gsrs.GsrsFactoryConfiguration;
-import gsrs.controller.EtagLegacySearchEntityController;
-import gsrs.controller.GetGsrsRestApiMapping;
-import gsrs.controller.GsrsRestApiController;
-import gsrs.controller.IdHelpers;
-import gsrs.controller.PostGsrsRestApiMapping;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.module.substance.RendererOptionsConfig;
 import gsrs.module.substance.RendererOptionsConfig.FullRenderOptions;
@@ -747,22 +746,29 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
         } else if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS) {
             Structure saltStrippedStructure = stripSalts(structure);
-            hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
+            log.trace("saltStrippedStructure formula: '{}'", saltStrippedStructure.formula);
+            hash = saltStrippedStructure.formula == null || saltStrippedStructure.formula.length()==0  ?
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash()
+                    :
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
                     + saltStrippedStructure.getExactHash();
         } else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
-                log.trace("running a flex plus search - remove salts");
-
                 Structure saltStripped = stripSalts(structure);
-                hash = makeSearch(saltStripped, true);
+                log.trace("running a flex plus search - remove salts. saltStripped formula: '{}'", saltStripped.formula);
+                //when we have a valid/non-blank structure after salt stripping, use it to make a full
+                // flex search.
+                // otherwise, use the original structure to make a simple search for stereo-insensitive hash
+                hash = saltStripped.formula != null && saltStripped.formula.length() > 0
+                        ?  makeSearch(saltStripped, true)
+                        : "root_structure_properties_STEREO_INSENSITIVE_HASH" + ":\"" + structure.getStereoInsensitiveHash() + "\"";
+                log.trace("flex plus hash: {}", hash);
             } else {
                 hash= makeSearch(structure, true);
             }
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-
             log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
-                    //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
         log.trace("hash: {}", hash);
         if(hash !=null){
@@ -770,6 +776,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             // Search for the hash and also add the qText (Query parameters).
             if (qText != null) {
+                log.trace("we have qText as well");
                 hash = hash + " AND (" + qText + ")";
             }
 
@@ -1182,7 +1189,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 return Optional.empty();
             }    	
     }
-    
+
+    @PreAuthorize("hasRole('SuperUpdate')")
+    @PutGsrsRestApiMapping("/novalid")
+    @Transactional
+    public ResponseEntity<Object> updateEntityWithoutValidation(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in updateEntityWithoutValidation");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        log.trace("in updateEntityWithoutValidation");
+        AbstractGsrsEntityService.UpdateResult<Substance> result = null;
+        log.trace("Will call updateEntityIgnoreValidation");
+        result = getEntityService().updateEntity(updatedEntityJson, true);
+        if( result != null && result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
+            return this.getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+
+        if( result.getStatus() == AbstractGsrsEntityService.UpdateResult.STATUS.UPDATED){
+            new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+        }
+        //match 200 status of old GSRS
+        return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+    }
+
     @Builder
     @Data
     public static class StructureToRender{
@@ -2027,10 +2060,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         topLevelNode.put("featureList", allFeatures);
     }
 
-    private Structure stripSalts(Structure structure) throws IOException {
+    public Structure stripSalts(Structure structure) throws IOException {
         Structure copy = new GinasChemicalStructure();
         copy.molfile = structure.molfile;
         Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+        if( clean == null) {
+            return new GinasChemicalStructure();
+        }
         Structure saltStripped= structureProcessor.instrument(clean);
         return saltStripped;
     }
