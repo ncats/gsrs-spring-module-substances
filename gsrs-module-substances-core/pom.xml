@@ -332,6 +332,16 @@
             <version>1.17</version>
         </dependency>
         <dependency>
+            <groupId>io.burt</groupId>
+            <artifactId>jmespath-core</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.burt</groupId>
+            <artifactId>jmespath-jackson</artifactId>
+            <version>0.6.0</version>
+        </dependency>
+        <dependency>
             <groupId>gov.fda.gsrs</groupId>
             <artifactId>Featureize-Nitrosamines</artifactId>
             <version>0.0.4-SNAPSHOT</version>
