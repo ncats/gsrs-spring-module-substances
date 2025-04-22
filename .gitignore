@@ -50,3 +50,4 @@ mvnw.backup
 mvnw.unix
 mvnw
 .gitignore
+"gsrs-module-substances-core/src/main/java/gsrs/module/substance/controllers/NitrosamineController.java" 

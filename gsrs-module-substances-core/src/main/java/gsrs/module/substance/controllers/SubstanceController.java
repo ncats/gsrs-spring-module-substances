@@ -2121,7 +2121,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     boxes.add("cat1");
                 }
                 
-                //if (responseData.getFeature("Alpha-Hydrogens").equals("NO")){
                 // Add additional boxes based on features
                 Optional<String> alphaHydrogens = responseData.getFeature("Alpha-Hydrogens");
                 if (alphaHydrogens.isPresent() && !alphaHydrogens.get().equals("0")) {
@@ -2133,7 +2132,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     boxes.add("q3");
                     boxes.add("cat5-3");
                 }
-                //}
                 // Add score boxes based on potency score
                 if (categoryScore >= 4) {
                     boxes.add("score4");
