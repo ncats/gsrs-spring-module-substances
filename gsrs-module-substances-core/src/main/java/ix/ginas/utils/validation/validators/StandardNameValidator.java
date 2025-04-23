@@ -77,8 +77,6 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
 
     // validateFull does a more comprehensive set of standardizations for the standard name field.
     // validateInPlace does a minimal replacement of 'awful' characters - for  the main 'name' field.
-
-
     public void validateFull(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
         Map<String, Name> oldNames = new HashMap<>();
@@ -160,12 +158,13 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                 log.trace("stdName: " + name.stdName);
                 if (!stdNameStandardizer.isStandardized(name.stdName)) {
                     warnedAboutThisNameStandardization =true;
+                    String suggestedSTDName = stdNameStandardizer.standardize(name.stdName).getResult();
                     if( invalidStdNameBehavior== InvalidStdNameBehavior.error) {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'",
-                            name.stdName));
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'. Suggest standardized name: '%s'.",
+                            name.stdName, suggestedSTDName));
                     }else {
-                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'",
-                            name.stdName));
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'. Suggest standardized name: '%s'.",
+                            name.stdName, suggestedSTDName));
                     }
                 }
                 log.trace("warningOnMismatch: " + warningOnMismatch);

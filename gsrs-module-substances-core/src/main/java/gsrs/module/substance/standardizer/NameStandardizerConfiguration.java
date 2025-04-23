@@ -66,7 +66,7 @@ public class NameStandardizerConfiguration {
             "\u0392", "\u0393", "\u0394", "\u0395", "\u0396", "\u0397", "\u0398", "\u0399", "\u039A",
             "\u039B", "\u039C", "\u039D", "\u039E", "\u039F", "\u03A0", "\u03A1", "\u03A3", "\u03A4",
             "\u03A5", "\u03A6", "\u03A7", "\u03A8", "\u03A9", "<i>", "</i>", "</sup><sup>", "</sub><sub>",
-            "<sup>", "</sup>", "<sub>", "</sub>", "&zwnj;", "&quot;");
+            "<sup>", "</sup>", "<sub>", "</sub>", "&zwnj;", "&quot;", "\u00B7");
         List<String> replace = Arrays.asList("&", "<-", "->","<", ">", "<-", "->", "+/-", "X", "1", "2", "3", "0", "1", "2",
             "3", "4", "5", "6", "7", "8", "9", "+", "-", "0" , "1", "2", "3", "4", "5", "6",
             "7", "8", "9", "+", "-", "L", "D", "", "'", "\"", "-", "!", "#", "%", "*", ",",
@@ -80,7 +80,7 @@ public class NameStandardizerConfiguration {
             ".EPSILON.", ".ZETA.", ".ETA.", ".THETA.", ".IOTA.", ".KAPPA.", ".LAMBDA.",
             ".MU.", ".NU.", ".XI.", ".OMICRON.", ".PI.", ".RHO.", ".SIGMA.",
             ".TAU.", ".UPSILON.", ".PHI.", ".CHI.", ".PSI.", ".OMEGA.", "", "", "", "",
-            "SUP(", ")", "SUB(", ")", "", "\"");
+            "SUP(", ")", "SUB(", ")", "", "\"",".");
         Map<String, Object> parameters = new HashMap<String, Object>();
         parameters.put("search", (Map<Integer, String>) search.stream().collect(Collectors.toMap(e->search.indexOf(e), e->e)));
         final Iterator<Integer> iter = IntStream.range(0, replace.size()).iterator();
