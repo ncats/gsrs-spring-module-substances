@@ -123,7 +123,8 @@ public class SQLExporter implements Exporter<Substance> {
                 .setHeader(String.valueOf(m.getOrDefault("header", "")).isEmpty() ? null : String.valueOf(m.get("header")).trim().split(delimiter))
                 .setQuote(m.get("quoteChar") != null ? Character.valueOf(String.valueOf(m.get("quoteChar")).charAt(0)) : format.getQuoteCharacter())
                 .setQuoteMode(m.get("quoteMode") != null ? QuoteMode.valueOf(String.valueOf(m.get("quoteMode"))) : format.getQuoteMode())
-                .setEscape(m.get("escapeChar") != null ? Character.valueOf(String.valueOf(m.get("escapeChar")).charAt(0)) : format.getEscapeCharacter())
+                 //MM change to prevent StringIndexOutOfBoundsException
+                .setEscape(m.get("escapeChar") != null  && ((String)m.get("escapeChar")).length()> 0 ? Character.valueOf(String.valueOf(m.get("escapeChar")).charAt(0)) : format.getEscapeCharacter())
                 .setNullString((String) m.getOrDefault("nullString", format.getNullString()))
                 .setRecordSeparator((String) m.getOrDefault("recordSeparator", format.getRecordSeparator()))
                 .get();
