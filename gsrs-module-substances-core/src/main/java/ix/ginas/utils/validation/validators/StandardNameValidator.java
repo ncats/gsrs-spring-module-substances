@@ -69,9 +69,9 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
     	initIfNeeded();
-        log.error("nameStandardizer class=" + nameStandardizer.getClass().getName());
+        log.debug("nameStandardizer class=" + nameStandardizer.getClass().getName());
         if(nameStandardizer!=null)validateInPlace(objnew, objold, callback);
-        log.error("stdNameStandardizer class=" + stdNameStandardizer.getClass().getName());
+        log.debug("stdNameStandardizer class=" + stdNameStandardizer.getClass().getName());
         if(stdNameStandardizer!=null)validateFull(objnew, objold, callback);
     }
 
