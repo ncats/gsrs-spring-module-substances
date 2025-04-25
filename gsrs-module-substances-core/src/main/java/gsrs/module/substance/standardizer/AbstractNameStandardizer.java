@@ -57,7 +57,7 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
 
     public void setReplace(String[] replaceList) {
         this.replace = replaceList;
-        log.error("NameStandardizer replacement list: " + Arrays.toString(this.replace));
+        log.debug("NameStandardizer replacement list: " + Arrays.toString(this.replace));
     }
 
     @JsonProperty
@@ -129,8 +129,7 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
     }
 
     public static ReplacementResult replaceRegexLists(String input, Pattern[] searchList, String[] replaceList) {
-    	
-    	log.error("In replaceRegexLists: " + Arrays.toString(replaceList));    	
+
         List<ReplacementNote> notes = new ArrayList<>();
         ReplacementResult result = new ReplacementResult(input, notes);
         if (input != null && input.length() != 0) {
