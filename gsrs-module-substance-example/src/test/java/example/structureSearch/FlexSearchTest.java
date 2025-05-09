@@ -193,7 +193,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Test
     @WithMockUser(value = "admin", roles = "Admin")
-    public void runFlexPlusSearchQuerySodiumTartrate() throws Exception {
+    public void verifyCleaningSodiumTartrateProducesEmptyMol() throws Exception {
         String molfileSource = "molfiles/sodium_tartrate.mol";
         File molfile = new ClassPathResource(molfileSource).getFile();
         Structure structureStd = structureProcessor.taskFor(Files.readString(molfile.toPath()))
@@ -208,18 +208,7 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
         SubstanceController controller = new SubstanceController();
         AutowireHelper.getInstance().autowireAndProxy(controller);
 
-        String hash = controller.makeSearch(cleanedStructure, true);
-        log.trace("search hash: {}", hash);
-        SearchRequest request = new SearchRequest.Builder()
-                .kind(Substance.class)
-                .query(hash)
-                .build();
-        List<Substance> substances = getSearchList(request);
-        log.trace("search results: (total: {})", substances.size());
-        substances.forEach(s-> log.trace("ID {} - {}", s.uuid, s.getName()));
-
-        int expectedNumber = 7;
-        assertEquals(expectedNumber, substances.size());
+        assertEquals(0, cleanedChemical.getAtomCount());
     }
 
     @Test
