@@ -4,15 +4,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gsrs.EntityProcessorFactory;
+import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.scheduledTasks.ScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.security.AdminService;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.ginas.models.GinasCommonData;
+import ix.ginas.models.v1.Substance;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -43,8 +46,12 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
     private Class<? extends GinasCommonData> entityClass;
     private String description;
     private String query;
+    private String ownerQuery;
     private List<Field> resetFields;
     private List<Field> publicFields;
+
+    @Autowired
+    private SubstanceRepository substanceRepository;
 
     @Autowired
     private EntityProcessorFactory entityProcessorFactory;
@@ -57,10 +64,11 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
 
     @SuppressWarnings("unchecked")
     public UpdateEntityTaskInitializer(
-        @JsonProperty("entityClass") String className,
-        @JsonProperty("description") String description,
-        @JsonProperty("query") String query,
-        @JsonProperty("resetFields") Map<Integer, String> resetFields) {
+            @JsonProperty("entityClass") String className,
+            @JsonProperty("description") String description,
+            @JsonProperty("query") String query,
+            @JsonProperty("ownerQuery") String ownerQuery,
+            @JsonProperty("resetFields") Map<Integer, String> resetFields) {
         try {
             this.entityClass = (Class<? extends GinasCommonData>) Class.forName(className);
         } catch (Exception e) {
@@ -77,22 +85,27 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
             if (query != null && !query.isEmpty()) {
                 this.query = query;
             } else {
-                this.query = "select " + ("Structure".equals(simpleClassName) ? "" : "uu") + "id from " + simpleClassName;
+                this.query = "select e.uuid from " + simpleClassName + " e";
+            }
+            if (ownerQuery != null && !ownerQuery.isEmpty()) {
+                this.ownerQuery = ownerQuery;
+            } else {
+                this.ownerQuery = "select e.owner.uuid from " + simpleClassName + " e where e.uuid = ?1";
             }
             if (resetFields != null && !resetFields.isEmpty()) {
                 this.resetFields = resetFields
-                    .values()
-                    .stream()
-                    .map(f->{
-                        Field field = null;
-                        try {
-                            field = this.entityClass.getDeclaredField(f);
-                            field.setAccessible(true);
-                        } catch (Exception e) {}
-                        return field;
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                        .values()
+                        .stream()
+                        .map(f->{
+                            Field field = null;
+                            try {
+                                field = this.entityClass.getDeclaredField(f);
+                                field.setAccessible(true);
+                            } catch (Exception e) {}
+                            return field;
+                        })
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
             } else {
                 this.resetFields = new ArrayList<>();
             }
@@ -151,15 +164,15 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
 
     private int makeHash(Object entity) {
         return (resetFields.isEmpty() ? publicFields : resetFields)
-            .stream()
-            .map(f->{
-                try {
-                    return String.valueOf(f.get(entity));
-                } catch (Exception e) {
-                    return "";
-                }
-            })
-            .collect(Collectors.joining()).hashCode();
+                .stream()
+                .map(f->{
+                    try {
+                        return String.valueOf(f.get(entity));
+                    } catch (Exception e) {
+                        return "";
+                    }
+                })
+                .collect(Collectors.joining()).hashCode();
     }
 
     @SuppressWarnings("unchecked")
@@ -170,49 +183,86 @@ public class UpdateEntityTaskInitializer extends ScheduledTaskInitializer {
         @SuppressWarnings({ "rawtypes" })
         JpaRepository<Object, UUID> repository = new SimpleJpaRepository(entityClass, StaticContextAccessor.getEntityManagerFor(entityClass));
         List<UUID> uuids = StaticContextAccessor
-            .getEntityManagerFor(entityClass)
-            .createQuery(query, UUID.class)
-            .getResultList();
+                .getEntityManagerFor(entityClass)
+                .createQuery(query, UUID.class)
+                .getResultList();
         int total = uuids.size();
         log.trace("total {} entities: {}", entityType, total);
         int soFar = 0;
+        Map<UUID, List<UUID>> owners = new HashMap<UUID, List<UUID>>();
         for (UUID uuid: uuids) {
-            soFar++;
-            log.trace("processing {} entity with ID {}", entityType, uuid.toString());
-            try {
-                Optional<Object> entityOpt = repository.findById(uuid);
-                if (!entityOpt.isPresent()) {
-                    log.info("No {} entity found with ID {}", entityType, uuid.toString());
-                    continue;
-                }
-                Object entity = entityOpt.get();
-                int hash = makeHash(entity);
-                for (Field field : resetFields) {
-                    field.set(entity, null);
-                }
-                entityProcessorFactory.getCombinedEntityProcessorFor(entity).preUpdate(entity);
-                if(makeHash(entity) != hash) {
-                    try {
-                        log.trace("resaving {} entity {}", entityType, entity.toString());
-                        TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
-                        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                        tx.setReadOnly(false);
-                        tx.executeWithoutResult(e -> {
-                            log.trace("before saveAndFlush");
-                            Object e2 = StaticContextAccessor.getEntityManagerFor(entityClass).merge(entity);
-                            GinasCommonData.class.cast(e2).forceUpdate();
-                            repository.saveAndFlush(entityClass.cast(e2));
-                        });
-                        log.trace("saved {} entity {}", entityType, entity.toString());
-                    } catch (Exception ex) {
-                        log.error("Error during save: {}", ex.getMessage());
-                    }
-                }
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                log.error("Error during processing: {}", ex.getMessage());
+            final UUID owner = StaticContextAccessor
+                    .getEntityManagerFor(Substance.class)
+                    .createQuery(ownerQuery, UUID.class)
+                    .setParameter(1, uuid)
+                    .getSingleResult();
+            if (!owners.containsKey(owner)) {
+                owners.put(owner, new ArrayList<UUID>());
             }
-            l.message(String.format("Processed %d of %d %s entities", soFar, total, entityType));
+            owners.get(owner).add(uuid);
+        }
+        for (Map.Entry<UUID, List<UUID>> me : owners.entrySet()) {
+            final UUID owner = me.getKey();
+            boolean updateSubstance = false;
+            for (UUID uuid: me.getValue()) {
+                soFar++;
+                log.trace("processing {} entity with ID {} with owner ID {}", entityType, uuid.toString(), owner.toString());
+                try {
+                    Optional<Object> entityOpt = repository.findById(uuid);
+                    if (!entityOpt.isPresent()) {
+                        log.info("No {} entity found with ID {}", entityType, uuid.toString());
+                        continue;
+                    }
+                    Object entity = entityOpt.get();
+                    int hash = makeHash(entity);
+                    for (Field field : resetFields) {
+                        field.set(entity, null);
+                    }
+                    entityProcessorFactory.getCombinedEntityProcessorFor(entity).preUpdate(entity);
+                    if(makeHash(entity) != hash) {
+                        updateSubstance = true;
+                        try {
+                            log.trace("resaving {} entity {}", entityType, entity.toString());
+                            TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+                            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                            tx.setReadOnly(false);
+                            tx.executeWithoutResult(e -> {
+                                log.trace("before saveAndFlush");
+                                Object e2 = StaticContextAccessor.getEntityManagerFor(entityClass).merge(entity);
+                                GinasCommonData.class.cast(e2).forceUpdate();
+                                repository.saveAndFlush(entityClass.cast(e2));
+                            });
+                            log.trace("saved {} entity {}", entityType, entity.toString());
+                        } catch (Exception ex) {
+                            log.error("Error during save: {}", ex.getMessage());
+                        }
+                    }
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    log.error("Error during processing: {}", ex.getMessage());
+                }
+                l.message(String.format("Processed %d of %d %s entities", soFar, total, entityType));
+            }
+            if (updateSubstance) {
+                try {
+                    log.trace("resaving Substance {}", owner.toString());
+                    TransactionTemplate tx = new TransactionTemplate(platformTransactionManager);
+                    tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                    tx.setReadOnly(false);
+                    tx.executeWithoutResult(e -> {
+                        log.trace("before saveAndFlush");
+                        Optional<Substance> substanceOpt = substanceRepository.findById(owner);
+                        if (substanceOpt.isPresent()) {
+                            Substance substance = substanceOpt.get();
+                            substance.forceUpdate();
+                            substanceRepository.saveAndFlush(substance);
+                        }
+                    });
+                    log.trace("saved Substance entity {}", owner.toString());
+                } catch (Exception ex) {
+                    log.error("Error during save: {}", ex.getMessage());
+                }
+            }
         }
     }
 }
