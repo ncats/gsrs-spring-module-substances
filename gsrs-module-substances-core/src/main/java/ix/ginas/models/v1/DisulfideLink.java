@@ -8,15 +8,17 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSimplifiedSubData;
 
 import javax.persistence.CascadeType;
+import javax.persistence.Entity;
 import javax.persistence.OneToOne;
+import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
 
 @SuppressWarnings("serial")
-//@Entity
-//@Table(name="ix_ginas_disulfide")
-@IgnoredModel
+@Entity
+@Table(name="ix_ginas_disulfide")
+//@IgnoredModel
 public class DisulfideLink extends GinasCommonSimplifiedSubData {
 	
 	@JsonIgnore
