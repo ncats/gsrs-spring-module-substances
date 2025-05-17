@@ -459,26 +459,6 @@ public class Structure extends BaseModel {
     }
 
 
-    /*@JsonProperty("_inchiKeySet")
-    @Transient
-    public String getInChIKeySet() {
-        try{
-            if(this.stereoChemistry.equals(Stereo.RACEMIC) && this.opticalActivity.equals(Optical.PLUS_MINUS)) {
-                this.toChemical().getExtendedTetrahedrals()
-            }
-            for (Value val : this.properties) {
-                if(val==null) continue;
-                if (Structure.H_InChI_Key.equals(val.label)) {
-                    return Objects.toString(val.getValue()).replaceAll("_", "-");
-                }
-            }
-            return getInChIKeyAndThrow();
-        }catch(Exception e){
-            e.printStackTrace();
-            return null;
-        }
-    }*/
-
     @JsonIgnore
     @Transient
     public String getInChIKeyAndThrow() throws Exception{
@@ -491,12 +471,15 @@ public class Structure extends BaseModel {
     @Transient
     public List<String> getInChIKeysAndThrow() {
 
-        log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}", this.stereoChemistry);
+        log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}, opticalActivity: {}", this.stereoChemistry, this.opticalActivity);
         try {
 
-        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
-            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
-            //handle non-epimers
+//        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
+//            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
+//            //handle non-epimers
+//            return Collections.singletonList(getInChIKey());
+//        }
+        if( this.opticalActivity != Optical.PLUS_MINUS) {
             return Collections.singletonList(getInChIKey());
         }
         List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
@@ -509,6 +492,7 @@ public class Structure extends BaseModel {
                         return null;
                     }
                 }).filter(i -> i != null)
+                .distinct()
                 .collect(Collectors.toList());
         }
         catch (Exception ex) {
@@ -525,9 +509,7 @@ public class Structure extends BaseModel {
         log.trace("in getInChIsAndThrow(), stereoChemistry: {}", this.stereoChemistry);
         try {
 
-            if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
-                    || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
-                //handle non-epimers
+            if(!this.opticalActivity.equals(Optical.PLUS_MINUS)) {
                 return Collections.singletonList(getInChI());
             }
             List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
@@ -540,6 +522,7 @@ public class Structure extends BaseModel {
                             return null;
                         }
                     }).filter(i -> i != null)
+                    .distinct()
                     .collect(Collectors.toList());
         }
         catch (Exception ex) {
