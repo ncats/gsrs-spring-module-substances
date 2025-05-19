@@ -479,11 +479,11 @@ public class Structure extends BaseModel {
 //            //handle non-epimers
 //            return Collections.singletonList(getInChIKey());
 //        }
-        if( this.opticalActivity != Optical.PLUS_MINUS) {
-            return Collections.singletonList(getInChIKey());
-        }
-        List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
-        return epimers.stream()
+            if( this.opticalActivity != Optical.PLUS_MINUS && this.definedStereo.intValue() > 0) {
+                return Collections.singletonList(getInChIKey());
+            }
+            List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
+            return epimers.stream()
                 .map(c -> {
                     try {
                         return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(c), true).getKey();
@@ -509,7 +509,7 @@ public class Structure extends BaseModel {
         log.trace("in getInChIsAndThrow(), stereoChemistry: {}", this.stereoChemistry);
         try {
 
-            if(!this.opticalActivity.equals(Optical.PLUS_MINUS)) {
+            if(!this.opticalActivity.equals(Optical.PLUS_MINUS) && this.definedStereo.intValue() > 0) {
                 return Collections.singletonList(getInChI());
             }
             List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
