@@ -28,6 +28,12 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
 
     @Autowired
     private GroupRepository groupRepository;
+    
+    private final String SetReferenceAccessWarning1 = "SetReferenceAccessWarning1";
+    private final String SetReferenceAccessWarning2 = "SetReferenceAccessWarning2";
+    private final String SetReferenceAccessWarning3 = "SetReferenceAccessWarning3";
+    private final String SetReferenceAccessWarning4 = "SetReferenceAccessWarning4";
+    
 
     //temporarily instantiate from hard-coded strings
     private LinkedHashMap<Integer, String> alwaysPublic = new LinkedHashMap<>();
@@ -55,32 +61,31 @@ public class SetReferenceAccess extends AbstractValidatorPlugin<Substance>
             if ((alwaysPrivate.values().contains(r.docType))
                     && (r.isPublic() || r.isPublicDomain() || r.isPublicReleaseReference())) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(
-                                "Protected reference:\"%s:%s\" cannot be public. Setting to protected.",
-                                        r.docType, r.citation)
+                        .WARNING_MESSAGE(SetReferenceAccessWarning1,
+                        		"Protected reference:\"" + r.docType + ":" + r.citation + 
+                        		"\" cannot be public. Setting to protected.")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> makeReferenceProtected(r));
             }else if (referenceCitationPatterns.values().stream().anyMatch(p -> p.matcher((" " + r.citation).toUpperCase()).find()) ) {
 							if (r.isPublic() || r.isPublicDomain() || r.isPublicReleaseReference()) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(
-                                "Reference:\"%s:%s\" appears to be non-public. Setting to protected.",
-                                        r.docType, r.citation)
+                        .WARNING_MESSAGE(SetReferenceAccessWarning2,
+                        		"Reference:\"" + r.docType + ":" + r.citation +
+                                "\" appears to be non-public. Setting to protected.")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> makeReferenceProtected(r));
 							}
             }else if (alwaysPublic.values().contains(r.docType)
                     && (!r.isPublic() || !r.isPublicDomain())) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(
-                                "Public reference:\"%s:%s\" cannot be private. Setting to public.",
-                                        r.docType, r.citation)
+                        .WARNING_MESSAGE(SetReferenceAccessWarning3,
+                        		"Public reference:\"" + r.docType + ":" + r.citation + "\" cannot be private. Setting to public.")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> makeReferencePublic(r));
             }else if(suggestedPublic.containsValue(r.docType) && (!r.isPublic() || !r.isPublicDomain())) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                    .WARNING_MESSAGE("References of type %s, such as \"%s:%s,\" are typically public. Consider modifying the access and public domain flag, unless there is an explicit reason to keep it restricted.",
-                                    r.docType, r.docType, r.citation);
+                    .WARNING_MESSAGE(SetReferenceAccessWarning4, "References of type " + r.docType + ", such as \"" + r.docType + ":" + r.citation + 
+                    		",\" are typically public. Consider modifying the access and public domain flag, unless there is an explicit reason to keep it restricted.");
                 if(!substanceNotesContainWarning(substance, mes.getMessage())){
                     callback.addMessage(mes);
                 }else {

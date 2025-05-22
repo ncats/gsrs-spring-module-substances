@@ -29,8 +29,17 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
     
     @Autowired
     private ReferenceRepository referenceRepository;
-
-
+    
+    private String CodesValidatorNullWarning = "CodesValidatorNullWarning";
+    private String CodesValidatorNullError1 = "CodesValidatorNullError1";
+    private String CodesValidatorNullError2 = "CodesValidatorNullError2";
+    private String CodesValidatorWhitespaceWarning1 = "CodesValidatorWhitespaceWarning1";
+    private String CodesValidatorWhitespaceWarning2 = "CodesValidatorWhitespaceWarning2";
+    private String CodesValidatorWhitespaceWarning3 = "CodesValidatorWhitespaceWarning3";
+    private String CodesValidatorWhitespaceWarning4 = "CodesValidatorWhitespaceWarning4";
+    private String CodesValidatorTypeWarning = "CodesValidatorTypeWarning";
+    private String CodesValidatorTagWarning = "CodesValidatorTagWarning";
+    
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate. " );
@@ -39,7 +48,7 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
             Code cd = codesIter.next();
             if (cd == null) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE("Null code objects are not allowed")
+                        .WARNING_MESSAGE(CodesValidatorNullWarning, "Null code objects are not allowed")
                         .appliableChange(true);
                 callback.addMessage(mes, ()->codesIter.remove());
                 continue;
@@ -47,50 +56,47 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
 
                 if (ValidationUtils.isEffectivelyNull(cd.code)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .ERROR_MESSAGE(
+                            .ERROR_MESSAGE(CodesValidatorNullError1,
                                     "'Code' should not be null in code objects")
                             .appliableChange(true);
                     callback.addMessage(mes, ()-> cd.code="<no code>");
 
                 }else if (!(cd.code+"").trim().equals(cd.code+"")) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "'Code' '%s' should not have trailing or leading whitespace. Code will be trimmed to '%s'",
-                                    cd.code, cd.code.trim())
-                            .appliableChange(true);
+                            .WARNING_MESSAGE(CodesValidatorWhitespaceWarning1, 
+                                    "'Code' '" + cd.code + "' should not have trailing or leading whitespace. Code will be trimmed to '"
+                                    + cd.code.trim()+ "'").appliableChange(true);
                     callback.addMessage(mes, ()-> cd.code=(cd.code+"").trim());
 
                 }
 
                 if (!ValidationUtils.isEffectivelyNull(cd.codeText) && !(cd.codeText+"").trim().equals(cd.codeText+"")) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "'Code comment' '%s' should not have trailing or leading whitespace. Code will be trimmed to '%s'",
-                                    cd.codeText, cd.codeText.trim())
-                            .appliableChange(true);
+                            .WARNING_MESSAGE(CodesValidatorWhitespaceWarning2,
+                                    "'Code comment' '" + cd.codeText + "' should not have trailing or leading whitespace. Code will be trimmed to '"
+                                    + cd.codeText.trim() + "'").appliableChange(true);
                     callback.addMessage(mes, ()-> cd.codeText=(cd.codeText+"").trim());
                 }
 
 
             if (ValidationUtils.isEffectivelyNull(cd.codeSystem)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .ERROR_MESSAGE(
+                            .ERROR_MESSAGE(CodesValidatorNullError2,
                                     "'Code System' should not be null in code objects")
                             .appliableChange(true);
                     callback.addMessage(mes, ()->cd.codeSystem="<no system>");
 
                 } else if (!(cd.codeSystem+"").trim().equals(cd.codeSystem+"")) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
-                                    "'Code system' '%s' should not have trailing or leading whitespace. Code will be trimmed to '%s'",
-                                    cd.codeSystem, cd.codeSystem.trim())
-                            .appliableChange(true);
+                            .WARNING_MESSAGE(CodesValidatorWhitespaceWarning3,
+                                    "'Code system' '" + cd.codeSystem + "' should not have trailing or leading whitespace. Code will be trimmed to '" 
+                                    + cd.codeSystem.trim() + "'").appliableChange(true);
                     callback.addMessage(mes, ()-> cd.codeSystem=(cd.codeSystem+"").trim());
                 }
 
                 if (ValidationUtils.isEffectivelyNull(cd.type)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
+                            .WARNING_MESSAGE(CodesValidatorTypeWarning,
                                     "Must specify a code type for each name. Defaults to \"PRIMARY\" (PRIMARY)")
                             .appliableChange(true);
                     callback.addMessage(mes, ()-> cd.type="PRIMARY");
@@ -113,9 +119,9 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                  if( containsLeadingTrailingSpaces(cd.comments) ) {
                      cd.comments=cd.comments.trim();
                      GinasProcessingMessage mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Code '%s'[%s] code text: %s contains one or more leading/trailing blanks that will be removed",
-                                        cd.code, cd.codeSystem, cd.comments)
+                                .WARNING_MESSAGE(CodesValidatorWhitespaceWarning4,
+                                        "Code '" + cd.code +"'[" + cd.codeSystem + "] code text: " + cd.comments 
+                                        + "contains one or more leading/trailing blanks that will be removed")
                                 .appliableChange(true);
                      callback.addMessage(mes);
                 }
@@ -123,9 +129,8 @@ public class CodesValidator extends AbstractValidatorPlugin<Substance> {
                 if(cd.comments!=null && !cd.comments.isEmpty() && !HtmlUtil.isValid(cd.comments)) {
                      cd.comments=HtmlUtil.clean(cd.comments, "UTF-8");
                      GinasProcessingMessage mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(
-                                        "Code '%s'[%s] code text: %s contains one or more forbidden html tags that will be removed",
-                                        cd.code, cd.codeSystem, cd.comments)
+                                .WARNING_MESSAGE(CodesValidatorTagWarning,
+                                        "Code '" + cd.code + "'[ " + cd.codeSystem + "] code text: " + cd.comments + " contains one or more forbidden html tags that will be removed")
                                 .appliableChange(true);
                      callback.addMessage(mes);
                 }

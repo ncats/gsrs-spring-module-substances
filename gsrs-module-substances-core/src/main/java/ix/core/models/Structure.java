@@ -607,7 +607,7 @@ public class Structure extends BaseModel {
 
         if(c==null || Chem.isProblem(c)){
         	messages.add(GinasProcessingMessage
-                    .WARNING_MESSAGE("Structure format modified due to standardization"));
+                    .WARNING_MESSAGE("StructureError", "Structure format modified due to standardization"));
         	try {
                 c = Chemical.parseMol(ChemCleaner.removeSGroupsAndLegacyAtomLists(mfile));
 
@@ -629,7 +629,7 @@ public class Structure extends BaseModel {
                     Structure.Stereo.RACEMIC.equals(stereoChemistry) ||
                     Structure.Stereo.UNKNOWN.equals(stereoChemistry)) {
                 messages.add(GinasProcessingMessage
-                        .WARNING_MESSAGE("Structure format may not encode full stereochemical information"));
+                        .WARNING_MESSAGE("StructureWarning", "Structure format may not encode full stereochemical information"));
             }
         }
         if (smiles != null)

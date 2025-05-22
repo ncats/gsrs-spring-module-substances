@@ -10,6 +10,9 @@ import ix.ginas.utils.validation.ValidatorPlugin;
  * Created by katzelda on 5/16/18.
  */
 public class UnknownSubstanceClassValidator extends AbstractValidatorPlugin<Substance> {
+	
+	private final String UnknownSubstanceClassValidatorError = "UnknownSubstanceClassValidatorError";
+	
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         switch (s.substanceClass) {
@@ -29,7 +32,7 @@ public class UnknownSubstanceClassValidator extends AbstractValidatorPlugin<Subs
                 break;
             default:
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE("Substance class \"%s\" is not valid", s.substanceClass));
+                        .ERROR_MESSAGE(UnknownSubstanceClassValidatorError, "Substance class \"" + s.substanceClass + "\" is not valid"));
                 break;
         }
     }

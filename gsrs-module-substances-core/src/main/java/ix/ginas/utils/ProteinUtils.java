@@ -691,7 +691,7 @@ public class ProteinUtils
         log.trace("containsStarAtom: " + containsStarAtom);
         if (containsStarAtom) {
             contribution.getMessages().add(
-                    GinasProcessingMessage.WARNING_MESSAGE("Note: molecular fragment used in structural modifications contains '*' atom.  Molecular weight calculation may be off"));
+                    GinasProcessingMessage.WARNING_MESSAGE("ProteinUtilsWarning","Note: molecular fragment used in structural modifications contains '*' atom.  Molecular weight calculation may be off"));
         }
 
         return contribution;

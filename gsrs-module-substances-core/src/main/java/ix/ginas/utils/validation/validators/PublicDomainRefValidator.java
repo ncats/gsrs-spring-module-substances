@@ -11,6 +11,10 @@ import ix.ginas.utils.validation.ValidatorPlugin;
  * Created by katzelda on 5/16/18.
  */
 public class PublicDomainRefValidator implements ValidatorPlugin<Substance> {
+	
+	private final String PublicDomainRefValidatorTagError = "PublicDomainRefValidatorTagError";
+	private final String PublicDomainRefValidatorNameError = "PublicDomainRefValidatorNameError";
+	
     @Override
     public boolean supports(Substance newValue, Substance oldValue, ValidatorConfig.METHOD_TYPE methodType) {
         return methodType != ValidatorConfig.METHOD_TYPE.BATCH;
@@ -27,15 +31,14 @@ public class PublicDomainRefValidator implements ValidatorPlugin<Substance> {
                     .isPresent();
             if (!allowed) {
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Public records must have a PUBLIC DOMAIN reference with a '%s' tag",
-                                    Reference.PUBLIC_DOMAIN_REF));
+                            .ERROR_MESSAGE(PublicDomainRefValidatorTagError, "Public records must have a PUBLIC DOMAIN reference with a '" + 
+                            		Reference.PUBLIC_DOMAIN_REF + "' tag"));
 
             }
             objnew.getDisplayName().ifPresent(dn->{
                 if(!dn.isPublic()){
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Display name \"%s\" must be public if the full record is public.",
-                                    dn.getName()));
+                            .ERROR_MESSAGE(PublicDomainRefValidatorNameError, "Display name \"" + dn.getName() + "\" must be public if the full record is public."));
                 }
             });
         }

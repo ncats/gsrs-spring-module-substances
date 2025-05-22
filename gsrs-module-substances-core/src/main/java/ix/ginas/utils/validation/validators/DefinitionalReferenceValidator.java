@@ -21,6 +21,8 @@ that is also marked public.
  */
 @Slf4j
 public class DefinitionalReferenceValidator extends AbstractValidatorPlugin<Substance>{
+	
+	private String DefinitionalReferenceValidatorReferenceError = "DefinitionalReferenceValidatorReferenceError";
 
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
@@ -40,7 +42,8 @@ public class DefinitionalReferenceValidator extends AbstractValidatorPlugin<Subs
             log.trace("     allowed: " + allowed);
             if (!allowed) {
                 callback.addMessage(GinasProcessingMessage
-                                .ERROR_MESSAGE("Public substance definitions require a public definitional reference.  Please add one."));
+                                .ERROR_MESSAGE(DefinitionalReferenceValidatorReferenceError, 
+                                		"Public substance definitions require a public definitional reference.  Please add one."));
             }
         }
     }

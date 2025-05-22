@@ -15,6 +15,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 public class StructurallyDiverseValidator extends AbstractValidatorPlugin<Substance> {
     @Autowired
     private ReferenceRepository referenceRepository;
+    
+    private final String StructurallyDiverseValidatorError1 = "StructurallyDiverseValidatorError1";
+    private final String StructurallyDiverseValidatorError2 = "StructurallyDiverseValidatorError2";
+    private final String StructurallyDiverseValidatorError3 = "StructurallyDiverseValidatorError3";
+    private final String StructurallyDiverseValidatorError4 = "StructurallyDiverseValidatorError4";
+    private final String StructurallyDiverseValidatorError5 = "StructurallyDiverseValidatorError5";
+    private final String StructurallyDiverseValidatorWarning = "StructurallyDiverseValidatorWarning";
 
     public ReferenceRepository getReferenceRepository() {
         return referenceRepository;
@@ -29,7 +36,8 @@ public class StructurallyDiverseValidator extends AbstractValidatorPlugin<Substa
         StructurallyDiverseSubstance cs = (StructurallyDiverseSubstance)objnew;
         if (cs.structurallyDiverse == null) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Structurally diverse substance must have a structurally diverse element"));
+                    .ERROR_MESSAGE(StructurallyDiverseValidatorError1,
+                    		"Structurally diverse substance must have a structurally diverse element"));
             return;
         }
 
@@ -37,7 +45,7 @@ public class StructurallyDiverseValidator extends AbstractValidatorPlugin<Substa
                 || cs.structurallyDiverse.sourceMaterialClass.equals("")) {
 
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Structurally diverse substance must specify a sourceMaterialClass"));
+                    .ERROR_MESSAGE(StructurallyDiverseValidatorError2, "Structurally diverse substance must specify a sourceMaterialClass"));
         } else {
             if (cs.structurallyDiverse.sourceMaterialClass
                     .equals("ORGANISM")) {
@@ -54,20 +62,20 @@ public class StructurallyDiverseValidator extends AbstractValidatorPlugin<Substa
                 if (cs.structurallyDiverse.part == null
                         || cs.structurallyDiverse.part.isEmpty()) {
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Structurally diverse organism substance must specify at least one (1) part"));
+                            .ERROR_MESSAGE(StructurallyDiverseValidatorError3, "Structurally diverse organism substance must specify at least one (1) part"));
                 }
                 if (!hasParent && !hasTaxon) {
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Structurally diverse organism substance must specify a parent substance, or a family"));
+                            .ERROR_MESSAGE(StructurallyDiverseValidatorError4, "Structurally diverse organism substance must specify a parent substance, or a family"));
                 }
                 if (hasParent && hasTaxon) {
                     callback.addMessage(GinasProcessingMessage
-                            .WARNING_MESSAGE("Structurally diverse organism substance typically should not specify both a parent and taxonomic information"));
+                            .WARNING_MESSAGE(StructurallyDiverseValidatorWarning, "Structurally diverse organism substance typically should not specify both a parent and taxonomic information"));
                 }
                 if (cs.structurallyDiverse.sourceMaterialType == null
                         || cs.structurallyDiverse.sourceMaterialType.equals("")) {
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE("Organism Structurally diverse substance must specify a sourceMaterialType"));
+                            .ERROR_MESSAGE(StructurallyDiverseValidatorError5, "Organism Structurally diverse substance must specify a sourceMaterialType"));
                 }
             }
            

@@ -19,6 +19,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
+	
+	private final String BasicNameValidatorStandardizedWarning = "BasicNameValidatorStandardizedWarning";
 
 	@Autowired
 	private NameStandardizerConfiguration nameStdConfig;
@@ -66,8 +68,8 @@ public class BasicNameValidator extends AbstractValidatorPlugin<Substance> {
             log.trace(debugMessage);
 
             if (!minimallyStandardizedName.getResult().equals(n.name) || minimallyStandardizedName.getReplacementNotes().size() > 0) {
-                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE("Name %s minimally standardized to %s",
-                        n.name, minimallyStandardizedName.getResult());
+                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(BasicNameValidatorStandardizedWarning, 
+                		"Name " + n.name + " minimally standardized to " + minimallyStandardizedName.getResult());
                 mes.appliableChange(true);
                 callback.addMessage(mes, () -> {
                     n.name = minimallyStandardizedName.getResult();

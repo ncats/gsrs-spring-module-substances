@@ -59,9 +59,12 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
             JmesPath<JsonNode> jmespath = new JacksonRuntime(configuration);
             this.messageType = GinasProcessingMessage.MESSAGE_TYPE.valueOf(m.getOrDefault("messageType", "NOTICE"));
             this.messageTemplate = m.get("messageTemplate");
-            this.messageId = m.getOrDefault("messageId", this.messageType.toString().substring(0,1)
-                                    + String.valueOf("JmespathValidator".hashCode()).substring(2,5)
-                                    + String.valueOf(this.messageTemplate.hashCode()).substring(1,5));
+//            this.messageId = m.getOrDefault("messageId", this.messageType.toString().substring(0,1)
+//                                    + String.valueOf("JmespathValidator".hashCode()).substring(2,5)
+//                                    + String.valueOf(this.messageTemplate.hashCode()).substring(1,5));
+            
+            this.messageId = "JmespathValidator" + m.getOrDefault("messageId", this.messageType.toString());
+
             this.rawExpression = m.get("expression");
             this.expression = (Expression<JsonNode>) jmespath.compile(this.rawExpression);
         }

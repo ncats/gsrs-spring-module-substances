@@ -26,6 +26,9 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
     public final static String DEA_NUMBER_CODE_SYSTEM = "DEA Number";
+    
+    //There are two DEAValidators in substances module. Use DEAValidator2 here.   
+    private final String DEAValidator2ScheduleWarning = "DEAValidator2ScheduleWarning";
 
     public Map<String, String> getInchiKeyToDeaSchedule() {
         return inchiKeyToDeaSchedule;
@@ -80,7 +83,7 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
         if( inchiKeyToDeaSchedule.containsKey(inchiKey)) {
             String deaSchedule = inchiKeyToDeaSchedule.get(inchiKey);
             GinasProcessingMessage mesWarn = GinasProcessingMessage
-                    .WARNING_MESSAGE(
+                    .WARNING_MESSAGE(DEAValidator2ScheduleWarning, 
                             String.format("This substance has DEA schedule: %s", deaSchedule));
 
             String deaNumber = inchiKeyToDeaNumber.get(inchiKey);

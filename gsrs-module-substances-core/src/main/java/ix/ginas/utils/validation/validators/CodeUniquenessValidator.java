@@ -27,6 +27,8 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
     @Autowired
     private SubstanceRepository substanceRepository;
 
+    private final String CodeUniquenessValidatorDuplicateWarning = "CodeUniquenessValidatorDuplicateWarning";
+    
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate. singletonCodeSystems: " + singletonCodeSystems);
@@ -51,7 +53,8 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
 
                 if (s2.getUuid() != null && !s2.getUuid().equals(s.getUuid())) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE("Code '%s'[%s] collides (possible duplicate) with existing code & codeSystem for substance:", cd.code, cd.codeSystem)
+                            .WARNING_MESSAGE(CodeUniquenessValidatorDuplicateWarning, 
+                            		"Code '" + cd.code + "'[" + cd.codeSystem + "] collides (possible duplicate) with existing code & codeSystem for substance.")
                             //                               TODO katelda Feb 2021 : add link support back!
                             .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
                     callback.addMessage(mes);

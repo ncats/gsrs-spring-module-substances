@@ -109,7 +109,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
 
                     if (GinasProcessingMessage.ALL_VALID(messages)) {
-                        resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
+                        resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("CodeEntityServiceSuccess", "Substance is valid"));
                     }
                 }
             }
