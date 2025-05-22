@@ -1,6 +1,6 @@
 package ix.ginas.modelBuilders;
 
-import ignoredModels.DisulfideLink;
+import ix.ginas.models.v1.DisulfideLink;
 import ix.ginas.models.v1.*;
 
 import java.util.ArrayList;

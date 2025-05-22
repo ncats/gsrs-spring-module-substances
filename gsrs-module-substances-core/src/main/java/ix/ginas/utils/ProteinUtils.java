@@ -10,7 +10,7 @@ import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import ix.core.chem.FormulaInfo;
 
 import ix.core.validator.GinasProcessingMessage;
-import ignoredModels.DisulfideLink;
+import ix.ginas.models.v1.DisulfideLink;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
 import ix.utils.Util;

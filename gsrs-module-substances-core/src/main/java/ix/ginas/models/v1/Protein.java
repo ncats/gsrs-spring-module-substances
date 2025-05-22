@@ -13,7 +13,6 @@ import gsrs.model.GsrsUrlLink;
 import ix.core.models.BeanViews;
 import ix.core.models.Indexable;
 import ix.core.util.ModelUtils;
-import ignoredModels.DisulfideLink;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import lombok.Data;

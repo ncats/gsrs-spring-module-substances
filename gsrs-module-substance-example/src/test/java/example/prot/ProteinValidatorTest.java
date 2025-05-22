@@ -7,7 +7,7 @@ import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
-import ignoredModels.DisulfideLink;
+import ix.ginas.models.v1.DisulfideLink;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;

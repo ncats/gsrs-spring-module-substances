@@ -2,7 +2,7 @@ package gsrs.module.substance.definitional;
 
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementImplementation;
-import ignoredModels.DisulfideLink;
+import ix.ginas.models.v1.DisulfideLink;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jcvi.jillion.core.residue.aa.AminoAcid;

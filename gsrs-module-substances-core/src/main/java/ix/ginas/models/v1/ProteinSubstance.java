@@ -9,7 +9,6 @@ import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.SequenceEntity;
 import ix.core.util.EntityUtils;
 import ix.core.util.LogUtil;
-import ignoredModels.DisulfideLink;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
