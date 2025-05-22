@@ -1,30 +1,27 @@
-package ix.ginas.models.v1;
-
+package ignoredModels;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import ix.core.IgnoredModel;
-import ix.core.models.Indexable;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSimplifiedSubData;
+import ix.ginas.models.v1.Site;
+import ix.ginas.models.v1.SiteContainer;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Entity;
-import javax.persistence.OneToOne;
-import javax.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 
 
-@SuppressWarnings("serial")
-@Entity
-@Table(name="ix_ginas_disulfide")
+//@SuppressWarnings("serial")
+//@Entity
+//@Table(name="ix_ginas_disulfide")
 //@IgnoredModel
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DisulfideLink extends GinasCommonSimplifiedSubData {
 	
 	@JsonIgnore
-	@OneToOne(cascade= CascadeType.ALL)
-	@Indexable(indexed=false)
-    SiteContainer siteContainer;
+	//@OneToOne(cascade= CascadeType.ALL)
+	//@Indexable(indexed=false)
+	SiteContainer siteContainer;
 	
     public List<Site> getSites(){
     	if(siteContainer!=null){

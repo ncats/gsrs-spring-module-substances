@@ -4,16 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.json.GsrsUrlLinkSerializer;
 import gsrs.model.GsrsUrlLink;
 import ix.core.models.BeanViews;
 import ix.core.models.Indexable;
 import ix.core.util.ModelUtils;
+import ignoredModels.DisulfideLink;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import lombok.Data;
@@ -57,30 +57,31 @@ public class Protein extends GinasCommonSubData {
 	@Transient
 	List<DisulfideLink> tmpDisulfides = null;
 
+	//next two methods from Perplexity
 	@JsonView(BeanViews.Full.class)
 	public List<DisulfideLink> getDisulfideLinks() {
-		if (tmpDisulfides != null)
-			return tmpDisulfides;
-		List<DisulfideLink> rolekinds = new ArrayList<DisulfideLink>();
-		if (this.disulfJSON != null) {
-			try {
-				ObjectMapper om = new ObjectMapper();
-				List l = om.readValue(disulfJSON, List.class);
-				for (Object o : l) {
-					try {
-						rolekinds.add(om.treeToValue(om.valueToTree(o), DisulfideLink.class));
-					} catch (Exception e) {
-						System.err.println(e.getMessage());
-						log.trace("Error parsing disulfides", e);
-					}
+		if (tmpDisulfides == null) {
+			synchronized (this) {
+				if (tmpDisulfides == null) {
+					tmpDisulfides = deserializeDisulfideLinks();
 				}
-			} catch (Exception e) {
-				log.trace("Error parsing disulfides", e);
 			}
-
 		}
-		tmpDisulfides = rolekinds;
 		return tmpDisulfides;
+	}
+
+	private List<DisulfideLink> deserializeDisulfideLinks() {
+		if (disulfJSON == null) return new ArrayList<>();
+
+		try {
+			return mapper.readValue(
+					disulfJSON,
+					new TypeReference<List<DisulfideLink>>() {}
+			);
+		} catch (JsonProcessingException e) {
+			log.error("Failed to deserialize disulfJSON: {}", disulfJSON, e);
+			return new ArrayList<>();
+		}
 	}
 
 	@JsonView(BeanViews.Compact.class)

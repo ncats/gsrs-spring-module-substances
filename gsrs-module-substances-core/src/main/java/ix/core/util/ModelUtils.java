@@ -1,6 +1,6 @@
 package ix.core.util;
 
-import ix.ginas.models.v1.DisulfideLink;
+import ignoredModels.DisulfideLink;
 import ix.ginas.models.v1.Site;
 
 import java.util.*;

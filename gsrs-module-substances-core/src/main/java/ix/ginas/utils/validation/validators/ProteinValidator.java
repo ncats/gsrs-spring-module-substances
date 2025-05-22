@@ -11,6 +11,7 @@ import ix.core.search.SearchRequest;
 import ix.core.search.SearchResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
+import ignoredModels.DisulfideLink;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.MolecularWeightAndFormulaContribution;
 import ix.ginas.utils.ProteinUtils;

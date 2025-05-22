@@ -4,6 +4,7 @@ import gov.nih.ncats.common.util.SingleThreadCounter;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.validator.ValidationMessage;
+import ignoredModels.DisulfideLink;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.PolymerSubstanceBuilder;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
