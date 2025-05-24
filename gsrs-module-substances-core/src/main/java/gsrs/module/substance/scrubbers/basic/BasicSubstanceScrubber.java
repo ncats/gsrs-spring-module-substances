@@ -834,6 +834,13 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             if(scrubberSettings.getSubstanceReferenceCleanup()) {
                 cleanUpReferences(snew);
             }
+            if(this.scrubberSettings.scrubUploadedFilesFromReferences){
+                log.trace("will now remove uploaded files");
+                snew.references.forEach(r->{
+                    r.uploadedFile=null;
+                });
+            }
+
             removeStaleReferences(snew);
             if( scrubberSettings.getApprovalIdCleanup()) {
                 scrubApprovalId(snew);

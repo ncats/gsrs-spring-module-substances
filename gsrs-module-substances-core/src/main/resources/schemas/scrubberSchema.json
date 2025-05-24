@@ -455,6 +455,12 @@
           false
         ]
       }
+    },
+    "scrubUploadedFilesFromReferences" : {
+      "commends": "Remove uploaded file URLs from References",
+      "title": "Remove uploaded file URLs from References",
+      "type": "boolean"
+
     }
   },
   "required": [],

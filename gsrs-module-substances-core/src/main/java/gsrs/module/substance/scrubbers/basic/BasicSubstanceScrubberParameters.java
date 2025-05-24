@@ -392,6 +392,14 @@ public Boolean removeStdNames = false;
 	 *
 	 *
 	 */
+	@JsonProperty("scrubUploadedFilesFromReferences")
+	public Boolean scrubUploadedFilesFromReferences = false;
+	/**
+	 * remove the uploaded files from References
+	 *
+	 *
+	 */
+
 	@JsonProperty("scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions")
 	public String scrubbedDefinitionHandlingAddNoteToScrubbedPartialDefinitions;
 	@JsonIgnore
