@@ -457,7 +457,7 @@
       }
     },
     "scrubUploadedFilesFromReferences" : {
-      "commends": "Remove uploaded file URLs from References",
+      "comments": "Remove uploaded file URLs from References. (These URLs probably won't be useful in another organization.)",
       "title": "Remove uploaded file URLs from References",
       "type": "boolean"
 
