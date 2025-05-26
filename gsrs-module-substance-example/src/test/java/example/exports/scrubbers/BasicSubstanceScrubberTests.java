@@ -1412,6 +1412,76 @@ public class BasicSubstanceScrubberTests {
     }
 
     @Test
+    public void testScrubSubstanceFileUrlNeg() {
+        String internalUrl = "https://ourserver.company.com/files/graphics/custom_graphic.jpg";
+        String currentSmiles="CCNC1CCC2CCCC12";
+        ChemicalSubstance chemical = SubstanceTestUtil.makeChemicalSubstance(currentSmiles);
+        chemical.names.clear();//remove any bogus names
+        UUID mainUuid=UUID.randomUUID();
+        chemical.uuid=mainUuid;
+        chemical.status="approved";
+
+        Reference publicRef = new Reference();
+        publicRef.publicDomain=true;
+        publicRef.docType="Wikipedia";
+        publicRef.citation="Some public chemical";
+        publicRef.uploadedFile = internalUrl;
+
+        Reference publicRef2 = new Reference();
+        publicRef2.publicDomain=true;
+        publicRef2.docType="UNIPROT";
+        publicRef2.citation="Some public protein ref";
+
+        Reference publicRef3 = new Reference();
+        publicRef3.publicDomain=true;
+        publicRef3.docType="KEW GARDENS (WCPS)";
+        publicRef3.citation="KEW GARDENS (WCPS)";
+        String approvalIdValue="Approved12";
+        String approvalIDCodeSystem="Approval ID Code";
+
+        Name namePublic = new Name();
+        namePublic.name = "~{N}-ethyl-1,2,3,3~{a},4,5,6,6~{a}-octahydropentalen-1-amine";
+        namePublic.addReference(publicRef);
+        UUID publicNameUuid=UUID.randomUUID();
+        namePublic.uuid=publicNameUuid;
+        chemical.addReference(publicRef);
+        chemical.names.add(namePublic);
+        chemical.created = new Date();
+
+        Reference poeRef = new Reference();
+        poeRef.citation="nevermore";
+        poeRef.docType="OTHER";
+        chemical.addReference(poeRef);
+        chemical.status="approved";
+        chemical.approvalID=approvalIdValue;
+
+        Code cas= new Code();
+        cas.codeSystem="CAS";
+        cas.type="PRIMARY";
+        cas.code="293-55-2";
+        cas.addReference(publicRef2);
+        UUID casCodeUuid=UUID.randomUUID();
+        cas.uuid=casCodeUuid;
+        chemical.codes.add(cas);
+        chemical.addReference(publicRef2);
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setSubstanceReferenceCleanup(false);
+        scrubberSettings.setRegenerateUUIDs(true);
+        scrubberSettings.setChangeAllStatuses(false);
+        scrubberSettings.setScrubUploadedFilesFromReferences(false);
+        scrubberSettings.setChangeAllStatusesNewStatusValue("pending");
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        chemical.addNote("This is a note");
+        String reasonToChange = "remove url";
+        chemical.changeReason = reasonToChange;
+        Optional<Substance> cleaned = scrubber.scrub(chemical);
+        ChemicalSubstance cleanedChemical = (ChemicalSubstance) cleaned.get();
+        Assertions.assertTrue(cleanedChemical.references.stream().anyMatch(r->r.uploadedFile!=null));
+    }
+
+    @Test
     public void testReferencedSubstanceCleanup() {
         //building up a structurally diverse substance where the parent is protected.
         StructurallyDiverseSubstance parent = new StructurallyDiverseSubstance();
