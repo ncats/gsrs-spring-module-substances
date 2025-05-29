@@ -593,7 +593,7 @@ public class Structure extends BaseModel {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE("SMILES parsing error: %s", e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("StructureError1", "SMILES parsing error: " + e.getMessage()));
             }
         
         }else{
@@ -601,13 +601,13 @@ public class Structure extends BaseModel {
                 c = Chemical.parseMol(molfile);
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE("Molfile parsing error: %s", e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("StructureError2","Molfile parsing error: " + e.getMessage()));
             }
         }
 
         if(c==null || Chem.isProblem(c)){
         	messages.add(GinasProcessingMessage
-                    .WARNING_MESSAGE("StructureError", "Structure format modified due to standardization"));
+                    .WARNING_MESSAGE("StructureWarning1", "Structure format modified due to standardization"));
         	try {
                 c = Chemical.parseMol(ChemCleaner.removeSGroupsAndLegacyAtomLists(mfile));
 
@@ -629,7 +629,7 @@ public class Structure extends BaseModel {
                     Structure.Stereo.RACEMIC.equals(stereoChemistry) ||
                     Structure.Stereo.UNKNOWN.equals(stereoChemistry)) {
                 messages.add(GinasProcessingMessage
-                        .WARNING_MESSAGE("StructureWarning", "Structure format may not encode full stereochemical information"));
+                        .WARNING_MESSAGE("StructureWarning2", "Structure format may not encode full stereochemical information"));
             }
         }
         if (smiles != null)

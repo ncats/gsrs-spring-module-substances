@@ -89,7 +89,7 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
                                             .map(s->HtmlUtil.clean(s, CHARSET))
                                             .toArray(Object[]::new);
                 String msg = String.format(messageTemplate, args);
-                log.debug("Validation Message: " + messageId + " " + msg);
+                log.debug("JmespathValidator Validation Message: " + messageId + " " + msg);
                 callback.addMessage(new GinasProcessingMessage(messageType, msg, messageId));
             }
         }

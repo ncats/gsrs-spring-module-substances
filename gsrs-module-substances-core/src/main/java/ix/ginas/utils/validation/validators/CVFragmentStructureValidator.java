@@ -188,10 +188,10 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 		
 		Optional<String> hash = getHash(term);
 		if(!hash.isPresent()) {
-			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "Unparseable chemical structure format getting hash: %s", term.getFragmentStructure()));
-		} else if(lookup.get(hash.get()).size()>1) {
 			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorStructureError4,
+                    "Unparseable chemical structure format getting hash: " + term.getFragmentStructure()));
+		} else if(lookup.get(hash.get()).size()>1) {
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorStructureError5,
                     "This fragment structure appears to have duplicates: " + term.getFragmentStructure() + 
                     " with hash: " + hash.get()));
 			log.warn("Duplicate: {}", hash.get());

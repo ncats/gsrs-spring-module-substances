@@ -48,8 +48,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private final String NamesValidatorLanguageWarning = "NamesValidatorLanguageWarning";
     private final String NamesValidatorTypeWarning = "NamesValidatorTypeWarning";
     private final String NamesValidatorError1 = "NamesValidatorError1";
-    private final String NamesValidatorError2 = "NamesValidatorError2";
-    private final String NamesValidatorWarning = "NamesValidatorWarning";
+    private final String NamesValidatorError2 = "NamesValidatorError2";  
     private final String NamesValidatorReplacerWarning = "NamesValidatorReplacerWarning";
     private final String NamesValidatorInfo = "NamesValidatorInfo";
     private final String NamesValidatorChangeWarning = "NamesValidatorChangeWarning";
