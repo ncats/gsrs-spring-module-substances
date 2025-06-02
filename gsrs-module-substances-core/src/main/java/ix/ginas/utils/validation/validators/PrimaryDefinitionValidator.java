@@ -18,13 +18,15 @@ public class PrimaryDefinitionValidator extends AbstractValidatorPlugin<Substanc
     @Autowired
     private SubstanceRepository substanceRepository;
 
+    private final String PrimaryDefinitionValidatorWarning = "PrimaryDefinitionValidatorWarning";
+    private final String PrimaryDefinitionValidatorError = "PrimaryDefinitionValidatorError";
 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         SubstanceReference sr = s.getPrimaryDefinitionReference();
         if (sr != null) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Primary definitions cannot be alternative definitions for other Primary definitions"));
+                    .ERROR_MESSAGE(PrimaryDefinitionValidatorError, "Primary definitions cannot be alternative definitions for other Primary definitions"));
         }
         for (SubstanceReference relsub : s
                 .getAlternativeDefinitionReferences()) {
@@ -33,10 +35,11 @@ public class PrimaryDefinitionValidator extends AbstractValidatorPlugin<Substanc
             Substance subAlternative = substanceRepository.findBySubstanceReference(relsub);
             if(subAlternative ==null){
                 //does not exist
-                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Alternative definition not found %s", relsub.refPname));
+                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(PrimaryDefinitionValidatorWarning, 
+                		"Alternative definition not found " + relsub.refPname));
             }else if (subAlternative.isPrimaryDefinition()) {
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE("Primary definitions cannot be alternative definitions for other Primary definitions"));
+                        .ERROR_MESSAGE(PrimaryDefinitionValidatorError, "Primary definitions cannot be alternative definitions for other Primary definitions"));
             }
         }
 

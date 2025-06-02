@@ -33,7 +33,7 @@ public class AcceptAndApplyAllWarningsProcessingStrategy extends AbstractProcess
     @Override
     public void setIfValid(ValidationResponse resp, List<GinasProcessingMessage> messages) {
         if (GinasProcessingMessage.ALL_VALID(messages)) {
-            resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
+            resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("AcceptAndApplyAllWarningsProcessingStrategySuccess","Substance is valid"));
             resp.setValid(true);
         }else{
             if(resp.hasError()){

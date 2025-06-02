@@ -39,6 +39,14 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 
 	@Autowired
 	private StructureProcessor structureProcessor;
+	
+	private final String CVFragmentStructureValidatorNullError = "CVFragmentStructureValidatorNullError";
+	private final String CVFragmentStructureValidatorStructureError1 = "CVFragmentStructureValidatorStructureError1";
+	private final String CVFragmentStructureValidatorStructureError2 = "CVFragmentStructureValidatorStructureError2";
+	private final String CVFragmentStructureValidatorStructureError3 = "CVFragmentStructureValidatorStructureError3";
+	private final String CVFragmentStructureValidatorStructureError4 = "CVFragmentStructureValidatorStructureError4";
+	private final String CVFragmentStructureValidatorStructureError5 = "CVFragmentStructureValidatorStructureError5";
+
 
 	private class FragmentChanges{
 		
@@ -59,7 +67,8 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 				.collect(Collectors.toList());
 				
 		if(invalidUpdateTerms.size()>0) {
-			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Display, fragmentStructure or value cannot be null."));
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorNullError, 
+					"Display, fragmentStructure or value cannot be null."));
 			return;
 		}
 		
@@ -153,13 +162,13 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 			try {
 				chem = Chemical.parse(fragmentStructure.split(" ")[0]);
 				if (!Optional.ofNullable(chem).isPresent()) {
-					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-							"Unrecognized chemical structure format: %s", term.getFragmentStructure()));
+					callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorStructureError1,
+							"Unrecognized chemical structure format: " + term.getFragmentStructure()));
 					return;
 				}
 			}catch(IOException IOEx) {
-				callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-						"Unrecognized chemical structure format: %s", term.getFragmentStructure()));
+				callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorStructureError2,
+						"Unrecognized chemical structure format: " + term.getFragmentStructure()));
 				return;
 			}
 		}
@@ -172,18 +181,19 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 			if(!Optional.ofNullable(term.getSimplifiedStructure()).isPresent())
 				term.setSimplifiedStructure(smiles);
 		} catch (Exception e) {
-			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-					"Unrecognized chemical structure format: %s", term.getFragmentStructure()));
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorStructureError3,
+					"Unrecognized chemical structure format:" + term.getFragmentStructure()));
 			return;
 		}
 		
 		Optional<String> hash = getHash(term);
 		if(!hash.isPresent()) {
-			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "Unparseable chemical structure format getting hash: %s", term.getFragmentStructure()));
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorStructureError4,
+                    "Unparseable chemical structure format getting hash: " + term.getFragmentStructure()));
 		} else if(lookup.get(hash.get()).size()>1) {
-			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "This fragment structure appears to have duplicates: %s with hash: %s", term.getFragmentStructure(), hash.get()));
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(CVFragmentStructureValidatorStructureError5,
+                    "This fragment structure appears to have duplicates: " + term.getFragmentStructure() + 
+                    " with hash: " + hash.get()));
 			log.warn("Duplicate: {}", hash.get());
 		}
 	}	

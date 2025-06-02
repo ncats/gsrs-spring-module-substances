@@ -16,6 +16,9 @@ import java.util.Optional;
  */
 public class StructuralModificationsValidator extends AbstractValidatorPlugin<Substance> {
     private static final String CV_AMINO_ACID_SUBSTITUTION = "AMINO_ACID_SUBSTITUTION";
+    private final String StructuralModificationsValidatorNullWarning = "StructuralModificationsValidatorNullWarning";
+    private final String StructuralModificationsValidatorTypeError = "StructuralModificationsValidatorTypeError";
+    private final String StructuralModificationsValidatorRecordError = "StructuralModificationsValidatorRecordError";
 
 	@Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
@@ -28,14 +31,14 @@ public class StructuralModificationsValidator extends AbstractValidatorPlugin<Su
         	StructuralModification mod = strModIter.next();
         	if (mod == null) {
         		GinasProcessingMessage mes = GinasProcessingMessage
-        				.WARNING_MESSAGE("Null modifications objects are not allowed")
+        				.WARNING_MESSAGE(StructuralModificationsValidatorNullWarning, "Null modifications objects are not allowed")
         				.appliableChange(true);
         		callback.addMessage(mes, ()->strModIter.remove());
         		continue;
         	}
         	if (ValidationUtils.isEffectivelyNull(mod.structuralModificationType)) {
         		GinasProcessingMessage mes = GinasProcessingMessage
-        				.ERROR_MESSAGE(
+        				.ERROR_MESSAGE(StructuralModificationsValidatorTypeError,
         						"Structural Modifications must specify a type")
         				.appliableChange(true);
         		callback.addMessage(mes, ()-> mod.structuralModificationType=CV_AMINO_ACID_SUBSTITUTION);
@@ -44,7 +47,7 @@ public class StructuralModificationsValidator extends AbstractValidatorPlugin<Su
         	if (ValidationUtils.isEffectivelyNull(mod.molecularFragment) ||
         			ValidationUtils.isEffectivelyNull(mod.molecularFragment.refuuid)) {
         		GinasProcessingMessage mes = GinasProcessingMessage
-        				.ERROR_MESSAGE(
+        				.ERROR_MESSAGE(StructuralModificationsValidatorRecordError,
         						"Must specify a record to be used for a structural modification.")
         				.appliableChange(true);
         		callback.addMessage(mes);

@@ -58,7 +58,7 @@ public class ChemUtils {
 		for (Atom atom : c.getAtoms()) {
 			if (atom.hasValenceError()) {
 				GinasProcessingMessage mes = GinasProcessingMessage
-								.WARNING_MESSAGE("Valence Error on %s atom (%s)", atom.getSymbol(), (atom.getAtomIndexInParent() + 1));
+								.WARNING_MESSAGE("ChemUtilsValenceWarning", String.format("Valence Error on %s atom (%s)", atom.getSymbol(), (atom.getAtomIndexInParent() + 1)));
 				gpm.add(mes);
 			}
 		}
@@ -73,7 +73,7 @@ public class ChemUtils {
 	public static void checkChargeBalance(Structure newstr, List<GinasProcessingMessage> gpm) {
 		if (newstr.charge != 0) {
 			GinasProcessingMessage mes = GinasProcessingMessage
-							.WARNING_MESSAGE("Structure is not charge-balanced, net charge of: %s", newstr.charge);
+							.WARNING_MESSAGE("ChemUtilsStructureWarning", "Structure is not charge-balanced, net charge of: " + newstr.charge);
 			gpm.add(mes);
 		}
 	}
@@ -129,9 +129,9 @@ public class ChemUtils {
 		if (!newChiralFlag.equals(chiralFlag)) {
 			lines[3] = lines[3].substring(0, 12) + newChiralFlag + lines[3].substring(15);
 			if (newChiralFlag.equals(chiralFlagOn)) {
-				gpm.add(GinasProcessingMessage.INFO_MESSAGE("Adding chiral flag based on structure information"));
+				gpm.add(GinasProcessingMessage.INFO_MESSAGE("ChemUtilsFlagInfo1", "Adding chiral flag based on structure information"));
 			}else{
-				gpm.add(GinasProcessingMessage.INFO_MESSAGE("Removing chiral flag based on structure information"));
+				gpm.add(GinasProcessingMessage.INFO_MESSAGE("ChemUtilsFlagInfo2","Removing chiral flag based on structure information"));
 			}
 		}
 		lines[3] = MOLFILE_COUNT_LINE_PARSER.standardize(lines[3]);
@@ -147,10 +147,10 @@ public class ChemUtils {
 						&& newstr.opticalActivity.equals(Optical.UNSPECIFIED)) {
 			log.debug("detected 0 stereocenters, achiral and unspec optical condition");
 			newstr.opticalActivity = Optical.NONE;
-			gpm.add(GinasProcessingMessage.INFO_MESSAGE("Reset optical activity to NONE based on structure information"));
+			gpm.add(GinasProcessingMessage.INFO_MESSAGE("ChemUtilsResetInfo", "Reset optical activity to NONE based on structure information"));
 		}else	if( newstr.stereoChemistry.equals(Stereo.ABSOLUTE) && newstr.opticalActivity.equals(Optical.NONE)) {
 			log.debug("detected absolute stereo and no optical activity condition");
-			gpm.add(GinasProcessingMessage.WARNING_MESSAGE("Note: Stereo 'Absolute' with Optical Activity 'NONE' does not make sense!"));
+			gpm.add(GinasProcessingMessage.WARNING_MESSAGE("ChemUtilsNoneInfo","Note: Stereo 'Absolute' with Optical Activity 'NONE' does not make sense!"));
 		}
 	}
 
@@ -168,7 +168,7 @@ public class ChemUtils {
 			} else {
 				messageText.append("Note: when stereo is 'Racemic,' Optical Activity '+/-' is strongly recommended.");
 			}
-			callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(messageText.toString()));
+			callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("ChemUtilsWarning",messageText.toString()));
 		}
 	}
 	

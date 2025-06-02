@@ -43,6 +43,15 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
 
     private final String DUPLICATE_IN_SAME_RECORD_MESSAGE_TEST_FRAGMENT = "is a duplicate standard name in the same record.";
     private final String DUPLICATE_IN_OTHER_RECORD_MESSAGE_TEST_FRAGMENT = "collides (possible duplicate) with existing standard name for other substance:";
+    
+    private final String StandardNameDuplicateValidatorLanguageWarning = "StandardNameDuplicateValidatorLanguageWarning";
+    private final String StandardNameDuplicateValidatorDuplicateError1 = "StandardNameDuplicateValidatorDuplicateError1";
+    private final String StandardNameDuplicateValidatorDuplicateError2 = "StandardNameDuplicateValidatorDuplicateError2";
+    private final String StandardNameDuplicateValidatorDuplicateWarning1 = "StandardNameDuplicateValidatorDuplicateWarning1";
+    private final String StandardNameDuplicateValidatorDuplicateWarning2 = "StandardNameDuplicateValidatorDuplicateWarning2";
+
+    
+    
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -129,7 +138,7 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                 // Make a method for this in NameUtilities for more DRY?
                 if (name.languages == null || name.languages.isEmpty()) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(
+                            .WARNING_MESSAGE(StandardNameDuplicateValidatorLanguageWarning,
                                     "Must specify a language for each name. Defaults to \"English\"")
                             .appliableChange(true);
                     callback.addMessage(mes, () -> {
@@ -149,11 +158,11 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                         Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
                         if (!stdNames.add(uppercaseStdName)) {
                             if (onDuplicateInSameRecordShowError) {
-                                GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName);
+                                GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(StandardNameDuplicateValidatorDuplicateError1, String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
                                 mes.markPossibleDuplicate();
                                 callback.addMessage(mes);
                             } else {
-                                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName);
+                                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(StandardNameDuplicateValidatorDuplicateWarning1, String.format(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName));
                                 mes.markPossibleDuplicate();
                                 callback.addMessage(mes);
                             }
@@ -164,11 +173,11 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                     Substance otherSubstance = checkStdNameForDuplicateInOtherRecordsViaIndexer(objnew, name.stdName);
                     if (otherSubstance != null) {
                         if (onDuplicateInOtherRecordShowError) {
-                            GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName);
+                            GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(StandardNameDuplicateValidatorDuplicateError2, String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
                             mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
                             callback.addMessage(mes);
                         } else {
-                            GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName);
+                            GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(StandardNameDuplicateValidatorDuplicateWarning2, String.format(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName));
                             mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
                             callback.addMessage(mes);
                         }

@@ -1392,7 +1392,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
      */
     protected Chemical getChemicalImpl(List<GinasProcessingMessage> messages) {
         messages.add(GinasProcessingMessage
-                .WARNING_MESSAGE("Structure is non-chemical. Structure format is largely meaningless."));
+                .WARNING_MESSAGE("SubstanceStructureError", "Structure is non-chemical. Structure format is largely meaningless."));
         try {
             return Chemical.parseMol(NULL_MOLFILE);
         }catch(Exception e){
