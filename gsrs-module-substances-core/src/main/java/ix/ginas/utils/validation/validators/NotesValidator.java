@@ -16,9 +16,6 @@ import java.util.Iterator;
  * Created by katzelda on 5/14/18.
  */
 public class NotesValidator extends AbstractValidatorPlugin<Substance> {
-	
-	private final String NotesValidatorNullWarning1 = "NotesValidatorNullWarning1";
-	private final String NotesValidatorNullWarning2 = "NotesValidatorNullWarning2"; 
 
     @Autowired
     private ReferenceRepository referenceRepository;
@@ -39,7 +36,7 @@ public class NotesValidator extends AbstractValidatorPlugin<Substance> {
             Note n = iter.next();
             if (n == null) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(NotesValidatorNullWarning1, "Null note objects are not allowed")
+                        .WARNING_MESSAGE("Null note objects are not allowed")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> {
                     iter.remove();
@@ -48,7 +45,7 @@ public class NotesValidator extends AbstractValidatorPlugin<Substance> {
             }
             if (n.note == null) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(NotesValidatorNullWarning2,"Note objects must have a populated note field. Setting to empty String")
+                        .WARNING_MESSAGE("Note objects must have a populated note field. Setting to empty String")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> n.note= "");
                 continue;

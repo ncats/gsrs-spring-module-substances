@@ -24,9 +24,6 @@ TODO: review with team
  */
 @Slf4j
 public class PubChemValidator extends AbstractValidatorPlugin<Substance> {
-	
-	private final String PubChemValidatorPublicWarning = "PubChemValidatorPublicWarning";
-	
     @Override
     public void validate(Substance newSubstance, Substance objold, ValidatorCallback callback) {
         if( newSubstance.substanceClass.equals(Substance.SubstanceClass.chemical)) {
@@ -41,7 +38,7 @@ public class PubChemValidator extends AbstractValidatorPlugin<Substance> {
                     if(!pubChemResultList.isEmpty() && pubChemResultList.stream().anyMatch(r->r.getInChIKey().equals(inChIKey))){
                         log.trace("PubChem has a match!");
                         GinasProcessingMessage mesWarn = GinasProcessingMessage
-                                .WARNING_MESSAGE(PubChemValidatorPublicWarning,
+                                .WARNING_MESSAGE(
                                         "Substance and/or structure is marked non-public but the structure is found in PubChem!");
                         callback.addMessage(mesWarn);
                     }

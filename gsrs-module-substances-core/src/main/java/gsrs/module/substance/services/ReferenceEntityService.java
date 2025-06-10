@@ -101,7 +101,7 @@ public class ReferenceEntityService extends AbstractGsrsEntityService<Reference,
 
 
                     if (GinasProcessingMessage.ALL_VALID(messages)) {
-                        resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("ReferenceEntityServiceSuccess","Substance is valid"));
+                        resp.addValidationMessage(GinasProcessingMessage.SUCCESS_MESSAGE("Substance is valid"));
                     }
                 }
             }

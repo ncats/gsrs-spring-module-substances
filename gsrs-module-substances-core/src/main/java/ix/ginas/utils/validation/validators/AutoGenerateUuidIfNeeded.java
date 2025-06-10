@@ -11,15 +11,11 @@ import java.util.UUID;
  * Created by katzelda on 5/7/18.
  */
 public class AutoGenerateUuidIfNeeded extends AbstractValidatorPlugin<Substance> {
-	
-	 private final String AutoGenerateUuidIfNeededNoUUIDInfo = "AutoGenerateUuidIfNeededNoUUIDInfo"; 
-	 
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         if (s.getUuid() == null) {
         	UUID uuid = UUID.randomUUID();
-            callback.addMessage(GinasProcessingMessage.INFO_MESSAGE(AutoGenerateUuidIfNeededNoUUIDInfo,
-            		"Substance has no UUID, will generate uuid:" + uuid),
+            callback.addMessage(GinasProcessingMessage.INFO_MESSAGE("Substance has no UUID, will generate uuid:\"%s\"", uuid),
                     ()->s.setUuid(uuid));
         }
     }

@@ -28,8 +28,6 @@ public class DefinitionalDependencyValidator extends AbstractValidatorPlugin<Sub
     public final static String SUBSTANCE_REFERENCE_MEDIATOR = "Mediator";
 
     private final boolean includeMediatorSubstances=true;
-    
-    private final String DefinitionalDependencyValidatorMissingWarning = "DefinitionalDependencyValidatorMissingWarning";
 
     @Autowired
     SubstanceRepository substanceRepository;
@@ -54,9 +52,8 @@ public class DefinitionalDependencyValidator extends AbstractValidatorPlugin<Sub
         if( !missing.isEmpty()){
             ValidationResponse<Substance> response= new ValidationResponse<>();
             missing.forEach(i->{
-                ValidationMessage message = GinasProcessingMessage.WARNING_MESSAGE(DefinitionalDependencyValidatorMissingWarning,
-                		"Substance " + i.getRefPname() + " (ID: " + i.getRefuuid()+ "), listed as " + 
-                				i.getRole().toLowerCase() + " is missing");
+                ValidationMessage message = GinasProcessingMessage.WARNING_MESSAGE("Substance %s (ID: %s), listed as %s is missing",
+                                i.getRefPname(), i.getRefuuid(), i.getRole().toLowerCase());
                 response.addValidationMessage(message);
             });
                 return response;

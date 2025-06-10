@@ -16,9 +16,6 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
     private String deaNumberFileName;
 
     private DEADataTable deaDataTable;
-    
-    // There are two DEAValidators in substances module. Use DEAValidator1 here.    
-    private final String DEAValidator1ScheduleWarning = "DEAValidator1ScheduleWarning";
 
     @Override
     public void validate(Substance substanceNew, Substance substanceOld, ValidatorCallback callback) {
@@ -33,7 +30,7 @@ public class DEAValidator extends AbstractValidatorPlugin<Substance> {
         String deaSchedule = deaDataTable.getDeaScheduleForChemical(chemical);
         if( deaNumber !=null) {
             GinasProcessingMessage mesWarn = GinasProcessingMessage
-                    .WARNING_MESSAGE(DEAValidator1ScheduleWarning, "This substance has DEA schedule: " + deaSchedule);
+                    .WARNING_MESSAGE("This substance has DEA schedule: %s", deaSchedule);
             if( deaDataTable.assignCodeForDea(substanceNew, deaNumber)){
                 mesWarn.appliableChange(true);
             }

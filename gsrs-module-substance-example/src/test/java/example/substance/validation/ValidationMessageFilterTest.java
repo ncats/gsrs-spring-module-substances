@@ -250,7 +250,7 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
             // This is a TEMPORARY, simple validator for testing.
             if (s.getAllNames().size() > 0) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                .WARNING_MESSAGE("Test", String.format("Only one name, please."));
+                .WARNING_MESSAGE(String.format("Only one name, please."));
                 mes.appliableChange(true);
                 callback.addMessage(mes);
             }
@@ -264,7 +264,7 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
             if (size > 0) {
                 String template = "FYI, there are %s names in your substance";
                 GinasProcessingMessage mes = GinasProcessingMessage
-                .WARNING_MESSAGE("Test", String.format(template, size));
+                .WARNING_MESSAGE(template, size);
                 mes.appliableChange(true);
                 mes.setMessageId(template);
                 callback.addMessage(mes);

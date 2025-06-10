@@ -28,9 +28,6 @@ import org.springframework.transaction.PlatformTransactionManager;
  */
 @Slf4j
 public class SaltValidator extends AbstractValidatorPlugin<Substance> {
-	
-	private final String SaltValidatorFragmentWarning1 = "SaltValidatorFragmentWarning1";
-	private final String SaltValidatorFragmentWarning2 = "SaltValidatorFragmentWarning2";
 
     public SaltValidator() {
     }
@@ -96,15 +93,14 @@ public class SaltValidator extends AbstractValidatorPlugin<Substance> {
 
             if (!smilesWithoutMatch.isEmpty()) {
                 smilesWithoutMatch.forEach(s -> {
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(SaltValidatorFragmentWarning1, 
-                    		"Each fragment should be present as a separate record in the database. Please register: " + s));
+                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Each fragment should be present as a separate record in the database. Please register: %s", s));
                 });
             }
             if (!smilesWithPartialMatch.isEmpty()) {
                 smilesWithPartialMatch.forEach(s -> {
                     callback.addMessage(
-                        GinasProcessingMessage.WARNING_MESSAGE(SaltValidatorFragmentWarning2,
-                            "This fragment is present as a separate record in the database but in a different form. Please register: " + s + " as an individual substance"));
+                        GinasProcessingMessage.WARNING_MESSAGE(
+                            "This fragment is present as a separate record in the database but in a different form. Please register: %s as an individual substance", s));
                 });
             }
 

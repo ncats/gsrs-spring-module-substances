@@ -41,20 +41,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     // This and other replacers should be handled later in a new NameStandardizer class similar to HTMLNameStandardizer
     private static final String PATTERN_SINGLE_LINEFEED_PRECEDED_CERTAIN_CHARACTERS = "(?<=[\\-])[ \\t]*[\\r\\n]+[\\s]*";
     private static boolean replaceSingleLinefeedPrecededByCertainCharactersWithBlank = true;
-    
-    private final String NamesValidatorLocatorsWarning = "NamesValidatorLocatorsWarning";
-    private final String NamesValidatorNullWarning = "NamesValidatorNullWarning";
-    private final String NamesValidatorNullError = "NamesValidatorNullError";
-    private final String NamesValidatorLanguageWarning = "NamesValidatorLanguageWarning";
-    private final String NamesValidatorTypeWarning = "NamesValidatorTypeWarning";
-    private final String NamesValidatorError1 = "NamesValidatorError1";
-    private final String NamesValidatorError2 = "NamesValidatorError2";  
-    private final String NamesValidatorReplacerWarning = "NamesValidatorReplacerWarning";
-    private final String NamesValidatorInfo = "NamesValidatorInfo";
-    private final String NamesValidatorChangeWarning = "NamesValidatorChangeWarning";
-    private final String NamesValidatorDuplicateWarning1 = "NamesValidatorDuplicateWarning1";
-    private final String NamesValidatorDuplicateWarning2 = "NamesValidatorDuplicateWarning2";
-    private final String NamesValidatorReferenceError = "NamesValidatorReferenceError";
 
     public static CachedSupplier<List<Replacer>> replacers = CachedSupplier.of(()->{
         List<Replacer> repList = new ArrayList<>();
@@ -89,7 +75,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     }
 
     private static String CHANGE_REASON_DISPLAYNAME_CHANGED ="Changed Display Name";
-    
 
     public static class Replacer{
         Pattern p;
@@ -127,7 +112,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             Name n = nameIterator.next();
             if (n == null) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(NamesValidatorNullWarning, "Null name objects are not allowed")
+                        .WARNING_MESSAGE("Null name objects are not allowed")
                         .appliableChange(true);
 
                 callback.addMessage(mes, () -> {
@@ -139,7 +124,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
             }
             if (n.getName() == null) {
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(NamesValidatorNullError, "Name can not be null"));
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Name can not be null"));
                 continue;
             }
             if (n.preferred) {
@@ -160,8 +145,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 List<String> locators = be.getTagTerms();
                 if (!locators.isEmpty()) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(NamesValidatorLocatorsWarning,
-                                    "Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:" +
+                            .WARNING_MESSAGE(
+                                    "Names of form \"<NAME> [<TEXT>]\" are transformed to locators. The following locators will be added:%s",
                                     locators.toString())
                             .appliableChange(true);
                     callback.addMessage(mes, () -> {
@@ -178,7 +163,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
             if (n.languages == null || n.languages.isEmpty()) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(NamesValidatorLanguageWarning,
+                        .WARNING_MESSAGE(
                                 "Must specify a language for each name. Defaults to \"English\"")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> {
@@ -190,7 +175,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
             if (n.type == null) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(NamesValidatorTypeWarning,
+                        .WARNING_MESSAGE(
                                 "Must specify a name type for each name. Defaults to \"Common Name\" (cn)")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> n.type = "cn");
@@ -202,8 +187,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 String name = n.getName();
                 if (name != null && r.matches(name)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(NamesValidatorReplacerWarning,
-                                    String.format(r.getMessage("%s"), name))
+                            .WARNING_MESSAGE(
+                                    r.getMessage("%s"), name)
                             .appliableChange(true);
                     callback.addMessage(mes, () -> n.setName(r.fix(name)));
 
@@ -221,8 +206,8 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
                 if (!hasPublicReference) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .ERROR_MESSAGE(NamesValidatorReferenceError, "The name :\"" + n.getName() + 
-                            		"\" needs an unprotected reference marked \"Public Domain\" in order to be made public.");
+                            .ERROR_MESSAGE("The name :\"%s\" needs an unprotected reference marked \"Public Domain\" in order to be made public.",
+                                    n.getName());
                     callback.addMessage(mes);
                 }
             }
@@ -233,12 +218,12 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
         if (s.names.isEmpty()) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .ERROR_MESSAGE(NamesValidatorError1, "Substances must have names");
+                    .ERROR_MESSAGE("Substances must have names");
             callback.addMessage(mes);
         }
         if (display == 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .INFO_MESSAGE(NamesValidatorInfo, "Substances should have exactly one (1) display name, Default to using:" + s.getName())
+                    .INFO_MESSAGE("Substances should have exactly one (1) display name, Default to using:%s", s.getName())
                     .appliableChange(true);
             callback.addMessage(mes, () -> {
                 if (!s.names.isEmpty()) {
@@ -250,7 +235,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
         }
         if (display > 1) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .ERROR_MESSAGE(NamesValidatorError2, "Substance should not have more than one (1) display name. Found " + display);
+                    .ERROR_MESSAGE("Substance should not have more than one (1) display name. Found %s", display);
             callback.addMessage(mes);
         }
 
@@ -276,7 +261,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 if (!names.add(uppercasedName)) {
                     GinasProcessingMessage mes;
                     mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(NamesValidatorDuplicateWarning1, "Name '" + name + "' is a duplicate name in the record.")
+                            .WARNING_MESSAGE("Name '%s' is a duplicate name in the record.", name)
                             .markPossibleDuplicate();
                     callback.addMessage(mes);
                 }
@@ -292,8 +277,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                     SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
                     if (!s2.getUuid().equals(s.getOrGenerateUUID())) {
                         GinasProcessingMessage mes = GinasProcessingMessage
-                                .WARNING_MESSAGE(NamesValidatorDuplicateWarning2, 
-                                		"Name '" + n.name + "' collides (possible duplicate) with existing name for substance.")
+                                .WARNING_MESSAGE("Name '%s' collides (possible duplicate) with existing name for substance:", n.name)
                                 //TODO katzelda Feb 2021: add link back
                                 .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
                         callback.addMessage(mes);
@@ -305,9 +289,9 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
                     && (s.changeReason == null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(NamesValidatorChangeWarning,
-                        		"Preferred Name has been changed from '" + oldDisplayName.get().getName() + "' to '" + n.getName() + 
-                        		"'. Please confirm that this change is intentional by submitting.");
+                        .WARNING_MESSAGE(
+                                "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
+                                oldDisplayName.get().getName(), n.getName());
                 callback.addMessage(mes);
             }
         }

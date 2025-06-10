@@ -28,16 +28,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
 
     @Autowired
     private SubstanceApprovalIdGenerator substanceApprovalIdGenerator;
-    
-    private final String UpdateSubstanceNonBatchLoaderValidatorClassWarning = "UpdateSubstanceNonBatchLoaderValidatorClassWarning";
-    private final String UpdateSubstanceNonBatchLoaderValidatorVersionError = "UpdateSubstanceNonBatchLoaderValidatorVersionError";
-    private final String UpdateSubstanceNonBatchLoaderValidatorRoleError1 = "UpdateSubstanceNonBatchLoaderValidatorRoleError1";
-    private final String UpdateSubstanceNonBatchLoaderValidatorRoleError2 = "UpdateSubstanceNonBatchLoaderValidatorRoleError2";
-    private final String UpdateSubstanceNonBatchLoaderValidatorApprovalIDWarning1 = "UpdateSubstanceNonBatchLoaderValidatorApprovalIDWarning1";
-    private final String UpdateSubstanceNonBatchLoaderValidatorApprovalIDWarning2 = "UpdateSubstanceNonBatchLoaderValidatorApprovalIDWarning2";
-    private final String UpdateSubstanceNonBatchLoaderValidatorApprovalIDError1 = "UpdateSubstanceNonBatchLoaderValidatorApprovalIDError1";
-    private final String UpdateSubstanceNonBatchLoaderValidatorApprovalIDError2 = "UpdateSubstanceNonBatchLoaderValidatorApprovalIDError2";
-    
+
     @Override
     public boolean supports(Substance newValue, Substance oldValue, ValidatorConfig.METHOD_TYPE methodType) {
         return methodType != ValidatorConfig.METHOD_TYPE.BATCH && oldValue !=null;
@@ -47,16 +38,16 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
 
         if(!objnew.getClass().equals(objold.getClass())){
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorClassWarning, 
-            		"Substance class should not typically be changed"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Substance class should not typically be changed"));
         }
 
         log.debug("old version = " +objold.version +  " new version = " + objnew.version);
         if(!objold.version.equals(objnew.version)){
             callback.addMessage(
                 GinasProcessingMessage
-                    .ERROR_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorVersionError,
-                        "Substance version '" + objnew.version +"', does not match the stored version '" + objold.version + "', record may have been changed while being updated"));
+                    .ERROR_MESSAGE(
+                        "Substance version '%s', does not match the stored version '%s', record may have been changed while being updated",
+                        objnew.version, objold.version));
         }
         UserProfile up =auditorAware.getCurrentAuditor()
                 .map(p->userProfileRepository.findByUser_UsernameIgnoreCase(p.username))
@@ -67,8 +58,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
 
 
             if (!(up.hasRole(Role.Admin) || up.hasRole(Role.SuperUpdate))) {
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorRoleError1, 
-                		"Only superUpdate users can make a substance public"));
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only superUpdate users can make a substance public"));
             }
         }
 
@@ -76,8 +66,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
         //Making a change to a validated record
         if (objnew.isValidated()) {
             if (!(up.hasRole(Role.Admin) || up.hasRole(Role.SuperUpdate))) {
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorRoleError2,
-                		"Only superUpdate users can update approved substances"));
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only superUpdate users can update approved substances"));
             }
         }
 
@@ -90,23 +79,23 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
                     //GSRS-638 removing an approval ID makes the new id null
                     if (objnew.approvalID == null) {
                         callback.addMessage(GinasProcessingMessage
-                                .WARNING_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorApprovalIDWarning1, 
-                                		"The approvalID for the record has been removed. Was ('" + objold.approvalID + "'). This is strongly discouraged."));
+                                .WARNING_MESSAGE("The approvalID for the record has been removed. Was ('%s'). This is strongly discouraged.",
+                                                objold.approvalID));
                     } else {
                         if(!substanceApprovalIdGenerator.isValidId(objnew.approvalID)){
                             callback.addMessage(GinasProcessingMessage
-                                    .ERROR_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorApprovalIDError1, "The approvalID for the record has changed. Was ('" + 
-                                    		objold.approvalID + "') but now is ('" + objnew.approvalID + "'). This approvalID is either a duplicate or invalid."));
+                                    .ERROR_MESSAGE("The approvalID for the record has changed. Was ('%s') but now is ('%s'). This approvalID is either a duplicate or invalid.",
+                                                objold.approvalID, objnew.approvalID));
                         } else {
                             callback.addMessage(GinasProcessingMessage
-                                    .WARNING_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorApprovalIDWarning2, "The approvalID for the record has changed. Was ('" + 
-                                    		objold.approvalID + "') but now is ('" + objnew.approvalID + "'). This is strongly discouraged."));
+                                    .WARNING_MESSAGE("The approvalID for the record has changed. Was ('%s') but now is ('%s'). This is strongly discouraged.",
+                                                objold.approvalID, objnew.approvalID));
                         }
                     }
                 } else{
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE(UpdateSubstanceNonBatchLoaderValidatorApprovalIDError2, "The approvalID for the record has changed. Was ('" + 
-                            		objold.approvalID + "') but now is ('" + objnew.approvalID +"'). This is not allowed, except by an admin."));
+                            .ERROR_MESSAGE("The approvalID for the record has changed. Was ('%s') but now is ('%s'). This is not allowed, except by an admin.",
+                                    objold.approvalID, objnew.approvalID));
                 }
 
             }

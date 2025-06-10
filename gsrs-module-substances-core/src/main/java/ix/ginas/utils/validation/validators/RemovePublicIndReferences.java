@@ -19,7 +19,6 @@ import java.util.regex.Pattern;
  */
 public class RemovePublicIndReferences extends AbstractValidatorPlugin<Substance> {
     private static final Pattern IND_PATTERN = Pattern.compile(".*[^A-Z]IND[^A-Z]*[0-9][0-9][0-9]*.*");
-    private final String RemovePublicIndReferencesWarning = "RemovePublicIndReferencesWarning"; 
 
     @Autowired
     private GroupRepository groupRepository;
@@ -45,8 +44,9 @@ public class RemovePublicIndReferences extends AbstractValidatorPlugin<Substance
                 .forEach(r->{
 
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(RemovePublicIndReferencesWarning,
-                                    "IND-like reference:\"" + r.docType + ":" + r.citation +"\" cannot be public. Setting to protected.")
+                            .WARNING_MESSAGE(
+                                    "IND-like reference:\"%s:%s\" cannot be public. Setting to protected.",
+                                            r.docType, r.citation)
                             .appliableChange(true);
                     callback.addMessage(mes, ()-> makeReferenceProtected(r));
                 });

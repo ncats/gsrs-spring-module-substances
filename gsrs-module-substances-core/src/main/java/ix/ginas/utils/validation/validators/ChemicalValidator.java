@@ -39,18 +39,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     private final String V3000_MOLFILE_MARKER = "M  V30";
     private final String V3000_MOLFILE_MARKER2 = "V3000";
-    
-    private final String ChemicalValidatorStructureError1 = "ChemicalValidatorStructureError1";
-    private final String ChemicalValidatorStructureError2 = "ChemicalValidatorStructureError2";
-    private final String ChemicalValidatorStructureError3 = "ChemicalValidatorStructureError3";
-    private final String ChemicalValidatorMolfileError = "ChemicalValidatorMolfileError";
-    private final String ChemicalValidatorProteinWarning = "ChemicalValidatorProteinWarning";
-    private final String ChemicalValidatorStructureWarning1 = "ChemicalValidatorStructureWarning1";
-    private final String ChemicalValidatorStructureWarning2 = "ChemicalValidatorStructureWarning2";
-    private final String ChemicalValidatorMoietyInfo1 = "ChemicalValidatorMoietyInfo1";
-    private final String ChemicalValidatorMoietyInfo2 = "ChemicalValidatorMoietyInfo2";
-    private final String ChemicalValidatorStructureInfo = "ChemicalValidatorStructureInfo";
-    
+
     public ReferenceRepository getReferenceRepository() {
         return referenceRepository;
     }
@@ -82,7 +71,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         ChemicalSubstance cs = (ChemicalSubstance)s;
 
         if (cs.getStructure() == null) {
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(ChemicalValidatorStructureError1,
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "Chemical substance must have a chemical structure"));
             return;
         }
@@ -90,7 +79,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         if (!allow0AtomStructures
                 && cs.getStructure().toChemical().getAtomCount() == 0
                 && !substanceIs0AtomChemical(objold)) {
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(ChemicalValidatorStructureError2,
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "Chemical substance must have a chemical structure with one or more atoms"));
             return;
         }
@@ -101,7 +90,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             if( (cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER) && cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER2))
                 || (cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER) && cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER2))) {
                 log.info("V3000 molfile detected");
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(ChemicalValidatorMolfileError,
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                         "GSRS does not currently support V3000 molfiles. Use another program to convert the structure to an earlier format."));
                 return;
             }
@@ -116,8 +105,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                 if (p != null && !p.getSubunits().isEmpty()
                         && p.getSubunits().get(0).getSequence().length() > 2) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(ChemicalValidatorProteinWarning,
-                            		"Substance may be represented as protein as well. Sequence:[" + p.toString() +"]");
+                            .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:[%s]", p.toString());
                     callback.addMessage(mes);
                 }
             } catch (Exception e) {
@@ -135,7 +123,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             if(!payload.contains("M  END")){
                 //not a mol convert it
                 //struc is already standardized
-                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(ChemicalValidatorStructureWarning1,
+                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(
                         "Structure should always be specified as mol file converting to format to mol automatically").appliableChange(true),
                         () -> {
                     try {
@@ -166,7 +154,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                     && cs.moieties.size() != moietiesForSub.size()) {
 
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .INFO_MESSAGE(ChemicalValidatorMoietyInfo1, "Incorrect number of moieties")
+                        .INFO_MESSAGE("Incorrect number of moieties")
                         .appliableChange(true);
                 callback.addMessage(mes, ()-> cs.moieties = moietiesForSub);
 
@@ -175,7 +163,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             		|| cs.moieties.isEmpty()) {
 
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .INFO_MESSAGE(ChemicalValidatorMoietyInfo2, "No moieties found in submission. They will be generated automatically.")
+                        .INFO_MESSAGE("No moieties found in submission. They will be generated automatically.")
                         .appliableChange(true);
                 callback.addMessage(mes, ()-> cs.moieties = moietiesForSub);
             } else {
@@ -197,8 +185,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 //            ChemUtils.checkChargeBalance(cs.structure, gpm);
             if (cs.getStructure().charge != 0) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(ChemicalValidatorStructureWarning2, 
-                        		"Structure is not charged balanced, net charge of: " + cs.getStructure().charge);
+                        .WARNING_MESSAGE("Structure is not charged balanced, net charge of: %s", cs.getStructure().charge);
                 callback.addMessage(mes);
             }
 
@@ -207,8 +194,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             //validateStructureDuplicates(cs, callback);
         } else {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(ChemicalValidatorStructureError3, 
-                    		"Chemical substance must have a valid chemical structure"));
+                    .ERROR_MESSAGE("Chemical substance must have a valid chemical structure"));
 
         }
 
@@ -245,7 +231,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         // if (true || !newhash.equals(oldhash)) {
         
         GinasProcessingMessage mes = GinasProcessingMessage
-                .INFO_MESSAGE(ChemicalValidatorStructureInfo,"Recomputing structure hash");
+                .INFO_MESSAGE("Recomputing structure hash");
 //                .appliableChange(true);
         Structure struc2 = new GinasChemicalStructure(newstr);
         oldstr.updateStructureFields(struc2);

@@ -9,15 +9,12 @@ import ix.ginas.utils.validation.AbstractValidatorPlugin;
  * Created by katzelda on 5/7/18.
  */
 public class SubstanceStatusValidator extends AbstractValidatorPlugin<Substance> {
-	
-	private final String SubstanceStatusValidatorWarning = "SubstanceStatusValidatorWarning";
-	
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
         if(s.status == null){
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .WARNING_MESSAGE(SubstanceStatusValidatorWarning, 
-                    		"No status specified for substance, defaulting to 'pending'")
+                    .WARNING_MESSAGE(
+                            "No status specified for substance, defaulting to 'pending'")
                     .appliableChange(true);
             callback.addMessage(mes, ()-> s.status= Substance.STATUS_PENDING);
         }

@@ -350,8 +350,8 @@ public class ProteinUtils
                         //There is no computable fragment to use
                         log.info("No usable molecular weight contribution from structural modification fragment: " + mod.molecularFragment.refuuid);
                         messages.add(
-                                GinasProcessingMessage.WARNING_MESSAGE("ProteinUtilsWeightWarning1", String.format("Structural modification will not affect the molecular weight because %s has no associated molecular weight",
-                                                mod.molecularFragment.refPname)));
+                                GinasProcessingMessage.WARNING_MESSAGE("Structural modification will not affect the molecular weight because %s has no associated molecular weight",
+                                                mod.molecularFragment.refPname));
                     }
                     else if (contribution.getMw() > 0 || (contribution.getMwHigh() > 0 && contribution.getMwLow() > 0)) {
                         //removeWater(contribution.getFormulaMap()); 1 December 2020 MAM no need for this
@@ -404,8 +404,8 @@ public class ProteinUtils
                 }
                 else {
                     log.trace("extent other than complete: " + mod.extent);
-                    messages.add(GinasProcessingMessage.WARNING_MESSAGE("ProteinUtilsWeightWarning2", String.format("Note: structural modification with extent '%s' will not be counted toward the molecular weight",
-                                    mod.extent != null ? mod.extent : "[missing]")));
+                    messages.add(GinasProcessingMessage.WARNING_MESSAGE("Note: structural modification with extent '%s' will not be counted toward the molecular weight",
+                                    mod.extent != null ? mod.extent : "[missing]"));
                 }
             }
         }
@@ -678,20 +678,20 @@ public class ProteinUtils
             log.trace("contribution: " + ((contribution == null) ? "null" : "not null"));
             if ((mwHigh != null && mwHigh > 0) || (mwHighLimit != null && mwHighLimit > 0)
                     || (mwLow != null && mwLow > 0) || (mwLowLimit != null && mwLowLimit > 0)) {
-                contribution.getMessages().add(GinasProcessingMessage.WARNING_MESSAGE("ProteinUtilsWeightWarning3", String.format("Using range of molecular weights for substance %s in structural modification",
-                                referencedSubstance.getName())));
+                contribution.getMessages().add(GinasProcessingMessage.WARNING_MESSAGE("Using range of molecular weights for substance %s in structural modification",
+                                referencedSubstance.getName()));
             }
         }
         else {
-            GinasProcessingMessage warning = GinasProcessingMessage.WARNING_MESSAGE("ProteinUtilsWeightWarning4",
-                            String.format("Structural modification molecular fragment %s has no average molecular weight and will not be used in the molecular weight calculation",
-                            referencedSubstance.getApprovalIDDisplay()));
+            GinasProcessingMessage warning = GinasProcessingMessage.WARNING_MESSAGE(
+                            "Structural modification molecular fragment %s has no average molecular weight and will not be used in the molecular weight calculation",
+                            referencedSubstance.getApprovalIDDisplay());
             contribution = new MolecularWeightAndFormulaContribution(referencedSubstance.substanceClass.name(), warning);
         }
         log.trace("containsStarAtom: " + containsStarAtom);
         if (containsStarAtom) {
             contribution.getMessages().add(
-                    GinasProcessingMessage.WARNING_MESSAGE("ProteinUtilsWeightWarning5","Note: molecular fragment used in structural modifications contains '*' atom.  Molecular weight calculation may be off"));
+                    GinasProcessingMessage.WARNING_MESSAGE("Note: molecular fragment used in structural modifications contains '*' atom.  Molecular weight calculation may be off"));
         }
 
         return contribution;

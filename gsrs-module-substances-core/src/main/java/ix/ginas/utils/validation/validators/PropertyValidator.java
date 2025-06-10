@@ -6,13 +6,11 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 
 public class PropertyValidator extends AbstractValidatorPlugin<Substance> {
-	
-	private final String PropertyValidatorNameError = "PropertyValidatorNameError";
 
 	@Override
 	public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
 		objnew.properties.stream().filter((property) -> ( property.getName() == null || property.getName().trim().length()==0)).forEachOrdered((_item) -> {
-			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(PropertyValidatorNameError ,"Property must have a name!"));
+			callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Property must have a name!"));
 		});
 	}
 	

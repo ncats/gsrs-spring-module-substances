@@ -40,7 +40,7 @@ public class PolymerSubstance extends Substance implements GinasSubstanceDefinit
 	@Override
 	protected Chemical getChemicalImpl(List<GinasProcessingMessage> messages) {
 		messages.add(GinasProcessingMessage
-						.WARNING_MESSAGE("PolymerSubstanceWarning", "Polymer substance structure is for display, and is not complete in definition"));
+						.WARNING_MESSAGE("Polymer substance structure is for display, and is not complete in definition"));
 
 		return polymer.idealizedStructure.toChemical(messages);
 	}

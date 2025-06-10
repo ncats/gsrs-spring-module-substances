@@ -59,25 +59,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
     private ReferenceRepository referenceRepository;
 
     @Autowired
-    private SubstanceLegacySearchService searchService; 
-    
-    private final String ProteinValidatorElementError = "ProteinValidatorElementError";
-    private final String ProteinValidatorSubunitError1 = "ProteinValidatorSubunitError1";
-    private final String ProteinValidatorSubunitError2 = "ProteinValidatorSubunitError2";
-    private final String ProteinValidatorSubunitWarning1 = "ProteinValidatorSubunitWarning1";
-    private final String ProteinValidatorSubunitWarning2 = "ProteinValidatorSubunitWarning2";
-    private final String ProteinValidatorSubunitWarning3 = "ProteinValidatorSubunitWarning3";
-    private final String ProteinValidatorDisulfideError = "ProteinValidatorDisulfideError";
-    private final String ProteinValidatorSiteError1 = "ProteinValidatorSiteError1";
-    private final String ProteinValidatorSiteError2 = "ProteinValidatorSiteError2";
-    private final String ProteinValidatorWarning = "ProteinValidatorWarning";
-    private final String ProteinValidatorWeightWarning1 = "ProteinValidatorWeightWarning1";
-    private final String ProteinValidatorWeightWarning2 = "ProteinValidatorWeightWarning2";
-    private final String ProteinValidatorWeightWarning3 = "ProteinValidatorWeightWarning3";
-    private final String ProteinValidatorFormulaWarning1 = "ProteinValidatorFormulaWarning1";
-    private final String ProteinValidatorFormulaWarning2 = "ProteinValidatorFormulaWarning2";
-    private final String ProteinValidatorSequenceWarning = "ProteinValidatorSequenceWarning";
-    private final String ProteinValidatorSequenceError = "ProteinValidatorSequenceError";
+    private SubstanceLegacySearchService searchService;
 
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
@@ -87,25 +69,24 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
         List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
         if (cs.protein == null) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(ProteinValidatorElementError, "Protein substance must have a protein element"));
+                    .ERROR_MESSAGE("Protein substance must have a protein element"));
         }
         else {
             if (cs.protein.subunits.isEmpty()) {
                 if (Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(ProteinValidatorSubunitWarning1, 
-                    		"Having no subunits is allowed but discouraged for incomplete protein records."));
+                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Having no subunits is allowed but discouraged for incomplete protein records."));
                 }
                 else {
-                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(ProteinValidatorSubunitError1, 
-                    		"Complete protein substance must have at least one Subunit element. Please add a subunit, or mark as incomplete."));
+                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Complete protein substance must have at least one Subunit element. Please add a subunit, or mark as incomplete."));
                 }
             }
             for (int i = 0; i < cs.protein.subunits.size(); i++) {
                 Subunit su = cs.protein.subunits.get(i);
                 if (su.subunitIndex == null) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE(ProteinValidatorSubunitWarning2,
-                            		"Protein subunit (at " + (i + 1) + " position) has no subunit index, defaulting to:" + (i + 1))
+                            .WARNING_MESSAGE(
+                                    "Protein subunit (at %s position) has no subunit index, defaulting to:%s",
+                                    (i + 1), (i + 1))
                                     .appliableChange(true);
                     Integer newValue = i + 1;
                     callback.addMessage(mes, () -> su.subunitIndex = newValue);
@@ -116,10 +97,10 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                 //for now just null/blank need to confer with stakeholders if amino acid validation is needed or not
                 if (su.sequence == null || su.sequence.trim().isEmpty()) {
                     if (Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
-                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(ProteinValidatorSubunitWarning3, "Subunit at position " + (i + 1) + " is blank. This is allowed but discouraged for incomplete protein records."));
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Subunit at position %s is blank. This is allowed but discouraged for incomplete protein records.", (i + 1)));
                     }
                     else {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(ProteinValidatorSubunitError2, "Subunit at position " + (i + 1) + " is blank"));
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Subunit at position %s is blank", (i + 1)));
                     }
                 }
             }
@@ -130,7 +111,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
             List<Site> sites = l.getSites();
             if (sites.size() != 2) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .ERROR_MESSAGE(ProteinValidatorDisulfideError, "Disulfide Link \"" + sites.toString() + "\" has " + sites.size() + " sites, should have 2");
+                        .ERROR_MESSAGE("Disulfide Link \"%s\" has %s sites, should have 2",
+                                sites.toString(), sites.size());
                 callback.addMessage(mes);
             }
             else {
@@ -138,13 +120,14 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                     String res = cs.protein.getResidueAt(s);
                     if (res == null) {
                         GinasProcessingMessage mes = GinasProcessingMessage
-                                .ERROR_MESSAGE(ProteinValidatorSiteError1, "Site \"" + s.toString() + "\" does not exist");
+                                .ERROR_MESSAGE("Site \"%s\" does not exist", s.toString());
                         callback.addMessage(mes);
                     }
                     else {
                         if (!res.equalsIgnoreCase("C")) {
                             GinasProcessingMessage mes = GinasProcessingMessage
-                                    .ERROR_MESSAGE(ProteinValidatorSiteError2, "Site \"" + s.toString() + "\" in disulfide link is not a Cysteine, found: \"" + res + "\"");
+                                    .ERROR_MESSAGE("Site \"%s\" in disulfide link is not a Cysteine, found: \"%s\"",
+                                            s.toString(), res);
                             callback.addMessage(mes);
                         }
                     }
@@ -170,7 +153,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 
         if (unknownRes.size() > 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .WARNING_MESSAGE(ProteinValidatorWarning, "Protein has unknown amino acid residues: %s" + unknownRes.toString());
+                    .WARNING_MESSAGE("Protein has unknown amino acid residues: %s",
+                            unknownRes.toString());
             callback.addMessage(mes);
         }
         mwFormulaContribution.getMessages().forEach(m -> callback.addMessage(m));
@@ -179,16 +163,17 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
         if (molprops.isEmpty()) {
             Property calculatedMolWeight = molWeightCalculatorProperties.calculateMolWeightProperty(tot, low, high, lowLimit, highLimit);
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .WARNING_MESSAGE(ProteinValidatorWeightWarning1,
-                            "Protein has no molecular weight, defaulting to calculated value of: %s" + calculatedMolWeight.getValue())
+                    .WARNING_MESSAGE(
+                            "Protein has no molecular weight, defaulting to calculated value of: %s",
+                            calculatedMolWeight.getValue())
                     .appliableChange(true);
             callback.addMessage(mes, () -> {
 
                 cs.properties.add(calculatedMolWeight);
                 if (!unknownRes.isEmpty()) {
                     GinasProcessingMessage mes2 = GinasProcessingMessage
-                            .WARNING_MESSAGE(ProteinValidatorWeightWarning2,
-                            		"Calculated protein weight questionable, due to unknown amino acid residues: %s"+ unknownRes.toString());
+                            .WARNING_MESSAGE("Calculated protein weight questionable, due to unknown amino acid residues: %s",
+                                    unknownRes.toString());
                     callback.addMessage(mes2);
                 }
             });
@@ -215,9 +200,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                     double avgoff = delta / len;  commented out per discussion with Tyler 29 June 2020 */
                     if (Math.abs(pdiff) > valueTolerance) {
                         callback.addMessage(GinasProcessingMessage
-                                .WARNING_MESSAGE(ProteinValidatorWeightWarning3, "Calculated weight [" + String.format("%.2f", tot) + "] is greater than " 
-                                		+ String.format("%.2f", tolerance) + "%" 
-                                		+ " off of given weight [" + String.format("%.2f", p.getValue().average) + "]"));
+                                .WARNING_MESSAGE("Calculated weight [%.2f] is greater than %.2f%s off of given weight [%.2f]",
+                                                tot, tolerance, "%", p.getValue().average));
                         //katzelda May 2018 - turn off appliable change since there isn't anything to change it to.
 //                                    .appliableChange(true));
                     }
@@ -234,8 +218,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
         if (formulaProperties.size() <= 0) {
 
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .WARNING_MESSAGE(ProteinValidatorFormulaWarning1,
-                            "Protein has no molecular formula property, defaulting to calculated value of: " + 
+                    .WARNING_MESSAGE(
+                            "Protein has no molecular formula property, defaulting to calculated value of: %s",
                             mwFormulaContribution.getFormula())
                     .appliableChange(true);
             callback.addMessage(mes, () -> {
@@ -243,8 +227,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                 cs.properties.add(ProteinUtils.makeMolFormulaProperty(mwFormulaContribution.getFormula()));
                 if (!unknownRes.isEmpty()) {
                     GinasProcessingMessage mes2 = GinasProcessingMessage
-                            .WARNING_MESSAGE(ProteinValidatorFormulaWarning2,
-                            		"Calculated protein formula questionable due to unknown amino acid residues: " +
+                            .WARNING_MESSAGE("Calculated protein formula questionable due to unknown amino acid residues: %s",
                                     unknownRes.toString());
                     callback.addMessage(mes2);
                 }
@@ -378,7 +361,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                                         }
 
                                         GinasProcessingMessage dupMessage = GinasProcessingMessage
-                                                .WARNING_MESSAGE(ProteinValidatorSequenceWarning, "There " + msgMod + " with a similar sequence to subunit [" + suSet + "]:");
+                                                .WARNING_MESSAGE("There %s with a similar sequence to subunit [%s]:", msgMod, suSet);
 //                                        dupMessage.addLink(l);
 
                                         suResults.stream()
@@ -415,7 +398,8 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
         } catch (Exception e) {
             log.error("Problem executing duplicate search function", e);
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(ProteinValidatorSequenceError, "Error performing seqeunce search on protein:" + e.getMessage()));
+                    .ERROR_MESSAGE("Error performing seqeunce search on protein:%s",
+                            e.getMessage()));
         }
     }
 
