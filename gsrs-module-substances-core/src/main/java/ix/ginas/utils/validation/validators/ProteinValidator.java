@@ -170,7 +170,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
 
         if (unknownRes.size() > 0) {
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .WARNING_MESSAGE(ProteinValidatorWarning, "Protein has unknown amino acid residues: " + unknownRes.toString());
+                    .WARNING_MESSAGE(ProteinValidatorWarning, "Protein has unknown amino acid residues: %s" + unknownRes.toString());
             callback.addMessage(mes);
         }
         mwFormulaContribution.getMessages().forEach(m -> callback.addMessage(m));
@@ -180,7 +180,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
             Property calculatedMolWeight = molWeightCalculatorProperties.calculateMolWeightProperty(tot, low, high, lowLimit, highLimit);
             GinasProcessingMessage mes = GinasProcessingMessage
                     .WARNING_MESSAGE(ProteinValidatorWeightWarning1,
-                            "Protein has no molecular weight, defaulting to calculated value of: " + calculatedMolWeight.getValue())
+                            "Protein has no molecular weight, defaulting to calculated value of: %s" + calculatedMolWeight.getValue())
                     .appliableChange(true);
             callback.addMessage(mes, () -> {
 
@@ -188,7 +188,7 @@ public class ProteinValidator extends AbstractValidatorPlugin<Substance>
                 if (!unknownRes.isEmpty()) {
                     GinasProcessingMessage mes2 = GinasProcessingMessage
                             .WARNING_MESSAGE(ProteinValidatorWeightWarning2,
-                            		"Calculated protein weight questionable, due to unknown amino acid residues: "+ unknownRes.toString());
+                            		"Calculated protein weight questionable, due to unknown amino acid residues: %s"+ unknownRes.toString());
                     callback.addMessage(mes2);
                 }
             });
