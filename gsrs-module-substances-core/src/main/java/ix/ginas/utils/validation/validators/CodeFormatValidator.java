@@ -28,9 +28,6 @@ public class CodeFormatValidator extends AbstractValidatorPlugin<Substance>
 
     @Autowired
     private ControlledVocabularyApi cvApi;
-    
-    private String CodeFormatValidatorPatternWarning = "CodeFormatValidatorPatternWarning";
-    private String CodeFormatValidatorExceptionWarning = "CodeFormatValidatorExceptionWarning";
 
     @Override
     public void validate(Substance s, Substance oldSubstance, ValidatorCallback callback)
@@ -63,15 +60,13 @@ public class CodeFormatValidator extends AbstractValidatorPlugin<Substance>
                         //find ? or matches?
                         if(!matcher.find()){
                             callback.addMessage(GinasProcessingMessage
-                                    .WARNING_MESSAGE(CodeFormatValidatorPatternWarning, 
-                                    		"Code " + c.getCode() +" does not match pattern " + codeSystemRegex + " for system " + vt1.getValue()));
+                                    .WARNING_MESSAGE("Code %s does not match pattern %s for system %s", c.getCode(), codeSystemRegex, vt1.getValue()));
                         }
                     }
                 }
             }
         } catch (IOException e) {
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(CodeFormatValidatorExceptionWarning, 
-            		"Could not validate CV"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Could not validate CV"));
         }
     }
 

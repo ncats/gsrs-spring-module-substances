@@ -59,28 +59,13 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
     private final String NO_SUGAR_MESSAGE = "Nucleic Acid substance must have at least 1 specified sugar";
     private final String NO_LINKAGE_MESSAGE ="Nucleic Acid substance must have at least 1 specified linkage";
 
-    private final String NucleicAcidValidatorElementError = "NucleicAcidValidatorElementError";
-    private final String NucleicAcidValidatorSubunitError1 = "NucleicAcidValidatorSubunitError1";
-    private final String NucleicAcidValidatorSubunitError2 = "NucleicAcidValidatorSubunitError2";
-    private final String NucleicAcidValidatorSubunitError3 = "NucleicAcidValidatorSubunitError3";
-    private final String NucleicAcidValidatorSubunitWarning1 = "NucleicAcidValidatorSubunitWarning1";
-    private final String NucleicAcidValidatorSubunitWarning2 = "NucleicAcidValidatorSubunitWarning2";
-    private final String NucleicAcidValidatorSubunitWarning3 = "NucleicAcidValidatorSubunitWarning3";
-    private final String NucleicAcidValidatorSubunitWarning4 = "NucleicAcidValidatorSubunitWarning4";
-    private final String NucleicAcidValidatorSugarError1 = "NucleicAcidValidatorSugarError1";
-    private final String NucleicAcidValidatorSugarError2 = "NucleicAcidValidatorSugarError2";
-    private final String NucleicAcidValidatorLinkageError1 = "NucleicAcidValidatorLinkageError1";
-    private final String NucleicAcidValidatorLinkageError2 = "NucleicAcidValidatorLinkageError2";
-    private final String NucleicAcidValidatorLinkageError3 = "NucleicAcidValidatorLinkageError3";
-    private final String NucleicAcidValidatorError = "NucleicAcidValidatorError";
-    
     @Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
 
         NucleicAcidSubstance cs = (NucleicAcidSubstance)s;
         if (cs.nucleicAcid == null) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(NucleicAcidValidatorElementError, "Nucleic Acid substance must have a nucleicAcid element"));
+                    .ERROR_MESSAGE("Nucleic Acid substance must have a nucleicAcid element"));
             return;
         }
 
@@ -90,10 +75,10 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)) {
                 callback.addMessage(GinasProcessingMessage
                         //warning text changed 13 Oct 2021 https://cnigsllc.atlassian.net/browse/GSRS-1884
-                        .WARNING_MESSAGE(NucleicAcidValidatorSubunitWarning1, NO_SUBUNIT_MESSAGE));
+                        .WARNING_MESSAGE(NO_SUBUNIT_MESSAGE));
             }else {
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE(NucleicAcidValidatorSubunitError1, NO_SUBUNIT_MESSAGE));
+                        .ERROR_MESSAGE(NO_SUBUNIT_MESSAGE));
             }
             //to make it easier for validation below set the subunits to an empty list to avoid other errors
             subunits = Collections.emptyList();
@@ -101,12 +86,12 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
         if (cs.nucleicAcid.getSugars() == null
                 || cs.nucleicAcid.getSugars().isEmpty()) {
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE(NucleicAcidValidatorSugarError1, NO_SUGAR_MESSAGE));
+                        .ERROR_MESSAGE(NO_SUGAR_MESSAGE));
         }
         if (cs.nucleicAcid.getLinkages() == null
                 || cs.nucleicAcid.getLinkages().isEmpty()) {
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE(NucleicAcidValidatorLinkageError1, NO_LINKAGE_MESSAGE));
+                        .ERROR_MESSAGE(NO_LINKAGE_MESSAGE));
         }
         for (int i=0; i< subunits.size(); i++) {
             Subunit su = subunits.get(i);
@@ -114,9 +99,9 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
             //for now just null/blank need to confer with stakeholders if validation is needed or not
             if(su.sequence == null || su.sequence.trim().isEmpty()){
                 if(Substance.SubstanceDefinitionLevel.INCOMPLETE.equals(cs.definitionLevel)){
-                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(NucleicAcidValidatorSubunitWarning2, String.format("Subunit at position %s is blank. This is allowed but discouraged for incomplete nucleic acid records.", (i +1))));
+                    callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Subunit at position %s is blank. This is allowed but discouraged for incomplete nucleic acid records.", (i +1)));
                 }else {
-                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(NucleicAcidValidatorSubunitError2, String.format("Subunit at position %s is blank", (i +1))));
+                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Subunit at position %s is blank", (i +1)));
                 }
             }
         }
@@ -126,8 +111,8 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 .getNumberOfUnspecifiedSugarSites(cs);
         if (unspSugars != 0) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(NucleicAcidValidatorSugarError2, String.format("Nucleic Acid substance must have every base specify a sugar fragment. Missing %s sites.",
-                            unspSugars)));
+                    .ERROR_MESSAGE("Nucleic Acid substance must have every base specify a sugar fragment. Missing %s sites.",
+                            unspSugars));
         }
 
 
@@ -135,13 +120,13 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 .getNumberOfUnspecifiedLinkageSites(cs);
         if (unspLinkages > 0) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(NucleicAcidValidatorLinkageError2, String.format("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing %s sites.",
-                            unspLinkages)));
+                    .ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment. Missing %s sites.",
+                            unspLinkages));
         }else{
             if (unspLinkages < - (subunits.size())) {
                 callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(NucleicAcidValidatorLinkageError3, String.format("Nucleic Acid substance must have every linkage specify a linkage fragment, but sites are over-specified. Found %s more sites than expected.",
-                            (-1*unspLinkages))));
+                    .ERROR_MESSAGE("Nucleic Acid substance must have every linkage specify a linkage fragment, but sites are over-specified. Found %s more sites than expected.",
+                            (-1*unspLinkages)));
             }
         }
 
@@ -197,15 +182,15 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                 //should we remove as applicable change?
             	//TP: I'm not sure we should even warn about duplicates within a record, tbh. At least with proteins,
             	//it's quite common to have subunits that are identical in sequence within the same record.
-                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(NucleicAcidValidatorSubunitWarning3, "Duplicate subunit at index %s" + subunit.subunitIndex));
+                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Duplicate subunit at index %s", subunit.subunitIndex));
             }
 
             try {
                 NucleotideSequence.of(subunit.sequence);
             }catch(Exception e){
                 //invalid bases
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(NucleicAcidValidatorSubunitError3, 
-                        String.format("Invalid nucleic acid sequence base in subunit %s %s", subunit.subunitIndex, e.getMessage())));
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                        "Invalid nucleic acid sequence base in subunit %s %s", subunit.subunitIndex, e.getMessage()));
 
             }
         }
@@ -328,7 +313,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
                              }
 
                              GinasProcessingMessage dupMessage = GinasProcessingMessage
-                                     .WARNING_MESSAGE(NucleicAcidValidatorSubunitWarning4, String.format("There %s with a similar sequence to subunit [%s]:", msgMod, suSet));
+                                     .WARNING_MESSAGE("There %s with a similar sequence to subunit [%s]:", msgMod, suSet);
 //                             dupMessage.addLink(l);
 
                              suResults.stream()
@@ -366,7 +351,7 @@ public class NucleicAcidValidator extends AbstractValidatorPlugin<Substance> {
         } catch (Exception e) {
         	log.error("Problem executing duplicate search function", e);
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(NucleicAcidValidatorError, "Error performing seqeunce search on Nucleic Acid:%s" + 
+                    .ERROR_MESSAGE("Error performing seqeunce search on Nucleic Acid:%s",
                             e.getMessage()));
         }
     }

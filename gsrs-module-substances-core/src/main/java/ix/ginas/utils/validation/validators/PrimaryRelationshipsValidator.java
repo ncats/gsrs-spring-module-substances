@@ -15,13 +15,6 @@ import java.util.Iterator;
  * Created by katzelda on 5/14/18.
  */
 public class PrimaryRelationshipsValidator extends AbstractValidatorPlugin<Substance> {
-	
-	private final String PrimaryRelationshipsValidatorNullWarning = "PrimaryRelationshipsValidatorNullWarning";
-	private final String PrimaryRelationshipsValidatorSubstanceError = "PrimaryRelationshipsValidatorSubstanceError";
-	private final String PrimaryRelationshipsValidatorTypeError = "PrimaryRelationshipsValidatorTypeError";
-	private final String PrimaryRelationshipsValidatorParentError = "PrimaryRelationshipsValidatorParentError";
-	private final String PrimaryRelationshipsValidatorSubconceptsError = "PrimaryRelationshipsValidatorSubconceptsError";
-	
     @Autowired
     private ReferenceRepository referenceRepository;
 
@@ -41,7 +34,7 @@ public class PrimaryRelationshipsValidator extends AbstractValidatorPlugin<Subst
             Relationship n = iter.next();
             if (ValidationUtils.isEffectivelyNull(n)) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(PrimaryRelationshipsValidatorNullWarning,
+                        .WARNING_MESSAGE(
                                 "Null relationship objects are not allowed")
                         .appliableChange(true);
                 callback.addMessage(mes, () -> iter.remove());
@@ -54,13 +47,13 @@ public class PrimaryRelationshipsValidator extends AbstractValidatorPlugin<Subst
 		  )
                ) {
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .ERROR_MESSAGE(PrimaryRelationshipsValidatorSubstanceError,
+                        .ERROR_MESSAGE(
                                 "Relationships must specify a related substance");
                 callback.addMessage(mes);
             }
             if(ValidationUtils.isEffectivelyNull(n.type)){
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .ERROR_MESSAGE(PrimaryRelationshipsValidatorTypeError,
+                        .ERROR_MESSAGE(
                                 "Relationships must specify a type");
                 callback.addMessage(mes);
             }
@@ -76,12 +69,12 @@ public class PrimaryRelationshipsValidator extends AbstractValidatorPlugin<Subst
 
         if(parentList>1){
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .ERROR_MESSAGE(PrimaryRelationshipsValidatorParentError,
+                    .ERROR_MESSAGE(
                             "Variant concepts may not specify more than one parent record");
             callback.addMessage(mes);
         }else if(parentList==1 && (s.substanceClass != Substance.SubstanceClass.concept)){
             GinasProcessingMessage mes = GinasProcessingMessage
-                    .ERROR_MESSAGE(PrimaryRelationshipsValidatorSubconceptsError,
+                    .ERROR_MESSAGE(
                             "Non-concepts may not be specified as subconcepts.");
             callback.addMessage(mes);
         }

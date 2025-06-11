@@ -37,13 +37,6 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     private String regenerateNameValue = "";
     private boolean warningOnMismatch = true;
 
-    private final String StandardNameValidatorError1 = "StandardNameValidatorError1";
-    private final String StandardNameValidatorWarning1 = "StandardNameValidatorWarning1";
-    private final String StandardNameValidatorWarning2 = "StandardNameValidatorWarning2";
-    private final String StandardNameValidatorWarning3 = "StandardNameValidatorWarning3";
-    private final String StandardNameValidatorWarning4 = "StandardNameValidatorWarning4";
-    private final String StandardNameValidatorWarning5 = "StandardNameValidatorWarning5";
-    
     private InvalidStdNameBehavior invalidStdNameBehavior= InvalidStdNameBehavior.error;
 
     public StandardNameValidator() {	
@@ -167,13 +160,11 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                     warnedAboutThisNameStandardization =true;
                     String suggestedSTDName = stdNameStandardizer.standardize(name.stdName).getResult();
                     if( invalidStdNameBehavior== InvalidStdNameBehavior.error) {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(StandardNameValidatorError1, 
-                        		"Standardized name does not meet standards. This name may contain one or more non-allowed character: '" 
-                        		+ name.stdName + "'. Suggest standardized name: '" + suggestedSTDName + "'."));
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'. Suggest standardized name: '%s'.",
+                            name.stdName, suggestedSTDName));
                     }else {
-                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(StandardNameValidatorWarning1, 
-                        		"Standardized name does not meet standards. This name may contain one or more non-allowed character: '" 
-                        		+ name.stdName + "'. Suggest standardized name: '" + suggestedSTDName + "'."));
+                        callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Standardized name does not meet standards. This name may contain one or more non-allowed character: '%s'. Suggest standardized name: '%s'.",
+                            name.stdName, suggestedSTDName));
                     }
                 }
                 log.trace("warningOnMismatch: " + warningOnMismatch);
@@ -197,9 +188,9 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                                     if (warningOnMismatch) {
                                         callback.addMessage(
                                             GinasProcessingMessage
-                                                .WARNING_MESSAGE(StandardNameValidatorWarning2,
-                                                		"Previous standardized name '" + name.stdName + "' does not agree with newly generated standardized name '" 
-                                                				+ newlyStandardizedName + "'. Newly generated standardized name will be used.")
+                                                .WARNING_MESSAGE(
+                                                    "Previous standardized name '%s' does not agree with newly generated standardized name '%s'. Newly generated standardized name will be used.",
+                                                    name.stdName, newlyStandardizedName)
                                                 .appliableChange(true));
                                         name.stdName = newlyStandardizedName;
                                     }
@@ -211,9 +202,9 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                                     if (warningOnMismatch) {
                                         callback.addMessage(
                                             GinasProcessingMessage
-                                                .WARNING_MESSAGE(StandardNameValidatorWarning3,
-                                                		"Previous standardized name '" + name.stdName + "' does not agree with newly generated standardized name '" 
-                                                				+ newlyStandardizedName + "'. Keeping previous standardized name. Remove standardized name to regenerate instead."));
+                                                .WARNING_MESSAGE(
+                                                    "Previous standardized name '%s' does not agree with newly generated standardized name '%s'. Keeping previous standardized name. Remove standardized name to regenerate instead.",
+                                                    name.stdName, newlyStandardizedName));
                                     }
                                 }
                             }
@@ -228,8 +219,8 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
                         if (warningOnMismatch && !warnedAboutThisNameStandardization) {
                             callback.addMessage(
                                 GinasProcessingMessage
-                                    .WARNING_MESSAGE(StandardNameValidatorWarning4, "Provided standardized name '" + name.stdName + "' does not agree with newly standardized name '" 
-                                    		+ newlyStandardizedName + "'. Provided standardized name will be used."));
+                                    .WARNING_MESSAGE("Provided standardized name '%s' does not agree with newly standardized name '%s'. Provided standardized name will be used.",
+                                    name.stdName, newlyStandardizedName));
                         }
                     }
                 }
@@ -253,11 +244,13 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
         s.names.forEach(n -> {
 
             ReplacementResult minimallyStandardizedName = nameStandardizer.standardize(n.name);
-            String debugMessage = String.format("name: " + n.name + "; minimallyStandardizedName: " + minimallyStandardizedName.getResult());
+            String debugMessage = String.format("name: %s; minimallyStandardizedName: %s", n.name,
+                    minimallyStandardizedName.getResult());
             log.trace(debugMessage);
 
             if (!minimallyStandardizedName.getResult().equals(n.name) || minimallyStandardizedName.getReplacementNotes().size() > 0) {
-                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(StandardNameValidatorWarning5, "Name " + n.name + " minimally standardized to " + minimallyStandardizedName.getResult());
+                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE("Name %s minimally standardized to %s",
+                        n.name, minimallyStandardizedName.getResult());
                 mes.appliableChange(true);
                 callback.addMessage(mes, () -> {
                     n.name = minimallyStandardizedName.getResult();

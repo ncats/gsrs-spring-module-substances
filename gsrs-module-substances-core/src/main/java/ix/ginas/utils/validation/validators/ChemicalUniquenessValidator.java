@@ -32,11 +32,7 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
     private SubstanceLegacySearchService legacySearchService;
 
     private boolean searchMoietiesAlongWithStructure =true;
-    private final String ChemicalUniquenessValidatorStructureError1 = "ChemicalUniquenessValidatorStructureError1";
-    private final String ChemicalUniquenessValidatorStructureError2 = "ChemicalUniquenessValidatorStructureError2"; 
-    private final String ChemicalUniquenessValidatorDuplicateWarning = "ChemicalUniquenessValidatorDuplicateWarning"; 
-    private final String ChemicalUniquenessValidatorStructureSuccess = "ChemicalUniquenessValidatorStructureSuccess";
-    
+
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in validate");
@@ -55,16 +51,14 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
 
     private List<ValidationMessage> handleDuplicateCheck(ChemicalSubstance chemicalSubstance) {
         if( chemicalSubstance.getStructure()==null || chemicalSubstance.getStructure().molfile==null) {
-            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE(ChemicalUniquenessValidatorStructureError1,
-            		"Please provide a structure"));
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure"));
         }
         Structure structure = (chemicalSubstance.getStructure().getStereoInsensitiveHash()!=null &&
                 chemicalSubstance.getStructure().getStereoInsensitiveHash().length()>0) ? chemicalSubstance.getStructure()
                 : structureProcessor.instrument(chemicalSubstance.getStructure().molfile);
 
         if (structure.toChemical().getAtomCount() == 0) {
-            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE(ChemicalUniquenessValidatorStructureError2, 
-            		"Please provide a structure with at least one atom"));
+            return Collections.singletonList(GinasProcessingMessage.ERROR_MESSAGE("Please provide a structure with at least one atom"));
         }
 
         Optional<UUID> substanceId = chemicalSubstance.getUuid() !=null ? Optional.of(chemicalSubstance.getUuid()) : Optional.empty();
@@ -122,15 +116,14 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
         results.forEach(r -> {
             Substance duplicate = (Substance) r;
             if(!substanceId.isPresent() || !substanceId.get().equals(duplicate.getUuid())) {
-                GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(ChemicalUniquenessValidatorDuplicateWarning,
-                		"Record " + duplicate.getName() + " is a potential duplicate");
+                GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(
+                        "Record %s is a potential duplicate", duplicate.getName());
                 message.addLink(ValidationUtils.createSubstanceLink(duplicate.asSubstanceReference()));
                 messages.add(message);
             }
         });
         if (messages.isEmpty()) {
-            messages.add(GinasProcessingMessage.SUCCESS_MESSAGE(ChemicalUniquenessValidatorStructureSuccess, 
-            		"Structure is unique"));
+            messages.add(GinasProcessingMessage.SUCCESS_MESSAGE("Structure is unique"));
         }
         return messages;
     }

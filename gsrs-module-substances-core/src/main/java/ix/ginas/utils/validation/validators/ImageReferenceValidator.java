@@ -18,12 +18,6 @@ Looking for these potential issues:
  */
 @Slf4j
 public class ImageReferenceValidator extends AbstractValidatorPlugin<Substance> {
-	
-	private String ImageReferenceValidatorError1 = "ImageReferenceValidatorError1";
-	private String ImageReferenceValidatorError2 = "ImageReferenceValidatorError2";
-	private String ImageReferenceValidatorError3 = "ImageReferenceValidatorError3";
-	
-	
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
         log.trace("starting in ImageReferenceValidator");
@@ -39,16 +33,13 @@ public class ImageReferenceValidator extends AbstractValidatorPlugin<Substance> 
             }
         }
         if(totalImageRefs>1){
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(ImageReferenceValidatorError1, 
-            		"Substance has more than one image reference!"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Substance has more than one image reference!"));
         }
         if(hasImageRefOnRelationship){
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(ImageReferenceValidatorError2, 
-            		"Substance has at least one image reference on a relationship.  This can have unintended consequences!"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Substance has at least one image reference on a relationship.  This can have unintended consequences!"));
         }
         if( totalImageRefs>0 && (objnew instanceof ChemicalSubstance || objnew instanceof PolymerSubstance)) {
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(ImageReferenceValidatorError3, 
-            		"It is not customary to set a customized image for Chemicals or Polymers!"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("It is not customary to set a customized image for Chemicals or Polymers!"));
         }
     }
 

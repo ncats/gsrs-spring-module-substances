@@ -20,9 +20,7 @@ import java.util.stream.Stream;
  * Created by peryeata on 8/28/18.
  */
 public class RelationshipModificationValidator extends AbstractValidatorPlugin<Substance> {
-	
     private static Collection<Role> ALLOWED_ROLES = Arrays.asList(Role.Admin, Role.SuperUpdate);
-    private final String RelationshipModificationValidatorRoleError = "RelationshipModificationValidatorRoleError";
 
 	@Override
     public void validate(Substance s, Substance objold, ValidatorCallback callback) {
@@ -47,8 +45,8 @@ public class RelationshipModificationValidator extends AbstractValidatorPlugin<S
 			        .filter(t->isChanged(t.v(),t.k())) //has changed
 			        .forEach(t->{
 			        	callback.addMessage(GinasProcessingMessage
-                                                    .ERROR_MESSAGE(RelationshipModificationValidatorRoleError, 
-                                                    		"Relationship \"" + t.v().toSimpleString() + "\" can not be updated by non-admin users."));
+                                                    .ERROR_MESSAGE("Relationship \"%s\" can not be updated by non-admin users.",
+                                                            t.v().toSimpleString()));
 			        });
 	    	       
 			        

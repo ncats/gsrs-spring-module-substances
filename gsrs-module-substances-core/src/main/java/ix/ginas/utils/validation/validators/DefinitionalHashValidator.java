@@ -25,11 +25,7 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 
 	@Autowired
 	private DefinitionalElementFactory definitionalElementFactory;
-	
-	private final String DefinitionalHashValidatorChangeWarning = "DefinitionalHashValidatorChangeWarning";
-	private final String DefinitionalHashValidatorSingleChangeWarning = "DefinitionalHashValidatorSingleChangeWarning";
-	private final String DefinitionalHashValidatorMultipleChangeWarning = "DefinitionalHashValidatorMultipleChangeWarning";
-	
+
 	public DefinitionalElementFactory getDefinitionalElementFactory() {
 		return definitionalElementFactory;
 	}
@@ -99,7 +95,7 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 												String message = 
 													"WARNING! You have made a change to the fundamental definition of a validated substance. Are you sure you want to proceed with this change?";
 												callback.addMessage(GinasProcessingMessage
-													.WARNING_MESSAGE(DefinitionalHashValidatorChangeWarning, message));
+													.WARNING_MESSAGE(message));
 												return;
 										}
 								}
@@ -144,10 +140,10 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 				}
 			}
 			if(messageParts.size() == 1) {
-				return GinasProcessingMessage.WARNING_MESSAGE(DefinitionalHashValidatorSingleChangeWarning, 
-						"A definitional change has been made: " + messageParts.get(0) + "please reaffirm.");
+				return GinasProcessingMessage.WARNING_MESSAGE("A definitional change has been made: %s please reaffirm.",
+					messageParts.get(0));
 			}
-			return GinasProcessingMessage.WARNING_MESSAGE(DefinitionalHashValidatorMultipleChangeWarning, 
-					"Definitional changes have been made: " + String.join("; ", messageParts) +"; please reaffirm.");
+			return GinasProcessingMessage.WARNING_MESSAGE("Definitional changes have been made: %s; please reaffirm.",
+				String.join("; ", messageParts));
 		}
 }

@@ -25,9 +25,6 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 
 	private static final List<String> SUBSTANCE_CLASSES_HANDLED = Arrays.asList("chemical", "mixture",
 					"structurallyDiverse", "polymer", "concept", "specifiedSubstanceG1");
-	
-	private final String SubstanceUniquenessValidatorError = "SubstanceUniquenessValidatorError";
-	private final String SubstanceUniquenessValidatorWarning = "SubstanceUniquenessValidatorWarning";
 
     @Autowired(required = true)
     private DefinitionalElementFactory definitionalElementFactory;
@@ -61,8 +58,8 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 		if (fullMatches.size() > 0) {
 			for (int i = 0; i < fullMatches.size(); i++) {
 				Substance possibleMatch = fullMatches.get(i);
-				GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(SubstanceUniquenessValidatorError,
-						"Substance " + possibleMatch.getName() +" (ID: " + possibleMatch.uuid + ") appears to be a full duplicate");
+				GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE("Substance %s (ID: %s) appears to be a full duplicate",
+								possibleMatch.getName(), possibleMatch.uuid);
                 mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
 				//.createSubstanceLink((possibleMatch));
 				callback.addMessage(mes);
@@ -76,8 +73,8 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 				for (int i = 0; i < matches.size(); i++) {
 					Substance possibleMatch = matches.get(i);
 					log.debug("in SubstanceUniquenessValidator before message creation");
-					GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(SubstanceUniquenessValidatorWarning, 
-							"Substance "+ possibleMatch.getName() +" (ID: " + possibleMatch.uuid + ") is a possible duplicate");
+					GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE("Substance %s (ID: %s) is a possible duplicate",
+									possibleMatch.getName(), possibleMatch.uuid);
 					log.debug("in SubstanceUniquenessValidator, created warning with message " + mes.getMessage());
 					  mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
 					//mes.addLink(GinasUtils.createSubstanceLink(possibleMatch));

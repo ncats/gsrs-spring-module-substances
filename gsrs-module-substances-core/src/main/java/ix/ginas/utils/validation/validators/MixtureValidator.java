@@ -26,15 +26,6 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
 
     @Autowired
     private ReferenceRepository referenceRepository;
-    
-    private final String MixtureValidatorElementError = "MixtureValidatorElementError"; 
-    private final String MixtureValidatorComponentError1 = "MixtureValidatorComponentError1";
-    private final String MixtureValidatorComponentError2 = "MixtureValidatorComponentError2";
-    private final String MixtureValidatorReferenceError1 = "MixtureValidatorReferenceError1";
-    private final String MixtureValidatorReferenceError2 = "MixtureValidatorReferenceError2";
-    private final String MixtureValidatorTypeError = "MixtureValidatorTypeError";
-    private final String MixtureValidatorReferenceWarning = "MixtureValidatorReferenceWarning";
-
 
     @Override
     @Transactional(readOnly = true)
@@ -42,34 +33,35 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
         MixtureSubstance cs = (MixtureSubstance) objnew;
         if (cs.mixture == null) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(MixtureValidatorElementError, "Mixture substance must have a mixture element"));
+                    .ERROR_MESSAGE("Mixture substance must have a mixture element"));
             return;
         }
         if (cs.mixture.components == null
                 || cs.mixture.components.size() < 2) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(MixtureValidatorComponentError1, "Mixture substance must have at least 2 mixture components"));
+                    .ERROR_MESSAGE("Mixture substance must have at least 2 mixture components"));
         } else {
             Set<String> mixtureIDs = new HashSet<>();
             int oneOfCount=0;
             for (Component c : cs.mixture.components) {
                 if (c.substance == null) {
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE(MixtureValidatorReferenceError1, "Mixture components must reference a substance record, found:\"null\""));
+                            .ERROR_MESSAGE("Mixture components must reference a substance record, found:\"null\""));
                 }else if(c.type == null || c.type.length()<=0){
-                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(MixtureValidatorTypeError ,"Mixture components must specify a type"));
+                    callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Mixture components must specify a type"));
                 }else {
 //                    Substance comp = SubstanceFactory.getFullSubstance(c.substance);
                     if (!substanceRepository.exists(c.substance)) {
                         callback.addMessage(GinasProcessingMessage
-                                .WARNING_MESSAGE(MixtureValidatorReferenceWarning, "Mixture substance references \"" + c.substance.getName() +"\" which is not yet registered"));
+                                .WARNING_MESSAGE("Mixture substance references \"%s\" which is not yet registered",
+                                        c.substance.getName()));
                     }
                     //add returns false if it's already present so we don't need to do the contains() check before add
                     if (!mixtureIDs.add(c.substance.refuuid)) {
 
                         callback.addMessage(GinasProcessingMessage
-                                .ERROR_MESSAGE(MixtureValidatorReferenceError2, "Cannot reference the same mixture substance twice in a mixture:\""
-                                		+ c.substance.refPname +"\""));
+                                .ERROR_MESSAGE("Cannot reference the same mixture substance twice in a mixture:\"%s\"",
+                                        c.substance.refPname));
                     }
                 }
 
@@ -81,8 +73,7 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
             //You should have to have at least two "One of" components in the mixture record.
             if(oneOfCount == 1){
                 callback.addMessage(GinasProcessingMessage
-                        .ERROR_MESSAGE(MixtureValidatorComponentError2, 
-                        		"Should have at least two \"One of\" components in the mixture record"));
+                        .ERROR_MESSAGE("Should have at least two \"One of\" components in the mixture record"));
             }
 
             ValidationUtils.validateReference(cs, cs.mixture, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);

@@ -19,18 +19,6 @@ import java.util.*;
 public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
     @Autowired
     private ReferenceRepository referenceRepository;
-    
-    private final String PolymerValidatorError1 = "PolymerValidatorError1";
-    private final String PolymerValidatorError2 = "PolymerValidatorError2";
-    private final String PolymerValidatorError3 = "PolymerValidatorError3";
-    private final String PolymerValidatorError4 = "PolymerValidatorError4";
-    private final String PolymerValidatorStructureError1 = "PolymerValidatorStructureError1";
-    private final String PolymerValidatorStructureInfo = "PolymerValidatorStructureInfo";
-    private final String PolymerValidatorStructureWarning1 = "PolymerValidatorStructureWarning1";
-    private final String PolymerValidatorStructureWarning2 = "PolymerValidatorStructureWarning2";
-    private final String PolymerValidatorMonomerWarning = "PolymerValidatorMonomerWarning";
-    private final String PolymerValidatorPropertyWarning = "PolymerValidatorPropertyWarning";
-    private final String PolymerValidatorConnectionWarning = "PolymerValidatorConnectionWarning";
 
     public ReferenceRepository getReferenceRepository() {
         return referenceRepository;
@@ -46,7 +34,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
         
         if (cs.polymer == null) {
             callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE(PolymerValidatorError1, "Polymer substance must have a polymer element"));
+                    .ERROR_MESSAGE("Polymer substance must have a polymer element"));
         } else {
 
             boolean withDisplay = !isNull(cs.polymer.displayStructure);
@@ -59,11 +47,11 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
 
             if (!withDisplay && !withIdealized) {
                 GinasProcessingMessage gpmwarn = GinasProcessingMessage
-                        .ERROR_MESSAGE(PolymerValidatorStructureError1, "No Display Structure or Idealized Structure found");
+                        .ERROR_MESSAGE("No Display Structure or Idealized Structure found");
                 callback.addMessage(gpmwarn);
             } else if (!withDisplay && withIdealized) {
                 GinasProcessingMessage gpmwarn = GinasProcessingMessage
-                        .WARNING_MESSAGE(PolymerValidatorStructureWarning1,
+                        .WARNING_MESSAGE(
                                 "No Display Structure found, basic to using Idealized Structure")
                         .appliableChange(true);
                 callback.addMessage(gpmwarn, ()-> {
@@ -71,13 +59,14 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                         cs.polymer.displayStructure = cs.polymer.idealizedStructure
                                 .copy();
                     } catch (Exception e) {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(PolymerValidatorError2, e.getMessage()));
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(e
+                                .getMessage()));
                     }
                 });
 
             } else if (withDisplay && !withIdealized) {
                 GinasProcessingMessage gpmwarn = GinasProcessingMessage
-                        .INFO_MESSAGE(PolymerValidatorStructureInfo,
+                        .INFO_MESSAGE(
                                 "No Idealized Structure found, basic to using Display Structure")
                         .appliableChange(true);
                 callback.addMessage(gpmwarn, ()-> {
@@ -85,7 +74,8 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                                 cs.polymer.idealizedStructure = cs.polymer.displayStructure
                                         .copy();
                             } catch (Exception e) {
-                                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(PolymerValidatorStructureError1, e.getMessage()));
+                                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(e
+                                        .getMessage()));
                             }
                         }
                     );
@@ -95,7 +85,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
 
             if (cs.polymer.structuralUnits == null || cs.polymer.structuralUnits.isEmpty()) {
                 callback.addMessage(GinasProcessingMessage
-                        .WARNING_MESSAGE(PolymerValidatorStructureWarning2, "Polymer substance should have structural units"));
+                        .WARNING_MESSAGE("Polymer substance should have structural units"));
             } else {
                 List<Unit> srus = cs.polymer.structuralUnits;
                 // ensure that all mappings make sense
@@ -111,10 +101,8 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     if (mentioned != null) {
                         if (!contained.containsAll(mentioned)) {
                             callback.addMessage(GinasProcessingMessage
-                                    .ERROR_MESSAGE(PolymerValidatorError3,
-                                    		"Mentioned attachment points '" + mentioned.toString() + 
-                                    		"' in unit '" + u.label + "' are not all found in actual connections '" + contained.toString() + "'."
-));
+                                    .ERROR_MESSAGE("Mentioned attachment points '%s' in unit '%s' are not all found in actual connecitons '%s'.",
+                                            mentioned.toString(), u.label, contained.toString()));
                         }
                     }
                     Map<String, LinkedHashSet<String>> mymap = u
@@ -133,7 +121,8 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     Set<String> leftovers = new HashSet<String>(rgroupMentions);
                     leftovers.removeAll(rgroupsWithMappings);
                     callback.addMessage(GinasProcessingMessage
-                            .ERROR_MESSAGE(PolymerValidatorError4, "Mentioned attachment point(s) '" + leftovers.toString() + "' cannot be found"));
+                            .ERROR_MESSAGE("Mentioned attachment point(s) '%s' cannot be found",
+                                    leftovers.toString()));
                 }
 
                 Map<String, String> newConnections = new HashMap<String, String>();
@@ -142,8 +131,8 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                     String[] c = con.split("-");
                     if (!connections.contains(c[1] + "-" + c[0])) {
                         GinasProcessingMessage gp = GinasProcessingMessage
-                                .WARNING_MESSAGE(PolymerValidatorConnectionWarning,
-                                		"Connection '" + con + "' does not have inverse connection. This can be created.")
+                                .WARNING_MESSAGE(
+                                        "Connection '%s' does not have inverse connection. This can be created.", con)
                                 .appliableChange(true);
 
                         callback.addMessage(gp, ()-> {
@@ -171,11 +160,11 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
             }
             if (cs.polymer.monomers == null || cs.polymer.monomers.size() <= 0) {
                 callback.addMessage(GinasProcessingMessage
-                        .WARNING_MESSAGE(PolymerValidatorMonomerWarning, "Polymer substance should have monomers"));
+                        .WARNING_MESSAGE("Polymer substance should have monomers"));
             }
             if (cs.properties == null || cs.properties.size() <= 0) {
                 callback.addMessage(GinasProcessingMessage
-                        .WARNING_MESSAGE(PolymerValidatorPropertyWarning, "Polymer substance has no properties, typically expected at least a molecular weight"));
+                        .WARNING_MESSAGE("Polymer substance has no properties, typically expected at least a molecular weight"));
             }
 
             ValidationUtils.validateReference(cs, cs.polymer, callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
