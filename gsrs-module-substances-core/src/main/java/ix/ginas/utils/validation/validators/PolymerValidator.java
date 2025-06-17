@@ -59,7 +59,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                         cs.polymer.displayStructure = cs.polymer.idealizedStructure
                                 .copy();
                     } catch (Exception e) {
-                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(e
+                        callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("E8180000", e
                                 .getMessage()));
                     }
                 });
@@ -74,7 +74,7 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
                                 cs.polymer.idealizedStructure = cs.polymer.displayStructure
                                         .copy();
                             } catch (Exception e) {
-                                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(e
+                                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("E8180000", e
                                         .getMessage()));
                             }
                         }
