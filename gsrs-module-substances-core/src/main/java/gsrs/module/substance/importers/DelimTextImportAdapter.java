@@ -24,8 +24,6 @@ public class DelimTextImportAdapter implements ImportAdapter<Substance> {
 
     private boolean removeQuotes=false;
 
-    private String substanceTypeColumn = "SUBSTANCE_TYPE";
-
     protected String substanceClassName = "concept";
 
     private String lineValueDelimiter = ",";

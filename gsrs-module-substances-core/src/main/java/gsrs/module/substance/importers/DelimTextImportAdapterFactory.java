@@ -23,11 +23,11 @@ import java.util.*;
 @Slf4j
 public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
-    private String lineValueDelimiter;
+    protected String lineValueDelimiter;
 
-    private boolean removeQuotes = false;
+    protected boolean removeQuotes = false;
 
-    private String inputFileName;
+    protected String inputFileName;
 
     protected Class stagingAreaService;
 
@@ -35,15 +35,15 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     private List<String> fields;
 
-    private int linesToSkip;
+    protected int linesToSkip;
 
-    private List<String> extensions = Arrays.asList("csv", "txt", "tsv");
+    protected List<String> extensions = Arrays.asList("csv", "txt", "tsv");
 
     public final static String FIELD_LIST = "fields";
 
     public String substanceClassName;
 
-    private String description = "Importer for various types of text/delimited files";
+    protected String description = "Importer for various types of text/delimited files";
 
     @Override
     public String getAdapterName() {
@@ -65,6 +65,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
         this.extensions = extensions;
     }
 
+    private final String DEFAULT_LINE_DELIMITER = "\t";
 
     @SneakyThrows
     @Override
@@ -110,6 +111,10 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
 
     @Override
     public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
+        if( this.lineValueDelimiter == null || this.lineValueDelimiter.length()==0) {
+            log.trace("no delimiter supplied. using default");
+            this.lineValueDelimiter = DEFAULT_LINE_DELIMITER;
+        }
         log.trace("in predictSettings");
         Set<String> fields = null;
         if (registry == null || registry.isEmpty()) {
@@ -167,6 +172,11 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
                 ObjectNode mapNode = createNucleicAcidMap(f);
                 actionNode.set(ACTION_PARAMETERS, mapNode);
                 actionNode.put("label", "Create Simple Nucleic Acid");
+            } else if(looksLikeSmiles(f) ){
+                actionNode.put(ACTION_NAME, "structure_and_moieties_from_text");
+                ObjectNode mapNode = createSmilesMap(f);
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+                actionNode.put("label", "Create Structure");
             }
             else {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));

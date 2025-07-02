@@ -273,6 +273,14 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
+    public ObjectNode createSmilesMap(String smilesFieldName) {
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("smiles", String.format("{{%s}}", smilesFieldName));
+        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
+        refs.add(String.format("[[%s]]", SIMPLE_REF));
+        mapNode.set("referenceUUIDs", refs);
+        return mapNode;
+    }
     public ObjectNode createProteinSequenceMap(String sequenceFieldName) {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         mapNode.put("proteinSequence", "{{" + sequenceFieldName+ "}}");
@@ -332,6 +340,21 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         }
         return false;
     }
+
+    protected boolean looksLikeSmiles(String fieldName) {
+        if(fieldName.toUpperCase().contains("SMILES")){
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean looksLikeMolfile(String fieldName) {
+        if(fieldName.toUpperCase().contains("MOLFILE")){
+            return true;
+        }
+        return false;
+    }
+
     protected JsonNode createDefaultReferenceReferenceNode() {
         ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
         parameters.add(String.format("[[%s]]", SIMPLE_REF));

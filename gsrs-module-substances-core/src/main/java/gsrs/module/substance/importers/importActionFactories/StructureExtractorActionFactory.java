@@ -37,8 +37,10 @@ public class StructureExtractorActionFactory extends BaseActionFactory {
             Map<String, Object> params = resolveParametersMap(sdRec, abstractParams);
             List<Structure> moieties = new ArrayList<>();
             try {
-
-                Structure struc = structureProcessor.taskFor((String) params.get("molfile"))
+                String structureInput = params.get("molfile") != null
+                        ? (String) params.get("molfile")
+                        :  (String)params.get("smiles");
+                Structure struc = structureProcessor.taskFor(structureInput)
                         .components(moieties)
                         .standardize(false)
                         .query(false)
@@ -72,7 +74,12 @@ public class StructureExtractorActionFactory extends BaseActionFactory {
                 .addParameterField(MappingParameter.builder()
                         .setFieldName("molfile")
                         .setValueType(String.class)
-                        .setRequired(true)
+                        .setRequired(false)
+                        .build())
+                .addParameterField(MappingParameter.builder()
+                        .setFieldName("smiles")
+                        .setValueType(String.class)
+                        .setRequired(false)
                         .build())
                 .addParameterField(MappingParameter.builder()
                         .setFieldName("stereochemistry")
