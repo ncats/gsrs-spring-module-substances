@@ -11,10 +11,7 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.ImportFieldMetadata;
 import gsrs.importer.PropertyBasedDataRecordContext;
-import gsrs.imports.ActionConfigImpl;
-import gsrs.imports.ImportAdapter;
-import gsrs.imports.ImportAdapterFactory;
-import gsrs.imports.ImportAdapterStatistics;
+import gsrs.imports.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.importers.InputFieldStatistics;
@@ -42,7 +39,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     protected Map<String, MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
 
-    protected List<ActionConfigImpl> fileImportActions;
+    protected List<ActionConfig> fileImportActions;
 
     public final static String ACTION_NAME = "actionName";
 
@@ -156,7 +153,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
-            JsonNode actionParameters = js.get("actionParameters");
+            JsonNode actionParameters = js.get(ACTION_PARAMETERS);
             ObjectMapper mapper = new ObjectMapper();
             //log.trace("about to call convertValue");
             Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
@@ -193,7 +190,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
     protected void defaultInitialize(){}
 
 
-    public void setFileImportActions(List<ActionConfigImpl> fileImportActions) {
+    public void setFileImportActions(List<ActionConfig> fileImportActions) {
         log.trace("setFileImportActions");
         this.fileImportActions = fileImportActions;
     }

@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.ImportFieldMetadata;
+import gsrs.imports.ActionConfig;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.ImportAdapter;
 import gsrs.imports.ImportAdapterStatistics;
@@ -52,7 +53,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     private ImportAdapterStatistics statistics;
 
-    public List<ActionConfigImpl> getFileImportActions() {
+    public List<ActionConfig> getFileImportActions() {
         return fileImportActions;
     }
 

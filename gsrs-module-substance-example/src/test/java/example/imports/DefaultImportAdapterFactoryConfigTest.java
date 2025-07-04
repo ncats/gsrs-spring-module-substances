@@ -65,7 +65,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
 
     @Test
     public void testSetupActions() throws Exception {
-        List<ActionConfigImpl> actionConfigs= buildTypedConfig();
+        List<ActionConfig> actionConfigs= buildTypedConfig();
         SDFImportAdapterFactory factory = new SDFImportAdapterFactory();
         factory.setFileImportActions(actionConfigs);
         factory.initialize();
@@ -162,9 +162,9 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         return parameters;
     }
 
-    private List<ActionConfigImpl> buildTypedConfig(){
+    private List<ActionConfig> buildTypedConfig(){
 
-        List<ActionConfigImpl> configList = new ArrayList<>();
+        List<ActionConfig> configList = new ArrayList<>();
         //List< Map<String, Object>> actions = new ArrayList<>();
         ActionConfig config = new ActionConfigImpl();
         config.setActionClass(NSRSCustomCodeExtractorActionFactory.class);
