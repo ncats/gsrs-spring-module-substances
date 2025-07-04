@@ -105,6 +105,7 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
         registry.put("note_import", new NotesExtractorActionFactory());
         registry.put("property_import", new PropertyExtractorActionFactory());
         registry.put("protein_import", new ProteinSequenceExtractorActionFactory());
+        registry.put("structure_and_moieties_from_text", new StructureExtractorActionFactory());
         registry.put("no-op", new NoOpActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }

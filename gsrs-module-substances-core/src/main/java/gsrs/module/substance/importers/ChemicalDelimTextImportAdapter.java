@@ -11,6 +11,6 @@ public class ChemicalDelimTextImportAdapter extends DelimTextImportAdapter{
 
     public ChemicalDelimTextImportAdapter(List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions, Map<String, Object> parameters) {
         super(actions, parameters);
-        this.substanceClassName="chemical";
+        this.substanceClassName="Chemical";
     }
 }
