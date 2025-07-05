@@ -281,6 +281,11 @@ Confirm ability to read data
         idConfigNode.put("fields", idActionFields);
         idConfigNode.put("actionName", "pubchem_code");
         idConfigNode.put("actionClass", CodeExtractorActionFactory.class.getName());
+        ObjectNode idActionParameters = JsonNodeFactory.instance.objectNode();
+        idActionParameters.put("code","{{id}}");
+        idActionParameters.put("codeSystem","pubchem");
+        idActionParameters.put("codeType","PRIMARY");
+        idConfigNode.put("actionParameters", idActionParameters);
         actionListNode.add(idConfigNode);
         List<CodeProcessorFieldImpl> fieldsRn = new ArrayList<>();
         CodeProcessorFieldImpl rnField = new CodeProcessorFieldImpl();
