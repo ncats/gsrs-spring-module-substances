@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -39,6 +40,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     protected Map<String, MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
 
+    @JsonDeserialize(contentAs = ActionConfigImpl.class)
     protected List<ActionConfig> fileImportActions;
 
     public final static String ACTION_NAME = "actionName";
@@ -189,7 +191,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     protected void defaultInitialize(){}
 
-
+    @JsonDeserialize(contentAs = ActionConfigImpl.class)
     public void setFileImportActions(List<ActionConfig> fileImportActions) {
         log.trace("setFileImportActions");
         this.fileImportActions = fileImportActions;

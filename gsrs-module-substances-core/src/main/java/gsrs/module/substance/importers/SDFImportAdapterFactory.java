@@ -1,6 +1,7 @@
 package gsrs.module.substance.importers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -53,6 +54,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
 
     private ImportAdapterStatistics statistics;
 
+    @JsonDeserialize(contentAs = ActionConfigImpl.class)
     public List<ActionConfig> getFileImportActions() {
         return fileImportActions;
     }
