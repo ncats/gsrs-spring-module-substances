@@ -5,17 +5,14 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.node.TextNode;
 import example.GsrsModuleSubstanceApplication;
+import gsrs.imports.ActionConfig;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.CodeProcessorFieldImpl;
 import gsrs.imports.ImportAdapter;
-import gsrs.module.substance.importers.ExcelFileImportAdapter;
-import gsrs.module.substance.importers.ExcelFileImportAdapterFactory;
-import gsrs.module.substance.importers.SDFImportAdapterFactory;
-import gsrs.module.substance.importers.importActionFactories.CodeExtractorActionFactory;
-import gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory;
-import gsrs.module.substance.importers.importActionFactories.ProteinSequenceExtractorActionFactory;
-import gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory;
+import gsrs.module.substance.importers.*;
+import gsrs.module.substance.importers.importActionFactories.*;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +22,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -46,7 +39,7 @@ Confirm ability to read data
 */
     @Test
     public void testParse() throws IOException {
-        List<ActionConfigImpl> simpleConfig = new ArrayList<>();
+        List<ActionConfig> simpleConfig = new ArrayList<>();
 
         ActionConfigImpl proteinActionConfig = new ActionConfigImpl();
         proteinActionConfig.setActionClass(ProteinSequenceExtractorActionFactory.class);
@@ -227,4 +220,95 @@ Confirm ability to read data
         Assertions.assertEquals(3, proteinSubstances.size());
     }
 
+    @Test
+    public void testParseSmiles() throws IOException {
+        ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
+        ObjectNode generalParameters = JsonNodeFactory.instance.objectNode();
+        generalParameters.put("substanceClassName", "Chemical");
+        generalParameters.put("dataSheetName", "Sheet0");
+        generalParameters.put("fieldRow", 0);
+        generalParameters.put("lineValueDelimiter", "\t");
+        adapterSettings.set("parameters", generalParameters);
+        ArrayNode actionListNode = JsonNodeFactory.instance.arrayNode();
+
+        List<ActionConfig> simpleConfig = new ArrayList<>();
+        ActionConfig idCodeConfig = new ActionConfigImpl();
+        idCodeConfig.setActionClass(CodeExtractorActionFactory.class);
+        idCodeConfig.setActionName("pubchem_code");
+        CodeProcessorFieldImpl idField = new CodeProcessorFieldImpl();
+        idField.setFieldName("code");
+        idField.setRequired(true);
+        idField.setFieldLabel("Code");
+        idField.setFieldType(String.class);
+        idField.setExpectedToChange(true);
+        idCodeConfig.setFields(Collections.singletonList(idField));
+        simpleConfig.add(idCodeConfig);
+
+        ActionConfig structureFieldActionConfig = new ActionConfigImpl();
+        structureFieldActionConfig.setActionClass(StructureExtractorActionFactory.class);
+        structureFieldActionConfig.setActionName("structure_and_moieties_from_text");
+        simpleConfig.add(structureFieldActionConfig);
+
+        ObjectNode structureActionConfig = JsonNodeFactory.instance.objectNode();
+        structureActionConfig.put("actionClass", StructureExtractorActionFactory.class.getName());
+        structureActionConfig.put("actionName", "structure_and_moieties_from_text");
+        ObjectNode structureActionParameters = JsonNodeFactory.instance.objectNode();
+        structureActionParameters.put("smiles","{{PUBCHEM_OPENEYE_CAN_SMILES}}");
+
+        CodeProcessorFieldImpl structureField = new CodeProcessorFieldImpl();
+        structureField.setFieldName("smiles");
+        structureField.setRequired(true);
+        structureField.setFieldLabel("SMILES");
+        structureField.setFieldType(String.class);
+        structureField.setExpectedToChange(true);
+        ObjectNode structureFieldNode = JsonNodeFactory.instance.objectNode();
+        structureFieldNode.put("fieldName", "smiles");
+        structureFieldNode.put("required", true);
+        structureFieldNode.put("fieldLabel", "SMILES");
+        structureFieldNode.put("fieldType", "String");
+        structureFieldNode.put("expectedToChange", true);
+
+        ArrayNode fieldList = JsonNodeFactory.instance.arrayNode();
+        fieldList.add(structureFieldNode);
+        structureActionConfig.set("fields", fieldList);
+        structureActionConfig.set("actionParameters", structureActionParameters);
+        actionListNode.add(structureActionConfig);
+        ObjectNode idActionFields = JsonNodeFactory.instance.objectNode();
+        idActionFields.put("code","{{id}}");
+        idActionFields.put("codeSystem", "pubchem");
+        idActionFields.put("codeType", "PRIMARY");
+        ObjectNode idConfigNode = JsonNodeFactory.instance.objectNode();
+        idConfigNode.put("fields", idActionFields);
+        idConfigNode.put("actionName", "pubchem_code");
+        idConfigNode.put("actionClass", CodeExtractorActionFactory.class.getName());
+        ObjectNode idActionParameters = JsonNodeFactory.instance.objectNode();
+        idActionParameters.put("code","{{id}}");
+        idActionParameters.put("codeSystem","pubchem");
+        idActionParameters.put("codeType","PRIMARY");
+        idConfigNode.put("actionParameters", idActionParameters);
+        actionListNode.add(idConfigNode);
+        List<CodeProcessorFieldImpl> fieldsRn = new ArrayList<>();
+        CodeProcessorFieldImpl rnField = new CodeProcessorFieldImpl();
+        fieldsRn.add(rnField);
+        ChemicalDelimTextImportAdapterFactory factory = new ChemicalDelimTextImportAdapterFactory();
+        factory.setFileImportActions(simpleConfig);
+        factory.initialize();
+        adapterSettings.set("actions", actionListNode);
+        factory.setFileImportActions(simpleConfig);
+        ImportAdapter<Substance> importAdapter= factory.createAdapter(adapterSettings);
+        ChemicalDelimTextImportAdapter testFieldAdapter = (ChemicalDelimTextImportAdapter) importAdapter;
+
+        String delim = "\t";
+        String testData = "id\tPUBCHEM_OPENEYE_CAN_SMILES\n137695\tCOC1=CC(=CC=C1)[Se]C";
+        InputStream inputStream = new ByteArrayInputStream(testData.getBytes());
+        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
+        String fileEncoding = "UTF-8";
+        settingsNode.put("Encoding", fileEncoding);
+        settingsNode.put("dataSheetName", "Sheet0");
+
+        Stream<Substance> chemStream = testFieldAdapter.parse(inputStream, settingsNode,  null);
+        ChemicalSubstance result = (ChemicalSubstance) chemStream.findFirst().get();
+        Assertions.assertEquals("C8H10OSe", result.toChemical().getFormula());
+        Assertions.assertEquals("137695", result.codes.get(0).code);
+    }
 }
