@@ -97,7 +97,7 @@ public class DelimTextImportAdapter implements ImportAdapter<Substance> {
                     .map(r->{
 
                         AbstractSubstanceBuilder s;
-                        switch(substanceClassName) {
+                         switch(substanceClassName) {
                             case "Chemical":
                                 s= new ChemicalSubstanceBuilder();
                                 break;

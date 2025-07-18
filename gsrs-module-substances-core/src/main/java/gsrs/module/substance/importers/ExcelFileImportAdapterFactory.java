@@ -84,7 +84,7 @@ public class ExcelFileImportAdapterFactory extends DelimTextImportAdapterFactory
     @Override
     public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
         log.trace("in predictSettings");
-        String sheetName = settings.get("dataSheetName").textValue();
+        String sheetName = settings.get("dataSheetName") != null ? settings.get("dataSheetName").textValue() : null;
         log.trace("using sheet name {}", sheetName);
         Set<String> fields;
         if (registry == null || registry.isEmpty()) {
