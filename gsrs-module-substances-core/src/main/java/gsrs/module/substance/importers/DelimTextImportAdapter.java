@@ -89,13 +89,13 @@ public class DelimTextImportAdapter implements ImportAdapter<Substance> {
             Stream<DefaultPropertyBasedRecordContext> contextStream = reader.readFile(is, lineValueDelimiter, removeQuotes, fileFields);
             return contextStream
                     .peek(r-> {
-                        log.trace("record has {} properties", r.getProperties().size());
+                        log.trace("in parse, record has {} properties", r.getProperties().size());
                         r.getProperties().forEach(p-> log.trace("   property: {}; value: {}", p, r.getProperty(p).isPresent() ? r.getProperty(p).get() : "absent"));
                     } )
                     .filter(r->r.getProperties() != null && r.getProperties().size() >0
-                            && r.getProperties().stream().allMatch(p-> r.getProperty(p).isPresent() && r.getProperty(p).get().length()>0))
+                            /*&& r.getProperties().stream().anyMatch(p-> r.getProperty(p).isPresent() && r.getProperty(p).get().length()>0)*/)
                     .map(r->{
-
+                        log.trace("in map that follows filter");
                         AbstractSubstanceBuilder s;
                          switch(substanceClassName) {
                             case "Chemical":
