@@ -108,13 +108,6 @@
 
 
     <repositories>
-         <repository>
-            <id>central-repo1-maven2</id>
-            <url>https://repo1.maven.org/maven2</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
         <repository>
             <id>oss.sonatype.org-snapshot</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
