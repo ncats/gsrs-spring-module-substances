@@ -163,8 +163,50 @@ public class BulkSearchTests extends AbstractSubstanceJpaFullStackEntityTest {
 		assertTrue(queriesInResult.contains("THIOFLAVIN S2"));
 			
 	}
-    
-    private SanitizedBulkSearchRequest createRequest(List<String> queries) {
+
+	@Test
+	public void testBulkSearchWithSMILES() throws IOException, InterruptedException, ExecutionException {
+
+		setupSearchOptions(true);
+		String oneSmiles = "CCCC[C@@]([H])(C(=N[C@@]([H])(Cc1ccc(cc1)O)C(=N[C@@]([H])([C@@]([H])(C)CC)C(=N[C@@]([H])(Cc2cnc[nH]2)C(=O)N3CCC[C@@]3([H])C(=O)O)O)O)O)N=C([C@]([H])(CCCNC(=N)N)N=C([C@]([H])(CC(=O)O)N)O)O";
+
+		List<String> queries = Arrays.asList(oneSmiles);
+		SanitizedBulkSearchRequest request = createRequest(queries);
+		indexer = textIndexerFactory.getDefaultInstance();
+		SearchResultContext searchContent = bulkSearchService.search(gsrsRepository, request, options,indexer, generator);
+		searchContent.getDeterminedFuture().get();
+
+		assertEquals(searchContent.getResultsAsList().size(),1);
+
+		BulkQuerySummary summary = (BulkQuerySummary)cache.getRaw("BulkSearchSummary/"+request.computeKey(false, new ArrayList<String>()));
+		List<String> queriesInResult = summary.getQueries().stream().map(r->r.getSearchTerm()).collect(Collectors.toList());
+
+		assertEquals(queries.size(),queriesInResult.size());
+		assertTrue(queriesInResult.contains(oneSmiles));
+	}
+
+	@Test
+	public void testBulkSearchWithInChIKey() throws IOException, InterruptedException, ExecutionException {
+
+		setupSearchOptions(true);
+		String oneInChIKey = "RUBMHAHMIJSMHA-LBWFYSSPSA-N";
+
+		List<String> queries = Arrays.asList(oneInChIKey);
+		SanitizedBulkSearchRequest request = createRequest(queries);
+		indexer = textIndexerFactory.getDefaultInstance();
+		SearchResultContext searchContent = bulkSearchService.search(gsrsRepository, request, options,indexer, generator);
+		searchContent.getDeterminedFuture().get();
+
+		assertEquals(searchContent.getResultsAsList().size(),1);
+
+		BulkQuerySummary summary = (BulkQuerySummary)cache.getRaw("BulkSearchSummary/"+request.computeKey(false, new ArrayList<String>()));
+		List<String> queriesInResult = summary.getQueries().stream().map(r->r.getSearchTerm()).collect(Collectors.toList());
+
+		assertEquals(queries.size(),queriesInResult.size());
+		assertTrue(queriesInResult.contains(oneInChIKey));
+	}
+
+	private SanitizedBulkSearchRequest createRequest(List<String> queries) {
 		SanitizedBulkSearchRequest request = new SanitizedBulkSearchRequest();
 		request.setQueries(queries);
 		return request;		
