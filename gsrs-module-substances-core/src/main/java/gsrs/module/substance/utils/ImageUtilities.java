@@ -3,6 +3,7 @@ package gsrs.module.substance.utils;
 import gsrs.repository.PayloadRepository;
 import gsrs.service.PayloadService;
 import ix.core.models.Payload;
+import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
@@ -18,12 +19,18 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import net.coobird.thumbnailator.Thumbnails;
+import org.apache.batik.gvt.ImageNode;
+import org.jsoup.Jsoup;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
@@ -34,6 +41,9 @@ import org.w3c.dom.Document;
 public class ImageUtilities {
 
     public static final String SUBSTANCE_IMAGE_REFERENCE_TYPE = "IMAGE REFERENCE";
+    public static final String PLANTS_OF_THE_WORLD = "POWO";
+    public static final String KEW_PARSING_EXPRESSION ="div[class=c-gallery__image-container first-image] img";
+    private static final String AMBIGUOUS_RESPONSE = "ambiguous";
 
     @Autowired
     private PayloadRepository payloadRepository;
@@ -47,35 +57,62 @@ public class ImageUtilities {
     Look for a reference with the indicated tag and an uploaded file URL.
     Read the data from the URL and return it
      */
-    public ImageInfo getSubstanceImage(Substance substance){
+    public ImageInfo getSubstanceImage(Substance substance, Integer imageNumber){
         log.trace("starting in getSubstanceImage");
-        for (Reference ref : substance.references) {
-            if(isImageReference(ref)) {
-                log.trace("reference found with image tag.  uploadedFile: {}", ref.uploadedFile);
-                String payloadId = getPayloadIdFromUrl(ref.uploadedFile);
-                if( payloadId ==null || payloadId.length()==0) {
-                    log.warn("found null/empty payload id from {}", ref.uploadedFile);
-                    continue;
+        List<ImageInfo> images =getSubstanceImageInfos(substance);
+        if( !images.isEmpty() ) {
+            if( images.size()==1 || imageNumber==0)  {
+                return images.get(0);
+            }
+            int numberToLookUp = imageNumber % images.size();
+            if( numberToLookUp >= 0 && numberToLookUp < images.size()) {
+                return images.get(numberToLookUp);
+            }
+        }
+        if(substance.substanceClass == Substance.SubstanceClass.structurallyDiverse
+                && substance.codes.stream().anyMatch(c->c.codeSystem.equalsIgnoreCase(PLANTS_OF_THE_WORLD))) {
+            log.trace("str div with POWO");
+            Optional<Code> powoCode = substance.codes.stream().filter(c->c.codeSystem.equalsIgnoreCase(PLANTS_OF_THE_WORLD)).findFirst();
+            if( powoCode.isPresent() ) {
+                //POWO codes refer to Kew Gardens
+                log.trace("going to retrieve and return POWO image. initial URL: {}", powoCode.get().url);
+                String kewPageData=TautomerUtils.getFullResponse(powoCode.get().url);
+                String imageUrl = extractImageElementText(kewPageData, KEW_PARSING_EXPRESSION);
+                if( imageUrl.startsWith("//")) {
+                    imageUrl = powoCode.get().url.substring(0, powoCode.get().url.indexOf(":")+1) + imageUrl;
+                    log.trace("image url: {}", imageUrl);
                 }
-                Optional<Payload> payload= payloadRepository.findById(UUID.fromString( payloadId));
-                if(!payload.isPresent()) {
-                    log.warn("found null/empty payload from {}", payloadId);
-                    continue;
-                }
-                Optional<byte[]> fileData;
-                try {
-                    fileData = getBytesFromPayloadId(UUID.fromString(payloadId), Math.toIntExact(payload.get().size));
-                    if(fileData.isPresent()) {
-                        log.trace("going to call getMimeTypeFromUrl with ref.uploadedFile: {}", ref.uploadedFile);
-                        return new ImageInfo(true, fileData.get(), payload.get().mimeType);
-                    }
-                } catch (IOException e) {
-                    log.error("Error reading image data from {}", ref.uploadedFile);
-                    throw new RuntimeException(e);
+
+                if( imageUrl!=null && !imageUrl.equals(AMBIGUOUS_RESPONSE) ) {
+                    byte[] imageData = TautomerUtils.getFullBinaryResponse(imageUrl);
+                    return new ImageInfo(imageData!=null, imageData,imageUrl.substring(imageUrl.lastIndexOf('.')+1));
                 }
             }
         }
         return new ImageInfo(false,null,null);
+    }
+
+    public List<ImageInfo> getSubstanceImageInfos(Substance substance){
+        log.trace("starting in getSubstanceImageInfos");
+        List<ImageInfo> images =
+                substance.references.stream()
+                        .filter(r->isImageReference(r))
+                        .map(r->getPayloadIdFromUrl(r.uploadedFile))
+                        .filter(p->p != null && p.length() >0)
+                        .map(id->payloadRepository.findById(UUID.fromString(id)))
+                        .filter(Optional::isPresent)
+                        .map( p->p.get())
+                        .map(p->{
+                            try {
+                                Optional<byte[]> fileData = getBytesFromPayloadId(p.id, Math.toIntExact(p.size));
+                                return new ImageInfo(true, fileData.get(), p.mimeType);
+                            } catch (IOException e) {
+                                log.error("Error retrieving payload/image: {}", e.getMessage());
+                                throw new RuntimeException(e);
+                            }
+                        })
+                        .collect(Collectors.toList());
+        return images;
     }
 
     private String getPayloadIdFromUrl(String url) {
@@ -174,4 +211,15 @@ public class ImageUtilities {
         return ( ref.uploadedFile != null && ref.uploadedFile.length()>0  && ref.docType.equalsIgnoreCase(SUBSTANCE_IMAGE_REFERENCE_TYPE));
     }
 
+    public static String extractImageElementText(String rawDocument, String expression){
+        org.jsoup.nodes.Document doc = Jsoup.parse(rawDocument);
+        Elements elements= doc.body().select(expression);
+        if(elements.size() == 1) {
+            if( elements.get(0).nodeName().equalsIgnoreCase("img")) {
+                return elements.get(0).attr("src");
+            }
+            return elements.get(0).select("img").toString();
+        }
+        return AMBIGUOUS_RESPONSE;
+    }
 }
