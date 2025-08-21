@@ -27,6 +27,7 @@ public class SSG1DefinitionalElementImpl implements DefinitionalElementImplement
 
     @Override
     public void computeDefinitionalElements(Object s, Consumer<DefinitionalElement> consumer) {
+        DefinitionalElementImplementation.super.computeDefinitionalElements(s, consumer);
         SpecifiedSubstanceGroup1Substance ssg1 = (SpecifiedSubstanceGroup1Substance) s;
 
         if(ssg1.specifiedSubstance.constituents != null) {
@@ -62,30 +63,6 @@ public class SSG1DefinitionalElementImpl implements DefinitionalElementImplement
         if( ssg1.modifications != null ){
             definitionalElementFactory.addDefinitionalElementsFor(ssg1.modifications, consumer);
 
-        }
-
-        if( ssg1.properties != null ) {
-            for(Property property : ssg1.properties) {
-                if(property.isDefining() && property.getValue() != null) {
-                    String defElementName = String.format("properties.%s.value",
-                            property.getName());
-                    DefinitionalElement propertyValueDefElement =
-                            DefinitionalElement.of(defElementName, property.getValue().toString(), 2);
-                    consumer.accept(propertyValueDefElement);
-                    log.debug("added def element for property " + defElementName);
-                    for(Parameter parameter : property.getParameters()) {
-                        defElementName = String.format("properties.%s.parameters.%s.value",
-                                property.getName(), parameter.getName());
-                        if( parameter.getValue() != null) {
-                            DefinitionalElement propertyParamValueDefElement =
-                                    DefinitionalElement.of(defElementName,
-                                            parameter.getValue().toString(), 2);
-                            consumer.accept(propertyParamValueDefElement);
-                            log.debug("added def element for property parameter " + defElementName);
-                        }
-                    }
-                }
-            }
         }
     }
 }

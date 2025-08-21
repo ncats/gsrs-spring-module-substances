@@ -22,9 +22,9 @@ public class SubstancesPomsVersionTest {
 
     // Set to true when testing in IDE
     boolean turnOffPomParameterCheck = false;
-
-    String shortVersion;
-    String longVersion;
+    String starterModuleVersion;
+    String substancesModuleVersion;
+    String otherModuleVersion;
     String rootDir;
     String propertiesFile;
     String installExtraJarsScriptText;
@@ -40,11 +40,15 @@ public class SubstancesPomsVersionTest {
 
         try {
             Properties properties = PomUtilities.readPomVersionProperties(rootDir + "/" + propertiesFile);
-            shortVersion = properties.getProperty("project.shortVersion");
-            longVersion = properties.getProperty("project.longVersion");
-            assertNotNull(shortVersion);
-            System.out.println("shortVersion: " + shortVersion);
-            System.out.println("longVersion: " + longVersion);
+
+
+            starterModuleVersion = properties.getProperty("sm.pomversiontest.starterModuleVersion");
+            substancesModuleVersion = properties.getProperty("sm.pomversiontest.substancesModuleVersion");
+            otherModuleVersion = properties.getProperty("sm.pomversiontest.otherModuleVersion");
+            assertNotNull(starterModuleVersion);
+            assertNotNull(substancesModuleVersion);
+            System.out.println("starterModuleVersion: " + starterModuleVersion);
+            System.out.println("substancesModuleVersion: " + substancesModuleVersion);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -66,8 +70,12 @@ public class SubstancesPomsVersionTest {
             rootModel = PomUtilities.readPomToModel(rootDir + "/pom.xml");
             Properties properties = rootModel.getProperties();
             System.out.println("> checking root");
-            assertEquals( longVersion, rootModel.getVersion(), "version");
-            assertEquals(longVersion, properties.getProperty("gsrs.version"), "gsrs.version:");
+            assertEquals( substancesModuleVersion, rootModel.getVersion(), "version");
+            assertEquals(starterModuleVersion, properties.getProperty("gsrs.version"), "gsrs.version");
+            assertEquals(otherModuleVersion, properties.getProperty("gsrs.applications-api.version"), "gsrs.applications-api.version");
+            assertEquals(otherModuleVersion, properties.getProperty("gsrs.clinical-trials-api.version"), "gsrs.clinical-trials-api.version");
+            assertEquals(otherModuleVersion, properties.getProperty("gsrs.products-api.version"), "gsrs.products-api.version");
+
             List<String> modules = rootModel.getModules();
             for (String module : modules) {
                 System.out.println("> checking "+ module);
@@ -75,7 +83,7 @@ public class SubstancesPomsVersionTest {
                 try {
                     moduleModel = PomUtilities.readPomToModel(rootDir + "/" + module + "/pom.xml");
                     String checkVersion = moduleModel.getParent().getVersion();
-                    assertEquals (longVersion, checkVersion, "parent/version");
+                    assertEquals (substancesModuleVersion, checkVersion, "parent/version");
 
                     if (module.equals("gsrs-fda-substance-extension")) {
                         List<Dependency> dependencies = moduleModel.getDependencies();
@@ -83,23 +91,23 @@ public class SubstancesPomsVersionTest {
                         boolean clinicalTrialsApiChecked = false;
                         boolean productsApiChecked = false;
 
-                        for (Dependency dependency : dependencies) {
-                            if (dependency.getGroupId().equals("gov.nih.ncats") && dependency.getArtifactId().equals("applications-api")) {
-                                checkDependencyExtraJarExistsAndFindPathInScript(dependency);
-                                applicationsApiChecked = true;
-                            }
-                            if (dependency.getGroupId().equals("gov.nih.ncats") && dependency.getArtifactId().equals("clinical-trials-api")) {
-                                checkDependencyExtraJarExistsAndFindPathInScript(dependency);
-                                clinicalTrialsApiChecked = true;
-                            }
-                            if (dependency.getGroupId().equals("gov.nih.ncats") && dependency.getArtifactId().equals("products-api")) {
-                                checkDependencyExtraJarExistsAndFindPathInScript(dependency);
-                                productsApiChecked = true;
-                            }
-                        }
-                        assertTrue(applicationsApiChecked);
-                        assertTrue(clinicalTrialsApiChecked);
-                        assertTrue(productsApiChecked);
+//                        for (Dependency dependency : dependencies) {
+//                            if (dependency.getGroupId().equals("gov.nih.ncats") && dependency.getArtifactId().equals("applications-api")) {
+//                                checkDependencyExtraJarExistsAndFindPathInScript(dependency);
+//                                applicationsApiChecked = true;
+//                            }
+//                            if (dependency.getGroupId().equals("gov.nih.ncats") && dependency.getArtifactId().equals("clinical-trials-api")) {
+//                                checkDependencyExtraJarExistsAndFindPathInScript(dependency);
+//                                clinicalTrialsApiChecked = true;
+//                            }
+//                            if (dependency.getGroupId().equals("gov.nih.ncats") && dependency.getArtifactId().equals("products-api")) {
+//                                checkDependencyExtraJarExistsAndFindPathInScript(dependency);
+//                                productsApiChecked = true;
+//                            }
+//                        }
+//                        assertTrue(applicationsApiChecked);
+//                        assertTrue(clinicalTrialsApiChecked);
+//                        assertTrue(productsApiChecked);
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);

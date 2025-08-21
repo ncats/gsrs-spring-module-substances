@@ -8,5 +8,13 @@
     
     <root level="ERROR">
         <appender-ref ref="STDOUT" />
-    </root> 
+    </root>
+
+    <logger name="example.prot" level="TRACE" additivity="false">
+        <appender-ref ref="STDOUT"  />
+    </logger>
+
+    <logger name="ix.core.chem" level="TRACE">
+        <appender-ref ref="STDOUT" />
+    </logger>
 </configuration>

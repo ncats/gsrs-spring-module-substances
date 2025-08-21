@@ -5,12 +5,41 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-module-substances-api</artifactId>
+    <name>gsrs-module-substances-api</name>
+    <description>gsrs-module-substances-api</description>
+    <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
 
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-module-substances.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-module-substances.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+    </scm>
     <properties>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
@@ -32,12 +61,12 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.6</version>
+            <version>0.6.10</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.16</version>
+            <version>1.0.24</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -47,21 +76,24 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>${spring-boot.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
 
     </dependencies>
-    <!-- Uncomment this for maven public release deployment
+    <!-- Uncomment this for maven public release deployment start
     <build>
         <plugins>
             <plugin>
@@ -84,6 +116,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>
@@ -96,4 +129,5 @@
             </plugin>
         </plugins>
     </build> -->
+    <!-- Uncomment this for maven public release deployment end -->
 </project>

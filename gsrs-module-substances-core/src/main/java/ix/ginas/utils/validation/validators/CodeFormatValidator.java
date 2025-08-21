@@ -66,7 +66,7 @@ public class CodeFormatValidator extends AbstractValidatorPlugin<Substance>
                 }
             }
         } catch (IOException e) {
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("could not validate CV"));
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE("Could not validate CV"));
         }
     }
 

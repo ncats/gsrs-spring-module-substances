@@ -5,12 +5,41 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.2</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>gsrs-fda-substance-extension</artifactId>
+        <name>gsrs-fda-substance-extension</name>
+    <description>gsrs-fda-substance-extension</description>
+    <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
 
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-module-substances.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-module-substances.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+    </scm>
 
     <dependencies>
         <dependency>
@@ -81,6 +110,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <optional>true</optional>
             <exclusions>
                 <exclusion>
@@ -110,7 +140,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>applications-api</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>${gsrs.applications-api.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -139,7 +169,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>products-api</artifactId>
-            <version>3.1.1-SNAPSHOT</version>
+            <version>${gsrs.products-api.version}</version> 
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -168,7 +198,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>clinical-trials-api</artifactId>
-            <version>3.1-SNAPSHOT</version>
+            <version>${gsrs.clinical-trials-api.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -193,7 +223,7 @@
             </exclusions>
         </dependency>
     </dependencies>
-    <!-- Uncomment this for maven public release deployment
+    <!-- Uncomment this for maven public release deployment start
     <build>
         <plugins>
             <plugin>
@@ -216,6 +246,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>
@@ -228,4 +259,5 @@
             </plugin>
         </plugins>
     </build> -->
+    <!-- Uncomment this for maven public release deployment end -->
 </project>

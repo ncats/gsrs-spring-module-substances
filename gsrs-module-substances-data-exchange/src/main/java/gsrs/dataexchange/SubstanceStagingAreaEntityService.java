@@ -215,7 +215,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         EntityUtils.EntityWrapper<Substance> wrapper = EntityUtils.EntityWrapper.of(substance);
         log.trace("create wrapper with kind {} - id field {}", wrapper.getKind(), wrapper.getEntityInfo().getIDFieldInfo().get());
         UUID reindexUuid = UUID.randomUUID();
-        ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, wrapper.getKey(), Optional.of(wrapper),true);
+        ReindexEntityEvent event = new ReindexEntityEvent(reindexUuid, wrapper.getKey(), Optional.of(wrapper));
         applicationEventPublisher.publishEvent(event);
         log.info("submitted object for indexing");
     }

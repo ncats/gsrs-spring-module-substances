@@ -10,7 +10,6 @@ import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.GsrsEntityTestConfiguration;
 import gsrs.startertests.jupiter.AbstractGsrsJpaEntityJunit5Test;
 import ix.core.search.SearchResult;
-import ix.core.search.bulk.ResultListRecordGenerator;
 import ix.ginas.exporters.SpecificExporterSettings;
 import ix.ginas.exporters.ExporterSpecificExportSettings;
 import ix.ginas.exporters.GeneralExportSettings;
@@ -25,6 +24,7 @@ import static org.mockito.Mockito.when;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,6 +35,7 @@ import java.util.*;
 @Slf4j
 @ActiveProfiles("test")
 @SpringBootTest(classes = { GsrsEntityTestConfiguration.class})
+@WithMockUser(username = "admin", roles = "Admin")
 public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
     AbstractExportSupportingGsrsEntityController controller = new AbstractExportSupportingGsrsEntityController() {
@@ -115,14 +116,6 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
                 .includeRepeatingDataOnEveryRow(false)
                 .build();
         JsonNode exporterSettings = objectMapper.valueToTree(exporterSpecificExportSettings);
-        GeneralExportSettings generalExportSettings = GeneralExportSettings.builder()
-                .approvalIdCodeSystem("Universal Approval Code")
-                .copyApprovalIdToCode(true)
-                .newAbstractUser("someone")
-                .removeApprovalId(true)
-                .setAllAuditorsToAbstractUser(true)
-                .build();
-        JsonNode generalSettings = objectMapper.valueToTree(generalExportSettings);
         SpecificExporterSettings config =  SpecificExporterSettings.builder()
                 .exporterKey(expConfKey)
                 .exporterSettings(exporterSettings)

@@ -8,7 +8,9 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSimplifiedSubData;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
 

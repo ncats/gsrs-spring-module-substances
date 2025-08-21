@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,15 +38,17 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
         log.trace("UniqueCodeGenerator constructor with Map");
         String name = (String) with.get("name");
         codeSystem = (String) with.get("codesystem");
-        String codeSystemSuffix = (String) with.get("suffix");
-        int length = (Integer) with.get("length");
+        String codeSystemSuffix = (String) with.getOrDefault("suffix", "");
+        int length = (int) with.getOrDefault("length", 0);
         boolean padding = (Boolean) with.get("padding");
         Boolean useLegacy = (Boolean) with.get("useLegacy");
+        Map<Integer, String> groups = (Map<Integer, String>) with.get("groups");
         Long maxValue;
         try {
             maxValue = Long.parseLong(String.valueOf(with.get("max")));
         } catch (Exception e) {
-            maxValue = Long.MAX_VALUE;
+            int counterLen = length - codeSystemSuffix.length();
+            maxValue = counterLen < 1 ? Long.MAX_VALUE : Long.valueOf(String.join("", Collections.nCopies(counterLen, "9")));
         }
         final Long max = maxValue;
         String msg = String.format("codeSystem: %s; codeSystemSuffix: %s; length: %d;  padding: %b, max: %d",
@@ -60,7 +63,7 @@ public class UniqueCodeGenerator implements EntityProcessor<Substance> {
                 });
             } else {
                 seqGen = CachedSupplier.runOnce(()->{
-                    CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, max, codeSystem);
+                    CodeSequentialGenerator gen= new CodeSequentialGenerator(name, length, codeSystemSuffix, padding, max, codeSystem, groups);
                     return AutowireHelper.getInstance().autowireAndProxy(gen);
 
                 });

@@ -140,10 +140,10 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 				}
 			}
 			if(messageParts.size() == 1) {
-				return GinasProcessingMessage.WARNING_MESSAGE("A definitional change has been made: %s please reaffirm.  ",
+				return GinasProcessingMessage.WARNING_MESSAGE("A definitional change has been made: %s please reaffirm.",
 					messageParts.get(0));
 			}
-			return GinasProcessingMessage.WARNING_MESSAGE("Definitional changes have been made: %s; please reaffirm.  ",
+			return GinasProcessingMessage.WARNING_MESSAGE("Definitional changes have been made: %s; please reaffirm.",
 				String.join("; ", messageParts));
 		}
 }

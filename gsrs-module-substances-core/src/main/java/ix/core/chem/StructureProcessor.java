@@ -124,7 +124,6 @@ public class StructureProcessor {
         instrument (struc, components, mol, true);
     }
 
-
     /**
      * All instrument calls lead to this one
      * @param settings
@@ -133,6 +132,30 @@ public class StructureProcessor {
         Structure struc = settings.getStructure();
         Collection<Structure> components = settings.getComponents();
         Chemical mol = settings.getChemical().copy();
+        /*if( maxUndefined !=null || complexityCutoff !=null ){
+            Class factoryClass = ImplUtil.getChemicalImplFactory().getClass();
+            if( !processedFactoryClasses.contains(factoryClass.getName())) {
+                log.trace("applying ChemicalImpl parameters.  maxUndefined: {} complexityCutoff: {}", maxUndefined, complexityCutoff);
+                Map<String, Object> parameters = new HashMap<>();
+                if (maxUndefined != null) {
+                    parameters.put("maxUndefined", maxUndefined);
+                }
+                if (complexityCutoff != null) {
+                    parameters.put("complexityCutoff", complexityCutoff);
+                }
+                log.trace("about to call ChemicalImplFactory.applyParameters using reflection");
+                try {
+                    Method applyParameterMethod = factoryClass.getDeclaredMethod("applyParameters", Map.class);
+                    applyParameterMethod.invoke(factoryClass, parameters);
+                } catch (Exception ex) {
+                    log.error("Error calling method on class {}", factoryClass.getName(), ex);
+                }
+                processedFactoryClasses.add(factoryClass.getName());
+            } else { log.trace("class {} has already been set-up", factoryClass.getName());}
+        } else {
+            log.trace("no parameters. mol is {}", mol.getClass().getName());
+        }*/
+
         boolean standardize = settings.isStandardize();
         boolean query = settings.isQuery();
 
@@ -157,11 +180,11 @@ public class StructureProcessor {
         }
         //katzelda this probably isn't needed anymore since now settings.getChemical should
         //compute coords if needed ??
-        if (!mol.hasCoordinates()) {
+    if (!mol.hasCoordinates()) {
             try {
                 mol.generateCoordinates();
                 molSupplier.resetCache();
-            } catch (MolwitchException e) {
+        } catch (MolwitchException e) {
                 e.printStackTrace();
             }
         }
@@ -330,7 +353,13 @@ public class StructureProcessor {
 
 
         Chem.setFormula(struc);
-        struc.setMwt(mol.getMass());
+        try {
+            struc.setMwt(mol.getMass());
+        } catch (Exception ignore){
+            //todo: deal with getMass for query atoms
+            //exception swallowed based on discussion between T. Peryea and M. Miller 27 June 2024
+        }
+
 
         if(!query){
             try {
@@ -461,5 +490,4 @@ public class StructureProcessor {
         }
         return "deadbeef";
     }
-
 }

@@ -23,6 +23,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -43,6 +44,7 @@ import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
+@Slf4j
 public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     public static final String  CONTEXT = "codes";
 
@@ -133,18 +135,17 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @Override
     public void delete(UUID id) {
-        repository.deleteById(id);
+        log.error("unsupported operation");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
+        throw new RuntimeException("Please update the Substance when deleting a Code to ensure correct processing");
     }
 
     @Override
     @Transactional
     protected Code update(Code substance) {
-//        controlledVocabulary.
-
-        //first bump version?
-        substance.forceUpdate();
-
-        return repository.save(getEntityManager().merge(substance));
+        log.error("unsupported operation");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
+        throw new RuntimeException("Please update the Substance when modifying a Code to ensure correct processing");
     }
 
     @Override
@@ -197,12 +198,8 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @Override
     protected Code create(Code substance) {
-        try {
-            return repository.saveAndFlush(substance);
-        }catch(Throwable t){
-            t.printStackTrace();
-            throw t;
-        }
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
+        throw new RuntimeException("Please update the Substance when creating a Code to ensure correct processing");
     }
 
     @Override
@@ -282,7 +279,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
                 c.addRestrictGroup(g);
             }
         }
-        
+
         substance.addCode(c);
         c.addReference(r, substance);
 
@@ -290,9 +287,17 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
         c.clearDirtyFields();
         r.clearDirtyFields();
         substance.clearDirtyFields();
-        
+
         return c;
     }
 
+    @Override
+    public List<UUID> getIDs() {
+        return repository.getAllIDs();
+    }
 
+    @Override
+    public boolean isReadOnly() {
+        return true;
+    }
 }

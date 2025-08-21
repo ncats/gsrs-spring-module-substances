@@ -1,6 +1,7 @@
 package example.ncats.controllers;
 
 import gsrs.*;
+import gsrs.config.FilePathParserUtils;
 import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.controller.GsrsRestApiController;
 import gsrs.controller.PostGsrsRestApiMapping;
@@ -86,14 +87,17 @@ public class NCATSSubstanceController {
     }
 
     public static File multipartToFile(MultipartFile multipart, String fileName) throws IllegalStateException, IOException {
-        File convFile = new File(System.getProperty("java.io.tmpdir")+"/"+fileName);
+        String basePath =System.getProperty("java.io.tmpdir");
+        FilePathParserUtils.failOnBadPathResolution(basePath, fileName);
+        File convFile = new File(basePath +"/"+fileName);
         multipart.transferTo(convFile);
         return convFile;
     }
 
     public static File stringToFile(String data, String fileName) throws IllegalStateException, IOException {
-
-        File convFile = new File(System.getProperty("java.io.tmpdir")+"/"+fileName);
+        String basePath =System.getProperty("java.io.tmpdir");
+        FilePathParserUtils.failOnBadPathResolution(basePath, fileName);
+        File convFile = new File(basePath+"/"+fileName);
         try(FileWriter writer = new FileWriter(convFile.getAbsoluteFile())) {
             writer.write(data);
         }

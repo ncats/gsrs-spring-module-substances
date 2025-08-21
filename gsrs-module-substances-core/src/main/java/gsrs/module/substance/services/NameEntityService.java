@@ -20,6 +20,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.utils.Util;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.context.annotation.ScopedProxyMode;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 
 @Scope(proxyMode = ScopedProxyMode.INTERFACES)
 @Service
+@Slf4j
 public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     public static final String  CONTEXT = "names";
 
@@ -120,18 +122,26 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     public void delete(UUID id) {
-        repository.deleteById(id);
+        log.error("unsupported delete");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
+        throw new RuntimeException("Please update the Substance when deleting a Name to ensure correct processing");
     }
 
     @Override
     @Transactional
     protected Name update(Name substance) {
+        log.error("unsupported update");
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
+        throw new RuntimeException("Please update the Substance when updating a Name to ensure correct processing");
+/*
+        log.warn("Updating name ({}) via low-level call.", substance.name);
 //        controlledVocabulary.
 
         //first bump version?
         substance.forceUpdate();
 
         return repository.save(getEntityManager().merge(substance));
+*/
     }
 
     @Override
@@ -184,12 +194,8 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     protected Name create(Name substance) {
-        try {
-            return repository.saveAndFlush(substance);
-        }catch(Throwable t){
-            t.printStackTrace();
-            throw t;
-        }
+        //the base controller will handle the request and send a message... This exception is here as a safety measure
+        throw new RuntimeException("Please update the Substance when creating a Name to ensure correct processing");
     }
 
     @Override
@@ -241,7 +247,15 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
         return Optional.empty();
     }
 
+    @Override
+	public List<UUID> getIDs() {
+		List<UUID> IDs = repository.getAllIDs();
+		return IDs;
+	}
 
-
-
+    @Override
+    public boolean isReadOnly(){
+        //prevents creation, update or deletion of the Name without the substance
+        return true;
+    }
 }

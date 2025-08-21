@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
@@ -22,13 +23,17 @@ public class ApprovalIdConfiguration {
 
     private Class generatorClass;
     private Map<String, Object> parameters;
+    private Map<String, Boolean> validators;
 
     @Bean
     @ConditionalOnMissingBean
     public ApprovalService defaultApprovalService(SubstanceApprovalIdGenerator approvalIdGenerator,
                                                   SubstanceRepository substanceRepository,
                                                   PrincipalRepository principalRepository){
-        return new DefaultApprovalService(approvalIdGenerator, substanceRepository, principalRepository);
+        if (validators == null) {
+            validators = new HashMap<String, Boolean>();
+        }
+        return new DefaultApprovalService(approvalIdGenerator, substanceRepository, principalRepository, validators);
 
     }
     @Bean

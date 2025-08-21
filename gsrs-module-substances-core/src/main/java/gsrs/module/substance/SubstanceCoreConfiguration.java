@@ -12,13 +12,17 @@ import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
 import gsrs.module.substance.standardizer.StructureStandardizerConfiguration;
 import gsrs.module.substance.standardizer.SubstanceSynchronizer;
+import gsrs.module.substance.utils.ChemicalUtils;
 import gsrs.module.substance.utils.MolWeightCalculatorProperties;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
+import gsrs.security.LegacyAuthenticationConfiguration;
+import ix.core.chem.StructureProcessorConfiguration;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
+import ix.ginas.utils.SubstanceFieldNameDecoratorConfiguration;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -35,7 +39,7 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
         LegacyGinasAppController.class,
         NameStandardizerConfiguration.class,
-        ProxyConfiguration.class, 
+        ProxyConfiguration.class,
         GSRSRendererConfiguration.class,
         StructureResolverService.class, StructureResolverServiceConfiguration.class,
         SubstanceDataConfiguration.class,
@@ -43,21 +47,26 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         SubstanceSpreadsheetExporterConfiguration.class,
         SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
         ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class,
-            //legacy bulk load 
+            //legacy bulk load
         SubstanceBulkLoadService.class, SubstanceBulkLoadServiceConfiguration.class, SubstanceLegacyBulkLoadController.class,
         ProcessingJobController.class, ProcessingJobEntityService.class,
         //used by bulk loader
         ConsoleFilterService.class,
         BulkSearchService.class,
         UserSavedListService.class,
-        SubstanceMatchViewGenerator.class,        
+        SubstanceMatchViewGenerator.class,
         SubstanceResultListRecordGenerator.class,
         SubstanceSequenceFileSupportService.class,
         //used for validation of Substances both single and bulk load
         GsrsProcessingStrategyFactory.class,
         GsrsProcessingStrategyFactoryConfiguration.class,
         ImportMetadataLegacySearchService.class,
-        SubstanceSynchronizer.class
+        SubstanceFieldNameDecoratorConfiguration.class,
+        SubstanceSynchronizer.class,
+        StructureProcessorConfiguration.class,
+        StructureHandlingConfiguration.class,
+        LegacyAuthenticationConfiguration.class,
+        ChemicalUtils.class
 })
 public class SubstanceCoreConfiguration {
 

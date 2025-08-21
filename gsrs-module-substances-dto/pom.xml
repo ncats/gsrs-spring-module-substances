@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.1-SNAPSHOT</version>
+        <version>3.1.2</version>
     </parent>
 
 
@@ -16,24 +16,50 @@
 
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-module-substances-dto</artifactId>
-
-
     <name>gsrs-module-substances-dto</name>
-    <description>Demo project for Spring Boot</description>
+    <description>gsrs-module-substances-dto</description>
+    <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-module-substances.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-module-substances.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+    </scm>
 
     <dependencies>
 
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.22</version>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
         <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.6</version>
+            <version>0.6.10</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -64,6 +90,7 @@
                     <additionalparam>-Xdoclint:none</additionalparam>
                     <additionalOptions>-Xdoclint:none</additionalOptions>
                     <additionalJOption>-Xdoclint:none</additionalJOption>
+                    <release>11</release>
                 </configuration>
                 <executions>
                     <execution>

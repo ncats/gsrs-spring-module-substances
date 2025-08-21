@@ -1,12 +1,11 @@
 package ix.core.chem;
 
 import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.models.Structure;
 import ix.core.util.LogUtil;
 import lombok.extern.slf4j.Slf4j;
-
-import ix.core.chem.ChemCleaner;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -22,6 +21,9 @@ import java.util.function.Function;
 public class Chem {
     private Chem () {}
 
+    public static final String WILDCARD_SUBSTITUTION_ATOM = "He";
+    public static final Integer WILDCARD_SUBSTITUTION_ATOM_NUMBER = 2;
+
     public static void setFormula (Structure struc) {
         try {
             struc.formula = formula (struc.toChemical(false));
@@ -31,21 +33,30 @@ public class Chem {
         }
     }
     
-    public static Chemical RemoveQueryAtomsForPseudoInChI(Chemical c) {
+    public static Chemical RemoveQueryFeaturesForPseudoInChI(Chemical c) {
         Chemical chemicalToUse = c;
-        if(c.hasQueryAtoms() || c.atoms().filter(at->"A".equals(at.getSymbol())).count()>0){
+        if(c.hasQueryAtoms() || c.atoms().filter(at->("A".equals(at.getSymbol()) || "*".equals(at.getSymbol()) || "R".equals(at.getSymbol()))).count()>0){
             chemicalToUse = c.copy();
             chemicalToUse.atoms()
-                    .filter(at->at.isQueryAtom() || "A".equals(at.getSymbol()))
+                    .filter(at-> at.getSymbol() == null || "A".equals(at.getSymbol()) || "*".equals(at.getSymbol())
+                            || "R".equals(at.getSymbol()))//isQueryAtom returns true
                     .forEach(a->{
-                        a.setAtomicNumber(2);
+                        a.setAtomicNumber(WILDCARD_SUBSTITUTION_ATOM_NUMBER);
+                        a.setAlias(WILDCARD_SUBSTITUTION_ATOM);
                         a.setMassNumber(6);
                     });
         }
+        Chemical processBonds = chemicalToUse.copy();
         try{
-            return Chemical.parse(ChemCleaner.removeSGroupsAndLegacyAtomLists(chemicalToUse.toMol()));
+            Chemical finalChem= Chemical.parse(ChemCleaner.removeSGroupsAndLegacyAtomLists(processBonds.toMol()));
+            finalChem.bonds().filter(b->b.getBondType() == null || b.getBondType().equals(Bond.BondType.SINGLE_OR_DOUBLE) || b.isQueryBond())
+                    .forEach(b->{
+                        log.trace("about to replace bond {}", b);
+                        b.setBondType(Bond.BondType.SINGLE);
+                    });
+            return finalChem;
         }catch(Exception e){
-            return chemicalToUse;
+            return processBonds;
         }
     }
 

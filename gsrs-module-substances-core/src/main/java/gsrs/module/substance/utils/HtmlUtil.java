@@ -1,5 +1,6 @@
 package gsrs.module.substance.utils;
 
+import gsrs.module.substance.SubstanceDataConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -20,7 +21,7 @@ import org.jsoup.select.NodeVisitor;
  * Created by epuzanov on 7/25/22.
  */
 public final class HtmlUtil {
-    private static final Set<String> safetags = Stream.of("i", "small", "sub", "sup").collect(Collectors.toSet());
+    private static final Set<String> safetags = Stream.of("br", "i", "small", "sub", "sup").collect(Collectors.toSet());
     private static class TruncateVisitor implements NodeVisitor {
         private int maxLen = 0;
         private Element dst;
@@ -54,20 +55,21 @@ public final class HtmlUtil {
                         String curText = ((TextNode) node).getWholeText();
                         if (resHtmlLen + nodeHtmlLen > maxLen) {
                             StringBuilder sb = new StringBuilder(curText);
-                            int curHtmlLen = maxNodeLen;
-                            sb.setLength(curHtmlLen);
+                            sb.setLength(maxNodeLen);
+                            int curHtmlLen = sb.toString().getBytes(StandardCharsets.UTF_8).length;
                             curHtmlLen += Long.valueOf(sb.chars().filter(c -> c == '&').count()).intValue() * 4;
                             curHtmlLen += Long.valueOf(sb.chars().filter(c -> (c == '<' || c == '>')).count()).intValue() * 3;
                             while (curHtmlLen > maxNodeLen) {
-                                char lastChar = sb.charAt(sb.length() - 1);
+                                int lastCharPos = sb.length() - 1;
+                                char lastChar = sb.charAt(lastCharPos);
                                 if (lastChar == '&') {
                                     curHtmlLen = curHtmlLen - 5;
                                 } else if (lastChar == '<' || lastChar == '>') {
                                     curHtmlLen = curHtmlLen - 4;
                                 } else {
-                                    curHtmlLen = curHtmlLen - 1;
+                                    curHtmlLen = curHtmlLen - String.valueOf(lastChar).getBytes(StandardCharsets.UTF_8).length;
                                 }
-                                sb.setLength(sb.length() - 1);
+                                sb.setLength(lastCharPos);
                             }
                             cur.appendText(sb.toString());
                             throw new IllegalStateException();
@@ -86,10 +88,14 @@ public final class HtmlUtil {
         }
     }
 
+    public static String truncate(String s){
+         return s==null ? null : truncate(s, SubstanceDataConfiguration.INSTANCE().getNameColumnLength());
+    }
+
     public static String truncate(String s, int len){
         Document srcDoc = Parser.parseBodyFragment(s, "");
         srcDoc.outputSettings().prettyPrint(false);
-        if (srcDoc.body().html().length() <= len) {
+        if (srcDoc.body().html().getBytes(StandardCharsets.UTF_8).length <= len) {
             return srcDoc.body().html();
         }
 
@@ -131,5 +137,15 @@ public final class HtmlUtil {
     public static boolean isValid(String content) {
         Safelist sl = Safelist.none().addTags(safetags.toArray(new String[safetags.size()]));
         return Jsoup.isValid(content, sl);
+    }
+
+    public static boolean isTruncatable(String s) {
+        return isTruncatable(s, SubstanceDataConfiguration.INSTANCE().getNameColumnLength());
+    }
+
+    public static boolean isTruncatable(String s, int len) {
+        Document srcDoc = Parser.parseBodyFragment(s, "");
+        srcDoc.outputSettings().prettyPrint(false);
+        return srcDoc.body().html().getBytes(StandardCharsets.UTF_8).length > len;
     }
 }

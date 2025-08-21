@@ -6,6 +6,7 @@ import ix.ginas.models.v1.Substance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,10 +26,14 @@ public interface SubstanceEntityService extends GsrsEntityService<Substance, UUI
 
     @Override
     long count();
+    
+    @Override
+    List<UUID> getIDs();
 
     Optional<Substance> get(UUID id);
 
     Optional<Substance> flexLookup(String someKindOfId);
 
-    UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) throws Exception;
+    UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson);
+
 }

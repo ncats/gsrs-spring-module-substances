@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
+import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.inchi.Inchi;
 import gov.nih.ncats.molwitch.io.CtTableCleaner;
@@ -21,13 +22,14 @@ import ix.ginas.models.converters.StereoConverter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
+import org.hibernate.annotations.Type;
 import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import jakarta.persistence.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 //@MappedSuperclass
 @Entity
@@ -37,9 +39,13 @@ import java.util.*;
 @Slf4j
 public class Structure extends BaseModel {
 
+
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
+    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
+    //maintain backwards compatibility with old GSRS store it as varchar(40) by basic hibernate will store uuids as binary
+    @Type(type = "uuid-char" )
+    @Column(length =40, updatable = false)
     public UUID id;
 
     @Version
@@ -100,7 +106,7 @@ public class Structure extends BaseModel {
         public static final Stereo UNKNOWN = new Stereo("UNKNOWN");
         
 		private String stereoType;
-        
+
         public Stereo(String stereo){
         	this.stereoType=stereo;
         }
@@ -457,15 +463,79 @@ public class Structure extends BaseModel {
     @JsonIgnore
     @Transient
     public String getInChIKeyAndThrow() throws Exception{
-       return Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(toChemical()), true).getKey();
+       return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(toChemical()), true).getKey();
 
     }
 
+    @JsonProperty("_inchiKeySet")
+    @JsonIgnore
+    @Transient
+    public List<String> getInChIKeysAndThrow() {
+
+        log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}, opticalActivity: {}", this.stereoChemistry, this.opticalActivity);
+        try {
+
+//        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
+//            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
+//            //handle non-epimers
+//            return Collections.singletonList(getInChIKey());
+//        }
+            if( this.opticalActivity != Optical.PLUS_MINUS || this.definedStereo.intValue() == 0) {
+                return Collections.singletonList(getInChIKey());
+            }
+            List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
+            return epimers.stream()
+                .map(c -> {
+                    try {
+                        return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(c), true).getKey();
+                    } catch (IOException e) {
+                        log.warn("Error calculating InChIKey", e);
+                        return null;
+                    }
+                }).filter(i -> i != null)
+                .distinct()
+                .collect(Collectors.toList());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return Collections.singletonList("[Error]");
+        }
+    }
+
+    @JsonProperty("_inchiSet")
+    @JsonIgnore
+    @Transient
+    public List<String> getInChIsAndThrow() {
+
+        log.trace("in getInChIsAndThrow(), stereoChemistry: {}", this.stereoChemistry);
+        try {
+
+            if(!this.opticalActivity.equals(Optical.PLUS_MINUS) || this.definedStereo.intValue() == 0) {
+                return Collections.singletonList(getInChI());
+            }
+            List<Chemical> epimers = toChemical().getImpl().permuteEpimersAndEnantiomers();
+            return epimers.stream()
+                    .map(c -> {
+                        try {
+                            return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(c), true).getInchi();
+                        } catch (IOException e) {
+                            log.warn("Error calculating InChI", e);
+                            return null;
+                        }
+                    }).filter(i -> i != null)
+                    .distinct()
+                    .collect(Collectors.toList());
+        }
+        catch (Exception ex) {
+            ex.printStackTrace();
+            return Collections.singletonList("[Error]");
+        }
+    }
 
     @JsonIgnore
     @Transient
     public String getInChIAndThrow() throws Exception{
-        return Inchi.asStdInchi(Chem.RemoveQueryAtomsForPseudoInChI(toChemical()), true).getInchi();
+        return Inchi.asStdInchi(Chem.RemoveQueryFeaturesForPseudoInChI(toChemical()), true).getInchi();
 
     }
 
@@ -507,7 +577,7 @@ public class Structure extends BaseModel {
                 }
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("SMILES parsing error: %s", e.getMessage()));
             }
         
         }else{
@@ -515,7 +585,7 @@ public class Structure extends BaseModel {
                 c = Chemical.parseMol(molfile);
             }catch(Exception e){
                 e.printStackTrace();
-                messages.add(GinasProcessingMessage.ERROR_MESSAGE(e.getMessage()));
+                messages.add(GinasProcessingMessage.ERROR_MESSAGE("Molfile parsing error: %s", e.getMessage()));
             }
         }
 
@@ -564,4 +634,9 @@ public class Structure extends BaseModel {
         }
         return this.stereoChemistry.toString();
     }
+
+    private boolean hasAnyStereoBond() {
+        return !this.toChemical().bonds().allMatch(b->b.getStereo().equals(Bond.Stereo.NONE));
+    }
+
 }

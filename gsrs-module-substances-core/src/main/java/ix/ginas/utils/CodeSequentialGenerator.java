@@ -13,6 +13,8 @@ import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.Objects;
 /*
   See UniqueCodeGenerator.
@@ -29,7 +31,7 @@ import java.util.Objects;
   If you don't specify a length the default will be Long.MAX_VALUE
 
   Configure like so:
-	gsrs.entityProcessors +={
+	gsrs.entityProcessors.list.UniqueCodeGenerator = {
 		"entityClassName" = "ix.ginas.models.v1.Substance",
 		"processor" = "gsrs.module.substance.processors.UniqueCodeGenerator",
 		"with"=  {
@@ -38,7 +40,8 @@ import java.util.Objects;
 			"suffix"="ZZ",
 			"length"=5,
 			"padding"=true,
-			"max"=999
+			"max"=999,
+			"groups"=["protected"]
 		}
 	}
  */
@@ -46,9 +49,6 @@ import java.util.Objects;
 @Slf4j
 @Component
 public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substance> {
-
-	private static final String GROUP_PROTECTED = "protected";
-	public static final Long DEFAULT_MAX = Long.MAX_VALUE;
 
 	@Autowired
 	private CodeRepository codeRepository;
@@ -59,6 +59,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 	private String codeSystem;
 	private String name;
 	private Long max;
+	private String[] groups;
 
 	public CodeRepository getCodeRepository() {
 		return codeRepository;
@@ -82,13 +83,17 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 					@JsonProperty("suffix") String suffix,
 					@JsonProperty("padding") boolean padding,
 					@JsonProperty("max") Long max,
-					@JsonProperty("codeSystem") String codeSystem) {
+					@JsonProperty("codeSystem") String codeSystem,
+					@JsonProperty("groups") Map<Integer, String> groups) {
 
 		super(len, suffix, padding);
-		if(max==null) { max=DEFAULT_MAX; }
-
-		this.max = max;
 		if(suffix==null) { this.suffix= "";}
+		if(max==null) {
+			int counterLen = len - this.suffix.length();
+			max = counterLen < 1 ? Long.MAX_VALUE : Long.valueOf(String.join("", Collections.nCopies(counterLen, "9")));
+		}
+		this.max = max;
+		this.groups = (groups != null) ? groups.values().stream().toArray(String[]::new) : null;
 		if(!this.getClass().equals(LegacyCodeSequentialGenerator.class)) {
             // Legacy could be an extension of this class, and if so these checks aren't appropriate.
 			if (len < 1) {
@@ -159,7 +164,7 @@ public class CodeSequentialGenerator extends SequentialNumericIDGenerator<Substa
 
 	public Code addCode(Substance s) {
 		try {
-			return codeEntityService.createNewSystemCode(s, this.codeSystem, c -> this.generateID(), GROUP_PROTECTED);
+			return codeEntityService.createNewSystemCode(s, this.codeSystem, c -> this.generateID(), this.groups);
 		} catch (Throwable t) {
 			return Sneak.sneakyThrow(new Exception("Throwing exception in addCode in CodeSequentialGenerator. " + ((t.getCause()!=null)?t.getCause():"")));
 		}

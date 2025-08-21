@@ -184,6 +184,14 @@ public class NameUtilitiesTest {
     }
 
     @Test
+    public void testInterpunct() {
+        String inputName = "·";
+        String expected = ".";
+        String actual = NameUtilities.symbolsToASCII(inputName);
+        Assertions.assertEquals(expected, actual);
+    }
+    
+    @Test
     public void testGreekLetterReplacements1() {
         String input = " Α, Β, Γ, Δ, Ε, Ζ, Η, Θ, Ι, Κ, Λ, Μ, Ν, Ξ, Ο, Π, Ρ, Σ, Τ, Υ, Φ, Χ, Ψ, and Ω";
         String expected = " .ALPHA., .BETA., .GAMMA., .DELTA., .EPSILON., .ZETA., .ETA., .THETA., .IOTA., .KAPPA., .LAMBDA., .MU., .NU., .XI., .OMICRON., .PI., .RHO., .SIGMA., .TAU., .UPSILON., .PHI., .CHI., .PSI., and .OMEGA.";

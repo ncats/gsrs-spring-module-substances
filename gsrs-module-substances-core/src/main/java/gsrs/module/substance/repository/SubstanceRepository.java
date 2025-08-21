@@ -1,5 +1,6 @@
 package gsrs.module.substance.repository;
 
+import gsrs.module.substance.utils.HtmlUtil;
 import gsrs.repository.GsrsVersionedRepository;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Keyword;
@@ -152,8 +153,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
             //How best to do this?
             //For now use explicit query
             NameRepository nr= StaticContextAccessor.getBean(NameRepository.class);
-            ref.refPname = nr.findDisplayNameByOwnerID(getUuid()).map(nn->nn.getName())
-                             .orElse("NO NAME");
+            ref.refPname = HtmlUtil.truncate(nr.findDisplayNameByOwnerID(getUuid()).map(nn->nn.getName())
+                             .orElse("NO NAME"));
             
             //This is reasonable to have done, but it's not the way references work
             //now. The substance class is set to be a reference if it's a reference.
