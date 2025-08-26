@@ -3,6 +3,9 @@ package ix.ginas.utils.validation.validators;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import gsrs.module.substance.standardizer.NameStandardizer;
@@ -44,7 +47,9 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     
     public StandardNameValidator(NameStandardizer minimal, NameStandardizer full) {
     		nameStandardizer = minimal;
-    		stdNameStandardizer = full;    	
+    		stdNameStandardizer = full;
+            log.trace("in parameterized constructor of StandardNameValidator, called from {}, full: {}",
+                    Thread.currentThread().getStackTrace()[2], full.getClass().getName());
     }
     
     private void initIfNeeded() {
@@ -287,5 +292,16 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     }
     public void setFullNameStandardizerClass(String standardizer) throws Exception {
     	stdNameStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
+    }
+
+    public JsonNode standardizeName(String inputName){
+        initIfNeeded();
+        String fullyStandardizedame = stdNameStandardizer.standardize(inputName).getResult();
+        String minimallyStandardizedName = nameStandardizer.standardize(inputName).getResult();
+        ObjectNode resultBuilder = JsonNodeFactory.instance.objectNode();
+        resultBuilder.put("InputName", inputName);
+        resultBuilder.put("FullyStandardizedName", fullyStandardizedame);
+        resultBuilder.put("MinimallyStandardizedName", minimallyStandardizedName);
+        return resultBuilder;
     }
 }
