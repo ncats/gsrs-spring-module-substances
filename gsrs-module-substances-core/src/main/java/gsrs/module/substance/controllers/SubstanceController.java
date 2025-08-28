@@ -2162,11 +2162,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     @GetGsrsRestApiMapping("/standardizeName")
-    public ResponseEntity<Object> structureSearchGet(
+    public ResponseEntity<Object> standardizeNameMethod(
             @RequestParam(required = false) String name,
             HttpServletRequest httpServletRequest,
             RedirectAttributes attributes) throws Exception {
 
+        log.warn("starting in standardizeNameMethod");
         StandardNameValidator validator = new StandardNameValidator();
         validator=AutowireHelper.getInstance().autowireAndProxy(validator);
         JsonNode standardizeResult = validator.standardizeName(name);
