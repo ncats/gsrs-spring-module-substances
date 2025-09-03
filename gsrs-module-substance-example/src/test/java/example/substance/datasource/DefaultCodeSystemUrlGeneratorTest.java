@@ -79,7 +79,7 @@ public class DefaultCodeSystemUrlGeneratorTest {
 
     @Test
     public void DefaultCodeSystemUrlGeneratorGenerationLowercaseTest() throws IOException {
-        String codeSystemForTest = "DRUG BANK";
+        String codeSystemForTest = "DRUGBANK";
         String codeUrlForTest = "http://www.drugbank.ca/drugs/$CODE$";
         String codeValueForTest = "a5b2c8d8e2f6";
         String expectedUrl = "http://www.drugbank.ca/drugs/a5b2c8d8e2f6";
