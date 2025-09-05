@@ -161,4 +161,15 @@ public class StandardNameValidatorTest extends AbstractSubstanceJpaEntityTest {
         }
         Assertions.assertNotNull(ex,"Must throw an exception when setting an invalid value");
     }
+
+
+    @Test
+    void testStandardize() {
+        StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
+        String inputNameForTest = "toluene";
+        String standardizeResult = validator.standardizeName(inputNameForTest,true).toPrettyString();
+        System.out.printf("stadardization result: %s\n", standardizeResult);
+        Assertions.assertTrue(standardizeResult.contains("FullyStandardizedName"));
+    }
 }
