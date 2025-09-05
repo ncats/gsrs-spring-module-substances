@@ -294,13 +294,15 @@ public class StandardNameValidator extends AbstractValidatorPlugin<Substance> {
     	stdNameStandardizer = (NameStandardizer) Class.forName(standardizer).newInstance();
     }
 
-    public JsonNode standardizeName(String inputName){
+    public JsonNode standardizeName(String inputName, boolean addInput){
         initIfNeeded();
-        String fullyStandardizedame = stdNameStandardizer.standardize(inputName).getResult();
+        String fullyStandardizedName = stdNameStandardizer.standardize(inputName).getResult();
         String minimallyStandardizedName = nameStandardizer.standardize(inputName).getResult();
         ObjectNode resultBuilder = JsonNodeFactory.instance.objectNode();
-        resultBuilder.put("InputName", inputName);
-        resultBuilder.put("FullyStandardizedName", fullyStandardizedame);
+        if( addInput){
+            resultBuilder.put("InputName", inputName);
+        }
+        resultBuilder.put("FullyStandardizedName", fullyStandardizedName);
         resultBuilder.put("MinimallyStandardizedName", minimallyStandardizedName);
         return resultBuilder;
     }

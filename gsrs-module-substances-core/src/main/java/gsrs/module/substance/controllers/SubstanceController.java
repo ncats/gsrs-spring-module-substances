@@ -179,6 +179,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private ChemicalUtils chemicalUtils;
 
+    private static final int MAX_NAME_STANDARDIZATION_INPUT_LENGTH = 500;
+
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
 
@@ -2163,14 +2165,17 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @GetGsrsRestApiMapping("/standardizeName")
     public ResponseEntity<Object> standardizeNameMethod(
-            @RequestParam(required = false) String name,
+            @RequestParam(required = true) String name,
             HttpServletRequest httpServletRequest,
             RedirectAttributes attributes) throws Exception {
 
+        if(name == null || name.length() == 0 || name.length() > MAX_NAME_STANDARDIZATION_INPUT_LENGTH ) {
+            return GsrsControllerConfiguration.createResponseEntity("Input is either missing or too long (max=500) ", HttpStatus.BAD_REQUEST.value());
+        }
         log.warn("starting in standardizeNameMethod");
         StandardNameValidator validator = new StandardNameValidator();
         validator=AutowireHelper.getInstance().autowireAndProxy(validator);
-        JsonNode standardizeResult = validator.standardizeName(name);
+        JsonNode standardizeResult = validator.standardizeName(name, false);
         return new ResponseEntity<>(standardizeResult, HttpStatus.OK);
     }
 }
