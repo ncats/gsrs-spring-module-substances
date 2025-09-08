@@ -283,7 +283,7 @@ public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Test
     public void testSearchByCodeSystemAndClass() {
-        String codeSystem1 = "DRUG BANK";
+        String codeSystem1 = "DRUGBANK";
         String substanceClass = "protein";
         List<String> expectedIds = Arrays.asList("044e6d9c-37c0-42ac-848e-2e41937216b1", "deb33005-e87e-4e7f-9704-d5b4c80d3023");
         Collections.sort(expectedIds);//use basic sort order

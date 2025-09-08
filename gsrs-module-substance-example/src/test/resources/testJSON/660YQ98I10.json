@@ -1236,7 +1236,7 @@
             "lastEdited": 1612729807885,
             "lastEditedBy": "admin",
             "deprecated": false,
-            "codeSystem": "DRUG BANK",
+            "codeSystem": "DRUGBANK",
             "code": "DB00761",
             "type": "PRIMARY",
             "url": "http://www.drugbank.ca/drugs/DB00761",
