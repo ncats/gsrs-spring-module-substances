@@ -6,8 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
+import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -23,7 +22,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,7 +30,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotBlank;
 
 import gsrs.controller.*;
-import gsrs.module.substance.utils.*;
+import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.utils.FeatureUtils;
+import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.service.AbstractGsrsEntityService;
+import ix.ginas.utils.validation.validators.StandardNameValidator;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -62,6 +64,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import gov.fda.gsrs.ndsri.FeaturizeNitrosamine;
+import gov.fda.gsrs.ndsri.FeaturizeNitrosamine.FeatureResponse;
 import gov.nih.ncats.common.io.IOUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Bond;
@@ -89,6 +93,9 @@ import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberFactory;
 import gsrs.module.substance.services.SubstanceSequenceSearchService;
 import gsrs.module.substance.services.SubstanceSequenceSearchService.SanitizedSequenceSearchRequest;
 import gsrs.module.substance.services.SubstanceStructureSearchService;
+import gsrs.module.substance.utils.ImageInfo;
+import gsrs.module.substance.utils.ImageUtilities;
+import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
 import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
@@ -172,10 +179,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     @Autowired
     private ChemicalUtils chemicalUtils;
 
-    private int IMAGE_NUMBER_USE_DEFAULT= -1;
-
-    private static final String IMAGE_STORED_WITH_REFERENCE = "Image stored with substance reference";
-    private static final String IMAGE_FOR_TAUTOMER = "Automatically generated tautomer";
+    private static final int MAX_NAME_STANDARDIZATION_INPUT_LENGTH = 500;
 
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -631,7 +635,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             @RequestParam MultiValueMap<String,String> body,
             HttpServletRequest httpRequest,
             RedirectAttributes attributes) throws Exception {
-
+        log.trace("in structureSearchPost. total records: {}", substanceRepository.count());
         SubstanceStructureSearchService.SearchRequest.SearchRequestBuilder rb = SubstanceStructureSearchService.SearchRequest.builder();
 
         Optional.ofNullable(body.getFirst("cutoff")).map(s->Double.parseDouble(s)).ifPresent(c->rb.cutoff(c));
@@ -645,11 +649,13 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
-
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
+        log.trace("sanitizedRequest.getType(): {}", sanitizedRequest.getType());
 
-        boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT ||
-                sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX ;
+        boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS
+                || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS;
         Optional<Structure> structure = parseStructureQuery(sanitizedRequest.getQueryStructure(), !isHashQuery);
         if(!structure.isPresent()){
             return getGsrsControllerConfiguration().handleNotFound(body.toSingleValueMap(), "query structure not found : " + sanitizedRequest.getQueryStructure());
@@ -657,10 +663,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         boolean sync = Optional.ofNullable(body.getFirst("sync")).map(b->Boolean.parseBoolean(b)).orElse(false);
 
-
         attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
-        //attributes.addAttribute("q", structure.get().id.toString());
         if(qText!=null){
         	attributes.addAttribute("qText", qText);
         }
@@ -668,9 +672,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         	attributes.addAttribute("sync", true);
         }
         Map<String,String> qmap = attributes.asMap().entrySet().stream().collect(Collectors.toMap(es->es.getKey(), es->es.getValue().toString()));
+        log.trace("about to call structureSearchGet using {}", sanitizedRequest.getType().toString());
         return structureSearchGet(
-        		attributes.getAttribute("q").toString(),
-        		sanitizedRequest.getType().toString(),
+        		sanitizedRequest.getQueryStructure(),
+        		sanitizedRequest.getType().getValue(),
         		Optional.ofNullable(sanitizedRequest.getCutoff()).orElse(0.9),
         		sanitizedRequest.getTop(),
         		sanitizedRequest.getSkip(),
@@ -707,9 +712,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
         Structure structure = structureOp.get();
 
-        
         String cleaned = CtTableCleaner.clean(structure.molfile);
-
+        log.trace("type: {}", type);
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = SubstanceStructureSearchService.SearchRequest.builder()
                 .q(cleaned)
                 .type(SubstanceStructureSearchService.StructureSearchType.parseType(type))
@@ -720,7 +724,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 .field(field)
                 .build()
                 .sanitize();
-
+        log.trace("in structureSearchGet, sanitizedRequest.type: {}", sanitizedRequest.getType());
 
         String hash=null;
 
@@ -741,34 +745,41 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     .getStructure();
         }
 
-        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT){
+        if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT) {
             hash = "root_structure_properties_EXACT_HASH:" + structure.getExactHash();
-        }else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
+        } else if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT_PLUS) {
+            Structure saltStrippedStructure = stripSalts(structure);
+            log.trace("saltStrippedStructure formula: '{}'", saltStrippedStructure.formula);
+            hash = saltStrippedStructure.formula == null || saltStrippedStructure.formula.length()==0  ?
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash()
+                    :
+                    "root_structure_properties_EXACT_HASH:" + structure.getExactHash() + " OR root_structure_properties_EXACT_HASH:"
+                    + saltStrippedStructure.getExactHash();
+        } else if(sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
             || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS){
             if( sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX_PLUS) {
-                log.trace("running a flex plus search - remove salts");
-
-                Structure copy = new GinasChemicalStructure();
-                copy.molfile = structure.molfile;
-                Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
-                //make another Structure, without salt
-                Structure saltStripped = new Structure();
-                saltStripped.molfile = clean.toMol();
-                hash = makeFlexSearch(saltStripped);
+                Structure saltStripped = stripSalts(structure);
+                log.trace("running a flex plus search - remove salts. saltStripped formula: '{}'", saltStripped.formula);
+                //when we have a valid/non-blank structure after salt stripping, use it to make a full
+                // flex search.
+                // otherwise, use the original structure to make a simple search for stereo-insensitive hash
+                hash = saltStripped.formula != null && saltStripped.formula.length() > 0
+                        ?  makeSearch(saltStripped, true)
+                        : "root_structure_properties_STEREO_INSENSITIVE_HASH" + ":\"" + structure.getStereoInsensitiveHash() + "\"";
+                log.trace("flex plus hash: {}", hash);
             } else {
-                hash= makeFlexSearch(structure);
+                hash= makeSearch(structure, true);
             }
             //note we purposefully don't have the lucene path so it finds moieties and polymers etc
-
             log.trace("search hash: {} for search of type {}", hash, sanitizedRequest.getType());
-                    //"root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
         }
-
+        log.trace("hash: {}", hash);
         if(hash !=null){
             attributes.mergeAttributes(sanitizedRequest.getParameterMap());
 
             // Search for the hash and also add the qText (Query parameters).
             if (qText != null) {
+                log.trace("we have qText as well");
                 hash = hash + " AND (" + qText + ")";
             }
 
@@ -1181,7 +1192,33 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 return Optional.empty();
             }    	
     }
-    
+
+    @PreAuthorize("hasRole('SuperUpdate')")
+    @PutGsrsRestApiMapping("/novalid")
+    @Transactional
+    public ResponseEntity<Object> updateEntityWithoutValidation(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
+        if( getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in updateEntityWithoutValidation");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message, this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        log.trace("in updateEntityWithoutValidation");
+        AbstractGsrsEntityService.UpdateResult<Substance> result = null;
+        log.trace("Will call updateEntityIgnoreValidation");
+        result = getEntityService().updateEntity(updatedEntityJson, true);
+        if( result != null && result.getStatus()== AbstractGsrsEntityService.UpdateResult.STATUS.NOT_FOUND){
+            return this.getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+
+        if( result.getStatus() == AbstractGsrsEntityService.UpdateResult.STATUS.UPDATED){
+            new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+        }
+        //match 200 status of old GSRS
+        return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
+    }
+
     @Builder
     @Data
     public static class StructureToRender{
@@ -1301,7 +1338,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
-                         @RequestParam(value = "imageNumber", required = false, defaultValue = "0") Integer imageNumber,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
 
         int[] amaps = null;
@@ -1315,9 +1351,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             if(s2r != null && s2r.substanceKey !=null &&
                     !(queryParameters.get("forceDefaultImage") !=null &&queryParameters.get("forceDefaultImage").equalsIgnoreCase("TRUE"))) {
-                log.trace("going to call getSpecificImageForSubstance. imageNumber: {}", imageNumber);
-                ImageInfo imageInfo = imageNumber == IMAGE_NUMBER_USE_DEFAULT ? new ImageInfo()
-                        : getSpecificImageForSubstance(s2r.substanceKey, imageNumber);
+                log.trace("going to call getSpecificImageForSubstance");
+                ImageInfo imageInfo = getSpecificImageForSubstance(s2r.substanceKey);
                 if (imageInfo.isHasData() && imageInfo.getImageData().length > 0) {
                     String formatToUse = format;
                     if (imageInfo.getFormat() != null && imageInfo.getFormat().trim().length() > 0) {
@@ -1413,102 +1448,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(bdat.dat, headers, HttpStatus.OK);
 
     }
-
-    @GetGsrsRestApiMapping({"/totalImages({ID})", "/totalImages/{ID}"})
-    public ResponseEntity<Object> totalImages(@PathVariable("ID") String idOrSmiles,
-                             @RequestParam(value = "version", required = false) String version,
-                             @RequestParam Map<String, String> queryParameters) throws Exception {
-        ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
-        if( !UUIDUtil.isUUID(idOrSmiles)){
-            topOfOutput.put("message", "Invalid input");
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
-        }
-        StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()-> getSubstanceAndStructure(idOrSmiles,version));
-        if( s2r == null) {
-            log.warn("No data found for input");
-            topOfOutput.put("message", "No data found for input");
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
-        }
-        Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
-        HttpStatus status = HttpStatus.BAD_REQUEST;
-        if(substance.isPresent()) {
-            ImageUtilities imageUtilities = new ImageUtilities();
-            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
-            List<ImageInfo> imageInfos = imageUtilities.getSubstanceImageInfos(substance.get());
-            topOfOutput.put("totalImages", imageInfos.size());
-            status = HttpStatus.OK;
-        } else {
-            topOfOutput.put("totalImages", 0);
-        }
-        return new ResponseEntity<>( GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), status);
-    }
-
-    @GetGsrsRestApiMapping({"/listImages({ID})", "/listImages/{ID}"})
-    public ResponseEntity<Object> listImages(@PathVariable("ID") String idOrSmiles,
-                             @RequestParam(value = "version", required = false) String version,
-                             @RequestParam Map<String, String> queryParameters) throws Exception {
-        ObjectNode topOfOutput = JsonNodeFactory.instance.objectNode();
-        if( !UUIDUtil.isUUID(idOrSmiles)){
-            log.warn("in listImages,input is not UUID");
-            topOfOutput.put("message", "invalid input");
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
-        }
-
-        StructureToRender s2r= gsrscache.getOrElseRawIfDirty("structForRender/" + idOrSmiles + "/" + version, ()->{
-            return getSubstanceAndStructure(idOrSmiles,version);
-        });
-        if(s2r == null) {
-            log.warn("No data found for input");
-            topOfOutput.put("message", "No data found for input");
-            return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.BAD_REQUEST);
-        }
-        Optional<Substance> substance = EntityFetcher.of(s2r.substanceKey).getIfPossible().map(o->(Substance)o);
-        ArrayNode outputList = JsonNodeFactory.instance.arrayNode();
-        if(substance.isPresent()) {
-            ImageUtilities imageUtilities = new ImageUtilities();
-            imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
-            List<ImageInfo> imageInfos = imageUtilities.getSubstanceImageInfos(substance.get());
-            AtomicInteger imageOrdinal =new AtomicInteger(0);
-            if( imageInfos.isEmpty() && substance.get() instanceof ChemicalSubstance) {
-                TautomerUtils tautomerUtils = new TautomerUtils();
-                AutowireHelper.getInstance().autowireAndProxy(tautomerUtils);
-                List<String> tautomericSmiles= tautomerUtils.getTautomerSmiles( substance.get().toChemical());
-                tautomericSmiles.forEach(s->{
-                    StringBuilder urlBuilder = new StringBuilder();
-                    urlBuilder.append("render(");
-                    urlBuilder.append(URLEncoder.encode(s, Charset.defaultCharset()));
-                    urlBuilder.append(")?");
-                    appendParametersToStringBuilder(urlBuilder, queryParameters);
-                    //remove '&' from the end of the string
-                    if(urlBuilder.charAt(urlBuilder.length()-1) == '&') {
-                       urlBuilder.setLength(urlBuilder.length()-1);
-                    }
-                    ObjectNode node = JsonNodeFactory.instance.objectNode();
-                    node.put("url", urlBuilder.toString());
-                    node.put("outputType", IMAGE_FOR_TAUTOMER);
-                    outputList.add(node);
-                });
-            }
-            imageInfos.forEach(imageInfo -> {
-                //build a URL based on the parameters we received
-                //render(782ffd25-f1ca-41b4-b5de-85b5b5df16d0)?format=svg&size=450&stereo=false&cache-control=bo8ykiezn3y&imageNumber=
-                StringBuilder urlBuilder = new StringBuilder();
-                urlBuilder.append("render(");
-                urlBuilder.append(idOrSmiles);
-                urlBuilder.append(")?");
-                appendParametersToStringBuilder(urlBuilder, queryParameters);
-                urlBuilder.append("imageNumber=");
-                urlBuilder.append(imageOrdinal.getAndIncrement());
-                ObjectNode node = JsonNodeFactory.instance.objectNode();
-                node.put("url", urlBuilder.toString());
-                node.put("outputType", IMAGE_STORED_WITH_REFERENCE);
-                outputList.add(node);
-           });
-        }
-        topOfOutput.put("imagesFound", outputList);
-        return new ResponseEntity<>(GsrsControllerUtil.enhanceWithView(topOfOutput, queryParameters), HttpStatus.OK);
-    }
-
     private static void renderInner(ChemicalRenderer renderer, Chemical chem, int minWidth, int maxWidth, int minHeight, int maxHeight,
                                     double bondLength, String format, ByteArrayOutputStream bos)
             throws IOException {
@@ -1603,12 +1542,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     }
 
-    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey, Integer imageNumber){
+    private ImageInfo getSpecificImageForSubstance(EntityUtils.Key substanceKey){
         Optional<Substance> substance = EntityFetcher.of(substanceKey).getIfPossible().map(o->(Substance)o);
         if(substance.isPresent()) {
             ImageUtilities imageUtilities = new ImageUtilities();
             imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
-            return imageUtilities.getSubstanceImage(substance.get(), imageNumber);
+            return imageUtilities.getSubstanceImage(substance.get());
         }
         return new ImageInfo(false, null, null);
     }
@@ -2066,21 +2005,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return items;
     }
 
-    public String makeFlexSearch(Structure structure) {
+    public String makeSearch(Structure structure, boolean flex) {
         String sins= structure.getStereoInsensitiveHash();
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append("(");
-        stringBuilder.append(  "root_structure_properties_STEREO_INSENSITIVE_HASH");
+        stringBuilder.append( flex ? "root_structure_properties_STEREO_INSENSITIVE_HASH" : "root_structure_properties_EXACT_HASH");
         stringBuilder.append(":\"");
         stringBuilder.append(sins);
         stringBuilder.append("\" OR ");
-        stringBuilder.append(makeFlexSearchMoietyClauses(structure));
+        stringBuilder.append(makeFlexSearchMoietyClauses(structure, flex));
         stringBuilder.append(")");
         return stringBuilder.toString();
-        //return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" OR " + makeFlexSearchMoietyClauses(structure, plus) + ")";
     }
 
-    public String makeFlexSearchMoietyClauses(Structure structure) {
+    public String makeFlexSearchMoietyClauses(Structure structure, boolean flex) {
 
         List<Structure> moieties = new ArrayList<>();
         try {
@@ -2094,8 +2032,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             String moietySearchString= moieties.stream()
                     .map(m->{
                         StringBuilder sb = new StringBuilder();
-                        sb.append("root_moieties_properties_STEREO_INSENSITIVE_HASH:\"");
-                        sb.append( m.getStereoInsensitiveHash());
+                        sb.append( flex ? "root_moieties_properties_STEREO_INSENSITIVE_HASH:\"" : "root_moieties_properties_EXACT_HASH:\"");
+                        sb.append( flex ? m.getStereoInsensitiveHash() : m.getExactHash());
                         sb.append("\"");
                         return sb.toString();
                     })
@@ -2125,12 +2063,119 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         topLevelNode.put("featureList", allFeatures);
     }
 
-    private void appendParametersToStringBuilder(StringBuilder stringBuilder, Map<String, String> parameters) {
-        parameters.entrySet().forEach(entry->{
-            stringBuilder.append(entry.getKey().equalsIgnoreCase("imageFormat") ? "format": entry.getKey());
-            stringBuilder.append("=");
-            stringBuilder.append(entry.getValue());
-            stringBuilder.append("&");
-        });
+    public Structure stripSalts(Structure structure) throws IOException {
+        Structure copy = new GinasChemicalStructure();
+        copy.molfile = structure.molfile;
+        Chemical clean = chemicalUtils.stripSalts(copy.toChemical());
+        if( clean == null) {
+            return new GinasChemicalStructure();
+        }
+        Structure saltStripped= structureProcessor.instrument(clean);
+        return saltStripped;
+    }
+
+    @GetGsrsRestApiMapping("/evaluateSmiles")
+    public ResponseEntity<Map<String, Object>> evaluateSmiles(@RequestParam("smiles") String smiles) {
+        log.debug("Evaluating SMILES: {}", smiles);
+        try {
+            // Create a map to store the response
+            Map<String, Object> response = new HashMap<>();
+            
+            // Parse the SMILES string
+            Chemical chemical = Chemical.parse(smiles);
+            
+            // Check for multiple nitrosamine groups
+            List<Integer> nitrosamineSites = FeaturizeNitrosamine.markAllNitrosamines(chemical);
+            response.put("multipleNitrosamines", nitrosamineSites.size() > 1);
+            response.put("nitrosamineCount", nitrosamineSites.size());
+            
+            // Get the feature response
+            Optional<FeatureResponse> featureResponse = FeaturizeNitrosamine.forMostPotentNitrosamine(chemical);
+            
+            if (featureResponse.isPresent()) {
+                FeatureResponse responseData = featureResponse.get();
+                
+                // Add the response data to the map
+                response.put("potencyScore", responseData.getCategoryScore());
+                
+                // Build structure details
+                StringBuilder details = new StringBuilder();
+                details.append("Type: ").append(responseData.getType()).append("\n");
+                responseData.getFeatureSet().forEach((key, value) -> {
+                    details.append(key).append(": ").append(value).append("\n");
+                });
+                response.put("structureDetails", details.toString());
+                
+                // Determine which boxes to highlight
+                List<String> boxes = new ArrayList<>();
+                boxes.add("q1"); // Always add first question
+                
+                // Add category box based on potency score
+                int categoryScore = responseData.getCategoryScore();
+                if (categoryScore >= 5) {
+                    boxes.add("cat5-1");
+                } else if (categoryScore >= 4) {
+                    boxes.add("cat4");
+                } else if (categoryScore == 3) {
+                    boxes.add("cat3");
+                } else if (categoryScore == 2) {
+                    boxes.add("cat2");
+                } else {
+                    boxes.add("cat1");
+                }
+                
+                // Add additional boxes based on features
+                Optional<String> alphaHydrogens = responseData.getFeature("Alpha-Hydrogens");
+                if (alphaHydrogens.isPresent() && !alphaHydrogens.get().equals("0")) {
+                    boxes.add("q2");
+                }
+                
+                Optional<String> tertiaryAlpha = responseData.getFeature("Tertiary α-carbon");
+                if (tertiaryAlpha.isPresent() && "YES".equals(tertiaryAlpha.get())) {
+                    boxes.add("q3");
+                    boxes.add("cat5-3");
+                }
+                // Add score boxes based on potency score
+                if (categoryScore >= 4) {
+                    boxes.add("score4");
+                } else if (categoryScore == 3) {
+                    boxes.add("score3");
+                } else if (categoryScore == 2) {
+                    boxes.add("score2");
+                } else {    
+                    boxes.add("score1");
+                }
+                
+                response.put("highlightedBoxes", boxes);
+                
+                log.debug("Successfully evaluated nitrosamine structure with potency score: {}", categoryScore);
+                return ResponseEntity.ok(response);
+            } else {
+                log.warn("No valid nitrosamine structure found for SMILES: {}", smiles);
+                response.put("error", "No valid nitrosamine structure found");
+                return ResponseEntity.ok(response);
+            }
+        } catch (Exception e) {
+            log.error("Error processing SMILES string: {}", e.getMessage(), e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", "Error processing SMILES string: " + e.getMessage());
+            return ResponseEntity.ok(errorResponse);
+        }
+    }
+
+    @GetGsrsRestApiMapping("/standardizeName")
+    public ResponseEntity<Object> standardizeNameMethod(
+            @RequestParam(required = true) String name,
+            HttpServletRequest httpServletRequest,
+            RedirectAttributes attributes) throws Exception {
+
+        if(name == null || name.length() == 0 || name.length() > MAX_NAME_STANDARDIZATION_INPUT_LENGTH ) {
+            return GsrsControllerConfiguration.createResponseEntity("Input is either missing or too long (max=500) ", HttpStatus.BAD_REQUEST.value());
+        }
+        log.warn("starting in standardizeNameMethod");
+        StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
+        JsonNode standardizeResult = validator.standardizeName(name, false);
+        return new ResponseEntity<>(standardizeResult, HttpStatus.OK);
     }
 }

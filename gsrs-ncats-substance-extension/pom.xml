@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.1.2-SNAPSHOT</version>
+        <version>3.1.3-SNAPSHOT</version>
     </parent>
     <properties>
         <!--java.version>11</java.version-->
@@ -13,6 +13,36 @@
         <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     </properties>
     <artifactId>gsrs-ncats-substance-extension</artifactId>
+    <name>gsrs-ncats-substance-extension</name>
+    <description>gsrs-ncats-substance-extension</description>
+    <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+
+    <licenses>
+        <license>
+            <name>The Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>peryeata</id>
+            <name>Tyler Peryea</name>
+            <email>tyler.peryea@fda.hhs.gov</email>
+            <roles>
+                <role>architect</role>
+                <role>developer</role>
+            </roles>
+            <timezone>America/New_York</timezone>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:https://github.com/ncats/gsrs-spring-module-substances.git</connection>
+        <developerConnection>scm:git:git@github.com:ncats/gsrs-spring-module-substances.git</developerConnection>
+        <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
+    </scm>
     <modelVersion>4.0.0</modelVersion>
     <build>
         <!-- Uncomment this for maven public release deployment start 
@@ -115,16 +145,18 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
-            <version>0.6.8</version>
+            <version>0.6.10</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <version>${spring-boot.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
@@ -162,6 +194,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>${spring-boot.version}</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
@@ -185,6 +218,7 @@
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-actuator</artifactId>
+                <version>${spring-boot.version}</version>
             </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
@@ -194,6 +228,7 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -210,6 +245,7 @@
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
+            <version>3.8.0</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>

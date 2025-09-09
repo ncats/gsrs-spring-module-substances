@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -11,10 +12,7 @@ import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.ImportFieldMetadata;
 import gsrs.importer.PropertyBasedDataRecordContext;
-import gsrs.imports.ActionConfigImpl;
-import gsrs.imports.ImportAdapter;
-import gsrs.imports.ImportAdapterFactory;
-import gsrs.imports.ImportAdapterStatistics;
+import gsrs.imports.*;
 import gsrs.module.substance.importers.model.SDRecordContext;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.importers.InputFieldStatistics;
@@ -42,7 +40,8 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     protected Map<String, MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> registry = new ConcurrentHashMap<>();
 
-    protected List<ActionConfigImpl> fileImportActions;
+    @JsonDeserialize(contentAs = ActionConfigImpl.class)
+    protected List<ActionConfig> fileImportActions;
 
     public final static String ACTION_NAME = "actionName";
 
@@ -156,7 +155,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         List<MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>> actions = new ArrayList<>();
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
-            JsonNode actionParameters = js.get("actionParameters");
+            JsonNode actionParameters = js.get(ACTION_PARAMETERS);
             ObjectMapper mapper = new ObjectMapper();
             //log.trace("about to call convertValue");
             Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
@@ -192,8 +191,8 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     protected void defaultInitialize(){}
 
-
-    public void setFileImportActions(List<ActionConfigImpl> fileImportActions) {
+    @JsonDeserialize(contentAs = ActionConfigImpl.class)
+    public void setFileImportActions(List<ActionConfig> fileImportActions) {
         log.trace("setFileImportActions");
         this.fileImportActions = fileImportActions;
     }
@@ -273,6 +272,14 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
+    public ObjectNode createSmilesMap(String smilesFieldName) {
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("smiles", String.format("{{%s}}", smilesFieldName));
+        ArrayNode refs = JsonNodeFactory.instance.arrayNode();
+        refs.add(String.format("[[%s]]", SIMPLE_REF));
+        mapNode.set("referenceUUIDs", refs);
+        return mapNode;
+    }
     public ObjectNode createProteinSequenceMap(String sequenceFieldName) {
         ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
         mapNode.put("proteinSequence", "{{" + sequenceFieldName+ "}}");
@@ -332,6 +339,21 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         }
         return false;
     }
+
+    protected boolean looksLikeSmiles(String fieldName) {
+        if(fieldName.toUpperCase().contains("SMILES")){
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean looksLikeMolfile(String fieldName) {
+        if(fieldName.toUpperCase().contains("MOLFILE")){
+            return true;
+        }
+        return false;
+    }
+
     protected JsonNode createDefaultReferenceReferenceNode() {
         ArrayNode parameters = JsonNodeFactory.instance.arrayNode();
         parameters.add(String.format("[[%s]]", SIMPLE_REF));

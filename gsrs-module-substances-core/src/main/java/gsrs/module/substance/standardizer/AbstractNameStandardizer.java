@@ -129,6 +129,7 @@ public abstract class AbstractNameStandardizer implements NameStandardizer{
     }
 
     public static ReplacementResult replaceRegexLists(String input, Pattern[] searchList, String[] replaceList) {
+
         List<ReplacementNote> notes = new ArrayList<>();
         ReplacementResult result = new ReplacementResult(input, notes);
         if (input != null && input.length() != 0) {

@@ -29,7 +29,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         Substance substance = createSimpleSubstance();
         Code code1 = new Code();
         code1.code = "DB01190";
-        code1.codeSystem = "Drug Bank";
+        code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
         substanceRepository.saveAndFlush(substance);
@@ -37,7 +37,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         Substance substance2 = createSimpleSubstance();
         Code code2 = new Code();
         code2.code = "DB01190";
-        code2.codeSystem = "Drug Bank";
+        code2.codeSystem = "DrugBank";
         code2.type = "PRIMARY";
         substance2.addCode(code2);
 
@@ -61,7 +61,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         Substance substance = createSimpleSubstance();
         Code code1 = new Code();
         code1.code = "DB01190";
-        code1.codeSystem = "Drug Bank";
+        code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
         substanceRepository.saveAndFlush(substance);
@@ -69,13 +69,13 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         Substance substance2 = createSimpleSubstance();
         Code code2 = new Code();
         code2.code = "DB01190";
-        code2.codeSystem = "Drug Bank";
+        code2.codeSystem = "DrugBank";
         code2.type = "PRIMARY";
         substance2.addCode(code2);
 
         CodeUniquenessValidator validator = new CodeUniquenessValidator();
         LinkedHashMap<Integer, String> singletons = new LinkedHashMap<>();
-        singletons.put(1, "others");//bogus value; will prevent 'Drug Bank' codes from being duplicate checked
+        singletons.put(1, "others");//bogus value; will prevent 'DrugBank' codes from being duplicate checked
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
@@ -93,7 +93,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         Substance substance = createSimpleSubstance();
         Code code1 = new Code();
         code1.code = "DB01190";
-        code1.codeSystem = "Drug Bank";
+        code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
         substanceRepository.saveAndFlush(substance);
@@ -101,13 +101,13 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         Substance substance2 = createSimpleSubstance();
         Code code2 = new Code();
         code2.code = "DB01190";
-        code2.codeSystem = "Drug Bank";
+        code2.codeSystem = "DrugBank";
         code2.type = "generic";
         substance2.addCode(code2);
 
         CodeUniquenessValidator validator = new CodeUniquenessValidator();
         LinkedHashMap<Integer, String> singletons = new LinkedHashMap<>();
-        singletons.put(1, "others");//bogus value; will prevent 'Drug Bank' codes from being duplicate checked
+        singletons.put(1, "others");//bogus value; will prevent 'DrugBank' codes from being duplicate checked
         validator.setSingletonCodeSystems(singletons);
         AutowireHelper.getInstance().autowire(validator);
         ValidationResponse<Substance> response = validator.validate(substance2, null);
@@ -158,14 +158,14 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         Substance substance = createSimpleSubstance();
         Code code1 = new Code();
         code1.code = "DB01190";
-        code1.codeSystem = "Drug Bank";
+        code1.codeSystem = "DrugBank";
         substance.addCode(code1);
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
         Code code2 = new Code();
         code2.code = "DB01190";
-        code2.codeSystem = "Drug Bank";
+        code2.codeSystem = "DrugBank";
         substance2.addCode(code2);
 
         CodeUniquenessValidator validator = new CodeUniquenessValidator();

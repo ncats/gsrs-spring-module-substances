@@ -309,7 +309,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
-    public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) throws Exception{
+    public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
 
@@ -321,127 +321,127 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
                 UpdateResult.UpdateResultBuilder<Substance> builder = UpdateResult.<Substance>builder();
                 EntityUtils.EntityWrapper<Substance> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
-                    EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
-                    String oldJson = og.toFullJson();
+                        EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
+                        String oldJson = og.toFullJson();
 
-                    EntityUtils.EntityWrapper<Substance> oWrap = EntityUtils.EntityWrapper.of(oldEntity);
-                    EntityUtils.EntityWrapper<Substance> nWrap = EntityUtils.EntityWrapper.of(updatedEntity);
+                        EntityUtils.EntityWrapper<Substance> oWrap = EntityUtils.EntityWrapper.of(oldEntity);
+                        EntityUtils.EntityWrapper<Substance> nWrap = EntityUtils.EntityWrapper.of(updatedEntity);
 
-                    boolean usePojoPatch=false;
-                    //only use POJO patch if the entities are the same type
-                    if(oWrap.getEntityClass().equals(nWrap.getEntityClass())){
-                        usePojoPatch=true;
-                    }
-                    if(usePojoPatch) {
-                        PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
-                        LogUtil.debug(() -> "changes = " + patch.getChanges());
-                        final List<Object> removed = new ArrayList<Object>();
-
-                        //Apply the changes, grabbing every change along the way
-                        Stack changeStack = patch.apply(oldEntity, c -> {
-                            if ("remove".equals(c.getOp())) {
-                                removed.add(c.getOldValue());
-                            }
-                            LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
-                        });
-                        if (changeStack.isEmpty()) {
-                            throw new IllegalStateException("No change detected");
-                        } else {
-                            LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
+                        boolean usePojoPatch = false;
+                        //only use POJO patch if the entities are the same type
+                        if (oWrap.getEntityClass().equals(nWrap.getEntityClass())) {
+                            usePojoPatch = true;
                         }
-                        oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
-                        //This is the last line of defense for making sure that the patch worked
-                        //Should throw an exception here if there's a major problem
-                        //This is inefficient, but forces confirmation that the object is fully realized
-                        String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
+                        if (usePojoPatch) {
+                            PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
+                            LogUtil.debug(() -> "changes = " + patch.getChanges());
+                            final List<Object> removed = new ArrayList<Object>();
 
-
-                        while (!changeStack.isEmpty()) {
-                            Object v = changeStack.pop();
-                            EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
-                            if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
-                                Object o =  ewchanged.getValue();
-                                if(o instanceof ForceUpdatableModel) {
-                                    //Maybe don't do twice? IDK.
-                                    ((ForceUpdatableModel)o).forceUpdate();
+                            //Apply the changes, grabbing every change along the way
+                            Stack changeStack = patch.apply(oldEntity, c -> {
+                                if ("remove".equals(c.getOp())) {
+                                    removed.add(c.getOldValue());
                                 }
-
-                                entityManager.merge(o);
+                                LogUtil.trace(() -> c.getOp() + "\t" + c.getOldValue() + "\t" + c.getNewValue());
+                            });
+                            if (changeStack.isEmpty()) {
+                                throw new IllegalStateException("No change detected");
+                            } else {
+                                LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
                             }
-                        }
+                            oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
+                            //This is the last line of defense for making sure that the patch worked
+                            //Should throw an exception here if there's a major problem
+                            //This is inefficient, but forces confirmation that the object is fully realized
+                            String serialized = EntityUtils.EntityWrapper.of(oldEntity).toJsonDiffJson();
 
-                        //explicitly delete deleted things
-                        //This should ONLY delete objects which "belong"
-                        //to something. That is, have a @SingleParent annotation
-                        //inside
 
-                        removed.stream()
-                                .filter(Objects::nonNull)
+                            while (!changeStack.isEmpty()) {
+                                Object v = changeStack.pop();
+                                EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
+                                if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
+                                    Object o = ewchanged.getValue();
+                                    if (o instanceof ForceUpdatableModel) {
+                                        //Maybe don't do twice? IDK.
+                                        ((ForceUpdatableModel) o).forceUpdate();
+                                    }
 
-                                .map(o -> EntityUtils.EntityWrapper.of(o))
-                                .filter(ew -> ew.isExplicitDeletable())
-                                .forEach(ew -> {
-                                    Object o = ew.getValue();
-                                    log.warn("deleting:" + o);
-                                    //hibernate can only remove entities from this transaction
-                                    //this logic will merge "detached" entities from outside this transaction before removing anything
+                                    entityManager.merge(o);
+                                }
+                            }
 
-                                    entityManager.remove(entityManager.contains(o) ? o : entityManager.merge(o));
+                            //explicitly delete deleted things
+                            //This should ONLY delete objects which "belong"
+                            //to something. That is, have a @SingleParent annotation
+                            //inside
 
-                                });
+                            removed.stream()
+                                    .filter(Objects::nonNull)
 
-                        try {
-                            Substance saved = transactionalUpdate(oldEntity, oldJson);
+                                    .map(o -> EntityUtils.EntityWrapper.of(o))
+                                    .filter(ew -> ew.isExplicitDeletable())
+                                    .forEach(ew -> {
+                                        Object o = ew.getValue();
+                                        log.warn("deleting:" + o);
+                                        //hibernate can only remove entities from this transaction
+                                        //this logic will merge "detached" entities from outside this transaction before removing anything
+
+                                        entityManager.remove(entityManager.contains(o) ? o : entityManager.merge(o));
+
+                                    });
+
+                            try {
+                                Substance saved = transactionalUpdate(oldEntity, oldJson);
 //                			System.out.println("updated entity = " + saved);
-                            String internalJSON = EntityUtils.EntityWrapper.of(saved).toInternalJson();
+                                String internalJSON = EntityUtils.EntityWrapper.of(saved).toInternalJson();
 //                			System.out.println("updated entity full eager fetch = " + internalJSON.hashCode());
-                            builder.updatedEntity(saved);
+                                builder.updatedEntity(saved);
 
-                            builder.status(UpdateResult.STATUS.UPDATED);
+                                builder.status(UpdateResult.STATUS.UPDATED);
 
-                            return Optional.of(saved);
-                        } catch (Throwable t) {
-                            t.printStackTrace();
+                                return Optional.of(saved);
+                            } catch (Throwable t) {
+                                t.printStackTrace();
 
-                            builder.status(UpdateResult.STATUS.ERROR);
-                            builder.throwable(t);
-                            return Optional.empty();
-                        }
-                    }else {
-                        //NON POJOPATCH: delete and save for updates
+                                builder.status(UpdateResult.STATUS.ERROR);
+                                builder.throwable(t);
+                                return Optional.empty();
+                            }
+                        } else {
+                            //NON POJOPATCH: delete and save for updates
 
-                        Substance oldValue=(Substance)oWrap.getValue();
-                        entityManager.remove(oldValue);
+                            Substance oldValue = (Substance) oWrap.getValue();
+                            entityManager.remove(oldValue);
 
-                        // Now need to take care of bad update pieces:
-                        //	1. Version not incremented correctly (post update hooks not called)
-                        //  2. Some metadata / audit data may be problematic
-                        //  3. The update hooks are called explicitly now
-                        //     ... and that's a weird thing to do, because the persist hooks
-                        //     will get called too. Does someone really expect things to
-                        //     get called twice?
-                        // TODO: the above pieces are from the old codebase, but the new one
-                        // has to have these evaluated too. Need unit tests.
+                            // Now need to take care of bad update pieces:
+                            //	1. Version not incremented correctly (post update hooks not called)
+                            //  2. Some metadata / audit data may be problematic
+                            //  3. The update hooks are called explicitly now
+                            //     ... and that's a weird thing to do, because the persist hooks
+                            //     will get called too. Does someone really expect things to
+                            //     get called twice?
+                            // TODO: the above pieces are from the old codebase, but the new one
+                            // has to have these evaluated too. Need unit tests.
 
-                        entityManager.flush();
-                        // if we clear here, it will cause issues for
-                        // some detached entities later, but not clearing causes other issues
+                            entityManager.flush();
+                            // if we clear here, it will cause issues for
+                            // some detached entities later, but not clearing causes other issues
 
-                        entityManager.clear();
+                                entityManager.clear();
 
                         Substance newValue = (Substance)nWrap.getValue();
-                        entityManager.persist(newValue);
-                        entityManager.flush();
+                            entityManager.persist(newValue);
+                            entityManager.flush();
 
 
 //                	    T saved=newValue;
-                        Substance saved = transactionalUpdate(newValue, oldJson);
-                        builder.updatedEntity(saved);
-                        builder.status(UpdateResult.STATUS.UPDATED);
+                            Substance saved = transactionalUpdate(newValue, oldJson);
+                            builder.updatedEntity(saved);
+                            builder.status(UpdateResult.STATUS.UPDATED);
 
-                        return Optional.of(saved); //Delete & Create
-                    }
-                });
+                            return Optional.of(saved); //Delete & Create
+                        }
+                    });
                 if(savedVersion ==null){
                     status.setRollbackOnly();
                 }else {

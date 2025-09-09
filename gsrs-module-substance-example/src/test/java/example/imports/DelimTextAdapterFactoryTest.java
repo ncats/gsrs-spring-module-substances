@@ -9,10 +9,7 @@ import com.fasterxml.jackson.databind.node.TextNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.PropertyBasedDataRecordContext;
-import gsrs.imports.ActionConfigImpl;
-import gsrs.imports.CodeProcessorFieldImpl;
-import gsrs.imports.ImportAdapter;
-import gsrs.imports.ImportAdapterStatistics;
+import gsrs.imports.*;
 import gsrs.module.substance.importers.DelimTextImportAdapter;
 import gsrs.module.substance.importers.DelimTextImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.CodeExtractorActionFactory;
@@ -47,7 +44,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
      */
     @Test
     public void testInitialize() throws NoSuchFieldException, IllegalAccessException {
-        List<ActionConfigImpl> simpleConfig = new ArrayList<>();
+        List<ActionConfig> simpleConfig = new ArrayList<>();
         ActionConfigImpl actionConfig = new ActionConfigImpl();
         actionConfig.setActionClass(NameExtractorActionFactory.class);
         actionConfig.setActionName("name_import");
@@ -80,7 +77,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
      */
     @Test
     public void testCreate()  {
-        List<ActionConfigImpl> simpleConfig = new ArrayList<>();
+        List<ActionConfig> simpleConfig = new ArrayList<>();
         ActionConfigImpl actionConfig = new ActionConfigImpl();
         actionConfig.setActionClass(NameExtractorActionFactory.class);
         actionConfig.setActionName("protein_import");
@@ -161,7 +158,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
     */
     @Test
     public void testParse() throws IOException {
-        List<ActionConfigImpl> simpleConfig = new ArrayList<>();
+        List<ActionConfig> simpleConfig = new ArrayList<>();
 
         ActionConfigImpl proteinActionConfig = new ActionConfigImpl();
         proteinActionConfig.setActionClass(ProteinSequenceExtractorActionFactory.class);
