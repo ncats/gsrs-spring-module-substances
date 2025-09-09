@@ -1547,7 +1547,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         if(substance.isPresent()) {
             ImageUtilities imageUtilities = new ImageUtilities();
             imageUtilities= AutowireHelper.getInstance().autowireAndProxy(imageUtilities);
-            return imageUtilities.getSubstanceImage(substance.get());
+            return imageUtilities.getSubstanceImage(substance.get(), 0);
         }
         return new ImageInfo(false, null, null);
     }
