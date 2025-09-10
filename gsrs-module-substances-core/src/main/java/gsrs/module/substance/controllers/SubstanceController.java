@@ -2170,7 +2170,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             RedirectAttributes attributes) throws Exception {
 
         if(name == null || name.length() == 0 || name.length() > MAX_NAME_STANDARDIZATION_INPUT_LENGTH ) {
-            return GsrsControllerConfiguration.createResponseEntity("Input is either missing or too long (max=500) ", HttpStatus.BAD_REQUEST.value());
+            String message = String.format("Input is either missing or too long (max=%d)", MAX_NAME_STANDARDIZATION_INPUT_LENGTH);
+            return GsrsControllerConfiguration.createResponseEntity(message, HttpStatus.BAD_REQUEST.value());
         }
         log.warn("starting in standardizeNameMethod");
         StandardNameValidator validator = new StandardNameValidator();
