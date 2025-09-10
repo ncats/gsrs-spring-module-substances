@@ -12,10 +12,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 class SmartsIndexValueMakerTest {
@@ -54,9 +52,9 @@ class SmartsIndexValueMakerTest {
         ChemicalSubstance nitrobenzene = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
-        Map<String, String> config = new HashMap<>();
+        Map<String, List<String>> config = new HashMap<>();
         String acidGroupName = "carboxlic acid";
-        config.put(acidGroupName, "C(O)=O");
+        config.put(acidGroupName, Collections.singletonList("C(O)=O"));
         indexer.setRawNamedSmarts(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
@@ -79,10 +77,42 @@ class SmartsIndexValueMakerTest {
         ChemicalSubstance mol1 = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
-        Map<String, String> config = new HashMap<>();
         String moleculeName = "imidazole";
-        config.put(moleculeName, "c1cnc[nH]1€C1=CN=CN1");
-        indexer.setRawNamedSmarts(config);
+        LinkedHashMap<Integer, Map<String, String>> config = new LinkedHashMap<>();
+        Map<String, String> configItems = new ConcurrentHashMap<>();
+        configItems.put("indexableName", moleculeName);
+        configItems.put("smarts", "c1cnc[nH]1₠C1=CN=CN1");
+        config.put(1, configItems);
+        indexer.setRawIndexables(config);
+        List<IndexableValue> indexedValues= new ArrayList<>();
+        indexer.createIndexableValues(mol1, indexedValues::add);
+        Assertions.assertEquals(1,
+                indexedValues.stream().filter(v->v.name().equals(SmartsIndexValueMaker.FACET_NAME_FULL) && v.value().equals(moleculeName) ).count());
+    }
+
+    @Test
+    void testTetrazoleMatch() throws IOException {
+        String molfilePath = "/molfiles/D34J7PAT68.mol";
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream(molfilePath),
+                "UTF-8"
+        );
+
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.addName("MIDD-0301");
+        GinasChemicalStructure structure = new GinasChemicalStructure();
+        structure.molfile= molfileText;
+        builder.setStructure(structure);
+        ChemicalSubstance mol1 = builder.build();
+
+        SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
+        String moleculeName = "tetrazazole";
+        LinkedHashMap<Integer, Map<String, String>> config = new LinkedHashMap<>();
+        Map<String, String> configItems = new ConcurrentHashMap<>();
+        configItems.put("indexableName", moleculeName);
+        configItems.put("smarts", "c1[nH]nnn1"); //original smarts: "N(=NN1)C=N1"
+        config.put(1, configItems);
+        indexer.setRawIndexables(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(mol1, indexedValues::add);
         Assertions.assertEquals(1,
