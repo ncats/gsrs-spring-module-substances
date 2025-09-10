@@ -44,7 +44,7 @@ public class Structure extends BaseModel {
     @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
     @GeneratedValue(generator = "NullUUIDGenerator")
     //maintain backwards compatibility with old GSRS store it as varchar(40) by basic hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
+ //   @Type(type = "uuid-char" )
     @Column(length =40, updatable = false)
     public UUID id;
 
