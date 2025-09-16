@@ -20,17 +20,15 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
     private final String DEFAULT_CONFIG_DATA = "nitro_[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]€nitroso_[NX2]=[OX1]";
 
-    private Map<String, List<String>> rawNamedSmarts;
-
     List<SmartsIndexable> indexables = new ArrayList<>();
 
     private boolean setupComplete=false;
 
     public final static String NAME_TO_VALUE_DELIM = "₠";
 
-    private String SET_TO_SET_DELIM = "¥";
+    //private String SET_TO_SET_DELIM = "¥";
 
-    private String VALUE_TO_VALUE_DELIM = "€";
+    //private String VALUE_TO_VALUE_DELIM = "€";
 
     private void completeSetup(){
         log.trace("completeSetup indexables size: {}", indexables.size());
@@ -95,11 +93,6 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
                 }
                 log.trace("after indexing");
             });
-    }
-
-    public void setRawNamedSmarts(Map<String, List<String>> newRawNamedSmarts) {
-        log.trace("setRawNamedSmarts with value {}", newRawNamedSmarts);
-        this.rawNamedSmarts = newRawNamedSmarts;
     }
 
     public List<SmartsIndexable> getIndexables() {

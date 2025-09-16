@@ -99,13 +99,7 @@ class SmartsIndexValueMakerTest {
     }
 
     @Test
-    void testTetrazoleMatch() throws IOException {
-        String molfilePath = "/molfiles/D34J7PAT68.mol";
-        String molfileText = IOUtils.toString(
-                this.getClass().getResourceAsStream(molfilePath),
-                "UTF-8"
-        );
-
+    void testTetrazoleMatch() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
         builder.setStructureWithDefaultReference("C(O)(=O)C1N2[C@@]([C@H](NC(/C(=N\\OC)/c3nc(N)sc3)=O)C2=O)(SC=C1Cn4nc(C)nn4)[H]");
