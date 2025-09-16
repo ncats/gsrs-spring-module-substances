@@ -47,15 +47,20 @@ class SmartsIndexValueMakerTest {
     @Test
     void testCarboxylateGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
-        builder.addName("Nitrobenzene");
+        builder.addName("benzoic acid");
         builder.setStructureWithDefaultReference("c1ccccc1C(=O)O");
         ChemicalSubstance nitrobenzene = builder.build();
 
-        SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
-        Map<String, List<String>> config = new HashMap<>();
         String acidGroupName = "carboxlic acid";
-        config.put(acidGroupName, Collections.singletonList("C(O)=O"));
-        indexer.setRawNamedSmarts(config);
+        SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
+        LinkedHashMap<Integer, Map<String, Object>> config = new LinkedHashMap<>();
+        Map<String, Object> configItems = new ConcurrentHashMap<>();
+        configItems.put("indexableName", acidGroupName);
+        Map<String, String> smarts = new LinkedHashMap<>();
+        smarts.put("0", "C(O)=O");
+        configItems.put("smarts", smarts);
+        config.put(1, configItems);
+        indexer.setRawIndexables(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
         Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals(acidGroupName)));
@@ -81,7 +86,10 @@ class SmartsIndexValueMakerTest {
         LinkedHashMap<Integer, Map<String, Object>> config = new LinkedHashMap<>();
         Map<String, Object> configItems = new ConcurrentHashMap<>();
         configItems.put("indexableName", moleculeName);
-        configItems.put("smarts", Arrays.asList("c1cnc[nH]1", "C1=CN=CN1")); //₠
+        Map<String, String> smarts = new LinkedHashMap<>();
+        smarts.put("0", "c1cnc[nH]1");
+        smarts.put("1", "C1=CN=CN1");
+        configItems.put("smarts", smarts); //₠
         config.put(1, configItems);
         indexer.setRawIndexables(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
@@ -100,17 +108,17 @@ class SmartsIndexValueMakerTest {
 
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
-        GinasChemicalStructure structure = new GinasChemicalStructure();
-        structure.molfile= molfileText;
-        builder.setStructure(structure);
+        builder.setStructureWithDefaultReference("C(O)(=O)C1N2[C@@]([C@H](NC(/C(=N\\OC)/c3nc(N)sc3)=O)C2=O)(SC=C1Cn4nc(C)nn4)[H]");
         ChemicalSubstance mol1 = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
-        String moleculeName = "tetrazazole";
+        String moleculeName = "Cefteram, Δ2";
         LinkedHashMap<Integer, Map<String, Object>> config = new LinkedHashMap<>();
         Map<String, Object> configItems = new ConcurrentHashMap<>();
         configItems.put("indexableName", moleculeName);
-        configItems.put("smarts",  Collections.singletonList("c1[nH]nnn1")); //original smarts: "N(=NN1)C=N1"
+        Map<String, String> smarts = new LinkedHashMap<>();
+        smarts.put("2", "n(nn1)cn1");
+        configItems.put("smarts",  smarts); //original smarts: "N(=NN1)C=N1"
         config.put(1, configItems);
         indexer.setRawIndexables(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
