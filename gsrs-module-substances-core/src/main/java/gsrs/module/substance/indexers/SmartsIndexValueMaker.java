@@ -1,5 +1,6 @@
 package gsrs.module.substance.indexers;
 
+import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.molwitch.search.MolSearcher;
 import gov.nih.ncats.molwitch.search.MolSearcherFactory;
 import ix.core.search.text.IndexValueMaker;
@@ -9,6 +10,7 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -39,30 +41,20 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
         }
 
         indexables = new ArrayList<>();
-        if(rawNamedSmarts != null && rawNamedSmarts.size() >0) {
-            log.trace("using real config");
-            for (Map.Entry<String, List<String>> entry : rawNamedSmarts.entrySet()) {
-                String fragmentName = entry.getKey();
-                //String rawSmartsList = entry.getValue();
-                List<String> temps = entry.getValue();
-                String[] listOfSmarts = temps.toArray(new String[temps.size()]);
-                // rawSmartsList.split("\\€");
-                log.trace("handling smarts set with name {}", fragmentName);
-                List<String> smartsList = Arrays.asList(listOfSmarts);
-                SmartsIndexable indexable = new SmartsIndexable(fragmentName, smartsList);
-                indexables.add(indexable);
+        String usableConfig = DEFAULT_CONFIG_DATA;
+        log.trace("using default config {}", usableConfig);
+        String[] tokens = usableConfig.split("\\€");
+        for(String token : tokens) {
+            String[] parts = token.split("\\_");
+            Map<String, String> values = new LinkedHashMap<>();
+            AtomicInteger item = new AtomicInteger(0);
+            String[] innerParts = parts[1].split(NAME_TO_VALUE_DELIM);
+            for(String part :innerParts) {
+                values.put( Integer.toString( item.getAndIncrement()), part);
             }
-        } else {
-            String usableConfig = DEFAULT_CONFIG_DATA;
-            log.trace("using default config {}", usableConfig);
-            String[] tokens = usableConfig.split("\\€");
-            for(String token : tokens) {
-                String[] parts = token.split("\\_");
-
-                SmartsIndexable indexable = new SmartsIndexable(parts[0], Collections.singletonList( parts[1]));
-                log.trace("indexable with {} and {}", parts[0], parts[1]);
-                indexables.add(indexable);
-            }
+            SmartsIndexable indexable = new SmartsIndexable(parts[0], values);
+            log.trace("indexable with {} and {}", parts[0], parts[1]);
+            indexables.add(indexable);
         }
     }
 
@@ -118,11 +110,13 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
         this.indexables = indexables;
     }
 
-    public void setRawIndexables( LinkedHashMap<Integer, Map<String, String>> newIndexables){
+    public void setRawIndexables( LinkedHashMap<Integer, Map<String, Object>> newIndexables){
         log.trace("starting in setRawIndexables");
         this.indexables.clear();
-        for (Map<String, String> expression: newIndexables.values()) {
-            SmartsIndexable indexable = new SmartsIndexable(expression);
+        for (Map<String, Object> rawIndexable: newIndexables.values()) {
+            String patternName = (String) rawIndexable.get("indexableName");
+            Map<String, String> smartsList = (Map<String, String>) rawIndexable.get("smarts");
+            SmartsIndexable indexable = new SmartsIndexable(patternName, smartsList);
             if (indexable.isValid()) {
                 this.indexables.add(indexable);
             }
