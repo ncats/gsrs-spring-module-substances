@@ -34,6 +34,7 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
 import gsrs.service.AbstractGsrsEntityService;
+import ix.ginas.utils.validation.validators.StandardNameValidator;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.DependsOn;
@@ -176,6 +177,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private ChemicalUtils chemicalUtils;
+
+    private static final int MAX_NAME_STANDARDIZATION_INPUT_LENGTH = 500;
 
     @Override
     public SearchOptions instrumentSearchOptions(SearchOptions so) {
@@ -2157,5 +2160,22 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             errorResponse.put("error", "Error processing SMILES string: " + e.getMessage());
             return ResponseEntity.ok(errorResponse);
         }
+    }
+
+    @GetGsrsRestApiMapping("/standardizeName")
+    public ResponseEntity<Object> standardizeNameMethod(
+            @RequestParam(required = true) String name,
+            HttpServletRequest httpServletRequest,
+            RedirectAttributes attributes) throws Exception {
+
+        if(name == null || name.length() == 0 || name.length() > MAX_NAME_STANDARDIZATION_INPUT_LENGTH ) {
+            String message = String.format("Input is either missing or too long (max=%d)", MAX_NAME_STANDARDIZATION_INPUT_LENGTH);
+            return GsrsControllerConfiguration.createResponseEntity(message, HttpStatus.BAD_REQUEST.value());
+        }
+        log.warn("starting in standardizeNameMethod");
+        StandardNameValidator validator = new StandardNameValidator();
+        validator=AutowireHelper.getInstance().autowireAndProxy(validator);
+        JsonNode standardizeResult = validator.standardizeName(name, false);
+        return new ResponseEntity<>(standardizeResult, HttpStatus.OK);
     }
 }
