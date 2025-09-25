@@ -91,8 +91,7 @@ public class FeatureGenerationTest {
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.molfile = molfileText;
         List<Map<String, String>> properties = FeatureUtils.calculateFeatures( structure.toChemical());
-        //properties.get(0).entrySet().forEach(e-> System.out.printf("key: %s = value: %s\n", e.getKey(), e.getValue()));
-        Assertions.assertEquals("5", properties.get(0).get("categoryScore"));
+        Assertions.assertEquals("5", properties.get(0).get("Potency Category"));
     }
 
 }
