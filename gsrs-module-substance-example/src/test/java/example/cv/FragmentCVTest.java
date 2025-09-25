@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.UserRoleConfiguration;
 import gsrs.services.GroupService;
+import gsrs.services.PrivilegeService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.ValidatorConfig;
@@ -142,7 +144,10 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         if(type == ValidatorConfig.METHOD_TYPE.BATCH){
             builder.allowPossibleDuplicates(true);
         }
-        if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+        PrivilegeService privilegeService = new PrivilegeService();
+
+        //if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+        if( privilegeService.canUserPerform("Override Duplicate Checks")== UserRoleConfiguration.PermissionResult.MayPerform) {
             builder.allowPossibleDuplicates(true);
         }
 

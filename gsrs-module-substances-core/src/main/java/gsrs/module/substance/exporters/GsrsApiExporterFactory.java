@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import gsrs.repository.UserProfileRepository;
+import gsrs.services.PrivilegeService;
 import ix.core.models.Role;
 import ix.core.models.UserProfile;
 import ix.ginas.exporters.Exporter;
@@ -46,6 +47,9 @@ public class GsrsApiExporterFactory implements ExporterFactory<Substance> {
 
     @Autowired
     private UserProfileRepository userProfileRepository;
+
+    @Autowired
+    private PrivilegeService privilegeService;
 
     private OutputFormat format = new OutputFormat("gsrsapi", "Send to ...");
     private int timeout = 120000;
@@ -159,7 +163,8 @@ public class GsrsApiExporterFactory implements ExporterFactory<Substance> {
         RestTemplate restTemplate = new RestTemplate(clientFactory);
         restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(baseUrl));
         UserProfile profile = userProfileRepository.findByUser_UsernameIgnoreCase(params.getUsername());
-        boolean allowedExport = (allowedRole == null || profile.hasRole(allowedRole)) ? true : false;
+        //boolean allowedExport = (allowedRole == null || profile.hasRole(allowedRole)) ? true : false;
+        boolean allowedExport = privilegeService.canDo("Export Data");
         return new GsrsApiExporter(out, restTemplate, getHeaders(profile), allowedExport, validate, newAuditor, changeReason);
     }
 

@@ -2,7 +2,9 @@ package example.substance.validation;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.UserRoleConfiguration;
 import gsrs.services.GroupService;
+import gsrs.services.PrivilegeService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.DefaultValidatorConfig;
@@ -196,11 +198,6 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         assertEquals(true, hasRole);
         assertTrue(response2.getValidationMessages().size()==1);
         response2.getValidationMessages().forEach(vm -> {
-            // System.out.println(String.format("user: %s", currentUser));
-            // System.out.println(String.format("type: %s", vm.getMessageType()));
-            // System.out.println(String.format("message: %s", vm.getMessage()));
-            // System.out.println(String.format("messageId: %s", vm.getMessageId()));
-            // System.out.println(String.format("isError: %s", vm.isError()));
             assertEquals(testMessageType, vm.getMessageType().toString());
         });
     }
@@ -235,8 +232,10 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         if(type == ValidatorConfig.METHOD_TYPE.BATCH){
             builder.allowPossibleDuplicates(true);
         }
-//
-        if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+
+        PrivilegeService privilegeService = new PrivilegeService();
+        //if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+        if(privilegeService.canUserPerform("Override Duplicate Checks") == UserRoleConfiguration.PermissionResult.MayPerform) {
             builder.allowPossibleDuplicates(true);
         }
 

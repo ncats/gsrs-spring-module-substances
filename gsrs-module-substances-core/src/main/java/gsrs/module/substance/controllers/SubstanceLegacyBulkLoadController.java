@@ -5,6 +5,8 @@ import gsrs.module.substance.services.ProcessingJobEntityService;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
+import gsrs.security.canImportData;
+import gsrs.security.canRunTasks;
 import gsrs.security.hasAdminRole;
 import gsrs.service.PayloadService;
 import ix.core.models.Payload;
@@ -51,7 +53,8 @@ public class SubstanceLegacyBulkLoadController {
 
 
 
-    @hasAdminRole
+    //@hasAdminRole
+    @canRunTasks
     @GetMapping("/api/v1/admin/{id}")
     public Object getLoadStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
         Optional<ProcessingJob> jobs = processingJobService.flexLookup(id);
@@ -62,7 +65,8 @@ public class SubstanceLegacyBulkLoadController {
     }
 
     ///admin/load
-    @hasAdminRole
+    //@hasAdminRole
+    @canImportData
     @PostMapping("/api/v1/admin/load")
     public Object handleFileUpload(@RequestParam("file-name") MultipartFile file,
                                                    @RequestParam("file-type") String type,
