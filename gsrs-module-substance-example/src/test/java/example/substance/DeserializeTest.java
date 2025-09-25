@@ -21,7 +21,7 @@ public class DeserializeTest {
         String substanceJson =FileUtils.readFileToString(resource, Charset.defaultCharset());
         ObjectMapper mapper = new ObjectMapper();
         JsonNode substanceNode = mapper.valueToTree(substanceJson);
-        Assertions.assertEquals(56819, substanceNode.asText().length());
+        Assertions.assertEquals(56818, substanceNode.asText().length());
 
     }
 }

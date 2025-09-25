@@ -19,14 +19,15 @@ public class InchiFunctionTest {
 
     @ParameterizedTest
     @MethodSource("inputData")
-    void testInchi(String molname, String description, Structure.Stereo stereo, boolean expectDelimiter) throws IOException {
+    void testInchi(String molname, String description, Structure.Optical optical, boolean expectDelimiter) throws IOException {
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream("/molfiles/" + molname + ".mol"),
                 "UTF-8"
         );
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.molfile = molfileText;
-        structure.stereoChemistry = stereo;
+        structure.opticalActivity = optical;
+        structure.definedStereo = 1; //arbitrary
         InChIFullRegisteredFunction functionHolder = new InChIFullRegisteredFunction();
         BiFunction<InChIFullRegisteredFunction.InChIFullPath, Structure, Optional<String>> fun = functionHolder.getOperation();
         Optional<String> result =fun.apply(new InChIFullRegisteredFunction.InChIFullPath(), structure);
@@ -36,14 +37,15 @@ public class InchiFunctionTest {
 
     @ParameterizedTest
     @MethodSource("inputData")
-    void testInchiKey(String molname, String description, Structure.Stereo stereo, boolean expectDelimiter) throws IOException {
+    void testInchiKey(String molname, String description, Structure.Optical optical, boolean expectDelimiter) throws IOException {
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream("/molfiles/" + molname + ".mol"),
                 "UTF-8"
         );
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.molfile = molfileText;
-        structure.stereoChemistry = stereo;
+        structure.opticalActivity = optical;
+        structure.definedStereo = 2;//arbitrary value; must be > 0!
         InChIRegisteredFunction functionHolder = new InChIRegisteredFunction();
         BiFunction<InChIRegisteredFunction.InChIPath, Structure, Optional<String>> fun = functionHolder.getOperation();
         Optional<String> result =fun.apply(new InChIRegisteredFunction.InChIPath(), structure);
@@ -53,12 +55,12 @@ public class InchiFunctionTest {
 
     private static Stream<Arguments> inputData() {
         return Stream.of(
-                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with unknown stereo", Structure.Stereo.UNKNOWN, false),
-                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with racemic stereo", Structure.Stereo.RACEMIC, true),
-                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with epimeric stereo", Structure.Stereo.EPIMERIC, true),
-                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with unknown stereo", Structure.Stereo.UNKNOWN, false),
-                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with racemic stereo", Structure.Stereo.RACEMIC, true),
-                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with epimeric stereo", Structure.Stereo.EPIMERIC, true)
+                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with unknown stereo", Structure.Optical.MINUS, false),
+                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with racemic stereo", Structure.Optical.PLUS_MINUS, true),
+                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with epimeric stereo", Structure.Optical.PLUS_MINUS, true),
+                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with unknown stereo", Structure.Optical.NONE, false),
+                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with racemic stereo", Structure.Optical.PLUS_MINUS, true),
+                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with epimeric stereo", Structure.Optical.PLUS_MINUS, true)
 
         );
     }
