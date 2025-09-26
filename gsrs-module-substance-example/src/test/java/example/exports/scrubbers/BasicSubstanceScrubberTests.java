@@ -2,9 +2,9 @@ package example.exports.scrubbers;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Predicate;
-import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.substances.tests.SubstanceTestUtil;
 import ix.core.models.Group;
 import ix.core.models.Keyword;
@@ -14,15 +14,13 @@ import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.*;
 
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @Slf4j
-public class BasicSubstanceScrubberTests {
+public class BasicSubstanceScrubberTests extends AbstractSubstanceJpaEntityTest {
 
 
     @Test

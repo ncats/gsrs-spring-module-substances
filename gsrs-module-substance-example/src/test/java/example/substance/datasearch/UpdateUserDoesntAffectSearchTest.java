@@ -111,10 +111,12 @@ public class UpdateUserDoesntAffectSearchTest extends AbstractSubstanceJpaFullSt
                 SearchResult sresult = searchService.search(sr.getQuery(), sr.getOptions());
 
                 List<Substance> list = sresult.getMatches();
+                return list;
+                /* removing this processing which seems no longer necessary (26-September-2025)
                 return list.stream()
                         //force fetching
                         .peek(ss -> EntityUtils.EntityWrapper.of(ss).toInternalJson())
-                        .collect(Collectors.toList());
+                        .collect(Collectors.toList());*/
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

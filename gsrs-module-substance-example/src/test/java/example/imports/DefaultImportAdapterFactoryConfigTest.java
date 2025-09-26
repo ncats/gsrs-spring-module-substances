@@ -34,6 +34,9 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         String substanceContext = "substances";
         //build up a complete configuration
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
+
+        Map<String,Map<String, Map<String, Object>>> blankSubstanceContextHashMap = new HashMap<>();
+
         Map<String, Map<String, Map<String, Map<String, Object>>>> adapterConfig = new HashMap<>();
         Map<String, Object> oneAdapter = new HashMap<>();
         oneAdapter.put("importAdapterFactoryClass", "gsrs.module.substance.importers.SDFImportAdapterFactory");
@@ -47,7 +50,9 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         Map<String, Map<String, Object>> adapters = new HashMap<>();
         // ix.ginas.export.exporterfactories.substances.list.SdfExporterFactory =
         adapters.put("SDFImportAdapterFactory", oneAdapter);
-        adapterConfig.put(substanceContext, null);
+
+        // adapterConfig.put(substanceContext, null);
+        adapterConfig.put(substanceContext, blankSubstanceContextHashMap);
         adapterConfig.get(substanceContext).put("list", adapters);
         config.setImportAdapterFactories(adapterConfig);
         ConfigBasedGsrsImportAdapterFactoryFactory factoryFactory = new ConfigBasedGsrsImportAdapterFactoryFactory();

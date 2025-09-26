@@ -1,5 +1,6 @@
 package example.substance;
 
+import example.GsrsModuleSubstanceApplicationTests;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
@@ -12,10 +13,13 @@ import ix.ginas.utils.validation.validators.tags.TagUtilities;
 import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest
+@SpringBootTest(
+        classes = {GsrsModuleSubstanceApplicationTests.class},
+        properties = {"spring.application.name=substance-example"}
+)
+
 @Slf4j
 public class TagsTest {
-
     Substance createOldSubstance() {
         Substance oldSubstance = new Substance();
         Name oldName1 = new Name();
