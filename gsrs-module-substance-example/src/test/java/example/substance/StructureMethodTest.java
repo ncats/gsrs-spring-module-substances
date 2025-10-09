@@ -1,12 +1,11 @@
 package example.substance;
 
-import example.GsrsModuleSubstanceApplication;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.File;
@@ -14,9 +13,8 @@ import java.nio.file.Files;
 import java.util.HashSet;
 import java.util.List;
 
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
-public class StructureMethodTest {
+public class StructureMethodTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
     private StructureProcessor structureProcessor;

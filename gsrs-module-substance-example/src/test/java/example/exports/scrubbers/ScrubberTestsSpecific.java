@@ -1,8 +1,8 @@
 package example.exports.scrubbers;
 
-import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
+import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Group;
 import ix.core.models.Keyword;
 import ix.core.models.Principal;
@@ -14,14 +14,12 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.*;
 
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
-public class ScrubberTestsSpecific {
+public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
 
     @Test
     /*
