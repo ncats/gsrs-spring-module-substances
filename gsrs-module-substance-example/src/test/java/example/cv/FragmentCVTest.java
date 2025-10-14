@@ -3,14 +3,12 @@ package example.cv;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
-import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.services.GroupService;
 import gsrs.services.PrivilegeService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.ValidatorConfig;
-import ix.core.models.Role;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
@@ -72,7 +70,6 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         GsrsProcessingStrategy strategy = gsrsProcessingStrategyFactory.createNewStrategy("ACCEPT_APPLY_ALL_WARNINGS");
         ValidatorCallback callback = createCallbackFor(naSugarVocab, response, ValidatorConfig.METHOD_TYPE.UPDATE, strategy);
         cvFragmentStructureValidator.validate(naSugarVocab, null, callback);
-        System.out.printf("total messages: %d\n", response.getValidationMessages().size());
         response.getValidationMessages().forEach(System.out::println);
         Assertions.assertEquals(0,
         response.getValidationMessages().stream()

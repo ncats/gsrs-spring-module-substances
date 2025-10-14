@@ -121,7 +121,7 @@ public class GsrsApiExporterFactory implements ExporterFactory<Substance> {
     }
 
     public void setAllowedRole(String allowedRole) {
-        this.allowedRole = Role.valueOf(allowedRole);
+        this.allowedRole = Role.of(allowedRole);
     }
 
     public void setNewAuditor(String newAuditor) {

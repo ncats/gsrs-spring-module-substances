@@ -3,7 +3,6 @@ package ix.ginas.utils.validation.validators;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
 import gsrs.services.PrivilegeService;
-import ix.core.models.Role;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
@@ -21,7 +20,6 @@ import java.util.stream.Stream;
  * Created by peryeata on 8/28/18.
  */
 public class RelationshipModificationValidator extends AbstractValidatorPlugin<Substance> {
-	private static Collection<Role> ALLOWED_ROLES = Arrays.asList(Role.Admin, Role.SuperUpdate);
 
 	@Autowired
 	private PrivilegeService privilegeService;
