@@ -1,5 +1,4 @@
 package example.substance.validation;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.UserRoleConfiguration;
