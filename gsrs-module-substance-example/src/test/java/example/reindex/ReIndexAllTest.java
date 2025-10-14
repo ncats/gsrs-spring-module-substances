@@ -97,6 +97,7 @@ public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
         transactionTemplate = new TransactionTemplate(platformTransactionManager);
 
     }
+
     @Test
     @WithMockUser(username = "admin", roles="Admin")
     public void persistCreatesBackupEvents(@Autowired ApplicationEvents applicationEvents){

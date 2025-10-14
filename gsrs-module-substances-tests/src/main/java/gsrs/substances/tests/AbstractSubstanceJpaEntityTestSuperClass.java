@@ -27,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -38,6 +37,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.task.TaskExecutor;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -242,7 +242,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected ExportService mockExportService;
 
-    @MockBean
+    @MockitoBean
     protected TaskExecutor mockTaskExecutor;
 
     @Autowired
@@ -251,7 +251,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected ETagRepository eTagRepository;
 
-    @MockBean
+    @MockitoBean
     protected PayloadController payloadController;
 
     @Autowired
