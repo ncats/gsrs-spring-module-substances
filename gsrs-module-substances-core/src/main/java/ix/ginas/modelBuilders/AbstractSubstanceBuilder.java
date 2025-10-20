@@ -365,7 +365,8 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
     }
 	
 	public JsonNode buildJson(){
-		return EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().valueToTree(this.build());
+        JsonNode jsonNode  = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().valueToTree(this.build());
+		return jsonNode;
 	}
 	
 	public void buildJsonAnd(Consumer<JsonNode> c){
