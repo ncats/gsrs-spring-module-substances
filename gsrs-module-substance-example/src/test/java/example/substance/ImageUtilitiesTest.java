@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 
 @Slf4j
@@ -70,7 +71,9 @@ public class ImageUtilitiesTest {
         String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         try {
             URL fileUrl = new URL(imageUrl);
-            InputStream is = fileUrl.openStream ();
+            URLConnection connection = fileUrl.openConnection();
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0"); // Mimic a real browser
+            InputStream is = connection.getInputStream();
             byte[] imageBytes = IOUtils.toByteArray(is);
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 50, 50, "jpg");
 
@@ -112,7 +115,9 @@ public class ImageUtilitiesTest {
         String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
         try {
             URL fileUrl = new URL(imageUrl);
-            InputStream is = fileUrl.openStream ();
+            URLConnection connection = fileUrl.openConnection();
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0"); // Mimic a real browser
+            InputStream is = connection.getInputStream();
             byte[] imageBytes = IOUtils.toByteArray(is);
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 50, 50, "jpeg");
             File basicFile = File.createTempFile ("del2Resized", "jpg");
