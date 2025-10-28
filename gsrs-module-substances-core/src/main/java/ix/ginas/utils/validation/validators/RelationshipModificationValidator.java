@@ -2,6 +2,7 @@ package ix.ginas.utils.validation.validators;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
+import gsrs.services.CommonPrivileges;
 import gsrs.services.PrivilegeService;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
@@ -32,7 +33,7 @@ public class RelationshipModificationValidator extends AbstractValidatorPlugin<S
 			return;
 		}
 
-		if(!privilegeService.canDo("Modify Relationships")){
+		if(!privilegeService.canDo(CommonPrivileges.MODIFY_RELATIONSHIPS)){
 			Map<UUID, Relationship> oldRelationships = Optional.ofNullable(objold.relationships)
 					.map(r->r.stream())
 					.orElse(Stream.empty())

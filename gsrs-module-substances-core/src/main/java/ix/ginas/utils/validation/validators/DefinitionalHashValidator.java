@@ -83,7 +83,7 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 										//confirm can be a new warning that can be dismissed
 
 										//if(!GsrsSecurityUtils.hasAnyRoles(Role.Admin)) {
-									if(privilegeService.canUserPerform("Edit Public Data") == UserRoleConfiguration.PermissionResult.MayPerform) {
+									if(privilegeService.canUserPerform("Data") == UserRoleConfiguration.PermissionResult.MayPerform) {
 											/*
 											This section related to GSRS-1347 (March 2020)
 											When a user makes a change to an approved substance (with a UNII) and the user is _not_ an admin

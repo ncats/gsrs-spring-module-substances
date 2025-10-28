@@ -19,12 +19,14 @@ public class NewSubstanceNonBatchLoadValidator extends AbstractValidatorPlugin<S
     @Autowired
     PrivilegeService privilegeService;
 
+    private final String REQUIRED_PRIVILEGE_FOR_PUBLIC_DATA = "Edit Public Data";
+
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
 
         if (objnew.isPublic()) {
             //if (!GsrsSecurityUtils.hasAnyRoles(Role.Admin,Role.SuperDataEntry)) {
-            if(privilegeService.canUserPerform("Edit Public Data") != UserRoleConfiguration.PermissionResult.MayPerform) {
+            if(privilegeService.canUserPerform(REQUIRED_PRIVILEGE_FOR_PUBLIC_DATA) != UserRoleConfiguration.PermissionResult.MayPerform) {
                 callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only superDataEntry users can make a substance public"));
             }
         }

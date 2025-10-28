@@ -2,6 +2,7 @@ package ix.ginas.utils.validation.validators;
 
 
 import gsrs.repository.UserProfileRepository;
+import gsrs.services.CommonPrivileges;
 import gsrs.services.PrivilegeService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.Principal;
@@ -69,7 +70,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
 
         //Making a change to a validated record
         if (objnew.isValidated()) {
-            if (!privilegeService.canDo("Edit Approved Records")) {
+            if (!privilegeService.canDo(CommonPrivileges.EDIT_APPROVED_RECORDS)) {
                 callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only users with the \"Edit Approved Records\" privilege can update approved substances"));
             }
         }
@@ -79,7 +80,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
         if (objold.approvalID != null) {
             if (!objold.approvalID.equals(objnew.approvalID)) {
                 // Can't change approvalID!!! (unless admin)
-                if (privilegeService.canDo("Edit Approval IDs")) {
+                if (privilegeService.canDo(CommonPrivileges.EDIT_APPROVAL_IDS)) {
                     //GSRS-638 removing an approval ID makes the new id null
                     if (objnew.approvalID == null) {
                         callback.addMessage(GinasProcessingMessage
