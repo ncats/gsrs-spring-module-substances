@@ -13,7 +13,9 @@ import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.UserRoleConfiguration;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.services.PrivilegeService;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
@@ -78,6 +80,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
+    @Autowired
+    private PrivilegeService privilegeService;
+
     @Override
     public Class<Substance> getEntityClass() {
         return Substance.class;
@@ -128,7 +133,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             builder.allowPossibleDuplicates(true);
         }
 //      
-        if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+        //if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+        if(privilegeService.canUserPerform("Override Duplicate Checks") == UserRoleConfiguration.PermissionResult.MayPerform){
             builder.allowPossibleDuplicates(true);   
         }
 

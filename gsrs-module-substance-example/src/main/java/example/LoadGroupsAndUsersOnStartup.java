@@ -6,6 +6,7 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
 import gsrs.repository.UserProfileRepository;
+import gsrs.services.PrivilegeService;
 import ix.core.models.Group;
 import ix.core.models.Principal;
 import ix.core.models.Role;
@@ -70,7 +71,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 up.active = true;
                 up.user.admin = true;
                 up.deprecated = false;
-                up.setRoles(Arrays.asList(Role.values()));
+                up.setRoles(PrivilegeService.instance().getAllRoleNames().stream().map(r->Role.of(r)).collect(Collectors.toList()));
 
                 userProfileRepository.saveAndFlush(up);
 
@@ -79,7 +80,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 up2.setPassword("user1");
                 up2.active = true;
                 up2.deprecated = false;
-                up2.setRoles(Arrays.asList(Role.Query));
+                up2.setRoles(Arrays.asList(Role.of("Query")));
 
                 userProfileRepository.saveAndFlush(up2);
 
@@ -88,7 +89,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 guest.setPassword("GUEST");
                 guest.active = false;
                 guest.deprecated = false;
-                guest.setRoles(Arrays.asList(Role.Query));
+                guest.setRoles(Arrays.asList(Role.of("Query")));
 
                 userProfileRepository.saveAndFlush(guest);
             }
@@ -105,7 +106,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                     UserProfile up = userProfileRepository.findByUser_UsernameIgnoreCase("admin").standardize();
 
                     Authentication auth = new UsernamePasswordAuthenticationToken(up.user.username, null,
-                            up.getRoles().stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r.name())).collect(Collectors.toList()));
+                            up.getRoles().stream().map(r -> new SimpleGrantedAuthority("ROLE_" + r.getRole())).collect(Collectors.toList()));
 
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 });

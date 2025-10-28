@@ -4,6 +4,8 @@ import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.definitional.DefinitionalElements.DefinitionalElementDiff.OP;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.UserRoleConfiguration;
+import gsrs.services.PrivilegeService;
 import ix.core.models.Role;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
@@ -25,6 +27,9 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 
 	@Autowired
 	private DefinitionalElementFactory definitionalElementFactory;
+
+	@Autowired
+	private PrivilegeService privilegeService;
 
 	public DefinitionalElementFactory getDefinitionalElementFactory() {
 		return definitionalElementFactory;
@@ -77,10 +82,11 @@ public class DefinitionalHashValidator  extends AbstractValidatorPlugin<Substanc
 										// only for approved substances
 										//confirm can be a new warning that can be dismissed
 
-										if(!GsrsSecurityUtils.hasAnyRoles(Role.Admin)) {
+										//if(!GsrsSecurityUtils.hasAnyRoles(Role.Admin)) {
+									if(privilegeService.canUserPerform("Data") == UserRoleConfiguration.PermissionResult.MayPerform) {
 											/*
 											This section related to GSRS-1347 (March 2020)
-											When a user makes a change to an approved sustance (with a UNII) and the user is _not_ an admin
+											When a user makes a change to an approved substance (with a UNII) and the user is _not_ an admin
 											-- but _is_ a super updated because regular updaters are not allowed to update approved substances
 											we display a strong warning.
 											Test this by making these types of changes:
