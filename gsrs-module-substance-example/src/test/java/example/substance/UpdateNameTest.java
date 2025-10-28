@@ -20,6 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
+// __aw__ this suite includes Mitch's changes that show how the test can work.
+    // but we need a more comprehesive solution
+    // Therefore the following test fails on purpose
+
+    @Test
+    public void failOnPurposeTest() {
+        assertEquals("Hello","Goodbye");
+    }
 
 
     @Test
