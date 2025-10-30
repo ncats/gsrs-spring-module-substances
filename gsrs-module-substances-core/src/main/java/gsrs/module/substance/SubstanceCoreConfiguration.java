@@ -68,7 +68,7 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         StructureHandlingConfiguration.class,
         LegacyAuthenticationConfiguration.class,
         ChemicalUtils.class,
-        PrivilegeService.class
+        SubstanceEntityServiceConfiguration.class
 })
 public class SubstanceCoreConfiguration {
 

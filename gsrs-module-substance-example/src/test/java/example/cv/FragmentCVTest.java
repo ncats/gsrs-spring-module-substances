@@ -143,7 +143,6 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         }
         PrivilegeService privilegeService = new PrivilegeService();
 
-        //if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
         if( privilegeService.canUserPerform("Override Duplicate Checks")== UserRoleConfiguration.PermissionResult.MayPerform) {
             builder.allowPossibleDuplicates(true);
         }

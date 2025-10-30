@@ -9,6 +9,8 @@ import gsrs.springUtils.StaticContextAccessor;
 
 import java.io.IOException;
 import java.net.*;
+import java.util.List;
+import java.util.Map;
 
 @Configuration
 @ConfigurationProperties("gsrs.substance.data")
@@ -20,8 +22,8 @@ public class SubstanceDataConfiguration {
 	});
 	
     private int nameColumnLength=254;
-    
-    
+
+	private Map<String, List<String >> privilegesForPossibleDuplicates;
     
     public static SubstanceDataConfiguration INSTANCE() {
     	return _instanceSupplier.get();

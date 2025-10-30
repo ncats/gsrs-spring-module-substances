@@ -27,7 +27,8 @@ public class NewSubstanceNonBatchLoadValidator extends AbstractValidatorPlugin<S
         if (objnew.isPublic()) {
             //if (!GsrsSecurityUtils.hasAnyRoles(Role.Admin,Role.SuperDataEntry)) {
             if(privilegeService.canUserPerform(REQUIRED_PRIVILEGE_FOR_PUBLIC_DATA) != UserRoleConfiguration.PermissionResult.MayPerform) {
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only superDataEntry users can make a substance public"));
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(String.format("Only users with the %s role can make a substance public",
+                        REQUIRED_PRIVILEGE_FOR_PUBLIC_DATA)));
             }
         }
         if(objnew.approvalID!=null){

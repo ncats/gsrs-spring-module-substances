@@ -12,17 +12,12 @@ import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
-import gsrs.security.GsrsSecurityUtils;
-import gsrs.security.UserRoleConfiguration;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.services.PrivilegeService;
-import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.models.ForceUpdatableModel;
-import ix.core.models.Role;
 import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.Key;
 import ix.core.util.LogUtil;
 import ix.core.validator.*;
 import ix.ginas.models.v1.Substance;
@@ -45,7 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.persistence.EntityManager;
-import javax.swing.text.DefaultStyledDocument;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -60,6 +54,21 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     public SubstanceEntityServiceImpl() {
         super(CONTEXT,  IdHelpers.UUID, "gsrs_exchange", "substance.created", "substance.updated");
+        log.info("starting constructor. ");
+        if( SubstanceEntityServiceConfiguration.getInstance().getPrivilegesForPossibleDuplicates() != null
+                && !SubstanceEntityServiceConfiguration.getInstance().getPrivilegesForPossibleDuplicates().isEmpty()){
+            this.privilegesForPossibleDuplicateOverride = SubstanceEntityServiceConfiguration.getInstance().getPrivilegesForPossibleDuplicates().values().stream()
+                    .flatMap(v->v.stream())
+                    .collect(Collectors.toList());
+            log.trace("used SubstanceEntityServiceConfiguration to init");
+        } else if(SubstanceDataConfiguration.INSTANCE().getPrivilegesForPossibleDuplicates() != null
+                && !SubstanceDataConfiguration.INSTANCE().getPrivilegesForPossibleDuplicates().isEmpty()) {
+            log.trace("using values from SubstanceDataConfiguration");
+            this.privilegesForPossibleDuplicateOverride = SubstanceDataConfiguration.INSTANCE().getPrivilegesForPossibleDuplicates().values().stream()
+                    .flatMap(v->v.stream())
+                    .collect(Collectors.toList());
+        }
+        log.trace("this.privilegesForPossibleDuplicateOverride: {}", this.privilegesForPossibleDuplicateOverride);
     }
 
     @Autowired
@@ -87,6 +96,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     public Class<Substance> getEntityClass() {
         return Substance.class;
     }
+
+    private List<String> privilegesForPossibleDuplicateOverride = Arrays.asList("Override Full Duplicate Checks","Override Potential Duplicate Warnings" );
 
     @Override
     public UUID parseIdFromString(String idAsString) {
@@ -132,10 +143,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         if(type == ValidatorConfig.METHOD_TYPE.BATCH){
             builder.allowPossibleDuplicates(true);
         }
-//      
-        //if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
-        if(privilegeService.canUserPerform("Override Duplicate Checks") == UserRoleConfiguration.PermissionResult.MayPerform){
-            builder.allowPossibleDuplicates(true);   
+        if( !privilegesForPossibleDuplicateOverride.isEmpty() && privilegesForPossibleDuplicateOverride.stream()
+                .anyMatch(p-> privilegeService.canDo(p))) {
+            log.trace("allowing possible duplicates");
+            builder.allowPossibleDuplicates(true);
         }
 
         return builder;
