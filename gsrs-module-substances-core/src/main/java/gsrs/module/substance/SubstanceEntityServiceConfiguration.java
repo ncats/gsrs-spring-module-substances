@@ -21,5 +21,4 @@ public class SubstanceEntityServiceConfiguration {
 
     public static SubstanceEntityServiceConfiguration getInstance(){return _instanceSupplier.get();}
 
-    private Map<String, List<String >> privilegesForPossibleDuplicates;
 }

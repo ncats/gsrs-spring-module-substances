@@ -13,7 +13,6 @@ import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.services.PrivilegeService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.models.ForceUpdatableModel;
@@ -54,21 +53,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     public SubstanceEntityServiceImpl() {
         super(CONTEXT,  IdHelpers.UUID, "gsrs_exchange", "substance.created", "substance.updated");
-        log.info("starting constructor. ");
-        if( SubstanceEntityServiceConfiguration.getInstance().getPrivilegesForPossibleDuplicates() != null
-                && !SubstanceEntityServiceConfiguration.getInstance().getPrivilegesForPossibleDuplicates().isEmpty()){
-            this.privilegesForPossibleDuplicateOverride = SubstanceEntityServiceConfiguration.getInstance().getPrivilegesForPossibleDuplicates().values().stream()
-                    .flatMap(v->v.stream())
-                    .collect(Collectors.toList());
-            log.trace("used SubstanceEntityServiceConfiguration to init");
-        } else if(SubstanceDataConfiguration.INSTANCE().getPrivilegesForPossibleDuplicates() != null
-                && !SubstanceDataConfiguration.INSTANCE().getPrivilegesForPossibleDuplicates().isEmpty()) {
-            log.trace("using values from SubstanceDataConfiguration");
-            this.privilegesForPossibleDuplicateOverride = SubstanceDataConfiguration.INSTANCE().getPrivilegesForPossibleDuplicates().values().stream()
-                    .flatMap(v->v.stream())
-                    .collect(Collectors.toList());
-        }
-        log.trace("this.privilegesForPossibleDuplicateOverride: {}", this.privilegesForPossibleDuplicateOverride);
     }
 
     @Autowired
@@ -89,15 +73,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
-    @Autowired
-    private PrivilegeService privilegeService;
-
     @Override
     public Class<Substance> getEntityClass() {
         return Substance.class;
     }
-
-    private List<String> privilegesForPossibleDuplicateOverride = Arrays.asList("Override Full Duplicate Checks","Override Potential Duplicate Warnings" );
 
     @Override
     public UUID parseIdFromString(String idAsString) {
@@ -140,15 +119,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 }
             }
         };
-        if(type == ValidatorConfig.METHOD_TYPE.BATCH){
-            builder.allowPossibleDuplicates(true);
-        }
-        if( !privilegesForPossibleDuplicateOverride.isEmpty() && privilegesForPossibleDuplicateOverride.stream()
-                .anyMatch(p-> privilegeService.canDo(p))) {
-            log.trace("allowing possible duplicates");
-            builder.allowPossibleDuplicates(true);
-        }
-
         return builder;
     }
 
