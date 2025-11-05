@@ -124,9 +124,9 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
         GsrsProcessingStrategyFactoryConfiguration.OverrideRule or1 = new GsrsProcessingStrategyFactoryConfiguration.OverrideRule();
         or1.setRegex(Pattern.compile(testTemplate));
-        or1.setUserRoles(Role.roles(Role.of("Admin"), Role.of("Approver")));
+        or1.setRulePrivileges(Arrays.asList("Approve Records", "Configure System"));
         or1.setNewMessageType(ValidationMessage.MESSAGE_TYPE.ERROR);
-        pConf.setOverrideRules(Arrays.asList(or1));
+        pConf.setOverrideRules(List.of(or1));
         pConf.setDefaultStrategy("ACCEPT_APPLY_ALL_WARNINGS");
 
         GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);
@@ -143,11 +143,6 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         assertEquals(true, hasRole);
         assertTrue(response2.getValidationMessages().size()==1);
         response2.getValidationMessages().forEach(vm -> {
-            // System.out.println(String.format("user: %s", currentUser));
-            // System.out.println(String.format("type: %s", vm.getMessageType()));
-            // System.out.println(String.format("message: %s", vm.getMessage()));
-            // System.out.println(String.format("messageId: %s", vm.getMessageId()));
-            // System.out.println(String.format("isError: %s", vm.isError()));
             assertTrue(vm.getMessageId().contains(testContains));
             assertEquals(testMessageType, vm.getMessageType().toString());
         });
@@ -174,11 +169,11 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
         GsrsProcessingStrategyFactoryConfiguration.OverrideRule or1 = new GsrsProcessingStrategyFactoryConfiguration.OverrideRule();
         or1.setRegex(Pattern.compile("W.*"));
-        or1.setUserRoles(Role.roles(Role.of("Admin"), Role.of("Approver")));
+        or1.setRulePrivileges(Collections.singletonList("Approve Records"));
         or1.setNewMessageType(ValidationMessage.MESSAGE_TYPE.NOTICE);
         GsrsProcessingStrategyFactoryConfiguration.OverrideRule or2 = new GsrsProcessingStrategyFactoryConfiguration.OverrideRule();
         or2.setRegex(Pattern.compile("W.*"));
-        or2.setUserRoles(Role.roles(Role.of("DataEntry")));
+        or2.setRulePrivileges(Collections.singletonList("Edit"));
         or2.setNewMessageType(ValidationMessage.MESSAGE_TYPE.NOTICE);
         pConf.setOverrideRules(Arrays.asList(or1, or2));
         pConf.setDefaultStrategy("ACCEPT_APPLY_ALL_WARNINGS");
