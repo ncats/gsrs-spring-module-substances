@@ -314,6 +314,13 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         return mapNode;
     }
 
+    public ObjectNode createApprovalIDMap(String approvalIdField){
+        ObjectNode mapNode = JsonNodeFactory.instance.objectNode();
+        mapNode.put("approvalIdValue", String.format("{{%s}}", approvalIdField));
+
+        return mapNode;
+    }
+
     protected boolean looksLikeProperty(String fieldName) {
         List<String> propertyWords = Arrays.asList("melting", "boiling","molecular", "density", "pka", "logp", "logd", "hbond",
                 "tpsa", "count", "rotatable", "mass", "formula");
@@ -349,6 +356,13 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
 
     protected boolean looksLikeMolfile(String fieldName) {
         if(fieldName.toUpperCase().contains("MOLFILE")){
+            return true;
+        }
+        return false;
+    }
+
+    protected boolean looksLikeApprovalId(String fieldName) {
+        if(fieldName.toUpperCase().contains("APPROVAL") || fieldName.toUpperCase().contains("UNII")){
             return true;
         }
         return false;

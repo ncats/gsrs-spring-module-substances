@@ -74,6 +74,7 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         registry.put("structure_and_moieties", new StructureExtractorActionFactory());
         registry.put("note_import", new NotesExtractorActionFactory());
         registry.put("property_import", new PropertyExtractorActionFactory());
+        registry.put("approval_id", new ApprovalIdExtractorActionFactory());
         registry.put("no-op", new NoOpActionFactory());
         registry.put(SIMPLE_REFERENCE_ACTION, new ReferenceExtractorActionFactory());
     }
@@ -208,6 +209,12 @@ public class SDFImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
                 actionNode.put(ACTION_NAME, "code_import");//  +createCleanFieldName(f));
                 actionNode.put("label", "Create Code Action");
                 ObjectNode mapNode = createCodeMap(f, "PRIMARY");
+                actionNode.set(ACTION_PARAMETERS, mapNode);
+            } else if(looksLikeApprovalId(f)) {
+                actionNode.put(ACTION_NAME, "approval_id");//  +createCleanFieldName(f));
+                actionNode.put("label", "Import Approval ID");
+                ObjectNode mapNode = createApprovalIDMap(f);
+                //todo: incorporate more than one field into the same map and action
                 actionNode.set(ACTION_PARAMETERS, mapNode);
             } else {
                 actionNode.put(ACTION_NAME, "note_import");
