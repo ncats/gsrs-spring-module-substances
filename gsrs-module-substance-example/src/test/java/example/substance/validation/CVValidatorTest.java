@@ -214,7 +214,6 @@ public class CVValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         Assertions.assertFalse(response.isValid());
     }
 
-
     @Test
     void testDuplicate4Case() {
         ControlledVocabulary vocabulary = new ControlledVocabulary();
