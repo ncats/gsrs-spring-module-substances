@@ -215,6 +215,42 @@ public class CVValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     }
 
     @Test
+    void testDuplicate4Case() {
+        ControlledVocabulary vocabulary = new ControlledVocabulary();
+        vocabulary.setDomain("holidays");
+        VocabularyTerm holiday1 = new VocabularyTerm();
+        holiday1.setValue("Presidents Day");
+        holiday1.setDisplay("Presidents Day");
+        VocabularyTerm holiday2 = new VocabularyTerm();
+        holiday2.setValue("Valentines Day");
+        holiday2.setDisplay("Valentines Day");
+        VocabularyTerm holiday3 = new VocabularyTerm();
+        holiday3.setValue("Pi Day");
+        holiday3.setDisplay("Pi Day");
+        VocabularyTerm holiday4 = new VocabularyTerm();
+        holiday4.setValue("Easter");
+        holiday4.setDisplay("Easter");
+        holiday4.setDescription("same old");
+        VocabularyTerm holiday4a = new VocabularyTerm();
+        holiday4a.setValue("Easter");
+        holiday4a.setDisplay("EASTER");
+        holiday4a.setDescription("Something different");
+
+        vocabulary.terms = Arrays.asList(holiday1, holiday2, holiday3, holiday4, holiday4a);
+        GsrsProcessingStrategyFactoryConfiguration pConf = new GsrsProcessingStrategyFactoryConfiguration();
+        pConf = AutowireHelper.getInstance().autowireAndProxy(pConf);
+        GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);
+        GsrsProcessingStrategy strategy = gsrsProcessingStrategyFactory.createNewStrategy("ACCEPT_APPLY_ALL_WARNINGS");
+        ValidationResponse<ControlledVocabulary> response = new ValidationResponse<>(vocabulary);
+        ValidatorCallback callback = createCallbackFor(vocabulary, response, ValidatorConfig.METHOD_TYPE.UPDATE, strategy);
+        CVValidator validator = new CVValidator();
+        validator.setAllowDuplicateValues(true);
+        validator.validate(vocabulary, null, callback);
+        Assertions.assertEquals( 1, response.getValidationMessages().size());
+        Assertions.assertFalse(response.isValid());
+    }
+
+    @Test
     void testDuplicate4NoDuplicateValues() {
         ControlledVocabulary vocabulary = new ControlledVocabulary();
         vocabulary.setDomain("holidays");
