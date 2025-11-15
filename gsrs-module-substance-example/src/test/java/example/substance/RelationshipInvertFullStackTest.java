@@ -25,11 +25,11 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.io.IOException;
@@ -53,18 +53,18 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
     @Autowired
     private TestGsrsValidatorFactory testGsrsValidatorFactory;
 
-    @SpyBean
+    @MockitoSpyBean
     private SubstanceProcessor substanceProcessor;
-    @SpyBean
+    @MockitoSpyBean
     private RelationshipProcessor relationshipProcessor;
-    @SpyBean
+    @MockitoSpyBean
     private ReferenceProcessor referenceProcessor;
 
     @Autowired
     private EditRepository editRepository;
 
 
-    @SpyBean
+    @MockitoSpyBean
     private RelationshipService relationshipService;
 
     
