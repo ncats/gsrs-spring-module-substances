@@ -99,7 +99,6 @@ import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
-import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.services.PrincipalServiceImpl;
@@ -1439,6 +1438,22 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         structureRenderingParameters.setMinHeight(minHeight);
         structureRenderingParameters.setMaxWidth(maxWidth);
         structureRenderingParameters.setMinWidth(minWidth);
+        if(queryParameters.containsKey("bracketPositionIntercept")) {
+            try{
+                double bpi = Double.parseDouble (queryParameters.get("bracketPositionIntercept"));
+                structureRenderingParameters.setBracketPositionIntercept(bpi);
+            } catch (Exception ex){
+                //do nothing
+            }
+        }
+        if(queryParameters.containsKey("bracketPositionSlope")) {
+            try{
+                double bps = Double.parseDouble (queryParameters.get("bracketPositionSlope"));
+                structureRenderingParameters.setBracketPositionSlope(bps);
+            } catch (Exception ex){
+                //do nothing
+            }
+        }
         ByteWrapper bdat = gsrscache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
             byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput),
                     format, size, damaps, null, stereo, standardize, structureRenderingParameters);
@@ -1466,6 +1481,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     (bos, new Dimension(width, height));
             try {
                 svg.startExport();
+
                 renderer.render(svg, chem, 0, 0, width, height, false);
                 svg.endExport();
             } finally {
@@ -1589,6 +1605,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             FullRenderOptions fullRendererOptions = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             RendererOptions rendererOptions = fullRendererOptions.getOptions();
+            if( parameters.getBracketPositionIntercept() != null && parameters.getBracketPositionIntercept() != 0) {
+                //????????????????
+            }
 
             if (struc != null && newDisplay == null) {
                 newDisplay = computeDisplayMap(struc, size, chem);
