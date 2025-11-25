@@ -47,10 +47,14 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
                 if (c.substance == null) {
                     callback.addMessage(GinasProcessingMessage
                             .ERROR_MESSAGE("Mixture components must reference a substance record, found:\"null\""));
-                }else if(c.type == null || c.type.length()<=0){
+                }else if(c.type == null || c.type.length()<=0) {
                     callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Mixture components must specify a type"));
+                } else if(c.type.length() != c.type.trim().length()) {
+                    c.type = c.type.trim();
+                    GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE("Mixture component type must not start or end with a space");
+                    message.appliableChange(true);
+                    callback.addMessage(message);
                 }else {
-//                    Substance comp = SubstanceFactory.getFullSubstance(c.substance);
                     if (!substanceRepository.exists(c.substance)) {
                         callback.addMessage(GinasProcessingMessage
                                 .WARNING_MESSAGE("Mixture substance references \"%s\" which is not yet registered",
