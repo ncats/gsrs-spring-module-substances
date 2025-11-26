@@ -18,10 +18,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import java.util.UUID;
 import java.util.stream.Stream;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Created by katzelda on 7/20/18.
@@ -199,4 +199,36 @@ public class MixtureValidationTest extends AbstractSubstanceJpaEntityTest {
 
 
     }
+
+    @Test
+    public void mixtureComponentsTypeMustHaveNoTrailingBlanks() throws Exception{
+
+        String inputComponentType = "MAY_BE_PRESENT_ONE_OF ";
+        String componentTypeTrimmed =inputComponentType.trim();
+        String inputComponentType2 = " MUST_BE_PRESENT";
+        String componentType2Trimmed = inputComponentType2.trim();
+        JsonNode toSubmit = new MixtureSubstanceBuilder()
+                .addName("foo " + UUID.randomUUID())
+                .addComponents(inputComponentType, s1)
+                .addComponents(inputComponentType2, s2)
+                .addComponents(componentTypeTrimmed, s3)
+                .buildJson();
+
+        GsrsEntityService.CreationResult<Substance> result = substanceEntityService.createEntity(toSubmit);
+
+        ValidationResponse response = result.getValidationResponse();
+        assertTrue(response.isValid());
+        //this is split up and stored as a variable for java 8 type inference to work...
+        Stream<ValidationMessage>s1 = response.getValidationMessages().stream();
+
+        assertEquals(2, s1
+                .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING)
+                .map(ValidationMessage::getMessage)
+                .filter(m-> m.contains(MixtureValidator.NO_LEAD_TRAIL_SPACES_IN_TYPE))
+                .count());
+        MixtureSubstance completed = (MixtureSubstance) result.getCreatedEntity();
+        assertEquals(2, completed.mixture.components.stream().map(component -> component.type).filter(t->t.equals(componentTypeTrimmed)).count());
+        assertEquals(1, completed.mixture.components.stream().map(component -> component.type).filter(t->t.equals(componentType2Trimmed)).count());
+    }
+
 }

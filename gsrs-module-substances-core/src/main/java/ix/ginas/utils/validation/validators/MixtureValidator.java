@@ -27,6 +27,7 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
     @Autowired
     private ReferenceRepository referenceRepository;
 
+    public final static String NO_LEAD_TRAIL_SPACES_IN_TYPE = "Mixture component type must not start or end with a space";
     @Override
     @Transactional(readOnly = true)
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
@@ -51,7 +52,7 @@ public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
                     callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Mixture components must specify a type"));
                 } else if(c.type.length() != c.type.trim().length()) {
                     c.type = c.type.trim();
-                    GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE("Mixture component type must not start or end with a space");
+                    GinasProcessingMessage message = GinasProcessingMessage.WARNING_MESSAGE(NO_LEAD_TRAIL_SPACES_IN_TYPE);
                     message.appliableChange(true);
                     callback.addMessage(message);
                 }else {
