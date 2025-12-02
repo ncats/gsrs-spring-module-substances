@@ -20,6 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
+// __aw__ this suite includes Mitch's changes that show how the test can work.
+    // but we need a more comprehesive solution
+    // Therefore the following test fails on purpose
+
+    @Test
+    public void failOnPurposeTest() {
+        assertEquals("Hello","Goodbye");
+    }
+
 
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
@@ -36,8 +45,10 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         old.get().toBuilder()
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
+                    org.setUuid(UUID.randomUUID());
                     org.nameOrg = "MyName org";
                     s.getAllNames().get(0).nameOrgs.add(org);
+                    s.version = "2";
                 })
                 .buildJsonAnd(this::assertUpdated);
         Optional<Substance> updated = substanceEntityService.get(uuid);
@@ -97,7 +108,11 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
+                    org.setUuid(UUID.randomUUID());
                     s.getAllNames().get(0).nameOrgs.add(org);
+                    String oldVersion = s.version;
+                    int oldVersionNumber = Integer.parseInt(oldVersion);
+                    s.version = Integer.toString(oldVersionNumber+1);
                 })
                 .buildJsonAnd(this::assertUpdated);
         Optional<Substance> updated = substanceEntityService.get(uuid);
@@ -117,6 +132,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .addName("Concept Name",n->{
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
+                    org.setUuid(UUID.randomUUID());
                     n.nameOrgs.add(org);
                 })
                 .addName("name 2")
@@ -128,7 +144,9 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
+                    org.setUuid(UUID.randomUUID());
                     s.getAllNames().get(1).nameOrgs.add(org);
+                    s.version = "2";
                 })
                 .buildJsonAnd(this::assertUpdated);
         Optional<Substance> updated = substanceEntityService.get(uuid);
