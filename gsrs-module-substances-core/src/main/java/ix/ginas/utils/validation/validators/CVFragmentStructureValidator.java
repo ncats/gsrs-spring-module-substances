@@ -136,6 +136,7 @@ public class CVFragmentStructureValidator extends AbstractValidatorPlugin<Contro
 				log.warn("Error in getMolfileFromSmiles", errorConvertingMolfile);
 				molfile = initiallyParsedChemical.toMol();
 			}
+			log.trace("getInChIKeyFromComplexSmiles going to parse molfile: {}", molfile);
 			Chemical transformedChemical= Chemical.parse(molfile);
 			return Optional.of(transformedChemical.toInchi().getKey());
 		} catch (Exception e) {
