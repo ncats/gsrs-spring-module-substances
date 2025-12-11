@@ -27,10 +27,10 @@ public class CVValidator extends AbstractValidatorPlugin<ControlledVocabulary> {
         //look for duplicates
         Map<String, Long> occurrencesOfTerms= objnew.terms.stream()
                 .map(t-> t.value)
-                .collect(Collectors.groupingBy(s-> s.toUpperCase(), Collectors.counting()));
+                .collect(Collectors.groupingBy(s-> s.toUpperCase().trim(), Collectors.counting()));
         Map<String, Long> occurrencesOfDisplays= objnew.terms.stream()
                 .map(t-> t.display)
-                .collect(Collectors.groupingBy(s-> s.toUpperCase(), Collectors.counting()));
+                .collect(Collectors.groupingBy(s-> s.toUpperCase().trim(), Collectors.counting()));
         List<String> duplicateTerms = occurrencesOfTerms.entrySet().stream()
                 .filter(en->en.getValue() >1)
                 .map(Map.Entry::getKey)
