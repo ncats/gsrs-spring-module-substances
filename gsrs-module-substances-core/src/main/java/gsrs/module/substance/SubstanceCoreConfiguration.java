@@ -19,6 +19,7 @@ import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
 import gsrs.security.LegacyAuthenticationConfiguration;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.services.PrivilegeService;
+import gsrs.services.RolesConfig;
 import ix.core.chem.StructureProcessorConfiguration;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
@@ -70,7 +71,8 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         LegacyAuthenticationConfiguration.class,
         ChemicalUtils.class,
         SubstanceEntityServiceConfiguration.class,
-        UserRoleConfiguration.class
+        UserRoleConfiguration.class,
+        RolesConfig.class
 })
 public class SubstanceCoreConfiguration {
 
