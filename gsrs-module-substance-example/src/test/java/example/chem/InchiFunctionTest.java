@@ -19,7 +19,7 @@ public class InchiFunctionTest {
 
     @ParameterizedTest
     @MethodSource("inputData")
-    void testInchi(String molname, String description, Structure.Stereo stereo, boolean expectDelimiter) throws IOException {
+    void testInchi(String molname, String description, Structure.Stereo stereo, Structure.Optical optical, int definedStereo, boolean expectDelimiter) throws IOException {
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream("/molfiles/" + molname + ".mol"),
                 "UTF-8"
@@ -27,6 +27,8 @@ public class InchiFunctionTest {
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.molfile = molfileText;
         structure.stereoChemistry = stereo;
+        structure.opticalActivity = optical;
+        structure.definedStereo = definedStereo;
         InChIFullRegisteredFunction functionHolder = new InChIFullRegisteredFunction();
         BiFunction<InChIFullRegisteredFunction.InChIFullPath, Structure, Optional<String>> fun = functionHolder.getOperation();
         Optional<String> result =fun.apply(new InChIFullRegisteredFunction.InChIFullPath(), structure);
@@ -36,7 +38,8 @@ public class InchiFunctionTest {
 
     @ParameterizedTest
     @MethodSource("inputData")
-    void testInchiKey(String molname, String description, Structure.Stereo stereo, boolean expectDelimiter) throws IOException {
+    void testInchiKey(String molname, String description, Structure.Stereo stereo, Structure.Optical opticalActivity, int definedStereo,
+                      boolean expectDelimiter) throws IOException {
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream("/molfiles/" + molname + ".mol"),
                 "UTF-8"
@@ -44,6 +47,8 @@ public class InchiFunctionTest {
         GinasChemicalStructure structure = new GinasChemicalStructure();
         structure.molfile = molfileText;
         structure.stereoChemistry = stereo;
+        structure.opticalActivity = opticalActivity;
+        structure.definedStereo = definedStereo;
         InChIRegisteredFunction functionHolder = new InChIRegisteredFunction();
         BiFunction<InChIRegisteredFunction.InChIPath, Structure, Optional<String>> fun = functionHolder.getOperation();
         Optional<String> result =fun.apply(new InChIRegisteredFunction.InChIPath(), structure);
@@ -53,12 +58,14 @@ public class InchiFunctionTest {
 
     private static Stream<Arguments> inputData() {
         return Stream.of(
-                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with unknown stereo", Structure.Stereo.UNKNOWN, false),
-                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with racemic stereo", Structure.Stereo.RACEMIC, true),
-                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with epimeric stereo", Structure.Stereo.EPIMERIC, true),
-                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with unknown stereo", Structure.Stereo.UNKNOWN, false),
-                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with racemic stereo", Structure.Stereo.RACEMIC, true),
-                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with epimeric stereo", Structure.Stereo.EPIMERIC, true)
+                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with unknown stereo", Structure.Stereo.UNKNOWN, Structure.Optical.NONE,
+                        0,
+                        false),
+                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with racemic stereo", Structure.Stereo.RACEMIC, Structure.Optical.PLUS_MINUS, 1, true),
+                Arguments.of("N9Y5G2T2T5", "N9Y5G2T2T5 with epimeric stereo", Structure.Stereo.EPIMERIC, Structure.Optical.PLUS_MINUS, 1, true),
+                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with unknown stereo", Structure.Stereo.UNKNOWN, Structure.Optical.NONE, 4, false),
+                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with racemic stereo", Structure.Stereo.RACEMIC, Structure.Optical.PLUS_MINUS, 4, true),
+                Arguments.of("SV1ATP0KYY", "SV1ATP0KYY with epimeric stereo", Structure.Stereo.EPIMERIC, Structure.Optical.PLUS_MINUS, 4, true)
 
         );
     }
