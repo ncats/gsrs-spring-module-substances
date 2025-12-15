@@ -1341,6 +1341,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
+                         @RequestParam(value = "bracketPositioningIntercept", required = false) Double bracketPositioningIntercept,
+                         @RequestParam(value = "bracketPositioningSlope", required = false) Double bracketPositioningSlope,
+                         @RequestParam(value = "bracketPositioningRightFudgeFactor", required = false) Double bracketPositioningRightFudgeFactor,
+                         @RequestParam(value = "bracketPositioningLeftFudgeFactor", required = false) Double bracketPositioningLeftFudgeFactor,
+                         @RequestParam(value = "bracketPositioningFudgeFactorCutoff", required = false) Long bracketPositioningFudgeFactorCutoff,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
 
         int[] amaps = null;
@@ -1438,21 +1443,20 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         structureRenderingParameters.setMinHeight(minHeight);
         structureRenderingParameters.setMaxWidth(maxWidth);
         structureRenderingParameters.setMinWidth(minWidth);
-        if(queryParameters.containsKey("bracketPositionIntercept")) {
-            try{
-                double bpi = Double.parseDouble (queryParameters.get("bracketPositionIntercept"));
-                structureRenderingParameters.setBracketPositionIntercept(bpi);
-            } catch (Exception ex){
-                //do nothing
-            }
+        if( bracketPositioningIntercept != null) {
+            structureRenderingParameters.setBracketPositioningIntercept(bracketPositioningIntercept);
         }
-        if(queryParameters.containsKey("bracketPositionSlope")) {
-            try{
-                double bps = Double.parseDouble (queryParameters.get("bracketPositionSlope"));
-                structureRenderingParameters.setBracketPositionSlope(bps);
-            } catch (Exception ex){
-                //do nothing
+        if( bracketPositioningSlope != null) {
+            structureRenderingParameters.setBracketPositioningSlope(bracketPositioningSlope);
             }
+        if(bracketPositioningLeftFudgeFactor != null) {
+            structureRenderingParameters.setBracketPositioningLeftFudgeFactor(bracketPositioningLeftFudgeFactor);
+        }
+        if(bracketPositioningRightFudgeFactor != null) {
+            structureRenderingParameters.setBracketPositioningRightFudgeFactor(bracketPositioningRightFudgeFactor);
+            }
+        if(bracketPositioningFudgeFactorCutoff != null) {
+            structureRenderingParameters.setBracketPositioningFudgeFactorCutoff(bracketPositioningFudgeFactorCutoff);
         }
         ByteWrapper bdat = gsrscache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
             byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput),
@@ -1614,6 +1618,23 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }
             if (newDisplay != null) {
                 rendererOptions.changeSettings(newDisplay);
+            }
+            if(parameters.getBracketPositioningSlope() != null) {
+                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_SLOPE, parameters.getBracketPositioningSlope());
+                log.trace("set BRACKET_POSITION_SLOPE to {}",parameters.getBracketPositioningSlope());
+            }
+            if(parameters.getBracketPositioningIntercept() != null) {
+                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
+                log.trace("set BRACKET_POSITION_INTERCEPT to {}",parameters.getBracketPositioningIntercept());
+            }
+            if( parameters.getBracketPositioningRightFudgeFactor() != null) {
+                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_RIGHT_FUDGE_FACTOR, parameters.getBracketPositioningRightFudgeFactor());
+            }
+            if( parameters.getBracketPositioningLeftFudgeFactor() != null) {
+                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_LEFT_FUDGE_FACTOR, parameters.getBracketPositioningLeftFudgeFactor());
+            }
+            if(parameters.getBracketPositioningFudgeFactorCutoff() != null){
+                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_FUDGE_FACTOR_ATOM_CUTOFF, parameters.getBracketPositioningFudgeFactorCutoff());
             }
 
             //TODO: This would be nice to get back eventually, for standardization:
