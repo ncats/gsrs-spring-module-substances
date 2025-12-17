@@ -1609,8 +1609,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             FullRenderOptions fullRendererOptions = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             RendererOptions rendererOptions = fullRendererOptions.getOptions();
-            if( parameters.getBracketPositionIntercept() != null && parameters.getBracketPositionIntercept() != 0) {
-                //????????????????
+            if( parameters.getBracketPositioningIntercept() != null && parameters.getBracketPositioningIntercept() != 0) {
+                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
             }
 
             if (struc != null && newDisplay == null) {
