@@ -7,10 +7,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>clinical-trials-api</module>
-        <module>gsrs-module-clinical-trials-spring-boot-starter</module>
-        <module>gsrs-module-clinical-trials-spring-boot-autoconfigure</module>
-        <module>gsrs-module-clinical-trials-spring-boot-starter-tests</module>
+        <module>gsrs-module-applications-spring-boot-starter</module>
+        <module>gsrs-module-applications-spring-boot-autoconfigure</module>
+        <module>applications-api</module>
     </modules>
 
     <parent>
@@ -21,23 +20,24 @@
     </parent>
 
     <groupId>gov.nih.ncats</groupId>
-    <artifactId>gsrs-module-clinical-trials</artifactId>
-    <version>3.1.3-3x-SNAPSHOT</version>
-    <name>GSRS Clinical Trials Module</name>
-    <description>GSRS Clinical Trials Module for Spring Boot</description>
+    <artifactId>gsrs-module-applications</artifactId>
+    <version>3.1.55-SNAPSHOT</version>
+    <name>GSRS Application Module</name>
+    <description>GSRS Application Module for Spring Boot</description>
 
     <scm>
-        <url>https://github.com/ncats/gsrs-spring-module-clinical-trials.git</url>
+        <url>https://github.com/ncats/gsrs-spring-module-drug-applications.git</url>
     </scm>
 
     <properties>
         <java.version>17</java.version>
-        <spring-cloud.version>2025.0.0</spring-cloud.version>
         <spring-boot.version>3.5.7</spring-boot.version>
-        <gsrs.version>3.1.3-3x-SNAPSHOT</gsrs.version>
-        <gsrs.substance.version>3.1.3-3x-SNAPSHOT</gsrs.substance.version>
-        <gsrs.clinical-trials.version>3.1.3-3x-SNAPSHOT</gsrs.clinical-trials.version>
-        <log4j2.version>2.17.1</log4j2.version>
+        <spring-cloud.version>2025.0.0</spring-cloud.version>
+        <gsrs.version>3.1.55-SNAPSHOT</gsrs.version>
+        <gsrs.application.version>3.1.55-SNAPSHOT</gsrs.application.version>
+        <log4j2.version>2.22.1</log4j2.version>
+        <!-- TO BE REMOVE -->
+        <gsrs.substance.version>3.1.55-SNAPSHOT</gsrs.substance.version>
     </properties>
 
     <!-- NEW Maven Central Repository BEGIN - July 2025 -->
@@ -56,7 +56,7 @@
     </build>
 
     <repositories>
-         <repository>
+        <repository>
             <id>central-repo1-maven2</id>
             <url>https://repo1.maven.org/maven2</url>
             <snapshots>
@@ -85,33 +85,5 @@
             <url>https://ossrh-staging-api.central.sonatype.com/service/local/staging/deploy/maven2/</url>
         </repository>
     </distributionManagement>
-    <!-- NEW Maven Central Repository END -->
 
-    <!-- OLD Maven Repository -->
-    <!--
-    <repositories>
-        <repository>
-            <id>oss.sonatype.org-snapshot</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases>
-                <enabled>false</enabled>
-            </releases>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-    -->
 </project>
-
