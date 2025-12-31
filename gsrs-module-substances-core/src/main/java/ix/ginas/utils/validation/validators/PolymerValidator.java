@@ -40,11 +40,6 @@ public class PolymerValidator extends AbstractValidatorPlugin<Substance> {
             boolean withDisplay = !isNull(cs.polymer.displayStructure);
             boolean withIdealized = !isNull(cs.polymer.idealizedStructure);
 
-            if(!withDisplay || withIdealized){
-                cs.polymer.displayStructure=null;
-                withDisplay=false;
-            }
-
             if (!withDisplay && !withIdealized) {
                 GinasProcessingMessage gpmwarn = GinasProcessingMessage
                         .ERROR_MESSAGE("No Display Structure or Idealized Structure found");
