@@ -1609,34 +1609,39 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             FullRenderOptions fullRendererOptions = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             RendererOptions rendererOptions = fullRendererOptions.getOptions();
-            if( parameters!= null && parameters.getBracketPositioningIntercept() != null && parameters.getBracketPositioningIntercept() != 0) {
-                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
-            }
-
             if (struc != null && newDisplay == null) {
                 newDisplay = computeDisplayMap(struc, size, chem);
             }
             if (newDisplay != null) {
                 rendererOptions.changeSettings(newDisplay);
             }
-            if(parameters.getBracketPositioningSlope() != null) {
-                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_SLOPE, parameters.getBracketPositioningSlope());
-                log.trace("set BRACKET_POSITION_SLOPE to {}",parameters.getBracketPositioningSlope());
-            }
-            if(parameters.getBracketPositioningIntercept() != null) {
-                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
-                log.trace("set BRACKET_POSITION_INTERCEPT to {}",parameters.getBracketPositioningIntercept());
-            }
-            if( parameters.getBracketPositioningRightFudgeFactor() != null) {
-                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_RIGHT_FUDGE_FACTOR, parameters.getBracketPositioningRightFudgeFactor());
-            }
-            if( parameters.getBracketPositioningLeftFudgeFactor() != null) {
-                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_LEFT_FUDGE_FACTOR, parameters.getBracketPositioningLeftFudgeFactor());
-            }
-            if(parameters.getBracketPositioningFudgeFactorCutoff() != null){
-                rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_FUDGE_FACTOR_ATOM_CUTOFF, parameters.getBracketPositioningFudgeFactorCutoff());
-            }
+            if( parameters != null ) {
+                if( parameters.getBracketPositioningIntercept() != null && parameters.getBracketPositioningIntercept() != 0) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
+                }
 
+                if (parameters.getBracketPositioningSlope() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_SLOPE, parameters.getBracketPositioningSlope());
+                    log.trace("set BRACKET_POSITION_SLOPE to {}", parameters.getBracketPositioningSlope());
+                }
+
+                if (parameters.getBracketPositioningIntercept() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
+                    log.trace("set BRACKET_POSITION_INTERCEPT to {}", parameters.getBracketPositioningIntercept());
+                }
+
+                if (parameters.getBracketPositioningRightFudgeFactor() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_RIGHT_FUDGE_FACTOR, parameters.getBracketPositioningRightFudgeFactor());
+                }
+
+                if (parameters.getBracketPositioningLeftFudgeFactor() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_LEFT_FUDGE_FACTOR, parameters.getBracketPositioningLeftFudgeFactor());
+                }
+
+                if (parameters.getBracketPositioningFudgeFactorCutoff() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_FUDGE_FACTOR_ATOM_CUTOFF, parameters.getBracketPositioningFudgeFactorCutoff());
+                }
+            }
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
 
