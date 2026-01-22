@@ -14,6 +14,11 @@ public class StructureRenderingParameters {
     private Integer maxHeight;
     private Integer maxWidth;
     private Double bondLength;
+    private Double bracketPositioningIntercept;
+    private Double bracketPositioningSlope;
+    private Double bracketPositioningLeftFudgeFactor;
+    private Double bracketPositioningRightFudgeFactor;
+    private Long bracketPositioningFudgeFactorCutoff;
 
     public boolean hasValuesForAll() {
         return (minHeight!=null && maxHeight != null && minWidth!=null && maxWidth!=null && bondLength!=null);

@@ -99,7 +99,6 @@ import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
-import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.services.PrincipalServiceImpl;
@@ -1342,6 +1341,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                          @RequestParam(value = "maxHeight", required = false) Integer maxHeight,
                          @RequestParam(value = "bondLength", required = false) Double bondLength,
                          @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
+                         @RequestParam(value = "bracketPositioningIntercept", required = false) Double bracketPositioningIntercept,
+                         @RequestParam(value = "bracketPositioningSlope", required = false) Double bracketPositioningSlope,
+                         @RequestParam(value = "bracketPositioningRightFudgeFactor", required = false) Double bracketPositioningRightFudgeFactor,
+                         @RequestParam(value = "bracketPositioningLeftFudgeFactor", required = false) Double bracketPositioningLeftFudgeFactor,
+                         @RequestParam(value = "bracketPositioningFudgeFactorCutoff", required = false) Long bracketPositioningFudgeFactorCutoff,
                          @RequestParam Map<String, String> queryParameters) throws Exception {
 
         int[] amaps = null;
@@ -1439,6 +1443,21 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         structureRenderingParameters.setMinHeight(minHeight);
         structureRenderingParameters.setMaxWidth(maxWidth);
         structureRenderingParameters.setMinWidth(minWidth);
+        if( bracketPositioningIntercept != null) {
+            structureRenderingParameters.setBracketPositioningIntercept(bracketPositioningIntercept);
+        }
+        if( bracketPositioningSlope != null) {
+            structureRenderingParameters.setBracketPositioningSlope(bracketPositioningSlope);
+            }
+        if(bracketPositioningLeftFudgeFactor != null) {
+            structureRenderingParameters.setBracketPositioningLeftFudgeFactor(bracketPositioningLeftFudgeFactor);
+        }
+        if(bracketPositioningRightFudgeFactor != null) {
+            structureRenderingParameters.setBracketPositioningRightFudgeFactor(bracketPositioningRightFudgeFactor);
+            }
+        if(bracketPositioningFudgeFactorCutoff != null) {
+            structureRenderingParameters.setBracketPositioningFudgeFactorCutoff(bracketPositioningFudgeFactorCutoff);
+        }
         ByteWrapper bdat = gsrscache.getOrElseRawIfDirty("image/" + Util.sha1(idOrSmiles) + "/" + size + "/" + format +"/" + standardize + "/" + stereo + "/" + contextId + "/" + version + "/" + structureRenderingParameters.toString(),TypedCallable.of(()->{
             byte[] b=renderChemical(effectivelyFinalS2r==null?null: effectivelyFinalS2r.getStructure(), parseAndComputeCoordsIfNeeded(dinput),
                     format, size, damaps, null, stereo, standardize, structureRenderingParameters);
@@ -1466,6 +1485,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     (bos, new Dimension(width, height));
             try {
                 svg.startExport();
+
                 renderer.render(svg, chem, 0, 0, width, height, false);
                 svg.endExport();
             } finally {
@@ -1589,14 +1609,39 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             FullRenderOptions fullRendererOptions = rendererOptionsConfig.getDefaultRendererOptions().copy();
 
             RendererOptions rendererOptions = fullRendererOptions.getOptions();
-
             if (struc != null && newDisplay == null) {
                 newDisplay = computeDisplayMap(struc, size, chem);
             }
             if (newDisplay != null) {
                 rendererOptions.changeSettings(newDisplay);
             }
+            if( parameters != null ) {
+                if( parameters.getBracketPositioningIntercept() != null && parameters.getBracketPositioningIntercept() != 0) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
+                }
 
+                if (parameters.getBracketPositioningSlope() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_SLOPE, parameters.getBracketPositioningSlope());
+                    log.trace("set BRACKET_POSITION_SLOPE to {}", parameters.getBracketPositioningSlope());
+                }
+
+                if (parameters.getBracketPositioningIntercept() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_INTERCEPT, parameters.getBracketPositioningIntercept());
+                    log.trace("set BRACKET_POSITION_INTERCEPT to {}", parameters.getBracketPositioningIntercept());
+                }
+
+                if (parameters.getBracketPositioningRightFudgeFactor() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_RIGHT_FUDGE_FACTOR, parameters.getBracketPositioningRightFudgeFactor());
+                }
+
+                if (parameters.getBracketPositioningLeftFudgeFactor() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_LEFT_FUDGE_FACTOR, parameters.getBracketPositioningLeftFudgeFactor());
+                }
+
+                if (parameters.getBracketPositioningFudgeFactorCutoff() != null) {
+                    rendererOptions.setDrawPropertyValue(RendererOptions.DrawProperties.BRACKET_POSITION_FUDGE_FACTOR_ATOM_CUTOFF, parameters.getBracketPositioningFudgeFactorCutoff());
+                }
+            }
             //TODO: This would be nice to get back eventually, for standardization:
             //chem.reduceMultiples();
 
