@@ -67,6 +67,8 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
 
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
+
+    @Query("select s from Substance s join s.codes c where c.code = ?1 and c.codeSystem = ?2 and c.type = 'PRIMARY'")
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
 
     Substance findByModifications_Uuid(UUID uuid);
