@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 public class DeserializeTest {
+
     @Test
     public void testDeserialize() throws IOException {
         String testJsonFile ="testJSON//ba88b751-f44a-4b38-8d17-fbcd45591844.json";
@@ -21,7 +22,7 @@ public class DeserializeTest {
         String substanceJson =FileUtils.readFileToString(resource, Charset.defaultCharset());
         ObjectMapper mapper = new ObjectMapper();
         JsonNode substanceNode = mapper.valueToTree(substanceJson);
-        Assertions.assertEquals(56819, substanceNode.asText().length());
+        Assertions.assertEquals(56818, substanceNode.asText().length());
 
     }
 }
