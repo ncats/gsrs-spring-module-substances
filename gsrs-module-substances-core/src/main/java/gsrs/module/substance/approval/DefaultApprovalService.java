@@ -5,6 +5,7 @@ import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.security.GsrsSecurityUtils;
+import gsrs.security.canApproveRecords;
 import gsrs.security.hasApproverRole;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
@@ -170,7 +171,8 @@ public class DefaultApprovalService implements ApprovalService{
      * if can be approved fails validation.
      */
     @Transactional
-    @hasApproverRole
+    //@hasApproverRole
+    @canApproveRecords
     @Override
     public ApprovalResult approve(Substance s) throws ApprovalException {
 

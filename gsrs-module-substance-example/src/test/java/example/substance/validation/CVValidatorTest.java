@@ -1,12 +1,11 @@
 package example.substance.validation;
 
 import example.GsrsModuleSubstanceApplication;
-import gsrs.security.GsrsSecurityUtils;
 import gsrs.services.GroupService;
+import gsrs.services.PrivilegeService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import gsrs.validator.ValidatorConfig;
-import ix.core.models.Role;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidationResponseBuilder;
@@ -19,6 +18,7 @@ import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
 import ix.ginas.utils.validation.validators.CVValidator;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,8 +33,16 @@ public class CVValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     @Autowired
     private GroupService groupService;
 
+    @BeforeAll
+    static void helpDebug() {
+        System.out.printf ("within test class, current dir: %s\n", System.getProperty("user.dir"));
+    }
+
+
     @Test
     void test1Duplicate() {
+        String userDir = System.getProperty("user.dir");
+        System.out.printf("userDir: %s\n", userDir);
         ControlledVocabulary vocabulary = new ControlledVocabulary();
         vocabulary.setDomain("holidays");
         VocabularyTerm holiday1 = new VocabularyTerm();
@@ -320,7 +328,7 @@ public class CVValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         if(type == ValidatorConfig.METHOD_TYPE.BATCH){
             builder.allowPossibleDuplicates(true);
         }
-        if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
+        if(PrivilegeService.instance().canDo("Manage CVs")) {
             builder.allowPossibleDuplicates(true);
         }
         return builder;

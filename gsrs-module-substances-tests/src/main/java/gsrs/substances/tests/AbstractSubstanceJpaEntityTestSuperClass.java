@@ -13,11 +13,13 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.persistence.EntityManager;
 
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
+import gsrs.services.PrivilegeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.Scheduler;
@@ -275,10 +277,10 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         entityManagerFacade = getEntityManagerFacade();
         if(createAdminUserOnInit) {
             TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
-//        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             transactionTemplate.executeWithoutResult(s -> {
-
-                createUser("admin", Role.values());
+                List<Role> roleList =PrivilegeService.instance().getAllRoleNames().stream().map(r->Role.of(r)).collect(Collectors.toList());
+                Role[] roles = roleList.toArray(new Role[]{});
+                createUser("admin", roles);
 
                 //some  integration tests will make validation messages which will get assigned an "admin" access group
                 groupRepository.saveAndFlush(new Group("admin"));
@@ -304,7 +306,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
 
     /**
      * Load the specially formatted GSRS format file (often with {@code .gsrs} extension although some
-     * GSRS 1.x verion files have the extension {@code .ginas}.  Either way, the file is a GZIPPED
+     * GSRS 1.x version files have the extension {@code .ginas}.  Either way, the file is a GZIPPED
      * encoded file of tab delimited text where each row contains the 1 Substance JSON record one line per record along
      * with additional metadata.
      * @param gsrsFile the GSRS file to load.

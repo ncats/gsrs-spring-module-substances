@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 
 public class DeserializeTest {
+
     @Test
     public void testDeserialize() throws IOException {
         String testJsonFile ="testJSON//ba88b751-f44a-4b38-8d17-fbcd45591844.json";

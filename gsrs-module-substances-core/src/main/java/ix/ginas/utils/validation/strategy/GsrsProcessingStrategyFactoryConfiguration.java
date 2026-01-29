@@ -1,10 +1,8 @@
 package ix.ginas.utils.validation.strategy;
 
-import ix.core.models.Role;
 import ix.core.validator.GinasProcessingMessage;
 
 import java.util.List;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import lombok.Data;
@@ -25,6 +23,6 @@ public class GsrsProcessingStrategyFactoryConfiguration {
     public static class OverrideRule {
         private Pattern regex;
         private GinasProcessingMessage.MESSAGE_TYPE newMessageType;
-        private List<Role> userRoles;
+        private List<String> rulePrivileges;
     }
 }
