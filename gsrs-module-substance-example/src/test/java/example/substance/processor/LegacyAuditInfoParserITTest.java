@@ -115,7 +115,7 @@ public class LegacyAuditInfoParserITTest extends AbstractSubstanceJpaEntityTest 
 		String theName = "Simple Named Concept";
 		String forcedApprovedBy = "SOME_BLOKE";
 
-		createUser(forcedApprovedBy, Role.Approver);
+		createUser(forcedApprovedBy, Role.of("Approver"));
 
 		UUID uuid = UUID.randomUUID();
 		JsonNode jsn = new SubstanceBuilder()

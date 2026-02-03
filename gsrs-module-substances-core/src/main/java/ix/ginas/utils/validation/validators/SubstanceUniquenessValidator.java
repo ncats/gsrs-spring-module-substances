@@ -61,7 +61,6 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 				GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE("Substance %s (ID: %s) appears to be a full duplicate",
 								possibleMatch.getName(), possibleMatch.uuid);
                 mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
-				//.createSubstanceLink((possibleMatch));
 				callback.addMessage(mes);
 			}
 		}
@@ -77,7 +76,6 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 									possibleMatch.getName(), possibleMatch.uuid);
 					log.debug("in SubstanceUniquenessValidator, created warning with message " + mes.getMessage());
 					  mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
-					//mes.addLink(GinasUtils.createSubstanceLink(possibleMatch));
 					callback.addMessage(mes);
 				}
 			}

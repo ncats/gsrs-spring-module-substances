@@ -2,6 +2,8 @@ package ix.ginas.utils.validation.validators;
 
 
 import gsrs.repository.UserProfileRepository;
+import gsrs.services.CommonPrivileges;
+import gsrs.services.PrivilegeService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.Principal;
 import ix.core.models.Role;
@@ -28,6 +30,9 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
 
     @Autowired
     private SubstanceApprovalIdGenerator substanceApprovalIdGenerator;
+
+    @Autowired
+    private PrivilegeService privilegeService;
 
     @Override
     public boolean supports(Substance newValue, Substance oldValue, ValidatorConfig.METHOD_TYPE methodType) {
@@ -57,16 +62,16 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
         if (objnew.isPublic() && !objold.isPublic()) {
 
 
-            if (!(up.hasRole(Role.Admin) || up.hasRole(Role.SuperUpdate))) {
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only superUpdate users can make a substance public"));
+            if (!privilegeService.canDo("Make Records Public")) {
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only users with the \"Make Records Public\" privilege can make a substance public"));
             }
         }
 
 
         //Making a change to a validated record
         if (objnew.isValidated()) {
-            if (!(up.hasRole(Role.Admin) || up.hasRole(Role.SuperUpdate))) {
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only superUpdate users can update approved substances"));
+            if (!privilegeService.canDo(CommonPrivileges.EDIT_APPROVED_RECORDS)) {
+                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE("Only users with the \"Edit Approved Records\" privilege can update approved substances"));
             }
         }
 
@@ -75,7 +80,7 @@ public class UpdateSubstanceNonBatchLoaderValidator implements ValidatorPlugin<S
         if (objold.approvalID != null) {
             if (!objold.approvalID.equals(objnew.approvalID)) {
                 // Can't change approvalID!!! (unless admin)
-                if (up.hasRole(Role.Admin)) {
+                if (privilegeService.canDo(CommonPrivileges.EDIT_APPROVAL_IDS)) {
                     //GSRS-638 removing an approval ID makes the new id null
                     if (objnew.approvalID == null) {
                         callback.addMessage(GinasProcessingMessage

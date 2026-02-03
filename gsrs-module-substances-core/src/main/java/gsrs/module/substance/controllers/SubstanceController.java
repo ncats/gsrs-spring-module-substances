@@ -33,6 +33,8 @@ import gsrs.controller.*;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
+import gsrs.security.canApproveRecords;
+import gsrs.security.canEditPublicData;
 import gsrs.service.AbstractGsrsEntityService;
 import ix.ginas.utils.validation.validators.StandardNameValidator;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
@@ -1157,7 +1159,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     
     @GetGsrsRestApiMapping(value={"({id})/@approve", "/{id}/@approve" })
-    @hasApproverRole
+    //@hasApproverRole
+    @canApproveRecords
     public ResponseEntity approveGetMethod(@PathVariable("id") String substanceUUIDOrName, @RequestParam Map<String, String> queryParameters){
 
         Optional<Substance> substance = getEntityService().getEntityBySomeIdentifier(substanceUUIDOrName);
@@ -1193,7 +1196,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             }    	
     }
 
-    @PreAuthorize("hasRole('SuperUpdate')")
+    //@PreAuthorize("hasRole('SuperUpdate')")
+    @canEditPublicData
     @PutGsrsRestApiMapping("/novalid")
     @Transactional
     public ResponseEntity<Object> updateEntityWithoutValidation(@RequestBody JsonNode updatedEntityJson,
