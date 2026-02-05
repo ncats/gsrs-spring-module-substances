@@ -12,15 +12,11 @@ import gsrs.module.substance.events.SubstanceCreatedEvent;
 import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
-import gsrs.security.GsrsSecurityUtils;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.models.ForceUpdatableModel;
-import ix.core.models.Role;
 import ix.core.util.EntityUtils;
-import ix.core.util.EntityUtils.Key;
 import ix.core.util.LogUtil;
 import ix.core.validator.*;
 import ix.ginas.models.v1.Substance;
@@ -43,7 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.persistence.EntityManager;
-import javax.swing.text.DefaultStyledDocument;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -124,14 +119,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 }
             }
         };
-        if(type == ValidatorConfig.METHOD_TYPE.BATCH){
-            builder.allowPossibleDuplicates(true);
-        }
-//      
-        if(GsrsSecurityUtils.hasAnyRoles(Role.SuperUpdate,Role.SuperDataEntry,Role.Admin)) {
-            builder.allowPossibleDuplicates(true);   
-        }
-
         return builder;
     }
 

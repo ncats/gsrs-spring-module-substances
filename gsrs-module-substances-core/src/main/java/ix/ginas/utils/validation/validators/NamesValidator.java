@@ -187,7 +187,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 String name = n.getName();
                 if (name != null && r.matches(name)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE("W7430000",
+                            .WARNING_MESSAGE_WITH_ID("W7430000",
                                     r.getMessage("%s"), name)
                             .appliableChange(true);
                     callback.addMessage(mes, () -> n.setName(r.fix(name)));

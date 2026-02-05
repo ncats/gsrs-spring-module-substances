@@ -21,6 +21,7 @@ import jakarta.annotation.PreDestroy;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+import gsrs.security.canImportData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -217,7 +218,8 @@ public class SubstanceBulkLoadService {
      * probably because it either didn't exist or isn't currently running.
      * @since 3.0
      */
-    @hasAdminRole
+   //@hasAdminRole
+   @canImportData
    public boolean cancel(String processorJobKey){
         ExecutorService service = executorServices.remove(processorJobKey);
         if(service ==null){
@@ -228,7 +230,8 @@ public class SubstanceBulkLoadService {
         applyStatisticsChangeForJob(processorJobKey, Statistics.CHANGE.CANCEL);
         return true;
        }
-    @hasAdminRole
+    //@hasAdminRole
+    @canImportData
     public PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
         // first see if this payload has already processed..
 
