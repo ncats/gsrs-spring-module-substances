@@ -54,7 +54,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void addNameOrg_MitchAlt3x(){
-        // Temporary modifed copy
+        // Temporary modified copy
         // Mitch discovered that the test can work like this.
         // Perhaps provides a clue on a broader fix of the problems
         // with UUID generation in the database
@@ -150,7 +150,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void updateNameOrg_MitchAlt3x(){
-        // Temporary modifed copy
+        // Temporary modified copy
         // Mitch discovered that the test can work like this.
         // Perhaps provides a clue on a broader fix of the problems
         // with UUID generation in the database
@@ -224,7 +224,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void update2ndNameOrg_MitchAlt3x(){
-        // Temporary modifed copy
+        // Temporary modified copy
         // Mitch discovered that the test can work like this.
         // Perhaps provides a clue on a broader fix of the problems
         // with UUID generation in the database
