@@ -12,7 +12,7 @@ import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
 import org.hibernate.annotations.Type;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -30,18 +30,16 @@ import java.util.UUID;
 @SingleParent
 //@JsonIgnoreProperties({ "id" })
 public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
-	public static String JSON_NULL="JSON_NULL";
-	/**
-	 * The UUID of this moiety
-	 */
+    public static String JSON_NULL="JSON_NULL";
+    /**
+     * The UUID of this moiety
+     */
 
-	@Type(type = "uuid-char" )
-	@Column(length =40, updatable = false, unique = true)
-	public UUID uuid;
+    public UUID uuid;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
-	@ParentReference
+    @ParentReference
     private ChemicalSubstance owner;
 
     public ChemicalSubstance getOwner(){

@@ -16,6 +16,7 @@ import ix.core.utils.executor.ProcessListener;
 import ix.ginas.models.v1.Substance;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -39,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class SubstanceRefTaskInitializer extends ScheduledTaskInitializer {
 
     private String reportFilePath;

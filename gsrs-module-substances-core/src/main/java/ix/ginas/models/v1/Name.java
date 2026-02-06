@@ -19,7 +19,7 @@ import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import org.apache.commons.lang3.ObjectUtils;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 @JSONEntity(title = "Name", isFinal = true)
