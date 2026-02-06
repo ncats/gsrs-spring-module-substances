@@ -20,19 +20,45 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
-// __aw__ this suite includes Mitch's changes that show how the test can work.
-    // but we need a more comprehesive solution
-    // Therefore the following test fails on purpose
-
-    @Test
-    public void failOnPurposeTest() {
-        assertEquals("Hello","Goodbye");
-    }
-
 
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void addNameOrg(){
+        UUID uuid = UUID.randomUUID();
+
+        new SubstanceBuilder()
+                .addName("Concept Name")
+                .setUUID(uuid)
+                .buildJsonAnd(this::assertCreated);
+
+        Optional<Substance> old= substanceEntityService.get(uuid);
+
+        old.get().toBuilder()
+                .andThen(s-> {
+                    NameOrg org = new NameOrg();
+                    org.nameOrg = "MyName org";
+                    s.getAllNames().get(0).nameOrgs.add(org);
+                })
+                .buildJsonAnd(this::assertUpdated);
+        Optional<Substance> updated = substanceEntityService.get(uuid);
+        NameOrg actualNameOrg = updated.get().getAllNames().get(0).nameOrgs.get(0);
+
+        assertEquals("MyName org", actualNameOrg.nameOrg);
+        UUID nameOrgId = actualNameOrg.getUuid();
+        assertNotNull(nameOrgId);
+    }
+
+
+
+
+    @Test
+    @WithMockUser(username = "admin", roles = "Admin")
+    public void addNameOrg_MitchAlt3x(){
+        // Temporary modifed copy
+        // Mitch discovered that the test can work like this.
+        // Perhaps provides a clue on a broader fix of the problems
+        // with UUID generation in the database
+
         UUID uuid = UUID.randomUUID();
 
         new SubstanceBuilder()
@@ -58,6 +84,8 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         UUID nameOrgId = actualNameOrg.getUuid();
         assertNotNull(nameOrgId);
     }
+
+
 
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
@@ -108,6 +136,41 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
+                    s.getAllNames().get(0).nameOrgs.add(org);
+                })
+                .buildJsonAnd(this::assertUpdated);
+        Optional<Substance> updated = substanceEntityService.get(uuid);
+        List<NameOrg> actualNameOrgs = updated.get().getAllNames().get(0).nameOrgs;
+
+        assertThat(updated.get().getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+                containsInAnyOrder("MyName org", "MyName org2"));
+
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "Admin")
+    public void updateNameOrg_MitchAlt3x(){
+        // Temporary modifed copy
+        // Mitch discovered that the test can work like this.
+        // Perhaps provides a clue on a broader fix of the problems
+        // with UUID generation in the database
+
+        UUID uuid = UUID.randomUUID();
+
+        new SubstanceBuilder()
+                .addName("Concept Name",n->{
+                    NameOrg org = new NameOrg();
+                    org.nameOrg = "MyName org";
+                    n.nameOrgs.add(org);
+                })
+                .setUUID(uuid)
+                .buildJsonAnd(this::assertCreated);
+        Optional<Substance> old= substanceEntityService.get(uuid);
+
+        old.get().toBuilder()
+                .andThen(s-> {
+                    NameOrg org = new NameOrg();
+                    org.nameOrg = "MyName org2";
                     org.setUuid(UUID.randomUUID());
                     s.getAllNames().get(0).nameOrgs.add(org);
                     String oldVersion = s.version;
@@ -123,9 +186,49 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
     }
 
+
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void update2ndNameOrg(){
+        UUID uuid = UUID.randomUUID();
+
+        new SubstanceBuilder()
+                .addName("Concept Name",n->{
+                    NameOrg org = new NameOrg();
+                    org.nameOrg = "MyName org";
+                    n.nameOrgs.add(org);
+                })
+                .addName("name 2")
+                .setUUID(uuid)
+                .buildJsonAnd(this::assertCreated);
+        Optional<Substance> old= substanceEntityService.get(uuid);
+
+        old.get().toBuilder()
+                .andThen(s-> {
+                    NameOrg org = new NameOrg();
+                    org.nameOrg = "MyName org2";
+                    s.getAllNames().get(1).nameOrgs.add(org);
+                })
+                .buildJsonAnd(this::assertUpdated);
+        Optional<Substance> updated = substanceEntityService.get(uuid);
+
+
+        assertThat(updated.get().getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+                containsInAnyOrder("MyName org"));
+        assertThat(updated.get().getAllNames().get(1).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+                containsInAnyOrder("MyName org2"));
+
+    }
+
+
+    @Test
+    @WithMockUser(username = "admin", roles = "Admin")
+    public void update2ndNameOrg_MitchAlt3x(){
+        // Temporary modifed copy
+        // Mitch discovered that the test can work like this.
+        // Perhaps provides a clue on a broader fix of the problems
+        // with UUID generation in the database
+
         UUID uuid = UUID.randomUUID();
 
         new SubstanceBuilder()
@@ -158,4 +261,5 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 containsInAnyOrder("MyName org2"));
 
     }
+
 }
