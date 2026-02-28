@@ -20,6 +20,7 @@ import org.jcvi.jillion.core.Ranges;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -48,7 +49,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 
     private SubunitRepositoryWrapper proteinAdapter;
     private SubunitRepositoryWrapper naAdapter;
-    
+
 
     public LegacySubstanceSequenceSearchService(SequenceIndexerService indexerService, GsrsCache ixCache,
                                                 ProteinSubstanceRepository proteinSubstanceRepository,
@@ -66,25 +67,23 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
 
     @Override
     public SearchResultContext search(SanitizedSequenceSearchRequest request) throws IOException {
-
         String hashKey = request.computeKey();
         try {
             return ixCache.getOrElse(indexerService.getLastModified() , hashKey, ()-> {
                 SearchResultProcessor<SequenceIndexer.Result, ?> processor;
-                
+
                 if ("protein".equalsIgnoreCase(request.getSeqType())) {
                     processor = new GinasSequenceResultProcessor(proteinAdapter, ixCache);
                 } else {
                     processor = new GinasSequenceResultProcessor(naAdapter, ixCache);
                 }
-               
+
                 processor = AutowireHelper.getInstance().autowireAndProxy(processor);
                 SequenceIndexer.ResultEnumeration resultEnumeration = indexerService.search(request.getQ(), request.getCutoff(), request.getType(), request.getSeqType());
                 try {
                     processor.setResults(1, resultEnumeration);
                     SearchResultContext ctx = processor.getContext();
                     ctx.setKey(hashKey);
-
                     return ctx;
                 } catch (Exception e) {
                     throw new IOException("error setting results", e);
@@ -95,7 +94,6 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
         }
     }
 
-    
     private interface SubunitRepositoryWrapper {
         Optional<Substance> getSubstanceFromSubunitUUID(UUID uuid);
         Optional<Subunit> getSubunitFromSubunitUUID(UUID uuid);
@@ -174,13 +172,13 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
         }
         
     }
-    
 
 
     public static class GinasSequenceResultProcessor
             extends SearchResultProcessor<SequenceIndexer.Result, Substance> {
         private SubunitRepositoryWrapper subunitRepoWrapper;
         private GsrsCache ixCache;
+        private Map<UUID, Double> highestScorePerSubstance = new ConcurrentHashMap<>();
 
         public GinasSequenceResultProcessor(SubunitRepositoryWrapper subunitRepoWrapper, GsrsCache ixCache) {
             this.subunitRepoWrapper = subunitRepoWrapper;
@@ -191,7 +189,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
         @Override
         protected Substance instrument(SequenceIndexer.Result r) throws Exception {
 
-
+            log.trace("in instrument r.id: {}", r.id);
 
             //katzelda - needed for large fasta sequences uploaded as references the indexer saves id
             //in format ">substanceID | file ID | record ID
@@ -201,6 +199,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                     String parentId = m.group(1);
                     String fileName = m.group(2);
                     String recordId = m.group(3);
+                    log.trace("parentId: {}; fileName: {}; recordId: {}", parentId, fileName, recordId);
                     Substance s= subunitRepoWrapper.getSubstanceByID(UUID.fromString(parentId)).orElse(null);
                     //right now the result id is ">substanceID | file ID | record ID
                     //we need that to know what the sequence is but we don't want to show that to the user
@@ -211,16 +210,24 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
                     });
                     return s;
                 }
+                log.trace("no FASTA_FILE_PATTERN match");
                 return null; //? maybe should do something else
             }
             UUID subunitUUID = UUID.fromString(r.id);
             
             Optional<Tuple<Substance,Subunit>> substanceAndSubunit = subunitRepoWrapper.getSubstanceAndSubunitFromSubunitUUID(subunitUUID);
-            
             Substance matched = substanceAndSubunit.map(t->{
                 Substance sub = t.k();
                 Subunit subunit = t.v();
-
+                log.trace("substance ID {}; subunit id: {}", sub.getUuid(), subunit.getUuid());
+                if( sub.getUuid() != null && highestScorePerSubstance.containsKey(sub.getUuid())
+                        && highestScorePerSubstance.get(sub.getUuid()) >= r.score ) {
+                    log.trace("We have seen this substance before");
+                    return null;
+                }
+                if( sub.getUuid() != null ) {
+                    highestScorePerSubstance.put(sub.getUuid(), r.score);
+                }
 
                 //GSRS 1512 add target site info
                 // this is the only place in the alignment code we have the aligned sequence
@@ -264,5 +271,4 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
             ixCache.setMatchingContext(this.getContext().getId(), key.toRootKey(), added);
         }
     }
-
 }

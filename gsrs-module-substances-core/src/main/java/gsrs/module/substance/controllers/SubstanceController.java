@@ -31,6 +31,7 @@ import javax.validation.constraints.NotBlank;
 
 import gsrs.controller.*;
 import gsrs.module.substance.SubstanceEntityService;
+import gsrs.module.substance.services.LegacySubstanceSequenceSearchService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
 import gsrs.security.canApproveRecords;
@@ -878,7 +879,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return getGsrsControllerConfiguration().handleNotFound(queryParameters, "query sequence not found : " + q);
 
         }
-        SubstanceSequenceSearchService.SequenceSearchRequest request = SubstanceSequenceSearchService.SequenceSearchRequest.builder()
+         SubstanceSequenceSearchService.SequenceSearchRequest request = SubstanceSequenceSearchService.SequenceSearchRequest.builder()
                 .q(subunit.get().sequence)
                 .type(SequenceIndexer.CutoffType.valueOfOrDefault(type))
                 .seqType(seqType)

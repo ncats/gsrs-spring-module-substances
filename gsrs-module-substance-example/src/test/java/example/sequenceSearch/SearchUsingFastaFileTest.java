@@ -48,6 +48,12 @@ public class SearchUsingFastaFileTest extends AbstractSubstanceJpaFullStackEntit
         testSequenceFileIsSearchable("VHLTPEEK", false);
     }
 
+    @Test
+    public void testIst1() {
+        String proteiniD = "XLR461MD3M";
+
+    }
+
     private void testSequenceFileIsSearchable(String sequence, boolean nucleicAcid) {
         UUID uuid = UUID.randomUUID();
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
