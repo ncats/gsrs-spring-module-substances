@@ -27,6 +27,7 @@ import ix.seqaln.SequenceIndexer.CutoffType;
 import ix.seqaln.SequenceIndexer.Result;
 import ix.seqaln.SequenceIndexer.ResultEnumeration;
 import ix.seqaln.service.SequenceIndexerService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,14 +49,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @Import({SequenceSearchFullStackTest.Configuration.class, RelationEventListener.class})
 @WithMockUser(username = "admin", roles="Admin")
+@Slf4j
 public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
@@ -340,6 +346,29 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
         List<Result> lres=StreamUtil.forEnumeration(re)
                                     .collect(Collectors.toList());
         return lres;
+    }
+
+    @Test
+    public void addProteinSequencesAndThenSearchShouldMatchItself() throws Exception {
+
+        loadData();
+        String remigromigSeq1 = "EVQLVESGGGLVQPGGSLRLSCAASGFDFTAYAMHWVRQAPGKGLEWVASIYPSGGYTAYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYCARRSYYFALDYWGQGTLVTVSSGGGGSDIQMTQSPSSLSASVGDRVTITCRASQSVSSAVAWYQQKPGKAPKLLIYSASSLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYCQQYWAYYSPITFGQGTKVEIKGGGGSGGGGSEPKSSDKTHTCPPCPAPEAAGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPASIEKTISKAKGQPREPMVFDLPPSREEMTKNQVSLWCMVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGKGGGSGGGSGGGSGGGSGSTGEVQLVESGGGLVQPGGSLRLSCAASGFTLSSYSMHWVRQAPGKGLEWVAYISSYDSITDYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYCARPAVGHMAFDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKKVEPKSCDKTHT";
+        List<Result> lres=getGlobalResults(remigromigSeq1,"protein");
+
+        assertEquals("Should return 2 matches for protein search",2, lres.size());
+        AtomicBoolean found100PercentMatch = new AtomicBoolean(false);
+        lres.forEach(r ->{
+            log.info("looking at result {}", r.id);
+            AtomicInteger matchNumber = new AtomicInteger(0);
+            r.alignments.forEach(a->{
+                log.info("score {}; iden: {}", a.score, a.iden);
+                if( matchNumber.get()==0 && r.score == 1.00) {
+                    found100PercentMatch.set(true);
+                }
+                matchNumber.incrementAndGet();
+            });
+        } );
+        assertTrue(found100PercentMatch.get());
     }
 
     private void loadData() throws IOException {
