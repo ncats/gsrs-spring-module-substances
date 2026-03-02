@@ -1,31 +1,41 @@
 package example.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.stream.StreamUtil;
+import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.processors.ReferenceProcessor;
 import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.SubstanceProcessor;
 import gsrs.module.substance.services.RelationshipService;
 import gsrs.repository.EditRepository;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestEntityProcessorFactory;
 import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.validator.DefaultValidatorConfig;
+import gsrs.validator.ValidatorConfig;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.validation.validators.ProteinValidator;
 import ix.seqaln.SequenceIndexer.CutoffType;
 import ix.seqaln.SequenceIndexer.Result;
 import ix.seqaln.SequenceIndexer.ResultEnumeration;
 import ix.seqaln.service.SequenceIndexerService;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -33,20 +43,33 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
 @RecordApplicationEvents
 @Import({SequenceSearchFullStackTest.Configuration.class, RelationEventListener.class})
 @WithMockUser(username = "admin", roles="Admin")
+@Slf4j
 public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackEntityTest {
-    
+
+    @Autowired
+    private TestIndexValueMakerFactory testIndexValueMakerFactory;
+
+    @Autowired
+    private TestGsrsValidatorFactory factory;
+
     @TestConfiguration
     @EnableAsync
     public static class Configuration implements AsyncConfigurer{
@@ -71,8 +94,6 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
         
         @Override
         public Executor getAsyncExecutor() {
-//            ThreadPoolTaskExecutor exec = new ThreadPoolTaskExecutor();
-//exec.
             return new Executor() {
                 @Override
                 public void execute(Runnable arg0) {
@@ -326,7 +347,50 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                                     .collect(Collectors.toList());
         return lres;
     }
-    
 
-    
+    @Test
+    public void addProteinSequencesAndThenSearchShouldMatchItself() throws Exception {
+
+        loadData();
+        String remigromigSeq1 = "EVQLVESGGGLVQPGGSLRLSCAASGFDFTAYAMHWVRQAPGKGLEWVASIYPSGGYTAYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYCARRSYYFALDYWGQGTLVTVSSGGGGSDIQMTQSPSSLSASVGDRVTITCRASQSVSSAVAWYQQKPGKAPKLLIYSASSLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYCQQYWAYYSPITFGQGTKVEIKGGGGSGGGGSEPKSSDKTHTCPPCPAPEAAGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPASIEKTISKAKGQPREPMVFDLPPSREEMTKNQVSLWCMVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGKGGGSGGGSGGGSGGGSGSTGEVQLVESGGGLVQPGGSLRLSCAASGFTLSSYSMHWVRQAPGKGLEWVAYISSYDSITDYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYCARPAVGHMAFDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGCLVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYICNVNHKPSNTKVDKKVEPKSCDKTHT";
+        List<Result> lres=getGlobalResults(remigromigSeq1,"protein");
+
+        assertEquals("Should return 2 matches for protein search",2, lres.size());
+        AtomicBoolean found100PercentMatch = new AtomicBoolean(false);
+        lres.forEach(r ->{
+            log.info("looking at result {}", r.id);
+            AtomicInteger matchNumber = new AtomicInteger(0);
+            r.alignments.forEach(a->{
+                log.info("score {}; iden: {}", a.score, a.iden);
+                if( matchNumber.get()==0 && r.score == 1.00) {
+                    found100PercentMatch.set(true);
+                }
+                matchNumber.incrementAndGet();
+            });
+        } );
+        assertTrue(found100PercentMatch.get());
+    }
+
+    private void loadData() throws IOException {
+        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+        AutowireHelper.getInstance().autowire(hashIndexer);
+        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+        {
+            ValidatorConfig config = new DefaultValidatorConfig();
+            config.setValidatorClass(ProteinValidator.class);
+            config.setNewObjClass(ProteinSubstance.class);
+            factory.addValidator("substances", config);
+        }
+
+        ObjectMapper mapper = new ObjectMapper();
+        Resource dataFile = new ClassPathResource("testJSON/XLR461MD3M.json");
+        String recordJson1 = Files.readString(dataFile.getFile().toPath());
+        JsonNode json = mapper.readTree(recordJson1);
+        assertCreatedAPI(json);
+        Resource dataFile2 = new ClassPathResource("testJSON/C3TZ3X6VNV.json");
+        String recordJson2 = Files.readString(dataFile2.getFile().toPath());
+        JsonNode json2 = mapper.readTree(recordJson2);
+        assertCreatedAPI(json2);
+        System.out.println("loaded data");
+    }
 }
