@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSearchService{
     /**
-     * Fasta files will have a pattern of ">$SubstanceUUID | sequence id
+    * Fasta files will have a pattern of ">$SubstanceUUID | sequence id
      * In order to link the match context back to the substance so the alignment
      * is displayed in search results we need this regex to pull out the substance uuid.
      */
