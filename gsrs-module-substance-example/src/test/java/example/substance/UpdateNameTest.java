@@ -126,6 +126,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .addName("Concept Name",n->{
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
+                    org.setUuid(UUID.randomUUID());
                     n.nameOrgs.add(org);
                 })
                 .setUUID(uuid)
@@ -136,7 +137,9 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
+                    org.setUuid(UUID.randomUUID());
                     s.getAllNames().get(0).nameOrgs.add(org);
+                    s.changeReason ="changed name orgs";
                 })
                 .buildJsonAnd(this::assertUpdated);
         Optional<Substance> updated = substanceEntityService.get(uuid);
@@ -207,6 +210,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
+                    org.setUuid(UUID.randomUUID());
                     s.getAllNames().get(1).nameOrgs.add(org);
                 })
                 .buildJsonAnd(this::assertUpdated);
