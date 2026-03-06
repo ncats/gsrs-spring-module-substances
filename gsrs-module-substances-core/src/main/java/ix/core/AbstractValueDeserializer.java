@@ -10,12 +10,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.module.substance.repository.ValueRepository;
 import ix.core.models.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class AbstractValueDeserializer extends JsonDeserializer<Value> {
 	@Autowired
 	private ValueRepository valueRepository;

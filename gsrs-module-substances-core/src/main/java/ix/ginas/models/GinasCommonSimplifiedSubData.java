@@ -11,7 +11,7 @@ import ix.core.models.Principal;
 import ix.ginas.models.serialization.GroupSerializer;
 import ix.ginas.models.serialization.PrincipalDeserializer;
 
-import javax.persistence.MappedSuperclass;
+import jakarta.persistence.MappedSuperclass;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;

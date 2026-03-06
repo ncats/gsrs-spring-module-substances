@@ -13,6 +13,7 @@ import java.util.*;
 
 @SuperBuilder
 @Data
+@EqualsAndHashCode(callSuper=false)
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,9 +42,12 @@ public class SubstanceDTO{
     private String approvalID;
     private String approvedBy;
 
+    @Builder.Default
     private SubstanceDefinitionType definitionType = SubstanceDefinitionType.PRIMARY;
+    @Builder.Default
     private SubstanceDefinitionLevel  definitionLevel= SubstanceDefinitionLevel.COMPLETE;
 
+    @Builder.Default
     private SubstanceClass substanceClass = SubstanceClass.concept;
     @Setter(AccessLevel.NONE)
     private LazyFetchedCollection _names;
@@ -54,9 +58,12 @@ public class SubstanceDTO{
     @Setter(AccessLevel.NONE)
     private LazyFetchedCollection _modifications;
 
+    @Builder.Default
     private List<NameDTO> names = new ArrayList<>();
+    @Builder.Default
     private List<CodeDTO> codes= new ArrayList<>();
 
+    @Builder.Default
     private List<ReferenceDTO> references= new ArrayList<>();
 
     @JsonSerialize(using = ToStringSerializer.class)

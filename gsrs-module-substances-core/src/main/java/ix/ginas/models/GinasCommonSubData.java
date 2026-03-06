@@ -10,7 +10,7 @@ import ix.ginas.models.serialization.ReferenceSetSerializer;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
