@@ -17,7 +17,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import javax.validation.constraints.AssertTrue;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -29,7 +28,7 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
     Confirm correct new (January 2023) behavior - duplicate names -> warning
      */
     @Test
-    public void testValidationNoErrors() {
+    void testValidationNoErrors() {
         NamesValidator validator = new NamesValidator();
         validator= AutowireHelper.getInstance().autowireAndProxy(validator);
         ChemicalSubstance chemical =createSimpleChemicalDuplicateNames();
@@ -61,9 +60,10 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
         List<Substance> concepts = buildBeforeAndAfterSubstance();
         Substance conceptBefore = concepts.get(0);
         Substance conceptAfter = concepts.get(1);
+        conceptAfter.status = Substance.STATUS_APPROVED;
         ValidationResponse<Substance> response = validator.validate(conceptAfter, conceptBefore);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(
-                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR && v.getMessage().contains("Additional privilege required to change preferred Name")));
+                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR && v.getMessage().contains("Additional privilege is required to change display name of approved records")));
     }
 
     private ChemicalSubstance createSimpleChemicalDuplicateNames(){

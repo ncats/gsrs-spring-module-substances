@@ -293,7 +293,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
             if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
                     && (s.changeReason == null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
-                if(privilegeService.canDo(PRIVILEGE_FOR_DISPLAY_NAME_CHANGE)) {
+                if(privilegeService.canDo(PRIVILEGE_FOR_DISPLAY_NAME_CHANGE) || !Substance.STATUS_APPROVED.equals(s.status)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .WARNING_MESSAGE(
                                     "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
@@ -302,8 +302,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 } else {
                     GinasProcessingMessage mes = GinasProcessingMessage
                             .ERROR_MESSAGE(
-                                    "Additional privilege required to change preferred Name from '%s' to '%s'. ",
-                                    oldDisplayName.get().getName(), n.getName());
+                                    "Additional privilege is required to change display name of approved records");
                     callback.addMessage(mes);
                 }
             }
