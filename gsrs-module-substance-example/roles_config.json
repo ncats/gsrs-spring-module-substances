@@ -51,7 +51,8 @@
 				"Modify Relationships",
 				"Merge Subconcepts",
 				"Edit Approval IDs",
-				"Manage Others Lists"
+				"Manage Others Lists",
+				"Change Display Name"
 			],
 			"include": [
 				"Approver"

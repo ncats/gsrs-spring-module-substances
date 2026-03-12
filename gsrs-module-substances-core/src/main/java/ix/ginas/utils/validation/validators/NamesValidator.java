@@ -3,6 +3,7 @@ package ix.ginas.utils.validation.validators;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.services.PrivilegeService;
 import ix.core.models.Keyword;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
@@ -31,11 +32,17 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private ReferenceRepository referenceRepository;
     @Autowired
     private SubstanceRepository substanceRepository;
+
+    @Autowired
+    PrivilegeService privilegeService;
+
     // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
     boolean extractLocators = false;
     private boolean duplicateNameIsError = false;
 
     private String caseSearchType = "Explicit";
+
+    public static final String PRIVILEGE_FOR_DISPLAY_NAME_CHANGE = "Change Display Name";
 
     // Keep consistent with NamesUtilities
     // This and other replacers should be handled later in a new NameStandardizer class similar to HTMLNameStandardizer
@@ -256,7 +263,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
             while (iter.hasNext()) {
                 String language = iter.next().getValue();
-//				System.out.println("language for " + n + "  = " + language);
                 Set<String> names = nameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
                 if (!names.add(uppercasedName)) {
                     GinasProcessingMessage mes;
@@ -267,7 +273,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 }
 
             }
-            //nameSet.add(n.getName());
             try {
                 List<SubstanceRepository.SubstanceSummary> sr =
                         (!this.caseSearchType.equalsIgnoreCase("IMPLICIT"))
@@ -288,11 +293,19 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             }
             if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
                     && (s.changeReason == null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
-                GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(
-                                "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
-                                oldDisplayName.get().getName(), n.getName());
-                callback.addMessage(mes);
+                if(privilegeService.canDo(PRIVILEGE_FOR_DISPLAY_NAME_CHANGE)) {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .WARNING_MESSAGE(
+                                    "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
+                                    oldDisplayName.get().getName(), n.getName());
+                    callback.addMessage(mes);
+                } else {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .ERROR_MESSAGE(
+                                    "Additional privilege required to change preferred Name from '%s' to '%s'. ",
+                                    oldDisplayName.get().getName(), n.getName());
+                    callback.addMessage(mes);
+                }
             }
         }
     }

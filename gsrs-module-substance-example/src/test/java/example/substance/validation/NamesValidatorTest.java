@@ -2,22 +2,26 @@ package example.substance.validation;
 
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import ix.core.models.Group;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.core.models.Keyword;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.models.EmbeddedKeywordList;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.validators.BasicNameValidator;
 import ix.ginas.utils.validation.validators.NamesValidator;
-import org.checkerframework.checker.units.qual.K;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 
+import javax.validation.constraints.AssertTrue;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
 
@@ -34,6 +38,32 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .filter(m -> m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.ERROR)).count());
         Assertions.assertEquals(1, response.getValidationMessages().stream()
                 .filter(m -> m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.WARNING)).count());
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "Admin")
+    void testChangeDisplayNameAdmin() {
+        NamesValidator validator = new NamesValidator();
+        validator= AutowireHelper.getInstance().autowireAndProxy(validator);
+        List<Substance> concepts = buildBeforeAndAfterSubstance();
+        Substance conceptBefore = concepts.get(0);
+        Substance conceptAfter = concepts.get(1);
+        ValidationResponse<Substance> response = validator.validate(conceptAfter, conceptBefore);
+        Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(
+                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.WARNING && v.getMessage().contains("Preferred Name has been changed")));
+    }
+
+    @Test
+    @WithMockUser(username = "editor", roles = "DataEntry")
+    void testChangeDisplayNameEditor() {
+        NamesValidator validator = new NamesValidator();
+        validator= AutowireHelper.getInstance().autowireAndProxy(validator);
+        List<Substance> concepts = buildBeforeAndAfterSubstance();
+        Substance conceptBefore = concepts.get(0);
+        Substance conceptAfter = concepts.get(1);
+        ValidationResponse<Substance> response = validator.validate(conceptAfter, conceptBefore);
+        Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(
+                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR && v.getMessage().contains("Additional privilege required to change preferred Name")));
     }
 
     private ChemicalSubstance createSimpleChemicalDuplicateNames(){
@@ -66,5 +96,56 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
                 .setStructureWithDefaultReference("CCO")
                 .build();
         return chemical;
+    }
+
+    private List<Substance> buildBeforeAndAfterSubstance() {
+        SubstanceBuilder conceptBuilder = new SubstanceBuilder();
+        String originalDisplayNameValue ="Substance One";
+        String originalSynonymValue = "Substance 1";
+
+        Reference nameRef = new Reference();
+        nameRef.docType = "Book";
+        nameRef.citation = "Page 2";
+
+        Name originalDisplayName = new Name();
+        originalDisplayName.displayName = true;
+        originalDisplayName.setName(originalDisplayNameValue);
+        Set<Group> access = new HashSet<>();
+        access.add( new Group("PROTECTED"));
+        originalDisplayName.setAccess(access);
+        originalDisplayName.addLanguage("en");
+        originalDisplayName.addReference(nameRef);
+        originalDisplayName.type = "cn";
+        conceptBuilder.addName(originalDisplayName);
+        Name originalSynonym = new Name();
+        originalSynonym.setName(originalSynonymValue);
+        originalSynonym.setAccess(access);
+        originalSynonym.addLanguage("en");
+        originalSynonym.type = "cn";
+        originalSynonym.addReference(nameRef);
+        conceptBuilder.addName(originalSynonym);
+        conceptBuilder.addReference(nameRef);
+        Substance conceptBefore = conceptBuilder.build();
+
+        SubstanceBuilder builder2 = new SubstanceBuilder();
+        Name copyName1 = new Name();
+        copyName1.displayName = false;
+        copyName1.setName(originalDisplayNameValue);
+        copyName1.setAccess(access);
+        copyName1.addLanguage("en");
+        copyName1.addReference(nameRef);
+        copyName1.type = "cn";
+        builder2.addName(copyName1);
+
+        Name copySynonym = new Name();
+        copySynonym.setName(originalSynonymValue);
+        copySynonym.setAccess(access);
+        copySynonym.addLanguage("en");
+        copySynonym.type = "cn";
+        copySynonym.addReference(nameRef);
+        builder2.addName(copySynonym);
+        builder2.addReference(nameRef);
+        Substance conceptAfter = builder2.build();
+        return Arrays.asList(conceptBefore, conceptAfter);
     }
 }
