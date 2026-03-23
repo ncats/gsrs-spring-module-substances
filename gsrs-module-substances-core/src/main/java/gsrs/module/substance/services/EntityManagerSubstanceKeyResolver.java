@@ -27,8 +27,7 @@ public class EntityManagerSubstanceKeyResolver implements SubstanceKeyResolver {
         if ((substanceKeyType!= null) && (substanceKeyType.equalsIgnoreCase("UUID"))) {
             query = entityManager.createQuery("SELECT s FROM Substance s WHERE s.uuid=:subKey");
             query.setParameter("subKey", UUID.fromString(substanceKey));
-
-        } else if ((substanceKeyType!= null) && (substanceKeyType.equalsIgnoreCase("APPROVAL_ID"))) {
+        } else if ((substanceKeyType!= null) && ((substanceKeyType.equalsIgnoreCase("APPROVAL_ID")) || (substanceKeyType.equalsIgnoreCase("UNII"))) ) {
             query = entityManager.createQuery("SELECT s FROM Substance s WHERE s.approvalID=:subKey");
             query.setParameter("subKey", substanceKey);
         } else {
