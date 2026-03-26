@@ -4,6 +4,7 @@ import gsrs.controller.EditController2;
 import gsrs.controller.EditEntityService;
 import gsrs.module.substance.approval.ApprovalIdConfiguration;
 import gsrs.module.substance.controllers.*;
+import gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirController;
 import gsrs.module.substance.exporters.SubstanceSpreadsheetExporterConfiguration;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinderConfig;
@@ -18,7 +19,6 @@ import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
 import gsrs.security.LegacyAuthenticationConfiguration;
 import gsrs.security.UserRoleConfiguration;
-import gsrs.services.PrivilegeService;
 import gsrs.services.RolesConfig;
 import ix.core.chem.StructureProcessorConfiguration;
 import ix.core.search.bulk.BulkSearchService;
@@ -72,7 +72,9 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ChemicalUtils.class,
         SubstanceEntityServiceConfiguration.class,
         UserRoleConfiguration.class,
-        RolesConfig.class
+        RolesConfig.class,
+        EmaSmsFhirController.class
+
 })
 public class SubstanceCoreConfiguration {
 

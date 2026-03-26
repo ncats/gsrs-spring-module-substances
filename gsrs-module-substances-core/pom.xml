@@ -417,5 +417,21 @@
             <artifactId>Featureize-Nitrosamines</artifactId>
             <version>0.0.4-SNAPSHOT</version>
         </dependency>
+
+        <dependency>
+            <groupId>ca.uhn.hapi</groupId>
+            <artifactId>hapi-base</artifactId>
+            <version>2.6.0</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ca.uhn.hapi.fhir</groupId>
+            <artifactId>hapi-fhir-structures-r5</artifactId>
+            <version>8.6.1</version>
+            <scope>compile</scope>
+        </dependency>
+
+
     </dependencies>
 </project>
