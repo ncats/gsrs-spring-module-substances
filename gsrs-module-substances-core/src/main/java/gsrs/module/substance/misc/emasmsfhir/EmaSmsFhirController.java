@@ -18,6 +18,10 @@ import java.util.Optional;
 @RestController
 public class EmaSmsFhirController {
 
+
+    // To do
+    // domain, identifier, multiple names
+
     private static final String SodiumChlorideUuid = "306d24b9-a6b8-4091-8024-02f9ec24b705";
     // http://localhost:8080/api/v1/substances/306d24b9-a6b8-4091-8024-02f9ec24b705/@emaSmsRecord
     // http://localhost:8080/api/v1/substances/306d24b9-a6b8-4091-8024-02f9ec24b705/@emaSmsSubstanceDefinition

@@ -1,7 +1,5 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import lombok.Data;
@@ -76,7 +74,7 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
             new SubstanceDefinition.SubstanceDefinitionCodeComponent()
             .setCode(new CodeableConcept()
             .addCoding(new Coding()
-                .setCode(findCodeByCodeSystem("EVMPD", substance))
+                .setCode(EmaSmsFhrUtils.findCodeByCodeSystem("EVMPD", substance))
                 .setSystem(EV_SYSTEM_URL)
             )
         ));
@@ -86,7 +84,7 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
             new SubstanceDefinition.SubstanceDefinitionCodeComponent()
             .setCode(new CodeableConcept()
                 .addCoding(new Coding()
-                    .setCode(findCodeByCodeSystem("FDA UNII", substance))
+                    .setCode(EmaSmsFhrUtils.findCodeByCodeSystem("FDA UNII", substance))
                     .setSystem(UNII_SYSTEM_URL)
                     .setDisplay("UNII")
                 )
@@ -97,7 +95,7 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
             new SubstanceDefinition.SubstanceDefinitionCodeComponent()
             .setCode(new CodeableConcept()
                 .addCoding(new Coding()
-                    .setCode(findCodeByCodeSystem("INN", substance))
+                    .setCode(EmaSmsFhrUtils.findCodeByCodeSystem("INN", substance))
                     .setSystem(INN_SYSTEM_URL)
                 )
         ));
@@ -107,7 +105,7 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
             new SubstanceDefinition.SubstanceDefinitionCodeComponent()
             .setCode(new CodeableConcept()
                 .addCoding(new Coding()
-                    .setCode(findCodeByCodeSystem("ECHA (EC/EINECS)", substance))
+                    .setCode(EmaSmsFhrUtils.findCodeByCodeSystem("ECHA (EC/EINECS)", substance))
                     .setSystem(ECHA_SYSTEM_URL)
                 )
             ));
@@ -116,7 +114,7 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
         if(includeGsrsSubstanceExtension) {
             substanceDefinition.addExtension(
                 new Extension().setUrl(GSRS_SUBSTANCE_EXTENSION_URL)
-                .setValue(new StringType(gsrsSubstanceToQuotedJson(substance)))
+                .setValue(new StringType(EmaSmsFhrUtils.gsrsSubstanceToQuotedJson(substance)))
             );
         }
         return substanceDefinition;
@@ -159,32 +157,6 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
         return "";
     }
 
-    private String findCodeByCodeSystem (String codeSystem, Substance substance){
-        // Do we need to check if public?
-        boolean publicOnly = false;
-        Optional<String> optionalCode = substance.getCodes()
-                .stream()
-                // .filter(cd -> !(publicOnly && !cd.isPublic()))
-                .filter(cd -> codeSystem.equalsIgnoreCase(cd.codeSystem))
-                .findFirst()
-                .map(cd -> {
-                    if ("PRIMARY".equals(cd.type)) {
-                        return cd.code;
-                    } else {
-                        return cd.code + " [" + cd.type + "]";
-                    }
-                });
-        return optionalCode.orElse("");
-    }
-
-    public String gsrsSubstanceToQuotedJson (Substance substance){
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.writeValueAsString(substance);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
 
 
