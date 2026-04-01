@@ -14,8 +14,11 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
     private static final String SUBTANCE_TYPE_SYSTEM_URL = "http://example.europa.eu/fhir/SubstanceType";
     private static final String CODE_SYSTEM_URL="http://example.europa.eu/fhir/Substance";
 
+
     private static final String UNII_SYSTEM_URL="https://example.europa.eu/fhir/Substance#---UNII";
     private static final String EV_SYSTEM_URL="https://example.europa.eu/fhir/Substance#---EV";
+    private static final String SMS_ID_SYSTEM_URL="https://example.europa.eu/fhir/Substance#---SMS_ID";
+
     private static final String INN_SYSTEM_URL="https://example.europa.eu/fhir/Substance#---INN";
     private static final String ECHA_SYSTEM_URL="https://example.europa.eu/fhir/Substance#----ECHA";
     private static final String STATUS_SYSTEM_URL="https://example.europa.eu/fhir/Substance#--status";
@@ -79,14 +82,24 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
             )
         ));
 
+        // e.g. SUB99611MIG
+        substanceDefinition.addCode(
+                new SubstanceDefinition.SubstanceDefinitionCodeComponent()
+                        .setCode(new CodeableConcept()
+                                .addCoding(new Coding()
+                                        .setCode(EmaSmsFhrUtils.findCodeByCodeSystem("SMS_ID", substance))
+                                        .setSystem(SMS_ID_SYSTEM_URL)
+                                )
+                        ));
+
         // e.g. UNII; should we use approval ID instead?
         substanceDefinition.addCode(
             new SubstanceDefinition.SubstanceDefinitionCodeComponent()
             .setCode(new CodeableConcept()
                 .addCoding(new Coding()
-                    .setCode(EmaSmsFhrUtils.findCodeByCodeSystem("FDA UNII", substance))
+                    .setCode("200000018817")
                     .setSystem(UNII_SYSTEM_URL)
-                    .setDisplay("UNII")
+                    .setDisplay(EmaSmsFhrUtils.findCodeByCodeSystem("FDA UNII", substance))
                 )
         ));
 

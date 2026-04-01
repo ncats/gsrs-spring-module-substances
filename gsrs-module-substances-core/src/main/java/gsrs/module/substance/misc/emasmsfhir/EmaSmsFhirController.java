@@ -36,11 +36,13 @@ public class EmaSmsFhirController {
     @Autowired
     private SubstanceEntityService substanceEntityService;
 
-    @GetMapping(value = "/api/v1/substances/{id}/@emaSmsRecord")
+    @GetMapping(value = "/api/v1/substances/{id}/@smsFhirRecord")
     public ResponseEntity<?> makeSimpleEmaSmsRecord(@PathVariable("id") String id) {
         String jsonEncoded;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+
+        System.out.println("hello ...");
         try {
             Optional<Substance> gsrsSubstance = substanceEntityService.flexLookup(id);
             if (!gsrsSubstance.isPresent()) {
