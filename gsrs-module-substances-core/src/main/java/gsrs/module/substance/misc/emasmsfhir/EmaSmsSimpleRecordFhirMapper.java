@@ -7,11 +7,12 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import org.hl7.fhir.r5.model.BooleanType;
 import org.hl7.fhir.r5.model.StringType;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-
+@Component
 public class EmaSmsSimpleRecordFhirMapper {
     private static String DEFAULT_NAME_SOURCE = "FDA SUBSTANCE REGISTRATION SYSTEM";
     private static String DEFAULT_LANGUAGE = "en";
