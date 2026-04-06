@@ -14,6 +14,12 @@
     <description>gsrs-module-substances-core</description>
     <url>https://github.com/ncats/gsrs-spring-module-substances.git</url>
 
+    <properties>
+        <jackson.version.core>2.20.1</jackson.version.core>
+        <jackson.version.annotations>2.20</jackson.version.annotations>
+        <jackson.version.databind>2.20.1</jackson.version.databind>
+    </properties>
+
     <licenses>
         <license>
             <name>The Apache License, Version 2.0</name>
@@ -21,7 +27,6 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
-
     <developers>
         <developer>
             <id>peryeata</id>
@@ -496,7 +501,52 @@
             <version>8.6.1</version>
             <scope>compile</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version.core}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version.databind}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version.annotations}</version>
+        </dependency>
 
     </dependencies>
-</project>
+    <!-- dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.17.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement -->
+</project><!-- dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.17.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement --></dependencyManagement -->
+</project><!-- dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.17.2</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
