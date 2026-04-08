@@ -67,11 +67,24 @@ public class EmaSmsSimpleRecord  extends DomainResource {
 
     @Override
     public DomainResource copy() {
-        return null;
+        EmaSmsSimpleRecord copy = new EmaSmsSimpleRecord();
+        if (smsId != null) copy.smsId = smsId.copy();
+        if (substanceName != null) copy.substanceName = substanceName.copy();
+        if (language2 != null) copy.language2 = language2.copy();
+        if (isPreferredName != null) copy.isPreferredName = isPreferredName.copy();
+        if (nameSource != null) copy.nameSource = nameSource.copy();
+        if (substanceType != null) copy.substanceType = substanceType.copy();
+        if (evCode != null) copy.evCode = evCode.copy();
+        if (unii != null) copy.unii = unii.copy();
+        if (innNumber != null) copy.innNumber = innNumber.copy();
+        if (ecListNumber != null) copy.ecListNumber = ecListNumber.copy();
+        if (gsrsSubstance != null) copy.gsrsSubstance = gsrsSubstance.copy();
+        copyValues(copy);
+        return copy;
     }
 
     @Override
     public ResourceType getResourceType() {
-        return null;
+        return ResourceType.Basic;
     }
 }
