@@ -43,6 +43,7 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private String caseSearchType = "Explicit";
 
     public static final String PRIVILEGE_FOR_DISPLAY_NAME_CHANGE = "Change Display Name";
+    public static final String PRIVILEGE_FOR_DISPLAY_NAME_CHANGE_FOR_VALIDATED = "Change Display Name for Approved";
 
     // Keep consistent with NamesUtilities
     // This and other replacers should be handled later in a new NameStandardizer class similar to HTMLNameStandardizer
@@ -291,7 +292,14 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
+
+            if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
+                    && Substance.STATUS_APPROVED.equals(s.status) && ! privilegeService.canDo(PRIVILEGE_FOR_DISPLAY_NAME_CHANGE_FOR_VALIDATED)){
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .ERROR_MESSAGE(
+                                "Changing Display Name is not allowed for your user role.");
+                callback.addMessage(mes);
+            } else if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
                     && (s.changeReason == null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
                 if(privilegeService.canDo(PRIVILEGE_FOR_DISPLAY_NAME_CHANGE) || !Substance.STATUS_APPROVED.equals(s.status)) {
                     GinasProcessingMessage mes = GinasProcessingMessage
