@@ -1,5 +1,6 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
+import ca.uhn.fhir.context.FhirContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import ix.core.controllers.EntityFactory;
@@ -26,13 +27,16 @@ public class EmaSmsFhirExporter implements Exporter<Substance> {
     private ExporterFactory.Parameters params;
     private boolean omitPrimaryCodeSystem;
     private String chosenApprovalIdName;
-
-    @Autowired
     private EmaSmsFhirConfiguration emaSmsFhirConfiguration;
+    private EmaSmsSubstanceDefinitionFhirMapper emaSmsSubstanceDefinitionFhirMapper;
 
-    public EmaSmsFhirExporter(OutputStream os, ExporterFactory.Parameters params, String primaryCodeSystem) throws IOException{
+
+    public EmaSmsFhirExporter(OutputStream os, ExporterFactory.Parameters params, String primaryCodeSystem, EmaSmsFhirConfiguration emaSmsFhirConfiguration, EmaSmsSubstanceDefinitionFhirMapper emaSmsSubstanceDefinitionFhirMapper) throws IOException{
         this.primaryCodeSystem = primaryCodeSystem;
         this.params = params;
+        this.emaSmsFhirConfiguration = emaSmsFhirConfiguration;
+        this.emaSmsSubstanceDefinitionFhirMapper = emaSmsSubstanceDefinitionFhirMapper;
+
         JsonNode detailedParameters = params.detailedParameters();
 
         omitPrimaryCodeSystem = (detailedParameters!=null
@@ -45,58 +49,25 @@ public class EmaSmsFhirExporter implements Exporter<Substance> {
                 ? detailedParameters.get(EmaSmsFhirExporterFactory.APPROVAL_ID_NAME_PARAMETERS).textValue().trim() : EmaSmsFhirExporterFactory.DEFAULT_APPROVAL_ID_NAME;
 
         bw = new BufferedWriter(new OutputStreamWriter(os));
-
-        StringBuilder sb = new StringBuilder();
-//        if (null != emaSmsFhirConfiguration.getCodeConfigs()) {
-            sb.append("testing: ").append( emaSmsFhirConfiguration.getCodeConfigs().toString());
-//        }
-
-
 //        StringBuilder sb = new StringBuilder();
-//
-//        sb.append("UUID").append("\t");
-//        sb.append(chosenApprovalIdName).append("\t");
-//        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
-//            sb.append(primaryCodeSystem).append("\t");
-//        }
-//        sb.append("Code Public/Private").append("\t");
-//        sb.append("CODE").append("\t");
-//        sb.append("CODE_SYSTEM").append("\t");
-//        sb.append("CODE_TYPE").append("\t");
-//        sb.append("CODE_TEXT").append("\t");
-//        sb.append("COMMENTS").append("\t");
-
-        bw.write(sb.toString());
-        bw.newLine();
+//        bw.write(sb.toString());
+//        bw.newLine();
     }
+    FhirContext ctx = FhirContext.forR5();
 
     @Override
     public void export(Substance obj) throws IOException {
         // The substance corresponds to one line of "scrubbed" data.
-        String priCode = null;
-        if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
-            priCode = obj.codes.stream().filter(cd -> cd.codeSystem.equals(primaryCodeSystem)
-                    && cd.type.equals("PRIMARY")).map(cd -> cd.code).findFirst().orElse(null);
-        }
-        String uuid = obj.getUuid().toString();
-        for (Code c : obj.getCodes()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append(uuid).append("\t");
-            sb.append(obj.approvalID).append("\t");
-            if(!omitPrimaryCodeSystem && primaryCodeSystem!=null) {
-                sb.append(priCode).append("\t");
-            }
-            sb.append(
-                    (c.getAccess().isEmpty())
-                            ? "Public" : "Private: " + ExporterUtilities.makeAccessGroupString(c.getAccess())).append("\t");
-            sb.append(c.code).append("\t");
-            sb.append(c.codeSystem).append("\t");
-            sb.append(c.type).append("\t");
-            sb.append((c.codeText != null) ? c.codeText : "").append("\t");
-            sb.append((c.comments != null) ? ExporterUtilities.replaceAllLinefeedsWithPipes(c.comments) : "");
-            bw.write(sb.toString());
-            bw.newLine();
-        }
+
+        StringBuilder sb = new StringBuilder();
+        bw.write(
+            ctx.newJsonParser().setPrettyPrint(false).encodeResourceToString(
+              emaSmsSubstanceDefinitionFhirMapper.generateEmaSmsSubstanceDefinitionFromSubstance(obj)
+            )
+        );
+        bw.newLine();
+
+
     }
 
     @Override

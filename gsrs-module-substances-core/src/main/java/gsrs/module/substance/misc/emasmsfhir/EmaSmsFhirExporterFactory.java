@@ -14,7 +14,10 @@ import java.io.OutputStream;
 import java.util.Collections;
 import java.util.Set;
 
-public class EmaSmsFhirExporterFactory implements ExporterFactory<Substance>{
+public class EmaSmsFhirExporterFactory implements ExporterFactory {
+    // see FDACodeExporterFactory
+    // see DefaultSubstanceSpreadsheetExporterFactory
+
     // To set include e.g. { parameters: {"primaryCodeSystem": "BDNUM"  }, ...}  in your factory configuration
     // the setter will be called automatically by gsrs code.
 
@@ -30,6 +33,9 @@ public class EmaSmsFhirExporterFactory implements ExporterFactory<Substance>{
     @Autowired
     private EmaSmsFhirConfiguration emaSmsFhirConfiguration;
 
+    @Autowired
+    private EmaSmsSubstanceDefinitionFhirMapper emaSmsSubstanceDefinitionFhirMapper;
+
     @Override
     public boolean supports(ExporterFactory.Parameters params) {
         return params.getFormat().equals(format);
@@ -42,7 +48,8 @@ public class EmaSmsFhirExporterFactory implements ExporterFactory<Substance>{
 
     @Override
     public Exporter<Substance> createNewExporter(OutputStream out, ExporterFactory.Parameters params) throws IOException {
-        return new EmaSmsFhirExporter(out, params, this.primaryCodeSystem);
+        System.out.println("Creating new Exporter using emaSmsSubstanceDefinitionFhirMapper, etc.");
+        return new EmaSmsFhirExporter(out, params, this.primaryCodeSystem, this.emaSmsFhirConfiguration, this.emaSmsSubstanceDefinitionFhirMapper);
     }
 
     public String getPrimaryCodeSystem() {
