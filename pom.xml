@@ -14,7 +14,34 @@
         <module>gsrs-module-substances-tests</module>
         <module>gsrs-ncats-substance-extension</module>
         <module>gsrs-module-substances-data-exchange</module>
+        <module>gsrs-ema-fhir-substance-extension</module>
     </modules>
+    <dependencies>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-module-substances-core</artifactId>
+            <version>3.2.5-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ca.uhn.hapi.fhir</groupId>
+            <artifactId>org.hl7.fhir.r5</artifactId>
+            <version>6.6.7</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-module-substances-core</artifactId>
+            <version>3.2.5-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>ca.uhn.hapi.fhir</groupId>
+            <artifactId>org.hl7.fhir.r5</artifactId>
+            <version>6.6.7</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
