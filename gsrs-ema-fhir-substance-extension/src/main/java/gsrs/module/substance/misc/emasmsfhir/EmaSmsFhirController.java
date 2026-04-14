@@ -52,6 +52,7 @@ public class EmaSmsFhirController {
 
     @GetMapping(value = "/api/v1/substances/{id}/@emaSmsSimpleRecord")
     public ResponseEntity<?> makeSimpleEmaSmsRecord(@PathVariable("id") String id) {
+        System.out.println("Running the controller ... @emaSmsSimpleRecord");
         String jsonEncoded;
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
