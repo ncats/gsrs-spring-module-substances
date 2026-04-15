@@ -206,8 +206,8 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .buildJsonAnd(this::assertCreated);
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
-                .andThen(s-> {
+        SubstanceBuilder.from(old.get().toFullJsonNode())
+                .andThen(s -> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
                     org.setUuid(UUID.randomUUID());
