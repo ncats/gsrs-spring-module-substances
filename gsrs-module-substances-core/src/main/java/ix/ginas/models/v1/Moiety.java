@@ -10,7 +10,6 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
-import org.hibernate.annotations.Type;
 
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -77,10 +76,11 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
     @PrePersist
     @PreUpdate
     public void enforce(){
-    	if(structure.id==null){
-    		structure.id=UUID.randomUUID();
-    	}
-    	this.innerUuid=structure.id.toString();
+        if (structure != null && structure.id != null) {
+            this.innerUuid = structure.id.toString();
+        } else if (this.innerUuid == null) {
+            this.innerUuid = UUID.randomUUID().toString();
+        }
     	if(uuid==null){
     		uuid= UUID.randomUUID();
 		}
@@ -150,7 +150,7 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 
 	public UUID getUUID(){
 		if(this.innerUuid!=null){
-			return UUID.fromString(this.innerUuid);
+			return UUID.fromString(this.innerUuid.trim());
 		}else{
 			return null;
 		}

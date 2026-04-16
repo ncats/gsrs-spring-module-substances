@@ -19,7 +19,33 @@ import ix.core.models.ForceUpdatableModel;
 import ix.core.util.EntityUtils;
 import ix.core.util.LogUtil;
 import ix.core.validator.*;
+import ix.ginas.models.v1.Linkage;
+import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.Component;
+import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.Glycosylation;
+import ix.ginas.models.v1.Material;
+import ix.ginas.models.v1.Moiety;
+import ix.ginas.models.v1.Mixture;
+import ix.ginas.models.v1.MixtureSubstance;
+import ix.ginas.models.v1.NucleicAcid;
+import ix.ginas.models.v1.NucleicAcidSubstance;
+import ix.ginas.models.v1.OtherLinks;
+import ix.ginas.models.v1.Polymer;
+import ix.ginas.models.v1.PolymerClassification;
+import ix.ginas.models.v1.PolymerSubstance;
+import ix.ginas.models.v1.Protein;
+import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.SpecifiedSubstanceComponent;
+import ix.ginas.models.v1.SpecifiedSubstanceGroup1;
+import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
+import ix.ginas.models.v1.StructurallyDiverse;
+import ix.ginas.models.v1.StructurallyDiverseSubstance;
+import ix.ginas.models.v1.Sugar;
+import ix.ginas.models.v1.Subunit;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.SubstanceReference;
+import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.ginas.utils.validation.strategy.BatchProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
@@ -200,12 +226,202 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected Substance create(Substance substance) {
-
+        normalizeCreateGraph(substance);
         try {
+            if (substance instanceof NucleicAcidSubstance
+                    || substance instanceof MixtureSubstance
+                    || substance instanceof ChemicalSubstance
+                    || substance instanceof ProteinSubstance
+                    || substance instanceof PolymerSubstance
+                    || substance instanceof StructurallyDiverseSubstance
+                    || substance instanceof SpecifiedSubstanceGroup1Substance) {
+                EntityManager entityManager = getEntityManager();
+                entityManager.persist(substance);
+                entityManager.flush();
+                return substance;
+            }
             return repository.saveAndFlush(substance);
         }catch(Throwable t){
             t.printStackTrace();
             throw t;
+        }
+    }
+
+    private void normalizeCreateGraph(Substance substance) {
+        if (substance == null) {
+            return;
+        }
+        substance.uuid = null;
+        substance.version = "1";
+        if (substance.modifications != null) {
+            substance.modifications.uuid = null;
+        }
+        if (substance instanceof ChemicalSubstance chemicalSubstance) {
+            resetChemicalGraphIds(chemicalSubstance);
+        }
+        if (substance instanceof MixtureSubstance mixtureSubstance) {
+            resetMixtureGraphIds(mixtureSubstance.mixture);
+        }
+        if (substance instanceof ProteinSubstance proteinSubstance) {
+            resetProteinGraphIds(proteinSubstance.protein);
+        }
+        if (substance instanceof PolymerSubstance polymerSubstance) {
+            resetPolymerGraphIds(polymerSubstance.polymer);
+        }
+        if (substance instanceof StructurallyDiverseSubstance structurallyDiverseSubstance) {
+            resetStructurallyDiverseGraphIds(structurallyDiverseSubstance.structurallyDiverse);
+        }
+        if (substance instanceof SpecifiedSubstanceGroup1Substance specifiedSubstanceGroup1Substance) {
+            resetSpecifiedSubstanceGraphIds(specifiedSubstanceGroup1Substance.specifiedSubstance);
+        }
+        if (substance instanceof NucleicAcidSubstance nucleicAcidSubstance) {
+            resetNucleicAcidGraphIds(nucleicAcidSubstance.nucleicAcid);
+        }
+    }
+
+    private void resetMixtureGraphIds(Mixture mixture) {
+        if (mixture == null) {
+            return;
+        }
+        mixture.uuid = null;
+        resetSubstanceReferenceIds(mixture.parentSubstance);
+        if (mixture.getMixture() != null) {
+            for (Component component : mixture.getMixture()) {
+                component.uuid = null;
+                resetSubstanceReferenceIds(component.substance);
+            }
+        }
+    }
+
+    private void resetSubstanceReferenceIds(SubstanceReference reference) {
+        if (reference == null) {
+            return;
+        }
+        reference.uuid = null;
+    }
+
+    private void resetProteinGraphIds(Protein protein) {
+        if (protein == null) {
+            return;
+        }
+        protein.uuid = null;
+        if (protein.glycosylation != null) {
+            resetGlycosylationGraphIds(protein.glycosylation);
+        }
+        if (protein.subunits != null) {
+            for (Subunit subunit : protein.subunits) {
+                subunit.uuid = null;
+            }
+        }
+        if (protein.otherLinks != null) {
+            for (OtherLinks otherLink : protein.otherLinks) {
+                otherLink.uuid = null;
+            }
+        }
+    }
+
+    private void resetGlycosylationGraphIds(Glycosylation glycosylation) {
+        glycosylation.uuid = null;
+    }
+
+    private void resetPolymerGraphIds(Polymer polymer) {
+        if (polymer == null) {
+            return;
+        }
+        polymer.uuid = null;
+        if (polymer.classification != null) {
+            resetPolymerClassificationGraphIds(polymer.classification);
+        }
+        resetChemicalStructureIds(polymer.displayStructure);
+        resetChemicalStructureIds(polymer.idealizedStructure);
+        if (polymer.monomers != null) {
+            for (Material material : polymer.monomers) {
+                material.uuid = null;
+                resetSubstanceReferenceIds(material.monomerSubstance);
+            }
+        }
+        if (polymer.structuralUnits != null) {
+            for (Unit unit : polymer.structuralUnits) {
+                unit.uuid = null;
+            }
+        }
+    }
+
+    private void resetPolymerClassificationGraphIds(PolymerClassification classification) {
+        classification.uuid = null;
+        resetSubstanceReferenceIds(classification.parentSubstance);
+    }
+
+    private void resetStructurallyDiverseGraphIds(StructurallyDiverse structurallyDiverse) {
+        if (structurallyDiverse == null) {
+            return;
+        }
+        structurallyDiverse.uuid = null;
+        resetSubstanceReferenceIds(structurallyDiverse.parentSubstance);
+        resetSubstanceReferenceIds(structurallyDiverse.hybridSpeciesMaternalOrganism);
+        resetSubstanceReferenceIds(structurallyDiverse.hybridSpeciesPaternalOrganism);
+    }
+
+    private void resetSpecifiedSubstanceGraphIds(SpecifiedSubstanceGroup1 specifiedSubstance) {
+        if (specifiedSubstance == null) {
+            return;
+        }
+        specifiedSubstance.uuid = null;
+        if (specifiedSubstance.constituents != null) {
+            for (SpecifiedSubstanceComponent component : specifiedSubstance.constituents) {
+                component.uuid = null;
+                resetSubstanceReferenceIds(component.substance);
+            }
+        }
+    }
+
+    private void resetChemicalGraphIds(ChemicalSubstance chemicalSubstance) {
+        if (chemicalSubstance == null) {
+            return;
+        }
+        resetChemicalStructureIds(chemicalSubstance.getStructure());
+        if (chemicalSubstance.getMoieties() != null) {
+            for (Moiety moiety : chemicalSubstance.getMoieties()) {
+                moiety.uuid = null;
+                moiety.innerUuid = null;
+                resetChemicalStructureIds(moiety.structure);
+            }
+        }
+    }
+
+    private void resetChemicalStructureIds(GinasChemicalStructure structure) {
+        if (structure == null) {
+            return;
+        }
+        structure.id = null;
+        structure.version = null;
+    }
+
+    private void resetNucleicAcidGraphIds(NucleicAcid nucleicAcid) {
+        if (nucleicAcid == null) {
+            return;
+        }
+        nucleicAcid.uuid = null;
+        if (nucleicAcid.getModifications() != null) {
+            nucleicAcid.getModifications().uuid = null;
+            nucleicAcid.getModifications().agentModifications.forEach(mod -> mod.uuid = null);
+            nucleicAcid.getModifications().physicalModifications.forEach(mod -> mod.uuid = null);
+            nucleicAcid.getModifications().structuralModifications.forEach(mod -> mod.uuid = null);
+        }
+        if (nucleicAcid.getLinkages() != null) {
+            for (Linkage linkage : nucleicAcid.getLinkages()) {
+                linkage.uuid = null;
+            }
+        }
+        if (nucleicAcid.getSugars() != null) {
+            for (Sugar sugar : nucleicAcid.getSugars()) {
+                sugar.uuid = null;
+            }
+        }
+        if (nucleicAcid.getSubunits() != null) {
+            for (Subunit subunit : nucleicAcid.getSubunits()) {
+                subunit.uuid = null;
+            }
         }
     }
 
