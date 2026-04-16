@@ -63,7 +63,7 @@
                                 </goals>
                                 <configuration>
                                     <sources>
-                                        <source>src/main/test/java</source>
+                                        <source>src/test/java</source>
                                     </sources>
                                 </configuration>
                             </execution>
@@ -76,7 +76,7 @@
                                 <configuration>
                                     <resources>
                                         <resource>
-                                            <directory>src/main/test/resources</directory>
+                                            <directory>src/test/resources</directory>
                                         </resource>
                                     </resources>
                                 </configuration>
@@ -111,7 +111,7 @@
                                         <exclude>**/*Test*</exclude>
                                     </excludes>
                                 </configuration>
-                            </execution>
+                                </execution>
                             <execution>
                                 <id>emasmsfhir-check</id>
                                 <phase>verify</phase>
@@ -134,7 +134,7 @@
                                                 <limit>
                                                     <counter>LINE</counter>
                                                     <value>COVEREDRATIO</value>
-                                                    <minimum>0</minimum>
+                                                    <minimum>0.15</minimum>
                                                 </limit>
                                             </limits>
                                         </rule>
@@ -300,7 +300,42 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.3.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.3.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <version>5.3.1</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
+<!--    <build>-->
+<!--        <plugins>-->
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-surefire-plugin</artifactId>-->
+<!--                <dependencies>-->
+<!--                    <dependency>-->
+<!--                        <groupId>org.junit.jupiter</groupId>-->
+<!--                        <artifactId>junit-jupiter-engine</artifactId>-->
+<!--                        <version>5.10.2</version>-->
+<!--                    </dependency>-->
+<!--                </dependencies>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
+<!--    </build>-->
+
     <!-- Uncomment this for maven public release deployment start
     <build>
         <plugins>

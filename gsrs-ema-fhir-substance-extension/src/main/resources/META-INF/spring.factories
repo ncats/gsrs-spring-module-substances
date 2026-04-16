@@ -1,1 +1,2 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirConfiguration

@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.PostConstruct;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -49,8 +50,17 @@ public class EmaSmsFhirController {
     @Autowired
     private EmaSmsSubstanceDefinitionFhirMapper emaSmsSubstanceDefinitionFhirMapper;
 
+    @PostConstruct
+    public void postc() {
+        System.out.println("I have post constructed ...............");
+    }
 
-    @GetMapping(value = "/api/v1/substances/{id}/@emaSmsSimpleRecord")
+    @GetMapping(value = "/api/v1/hellofromcontroller")
+    public String hello() {
+        return "Running the controller ... hellofromcontroller";
+    }
+
+        @GetMapping(value = "/api/v1/substances/{id}/@emaSmsSimpleRecord")
     public ResponseEntity<?> makeSimpleEmaSmsRecord(@PathVariable("id") String id) {
         System.out.println("Running the controller ... @emaSmsSimpleRecord");
         String jsonEncoded;
