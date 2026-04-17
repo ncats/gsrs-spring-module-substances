@@ -85,9 +85,14 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
     		uuid= UUID.randomUUID();
 		}
     }
-	public String fetchGlobalId() {
-		return this.uuid == null ? null : this.uuid.toString();
-	}
+    public String fetchGlobalId() {
+        return this.uuid == null ? null : this.uuid.toString();
+    }
+
+    @Indexable()
+    public UUID getUuid() {
+        return uuid;
+    }
 	/**
 	 * Set the Count {@link Amount} only if the count
 	 * is not already set.  If you really want o
@@ -148,6 +153,7 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 	
 	
 
+	@JsonIgnore
 	public UUID getUUID(){
 		if(this.innerUuid!=null){
 			return UUID.fromString(this.innerUuid.trim());
