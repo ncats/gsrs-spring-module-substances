@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hl7.fhir.r5.model.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 

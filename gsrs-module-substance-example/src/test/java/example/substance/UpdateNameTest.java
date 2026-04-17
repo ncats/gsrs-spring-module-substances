@@ -5,6 +5,7 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.NameOrg;
 import ix.ginas.models.v1.Substance;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -15,8 +16,7 @@ import java.util.stream.Collectors;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
@@ -140,4 +140,39 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 containsInAnyOrder("MyName org2"));
 
     }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "Admin")
+    public void updateNameOrgDeprecated(){
+        UUID uuid = UUID.randomUUID();
+
+        new SubstanceBuilder()
+                .addName("Concept Name",n->{
+                    NameOrg org = new NameOrg();
+                    org.nameOrg = "MyName org";
+                    n.nameOrgs.add(org);
+                })
+                .setUUID(uuid)
+                .buildJsonAnd(this::assertCreated);
+        Optional<Substance> old= substanceEntityService.get(uuid);
+
+        String currentNameOrg ="MyName org2";
+        Substance toUpdate = old.get().toBuilder()
+                .andThen(s-> {
+                    NameOrg org = new NameOrg();
+                    org.nameOrg = currentNameOrg;
+                    org.deprecated = true;
+                    s.getAllNames().get(0).nameOrgs.add(org);
+                })
+                .build();
+        assertUpdated(toUpdate.toFullJsonNode());
+        Optional<Substance> updated = substanceEntityService.get(uuid);
+        System.out.println("name orgs");
+        List<NameOrg> actualNameOrgs = updated.get().getAllNames().get(0).nameOrgs;
+        actualNameOrgs.forEach( no->{
+            System.out.printf("name org %s, deprecated: %b%n", no.nameOrg, no.deprecated);
+        });
+        assertEquals(1, actualNameOrgs.stream().filter(no-> no.nameOrg.equals(currentNameOrg)).filter(no->no.deprecated).count());
+    }
+
 }

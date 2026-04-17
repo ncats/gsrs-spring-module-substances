@@ -63,7 +63,7 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
         conceptAfter.status = Substance.STATUS_APPROVED;
         ValidationResponse<Substance> response = validator.validate(conceptAfter, conceptBefore);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(
-                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR && v.getMessage().contains("Additional privilege is required to change display name of approved records")));
+                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR && v.getMessage().contains("Changing Display Name is not allowed for your user role.")));
     }
 
     private ChemicalSubstance createSimpleChemicalDuplicateNames(){

@@ -59,7 +59,7 @@ class EmaSmsFhirControllerTest {
         ResponseEntity<?> response = controller.makeSimpleEmaSmsRecord(testSubstanceId);
 
         assertNotNull(response);
-        assertEquals(HttpStatus.FOUND, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
         String responseBody = (String) response.getBody();
         assertNotNull(responseBody);
@@ -108,7 +108,7 @@ class EmaSmsFhirControllerTest {
 
         ResponseEntity<?> response = controller.makeEmaSmsSubstanceDefinition(testSubstanceId);
 
-        assertEquals(HttpStatus.FOUND, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode());
         String responseBody = (String) response.getBody();
         assertNotNull(responseBody);
         assertTrue(responseBody.contains("SubstanceDefinition"));
