@@ -3,6 +3,7 @@ package example.pojodiff;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flipkart.zjsonpatch.JsonDiff;
+import ix.core.controllers.EntityFactory.EntityMapper;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Moiety;
 import ix.utils.pojopatch.PojoDiff;
@@ -47,6 +48,24 @@ public class MoietyDiffTest{
         patch.apply(old);
 
         JsonMatches(newMoiety, old);
+    }
+
+    @Test
+    public void deserializerPreservesMoietyUuid() throws Exception {
+        UUID moietyUuid = UUID.randomUUID();
+        UUID structureUuid = UUID.randomUUID();
+        String json = "{"
+                + "\"uuid\":\"" + moietyUuid + "\","
+                + "\"id\":\"" + structureUuid + "\","
+                + "\"smiles\":\"c1cccc1\","
+                + "\"countAmount\":{\"type\":\"MOL RATIO\",\"average\":1,\"units\":\"MOL RATIO\"}"
+                + "}";
+
+        Moiety moiety = EntityMapper.FULL_ENTITY_MAPPER().readValue(json, Moiety.class);
+
+        assertEquals(moietyUuid, moiety.uuid);
+        assertEquals(structureUuid, moiety.structure.id);
+        assertEquals(structureUuid.toString(), moiety.innerUuid);
     }
 
     private void JsonMatches(Object expected, Object actual){

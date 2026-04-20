@@ -2,6 +2,8 @@ package gsrs.module.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelpers;
@@ -204,8 +206,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected Substance fromUpdatedJson(JsonNode json) throws IOException {
-        //TODO should we make any edits to remove fields?
-        return JsonSubstanceFactory.makeSubstance(json);
+        return JsonSubstanceFactory.makeSubstance(scrubChemicalPayloadForUpdate(json));
     }
 
 
@@ -397,6 +398,145 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         structure.version = null;
     }
 
+    private JsonNode scrubChemicalPayloadForUpdate(JsonNode json) {
+        if (!(json instanceof ObjectNode root)) {
+            return json;
+        }
+        JsonNode substanceClassNode = root.get("substanceClass");
+        if (substanceClassNode == null || !"chemical".equalsIgnoreCase(substanceClassNode.asText())) {
+            return json;
+        }
+
+        ObjectNode copy = root.deepCopy();
+        scrubChemicalStructureNode((ObjectNode) copy.get("structure"), true);
+
+        ArrayNode moieties = (ArrayNode) copy.get("moieties");
+        if (moieties != null) {
+            for (JsonNode moietyNode : moieties) {
+                if (moietyNode instanceof ObjectNode moietyObject) {
+                    scrubChemicalStructureNode(moietyObject, true);
+                }
+            }
+        }
+        return copy;
+    }
+
+    private void scrubChemicalStructureNode(ObjectNode structureNode, boolean preserveStructureId) {
+        if (structureNode == null) {
+            return;
+        }
+        structureNode.remove("properties");
+        structureNode.remove("links");
+        structureNode.remove("hash");
+        structureNode.remove("_inchi");
+        structureNode.remove("_inchiKey");
+        if (!preserveStructureId) {
+            structureNode.remove("id");
+        }
+    }
+
+    private void normalizeUpdatedEntityForDiff(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)) {
+            return;
+        }
+        normalizeUpdatedChemicalForDiff(persistedChemical, updatedChemical);
+    }
+
+    private void normalizeUpdatedChemicalForDiff(ChemicalSubstance persisted, ChemicalSubstance updated) {
+        if (persisted == null || updated == null) {
+            return;
+        }
+        if (sameChemicalStructureForDiff(persisted.getStructure(), updated.getStructure())) {
+            updated.setStructure(persisted.getStructure());
+        } else if (persisted.getStructure() != null && updated.getStructure() != null) {
+            updated.getStructure().id = persisted.getStructure().id;
+            updated.getStructure().version = persisted.getStructure().version;
+        }
+
+        List<Moiety> remainingPersistedMoieties = persisted.getMoieties() == null
+                ? new ArrayList<>()
+                : new ArrayList<>(persisted.getMoieties());
+        if (updated.getMoieties() == null) {
+            return;
+        }
+        for (int i = 0; i < updated.getMoieties().size(); i++) {
+            Moiety updatedMoiety = updated.getMoieties().get(i);
+            Moiety matchedPersistedMoiety = findMatchingMoiety(remainingPersistedMoieties, updatedMoiety);
+            if (matchedPersistedMoiety == null) {
+                continue;
+            }
+            remainingPersistedMoieties.remove(matchedPersistedMoiety);
+            updated.getMoieties().set(i, matchedPersistedMoiety);
+        }
+    }
+
+    private Moiety findMatchingMoiety(List<Moiety> persistedMoieties, Moiety updatedMoiety) {
+        for (Moiety persistedMoiety : persistedMoieties) {
+            if (sameMoietyForDiff(persistedMoiety, updatedMoiety)) {
+                return persistedMoiety;
+            }
+        }
+        return null;
+    }
+
+    private boolean sameMoietyForDiff(Moiety persisted, Moiety updated) {
+        if (persisted == null || updated == null) {
+            return false;
+        }
+        return sameChemicalStructureForDiff(persisted.structure, updated.structure)
+                && sameAmountForDiff(persisted.getCountAmount(), updated.getCountAmount());
+    }
+
+    private boolean sameChemicalStructureForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        return Objects.equals(persisted.digest, updated.digest)
+                && Objects.equals(persisted.molfile, updated.molfile)
+                && Objects.equals(persisted.smiles, updated.smiles)
+                && Objects.equals(persisted.formula, updated.formula)
+                && Objects.equals(persisted.opticalActivity, updated.opticalActivity)
+                && Objects.equals(persisted.atropisomerism, updated.atropisomerism)
+                && Objects.equals(persisted.stereoCenters, updated.stereoCenters)
+                && Objects.equals(persisted.definedStereo, updated.definedStereo)
+                && Objects.equals(persisted.ezCenters, updated.ezCenters)
+                && Objects.equals(persisted.charge, updated.charge)
+                && Objects.equals(persisted.count, updated.count)
+                && Objects.equals(persisted.stereoChemistry, updated.stereoChemistry);
+    }
+
+    private boolean sameAmountForDiff(ix.ginas.models.v1.Amount persisted, ix.ginas.models.v1.Amount updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        return Objects.equals(persisted.type, updated.type)
+                && Objects.equals(persisted.average, updated.average)
+                && Objects.equals(persisted.highLimit, updated.highLimit)
+                && Objects.equals(persisted.high, updated.high)
+                && Objects.equals(persisted.lowLimit, updated.lowLimit)
+                && Objects.equals(persisted.low, updated.low)
+                && Objects.equals(persisted.units, updated.units)
+                && Objects.equals(persisted.nonNumericValue, updated.nonNumericValue)
+                && Objects.equals(persisted.approvalID, updated.approvalID);
+    }
+
+    private void copyPersistedStructureIdentityAndDerivedFields(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted == null || updated == null) {
+            return;
+        }
+        updated.id = persisted.id;
+        updated.version = persisted.version;
+        updated.properties = persisted.properties;
+        updated.links = persisted.links;
+        updated.created = persisted.created;
+        updated.createdBy = persisted.createdBy;
+        updated.lastEdited = persisted.lastEdited;
+        updated.lastEditedBy = persisted.lastEditedBy;
+        updated.setAccess(persisted.getAccess());
+        updated.setReferences(persisted.getReferences());
+    }
+
     private void resetNucleicAcidGraphIds(NucleicAcid nucleicAcid) {
         if (nucleicAcid == null) {
             return;
@@ -512,8 +652,27 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
-    public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
+    public UpdateResult<Substance> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception {
+        ValidationResponse<Substance> validationResponse = null;
+        if (!ignoreValidation) {
+            validationResponse = validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_ALL());
+            if (validationResponse != null && !validationResponse.isValid()) {
+                return UpdateResult.<Substance>builder()
+                        .status(UpdateResult.STATUS.ERROR)
+                        .validationResponse(validationResponse)
+                        .build();
+            }
+        }
+        return performUpdateEntity(updatedEntityJson, validationResponse);
+    }
 
+    @Override
+    public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
+        return performUpdateEntity(updatedEntityJson, null);
+    }
+
+    private UpdateResult<Substance> performUpdateEntity(JsonNode updatedEntityJson,
+                                                        ValidationResponse<Substance> validationResponse) {
         TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
 
         return transactionTemplate.execute( status-> {
@@ -523,9 +682,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 EntityManager entityManager = oKey.getEntityManager();
 
                 UpdateResult.UpdateResultBuilder<Substance> builder = UpdateResult.<Substance>builder();
+                if (validationResponse != null) {
+                    builder.validationResponse(validationResponse);
+                }
                 EntityUtils.EntityWrapper<Substance> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
                         EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
                         String oldJson = og.toFullJson();
+                        builder.oldJson(oldJson);
 
                         EntityUtils.EntityWrapper<Substance> oWrap = EntityUtils.EntityWrapper.of(oldEntity);
                         EntityUtils.EntityWrapper<Substance> nWrap = EntityUtils.EntityWrapper.of(updatedEntity);
@@ -536,6 +699,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             usePojoPatch = true;
                         }
                         if (usePojoPatch) {
+                            normalizeUpdatedEntityForDiff(oldEntity, updatedEntity);
                             PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
                             LogUtil.debug(() -> "changes = " + patch.getChanges());
                             final List<Object> removed = new ArrayList<Object>();
