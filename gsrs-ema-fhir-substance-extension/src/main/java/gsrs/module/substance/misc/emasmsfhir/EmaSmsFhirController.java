@@ -46,7 +46,6 @@ public class EmaSmsFhirController {
     @Autowired
     private EmaSmsSimpleRecordFhirMapper emaSmsSimpleRecordFhirMapper;
 
-
     @Autowired
     private EmaSmsSubstanceDefinitionFhirMapper emaSmsSubstanceDefinitionFhirMapper;
 
@@ -60,7 +59,7 @@ public class EmaSmsFhirController {
         return "Running the controller ... hellofromcontroller";
     }
 
-        @GetMapping(value = "/api/v1/substances/{id}/@emaSmsSimpleRecord")
+    @GetMapping(value = "/api/v1/substances/{id}/@emaSmsSimpleRecord")
     public ResponseEntity<?> makeSimpleEmaSmsRecord(@PathVariable("id") String id) {
         System.out.println("Running the controller ... @emaSmsSimpleRecord");
         String jsonEncoded;
