@@ -1,19 +1,14 @@
 package ix.ginas.utils.validation.validators;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import gov.nih.ncats.common.sneak.Sneak;
-import gsrs.cache.GsrsCache;
-import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.models.Keyword;
-import ix.core.search.SearchRequest;
-import ix.core.search.SearchResult;
-import ix.core.search.text.TextIndexer;
-import ix.core.search.text.TextIndexerFactory;
-import ix.core.util.EntityUtils;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.EmbeddedKeywordList;
@@ -23,16 +18,7 @@ import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.facet.taxonomy.TaxonomyReader;
-import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
-import org.apache.lucene.queryparser.classic.ParseException;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import javax.imageio.IIOException;
 
 @Slf4j
 public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Substance> {
@@ -47,68 +33,12 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
     @Autowired
     private SubstanceRepository substanceRepository;
 
-    @Autowired
-    protected PlatformTransactionManager transactionManager;
-
-    @Autowired
-    private SubstanceLegacySearchService searchService;
-
-    @Autowired
-    private TextIndexerFactory textIndexerFactory;
-
-    private TextIndexer indexer;
-
-
-    @Autowired
-    private GsrsCache cache;
-
-    private boolean checkDuplicateInOtherRecord = true;
-    private boolean checkDuplicateInSameRecord = true;
-    private boolean onDuplicateInOtherRecordShowError = true;
-    private boolean onDuplicateInSameRecordShowError = false;
-
     // User adds/edits standard name in substance record that has a duplicate standard name within
     // the substance record and in the same language.
     // ==> warning (default)
 
     // User adds/edits standard name in substance record that has a duplicate in another substance
     // record ==> error (default)
-
-    public void setSubstanceRepository(SubstanceRepository substanceRepository) {
-        this.substanceRepository = substanceRepository;
-    }
-
-    public void setTransactionManager(PlatformTransactionManager transactionManager) {
-        this.transactionManager = transactionManager;
-    }
-
-    public void setSearchService(SubstanceLegacySearchService searchService) {
-        this.searchService = searchService;
-    }
-
-    public void setTextIndexerFactory(TextIndexerFactory textIndexerFactory) {
-        this.textIndexerFactory = textIndexerFactory;
-    }
-
-    public void setCache(GsrsCache cache) {
-        this.cache = cache;
-    }
-
-    public void setOnDuplicateInOtherRecordShowError(boolean onDuplicateInOtherRecordShowError) {
-        this.onDuplicateInOtherRecordShowError = onDuplicateInOtherRecordShowError;
-    }
-
-    public void setOnDuplicateInSameRecordShowError(boolean onDuplicateInSameRecordShowError) {
-        this.onDuplicateInSameRecordShowError = onDuplicateInSameRecordShowError;
-    }
-
-    public void setCheckDuplicateInOtherRecord(boolean checkDuplicateInOtherRecord) {
-        this.checkDuplicateInOtherRecord = checkDuplicateInOtherRecord;
-    }
-
-    public void setCheckDuplicateInSameRecord(boolean checkDuplicateInSameRecord) {
-        this.checkDuplicateInSameRecord = checkDuplicateInSameRecord;
-    }
 
     public String getDUPLICATE_IN_OTHER_RECORD_MESSAGE_TEST_FRAGMENT() {
         return DUPLICATE_IN_OTHER_RECORD_MESSAGE_TEST_FRAGMENT;
@@ -141,117 +71,30 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
                 }
 
                 // Check for duplicates in the record.
-                if(checkDuplicateInSameRecord) {
-                    Iterator<Keyword> iter = name.languages.iterator();
-                    String uppercaseStdName = name.stdName.toUpperCase();
-                    while (iter.hasNext()) {
-                        String language = iter.next().getValue();
-                        Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
-                        if (!stdNames.add(uppercaseStdName)) {
-                            if (onDuplicateInSameRecordShowError) {
-                                GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName);
-                                mes.markPossibleDuplicate();
-                                callback.addMessage(mes);
-                            } else {
-                                GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName);
-                                mes.markPossibleDuplicate();
-                                callback.addMessage(mes);
-                            }
-                        }
+                Iterator<Keyword> iter = name.languages.iterator();
+                String uppercaseStdName = name.stdName.toUpperCase();
+                while (iter.hasNext()) {
+                    String language = iter.next().getValue();
+                    Set<String> stdNames = stdNameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
+                    if (!stdNames.add(uppercaseStdName)) {
+                        GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(DUPLICATE_IN_SAME_RECORD_MESSAGE, name.stdName);
+                        mes.markPossibleDuplicate();
+                        callback.addMessage(mes);
                     }
                 }
-                if(checkDuplicateInOtherRecord) {
-                    Substance otherSubstance = checkStdNameForDuplicateInOtherRecordsViaIndexer(objnew, name.stdName);
-                    if (otherSubstance != null) {
-                        if (onDuplicateInOtherRecordShowError) {
-                            GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName);
-                            mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
-                            callback.addMessage(mes);
-                        } else {
-                            GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName);
-                            mes.addLink(ValidationUtils.createSubstanceLink(SubstanceReference.newReferenceFor(otherSubstance)));
-                            callback.addMessage(mes);
-                        }
+
+                List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByNames_StdNameIgnoreCase(name.stdName);
+                if (sr != null && !sr.isEmpty()) {
+                    SubstanceRepository.SubstanceSummary s2 = sr.iterator().next();
+                    if (s2.getUuid() != null && !s2.getUuid().equals(objnew.getOrGenerateUUID())) {
+                        GinasProcessingMessage mes = GinasProcessingMessage
+                                .ERROR_MESSAGE(DUPLICATE_IN_OTHER_RECORD_MESSAGE, name.stdName)
+                                .addLink(ValidationUtils.createSubstanceLink(s2.toSubstanceReference()));
+                        callback.addMessage(mes);
                     }
                 }
             } // if stdName not null
 
         });
-    }
-    public Substance checkStdNameForDuplicateInOtherRecordsViaIndexer(Substance s, String stdName) {
-
-    	try {
-    		Optional<Substance> substance = findOneIndexedSubstanceByStdNameExcludingUuid(stdName, s.getOrGenerateUUID());
-    		return substance.orElse(null);
-    	} catch (Exception e) {
-    		// Should we throw it?
-    		log.error("Problem checking for duplicate standard name.", e);
-    	}
-    	return null;
-    }
-
-    public List<Substance> findIndexedSubstancesByStdName(String stdName) {
-        Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
-        String query = prepareQuery(stdName);
-        SearchRequest request = new SearchRequest.Builder()
-                .kind(Substance.class)
-                .fdim(0)
-                .simpleSearchOnly(true)
-                .query(query)
-                .top(Integer.MAX_VALUE)
-                .build();
-        List<Substance> substances = getSearchList(request);
-        return substances;
-    }
-    
-    private String prepareQuery(String stdName) {
-        String query = "root_names_stdName:\"^" + stdName
-                .replace("\"", "") //eliminate any internal quotes
-    	        .replace("*", "?").replace("~","?")  //replace special lucene chars with single-char wildcard
-                                                     // TODO: this isn't perfect, but does a pretty good job
-                + "$\"";
-        return query;
-    }
-
-    public Optional<Substance> findOneIndexedSubstanceByStdNameExcludingUuid(String stdName, UUID excludeUuid) {
-        // This one allows you to exclude a specific uuid, that way we only
-        // need to build a search result list with one substance.
-        Objects.requireNonNull(stdName, "Parameter 'stdName' must not be null");
-        Objects.requireNonNull(excludeUuid, "Parameter 'excludeUuid' must not be null");
-        String query = prepareQuery(stdName);
-        query += " AND NOT " + "root_uuid:\"^" + excludeUuid + "$\"";
-        SearchRequest request = new SearchRequest.Builder()
-	        .kind(Substance.class)
-	        .simpleSearchOnly(true) //this avoids doing all the extra facets/etc
-	        .fdim(0)
-	        .query(query)
-	        .top(1)
-	        .build();
-        return getSearchList(request).stream().findFirst();
-    }
-
-    /**
-     * Return a list of substances based on the {@link SearchRequest}. This
-     * takes care of some tricky transaction issues.
-     *
-     * @param sr
-     * @return
-     */
-
-    private List<Substance> getSearchList(SearchRequest sr) {
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        List<Substance> substances = transactionSearch.execute(ts -> {
-            try {
-                SearchResult sresult = searchService.search(sr.getQuery(), sr.getOptions());
-                List<Substance> first = sresult.getMatches();
-                return first.stream()
-                        //force fetching
-                        .peek(ss -> EntityUtils.EntityWrapper.of(ss).toInternalJson())
-                        .collect(Collectors.toList());
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        return substances;
     }
 }
