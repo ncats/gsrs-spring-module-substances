@@ -1,6 +1,8 @@
 package ix.ginas.models.v1;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import ix.core.SingleParent;
@@ -154,13 +156,31 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 	
 
 	@JsonIgnore
-	public UUID getUUID(){
+    public UUID getUUID(){
 		if(this.innerUuid!=null){
 			return UUID.fromString(this.innerUuid.trim());
 		}else{
 			return null;
 		}
 	}
+
+    /**
+     * Preserve the legacy wire format where a moiety's top-level "uuid"
+     * aliases the unwrapped structure id. The frontend render path expects
+     * this field to be the renderable structure identifier.
+     */
+    @JsonGetter("uuid")
+    public UUID getJsonUuid() {
+        if (structure != null && structure.id != null) {
+            return structure.id;
+        }
+        return uuid;
+    }
+
+    @JsonSetter("uuid")
+    public void setJsonUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
 	
 //	@Override
 //	public void forceUpdate() {
