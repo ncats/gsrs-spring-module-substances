@@ -588,6 +588,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     private Substance applyReplacementToManagedEntity(Substance managed, Substance updated) throws IOException {
+        GinasChemicalStructure existingStructure = managed instanceof ChemicalSubstance chemicalManaged
+                ? chemicalManaged.getStructure()
+                : null;
         Map<UUID, Name> existingNames = mapByUuid(managed.names);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
         Map<UUID, Note> existingNotes = mapByUuid(managed.notes);
@@ -596,6 +599,18 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, Reference> existingReferences = mapByUuid(managed.references);
         JsonNode updatedJson = objectMapper.valueToTree(updated);
         Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
+        if (replaced instanceof ChemicalSubstance replacedChemical && existingStructure != null) {
+            GinasChemicalStructure updatedStructure = replacedChemical.getStructure();
+            if (updatedStructure != null && updatedStructure != existingStructure
+                    && Objects.equals(updatedStructure.id, existingStructure.id)) {
+                JsonNode updatedStructureJson = objectMapper.valueToTree(updatedStructure);
+                objectMapper.readerForUpdating(existingStructure).readValue(updatedStructureJson);
+                existingStructure.version = updatedStructure.version != null
+                        ? updatedStructure.version
+                        : existingStructure.version;
+                replacedChemical.setStructure(existingStructure);
+            }
+        }
         replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
         replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
         replaced.notes = reconcileManagedChildren(replaced.notes, existingNotes, child -> child.setOwner(replaced));
