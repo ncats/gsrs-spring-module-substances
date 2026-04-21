@@ -552,6 +552,34 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return !sameChemicalStructureForDiff(persistedChemical.getStructure(), updatedChemical.getStructure());
     }
 
+    private void normalizeUpdatedEntityForReplacement(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)) {
+            return;
+        }
+        if (persistedChemical.getStructure() != null && updatedChemical.getStructure() != null) {
+            updatedChemical.getStructure().id = persistedChemical.getStructure().id;
+            updatedChemical.getStructure().version = persistedChemical.getStructure().version;
+        }
+        if (updatedChemical.getMoieties() == null) {
+            return;
+        }
+        for (Moiety moiety : updatedChemical.getMoieties()) {
+            if (moiety == null) {
+                continue;
+            }
+            moiety.uuid = null;
+            moiety.innerUuid = null;
+            if (moiety.structure != null) {
+                moiety.structure.id = null;
+                moiety.structure.version = null;
+            }
+            if (moiety.getCountAmount() != null) {
+                moiety.getCountAmount().uuid = null;
+            }
+        }
+    }
+
     private boolean sameAmountForDiff(ix.ginas.models.v1.Amount persisted, ix.ginas.models.v1.Amount updated) {
         if (persisted == null || updated == null) {
             return persisted == updated;
@@ -811,6 +839,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             //NON POJOPATCH: delete and save for updates
 
                             Substance oldValue = (Substance) oWrap.getValue();
+                            normalizeUpdatedEntityForReplacement(oldValue, updatedEntity);
                             entityManager.remove(oldValue);
 
                             // Now need to take care of bad update pieces:
@@ -830,7 +859,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 entityManager.clear();
 
                         Substance newValue = (Substance)nWrap.getValue();
-                            entityManager.persist(newValue);
+                            newValue = entityManager.merge(newValue);
                             entityManager.flush();
 
 
