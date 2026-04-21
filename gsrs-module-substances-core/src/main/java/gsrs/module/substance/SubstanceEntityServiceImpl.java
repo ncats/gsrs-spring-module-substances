@@ -25,7 +25,9 @@ import ix.core.util.LogUtil;
 import ix.core.validator.*;
 import ix.ginas.models.v1.Linkage;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.v1.Component;
+import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Glycosylation;
 import ix.ginas.models.v1.Material;
@@ -34,12 +36,17 @@ import ix.ginas.models.v1.Mixture;
 import ix.ginas.models.v1.MixtureSubstance;
 import ix.ginas.models.v1.NucleicAcid;
 import ix.ginas.models.v1.NucleicAcidSubstance;
+import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.OtherLinks;
 import ix.ginas.models.v1.Polymer;
 import ix.ginas.models.v1.PolymerClassification;
 import ix.ginas.models.v1.PolymerSubstance;
+import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.Protein;
 import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.SpecifiedSubstanceComponent;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
@@ -581,8 +588,59 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     private Substance applyReplacementToManagedEntity(Substance managed, Substance updated) throws IOException {
+        Map<UUID, Name> existingNames = mapByUuid(managed.names);
+        Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
+        Map<UUID, Note> existingNotes = mapByUuid(managed.notes);
+        Map<UUID, Property> existingProperties = mapByUuid(managed.properties);
+        Map<UUID, Relationship> existingRelationships = mapByUuid(managed.relationships);
+        Map<UUID, Reference> existingReferences = mapByUuid(managed.references);
         JsonNode updatedJson = objectMapper.valueToTree(updated);
-        return objectMapper.readerForUpdating(managed).readValue(updatedJson);
+        Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
+        replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
+        replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
+        replaced.notes = reconcileManagedChildren(replaced.notes, existingNotes, child -> child.setOwner(replaced));
+        replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
+        replaced.relationships = reconcileManagedChildren(replaced.relationships, existingRelationships, child -> child.assignOwner(replaced));
+        replaced.references = reconcileManagedChildren(replaced.references, existingReferences, child -> child.setOwner(replaced));
+        return replaced;
+    }
+
+    private <T extends GinasCommonData> Map<UUID, T> mapByUuid(List<T> values) {
+        Map<UUID, T> mapped = new LinkedHashMap<>();
+        if (values == null) {
+            return mapped;
+        }
+        for (T value : values) {
+            if (value != null && value.getUuid() != null) {
+                mapped.put(value.getUuid(), value);
+            }
+        }
+        return mapped;
+    }
+
+    private <T extends GinasCommonData> List<T> reconcileManagedChildren(List<T> updatedValues,
+                                                                         Map<UUID, T> existingByUuid,
+                                                                         java.util.function.Consumer<T> ownerSetter) throws IOException {
+        if (updatedValues == null) {
+            return null;
+        }
+        List<T> reconciled = new ArrayList<>(updatedValues.size());
+        for (T updatedValue : updatedValues) {
+            if (updatedValue == null) {
+                continue;
+            }
+            T managedValue = updatedValue.getUuid() == null ? null : existingByUuid.get(updatedValue.getUuid());
+            if (managedValue != null && managedValue != updatedValue) {
+                JsonNode updatedJson = objectMapper.valueToTree(updatedValue);
+                objectMapper.readerForUpdating(managedValue).readValue(updatedJson);
+                ownerSetter.accept(managedValue);
+                reconciled.add(managedValue);
+            } else {
+                ownerSetter.accept(updatedValue);
+                reconciled.add(updatedValue);
+            }
+        }
+        return reconciled;
     }
 
     private boolean sameAmountForDiff(ix.ginas.models.v1.Amount persisted, ix.ginas.models.v1.Amount updated) {
