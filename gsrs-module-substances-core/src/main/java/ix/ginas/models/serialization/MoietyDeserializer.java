@@ -11,7 +11,6 @@ import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Moiety;
 
 import java.io.IOException;
-import java.util.UUID;
 
 public class MoietyDeserializer extends JsonDeserializer<Moiety> {
     public MoietyDeserializer () {
@@ -40,10 +39,6 @@ public class MoietyDeserializer extends JsonDeserializer<Moiety> {
         	}catch(Exception e){
         		System.err.println(e.getMessage());
         	}
-        }
-        JsonNode moietyUuid = tree.get("uuid");
-        if (moietyUuid != null && !moietyUuid.isNull() && !moietyUuid.asText().isEmpty()) {
-            moiety.uuid = UUID.fromString(moietyUuid.asText());
         }
         JsonNode innerUuid = tree.get("innerUuid");
         if (innerUuid != null && !innerUuid.isNull() && !innerUuid.asText().isEmpty()) {
