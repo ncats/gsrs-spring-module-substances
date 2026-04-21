@@ -17,6 +17,8 @@ import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.service.AbstractGsrsEntityService;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
+import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.util.EntityUtils;
 import ix.core.util.LogUtil;
@@ -88,6 +90,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private StructureProcessor structureProcessor;
 
     @Autowired
     private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
@@ -492,10 +497,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         if (persisted == null || updated == null) {
             return persisted == updated;
         }
-        return Objects.equals(persisted.digest, updated.digest)
-                && Objects.equals(persisted.molfile, updated.molfile)
-                && Objects.equals(persisted.smiles, updated.smiles)
-                && Objects.equals(persisted.formula, updated.formula)
+        String persistedExactHash = getExactHashForDiff(persisted);
+        String updatedExactHash = getExactHashForDiff(updated);
+        if (persistedExactHash != null && updatedExactHash != null) {
+            return Objects.equals(persistedExactHash, updatedExactHash)
+                    && Objects.equals(persisted.count, updated.count);
+        }
+        return Objects.equals(persisted.formula, updated.formula)
                 && Objects.equals(persisted.opticalActivity, updated.opticalActivity)
                 && Objects.equals(persisted.atropisomerism, updated.atropisomerism)
                 && Objects.equals(persisted.stereoCenters, updated.stereoCenters)
@@ -504,6 +512,44 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 && Objects.equals(persisted.charge, updated.charge)
                 && Objects.equals(persisted.count, updated.count)
                 && Objects.equals(persisted.stereoChemistry, updated.stereoChemistry);
+    }
+
+    private String getExactHashForDiff(GinasChemicalStructure structure) {
+        if (structure == null) {
+            return null;
+        }
+        String exactHash = structure.getExactHash();
+        if (exactHash != null && !exactHash.isBlank()) {
+            return exactHash;
+        }
+        String structureText = firstNonBlank(structure.molfile, structure.smiles);
+        if (structureText == null) {
+            return null;
+        }
+        try {
+            Structure instrumented = structureProcessor.instrument(structureText);
+            return instrumented.getExactHash();
+        } catch (RuntimeException e) {
+            log.debug("Unable to compute exact hash for diff matching", e);
+            return null;
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasChemicalDefinitionChange(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)) {
+            return false;
+        }
+        return !sameChemicalStructureForDiff(persistedChemical.getStructure(), updatedChemical.getStructure());
     }
 
     private boolean sameAmountForDiff(ix.ginas.models.v1.Amount persisted, ix.ginas.models.v1.Amount updated) {
@@ -681,6 +727,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         //only use POJO patch if the entities are the same type
                         if (oWrap.getEntityClass().equals(nWrap.getEntityClass())) {
                             usePojoPatch = true;
+                        }
+                        if (usePojoPatch && hasChemicalDefinitionChange(oldEntity, updatedEntity)) {
+                            usePojoPatch = false;
                         }
                         if (usePojoPatch) {
                             normalizeUpdatedEntityForDiff(oldEntity, updatedEntity);
