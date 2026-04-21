@@ -521,22 +521,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 && Objects.equals(persisted.approvalID, updated.approvalID);
     }
 
-    private void copyPersistedStructureIdentityAndDerivedFields(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
-        if (persisted == null || updated == null) {
-            return;
-        }
-        updated.id = persisted.id;
-        updated.version = persisted.version;
-        updated.properties = persisted.properties;
-        updated.links = persisted.links;
-        updated.created = persisted.created;
-        updated.createdBy = persisted.createdBy;
-        updated.lastEdited = persisted.lastEdited;
-        updated.lastEditedBy = persisted.lastEditedBy;
-        updated.setAccess(persisted.getAccess());
-        updated.setReferences(persisted.getReferences());
-    }
-
     private void resetNucleicAcidGraphIds(NucleicAcid nucleicAcid) {
         if (nucleicAcid == null) {
             return;

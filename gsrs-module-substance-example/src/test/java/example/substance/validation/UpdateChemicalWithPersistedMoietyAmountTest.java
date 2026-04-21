@@ -54,6 +54,22 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
     }
 
     @Test
+    void fullJsonIncludesLegacyMoietyUuidAlias() throws Exception {
+
+        File jsonFile = new ClassPathResource("testJSON/1_5-naphthyridin-3-ol.json").getFile();
+        ChemicalSubstanceBuilder builder = SubstanceBuilder.from(jsonFile);
+        ChemicalSubstance chem = builder.build();
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(chem.toFullJsonNode());
+
+        JsonNode fullJson = created.toFullJsonNode();
+        JsonNode moietyJson = fullJson.path("moieties").path(0);
+
+        assertNotNull(moietyJson.get("id"));
+        assertNotNull(moietyJson.get("uuid"));
+        assertEquals(moietyJson.get("id").asText(), moietyJson.get("uuid").asText());
+    }
+
+    @Test
     void updateChemicalWithNewName() throws Exception {
 
         File jsonFile = new ClassPathResource("testJSON/1_5-naphthyridin-3-ol.json").getFile();
