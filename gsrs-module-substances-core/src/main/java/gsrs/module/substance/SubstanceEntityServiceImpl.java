@@ -26,6 +26,7 @@ import ix.core.validator.*;
 import ix.ginas.models.v1.Linkage;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.GinasCommonData;
+import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Component;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -42,6 +43,7 @@ import ix.ginas.models.v1.OtherLinks;
 import ix.ginas.models.v1.Polymer;
 import ix.ginas.models.v1.PolymerClassification;
 import ix.ginas.models.v1.PolymerSubstance;
+import ix.ginas.models.v1.Parameter;
 import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.Protein;
 import ix.ginas.models.v1.ProteinSubstance;
@@ -591,6 +593,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         GinasChemicalStructure existingStructure = managed instanceof ChemicalSubstance chemicalManaged
                 ? chemicalManaged.getStructure()
                 : null;
+        List<Moiety> existingMoieties = managed instanceof ChemicalSubstance chemicalManaged
+                ? chemicalManaged.getMoieties()
+                : null;
         Map<UUID, Name> existingNames = mapByUuid(managed.names);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
         Map<UUID, Note> existingNotes = mapByUuid(managed.notes);
@@ -617,6 +622,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
         replaced.relationships = reconcileManagedChildren(replaced.relationships, existingRelationships, child -> child.assignOwner(replaced));
         replaced.references = reconcileManagedChildren(replaced.references, existingReferences, child -> child.setOwner(replaced));
+        reconcileNestedPropertyData(replaced.properties, existingProperties);
+        reconcileNestedRelationshipAmounts(replaced.relationships, existingRelationships);
+        if (replaced instanceof ChemicalSubstance replacedChemical) {
+            reconcileNestedMoietyAmounts(replacedChemical.getMoieties(), existingMoieties);
+        }
         return replaced;
     }
 
@@ -656,6 +666,86 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             }
         }
         return reconciled;
+    }
+
+    private void reconcileNestedRelationshipAmounts(List<Relationship> relationships,
+                                                    Map<UUID, Relationship> existingRelationships) {
+        if (relationships == null) {
+            return;
+        }
+        for (Relationship relationship : relationships) {
+            if (relationship == null || relationship.getUuid() == null || relationship.amount == null
+                    || relationship.amount.getUuid() == null) {
+                continue;
+            }
+            Relationship existingRelationship = existingRelationships.get(relationship.getUuid());
+            if (existingRelationship != null && existingRelationship.amount != null
+                    && Objects.equals(existingRelationship.amount.getUuid(), relationship.amount.getUuid())) {
+                relationship.amount = existingRelationship.amount;
+            }
+        }
+    }
+
+    private void reconcileNestedPropertyData(List<Property> properties,
+                                             Map<UUID, Property> existingProperties) throws IOException {
+        if (properties == null) {
+            return;
+        }
+        for (Property property : properties) {
+            if (property == null || property.getUuid() == null) {
+                continue;
+            }
+            Property existingProperty = existingProperties.get(property.getUuid());
+            if (existingProperty == null) {
+                continue;
+            }
+            if (existingProperty.getValue() != null && property.getValue() != null
+                    && Objects.equals(existingProperty.getValue().getUuid(), property.getValue().getUuid())) {
+                property.setValue(existingProperty.getValue());
+            }
+
+            Map<UUID, Parameter> existingParameters = mapByUuid(existingProperty.getParameters());
+            List<Parameter> reconciledParameters = reconcileManagedChildren(property.getParameters(),
+                    existingParameters,
+                    child -> {
+                    });
+            if (reconciledParameters != null) {
+                for (Parameter parameter : reconciledParameters) {
+                    if (parameter == null || parameter.getUuid() == null || parameter.getValue() == null
+                            || parameter.getValue().getUuid() == null) {
+                        continue;
+                    }
+                    Parameter existingParameter = existingParameters.get(parameter.getUuid());
+                    if (existingParameter != null && existingParameter.getValue() != null
+                            && Objects.equals(existingParameter.getValue().getUuid(), parameter.getValue().getUuid())) {
+                        parameter.setValue(existingParameter.getValue());
+                    }
+                }
+            }
+            property.setParameters(reconciledParameters);
+        }
+    }
+
+    private void reconcileNestedMoietyAmounts(List<Moiety> moieties, List<Moiety> existingMoieties) {
+        if (moieties == null || existingMoieties == null) {
+            return;
+        }
+        Map<UUID, Amount> existingAmounts = new LinkedHashMap<>();
+        for (Moiety existingMoiety : existingMoieties) {
+            if (existingMoiety != null && existingMoiety.getCountAmount() != null
+                    && existingMoiety.getCountAmount().getUuid() != null) {
+                existingAmounts.put(existingMoiety.getCountAmount().getUuid(), existingMoiety.getCountAmount());
+            }
+        }
+        for (Moiety moiety : moieties) {
+            if (moiety == null || moiety.getCountAmount() == null || moiety.getCountAmount().getUuid() == null) {
+                continue;
+            }
+            Amount existingAmount = existingAmounts.get(moiety.getCountAmount().getUuid());
+            if (existingAmount != null) {
+                moiety.setCountAmount(existingAmount);
+            }
+        }
     }
 
     private boolean sameAmountForDiff(ix.ginas.models.v1.Amount persisted, ix.ginas.models.v1.Amount updated) {
