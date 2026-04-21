@@ -759,6 +759,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         if (usePojoPatch && hasChemicalDefinitionChange(oldEntity, updatedEntity)) {
                             usePojoPatch = false;
                         }
+                        boolean chemicalDefinitionChange = hasChemicalDefinitionChange(oldEntity, updatedEntity);
                         if (usePojoPatch) {
                             normalizeUpdatedEntityForDiff(oldEntity, updatedEntity);
                             PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
@@ -836,10 +837,26 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 return Optional.empty();
                             }
                         } else {
-                            //NON POJOPATCH: delete and save for updates
+                            // NON POJOPATCH: for true chemical definition changes, merge the
+                            // updated graph directly so the root structure row is updated in
+                            // place. For the remaining cases, keep the legacy delete-and-save
+                            // behavior.
 
                             Substance oldValue = (Substance) oWrap.getValue();
                             normalizeUpdatedEntityForReplacement(oldValue, updatedEntity);
+
+                            if (chemicalDefinitionChange) {
+                                Substance newValue = (Substance) nWrap.getValue();
+                                newValue = entityManager.merge(newValue);
+                                entityManager.flush();
+
+                                Substance saved = transactionalUpdate(newValue, oldJson);
+                                builder.updatedEntity(saved);
+                                builder.status(UpdateResult.STATUS.UPDATED);
+
+                                return Optional.of(saved);
+                            }
+
                             entityManager.remove(oldValue);
 
                             // Now need to take care of bad update pieces:
