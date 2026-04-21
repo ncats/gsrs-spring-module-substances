@@ -580,6 +580,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
     }
 
+    private Substance applyReplacementToManagedEntity(Substance managed, Substance updated) throws IOException {
+        JsonNode updatedJson = objectMapper.valueToTree(updated);
+        return objectMapper.readerForUpdating(managed).readValue(updatedJson);
+    }
+
     private boolean sameAmountForDiff(ix.ginas.models.v1.Amount persisted, ix.ginas.models.v1.Amount updated) {
         if (persisted == null || updated == null) {
             return persisted == updated;
@@ -847,10 +852,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
                             if (chemicalDefinitionChange) {
                                 Substance newValue = (Substance) nWrap.getValue();
-                                newValue = entityManager.merge(newValue);
+                                oldValue = applyReplacementToManagedEntity(oldValue, newValue);
+                                oldValue = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldValue, true));
                                 entityManager.flush();
 
-                                Substance saved = transactionalUpdate(newValue, oldJson);
+                                Substance saved = transactionalUpdate(oldValue, oldJson);
                                 builder.updatedEntity(saved);
                                 builder.status(UpdateResult.STATUS.UPDATED);
 
