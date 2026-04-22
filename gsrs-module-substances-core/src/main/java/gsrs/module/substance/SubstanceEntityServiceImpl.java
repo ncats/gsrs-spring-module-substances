@@ -600,8 +600,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
         Map<UUID, Note> existingNotes = mapByUuid(managed.notes);
         Map<UUID, Property> existingProperties = mapByUuid(managed.properties);
+        Map<UUID, Parameter> existingParameters = mapByUuid(flattenParameters(managed.properties));
         Map<UUID, Relationship> existingRelationships = mapByUuid(managed.relationships);
         Map<UUID, Reference> existingReferences = mapByUuid(managed.references);
+        Map<UUID, Amount> existingRelationshipAmounts = mapRelationshipAmounts(managed.relationships);
+        Map<UUID, Amount> existingMoietyAmounts = mapMoietyAmounts(existingMoieties);
+        Map<UUID, Amount> existingPropertyAmounts = mapPropertyAmounts(managed.properties);
+        Map<UUID, Amount> existingParameterAmounts = mapParameterAmounts(managed.properties);
         JsonNode updatedJson = objectMapper.valueToTree(updated);
         Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
         if (replaced instanceof ChemicalSubstance replacedChemical && existingStructure != null) {
@@ -622,10 +627,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
         replaced.relationships = reconcileManagedChildren(replaced.relationships, existingRelationships, child -> child.assignOwner(replaced));
         replaced.references = reconcileManagedChildren(replaced.references, existingReferences, child -> child.setOwner(replaced));
-        reconcileNestedPropertyData(replaced.properties, existingProperties);
-        reconcileNestedRelationshipAmounts(replaced.relationships, existingRelationships);
+        reconcileNestedPropertyData(replaced.properties, existingParameters, existingPropertyAmounts, existingParameterAmounts);
+        reconcileNestedRelationshipAmounts(replaced.relationships, existingRelationshipAmounts);
         if (replaced instanceof ChemicalSubstance replacedChemical) {
-            reconcileNestedMoietyAmounts(replacedChemical.getMoieties(), existingMoieties);
+            reconcileNestedMoietyAmounts(replacedChemical.getMoieties(), existingMoietyAmounts);
         }
         return replaced;
     }
@@ -668,8 +673,78 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return reconciled;
     }
 
+    private List<Parameter> flattenParameters(List<Property> properties) {
+        List<Parameter> parameters = new ArrayList<>();
+        if (properties == null) {
+            return parameters;
+        }
+        for (Property property : properties) {
+            if (property != null && property.getParameters() != null) {
+                parameters.addAll(property.getParameters());
+            }
+        }
+        return parameters;
+    }
+
+    private Map<UUID, Amount> mapRelationshipAmounts(List<Relationship> relationships) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (relationships == null) {
+            return amounts;
+        }
+        for (Relationship relationship : relationships) {
+            if (relationship != null && relationship.amount != null && relationship.amount.getUuid() != null) {
+                amounts.put(relationship.amount.getUuid(), relationship.amount);
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapMoietyAmounts(List<Moiety> moieties) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (moieties == null) {
+            return amounts;
+        }
+        for (Moiety moiety : moieties) {
+            if (moiety != null && moiety.getCountAmount() != null && moiety.getCountAmount().getUuid() != null) {
+                amounts.put(moiety.getCountAmount().getUuid(), moiety.getCountAmount());
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapPropertyAmounts(List<Property> properties) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (properties == null) {
+            return amounts;
+        }
+        for (Property property : properties) {
+            if (property != null && property.getValue() != null && property.getValue().getUuid() != null) {
+                amounts.put(property.getValue().getUuid(), property.getValue());
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapParameterAmounts(List<Property> properties) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (properties == null) {
+            return amounts;
+        }
+        for (Property property : properties) {
+            if (property == null || property.getParameters() == null) {
+                continue;
+            }
+            for (Parameter parameter : property.getParameters()) {
+                if (parameter != null && parameter.getValue() != null && parameter.getValue().getUuid() != null) {
+                    amounts.put(parameter.getValue().getUuid(), parameter.getValue());
+                }
+            }
+        }
+        return amounts;
+    }
+
     private void reconcileNestedRelationshipAmounts(List<Relationship> relationships,
-                                                    Map<UUID, Relationship> existingRelationships) {
+                                                    Map<UUID, Amount> existingAmounts) {
         if (relationships == null) {
             return;
         }
@@ -678,33 +753,30 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     || relationship.amount.getUuid() == null) {
                 continue;
             }
-            Relationship existingRelationship = existingRelationships.get(relationship.getUuid());
-            if (existingRelationship != null && existingRelationship.amount != null
-                    && Objects.equals(existingRelationship.amount.getUuid(), relationship.amount.getUuid())) {
-                relationship.amount = existingRelationship.amount;
+            Amount existingAmount = existingAmounts.get(relationship.amount.getUuid());
+            if (existingAmount != null) {
+                relationship.amount = existingAmount;
             }
         }
     }
 
     private void reconcileNestedPropertyData(List<Property> properties,
-                                             Map<UUID, Property> existingProperties) throws IOException {
+                                             Map<UUID, Parameter> existingParameters,
+                                             Map<UUID, Amount> existingPropertyAmounts,
+                                             Map<UUID, Amount> existingParameterAmounts) throws IOException {
         if (properties == null) {
             return;
         }
         for (Property property : properties) {
-            if (property == null || property.getUuid() == null) {
+            if (property == null) {
                 continue;
             }
-            Property existingProperty = existingProperties.get(property.getUuid());
-            if (existingProperty == null) {
-                continue;
+            if (property.getValue() != null && property.getValue().getUuid() != null) {
+                Amount existingValue = existingPropertyAmounts.get(property.getValue().getUuid());
+                if (existingValue != null) {
+                    property.setValue(existingValue);
+                }
             }
-            if (existingProperty.getValue() != null && property.getValue() != null
-                    && Objects.equals(existingProperty.getValue().getUuid(), property.getValue().getUuid())) {
-                property.setValue(existingProperty.getValue());
-            }
-
-            Map<UUID, Parameter> existingParameters = mapByUuid(existingProperty.getParameters());
             List<Parameter> reconciledParameters = reconcileManagedChildren(property.getParameters(),
                     existingParameters,
                     child -> {
@@ -715,10 +787,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             || parameter.getValue().getUuid() == null) {
                         continue;
                     }
-                    Parameter existingParameter = existingParameters.get(parameter.getUuid());
-                    if (existingParameter != null && existingParameter.getValue() != null
-                            && Objects.equals(existingParameter.getValue().getUuid(), parameter.getValue().getUuid())) {
-                        parameter.setValue(existingParameter.getValue());
+                    Amount existingValue = existingParameterAmounts.get(parameter.getValue().getUuid());
+                    if (existingValue != null) {
+                        parameter.setValue(existingValue);
                     }
                 }
             }
@@ -726,16 +797,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
     }
 
-    private void reconcileNestedMoietyAmounts(List<Moiety> moieties, List<Moiety> existingMoieties) {
-        if (moieties == null || existingMoieties == null) {
+    private void reconcileNestedMoietyAmounts(List<Moiety> moieties, Map<UUID, Amount> existingAmounts) {
+        if (moieties == null) {
             return;
-        }
-        Map<UUID, Amount> existingAmounts = new LinkedHashMap<>();
-        for (Moiety existingMoiety : existingMoieties) {
-            if (existingMoiety != null && existingMoiety.getCountAmount() != null
-                    && existingMoiety.getCountAmount().getUuid() != null) {
-                existingAmounts.put(existingMoiety.getCountAmount().getUuid(), existingMoiety.getCountAmount());
-            }
         }
         for (Moiety moiety : moieties) {
             if (moiety == null || moiety.getCountAmount() == null || moiety.getCountAmount().getUuid() == null) {
