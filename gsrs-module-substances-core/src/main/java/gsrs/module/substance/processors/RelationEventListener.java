@@ -36,10 +36,8 @@ public class RelationEventListener {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateInverseRelationship(UpdateInverseRelationshipEvent event) {
         runIfNotReentrant(eventKey("update",
-                        event.getRelationshipIdThatWasUpdated(),
                         event.getOriginatorUUID(),
-                        event.getSubstanceIdThatWasUpdated(),
-                        event.getSubstanceIdToUpdate()),
+                        unorderedKeyPart(event.getSubstanceIdThatWasUpdated(), event.getSubstanceIdToUpdate())),
                 () -> {
                     relationshipService.updateInverseRelationshipFor(event);
                     return null;
@@ -67,6 +65,12 @@ public class RelationEventListener {
             builder.append('|').append(part);
         }
         return builder.toString();
+    }
+
+    private static String unorderedKeyPart(Object first, Object second) {
+        String a = String.valueOf(first);
+        String b = String.valueOf(second);
+        return a.compareTo(b) <= 0 ? a + "|" + b : b + "|" + a;
     }
 
     private static <T> T runIfNotReentrant(String key, Supplier<T> action) {
