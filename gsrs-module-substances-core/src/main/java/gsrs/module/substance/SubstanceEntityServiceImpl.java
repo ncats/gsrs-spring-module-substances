@@ -88,6 +88,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substance, UUID> implements SubstanceEntityService {
     public static final String  CONTEXT = "substances";
+    private static final Set<String> SERVER_MANAGED_AUDIT_FIELDS = Set.of(
+            "created",
+            "createdBy",
+            "lastEdited",
+            "lastEditedBy",
+            "approved",
+            "approvedBy"
+    );
 
 
     public SubstanceEntityServiceImpl() {
@@ -416,12 +424,12 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         if (!(json instanceof ObjectNode root)) {
             return json;
         }
+        ObjectNode copy = root.deepCopy();
+        scrubServerManagedAuditFields(copy);
         JsonNode substanceClassNode = root.get("substanceClass");
         if (substanceClassNode == null || !"chemical".equalsIgnoreCase(substanceClassNode.asText())) {
-            return json;
+            return copy;
         }
-
-        ObjectNode copy = root.deepCopy();
         scrubChemicalStructureNode((ObjectNode) copy.get("structure"), true);
 
         ArrayNode moieties = (ArrayNode) copy.get("moieties");
@@ -433,6 +441,22 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             }
         }
         return copy;
+    }
+
+    private void scrubServerManagedAuditFields(JsonNode node) {
+        if (node instanceof ObjectNode objectNode) {
+            SERVER_MANAGED_AUDIT_FIELDS.forEach(objectNode::remove);
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+                scrubServerManagedAuditFields(fields.next().getValue());
+            }
+            return;
+        }
+        if (node instanceof ArrayNode arrayNode) {
+            for (JsonNode child : arrayNode) {
+                scrubServerManagedAuditFields(child);
+            }
+        }
     }
 
     private void scrubChemicalStructureNode(ObjectNode structureNode, boolean preserveStructureId) {
