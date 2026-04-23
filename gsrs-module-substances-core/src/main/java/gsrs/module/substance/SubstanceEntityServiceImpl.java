@@ -641,11 +641,15 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     private Substance applyReplacementToManagedEntity(Substance managed, Substance updated) throws IOException {
+        EntityManager entityManager = getEntityManager();
         GinasChemicalStructure existingStructure = managed instanceof ChemicalSubstance chemicalManaged
                 ? chemicalManaged.getStructure()
                 : null;
         List<Moiety> existingMoieties = managed instanceof ChemicalSubstance chemicalManaged
                 ? chemicalManaged.getMoieties()
+                : null;
+        List<Moiety> replacementMoieties = updated instanceof ChemicalSubstance updatedChemical
+                ? (updatedChemical.getMoieties() == null ? null : new ArrayList<>(updatedChemical.getMoieties()))
                 : null;
         Map<UUID, Name> existingNames = mapByUuid(managed.names);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
@@ -674,6 +678,17 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         : existingStructure.version;
                 replacedChemical.setStructure(existingStructure);
             }
+        }
+        if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
+            if (existingMoieties != null) {
+                for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
+                    existingMoiety.setOwner(null);
+                    entityManager.remove(entityManager.contains(existingMoiety)
+                            ? existingMoiety
+                            : entityManager.merge(existingMoiety));
+                }
+            }
+            replacedChemical.setMoieties(replacementMoieties);
         }
         replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
         replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
@@ -1135,7 +1150,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
         return transactionTemplate.execute( status-> {
             try {
-                Substance updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
+                Substance updatedEntity = validationResponse != null && validationResponse.getNewObject() != null
+                        ? JsonEntityUtil.fixOwners((Substance) validationResponse.getNewObject(), true)
+                        : JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
                 EntityUtils.Key oKey = EntityUtils.EntityWrapper.of(updatedEntity).getKey();
                 EntityManager entityManager = oKey.getEntityManager();
 

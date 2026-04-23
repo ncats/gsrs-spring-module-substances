@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.service.GsrsEntityService;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Keyword;
+import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
@@ -210,6 +211,37 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         ChemicalSubstance updated = (ChemicalSubstance) result.getUpdatedEntity();
         assertEquals(created.uuid, updated.uuid);
         assertTrue(updated.getMoieties() != null && !updated.getMoieties().isEmpty());
+    }
+
+    @Test
+    void updateWithValidationPersistsValidatorCorrectedMoieties() throws Exception {
+        File jsonFile = new ClassPathResource("testJSON/1_5-naphthyridin-3-ol.json").getFile();
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(SubstanceBuilder.from(jsonFile).build().toFullJsonNode());
+
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        ArrayNode moieties = (ArrayNode) updateJson.get("moieties");
+        ObjectNode clonedMoiety = ((ObjectNode) moieties.get(0)).deepCopy();
+        clonedMoiety.put("uuid", UUID.randomUUID().toString());
+        clonedMoiety.put("innerUuid", UUID.randomUUID().toString());
+        ObjectNode countAmount = (ObjectNode) clonedMoiety.get("countAmount");
+        if (countAmount != null) {
+            countAmount.put("uuid", UUID.randomUUID().toString());
+        }
+        moieties.add(clonedMoiety);
+
+        ValidationResponse<ix.ginas.models.v1.Substance> validationResponse =
+                substanceEntityService.validateEntity(updateJson);
+        ChemicalSubstance validated = (ChemicalSubstance) validationResponse.getNewObject();
+        assertEquals(1, validated.getMoieties().size());
+
+        GsrsEntityService.UpdateResult<ix.ginas.models.v1.Substance> result =
+                substanceEntityService.updateEntity(updateJson, false);
+
+        assertEquals(GsrsEntityService.UpdateResult.STATUS.UPDATED, result.getStatus(),
+                () -> "validated update should succeed, but status was "
+                        + result.getStatus() + ", throwable=" + result.getThrowable());
+        ChemicalSubstance updated = (ChemicalSubstance) result.getUpdatedEntity();
+        assertEquals(validated.getMoieties().size(), updated.getMoieties().size());
     }
 
     private JsonNode sanitizeCapturedChemicalForCreate(JsonNode json) {
