@@ -1352,7 +1352,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private Optional<Substance> resolveExistingSubstanceForValidation(JsonNode updatedEntityJson, Substance newValue) {
         UUID substanceId = getIdFrom(newValue);
         if (substanceId != null) {
-            Optional<Substance> existing = get(substanceId);
+            Optional<Substance> existing = loadExistingSubstanceForValidation(substanceId);
             if (existing.isPresent()) {
                 return existing;
             }
@@ -1367,12 +1367,37 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             if (identifier == null || identifier.isBlank()) {
                 continue;
             }
-            Optional<Substance> existing = getEntityBySomeIdentifier(identifier);
+            Optional<Substance> existing = loadExistingSubstanceForValidation(identifier);
             if (existing.isPresent()) {
                 return existing;
             }
         }
         return Optional.empty();
+    }
+
+    private Optional<Substance> loadExistingSubstanceForValidation(UUID substanceId) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
+        transactionTemplate.setReadOnly(true);
+        return transactionTemplate.execute(status -> repository.findById(substanceId)
+                .map(this::detachFullyFetchedSubstance));
+    }
+
+    private Optional<Substance> loadExistingSubstanceForValidation(String identifier) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
+        transactionTemplate.setReadOnly(true);
+        return transactionTemplate.execute(status -> {
+            if (Util.isUUID(identifier)) {
+                return repository.findById(UUID.fromString(identifier))
+                        .map(this::detachFullyFetchedSubstance);
+            }
+            Substance existing = repository.findByApprovalID(identifier);
+            return Optional.ofNullable(existing)
+                    .map(this::detachFullyFetchedSubstance);
+        });
+    }
+
+    private Substance detachFullyFetchedSubstance(Substance substance) {
+        return JsonSubstanceFactory.makeSubstance(substance.toFullJsonNode());
     }
 
 }
