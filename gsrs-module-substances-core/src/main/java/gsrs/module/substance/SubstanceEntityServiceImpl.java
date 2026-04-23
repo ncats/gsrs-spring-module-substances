@@ -1122,7 +1122,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     public ValidationResponse<Substance> validateEntity(JsonNode updatedEntityJson,
                                                         ValidatorCategory validatorCategory) throws Exception {
         Substance newValue = fromUpdatedJson(updatedEntityJson);
+        normalizeChemicalStructuresForValidation(newValue);
         Optional<Substance> oldValue = resolveExistingSubstanceForValidation(updatedEntityJson, newValue);
+        oldValue.ifPresent(this::normalizeChemicalStructuresForValidation);
         ValidatorConfig.METHOD_TYPE methodType = oldValue.isPresent()
                 ? ValidatorConfig.METHOD_TYPE.UPDATE
                 : ValidatorConfig.METHOD_TYPE.CREATE;
@@ -1398,6 +1400,58 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     private Substance detachFullyFetchedSubstance(Substance substance) {
         return JsonSubstanceFactory.makeSubstance(substance.toFullJsonNode());
+    }
+
+    private void normalizeChemicalStructuresForValidation(Substance substance) {
+        if (!(substance instanceof ChemicalSubstance chemicalSubstance)) {
+            return;
+        }
+        chemicalSubstance.setStructure(normalizeChemicalStructureForValidation(chemicalSubstance.getStructure()));
+        if (chemicalSubstance.moieties != null) {
+            for (Moiety moiety : chemicalSubstance.moieties) {
+                if (moiety != null) {
+                    moiety.structure = normalizeChemicalStructureForValidation(moiety.structure);
+                }
+            }
+        }
+    }
+
+    private GinasChemicalStructure normalizeChemicalStructureForValidation(GinasChemicalStructure structure) {
+        if (structure == null) {
+            return null;
+        }
+        boolean missingHashes = isBlank(structure.getExactHash()) || isBlank(structure.getStereoInsensitiveHash());
+        if (!missingHashes) {
+            return structure;
+        }
+        String structureText = firstNonBlank(structure.molfile, structure.smiles);
+        if (structureText == null) {
+            return structure;
+        }
+        try {
+            Structure instrumented = structureProcessor.instrument(structureText);
+            structure.properties = instrumented.properties;
+            if (structure.stereoChemistry == null) {
+                structure.stereoChemistry = instrumented.stereoChemistry;
+            }
+            if (structure.opticalActivity == null) {
+                structure.opticalActivity = instrumented.opticalActivity;
+            }
+            if (structure.atropisomerism == null) {
+                structure.atropisomerism = instrumented.atropisomerism;
+            }
+            if (isBlank(structure.stereoComments)) {
+                structure.stereoComments = instrumented.stereoComments;
+            }
+            return structure;
+        } catch (RuntimeException e) {
+            log.debug("Unable to normalize chemical structure for validation", e);
+            return structure;
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
 }

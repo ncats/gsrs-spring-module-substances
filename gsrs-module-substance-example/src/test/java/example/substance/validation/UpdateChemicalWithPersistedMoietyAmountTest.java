@@ -22,6 +22,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
 
@@ -242,6 +243,33 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                         + result.getStatus() + ", throwable=" + result.getThrowable());
         ChemicalSubstance updated = (ChemicalSubstance) result.getUpdatedEntity();
         assertEquals(validated.getMoieties().size(), updated.getMoieties().size());
+    }
+
+    @Test
+    void textOnlyChemicalUpdateDoesNotTriggerDefinitionalChangeWarning() throws Exception {
+        File jsonFile = new ClassPathResource("testJSON/1_5-naphthyridin-3-ol.json").getFile();
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(SubstanceBuilder.from(jsonFile).build().toFullJsonNode());
+
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        ((ArrayNode) updateJson.get("names")).add(
+                mapper.readTree("""
+                        {
+                          "references": ["ba459ffe-4fd9-4be3-8c11-98a79d0da0ca"],
+                          "access": [],
+                          "languages": ["en"],
+                          "type": "cn",
+                          "name": "1,5-naphthyridin-3-ol renamed"
+                        }
+                        """));
+
+        ValidationResponse<ix.ginas.models.v1.Substance> response =
+                substanceEntityService.validateEntity(updateJson);
+
+        assertFalse(response.getValidationMessages().stream()
+                        .map(message -> message.getMessage())
+                        .anyMatch(message -> message != null && message.contains("Definitional change")),
+                () -> "text-only update should not trigger definitional warning, but got "
+                        + response.getValidationMessages());
     }
 
     private JsonNode sanitizeCapturedChemicalForCreate(JsonNode json) {
