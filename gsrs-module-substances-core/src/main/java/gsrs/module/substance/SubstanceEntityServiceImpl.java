@@ -587,7 +587,29 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 || !(updated instanceof ChemicalSubstance updatedChemical)) {
             return false;
         }
-        return !sameChemicalStructureForDiff(persistedChemical.getStructure(), updatedChemical.getStructure());
+        return !sameChemicalStructureForDiff(persistedChemical.getStructure(), updatedChemical.getStructure())
+                || !sameMoietyCollectionForDiff(persistedChemical.getMoieties(), updatedChemical.getMoieties());
+    }
+
+    private boolean sameMoietyCollectionForDiff(List<Moiety> persistedMoieties, List<Moiety> updatedMoieties) {
+        if (persistedMoieties == null || persistedMoieties.isEmpty()) {
+            return updatedMoieties == null || updatedMoieties.isEmpty();
+        }
+        if (updatedMoieties == null || updatedMoieties.isEmpty()) {
+            return false;
+        }
+        if (persistedMoieties.size() != updatedMoieties.size()) {
+            return false;
+        }
+        List<Moiety> remainingPersistedMoieties = new ArrayList<>(persistedMoieties);
+        for (Moiety updatedMoiety : updatedMoieties) {
+            Moiety matchedPersistedMoiety = findMatchingMoiety(remainingPersistedMoieties, updatedMoiety);
+            if (matchedPersistedMoiety == null) {
+                return false;
+            }
+            remainingPersistedMoieties.remove(matchedPersistedMoiety);
+        }
+        return remainingPersistedMoieties.isEmpty();
     }
 
     private void normalizeUpdatedEntityForReplacement(Substance persisted, Substance updated) {

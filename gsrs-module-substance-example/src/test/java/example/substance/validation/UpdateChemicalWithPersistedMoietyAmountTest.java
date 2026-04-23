@@ -16,9 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
 
@@ -178,6 +180,36 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         assertEquals(created.uuid, updated.uuid);
         assertEquals(2, updated.names.size());
         assertEquals(2, updated.references.size());
+    }
+
+    @Test
+    void updateWithoutValidationWithChangedMoietyCollectionUsesReplacementPath() throws Exception {
+        File jsonFile = new ClassPathResource("testJSON/1_5-naphthyridin-3-ol.json").getFile();
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(SubstanceBuilder.from(jsonFile).build().toFullJsonNode());
+
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        ArrayNode moieties = (ArrayNode) updateJson.get("moieties");
+        assertNotNull(moieties);
+        assertTrue(moieties.size() > 0);
+
+        ObjectNode clonedMoiety = ((ObjectNode) moieties.get(0)).deepCopy();
+        clonedMoiety.put("uuid", UUID.randomUUID().toString());
+        clonedMoiety.put("innerUuid", UUID.randomUUID().toString());
+        ObjectNode countAmount = (ObjectNode) clonedMoiety.get("countAmount");
+        if (countAmount != null) {
+            countAmount.put("uuid", UUID.randomUUID().toString());
+        }
+        moieties.add(clonedMoiety);
+
+        GsrsEntityService.UpdateResult<ix.ginas.models.v1.Substance> result =
+                substanceEntityService.updateEntityWithoutValidation(updateJson);
+
+        assertEquals(GsrsEntityService.UpdateResult.STATUS.UPDATED, result.getStatus(),
+                () -> "moiety collection change should bypass PojoDiff, but status was "
+                        + result.getStatus() + ", throwable=" + result.getThrowable());
+        ChemicalSubstance updated = (ChemicalSubstance) result.getUpdatedEntity();
+        assertEquals(created.uuid, updated.uuid);
+        assertTrue(updated.getMoieties() != null && !updated.getMoieties().isEmpty());
     }
 
     private JsonNode sanitizeCapturedChemicalForCreate(JsonNode json) {
