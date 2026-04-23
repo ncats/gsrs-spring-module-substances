@@ -15,6 +15,7 @@ import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.chem.StructureProcessor;
@@ -60,6 +61,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.ValidatorFactory;
 import ix.ginas.utils.validation.strategy.BatchProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
@@ -122,6 +124,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private GsrsValidatorFactory validatorFactoryService;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -1072,6 +1077,32 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     @Override
+    public ValidationResponse<Substance> validateEntity(JsonNode updatedEntityJson,
+                                                        ValidatorCategory validatorCategory) throws Exception {
+        Substance newValue = fromUpdatedJson(updatedEntityJson);
+        Optional<Substance> oldValue = resolveExistingSubstanceForValidation(updatedEntityJson, newValue);
+        ValidatorConfig.METHOD_TYPE methodType = oldValue.isPresent()
+                ? ValidatorConfig.METHOD_TYPE.UPDATE
+                : ValidatorConfig.METHOD_TYPE.CREATE;
+
+        ValidatorFactory validatorFactory = validatorFactoryService.newFactory(CONTEXT);
+        Validator<Substance> validator = validatorFactory.createValidatorFor(
+                newValue,
+                oldValue.orElse(null),
+                methodType,
+                validatorCategory);
+
+        ValidationResponse<Substance> response = createValidationResponse(
+                newValue,
+                oldValue.orElse(null),
+                methodType);
+        ValidatorCallback callback = createCallbackFor(newValue, response, methodType);
+        validator.validate(newValue, oldValue.orElse(null), callback);
+        callback.complete();
+        return response;
+    }
+
+    @Override
     public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
         return performUpdateEntity(updatedEntityJson, null);
     }
@@ -1272,6 +1303,32 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 	public List<UUID> getIDs() {
 		List<UUID> IDs = repository.getAllIds();		
 		return IDs;
-	}
+    }
+
+    private Optional<Substance> resolveExistingSubstanceForValidation(JsonNode updatedEntityJson, Substance newValue) {
+        UUID substanceId = getIdFrom(newValue);
+        if (substanceId != null) {
+            Optional<Substance> existing = get(substanceId);
+            if (existing.isPresent()) {
+                return existing;
+            }
+        }
+
+        for (String identifierField : List.of("uuid", "approvalID")) {
+            JsonNode identifierNode = updatedEntityJson.get(identifierField);
+            if (identifierNode == null || identifierNode.isNull()) {
+                continue;
+            }
+            String identifier = identifierNode.asText();
+            if (identifier == null || identifier.isBlank()) {
+                continue;
+            }
+            Optional<Substance> existing = getEntityBySomeIdentifier(identifier);
+            if (existing.isPresent()) {
+                return existing;
+            }
+        }
+        return Optional.empty();
+    }
 
 }
