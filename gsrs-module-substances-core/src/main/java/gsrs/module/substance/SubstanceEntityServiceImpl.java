@@ -666,6 +666,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, SubstanceReference> existingPropertyReferences = mapPropertySubstanceReferences(managed.properties);
         Map<UUID, SubstanceReference> existingParameterReferences = mapParameterSubstanceReferences(managed.properties);
         JsonNode updatedJson = objectMapper.valueToTree(updated);
+        if (updatedJson instanceof ObjectNode updatedObject
+                && updated instanceof ChemicalSubstance
+                && replacementMoieties != null) {
+            updatedObject.remove("moieties");
+        }
         Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
         if (replaced instanceof ChemicalSubstance replacedChemical && existingStructure != null) {
             GinasChemicalStructure updatedStructure = replacedChemical.getStructure();

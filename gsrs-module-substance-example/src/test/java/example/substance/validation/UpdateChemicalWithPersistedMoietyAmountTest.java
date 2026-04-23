@@ -210,7 +210,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                         + result.getStatus() + ", throwable=" + result.getThrowable());
         ChemicalSubstance updated = (ChemicalSubstance) result.getUpdatedEntity();
         assertEquals(created.uuid, updated.uuid);
-        assertTrue(updated.getMoieties() != null && !updated.getMoieties().isEmpty());
+        assertEquals(2, updated.getMoieties().size());
     }
 
     @Test
@@ -232,7 +232,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         ValidationResponse<ix.ginas.models.v1.Substance> validationResponse =
                 substanceEntityService.validateEntity(updateJson);
         ChemicalSubstance validated = (ChemicalSubstance) validationResponse.getNewObject();
-        assertEquals(1, validated.getMoieties().size());
+        assertEquals(2, validated.getMoieties().size());
 
         GsrsEntityService.UpdateResult<ix.ginas.models.v1.Substance> result =
                 substanceEntityService.updateEntity(updateJson, false);
