@@ -43,7 +43,6 @@ public class EmaSmsFhirController {
     @Autowired
     private EmaSmsSimpleRecordFhirMapper emaSmsSimpleRecordFhirMapper;
 
-
     @Autowired
     private EmaSmsSubstanceDefinitionFhirMapper emaSmsSubstanceDefinitionFhirMapper;
 

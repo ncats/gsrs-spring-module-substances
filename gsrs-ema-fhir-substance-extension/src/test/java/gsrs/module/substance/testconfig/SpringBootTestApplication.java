@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Import;
 /**
  * Test Spring Boot application configuration for testing the substances module.
  * This class provides the necessary Spring Boot context for integration tests
- * while excluding heavy dependencies like JPA repositories and API auto-configuration.
+ * while excluding heavy dependencies like JPA repositories and API autoconfiguration.
  */
 @SpringBootApplication(exclude = {
         JpaRepositoriesAutoConfiguration.class,
@@ -27,7 +27,7 @@ import org.springframework.context.annotation.Import;
                 )
         }
 )
-@Import({TestBeansConfiguration.class})
+@Import(TestBeansConfiguration.class)
 public class SpringBootTestApplication {
 }
 
