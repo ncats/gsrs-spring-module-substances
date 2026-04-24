@@ -23,7 +23,7 @@ public class NameOrg extends GinasCommonSubData {
     @ParentReference
 	private Name owner;
 	
-	
+
     @JSONEntity(title = "Naming Organization", format = JSONConstants.CV_NAME_ORG, isRequired = true)
     @Column(nullable=false)
     public String nameOrg;
@@ -31,7 +31,11 @@ public class NameOrg extends GinasCommonSubData {
     // TODO Is this the only thing that can reasonably be deprecated?!!
     @JSONEntity(title = "Deprecated")
     public boolean deprecated;
-    
+
+    public boolean isDeprecated() {
+        return this.deprecated;
+    }
+
     @JSONEntity(title = "Deprecated Date", format = "date")
     public Date deprecatedDate;
 
