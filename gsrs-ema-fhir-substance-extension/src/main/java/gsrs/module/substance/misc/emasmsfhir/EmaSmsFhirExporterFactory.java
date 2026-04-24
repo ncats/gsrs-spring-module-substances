@@ -25,7 +25,7 @@ public class EmaSmsFhirExporterFactory implements ExporterFactory {
     public static final String APPROVAL_ID_NAME_PARAMETERS ="approvalIdName";
     public static final String DEFAULT_APPROVAL_ID_NAME ="APPROVAL_ID";
 
-    OutputFormat format = new OutputFormat("emasmsfhir.txt", "Fhir export, (.emasmsfhir.txt)");
+    OutputFormat format = new OutputFormat("emasmsfhirsd.txt", "Fhir export (.emasmsfhirsd.txt)");
 
     private String primaryCodeSystem;
 

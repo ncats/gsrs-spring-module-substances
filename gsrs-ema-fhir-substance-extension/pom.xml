@@ -48,6 +48,13 @@
     <profiles>
         <profile>
             <id>jacoco-emasmsfhir-only</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>env.JACACO</name>
+                    <value>ADD</value>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>

@@ -43,7 +43,7 @@ class EmaSmsFhirExporterFactoryTest {
         assertNotNull(formats);
         assertEquals(1, formats.size());
         OutputFormat fmt = formats.iterator().next();
-        assertEquals("emasmsfhir.txt", fmt.getExtension());
+        assertEquals("emasmsfhirsd.txt", fmt.getExtension());
     }
 
     @Test

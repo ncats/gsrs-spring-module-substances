@@ -52,7 +52,7 @@ public class EmaSmsFhirExporterTest {
         }
         FileOutputStream fos = new FileOutputStream(outputFile);
         ObjectNode details = JsonNodeFactory.instance.objectNode();
-        OutputFormat outputFormat = new OutputFormat("emasmsfhir.txt", "emasmsfhir.txt");
+        OutputFormat outputFormat = new OutputFormat("emasmsfhirsd.txt", "emasmsfhir.txt");
         BufferedOutputStream outputStream= new BufferedOutputStream(fos);
         DefaultParameters parameters = new DefaultParameters(outputFormat,false, details);
         EmaSmsFhirExporter exporter = (EmaSmsFhirExporter) factory.createNewExporter(outputStream, parameters );

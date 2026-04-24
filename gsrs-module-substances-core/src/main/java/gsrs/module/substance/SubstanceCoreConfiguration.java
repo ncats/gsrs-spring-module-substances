@@ -7,10 +7,6 @@ import gsrs.module.substance.controllers.*;
 import gsrs.module.substance.exporters.SubstanceSpreadsheetExporterConfiguration;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinder;
 import gsrs.module.substance.hierarchy.SubstanceHierarchyFinderConfig;
-//import gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirConfiguration;
-//import gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirController;
-//import gsrs.module.substance.misc.emasmsfhir.EmaSmsSimpleRecordFhirMapper;
-//import gsrs.module.substance.misc.emasmsfhir.EmaSmsSubstanceDefinitionFhirMapper;
 import gsrs.module.substance.processors.RelationEventListener;
 import gsrs.module.substance.services.*;
 import gsrs.module.substance.standardizer.NameStandardizerConfiguration;
@@ -76,11 +72,6 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         SubstanceEntityServiceConfiguration.class,
         UserRoleConfiguration.class,
         RolesConfig.class
-//        ,
-//        EmaSmsFhirConfiguration.class,
-//        EmaSmsFhirController.class,
-//        EmaSmsSubstanceDefinitionFhirMapper.class,
-//        EmaSmsSimpleRecordFhirMapper.class
 })
 public class SubstanceCoreConfiguration {
 
