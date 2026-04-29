@@ -491,10 +491,14 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             return;
         }
         if (sameChemicalStructureForDiff(persisted.getStructure(), updated.getStructure())) {
-            updated.setStructure(persisted.getStructure());
+            if (sameChemicalStructureStoredFieldsForDiff(persisted.getStructure(), updated.getStructure())) {
+                updated.setStructure(persisted.getStructure());
+            } else {
+                reusePersistedStructureComputedPropertiesForDiff(persisted.getStructure(), updated.getStructure());
+                reusePersistedStructureIdentityForDiff(persisted.getStructure(), updated.getStructure());
+            }
         } else if (persisted.getStructure() != null && updated.getStructure() != null) {
-            updated.getStructure().id = persisted.getStructure().id;
-            updated.getStructure().version = persisted.getStructure().version;
+            reusePersistedStructureIdentityForDiff(persisted.getStructure(), updated.getStructure());
         }
 
         List<Moiety> remainingPersistedMoieties = persisted.getMoieties() == null
@@ -512,6 +516,40 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             remainingPersistedMoieties.remove(matchedPersistedMoiety);
             updated.getMoieties().set(i, matchedPersistedMoiety);
         }
+    }
+
+    private void reusePersistedStructureIdentityForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted != null && updated != null) {
+            updated.id = persisted.id;
+            updated.version = persisted.version;
+        }
+    }
+
+    private void reusePersistedStructureComputedPropertiesForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted != null && updated != null) {
+            updated.properties = persisted.properties;
+        }
+    }
+
+    private boolean sameChemicalStructureStoredFieldsForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        return Objects.equals(persisted.molfile, updated.molfile)
+                && Objects.equals(persisted.smiles, updated.smiles)
+                && Objects.equals(persisted.formula, updated.formula)
+                && Objects.equals(persisted.digest, updated.digest)
+                && Objects.equals(persisted.stereoChemistry, updated.stereoChemistry)
+                && Objects.equals(persisted.opticalActivity, updated.opticalActivity)
+                && Objects.equals(persisted.atropisomerism, updated.atropisomerism)
+                && Objects.equals(persisted.stereoComments, updated.stereoComments)
+                && Objects.equals(persisted.stereoCenters, updated.stereoCenters)
+                && Objects.equals(persisted.definedStereo, updated.definedStereo)
+                && Objects.equals(persisted.ezCenters, updated.ezCenters)
+                && Objects.equals(persisted.charge, updated.charge)
+                && Objects.equals(persisted.count, updated.count)
+                && Objects.equals(persisted.mwt, updated.mwt)
+                && Objects.equals(persisted.deprecated, updated.deprecated);
     }
 
     private Moiety findMatchingMoiety(List<Moiety> persistedMoieties, Moiety updatedMoiety) {

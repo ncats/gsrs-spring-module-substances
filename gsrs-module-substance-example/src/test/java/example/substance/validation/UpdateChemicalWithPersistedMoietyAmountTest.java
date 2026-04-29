@@ -11,12 +11,15 @@ import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Name;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -270,6 +273,46 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                         .anyMatch(message -> message != null && message.contains("Definitional change")),
                 () -> "text-only update should not trigger definitional warning, but got "
                         + response.getValidationMessages());
+    }
+
+    @Test
+    void updateChemicalWithCoordinateOnlyMolfileChangePersistsMolfile() throws Exception {
+        GinasChemicalStructure structure = new GinasChemicalStructure();
+        structure.molfile = readMolfile("coordinate_edit_before.mol");
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(new ChemicalSubstanceBuilder()
+                .addName("coordinate-only molfile edit")
+                .setStructure(structure)
+                .build()
+                .toFullJsonNode());
+
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        ((ObjectNode) updateJson.get("structure")).put("molfile", readMolfile("coordinate_edit_after.mol"));
+
+        ChemicalSubstance updated = (ChemicalSubstance) assertUpdated(updateJson);
+        assertEditedCoordinatesPersisted(updated);
+
+        ChemicalSubstance refetched = (ChemicalSubstance) substanceEntityService.get(created.uuid).orElseThrow();
+        assertEditedCoordinatesPersisted(refetched);
+    }
+
+    private void assertEditedCoordinatesPersisted(ChemicalSubstance substance) {
+        String molfile = normalizeMolfile(substance.getStructure().molfile);
+        assertTrue(molfile.contains("   18.0243   -4.5961    0.0000 C"),
+                () -> "edited atom coordinates were not persisted:\n" + molfile);
+        assertTrue(molfile.contains("M  SDI   1  4   26.8647   -8.0600   26.8647   -5.1480"),
+                () -> "edited S-group display coordinates were not persisted:\n" + molfile);
+        assertFalse(molfile.contains("   20.1756   -5.6361    0.0000 C"),
+                () -> "original atom coordinates were retained:\n" + molfile);
+    }
+
+    private String readMolfile(String name) throws Exception {
+        try (InputStream inputStream = new ClassPathResource("molfiles/" + name).getInputStream()) {
+            return new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+        }
+    }
+
+    private String normalizeMolfile(String molfile) {
+        return molfile == null ? "" : molfile.replace("\r\n", "\n").replace('\r', '\n');
     }
 
     private JsonNode sanitizeCapturedChemicalForCreate(JsonNode json) {
