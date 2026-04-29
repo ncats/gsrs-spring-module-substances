@@ -8,6 +8,7 @@ import gsrs.service.GsrsEntityService;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Keyword;
 import ix.core.validator.ValidationResponse;
+import ix.core.validator.ValidatorCategory;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
@@ -26,8 +27,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
+
+    private static final String ORIGINAL_MOIETY_COORDINATE = "   12.3760   -7.9040    0.0000 C";
+    private static final String EDITED_MOIETY_COORDINATE = "   12.8760   -7.9040    0.0000 C";
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -234,7 +239,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         moieties.add(clonedMoiety);
 
         ValidationResponse<ix.ginas.models.v1.Substance> validationResponse =
-                substanceEntityService.validateEntity(updateJson);
+                substanceEntityService.validateEntity(updateJson, ValidatorCategory.CATEGORY_ALL());
         ChemicalSubstance validated = (ChemicalSubstance) validationResponse.getNewObject();
         assertEquals(2, validated.getMoieties().size());
 
@@ -295,6 +300,28 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         assertEditedCoordinatesPersisted(refetched);
     }
 
+    @Test
+    void updateChemicalWithRootMolfileCoordinateChangeRegeneratesMoietyMolfiles() throws Exception {
+        File jsonFile = new ClassPathResource("testJSON/1_5-naphthyridin-3-ol.json").getFile();
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(SubstanceBuilder.from(jsonFile).build().toFullJsonNode());
+        String originalMoietyMolfiles = normalizeMoietyMolfiles(created);
+        assertFalse(originalMoietyMolfiles.isBlank(),
+                () -> "fixture should create persisted moiety molfiles for " + created.uuid);
+
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        assertEquals(created.uuid.toString(), updateJson.get("uuid").asText());
+        ObjectNode updateStructure = (ObjectNode) updateJson.get("structure");
+        updateStructure.put("molfile", updateStructure.get("molfile").asText()
+                .replace(ORIGINAL_MOIETY_COORDINATE, EDITED_MOIETY_COORDINATE));
+        assertTrue(updateStructure.get("molfile").asText().contains(EDITED_MOIETY_COORDINATE));
+
+        ChemicalSubstance updated = (ChemicalSubstance) assertUpdated(updateJson);
+        assertMoietiesUpdated(originalMoietyMolfiles, updated);
+
+        ChemicalSubstance refetched = (ChemicalSubstance) substanceEntityService.get(created.uuid).orElseThrow();
+        assertMoietiesUpdated(originalMoietyMolfiles, refetched);
+    }
+
     private void assertEditedCoordinatesPersisted(ChemicalSubstance substance) {
         String molfile = normalizeMolfile(substance.getStructure().molfile);
         assertTrue(molfile.contains("   18.0243   -4.5961    0.0000 C"),
@@ -303,6 +330,31 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                 () -> "edited S-group display coordinates were not persisted:\n" + molfile);
         assertFalse(molfile.contains("   20.1756   -5.6361    0.0000 C"),
                 () -> "original atom coordinates were retained:\n" + molfile);
+    }
+
+    private void assertMoietiesUpdated(String originalMoietyMolfiles, ChemicalSubstance substance) {
+        String updatedMoietyMolfiles = normalizeMoietyMolfiles(substance);
+        assertFalse(updatedMoietyMolfiles.isBlank(),
+                () -> "expected generated moiety molfiles for " + substance.uuid);
+        assertTrue(updatedMoietyMolfiles.contains(EDITED_MOIETY_COORDINATE),
+                () -> "edited atom coordinate was not present in regenerated moieties:\n" + updatedMoietyMolfiles);
+        assertFalse(updatedMoietyMolfiles.contains(ORIGINAL_MOIETY_COORDINATE),
+                () -> "original atom coordinate was retained in regenerated moieties:\n" + updatedMoietyMolfiles);
+        assertNotEquals(originalMoietyMolfiles, updatedMoietyMolfiles,
+                () -> "moiety molfiles were not regenerated after root structure coordinate edit");
+    }
+
+    private String normalizeMoietyMolfiles(ChemicalSubstance substance) {
+        if (substance.getMoieties() == null) {
+            return "";
+        }
+        StringBuilder builder = new StringBuilder();
+        for (Moiety moiety : substance.getMoieties()) {
+            if (moiety != null && moiety.structure != null) {
+                builder.append(normalizeMolfile(moiety.structure.molfile)).append("\n---\n");
+            }
+        }
+        return builder.toString();
     }
 
     private String readMolfile(String name) throws Exception {

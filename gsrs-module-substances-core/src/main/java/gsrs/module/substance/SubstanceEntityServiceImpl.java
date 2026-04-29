@@ -514,7 +514,25 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 continue;
             }
             remainingPersistedMoieties.remove(matchedPersistedMoiety);
-            updated.getMoieties().set(i, matchedPersistedMoiety);
+            if (sameMoietyStoredFieldsForDiff(matchedPersistedMoiety, updatedMoiety)) {
+                updated.getMoieties().set(i, matchedPersistedMoiety);
+            } else {
+                reusePersistedMoietyIdentityForDiff(matchedPersistedMoiety, updatedMoiety);
+                updated.getMoieties().set(i, updatedMoiety);
+            }
+        }
+    }
+
+    private void reusePersistedMoietyIdentityForDiff(Moiety persisted, Moiety updated) {
+        if (persisted == null || updated == null) {
+            return;
+        }
+        updated.uuid = persisted.uuid;
+        updated.innerUuid = persisted.innerUuid;
+        reusePersistedStructureComputedPropertiesForDiff(persisted.structure, updated.structure);
+        reusePersistedStructureIdentityForDiff(persisted.structure, updated.structure);
+        if (sameAmountForDiff(persisted.getCountAmount(), updated.getCountAmount())) {
+            updated.setCountAmount(persisted.getCountAmount());
         }
     }
 
@@ -550,6 +568,14 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 && Objects.equals(persisted.count, updated.count)
                 && Objects.equals(persisted.mwt, updated.mwt)
                 && Objects.equals(persisted.deprecated, updated.deprecated);
+    }
+
+    private boolean sameMoietyStoredFieldsForDiff(Moiety persisted, Moiety updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        return sameChemicalStructureStoredFieldsForDiff(persisted.structure, updated.structure)
+                && sameAmountForDiff(persisted.getCountAmount(), updated.getCountAmount());
     }
 
     private Moiety findMatchingMoiety(List<Moiety> persistedMoieties, Moiety updatedMoiety) {
@@ -1213,15 +1239,19 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         EntityUtils.EntityWrapper<Substance> oWrap = EntityUtils.EntityWrapper.of(oldEntity);
                         EntityUtils.EntityWrapper<Substance> nWrap = EntityUtils.EntityWrapper.of(updatedEntity);
 
+                        boolean rootMolfileChange = hasRootMolfileChange(oldEntity, updatedEntity);
+                        regenerateMoietiesForRootMolfileChange(oldEntity, updatedEntity);
+
                         boolean usePojoPatch = false;
                         //only use POJO patch if the entities are the same type
                         if (oWrap.getEntityClass().equals(nWrap.getEntityClass())) {
                             usePojoPatch = true;
                         }
-                        if (usePojoPatch && hasChemicalDefinitionChange(oldEntity, updatedEntity)) {
+                        boolean chemicalDefinitionChange = hasChemicalDefinitionChange(oldEntity, updatedEntity);
+                        boolean useReplacementUpdate = chemicalDefinitionChange || rootMolfileChange;
+                        if (usePojoPatch && useReplacementUpdate) {
                             usePojoPatch = false;
                         }
-                        boolean chemicalDefinitionChange = hasChemicalDefinitionChange(oldEntity, updatedEntity);
                         if (usePojoPatch) {
                             normalizeUpdatedEntityForDiff(oldEntity, updatedEntity);
                             PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
@@ -1307,7 +1337,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             Substance oldValue = (Substance) oWrap.getValue();
                             normalizeUpdatedEntityForReplacement(oldValue, updatedEntity);
 
-                            if (chemicalDefinitionChange) {
+                            if (useReplacementUpdate) {
                                 Substance newValue = (Substance) nWrap.getValue();
                                 oldValue = applyReplacementToManagedEntity(oldValue, newValue);
                                 oldValue = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldValue, true));
@@ -1381,6 +1411,51 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    private void regenerateMoietiesForRootMolfileChange(Substance persisted, Substance updated) {
+        if (!hasRootMolfileChange(persisted, updated)
+                || !(updated instanceof ChemicalSubstance updatedChemical)
+                || updatedChemical.getStructure() == null) {
+            return;
+        }
+        String rootMolfile = updatedChemical.getStructure().molfile;
+        if (rootMolfile == null) {
+            updatedChemical.setMoieties(new ArrayList<>());
+            return;
+        }
+
+        List<Structure> moietyStructures = new ArrayList<>();
+        structureProcessor.instrument(rootMolfile, moietyStructures, true);
+        List<Moiety> regeneratedMoieties = new ArrayList<>(moietyStructures.size());
+        for (Structure moietyStructure : moietyStructures) {
+            Moiety moiety = new Moiety();
+            moiety.structure = new GinasChemicalStructure(moietyStructure);
+            moiety.setCount(moietyStructure.count);
+            regeneratedMoieties.add(moiety);
+        }
+        preserveRootMolfileForSingleMoiety(rootMolfile, regeneratedMoieties);
+        updatedChemical.setMoieties(regeneratedMoieties);
+    }
+
+    private boolean hasRootMolfileChange(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)
+                || persistedChemical.getStructure() == null
+                || updatedChemical.getStructure() == null) {
+            return false;
+        }
+        return !Objects.equals(persistedChemical.getStructure().molfile, updatedChemical.getStructure().molfile);
+    }
+
+    private void preserveRootMolfileForSingleMoiety(String rootMolfile, List<Moiety> moieties) {
+        if (rootMolfile == null || moieties == null || moieties.size() != 1) {
+            return;
+        }
+        Moiety moiety = moieties.get(0);
+        if (moiety != null && moiety.structure != null) {
+            moiety.structure.molfile = rootMolfile;
+        }
     }
 
 	@Override
