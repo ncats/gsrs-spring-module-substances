@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import gov.nih.ncats.molwitch.Atom;
+import gov.nih.ncats.molwitch.AtomCoordinates;
+import gov.nih.ncats.molwitch.Chemical;
 import gsrs.service.GsrsEntityService;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Keyword;
@@ -33,6 +36,10 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
 
     private static final String ORIGINAL_MOIETY_COORDINATE = "   12.3760   -7.9040    0.0000 C";
     private static final String EDITED_MOIETY_COORDINATE = "   12.8760   -7.9040    0.0000 C";
+    private static final double ORIGINAL_MOIETY_COORDINATE_X = 12.3760;
+    private static final double EDITED_MOIETY_COORDINATE_X = 12.8760;
+    private static final double EDITED_MOIETY_COORDINATE_Y = -7.9040;
+    private static final double COORDINATE_TOLERANCE = 0.0005;
 
     private final ObjectMapper mapper = new ObjectMapper();
 
@@ -332,16 +339,39 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                 () -> "original atom coordinates were retained:\n" + molfile);
     }
 
-    private void assertMoietiesUpdated(String originalMoietyMolfiles, ChemicalSubstance substance) {
+    private void assertMoietiesUpdated(String originalMoietyMolfiles, ChemicalSubstance substance) throws Exception {
         String updatedMoietyMolfiles = normalizeMoietyMolfiles(substance);
         assertFalse(updatedMoietyMolfiles.isBlank(),
                 () -> "expected generated moiety molfiles for " + substance.uuid);
-        assertTrue(updatedMoietyMolfiles.contains(EDITED_MOIETY_COORDINATE),
+        assertTrue(moietiesContainAtomAt(substance, EDITED_MOIETY_COORDINATE_X, EDITED_MOIETY_COORDINATE_Y),
                 () -> "edited atom coordinate was not present in regenerated moieties:\n" + updatedMoietyMolfiles);
-        assertFalse(updatedMoietyMolfiles.contains(ORIGINAL_MOIETY_COORDINATE),
+        assertFalse(moietiesContainAtomAt(substance, ORIGINAL_MOIETY_COORDINATE_X, EDITED_MOIETY_COORDINATE_Y),
                 () -> "original atom coordinate was retained in regenerated moieties:\n" + updatedMoietyMolfiles);
         assertNotEquals(originalMoietyMolfiles, updatedMoietyMolfiles,
                 () -> "moiety molfiles were not regenerated after root structure coordinate edit");
+    }
+
+    private boolean moietiesContainAtomAt(ChemicalSubstance substance, double x, double y) throws Exception {
+        if (substance.getMoieties() == null) {
+            return false;
+        }
+        for (Moiety moiety : substance.getMoieties()) {
+            if (moiety == null || moiety.structure == null || moiety.structure.molfile == null) {
+                continue;
+            }
+            Chemical chemical = Chemical.parseMol(moiety.structure.molfile);
+            if (chemical.atoms().anyMatch(atom -> atomIsAt(atom, x, y))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean atomIsAt(Atom atom, double x, double y) {
+        AtomCoordinates coordinates = atom.getAtomCoordinates();
+        return coordinates != null
+                && Math.abs(coordinates.getX() - x) <= COORDINATE_TOLERANCE
+                && Math.abs(coordinates.getY() - y) <= COORDINATE_TOLERANCE;
     }
 
     private String normalizeMoietyMolfiles(ChemicalSubstance substance) {
