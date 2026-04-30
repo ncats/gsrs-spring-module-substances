@@ -1242,11 +1242,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         boolean rootMolfileChange = hasRootMolfileChange(oldEntity, updatedEntity);
                         regenerateMoietiesForRootMolfileChange(oldEntity, updatedEntity);
 
-                        boolean usePojoPatch = false;
-                        //only use POJO patch if the entities are the same type
-                        if (oWrap.getEntityClass().equals(nWrap.getEntityClass())) {
-                            usePojoPatch = true;
-                        }
+                        // Only use POJO patch if the entities are the same substance type.
+                        boolean sameSubstanceClass = Objects.equals(oldEntity.substanceClass, updatedEntity.substanceClass);
+                        boolean usePojoPatch = sameSubstanceClass;
                         boolean chemicalDefinitionChange = hasChemicalDefinitionChange(oldEntity, updatedEntity);
                         boolean useReplacementUpdate = chemicalDefinitionChange || rootMolfileChange;
                         if (usePojoPatch && useReplacementUpdate) {
@@ -1366,10 +1364,15 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             // if we clear here, it will cause issues for
                             // some detached entities later, but not clearing causes other issues
 
-                                entityManager.clear();
+                            entityManager.clear();
 
-                        Substance newValue = (Substance)nWrap.getValue();
-                            newValue = entityManager.merge(newValue);
+                            Substance newValue = (Substance)nWrap.getValue();
+                            if (!sameSubstanceClass) {
+                                resetTypeSpecificGraphIdsForTypeChange(newValue);
+                                entityManager.persist(newValue);
+                            } else {
+                                newValue = entityManager.merge(newValue);
+                            }
                             entityManager.flush();
 
 
@@ -1411,6 +1414,30 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 throw new UncheckedIOException(e);
             }
         });
+    }
+
+    private void resetTypeSpecificGraphIdsForTypeChange(Substance replacement) {
+        if (replacement instanceof ChemicalSubstance chemicalSubstance) {
+            resetChemicalGraphIds(chemicalSubstance);
+        }
+        if (replacement instanceof MixtureSubstance mixtureSubstance) {
+            resetMixtureGraphIds(mixtureSubstance.mixture);
+        }
+        if (replacement instanceof ProteinSubstance proteinSubstance) {
+            resetProteinGraphIds(proteinSubstance.protein);
+        }
+        if (replacement instanceof PolymerSubstance polymerSubstance) {
+            resetPolymerGraphIds(polymerSubstance.polymer);
+        }
+        if (replacement instanceof StructurallyDiverseSubstance structurallyDiverseSubstance) {
+            resetStructurallyDiverseGraphIds(structurallyDiverseSubstance.structurallyDiverse);
+        }
+        if (replacement instanceof SpecifiedSubstanceGroup1Substance specifiedSubstanceGroup1Substance) {
+            resetSpecifiedSubstanceGraphIds(specifiedSubstanceGroup1Substance.specifiedSubstance);
+        }
+        if (replacement instanceof NucleicAcidSubstance nucleicAcidSubstance) {
+            resetNucleicAcidGraphIds(nucleicAcidSubstance.nucleicAcid);
+        }
     }
 
     private void regenerateMoietiesForRootMolfileChange(Substance persisted, Substance updated) {

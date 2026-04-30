@@ -1,6 +1,7 @@
 package example.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.junit.json.JsonUtil;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.substances.tests.SubstanceJsonUtil;
@@ -20,6 +21,8 @@ import static org.junit.Assert.assertTrue;
 @Transactional
 public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
 
+
+     private static final ObjectMapper MAPPER = new ObjectMapper();
 
      File resource;
 
@@ -93,4 +96,38 @@ public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
             
 
    	}
+
+    @Test
+    public void changeChemicalToProteinWithRetainedChemicalPayloadTest() throws Exception {
+        JsonNode createdChemical = assertCreated(
+                SubstanceTestUtil.makeChemicalSubstance("CC").toFullJsonNode())
+                .toFullJsonNode();
+
+        JsonNode protein = MAPPER.readTree("""
+                {
+                  "proteinType": "",
+                  "references": [],
+                  "subunits": [
+                    {
+                      "references": [],
+                      "access": [],
+                      "sequence": "AC",
+                      "subunitIndex": 1
+                    }
+                  ],
+                  "otherLinks": [],
+                  "disulfideLinks": [],
+                  "glycosylation": {}
+                }
+                """);
+
+        JsonNode update = new JsonUtil.JsonNodeBuilder(createdChemical)
+                .set("/substanceClass", "protein")
+                .add("/protein", protein)
+                .build();
+
+        JsonNode updatedProtein = assertUpdated(update).toFullJsonNode();
+        assertEquals("protein", updatedProtein.at("/substanceClass").asText());
+        assertEquals("AC", updatedProtein.at("/protein/subunits/0/sequence").asText());
+    }
 }
