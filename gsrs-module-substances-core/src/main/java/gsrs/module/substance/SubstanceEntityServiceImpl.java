@@ -2,6 +2,8 @@ package gsrs.module.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelpers;
@@ -13,15 +15,21 @@ import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.service.AbstractGsrsEntityService;
+import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
+import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
 import ix.core.models.ForceUpdatableModel;
 import ix.core.util.EntityUtils;
 import ix.core.util.LogUtil;
 import ix.core.validator.*;
 import ix.ginas.models.v1.Linkage;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.GinasCommonData;
+import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Component;
+import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Glycosylation;
 import ix.ginas.models.v1.Material;
@@ -30,12 +38,18 @@ import ix.ginas.models.v1.Mixture;
 import ix.ginas.models.v1.MixtureSubstance;
 import ix.ginas.models.v1.NucleicAcid;
 import ix.ginas.models.v1.NucleicAcidSubstance;
+import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.OtherLinks;
 import ix.ginas.models.v1.Polymer;
 import ix.ginas.models.v1.PolymerClassification;
 import ix.ginas.models.v1.PolymerSubstance;
+import ix.ginas.models.v1.Parameter;
+import ix.ginas.models.v1.Property;
 import ix.ginas.models.v1.Protein;
 import ix.ginas.models.v1.ProteinSubstance;
+import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.SpecifiedSubstanceComponent;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
@@ -47,6 +61,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.models.v1.Unit;
 import ix.ginas.utils.JsonSubstanceFactory;
+import ix.ginas.utils.validation.ValidatorFactory;
 import ix.ginas.utils.validation.strategy.BatchProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
@@ -75,6 +90,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substance, UUID> implements SubstanceEntityService {
     public static final String  CONTEXT = "substances";
+    private static final Set<String> SERVER_MANAGED_AUDIT_FIELDS = Set.of(
+            "created",
+            "createdBy",
+            "lastEdited",
+            "lastEditedBy",
+            "approved",
+            "approvedBy"
+    );
 
 
     public SubstanceEntityServiceImpl() {
@@ -88,6 +111,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private ObjectMapper objectMapper;
 
     @Autowired
+    private StructureProcessor structureProcessor;
+
+    @Autowired
     private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
 
     @Autowired
@@ -98,6 +124,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+
+    @Autowired
+    private GsrsValidatorFactory validatorFactoryService;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -204,8 +233,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected Substance fromUpdatedJson(JsonNode json) throws IOException {
-        //TODO should we make any edits to remove fields?
-        return JsonSubstanceFactory.makeSubstance(json);
+        return JsonSubstanceFactory.makeSubstance(scrubChemicalPayloadForUpdate(json));
     }
 
 
@@ -397,6 +425,634 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         structure.version = null;
     }
 
+    private JsonNode scrubChemicalPayloadForUpdate(JsonNode json) {
+        if (!(json instanceof ObjectNode root)) {
+            return json;
+        }
+        ObjectNode copy = root.deepCopy();
+        scrubServerManagedAuditFields(copy);
+        JsonNode substanceClassNode = root.get("substanceClass");
+        if (substanceClassNode == null || !"chemical".equalsIgnoreCase(substanceClassNode.asText())) {
+            return copy;
+        }
+        scrubChemicalStructureNode((ObjectNode) copy.get("structure"), true);
+
+        ArrayNode moieties = (ArrayNode) copy.get("moieties");
+        if (moieties != null) {
+            for (JsonNode moietyNode : moieties) {
+                if (moietyNode instanceof ObjectNode moietyObject) {
+                    scrubChemicalStructureNode(moietyObject, true);
+                }
+            }
+        }
+        return copy;
+    }
+
+    private void scrubServerManagedAuditFields(JsonNode node) {
+        if (node instanceof ObjectNode objectNode) {
+            SERVER_MANAGED_AUDIT_FIELDS.forEach(objectNode::remove);
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            while (fields.hasNext()) {
+                scrubServerManagedAuditFields(fields.next().getValue());
+            }
+            return;
+        }
+        if (node instanceof ArrayNode arrayNode) {
+            for (JsonNode child : arrayNode) {
+                scrubServerManagedAuditFields(child);
+            }
+        }
+    }
+
+    private void scrubChemicalStructureNode(ObjectNode structureNode, boolean preserveStructureId) {
+        if (structureNode == null) {
+            return;
+        }
+        structureNode.remove("properties");
+        structureNode.remove("links");
+        structureNode.remove("hash");
+        structureNode.remove("_inchi");
+        structureNode.remove("_inchiKey");
+        if (!preserveStructureId) {
+            structureNode.remove("id");
+        }
+    }
+
+    private void normalizeUpdatedEntityForDiff(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)) {
+            return;
+        }
+        normalizeUpdatedChemicalForDiff(persistedChemical, updatedChemical);
+    }
+
+    private void normalizeUpdatedChemicalForDiff(ChemicalSubstance persisted, ChemicalSubstance updated) {
+        if (persisted == null || updated == null) {
+            return;
+        }
+        if (sameChemicalStructureForDiff(persisted.getStructure(), updated.getStructure())) {
+            if (sameChemicalStructureStoredFieldsForDiff(persisted.getStructure(), updated.getStructure())) {
+                updated.setStructure(persisted.getStructure());
+            } else {
+                reusePersistedStructureComputedPropertiesForDiff(persisted.getStructure(), updated.getStructure());
+                reusePersistedStructureIdentityForDiff(persisted.getStructure(), updated.getStructure());
+            }
+        } else if (persisted.getStructure() != null && updated.getStructure() != null) {
+            reusePersistedStructureIdentityForDiff(persisted.getStructure(), updated.getStructure());
+        }
+
+        List<Moiety> remainingPersistedMoieties = persisted.getMoieties() == null
+                ? new ArrayList<>()
+                : new ArrayList<>(persisted.getMoieties());
+        if (updated.getMoieties() == null) {
+            return;
+        }
+        for (int i = 0; i < updated.getMoieties().size(); i++) {
+            Moiety updatedMoiety = updated.getMoieties().get(i);
+            Moiety matchedPersistedMoiety = findMatchingMoiety(remainingPersistedMoieties, updatedMoiety);
+            if (matchedPersistedMoiety == null) {
+                continue;
+            }
+            remainingPersistedMoieties.remove(matchedPersistedMoiety);
+            if (sameMoietyStoredFieldsForDiff(matchedPersistedMoiety, updatedMoiety)) {
+                updated.getMoieties().set(i, matchedPersistedMoiety);
+            } else {
+                reusePersistedMoietyIdentityForDiff(matchedPersistedMoiety, updatedMoiety);
+                updated.getMoieties().set(i, updatedMoiety);
+            }
+        }
+    }
+
+    private void reusePersistedMoietyIdentityForDiff(Moiety persisted, Moiety updated) {
+        if (persisted == null || updated == null) {
+            return;
+        }
+        updated.uuid = persisted.uuid;
+        updated.innerUuid = persisted.innerUuid;
+        reusePersistedStructureComputedPropertiesForDiff(persisted.structure, updated.structure);
+        reusePersistedStructureIdentityForDiff(persisted.structure, updated.structure);
+        if (sameAmountForDiff(persisted.getCountAmount(), updated.getCountAmount())) {
+            updated.setCountAmount(persisted.getCountAmount());
+        }
+    }
+
+    private void reusePersistedStructureIdentityForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted != null && updated != null) {
+            updated.id = persisted.id;
+            updated.version = persisted.version;
+        }
+    }
+
+    private void reusePersistedStructureComputedPropertiesForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted != null && updated != null) {
+            updated.properties = persisted.properties;
+        }
+    }
+
+    private boolean sameChemicalStructureStoredFieldsForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        return Objects.equals(persisted.molfile, updated.molfile)
+                && Objects.equals(persisted.smiles, updated.smiles)
+                && Objects.equals(persisted.formula, updated.formula)
+                && Objects.equals(persisted.digest, updated.digest)
+                && Objects.equals(persisted.stereoChemistry, updated.stereoChemistry)
+                && Objects.equals(persisted.opticalActivity, updated.opticalActivity)
+                && Objects.equals(persisted.atropisomerism, updated.atropisomerism)
+                && Objects.equals(persisted.stereoComments, updated.stereoComments)
+                && Objects.equals(persisted.stereoCenters, updated.stereoCenters)
+                && Objects.equals(persisted.definedStereo, updated.definedStereo)
+                && Objects.equals(persisted.ezCenters, updated.ezCenters)
+                && Objects.equals(persisted.charge, updated.charge)
+                && Objects.equals(persisted.count, updated.count)
+                && Objects.equals(persisted.mwt, updated.mwt)
+                && Objects.equals(persisted.deprecated, updated.deprecated);
+    }
+
+    private boolean sameMoietyStoredFieldsForDiff(Moiety persisted, Moiety updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        return sameChemicalStructureStoredFieldsForDiff(persisted.structure, updated.structure)
+                && sameAmountForDiff(persisted.getCountAmount(), updated.getCountAmount());
+    }
+
+    private Moiety findMatchingMoiety(List<Moiety> persistedMoieties, Moiety updatedMoiety) {
+        for (Moiety persistedMoiety : persistedMoieties) {
+            if (sameMoietyForDiff(persistedMoiety, updatedMoiety)) {
+                return persistedMoiety;
+            }
+        }
+        return null;
+    }
+
+    private boolean sameMoietyForDiff(Moiety persisted, Moiety updated) {
+        if (persisted == null || updated == null) {
+            return false;
+        }
+        return sameChemicalStructureForDiff(persisted.structure, updated.structure)
+                && sameAmountForDiff(persisted.getCountAmount(), updated.getCountAmount());
+    }
+
+    private boolean sameChemicalStructureForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        String persistedExactHash = getExactHashForDiff(persisted);
+        String updatedExactHash = getExactHashForDiff(updated);
+        if (persistedExactHash != null && updatedExactHash != null) {
+            return Objects.equals(persistedExactHash, updatedExactHash)
+                    && Objects.equals(persisted.count, updated.count);
+        }
+        return Objects.equals(persisted.formula, updated.formula)
+                && Objects.equals(persisted.opticalActivity, updated.opticalActivity)
+                && Objects.equals(persisted.atropisomerism, updated.atropisomerism)
+                && Objects.equals(persisted.stereoCenters, updated.stereoCenters)
+                && Objects.equals(persisted.definedStereo, updated.definedStereo)
+                && Objects.equals(persisted.ezCenters, updated.ezCenters)
+                && Objects.equals(persisted.charge, updated.charge)
+                && Objects.equals(persisted.count, updated.count)
+                && Objects.equals(persisted.stereoChemistry, updated.stereoChemistry);
+    }
+
+    private String getExactHashForDiff(GinasChemicalStructure structure) {
+        if (structure == null) {
+            return null;
+        }
+        String exactHash = structure.getExactHash();
+        if (exactHash != null && !exactHash.isBlank()) {
+            return exactHash;
+        }
+        String structureText = firstNonBlank(structure.molfile, structure.smiles);
+        if (structureText == null) {
+            return null;
+        }
+        try {
+            Structure instrumented = structureProcessor.instrument(structureText);
+            return instrumented.getExactHash();
+        } catch (RuntimeException e) {
+            log.debug("Unable to compute exact hash for diff matching", e);
+            return null;
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private boolean hasChemicalDefinitionChange(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)) {
+            return false;
+        }
+        return !sameChemicalStructureForDiff(persistedChemical.getStructure(), updatedChemical.getStructure())
+                || !sameMoietyCollectionForDiff(persistedChemical.getMoieties(), updatedChemical.getMoieties());
+    }
+
+    private boolean sameMoietyCollectionForDiff(List<Moiety> persistedMoieties, List<Moiety> updatedMoieties) {
+        if (persistedMoieties == null || persistedMoieties.isEmpty()) {
+            return updatedMoieties == null || updatedMoieties.isEmpty();
+        }
+        if (updatedMoieties == null || updatedMoieties.isEmpty()) {
+            return false;
+        }
+        if (persistedMoieties.size() != updatedMoieties.size()) {
+            return false;
+        }
+        List<Moiety> remainingPersistedMoieties = new ArrayList<>(persistedMoieties);
+        for (Moiety updatedMoiety : updatedMoieties) {
+            Moiety matchedPersistedMoiety = findMatchingMoiety(remainingPersistedMoieties, updatedMoiety);
+            if (matchedPersistedMoiety == null) {
+                return false;
+            }
+            remainingPersistedMoieties.remove(matchedPersistedMoiety);
+        }
+        return remainingPersistedMoieties.isEmpty();
+    }
+
+    private void normalizeUpdatedEntityForReplacement(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)) {
+            return;
+        }
+        if (persistedChemical.getStructure() != null && updatedChemical.getStructure() != null) {
+            updatedChemical.getStructure().id = persistedChemical.getStructure().id;
+            updatedChemical.getStructure().version = persistedChemical.getStructure().version;
+        }
+        if (updatedChemical.getMoieties() == null) {
+            return;
+        }
+        for (Moiety moiety : updatedChemical.getMoieties()) {
+            if (moiety == null) {
+                continue;
+            }
+            moiety.uuid = null;
+            moiety.innerUuid = null;
+            if (moiety.structure != null) {
+                moiety.structure.id = null;
+                moiety.structure.version = null;
+            }
+            if (moiety.getCountAmount() != null) {
+                moiety.getCountAmount().uuid = null;
+            }
+        }
+    }
+
+    private Substance applyReplacementToManagedEntity(Substance managed, Substance updated) throws IOException {
+        EntityManager entityManager = getEntityManager();
+        GinasChemicalStructure existingStructure = managed instanceof ChemicalSubstance chemicalManaged
+                ? chemicalManaged.getStructure()
+                : null;
+        List<Moiety> existingMoieties = managed instanceof ChemicalSubstance chemicalManaged
+                ? chemicalManaged.getMoieties()
+                : null;
+        List<Moiety> replacementMoieties = updated instanceof ChemicalSubstance updatedChemical
+                ? (updatedChemical.getMoieties() == null ? null : new ArrayList<>(updatedChemical.getMoieties()))
+                : null;
+        Map<UUID, Name> existingNames = mapByUuid(managed.names);
+        Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
+        Map<UUID, Note> existingNotes = mapByUuid(managed.notes);
+        Map<UUID, Property> existingProperties = mapByUuid(managed.properties);
+        Map<UUID, Parameter> existingParameters = mapByUuid(flattenParameters(managed.properties));
+        Map<UUID, Relationship> existingRelationships = mapByUuid(managed.relationships);
+        Map<UUID, Reference> existingReferences = mapByUuid(managed.references);
+        Map<UUID, Amount> existingRelationshipAmounts = mapRelationshipAmounts(managed.relationships);
+        Map<UUID, Amount> existingMoietyAmounts = mapMoietyAmounts(existingMoieties);
+        Map<UUID, Amount> existingPropertyAmounts = mapPropertyAmounts(managed.properties);
+        Map<UUID, Amount> existingParameterAmounts = mapParameterAmounts(managed.properties);
+        Map<UUID, SubstanceReference> existingRelationshipReferences = mapRelationshipSubstanceReferences(managed.relationships);
+        Map<UUID, SubstanceReference> existingPropertyReferences = mapPropertySubstanceReferences(managed.properties);
+        Map<UUID, SubstanceReference> existingParameterReferences = mapParameterSubstanceReferences(managed.properties);
+        JsonNode updatedJson = objectMapper.valueToTree(updated);
+        if (updatedJson instanceof ObjectNode updatedObject
+                && updated instanceof ChemicalSubstance
+                && replacementMoieties != null) {
+            updatedObject.remove("moieties");
+        }
+        Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
+        if (replaced instanceof ChemicalSubstance replacedChemical && existingStructure != null) {
+            GinasChemicalStructure updatedStructure = replacedChemical.getStructure();
+            if (updatedStructure != null && updatedStructure != existingStructure
+                    && Objects.equals(updatedStructure.id, existingStructure.id)) {
+                JsonNode updatedStructureJson = objectMapper.valueToTree(updatedStructure);
+                objectMapper.readerForUpdating(existingStructure).readValue(updatedStructureJson);
+                existingStructure.version = updatedStructure.version != null
+                        ? updatedStructure.version
+                        : existingStructure.version;
+                replacedChemical.setStructure(existingStructure);
+            }
+        }
+        if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
+            if (existingMoieties != null) {
+                for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
+                    existingMoiety.setOwner(null);
+                    entityManager.remove(entityManager.contains(existingMoiety)
+                            ? existingMoiety
+                            : entityManager.merge(existingMoiety));
+                }
+            }
+            replacedChemical.setMoieties(replacementMoieties);
+        }
+        replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
+        replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
+        replaced.notes = reconcileManagedChildren(replaced.notes, existingNotes, child -> child.setOwner(replaced));
+        replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
+        replaced.relationships = reconcileManagedChildren(replaced.relationships, existingRelationships, child -> child.assignOwner(replaced));
+        replaced.references = reconcileManagedChildren(replaced.references, existingReferences, child -> child.setOwner(replaced));
+        reconcileNestedPropertyData(replaced.properties, existingParameters, existingPropertyAmounts, existingParameterAmounts,
+                existingPropertyReferences, existingParameterReferences);
+        reconcileNestedRelationshipData(replaced.relationships, existingRelationshipAmounts, existingRelationshipReferences);
+        if (replaced instanceof ChemicalSubstance replacedChemical) {
+            reconcileNestedMoietyAmounts(replacedChemical.getMoieties(), existingMoietyAmounts);
+        }
+        return replaced;
+    }
+
+    private <T extends GinasCommonData> Map<UUID, T> mapByUuid(List<T> values) {
+        Map<UUID, T> mapped = new LinkedHashMap<>();
+        if (values == null) {
+            return mapped;
+        }
+        for (T value : values) {
+            if (value != null && value.getUuid() != null) {
+                mapped.put(value.getUuid(), value);
+            }
+        }
+        return mapped;
+    }
+
+    private <T extends GinasCommonData> List<T> reconcileManagedChildren(List<T> updatedValues,
+                                                                         Map<UUID, T> existingByUuid,
+                                                                         java.util.function.Consumer<T> ownerSetter) throws IOException {
+        if (updatedValues == null) {
+            return null;
+        }
+        List<T> reconciled = new ArrayList<>(updatedValues.size());
+        for (T updatedValue : updatedValues) {
+            if (updatedValue == null) {
+                continue;
+            }
+            T managedValue = updatedValue.getUuid() == null ? null : existingByUuid.get(updatedValue.getUuid());
+            if (managedValue != null && managedValue != updatedValue) {
+                JsonNode updatedJson = objectMapper.valueToTree(updatedValue);
+                objectMapper.readerForUpdating(managedValue).readValue(updatedJson);
+                ownerSetter.accept(managedValue);
+                reconciled.add(managedValue);
+            } else {
+                ownerSetter.accept(updatedValue);
+                reconciled.add(updatedValue);
+            }
+        }
+        return reconciled;
+    }
+
+    private List<Parameter> flattenParameters(List<Property> properties) {
+        List<Parameter> parameters = new ArrayList<>();
+        if (properties == null) {
+            return parameters;
+        }
+        for (Property property : properties) {
+            if (property != null && property.getParameters() != null) {
+                parameters.addAll(property.getParameters());
+            }
+        }
+        return parameters;
+    }
+
+    private Map<UUID, Amount> mapRelationshipAmounts(List<Relationship> relationships) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (relationships == null) {
+            return amounts;
+        }
+        for (Relationship relationship : relationships) {
+            if (relationship != null && relationship.amount != null && relationship.amount.getUuid() != null) {
+                amounts.put(relationship.amount.getUuid(), relationship.amount);
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapMoietyAmounts(List<Moiety> moieties) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (moieties == null) {
+            return amounts;
+        }
+        for (Moiety moiety : moieties) {
+            if (moiety != null && moiety.getCountAmount() != null && moiety.getCountAmount().getUuid() != null) {
+                amounts.put(moiety.getCountAmount().getUuid(), moiety.getCountAmount());
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapPropertyAmounts(List<Property> properties) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (properties == null) {
+            return amounts;
+        }
+        for (Property property : properties) {
+            if (property != null && property.getValue() != null && property.getValue().getUuid() != null) {
+                amounts.put(property.getValue().getUuid(), property.getValue());
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapParameterAmounts(List<Property> properties) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (properties == null) {
+            return amounts;
+        }
+        for (Property property : properties) {
+            if (property == null || property.getParameters() == null) {
+                continue;
+            }
+            for (Parameter parameter : property.getParameters()) {
+                if (parameter != null && parameter.getValue() != null && parameter.getValue().getUuid() != null) {
+                    amounts.put(parameter.getValue().getUuid(), parameter.getValue());
+                }
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, SubstanceReference> mapRelationshipSubstanceReferences(List<Relationship> relationships) {
+        Map<UUID, SubstanceReference> references = new LinkedHashMap<>();
+        if (relationships == null) {
+            return references;
+        }
+        for (Relationship relationship : relationships) {
+            if (relationship == null) {
+                continue;
+            }
+            if (relationship.relatedSubstance != null && relationship.relatedSubstance.getUuid() != null) {
+                references.put(relationship.relatedSubstance.getUuid(), relationship.relatedSubstance);
+            }
+            if (relationship.mediatorSubstance != null && relationship.mediatorSubstance.getUuid() != null) {
+                references.put(relationship.mediatorSubstance.getUuid(), relationship.mediatorSubstance);
+            }
+        }
+        return references;
+    }
+
+    private Map<UUID, SubstanceReference> mapPropertySubstanceReferences(List<Property> properties) {
+        Map<UUID, SubstanceReference> references = new LinkedHashMap<>();
+        if (properties == null) {
+            return references;
+        }
+        for (Property property : properties) {
+            if (property != null && property.getReferencedSubstance() != null
+                    && property.getReferencedSubstance().getUuid() != null) {
+                references.put(property.getReferencedSubstance().getUuid(), property.getReferencedSubstance());
+            }
+        }
+        return references;
+    }
+
+    private Map<UUID, SubstanceReference> mapParameterSubstanceReferences(List<Property> properties) {
+        Map<UUID, SubstanceReference> references = new LinkedHashMap<>();
+        if (properties == null) {
+            return references;
+        }
+        for (Property property : properties) {
+            if (property == null || property.getParameters() == null) {
+                continue;
+            }
+            for (Parameter parameter : property.getParameters()) {
+                if (parameter != null && parameter.referencedSubstance != null
+                        && parameter.referencedSubstance.getUuid() != null) {
+                    references.put(parameter.referencedSubstance.getUuid(), parameter.referencedSubstance);
+                }
+            }
+        }
+        return references;
+    }
+
+    private void reconcileNestedRelationshipData(List<Relationship> relationships,
+                                                 Map<UUID, Amount> existingAmounts,
+                                                 Map<UUID, SubstanceReference> existingReferences) {
+        if (relationships == null) {
+            return;
+        }
+        for (Relationship relationship : relationships) {
+            if (relationship == null) {
+                continue;
+            }
+            if (relationship.amount != null && relationship.amount.getUuid() != null) {
+                Amount existingAmount = existingAmounts.get(relationship.amount.getUuid());
+                if (existingAmount != null) {
+                    relationship.amount = existingAmount;
+                }
+            }
+            if (relationship.relatedSubstance != null && relationship.relatedSubstance.getUuid() != null) {
+                SubstanceReference existingReference = existingReferences.get(relationship.relatedSubstance.getUuid());
+                if (existingReference != null) {
+                    relationship.relatedSubstance = existingReference;
+                }
+            }
+            if (relationship.mediatorSubstance != null && relationship.mediatorSubstance.getUuid() != null) {
+                SubstanceReference existingReference = existingReferences.get(relationship.mediatorSubstance.getUuid());
+                if (existingReference != null) {
+                    relationship.mediatorSubstance = existingReference;
+                }
+            }
+        }
+    }
+
+    private void reconcileNestedPropertyData(List<Property> properties,
+                                             Map<UUID, Parameter> existingParameters,
+                                             Map<UUID, Amount> existingPropertyAmounts,
+                                             Map<UUID, Amount> existingParameterAmounts,
+                                             Map<UUID, SubstanceReference> existingPropertyReferences,
+                                             Map<UUID, SubstanceReference> existingParameterReferences) throws IOException {
+        if (properties == null) {
+            return;
+        }
+        for (Property property : properties) {
+            if (property == null) {
+                continue;
+            }
+            if (property.getValue() != null && property.getValue().getUuid() != null) {
+                Amount existingValue = existingPropertyAmounts.get(property.getValue().getUuid());
+                if (existingValue != null) {
+                    property.setValue(existingValue);
+                }
+            }
+            if (property.getReferencedSubstance() != null && property.getReferencedSubstance().getUuid() != null) {
+                SubstanceReference existingReference = existingPropertyReferences.get(property.getReferencedSubstance().getUuid());
+                if (existingReference != null) {
+                    property.setReferencedSubstance(existingReference);
+                }
+            }
+            List<Parameter> reconciledParameters = reconcileManagedChildren(property.getParameters(),
+                    existingParameters,
+                    child -> {
+                    });
+            if (reconciledParameters != null) {
+                for (Parameter parameter : reconciledParameters) {
+                    if (parameter == null || parameter.getUuid() == null || parameter.getValue() == null
+                            || parameter.getValue().getUuid() == null) {
+                        if (parameter != null && parameter.referencedSubstance != null
+                                && parameter.referencedSubstance.getUuid() != null) {
+                            SubstanceReference existingReference = existingParameterReferences.get(parameter.referencedSubstance.getUuid());
+                            if (existingReference != null) {
+                                parameter.referencedSubstance = existingReference;
+                            }
+                        }
+                        continue;
+                    }
+                    Amount existingValue = existingParameterAmounts.get(parameter.getValue().getUuid());
+                    if (existingValue != null) {
+                        parameter.setValue(existingValue);
+                    }
+                    if (parameter.referencedSubstance != null && parameter.referencedSubstance.getUuid() != null) {
+                        SubstanceReference existingReference = existingParameterReferences.get(parameter.referencedSubstance.getUuid());
+                        if (existingReference != null) {
+                            parameter.referencedSubstance = existingReference;
+                        }
+                    }
+                }
+            }
+            property.setParameters(reconciledParameters);
+        }
+    }
+
+    private void reconcileNestedMoietyAmounts(List<Moiety> moieties, Map<UUID, Amount> existingAmounts) {
+        if (moieties == null) {
+            return;
+        }
+        for (Moiety moiety : moieties) {
+            if (moiety == null || moiety.getCountAmount() == null || moiety.getCountAmount().getUuid() == null) {
+                continue;
+            }
+            Amount existingAmount = existingAmounts.get(moiety.getCountAmount().getUuid());
+            if (existingAmount != null) {
+                moiety.setCountAmount(existingAmount);
+            }
+        }
+    }
+
+    private boolean sameAmountForDiff(ix.ginas.models.v1.Amount persisted, ix.ginas.models.v1.Amount updated) {
+        if (persisted == null || updated == null) {
+            return persisted == updated;
+        }
+        return Objects.equals(persisted.type, updated.type)
+                && Objects.equals(persisted.average, updated.average)
+                && Objects.equals(persisted.highLimit, updated.highLimit)
+                && Objects.equals(persisted.high, updated.high)
+                && Objects.equals(persisted.lowLimit, updated.lowLimit)
+                && Objects.equals(persisted.low, updated.low)
+                && Objects.equals(persisted.units, updated.units)
+                && Objects.equals(persisted.nonNumericValue, updated.nonNumericValue)
+                && Objects.equals(persisted.approvalID, updated.approvalID);
+    }
+
     private void resetNucleicAcidGraphIds(NucleicAcid nucleicAcid) {
         if (nucleicAcid == null) {
             return;
@@ -512,30 +1168,90 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
-    public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
+    public UpdateResult<Substance> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception {
+        ValidationResponse<Substance> validationResponse = null;
+        if (!ignoreValidation) {
+            validationResponse = validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_ALL());
+            if (validationResponse != null && !validationResponse.isValid()) {
+                return UpdateResult.<Substance>builder()
+                        .status(UpdateResult.STATUS.ERROR)
+                        .validationResponse(validationResponse)
+                        .build();
+            }
+        }
+        return performUpdateEntity(updatedEntityJson, validationResponse);
+    }
 
+    @Override
+    public ValidationResponse<Substance> validateEntity(JsonNode updatedEntityJson,
+                                                        ValidatorCategory validatorCategory) throws Exception {
+        Substance newValue = fromUpdatedJson(updatedEntityJson);
+        normalizeChemicalStructuresForValidation(newValue);
+        Optional<Substance> oldValue = resolveExistingSubstanceForValidation(updatedEntityJson, newValue);
+        oldValue.ifPresent(this::normalizeChemicalStructuresForValidation);
+        ValidatorConfig.METHOD_TYPE methodType = oldValue.isPresent()
+                ? ValidatorConfig.METHOD_TYPE.UPDATE
+                : ValidatorConfig.METHOD_TYPE.CREATE;
+
+        ValidatorFactory validatorFactory = validatorFactoryService.newFactory(CONTEXT);
+        Validator<Substance> validator = validatorFactory.createValidatorFor(
+                newValue,
+                oldValue.orElse(null),
+                methodType,
+                validatorCategory);
+
+        ValidationResponse<Substance> response = createValidationResponse(
+                newValue,
+                oldValue.orElse(null),
+                methodType);
+        ValidatorCallback callback = createCallbackFor(newValue, response, methodType);
+        validator.validate(newValue, oldValue.orElse(null), callback);
+        callback.complete();
+        return response;
+    }
+
+    @Override
+    public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
+        return performUpdateEntity(updatedEntityJson, null);
+    }
+
+    private UpdateResult<Substance> performUpdateEntity(JsonNode updatedEntityJson,
+                                                        ValidationResponse<Substance> validationResponse) {
         TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
 
         return transactionTemplate.execute( status-> {
             try {
-                Substance updatedEntity = JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
+                Substance updatedEntity = validationResponse != null && validationResponse.getNewObject() != null
+                        ? JsonEntityUtil.fixOwners((Substance) validationResponse.getNewObject(), true)
+                        : JsonEntityUtil.fixOwners(fromUpdatedJson(updatedEntityJson), true);
                 EntityUtils.Key oKey = EntityUtils.EntityWrapper.of(updatedEntity).getKey();
                 EntityManager entityManager = oKey.getEntityManager();
 
                 UpdateResult.UpdateResultBuilder<Substance> builder = UpdateResult.<Substance>builder();
+                if (validationResponse != null) {
+                    builder.validationResponse(validationResponse);
+                }
                 EntityUtils.EntityWrapper<Substance> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
                         EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
                         String oldJson = og.toFullJson();
+                        builder.oldJson(oldJson);
 
                         EntityUtils.EntityWrapper<Substance> oWrap = EntityUtils.EntityWrapper.of(oldEntity);
                         EntityUtils.EntityWrapper<Substance> nWrap = EntityUtils.EntityWrapper.of(updatedEntity);
 
-                        boolean usePojoPatch = false;
-                        //only use POJO patch if the entities are the same type
-                        if (oWrap.getEntityClass().equals(nWrap.getEntityClass())) {
-                            usePojoPatch = true;
+                        boolean rootMolfileChange = hasRootMolfileChange(oldEntity, updatedEntity);
+                        regenerateMoietiesForRootMolfileChange(oldEntity, updatedEntity);
+
+                        // Only use POJO patch if the entities are the same substance type.
+                        boolean sameSubstanceClass = Objects.equals(oldEntity.substanceClass, updatedEntity.substanceClass);
+                        boolean usePojoPatch = sameSubstanceClass;
+                        boolean chemicalDefinitionChange = hasChemicalDefinitionChange(oldEntity, updatedEntity);
+                        boolean useReplacementUpdate = chemicalDefinitionChange || rootMolfileChange;
+                        if (usePojoPatch && useReplacementUpdate) {
+                            usePojoPatch = false;
                         }
                         if (usePojoPatch) {
+                            normalizeUpdatedEntityForDiff(oldEntity, updatedEntity);
                             PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
                             LogUtil.debug(() -> "changes = " + patch.getChanges());
                             final List<Object> removed = new ArrayList<Object>();
@@ -611,9 +1327,27 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 return Optional.empty();
                             }
                         } else {
-                            //NON POJOPATCH: delete and save for updates
+                            // NON POJOPATCH: for true chemical definition changes, merge the
+                            // updated graph directly so the root structure row is updated in
+                            // place. For the remaining cases, keep the legacy delete-and-save
+                            // behavior.
 
                             Substance oldValue = (Substance) oWrap.getValue();
+                            normalizeUpdatedEntityForReplacement(oldValue, updatedEntity);
+
+                            if (useReplacementUpdate) {
+                                Substance newValue = (Substance) nWrap.getValue();
+                                oldValue = applyReplacementToManagedEntity(oldValue, newValue);
+                                oldValue = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldValue, true));
+                                entityManager.flush();
+
+                                Substance saved = transactionalUpdate(oldValue, oldJson);
+                                builder.updatedEntity(saved);
+                                builder.status(UpdateResult.STATUS.UPDATED);
+
+                                return Optional.of(saved);
+                            }
+
                             entityManager.remove(oldValue);
 
                             // Now need to take care of bad update pieces:
@@ -630,10 +1364,15 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             // if we clear here, it will cause issues for
                             // some detached entities later, but not clearing causes other issues
 
-                                entityManager.clear();
+                            entityManager.clear();
 
-                        Substance newValue = (Substance)nWrap.getValue();
-                            entityManager.persist(newValue);
+                            Substance newValue = (Substance)nWrap.getValue();
+                            if (!sameSubstanceClass) {
+                                resetTypeSpecificGraphIdsForTypeChange(newValue);
+                                entityManager.persist(newValue);
+                            } else {
+                                newValue = entityManager.merge(newValue);
+                            }
                             entityManager.flush();
 
 
@@ -677,10 +1416,182 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         });
     }
 
+    private void resetTypeSpecificGraphIdsForTypeChange(Substance replacement) {
+        if (replacement instanceof ChemicalSubstance chemicalSubstance) {
+            resetChemicalGraphIds(chemicalSubstance);
+        }
+        if (replacement instanceof MixtureSubstance mixtureSubstance) {
+            resetMixtureGraphIds(mixtureSubstance.mixture);
+        }
+        if (replacement instanceof ProteinSubstance proteinSubstance) {
+            resetProteinGraphIds(proteinSubstance.protein);
+        }
+        if (replacement instanceof PolymerSubstance polymerSubstance) {
+            resetPolymerGraphIds(polymerSubstance.polymer);
+        }
+        if (replacement instanceof StructurallyDiverseSubstance structurallyDiverseSubstance) {
+            resetStructurallyDiverseGraphIds(structurallyDiverseSubstance.structurallyDiverse);
+        }
+        if (replacement instanceof SpecifiedSubstanceGroup1Substance specifiedSubstanceGroup1Substance) {
+            resetSpecifiedSubstanceGraphIds(specifiedSubstanceGroup1Substance.specifiedSubstance);
+        }
+        if (replacement instanceof NucleicAcidSubstance nucleicAcidSubstance) {
+            resetNucleicAcidGraphIds(nucleicAcidSubstance.nucleicAcid);
+        }
+    }
+
+    private void regenerateMoietiesForRootMolfileChange(Substance persisted, Substance updated) {
+        if (!hasRootMolfileChange(persisted, updated)
+                || !(updated instanceof ChemicalSubstance updatedChemical)
+                || updatedChemical.getStructure() == null) {
+            return;
+        }
+        String rootMolfile = updatedChemical.getStructure().molfile;
+        if (rootMolfile == null) {
+            updatedChemical.setMoieties(new ArrayList<>());
+            return;
+        }
+
+        List<Structure> moietyStructures = new ArrayList<>();
+        structureProcessor.instrument(rootMolfile, moietyStructures, true);
+        List<Moiety> regeneratedMoieties = new ArrayList<>(moietyStructures.size());
+        for (Structure moietyStructure : moietyStructures) {
+            Moiety moiety = new Moiety();
+            moiety.structure = new GinasChemicalStructure(moietyStructure);
+            moiety.setCount(moietyStructure.count);
+            regeneratedMoieties.add(moiety);
+        }
+        preserveRootMolfileForSingleMoiety(rootMolfile, regeneratedMoieties);
+        updatedChemical.setMoieties(regeneratedMoieties);
+    }
+
+    private boolean hasRootMolfileChange(Substance persisted, Substance updated) {
+        if (!(persisted instanceof ChemicalSubstance persistedChemical)
+                || !(updated instanceof ChemicalSubstance updatedChemical)
+                || persistedChemical.getStructure() == null
+                || updatedChemical.getStructure() == null) {
+            return false;
+        }
+        return !Objects.equals(persistedChemical.getStructure().molfile, updatedChemical.getStructure().molfile);
+    }
+
+    private void preserveRootMolfileForSingleMoiety(String rootMolfile, List<Moiety> moieties) {
+        if (rootMolfile == null || moieties == null || moieties.size() != 1) {
+            return;
+        }
+        Moiety moiety = moieties.get(0);
+        if (moiety != null && moiety.structure != null) {
+            moiety.structure.molfile = rootMolfile;
+        }
+    }
+
 	@Override
 	public List<UUID> getIDs() {
 		List<UUID> IDs = repository.getAllIds();		
 		return IDs;
-	}
+    }
+
+    private Optional<Substance> resolveExistingSubstanceForValidation(JsonNode updatedEntityJson, Substance newValue) {
+        UUID substanceId = getIdFrom(newValue);
+        if (substanceId != null) {
+            Optional<Substance> existing = loadExistingSubstanceForValidation(substanceId);
+            if (existing.isPresent()) {
+                return existing;
+            }
+        }
+
+        for (String identifierField : List.of("uuid", "approvalID")) {
+            JsonNode identifierNode = updatedEntityJson.get(identifierField);
+            if (identifierNode == null || identifierNode.isNull()) {
+                continue;
+            }
+            String identifier = identifierNode.asText();
+            if (identifier == null || identifier.isBlank()) {
+                continue;
+            }
+            Optional<Substance> existing = loadExistingSubstanceForValidation(identifier);
+            if (existing.isPresent()) {
+                return existing;
+            }
+        }
+        return Optional.empty();
+    }
+
+    private Optional<Substance> loadExistingSubstanceForValidation(UUID substanceId) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
+        transactionTemplate.setReadOnly(true);
+        return transactionTemplate.execute(status -> repository.findById(substanceId)
+                .map(this::detachFullyFetchedSubstance));
+    }
+
+    private Optional<Substance> loadExistingSubstanceForValidation(String identifier) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(this.getTransactionManager());
+        transactionTemplate.setReadOnly(true);
+        return transactionTemplate.execute(status -> {
+            if (Util.isUUID(identifier)) {
+                return repository.findById(UUID.fromString(identifier))
+                        .map(this::detachFullyFetchedSubstance);
+            }
+            Substance existing = repository.findByApprovalID(identifier);
+            return Optional.ofNullable(existing)
+                    .map(this::detachFullyFetchedSubstance);
+        });
+    }
+
+    private Substance detachFullyFetchedSubstance(Substance substance) {
+        return JsonSubstanceFactory.makeSubstance(substance.toFullJsonNode());
+    }
+
+    private void normalizeChemicalStructuresForValidation(Substance substance) {
+        if (!(substance instanceof ChemicalSubstance chemicalSubstance)) {
+            return;
+        }
+        chemicalSubstance.setStructure(normalizeChemicalStructureForValidation(chemicalSubstance.getStructure()));
+        if (chemicalSubstance.moieties != null) {
+            for (Moiety moiety : chemicalSubstance.moieties) {
+                if (moiety != null) {
+                    moiety.structure = normalizeChemicalStructureForValidation(moiety.structure);
+                }
+            }
+        }
+    }
+
+    private GinasChemicalStructure normalizeChemicalStructureForValidation(GinasChemicalStructure structure) {
+        if (structure == null) {
+            return null;
+        }
+        boolean missingHashes = isBlank(structure.getExactHash()) || isBlank(structure.getStereoInsensitiveHash());
+        if (!missingHashes) {
+            return structure;
+        }
+        String structureText = firstNonBlank(structure.molfile, structure.smiles);
+        if (structureText == null) {
+            return structure;
+        }
+        try {
+            Structure instrumented = structureProcessor.instrument(structureText);
+            structure.properties = instrumented.properties;
+            if (structure.stereoChemistry == null) {
+                structure.stereoChemistry = instrumented.stereoChemistry;
+            }
+            if (structure.opticalActivity == null) {
+                structure.opticalActivity = instrumented.opticalActivity;
+            }
+            if (structure.atropisomerism == null) {
+                structure.atropisomerism = instrumented.atropisomerism;
+            }
+            if (isBlank(structure.stereoComments)) {
+                structure.stereoComments = instrumented.stereoComments;
+            }
+            return structure;
+        } catch (RuntimeException e) {
+            log.debug("Unable to normalize chemical structure for validation", e);
+            return structure;
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
 
 }

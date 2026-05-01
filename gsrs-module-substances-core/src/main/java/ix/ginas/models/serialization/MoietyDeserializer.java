@@ -40,6 +40,10 @@ public class MoietyDeserializer extends JsonDeserializer<Moiety> {
         		System.err.println(e.getMessage());
         	}
         }
+        JsonNode innerUuid = tree.get("innerUuid");
+        if (innerUuid != null && !innerUuid.isNull() && !innerUuid.asText().isEmpty()) {
+            moiety.innerUuid = innerUuid.asText();
+        }
         moiety.enforce();
         return moiety;
     }
