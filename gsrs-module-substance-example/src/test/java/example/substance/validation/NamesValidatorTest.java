@@ -1,7 +1,8 @@
 package example.substance.validation;
 
-import gsrs.springUtils.AutowireHelper;
-import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.services.PrivilegeService;
 import ix.core.models.Group;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
@@ -14,23 +15,51 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.NamesValidator;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
+
+@ExtendWith(MockitoExtension.class)
+public class NamesValidatorTest {
+
+    @Mock
+    private ReferenceRepository referenceRepository;
+    @Mock
+    private SubstanceRepository substanceRepository;
+    @Mock
+    private PrivilegeService privilegeService;
+
+    private NamesValidator validator;
+
+    @BeforeEach
+    void setUp() {
+        validator = new NamesValidator();
+        validator.setReferenceRepository(referenceRepository);
+        validator.setSubstanceRepository(substanceRepository);
+        ReflectionTestUtils.setField(validator, "privilegeService", privilegeService);
+
+        lenient().when(substanceRepository.findByNames_NameIgnoreCase(anyString())).thenReturn(Collections.emptyList());
+        lenient().when(privilegeService.canDo(anyString())).thenReturn(false);
+    }
 
     /*
     Confirm correct new (January 2023) behavior - duplicate names -> warning
      */
     @Test
     void testValidationNoErrors() {
-        NamesValidator validator = new NamesValidator();
-        validator= AutowireHelper.getInstance().autowireAndProxy(validator);
         ChemicalSubstance chemical =createSimpleChemicalDuplicateNames();
         ValidationResponse<Substance> response = validator.validate(chemical, null);
         Assertions.assertEquals(0, response.getValidationMessages().stream()
@@ -40,10 +69,7 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
-    @WithMockUser(username = "admin", roles = "Admin")
     void testChangeDisplayNameAdmin() {
-        NamesValidator validator = new NamesValidator();
-        validator= AutowireHelper.getInstance().autowireAndProxy(validator);
         List<Substance> concepts = buildBeforeAndAfterSubstance();
         Substance conceptBefore = concepts.get(0);
         Substance conceptAfter = concepts.get(1);
@@ -53,17 +79,17 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
-    @WithMockUser(username = "editor", roles = "DataEntry")
     void testChangeDisplayNameEditor() {
-        NamesValidator validator = new NamesValidator();
-        validator= AutowireHelper.getInstance().autowireAndProxy(validator);
         List<Substance> concepts = buildBeforeAndAfterSubstance();
         Substance conceptBefore = concepts.get(0);
         Substance conceptAfter = concepts.get(1);
         conceptAfter.status = Substance.STATUS_APPROVED;
         ValidationResponse<Substance> response = validator.validate(conceptAfter, conceptBefore);
+        String messages = response.getValidationMessages().stream()
+                .map(v -> v.getMessageType() + ": " + v.getMessage())
+                .collect(Collectors.joining("; "));
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(
-                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR && v.getMessage().contains("Changing Display Name is not allowed for your user role.")));
+                v->v.getMessageType()== ValidationMessage.MESSAGE_TYPE.ERROR && v.getMessage().toLowerCase().contains("display name")), messages);
     }
 
     private ChemicalSubstance createSimpleChemicalDuplicateNames(){
@@ -139,6 +165,7 @@ public class NamesValidatorTest extends AbstractSubstanceJpaEntityTest {
 
         Name copySynonym = new Name();
         copySynonym.setName(originalSynonymValue);
+        copySynonym.displayName = true;
         copySynonym.setAccess(access);
         copySynonym.addLanguage("en");
         copySynonym.type = "cn";

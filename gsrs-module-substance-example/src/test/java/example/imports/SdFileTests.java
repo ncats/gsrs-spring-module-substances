@@ -3,366 +3,408 @@ package example.imports;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import example.GsrsModuleSubstanceApplication;
-import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.imports.ImportAdapter;
-import gsrs.imports.ImportAdapterFactory;
+import gsrs.dataexchange.model.MappingAction;
+import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapterStatistics;
-import gsrs.module.substance.controllers.SubstanceController;
+import gsrs.module.substance.importers.SDFImportAdapter;
 import gsrs.module.substance.importers.SDFImportAdapterFactory;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
 import gsrs.module.substance.importers.model.ChemicalBackedSDRecordContext;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.ginas.importers.InputFieldStatistics;
+import ix.ginas.importers.InputFileStatistics;
+import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
-import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.ResponseEntity;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.web.multipart.MultipartFile;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.*;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.jupiter.api.Assertions.*;
+import static gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase.ACTION_NAME;
+import static gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase.ACTION_PARAMETERS;
+import static gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase.FILE_FIELD;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
-//@SpringBootTest
-@Slf4j
-/*@TestPropertySource(properties = {
-        "ix.gsrs.sdfActions={structure_and_moieties:'gsrs.module.substance.importers.importActionFactories.StructureExtractorActionFactory'," +
-                "code_import:'gsrs.module.substance.importers.importActionFactories.CodeExtractorActionFactory'," +
-                "common_name:'gsrs.module.substance.importers.importActionFactories.NameExtractorActionFactory'}",
-})*/
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
-public class SdFileTests extends AbstractSubstanceJpaFullStackEntityTest {
+class SdFileTests {
 
-    List<ImportAdapterFactory<Substance>> factories = Collections.singletonList(new SDFImportAdapterFactory());
-    private final CachedSupplier<List<ImportAdapterFactory<Substance>>> importAdapterFactories
-            = CachedSupplier.of(() -> factories);
-
-    @Autowired
-    private PlatformTransactionManager platformTransactionManager;
+    private static final String NAME_FIELD = "PREFERRED_NAME";
+    private static final String CODE_FIELD = "REGISTRY_CODE";
 
     @Test
-    public void testSdfInstructions1() {
-        SDFImportAdapterFactory importAdapterFactory = new SDFImportAdapterFactory();
+    void adapterMetadataAndAccessors() {
+        SDFImportAdapterFactory adapterFactory = new SDFImportAdapterFactory();
 
-        List<String> fieldNames = Arrays.asList("CAS", "select_name", "alpha code");
-        Map<String, InputFieldStatistics> map = new HashMap<>();
-        fieldNames.forEach(fn -> map.put(fn, null));
-        JsonNode importInfo = importAdapterFactory.createDefaultSdfFileImport(map);
-        String json = importInfo.toPrettyString();
-        System.out.println(json);
-        Assertions.assertTrue(json.length() > 0);
-        List<JsonNode> nodes = importInfo.findValues("actionName");
-        Assertions.assertEquals(5, nodes.size());
-        Assertions.assertEquals(1, nodes.stream().filter(n -> n.textValue().startsWith("common_name")).count());
+        assertEquals("SDF Adapter", adapterFactory.getAdapterName());
+        assertEquals("SDF", adapterFactory.getAdapterKey());
+        assertEquals(Arrays.asList("sdf", "sd"), adapterFactory.getSupportedFileExtensions());
+
+        adapterFactory.setSupportedFileExtensions(Collections.singletonList("sdfx"));
+        assertEquals(Collections.singletonList("sdfx"), adapterFactory.getSupportedFileExtensions());
+
+        adapterFactory.setFileName("sample.sdf");
+        assertEquals("sample.sdf", adapterFactory.getFileName());
+
+        adapterFactory.setDescription("custom description");
+        assertEquals("custom description", adapterFactory.getDescription());
+
+        adapterFactory.setStagingAreaService(String.class);
+        assertEquals(String.class, adapterFactory.getStagingAreaService());
+        assertEquals(String.class, adapterFactory.getStagingAreaEntityService());
+        adapterFactory.setStagingAreaEntityService(Integer.class);
+        assertEquals(Integer.class, adapterFactory.getStagingAreaService());
+
+        adapterFactory.setEntityServiceClass(Long.class);
+        assertEquals(Long.class, adapterFactory.getEntityServiceClass());
+        assertNull(adapterFactory.getEntityServices());
     }
 
     @Test
-    public void predictSettingsTest() throws IOException {
-        String fileName = "testSDF/structures.molV2.sdf";
-        File dataFile = new ClassPathResource(fileName).getFile();
-        log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
+    @DisplayName("Default SDF action generation covers structure, field actions, and reference")
+    void defaultSdfInstructionsIncludeStableStructureAndReferenceActions() {
+        JsonNode importInfo = newAdapterFactory().createDefaultSdfFileImport(fieldStats(
+                "CAS",
+                "select_name",
+                "melting point",
+                "free text note"
+        ));
 
-        InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
-        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis, null);
-        fis.close();
+        List<JsonNode> actions = actions(importInfo);
+        assertEquals(6, actions.size());
+        assertEquals("structure_and_moieties", actions.get(0).get(ACTION_NAME).asText());
+        assertEquals("public_reference", actions.get(actions.size() - 1).get(ACTION_NAME).asText());
+        assertEquals("[[UUID_1]]", actions.get(actions.size() - 1).get(ACTION_PARAMETERS).get("uuid").asText());
+    }
 
-        JsonNode adapter = settings.getAdapterSettings();
-        log.trace("adapter: ");
-        log.trace(adapter.toPrettyString());
-        JsonNode schema = settings.getAdapterSchema();
-        log.trace("schema: ");
-        log.trace(schema.toPrettyString());
-        Assertions.assertNotNull(adapter);
-        Assertions.assertNotNull(schema);
+    @ParameterizedTest
+    @CsvSource({
+            "Preferred Name,common_name",
+            "synonym list,common_name",
+            "melting point,property_import",
+            "molecular formula,property_import",
+            "CAS,code_import",
+            "RN,code_import",
+            "free text,note_import"
+    })
+    void defaultSdfInstructionsChooseExpectedActionForField(String fieldName, String expectedAction) {
+        JsonNode importInfo = newAdapterFactory().createDefaultSdfFileImport(fieldStats(fieldName));
+
+        JsonNode action = actionForField(importInfo, fieldName);
+
+        assertEquals(expectedAction, action.get(ACTION_NAME).asText());
+        assertNotNull(action.get(ACTION_PARAMETERS));
     }
 
     @Test
-    public void createSubstanceStreamTest() throws IOException {
-        String fileName = "testSDF/structures.molV2.sdf";
-        File dataFile = new ClassPathResource(fileName).getFile();
-        log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
-        InputStream fis = new FileInputStream(dataFile.getAbsoluteFile());
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
-        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(fis, null);
+    void predictSettingsFromGeneratedSdfIncludesSchemaSettingsAndRecordCount() throws Exception {
+        SDFImportAdapterFactory adapterFactory = newAdapterFactory();
+        adapterFactory.setFileName("generated.sdf");
 
-        fis.close();
-        JsonNode adapter = settings.getAdapterSettings();
-        log.trace("adapter: ");
-        log.trace(adapter.toPrettyString());
-        ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
-        InputStream fisRead = new FileInputStream(dataFile.getAbsoluteFile());
-        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
-        settingsNode.put("Encoding", Charset.defaultCharset().name());
-        Stream<Substance> substanceStream = importAdapter.parse(fisRead, settingsNode, null);
-        substanceStream.forEach(s -> {
-            if(!s.substanceClass.toString().contains("chemical") || s.names.isEmpty() || s.codes.isEmpty()){
-                log.trace("full substance that does not conform: ");
-                log.trace(s.toFullJsonNode().toPrettyString());
-            }
-            Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
-            Assertions.assertTrue(s.names.size()>=1);
-            Assertions.assertTrue( s.codes.size()>=1 || s.notes.size()>0);
+        try (InputStream sdf = sdfStream(testChemical("Octane", "BD-1"))) {
+            ImportAdapterStatistics settings = adapterFactory.predictSettings(sdf, null);
 
-        });
-        fisRead.close();
+            assertNotNull(settings);
+            assertEquals(1, settings.getAdapterSettings().get("RecordCount").asInt());
+            assertEquals("generated.sdf", settings.getAdapterSchema().get("fileName").asText());
+            assertTrue(settings.getAdapterSettings().get("actions").size() >= 3);
+        }
     }
 
     @Test
-    public void createSubstanceStreamTestWithMultipleNames() throws IOException {
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
-        Chemical c = Chemical.parse("CCCCCCCC");
-        c.setName("MY_NAME");
-        c.setProperty("NAME", "NAME_0\r\n\r\nNAME_1\r\nNAME_2\r\nIBUPROFEN\r\nNAME_3");
-        ByteArrayInputStream bais = new ByteArrayInputStream(c.toSd().getBytes());
-        sDFImportAdapterFactory.initialize();
-        ImportAdapterStatistics settings = sDFImportAdapterFactory.predictSettings(bais, null);
-        JsonNode adapter = settings.getAdapterSettings();
-        log.trace("adapter: ");
-        log.trace(adapter.toPrettyString());
-        ImportAdapter<Substance> importAdapter = sDFImportAdapterFactory.createAdapter(adapter);
-        bais = new ByteArrayInputStream(c.toSd().getBytes());
-        ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();
-        settingsNode.put("Encoding", Charset.defaultCharset().name());
-        Stream<Substance> substanceStream = importAdapter.parse(bais, settingsNode, null);
-        substanceStream.forEach(s -> {
-            log.trace("full substance: ");
-            log.trace(s.toFullJsonNode().toPrettyString());
-            Assertions.assertTrue(s.substanceClass.toString().contains("chemical"));
-            Assertions.assertEquals(5, s.names.size());
-        });
+    void predictSettingsReturnsNullWhenInputCannotBeRead() {
+        ImportAdapterStatistics settings = new ThrowingSdfImportAdapterFactory()
+                .predictSettings(new ByteArrayInputStream(new byte[0]), null);
+
+        assertNull(settings);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void parseChemicalAppliesDirectUnitActionsWithoutSpringContext(boolean includeEncoding) throws Exception {
+        SDFImportAdapter adapter = new SDFImportAdapter(Arrays.asList(
+                addNameFrom(NAME_FIELD),
+                addPrimaryCodeFrom(CODE_FIELD, "BDNUM")
+        ));
+        ObjectNode runtimeSettings = JsonNodeFactory.instance.objectNode();
+        if (includeEncoding) {
+            runtimeSettings.put("Encoding", StandardCharsets.UTF_8.name());
+        }
+
+        List<Substance> substances = parse(adapter, testChemical("Octane", "BD-1"), runtimeSettings);
+
+        assertEquals(1, substances.size());
+        Substance substance = substances.get(0);
+        assertEquals(Substance.SubstanceClass.chemical, substance.substanceClass);
+        assertEquals("Octane", substance.names.get(0).name);
+        assertTrue(substance.codes.stream()
+                .anyMatch(code -> "BDNUM".equals(code.codeSystem)
+                        && "BD-1".equals(code.code)
+                        && "PRIMARY".equals(code.type)));
     }
 
     @Test
-   public void parseUUIDTest() throws IOException {
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
+    void parseContinuesWhenActionThrowsAndFileEncodingAccessorsRoundTrip() throws Exception {
+        SDFImportAdapter adapter = new SDFImportAdapter(Collections.singletonList((builder, context) -> {
+            throw new IllegalStateException("action failure");
+        }));
+        adapter.setFileEncoding(StandardCharsets.UTF_8.name());
 
-        String uuidSyntax1 = "[[UUID_1]]";
-        String uuidSyntax2 = "[[UUID_2]]";
-        Chemical c = Chemical.parse("CCCCCCCC");
+        List<Substance> substances = parseSilencingSystemErr(
+                adapter,
+                testChemical("Octane", "BD-1"),
+                JsonNodeFactory.instance.objectNode());
 
-        ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        val res1_first = SubstanceImportAdapterFactoryBase.resolveParameter(ctx, uuidSyntax1);
-        String res1_again = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax1);
-        String res2_first = sDFImportAdapterFactory.resolveParameter(ctx, uuidSyntax2);
-        assertEquals(res1_first, res1_again);
-
-        assertNotEquals(res1_first, res2_first);
-        UUID uid1 = UUID.fromString(res1_first);
-        UUID uid2 = UUID.fromString(res2_first);
-        assertNotNull(uid1);
-        assertNotNull(uid2);
+        assertEquals(StandardCharsets.UTF_8.name(), adapter.getFileEncoding());
+        assertEquals(1, substances.size());
+        assertEquals(Substance.SubstanceClass.chemical, substances.get(0).substanceClass);
+        assertTrue(substances.get(0).names.isEmpty());
     }
 
     @Test
-    public void parsePropertyTest() throws IOException {
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
+    void resolveParametersResolvesSdPropertiesMolfileAndStableSpecialTokens() throws Exception {
+        ChemicalBackedSDRecordContext context = sdContext(testChemical("Octane", "BD-1"));
 
-        String prop1 = "{{FOO}}";
-        Chemical c = Chemical.parse("CCCCCCCC");
-        c.setProperty("FOO", "BAR");
+        List<String> resolved = SDFImportAdapterFactory.resolveParameters(context,
+                Arrays.asList("{{" + NAME_FIELD + "}}", "{{molfile_name}}", "[[UUID_1]]", "[[UUID_1]]"));
 
-        ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, prop1);
-        assertEquals("BAR", res1_first);
+        assertEquals("Octane", resolved.get(0));
+        assertEquals("Octane", resolved.get(1));
+        assertEquals(resolved.get(2), resolved.get(3));
+        assertNotNull(UUID.fromString(resolved.get(2)));
     }
 
     @Test
-    public void parseMolfileTest() throws IOException {
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
+    void resolveParameterLeavesOriginalTextWhenNoTokenCanBeResolved() throws Exception {
+        ChemicalBackedSDRecordContext context = sdContext(testChemical("Octane", "BD-1"));
 
-        String prop1 = "{{molfile}}";
-        Chemical c = Chemical.parse("CCCCCCCC");
-
-        ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, prop1);
-        assertTrue(res1_first.contains("V2000"));
+        assertEquals("plain text", SDFImportAdapterFactory.resolveParameter(context, "plain text"));
+        assertEquals("{{missing}}", SDFImportAdapterFactory.resolveParameter(context, "{{missing}}"));
     }
 
     @Test
-    public void parseMolfileNameTest() throws IOException {
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
+    void resolveParameterUsesEncoderForSdAndNonSdContexts() throws Exception {
+        ChemicalBackedSDRecordContext sdContext = sdContext(testChemical("Octane", "BD-1"));
+        SimplePropertyContext propertyContext = new SimplePropertyContext(Collections.singletonMap("FOO", "BAR"));
 
-        String prop1 = "{{molfile_name}}";
-        Chemical c = Chemical.parse("CCCCCCCC");
-        c.setName("MY_NAME");
-
-        ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-        String res1_first = sDFImportAdapterFactory.resolveParameter(ctx, prop1);
-        assertEquals("MY_NAME", res1_first);
+        assertEquals("[Octane]", SubstanceImportAdapterFactoryBase.resolveParameter(
+                sdContext, "{{" + NAME_FIELD + "}}", value -> "[" + value + "]"));
+        assertEquals("[BAR]", SubstanceImportAdapterFactoryBase.resolveParameter(
+                propertyContext, "{{FOO}}", value -> "[" + value + "]"));
     }
 
     @Test
-    public void parseMapTest() throws Exception {
-        SDFImportAdapterFactory sDFImportAdapterFactory = new SDFImportAdapterFactory();
-
-        Chemical c = Chemical.parse("CCCCCCCC");
-        c.setName("MY_NAME");
-        c.setProperty("FOO", "BAR");
-        ChemicalBackedSDRecordContext ctx = new ChemicalBackedSDRecordContext(c);
-
-        Map<String, Object> settings = new HashMap<>();
-
+    void resolveParametersMapPreservesRepeatedSpecialValuesAndReplacesProperties() throws Exception {
+        ChemicalBackedSDRecordContext context = sdContext(testChemical("Octane", "BD-1"));
+        Map<String, Object> settings = new LinkedHashMap<>();
         settings.put("molfile", "{{molfile}}");
-        settings.put("molfile_name", "{{molfile_name}}");
-        settings.put("foo_property", "{{FOO}}");
-        settings.put("uuid1", "[[UUID_1]]");
-        settings.put("uuid1again", "[[UUID_1]]");
-        settings.put("uuid2", "[[UUID_2]]");
+        settings.put("name", "{{" + NAME_FIELD + "}}");
+        settings.put("uuid", "[[UUID_1]]");
+        settings.put("sameUuid", "[[UUID_1]]");
+        settings.put("otherUuid", "[[UUID_2]]");
 
-        Map<String, Object> settingsResolved = sDFImportAdapterFactory.resolveParametersMap(ctx, settings);
+        Map<String, Object> resolved = newAdapterFactory().resolveParametersMap(context, settings);
 
-
-        assertEquals("MY_NAME", settingsResolved.get("molfile_name"));
-        assertEquals("BAR", settingsResolved.get("foo_property"));
-        assertEquals(settingsResolved.get("uuid1"), settingsResolved.get("uuid1again"));
-        assertNotEquals(settingsResolved.get("uuid1"), settingsResolved.get("uuid2"));
-
-        assertTrue(settingsResolved.get("molfile").toString().contains("V2000"));
-        assertNotNull(UUID.fromString(settingsResolved.get("uuid1").toString()));
-        assertNotNull(UUID.fromString(settingsResolved.get("uuid2").toString()));
+        assertTrue(resolved.get("molfile").toString().contains("V2000"));
+        assertEquals("Octane", resolved.get("name"));
+        assertEquals(resolved.get("uuid"), resolved.get("sameUuid"));
+        assertNotEquals(resolved.get("uuid"), resolved.get("otherUuid"));
     }
 
-    @Test
-    protected void TestPreview() throws Exception {
-        String fileName = "testSDF/chembl_30_first_36.sdf";
-        File dataFile = new ClassPathResource(fileName).getFile();
-        log.trace("using dataFile.getAbsoluteFile(): " + dataFile.getAbsoluteFile());
-
-        SubstanceController controller = new SubstanceController();
-        AutowireHelper.getInstance().autowire(controller);
-        Map<String, String> queryParameters = new HashMap<>();
-        queryParameters.put("adapter", "SDF Adapter");
-        queryParameters.put("entityType", "ix.ginas.models.v1.ChemicalSubstance");
-        queryParameters.put("fileEncoding", "UTF-8");
-        MultipartFile file = new MultipartFile() {
-            @Override
-            public String getName() {
-                return dataFile.getName();
-            }
-
-            @Override
-            public String getOriginalFilename() {
-                return dataFile.getName();
-            }
-
-            @Override
-            public String getContentType() {
-                return "application/x-sdf";
-            }
-
-            @Override
-            public boolean isEmpty() {
-                return false;
-            }
-
-            @Override
-            public long getSize() {
-                return dataFile.length();
-            }
-
-            @Override
-            public byte[] getBytes() throws IOException {
-                return Files.readAllBytes(dataFile.toPath());
-                //return new byte[0];
-            }
-
-            @Override
-            public InputStream getInputStream() throws IOException {
-                return null;
-            }
-
-            @Override
-            public void transferTo(File file) throws IOException, IllegalStateException {
-
-            }
-        };
-
-        ResponseEntity<Object> responseEntity= controller.handleImport(file, queryParameters);
-        Assertions.assertNotNull(responseEntity.getBody());
+    @ParameterizedTest
+    @CsvSource({
+            "melting point,true",
+            "TPSA,true",
+            "description,false"
+    })
+    void propertyHeuristicIdentifiesLikelyProperties(String fieldName, boolean expected) {
+        assertEquals(expected, newAdapterFactory().isPropertyField(fieldName));
     }
 
-    @Test
-    public void testParseRange() {
-        Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\-(\\d+\\.?\\d+)(.+)");
-        String input1 = "159.1-190.6 °C";
-        String expectedLower ="159.1";
-        String expectedUpper ="190.6";
-        Matcher m = rangePattern.matcher(input1);
-        String lower="";
-        String upper="";
-        String units ="";
-        if(m.matches())  {
-            lower= m.group(1);
-            upper = m.group(2);
-            units=m.group(3);
+    @ParameterizedTest
+    @CsvSource({
+            "CAS,true",
+            "PubChem_Compound_CID,true",
+            "RN,true",
+            "internal registry,false"
+    })
+    void codeHeuristicIdentifiesLikelyCodes(String fieldName, boolean expected) {
+        assertEquals(expected, newAdapterFactory().isCodeField(fieldName));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "protein sequence,protein",
+            "nucleic acid sequence,nucleic",
+            "canonical smiles,smiles",
+            "molfile,molfile"
+    })
+    void sequenceAndStructureHeuristicsIdentifySpecialFields(String fieldName, String expectedType) {
+        TestableSdfImportAdapterFactory factory = newAdapterFactory();
+
+        assertEquals("protein".equals(expectedType), factory.isProteinSequenceField(fieldName));
+        assertEquals("nucleic".equals(expectedType), factory.isNucleicAcidSequenceField(fieldName));
+        assertEquals("smiles".equals(expectedType), factory.isSmilesField(fieldName));
+        assertEquals("molfile".equals(expectedType), factory.isMolfileField(fieldName));
+    }
+
+    private static TestableSdfImportAdapterFactory newAdapterFactory() {
+        return new TestableSdfImportAdapterFactory();
+    }
+
+    private static Map<String, InputFieldStatistics> fieldStats(String... fieldNames) {
+        Map<String, InputFieldStatistics> fields = new LinkedHashMap<>();
+        Arrays.stream(fieldNames).forEach(field -> fields.put(field, new InputFieldStatistics(field)));
+        return fields;
+    }
+
+    private static List<JsonNode> actions(JsonNode importInfo) {
+        List<JsonNode> actions = new ArrayList<>();
+        importInfo.get("actions").forEach(actions::add);
+        return actions;
+    }
+
+    private static JsonNode actionForField(JsonNode importInfo, String fieldName) {
+        for (JsonNode action : importInfo.get("actions")) {
+            if (action.has(FILE_FIELD) && fieldName.equals(action.get(FILE_FIELD).asText())) {
+                return action;
+            }
         }
-        assertEquals(expectedLower, lower);
-        assertEquals(expectedUpper, upper);
-        System.out.println("units: " + units);
+        return fail("No action found for field: " + fieldName);
     }
 
-    @Test
-    public void testParseRange2() {
-        Pattern rangePattern = Pattern.compile("(\\d+\\.?\\d+)\\±(\\d+\\.?\\d+)(.+)");
-        String input1 =     "722.2±60.0 °C    Press: 760 Torr";
-                    input1= "722.2±60.0 °C    Press: 760 Torr";
-        String expectedBase ="722.2";
-        String expectedVariation ="60.0";
-        Matcher m = rangePattern.matcher(input1);
-        String base="";
-        String range="";
-        String unitsAndConditions ="";
-        if(m.matches())  {
-            base= m.group(1);
-            range = m.group(2);
-            unitsAndConditions=m.group(3);
-        }
-        assertEquals(expectedBase, base);
-        assertEquals(expectedVariation, range);
-        System.out.println("unitsAndConditions: " + unitsAndConditions);
+    private static Chemical testChemical(String name, String code) throws IOException {
+        Chemical chemical = Chemical.parse("CCCCCCCC");
+        chemical.setName(name);
+        chemical.setProperty(NAME_FIELD, name);
+        chemical.setProperty(CODE_FIELD, code);
+        return chemical;
     }
-/*    @Test
-    public void testActionsFromConfig() throws IOException {
-        String fieldName = "registry";
-        SDFImportAdapterFactory SDFImportAdapterFactory = new SDFImportAdapterFactory();
+
+    private static ChemicalBackedSDRecordContext sdContext(Chemical chemical) {
+        return new ChemicalBackedSDRecordContext(chemical);
+    }
+
+    private static InputStream sdfStream(Chemical chemical) throws IOException {
+        return new ByteArrayInputStream(chemical.toSd().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static List<Substance> parse(SDFImportAdapter adapter,
+                                         Chemical chemical,
+                                         ObjectNode runtimeSettings) throws IOException {
+        try (InputStream sdf = sdfStream(chemical)) {
+            return adapter.parse(sdf, runtimeSettings, null).collect(Collectors.toList());
+        }
+    }
+
+    private static List<Substance> parseSilencingSystemErr(SDFImportAdapter adapter,
+                                                           Chemical chemical,
+                                                           ObjectNode runtimeSettings) throws IOException {
+        java.io.PrintStream originalErr = System.err;
         try {
-            Field defValuesField = SDFImportAdapterFactory.getClass().getDeclaredField("defaultImportActions");
-            defValuesField.setAccessible(true);
-            defValuesField.set(SDFImportAdapterFactory, values);
-            SDFImportAdapterFactory.initialize();
-            java.lang.reflect.Field registryField = SDFImportAdapterFactory.getClass().getDeclaredField(fieldName);
-            registryField.setAccessible(true);
-            Map<String, MappingActionFactory<Substance, SDRecordContext>> reg =
-                    (Map<String, MappingActionFactory<Substance, SDRecordContext>>)
-                            registryField.get(SDFImportAdapterFactory);
-
-            Assertions.assertEquals(3, reg.size());
-            Assertions.assertTrue(reg.containsKey("structure_and_moieties"));
-            Assertions.assertTrue(reg.containsKey("common_name"));
-            Assertions.assertTrue(reg.containsKey("code_import"));
-            System.out.println("it works!");
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            log.error("Error accessing field: " + e.getMessage());
-            e.printStackTrace();
-            Assertions.fail("Error fails test");
+            System.setErr(new java.io.PrintStream(new java.io.ByteArrayOutputStream()));
+            return parse(adapter, chemical, runtimeSettings);
+        } finally {
+            System.setErr(originalErr);
         }
-    }*/
+    }
+
+    private static MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> addNameFrom(String field) {
+        return (builder, context) -> {
+            String value = context.getProperty(field).orElseThrow(IllegalStateException::new);
+            Name name = new Name();
+            name.name = value;
+            name.stdName = value;
+            name.displayName = true;
+            return builder.addName(name);
+        };
+    }
+
+    private static MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> addPrimaryCodeFrom(String field,
+                                                                                                             String codeSystem) {
+        return (builder, context) -> {
+            Code code = new Code();
+            code.codeSystem = codeSystem;
+            code.code = context.getProperty(field).orElseThrow(IllegalStateException::new);
+            code.type = "PRIMARY";
+            return builder.addCode(code);
+        };
+    }
+
+    private static final class TestableSdfImportAdapterFactory extends SDFImportAdapterFactory {
+        private boolean isPropertyField(String fieldName) {
+            return looksLikeProperty(fieldName);
+        }
+
+        private boolean isCodeField(String fieldName) {
+            return looksLikeCode(fieldName);
+        }
+
+        private boolean isProteinSequenceField(String fieldName) {
+            return looksLikeProteinSequence(fieldName);
+        }
+
+        private boolean isNucleicAcidSequenceField(String fieldName) {
+            return looksLikeNucleicAcidSequence(fieldName);
+        }
+
+        private boolean isSmilesField(String fieldName) {
+            return looksLikeSmiles(fieldName);
+        }
+
+        private boolean isMolfileField(String fieldName) {
+            return looksLikeMolfile(fieldName);
+        }
+    }
+
+    private static final class ThrowingSdfImportAdapterFactory extends SDFImportAdapterFactory {
+        @Override
+        public InputFileStatistics getFieldsForFile(InputStream input) throws IOException {
+            throw new IOException("forced read failure");
+        }
+    }
+
+    private static final class SimplePropertyContext implements PropertyBasedDataRecordContext {
+        private final Map<String, String> properties;
+
+        private SimplePropertyContext(Map<String, String> properties) {
+            this.properties = properties;
+        }
+
+        @Override
+        public Optional<String> getProperty(String name) {
+            return Optional.ofNullable(properties.get(name));
+        }
+
+        @Override
+        public List<String> getProperties() {
+            return properties.keySet().stream().collect(Collectors.toList());
+        }
+
+        @Override
+        public Map<String, String> getSpecialPropertyMap() {
+            return Collections.emptyMap();
+        }
+    }
 
 }

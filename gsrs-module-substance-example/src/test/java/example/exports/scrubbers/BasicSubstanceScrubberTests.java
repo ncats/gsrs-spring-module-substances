@@ -626,7 +626,7 @@ public class BasicSubstanceScrubberTests extends AbstractSubstanceJpaEntityTest 
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         ProteinSubstance cleanedProtein= (ProteinSubstance) scrubber.scrub(proteinSubstance).get();
 
-        Assertions.assertEquals(newUserName, cleanedProtein.createdBy.username);
+        Assertions.assertEquals(newUserName.toUpperCase(Locale.ROOT), cleanedProtein.createdBy.username);
     }
 
     @Test

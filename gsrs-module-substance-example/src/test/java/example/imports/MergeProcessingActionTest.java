@@ -1,10 +1,9 @@
 package example.imports;
 
-import example.GsrsModuleSubstanceApplication;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import example.substance.support.TestJsonSanitizer;
 import gsrs.dataexchange.processingactions.MergeProcessingAction;
-import gsrs.legacy.structureIndexer.StructureIndexerService;
-import gsrs.services.PrincipalServiceImpl;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -13,10 +12,7 @@ import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
@@ -25,21 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
-public class MergeProcessingActionTest extends AbstractSubstanceJpaFullStackEntityTest {
-
-    @Autowired
-    private StructureIndexerService indexer;
-
-
-    @Autowired
-    private PrincipalServiceImpl principalService;
-
-    @BeforeEach
-    public void clearIndexers() throws IOException {
-        indexer.removeAll();
-        principalService.clearCache();
-    }
+public class MergeProcessingActionTest {
 
     @Test
     public void testMergeNames() {
@@ -1115,7 +1097,8 @@ Map<String, Object> parms = new HashMap<>();
     @Test
     public void mergeMods1Test() throws IOException {
         File proteinFile =new ClassPathResource("testJSON/YYD6UT8T47.json").getFile();
-        ProteinSubstanceBuilder builder =SubstanceBuilder.from(proteinFile);
+        JsonNode proteinJson = TestJsonSanitizer.stripAccessFields(new ObjectMapper().readTree(proteinFile));
+        ProteinSubstanceBuilder builder = SubstanceBuilder.from(proteinJson);
         ProteinSubstance proteinSubstanceSource= builder.build();
         ProteinSubstance proteinSubstanceTarget= builder.build();
         proteinSubstanceTarget.modifications.structuralModifications.clear();
