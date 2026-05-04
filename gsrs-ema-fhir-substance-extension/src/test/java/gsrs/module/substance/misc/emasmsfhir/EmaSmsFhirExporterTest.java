@@ -9,8 +9,10 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import org.hl7.fhir.r5.model.SubstanceDefinition;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -19,6 +21,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Slf4j
 public class EmaSmsFhirExporterTest {
@@ -30,6 +36,15 @@ public class EmaSmsFhirExporterTest {
         EmaSmsFhirExporterFactory factory = new EmaSmsFhirExporterFactory();
         factory.setPrimaryCodeSystem("BDNUM");
         Assertions.assertEquals("BDNUM", factory.getPrimaryCodeSystem());
+
+        // Inject mocked mapper so exporter can serialize a deterministic SubstanceDefinition.
+        EmaSmsSubstanceDefinitionFhirMapper mockedMapper = mock(EmaSmsSubstanceDefinitionFhirMapper.class);
+        SubstanceDefinition mappedDefinition = new SubstanceDefinition();
+        mappedDefinition.setId("test-id");
+        when(mockedMapper.generateEmaSmsSubstanceDefinitionFromSubstance(any(Substance.class)))
+                .thenReturn(mappedDefinition);
+        setField(factory, "emaSmsSubstanceDefinitionFhirMapper", mockedMapper);
+
         File outputFile = File.createTempFile("testExportFhir", "txt");
         if(outputFile.exists()) {
             outputFile.delete();
@@ -37,9 +52,7 @@ public class EmaSmsFhirExporterTest {
         }
         FileOutputStream fos = new FileOutputStream(outputFile);
         ObjectNode details = JsonNodeFactory.instance.objectNode();
-//         details.put(EmaSmsFhirExporterTest.CODE_PARAMETERS, true);
-//         details.put(EmaSmsFhirExporterTest.NAME_PARAMETERS, true);
-        OutputFormat outputFormat = new OutputFormat("emasmsfhir.txt", "emasmsfhir.txt");
+        OutputFormat outputFormat = new OutputFormat("emasmsfhirsd.txt", "emasmsfhir.txt");
         BufferedOutputStream outputStream= new BufferedOutputStream(fos);
         DefaultParameters parameters = new DefaultParameters(outputFormat,false, details);
         EmaSmsFhirExporter exporter = (EmaSmsFhirExporter) factory.createNewExporter(outputStream, parameters );
@@ -47,41 +60,10 @@ public class EmaSmsFhirExporterTest {
         exporter.close();
         Assertions.assertTrue(outputFile.exists());
         String fileData= Files.lines(outputFile.toPath(),StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
-//        System.out.println("fileData: " + fileData);
-//        Assertions.assertTrue(fileData.contains("001123AB"));
-//        Assertions.assertTrue(fileData.contains("XYZBEFCHI1"));
-//        Assertions.assertTrue(fileData.contains("APPROVAL_ID\tBDNUM"));
+        Assertions.assertTrue(fileData.contains("SubstanceDefinition"));
+        Assertions.assertTrue(fileData.contains("test-id"));
     }
 
-//    @Test
-//    public void testExportCodesNoPrimaryCodeSystem() throws IOException {
-//        EmaSmsFhirExporterFactory factory = new EmaSmsFhirExporterFactory();
-//        Assertions.assertNull(factory.getPrimaryCodeSystem());
-//        File outputFile = File.createTempFile("testExportCodesNoPrimaryCodeSystem", "txt");
-//        if(outputFile.exists()) {
-//            outputFile.delete();
-//            log.trace("file existed and was deleted");
-//        }
-//        FileOutputStream fos = new FileOutputStream(outputFile);
-//        ObjectNode details = JsonNodeFactory.instance.objectNode();
-//        // details.put(FDACodeExporterFactory.CODE_PARAMETERS, true);
-//        // details.put(FDACodeExporterFactory.NAME_PARAMETERS, true);
-//        OutputFormat outputFormat = new OutputFormat("codes.txt", "codes.txt");
-//        BufferedOutputStream outputStream= new BufferedOutputStream(fos);
-//        DefaultParameters parameters = new DefaultParameters(outputFormat,false, details);
-//        EmaSmsFhirExporter exporter = (EmaSmsFhirExporter) factory.createNewExporter(outputStream, parameters );
-//        exporter.export(createSubstanceWithNamesAndCodes());
-//        exporter.close();
-//        Assertions.assertTrue(outputFile.exists());
-//        String fileData= Files.lines(outputFile.toPath(),StandardCharsets.UTF_8).collect(Collectors.joining("\n"));
-//        System.out.println("fileData: " + fileData);
-//        Assertions.assertTrue(fileData.contains("001123AB"));
-//        Assertions.assertTrue(fileData.contains("XYZBEFCHI1"));
-//        Assertions.assertFalse(fileData.contains("Approval ID\tBDNUM"));
-//        Assertions.assertNull(factory.getPrimaryCodeSystem());
-//    }
-//
-//
     private Substance createSubstanceWithNamesAndCodes() {
         SubstanceBuilder builder = new SubstanceBuilder();
         substanceNames.forEach(builder::addName);
@@ -113,5 +95,22 @@ public class EmaSmsFhirExporterTest {
         Substance s =  builder.build();
         s.approvalID = "XYZBEFCHI1";
         return s;
+    }
+
+    private static void setField(Object target, String fieldName, Object value) {
+        Class<?> current = target.getClass();
+        while (current != null) {
+            try {
+                java.lang.reflect.Field field = current.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        throw new IllegalArgumentException("Could not find field: " + fieldName);
     }
 }
