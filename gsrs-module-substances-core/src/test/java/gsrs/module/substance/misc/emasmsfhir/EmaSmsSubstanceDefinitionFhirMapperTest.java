@@ -1,7 +1,5 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import org.hl7.fhir.r5.model.Extension;
 import org.hl7.fhir.r5.model.SubstanceDefinition;
@@ -10,7 +8,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -22,18 +19,18 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @BeforeEach
     void setUp() {
         mapper = new EmaSmsSubstanceDefinitionFhirMapper();
-        mapper.setEmaSmsFhirConfiguration(createConfiguration());
+        mapper.setEmaSmsFhirConfiguration(EmaSmsFhirTestData.configuration());
     }
 
     @Test
     @DisplayName("Maps classification, name, and all configured codes")
     void mapsClassificationNameAndCodes() {
-        Substance substance = createChemicalSubstanceWithDisplayName("Sodium Chloride");
-        substance.codes.add(createCode("ECHA (EC/EINECS)", "231-959-4", "PRIMARY"));
-        substance.codes.add(createCode("EVMPD", "EV123", "PRIMARY"));
-        substance.codes.add(createCode("INN", "INN-123", "PRIMARY"));
-        substance.codes.add(createCode("SMS ID", "SMS-987", "PRIMARY"));
-        substance.codes.add(createCode("FDA UNII", "451W47IQ8X", "PRIMARY"));
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Sodium Chloride");
+        substance.codes.add(EmaSmsFhirTestData.code("ECHA (EC/EINECS)", "231-959-4", "PRIMARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("EVMPD", "EV123", "PRIMARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("INN", "INN-123", "PRIMARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("SMS ID", "SMS-987", "PRIMARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("FDA UNII", "451W47IQ8X", "PRIMARY"));
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -52,7 +49,7 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @Test
     @DisplayName("Skips code entries when display code is absent")
     void skipsCodeWhenDisplayIsMissing() {
-        Substance substance = createChemicalSubstanceWithDisplayName("No Codes");
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("No Codes");
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -63,13 +60,13 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @Test
     @DisplayName("Skips code entries when key is not configured")
     void skipsWhenCodeKeyIsMissingFromConfiguration() {
-        EmaSmsFhirConfiguration cfg = createConfiguration();
+        EmaSmsFhirConfiguration cfg = EmaSmsFhirTestData.configuration();
         cfg.getCodeConfigs().remove("evCode");
         mapper.setEmaSmsFhirConfiguration(cfg);
 
-        Substance substance = createChemicalSubstanceWithDisplayName("Partial Config");
-        substance.codes.add(createCode("ECHA (EC/EINECS)", "231-959-4", "PRIMARY"));
-        substance.codes.add(createCode("EVMPD", "EV123", "PRIMARY"));
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Partial Config");
+        substance.codes.add(EmaSmsFhirTestData.code("ECHA (EC/EINECS)", "231-959-4", "PRIMARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("EVMPD", "EV123", "PRIMARY"));
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -80,13 +77,13 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @Test
     @DisplayName("Uses empty code/system values when configuration values are null")
     void usesEmptyFallbackForNullCodeAndSystem() {
-        EmaSmsFhirConfiguration cfg = createConfiguration();
+        EmaSmsFhirConfiguration cfg = EmaSmsFhirTestData.configuration();
         cfg.getCodeConfigs().get("evCode").put("smsTermId", null);
         cfg.getCodeConfigs().get("evCode").put("smsUrl", null);
         mapper.setEmaSmsFhirConfiguration(cfg);
 
-        Substance substance = createChemicalSubstanceWithDisplayName("Null Config Values");
-        substance.codes.add(createCode("EVMPD", "EV123", "PRIMARY"));
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Null Config Values");
+        substance.codes.add(EmaSmsFhirTestData.code("EVMPD", "EV123", "PRIMARY"));
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -100,7 +97,7 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @DisplayName("Adds GSRS substance extension when enabled")
     void addsGsrsExtensionWhenEnabled() {
         mapper.setIncludeGsrsSubstanceExtension(true);
-        Substance substance = createChemicalSubstanceWithDisplayName("Extension Test");
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Extension Test");
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -113,7 +110,7 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @Test
     @DisplayName("Handles no display name by omitting name section")
     void omitsNameWhenDisplayNameMissing() {
-        Substance substance = new SubstanceBuilder().asChemical().generateNewUUID().build();
+        Substance substance = EmaSmsFhirTestData.chemicalSubstance();
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -124,8 +121,8 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @Test
     @DisplayName("Uses bracketed display for non-primary code types")
     void usesBracketedDisplayForNonPrimaryCodeTypes() {
-        Substance substance = createChemicalSubstanceWithDisplayName("Non Primary");
-        substance.codes.add(createCode("INN", "INN-XYZ", "SECONDARY"));
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Non Primary");
+        substance.codes.add(EmaSmsFhirTestData.code("INN", "INN-XYZ", "SECONDARY"));
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -138,7 +135,7 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @DisplayName("Does not add extension when toggle is disabled")
     void doesNotAddExtensionWhenDisabled() {
         mapper.setIncludeGsrsSubstanceExtension(false);
-        Substance substance = createChemicalSubstanceWithDisplayName("No Extension");
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("No Extension");
 
         SubstanceDefinition sd = mapper.generateEmaSmsSubstanceDefinitionFromSubstance(substance);
 
@@ -148,8 +145,8 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
     @Test
     @DisplayName("Configuration Lombok methods are exercised")
     void configurationLombokMethodsAreExercised() {
-        EmaSmsFhirConfiguration a = createConfiguration();
-        EmaSmsFhirConfiguration b = createConfiguration();
+        EmaSmsFhirConfiguration a = EmaSmsFhirTestData.configuration();
+        EmaSmsFhirConfiguration b = EmaSmsFhirTestData.configuration();
 
         assertEquals(a.getCodeConfigs(), b.getCodeConfigs());
         assertEquals(a.getSubstanceTypeConfigs(), b.getSubstanceTypeConfigs());
@@ -182,9 +179,9 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
         EmaSmsSubstanceDefinitionFhirMapper a = new EmaSmsSubstanceDefinitionFhirMapper();
         EmaSmsSubstanceDefinitionFhirMapper b = new EmaSmsSubstanceDefinitionFhirMapper();
 
-        EmaSmsFhirConfiguration cfg = createConfiguration();
+        EmaSmsFhirConfiguration cfg = EmaSmsFhirTestData.configuration();
         a.setEmaSmsFhirConfiguration(cfg);
-        b.setEmaSmsFhirConfiguration(createConfiguration());
+        b.setEmaSmsFhirConfiguration(EmaSmsFhirTestData.configuration());
         a.setIncludeGsrsSubstanceExtension(true);
         b.setIncludeGsrsSubstanceExtension(true);
 
@@ -198,64 +195,6 @@ class EmaSmsSubstanceDefinitionFhirMapperTest {
 
         b.setIncludeGsrsSubstanceExtension(false);
         assertNotEquals(a, b);
-    }
-
-    private static Substance createChemicalSubstanceWithDisplayName(String name) {
-        return new SubstanceBuilder()
-                .asChemical()
-                .generateNewUUID()
-                .addName(name, n -> {
-                    n.displayName = true;
-                    n.addLanguage("en");
-                })
-                .build();
-    }
-
-    private static Code createCode(String codeSystem, String code, String type) {
-        Code c = new Code(codeSystem, code);
-        c.type = type;
-        return c;
-    }
-
-    private static EmaSmsFhirConfiguration createConfiguration() {
-        EmaSmsFhirConfiguration cfg = new EmaSmsFhirConfiguration();
-
-        Map<String, Map<String, String>> codeConfigs = new HashMap<>();
-        codeConfigs.put("ecListNumber", codeConfig("EC-TID", "ECHA (EC/EINECS)", "https://sms/codes/ec"));
-        codeConfigs.put("evCode", codeConfig("EV-TID", "EVMPD", "https://sms/codes/ev"));
-        codeConfigs.put("innNumber", codeConfig("INN-TID", "INN", "https://sms/codes/inn"));
-        codeConfigs.put("smsId", codeConfig("SMS-TID", "SMS ID", "https://sms/codes/sms"));
-        codeConfigs.put("unii", codeConfig("UNII-TID", "FDA UNII", "https://sms/codes/unii"));
-        cfg.setCodeConfigs(codeConfigs);
-
-        Map<String, Map<String, String>> substanceTypeConfigs = new HashMap<>();
-        Map<String, String> chemical = new HashMap<>();
-        chemical.put("SMS Term ID", "CHEM-TID");
-        chemical.put("SMS URL", "https://sms/types/chemical");
-        substanceTypeConfigs.put("chemical", chemical);
-        cfg.setSubstanceTypeConfigs(substanceTypeConfigs);
-
-        Map<String, Map<String, String>> miscDefaults = new HashMap<>();
-        Map<String, String> nameLanguageCoding = new HashMap<>();
-        nameLanguageCoding.put("system", "urn:ietf:bcp:47");
-        miscDefaults.put("name_language_coding", nameLanguageCoding);
-
-        Map<String, String> nameStatusCoding = new HashMap<>();
-        nameStatusCoding.put("code", "official");
-        nameStatusCoding.put("system", "https://sms/name-status");
-        nameStatusCoding.put("display", "Official");
-        miscDefaults.put("name_status_coding", nameStatusCoding);
-
-        cfg.setMiscDefaultConfigs(miscDefaults);
-        return cfg;
-    }
-
-    private static Map<String, String> codeConfig(String smsTermId, String gsrsCvTerm, String smsUrl) {
-        Map<String, String> m = new HashMap<>();
-        m.put("smsTermId", smsTermId);
-        m.put("gsrsCvTerm", gsrsCvTerm);
-        m.put("smsUrl", smsUrl);
-        return m;
     }
 }
 

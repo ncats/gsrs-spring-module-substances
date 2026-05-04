@@ -56,6 +56,18 @@
             <inherited>true</inherited>
             <configuration>
                 <argLine>-Xmx3500m</argLine>
+                <reuseForks>true</reuseForks>
+                <forkCount>1</forkCount>
+                <includes>
+                    <include>**/*Test.java</include>
+                    <include>**/*Tests.java</include>
+                </includes>
+                <excludes>
+                    <exclude>**/*IT.java</exclude>
+                    <exclude>**/*ITTest.java</exclude>
+                    <exclude>**/*FullStackTest.java</exclude>
+                    <exclude>**/*BulkLoadTest.java</exclude>
+                </excludes>
            </configuration>
         </plugin>
         <plugin>
@@ -127,6 +139,34 @@
             </resource>
         </resources>
     </build>
+
+    <profiles>
+        <profile>
+            <id>full-test-suite</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <argLine>-Xmx3500m</argLine>
+                            <reuseForks>true</reuseForks>
+                            <forkCount>1</forkCount>
+                            <includes>
+                                <include>**/*Test.java</include>
+                                <include>**/*Tests.java</include>
+                                <include>**/*ITTest.java</include>
+                                <include>**/*FullStackTest.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/*IT.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 
 

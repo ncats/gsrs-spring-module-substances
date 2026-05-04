@@ -1,7 +1,5 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +26,7 @@ class EmaSmsSimpleRecordFhirMapperTest {
     @Test
     @DisplayName("Display name fields are mapped")
     void displayNameFieldsAreMapped() {
-        Substance substance = createChemicalSubstanceWithDisplayName("Sodium Chloride");
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Sodium Chloride");
 
         EmaSmsSimpleRecord record = mapper.generateEmaSmsSimpleRecordFromSubstance(substance);
 
@@ -42,11 +40,11 @@ class EmaSmsSimpleRecordFhirMapperTest {
     @Test
     @DisplayName("Code fields are mapped and non-primary code keeps type suffix")
     void codeFieldsAreMapped() {
-        Substance substance = createChemicalSubstanceWithDisplayName("Acetaminophen");
-        substance.codes.add(createCode("EVMPD", "EV123", "PRIMARY"));
-        substance.codes.add(createCode("FDA UNII", "451W47IQ8X", "PRIMARY"));
-        substance.codes.add(createCode("INN", "INN-123", "SECONDARY"));
-        substance.codes.add(createCode("ECHA (EC/EINECS)", "231-959-4", "PRIMARY"));
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Acetaminophen");
+        substance.codes.add(EmaSmsFhirTestData.code("EVMPD", "EV123", "PRIMARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("FDA UNII", "451W47IQ8X", "PRIMARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("INN", "INN-123", "SECONDARY"));
+        substance.codes.add(EmaSmsFhirTestData.code("ECHA (EC/EINECS)", "231-959-4", "PRIMARY"));
 
         EmaSmsSimpleRecord record = mapper.generateEmaSmsSimpleRecordFromSubstance(substance);
 
@@ -59,7 +57,7 @@ class EmaSmsSimpleRecordFhirMapperTest {
     @Test
     @DisplayName("Missing display name only omits display-name specific fields")
     void missingDisplayNameStillMapsCoreFields() {
-        Substance substance = new SubstanceBuilder().asChemical().generateNewUUID().build();
+        Substance substance = EmaSmsFhirTestData.chemicalSubstance();
 
         EmaSmsSimpleRecord record = mapper.generateEmaSmsSimpleRecordFromSubstance(substance);
 
@@ -73,8 +71,8 @@ class EmaSmsSimpleRecordFhirMapperTest {
     @Test
     @DisplayName("Code-system lookup is case-insensitive")
     void codeSystemLookupIsCaseInsensitive() {
-        Substance substance = createChemicalSubstanceWithDisplayName("Case Test");
-        substance.codes.add(createCode("inn", "INN-LOWER", "PRIMARY"));
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Case Test");
+        substance.codes.add(EmaSmsFhirTestData.code("inn", "INN-LOWER", "PRIMARY"));
 
         EmaSmsSimpleRecord record = mapper.generateEmaSmsSimpleRecordFromSubstance(substance);
 
@@ -84,29 +82,12 @@ class EmaSmsSimpleRecordFhirMapperTest {
     @Test
     @DisplayName("Serialized GSRS payload is always populated")
     void serializedGsrsPayloadIsPopulated() {
-        Substance substance = createChemicalSubstanceWithDisplayName("Payload Test");
+        Substance substance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Payload Test");
 
         EmaSmsSimpleRecord record = mapper.generateEmaSmsSimpleRecordFromSubstance(substance);
 
         assertNotNull(record.getGsrsSubstance());
         assertTrue(record.getGsrsSubstance().getValue().contains("\"substanceClass\""));
-    }
-
-    private static Substance createChemicalSubstanceWithDisplayName(String name) {
-        return new SubstanceBuilder()
-                .asChemical()
-                .generateNewUUID()
-                .addName(name, n -> {
-                    n.displayName = true;
-                    n.addLanguage("en");
-                })
-                .build();
-    }
-
-    private static Code createCode(String codeSystem, String code, String type) {
-        Code c = new Code(codeSystem, code);
-        c.type = type;
-        return c;
     }
 }
 

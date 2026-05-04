@@ -6,6 +6,8 @@ import org.hl7.fhir.r5.model.StringType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -152,27 +154,22 @@ public class EmaSmsSimpleRecordTest {
         assertNotNull(record.getGsrsSubstance());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(strings = {"en", "fr", "de", "es"})
     @DisplayName("Should handle multiple language codes")
-    public void testMultipleLanguages() {
-        String[] languages = {"en", "fr", "de", "es"};
-        for (String lang : languages) {
-            EmaSmsSimpleRecord rec = new EmaSmsSimpleRecord();
-            rec.setLanguage2(new StringType(lang));
-            assertEquals(lang, rec.getLanguage2().getValue());
-        }
+    public void testMultipleLanguages(String lang) {
+        EmaSmsSimpleRecord rec = new EmaSmsSimpleRecord();
+        rec.setLanguage2(new StringType(lang));
+        assertEquals(lang, rec.getLanguage2().getValue());
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     @DisplayName("Should handle isPreferredName boolean values")
-    public void testIsPreferredNameBoolean() {
-        EmaSmsSimpleRecord rec1 = new EmaSmsSimpleRecord();
-        rec1.setIsPreferredName(new BooleanType(true));
-        assertTrue(rec1.getIsPreferredName().getValue());
-
-        EmaSmsSimpleRecord rec2 = new EmaSmsSimpleRecord();
-        rec2.setIsPreferredName(new BooleanType(false));
-        assertFalse(rec2.getIsPreferredName().getValue());
+    public void testIsPreferredNameBoolean(boolean preferred) {
+        EmaSmsSimpleRecord rec = new EmaSmsSimpleRecord();
+        rec.setIsPreferredName(new BooleanType(preferred));
+        assertEquals(preferred, rec.getIsPreferredName().getValue());
     }
 
     @Test
@@ -200,6 +197,26 @@ public class EmaSmsSimpleRecordTest {
         // Mutate original and ensure copy does not change.
         record.getSmsId().setValue("SMS-CHANGED");
         assertEquals("SMS-001", copy.getSmsId().getValue());
+    }
+
+    @Test
+    @DisplayName("copy should preserve null fields when optional values are absent")
+    public void testCopyKeepsAbsentFieldsNull() {
+        EmaSmsSimpleRecord copy = (EmaSmsSimpleRecord) record.copy();
+
+        assertAll(
+                () -> assertNull(copy.getSmsId()),
+                () -> assertNull(copy.getSubstanceName()),
+                () -> assertNull(copy.getLanguage2()),
+                () -> assertNull(copy.getIsPreferredName()),
+                () -> assertNull(copy.getNameSource()),
+                () -> assertNull(copy.getSubstanceType()),
+                () -> assertNull(copy.getEvCode()),
+                () -> assertNull(copy.getUnii()),
+                () -> assertNull(copy.getInnNumber()),
+                () -> assertNull(copy.getEcListNumber()),
+                () -> assertNull(copy.getGsrsSubstance())
+        );
     }
 
     @Test

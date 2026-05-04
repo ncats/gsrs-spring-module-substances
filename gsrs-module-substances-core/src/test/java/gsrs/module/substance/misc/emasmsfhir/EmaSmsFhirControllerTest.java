@@ -1,7 +1,6 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
 import gsrs.module.substance.SubstanceEntityService;
-import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -10,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 
-import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -31,23 +29,13 @@ class EmaSmsFhirControllerTest {
         substanceEntityService = mock(SubstanceEntityService.class);
         emaSmsSubstanceDefinitionFhirMapper = mock(EmaSmsSubstanceDefinitionFhirMapper.class);
         controller = new EmaSmsFhirController();
-        setField(controller, "substanceEntityService", substanceEntityService);
-        setField(controller, "emaSmsSimpleRecordFhirMapper", new EmaSmsSimpleRecordFhirMapper());
-        setField(controller, "emaSmsSubstanceDefinitionFhirMapper", emaSmsSubstanceDefinitionFhirMapper);
+        EmaSmsFhirTestData.setField(controller, "substanceEntityService", substanceEntityService);
+        EmaSmsFhirTestData.setField(controller, "emaSmsSimpleRecordFhirMapper", new EmaSmsSimpleRecordFhirMapper());
+        EmaSmsFhirTestData.setField(controller, "emaSmsSubstanceDefinitionFhirMapper", emaSmsSubstanceDefinitionFhirMapper);
 
         testSubstanceId = "306d24b9-a6b8-4091-8024-02f9ec24b705";
-        testSubstance = new Substance();
+        testSubstance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Sodium Chloride");
         testSubstance.setUuid(UUID.fromString(testSubstanceId));
-        testSubstance.substanceClass = Substance.SubstanceClass.chemical;
-
-        Name displayName = new Name();
-        displayName.name = "Sodium Chloride";
-        displayName.displayName = true;
-        displayName.addLanguage("en");
-        testSubstance.names = new ArrayList<>();
-        testSubstance.names.add(displayName);
-
-        testSubstance.codes = new ArrayList<>();
     }
 
     @Test
@@ -154,23 +142,6 @@ class EmaSmsFhirControllerTest {
         controller.makeSimpleEmaSmsRecord(testSubstanceId);
 
         verify(substanceEntityService, times(1)).flexLookup(testSubstanceId);
-    }
-
-    private static void setField(Object target, String fieldName, Object value) {
-        Class<?> current = target.getClass();
-        while (current != null) {
-            try {
-                java.lang.reflect.Field field = current.getDeclaredField(fieldName);
-                field.setAccessible(true);
-                field.set(target, value);
-                return;
-            } catch (NoSuchFieldException ignored) {
-                current = current.getSuperclass();
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        throw new IllegalArgumentException("Could not find field: " + fieldName);
     }
 }
 

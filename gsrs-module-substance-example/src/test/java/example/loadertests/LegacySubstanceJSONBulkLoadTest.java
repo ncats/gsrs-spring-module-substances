@@ -1,6 +1,8 @@
 package example.loadertests;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,7 +27,6 @@ import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.service.PayloadService;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.validator.GsrsValidatorFactory;
 import ix.core.models.Payload;
 import ix.core.processing.PayloadProcessor;
 import ix.core.stats.Statistics;
@@ -42,9 +43,6 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
 
     @Autowired
     private SubstanceEntityService substanceEntityService;
-
-    @Autowired
-    private GsrsValidatorFactory validatorFactory;
 
     public LegacySubstanceJSONBulkLoadTest(){
         super(false);
@@ -85,27 +83,30 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
                 .build());
 
         String statKey = pp.key;
-        boolean done =false;
-        Statistics statistics=null;
-        while(!done){
-            statistics = bulkLoadService.getStatisticsFor(statKey);
-
-            if(statistics._isDone()){
-                System.out.println(statistics);
-                break;
-            }
-            Thread.sleep(1000);
-        }
+        Statistics statistics = waitForCompletion(statKey, TimeUnit.MINUTES.toMillis(10));
+        assertNotNull(statistics, "statistics should be present after waitForCompletion");
         //depending on the order the bulk load might fail if the substance currently requires a related substance to be present
         //(for example alt def?)
         assertEquals(90,statistics.totalFailedAndPersisted());
-        Statistics effectivelyFinalStatistics = statistics;
         TransactionTemplate tx3 = new TransactionTemplate(transactionManager);
         tx3.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx3.executeWithoutResult( ignored ->{
-            assertEquals(effectivelyFinalStatistics.recordsPersistedSuccess.get(), substanceEntityService.count() - startCount.get());
-        });
+        tx3.executeWithoutResult(ignored ->
+                assertEquals(statistics.recordsPersistedSuccess.get(), substanceEntityService.count() - startCount.get()));
 
 
+    }
+
+    private Statistics waitForCompletion(String statKey, long timeoutMs) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        while (System.currentTimeMillis() < deadline) {
+            Statistics statistics = bulkLoadService.getStatisticsFor(statKey);
+            if (statistics != null && statistics._isDone()) {
+                System.out.println(statistics);
+                return statistics;
+            }
+            Thread.sleep(500);
+        }
+        fail("Timed out waiting for bulk load statistics for key: " + statKey);
+        return null;
     }
 }

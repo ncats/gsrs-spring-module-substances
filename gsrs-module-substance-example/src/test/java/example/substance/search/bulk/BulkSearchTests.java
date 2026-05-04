@@ -15,8 +15,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 
 import example.GsrsModuleSubstanceApplication;
 import gsrs.cache.GsrsCache;
@@ -26,6 +28,7 @@ import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.GsrsFullStackTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -48,7 +51,13 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Import(AutowireHelper.class)
 public class BulkSearchTests extends AbstractSubstanceJpaFullStackEntityTest {
+
+    public BulkSearchTests() {
+        super(false);
+    }
 
     @Autowired
     private TestIndexValueMakerFactory testIndexValueMakerFactory;
@@ -71,35 +80,37 @@ public class BulkSearchTests extends AbstractSubstanceJpaFullStackEntityTest {
 	@Autowired
 	private GsrsCache cache;
 
-    private String fileName = "rep18.gsrs";
+    private static final String TEST_DATA_FILE = "rep18.gsrs";
     
     private TextIndexer indexer;	
 	
 	private SearchOptions options;
     
-    private void setupSearchOptions(Boolean searchOnIdentifier) {
+    private void setupSearchOptions(boolean searchOnIdentifier) {
 		options = new SearchOptions();
 		options.setTop(10);
 		options.setSkip(0);
 		options.setKind(Substance.class);
-		options.setBulkSearchOnIdentifiers(false);
+		options.setBulkSearchOnIdentifiers(searchOnIdentifier);
 		options.setDefaultField(TextIndexer.FULL_IDENTIFIER_FIELD);
 	}
 
     @BeforeEach
     public void clearIndexers() throws IOException {
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        {
-            ValidatorConfig config = new DefaultValidatorConfig();
-            config.setValidatorClass(ChemicalValidator.class);
-            config.setNewObjClass(ChemicalSubstance.class);
-            factory.addValidator("substances", config);
-        }
+        if (substanceRepository.count() == 0) {
+            SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+            AutowireHelper.getInstance().autowire(hashIndexer);
+            testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+            {
+                ValidatorConfig config = new DefaultValidatorConfig();
+                config.setValidatorClass(ChemicalValidator.class);
+                config.setNewObjClass(ChemicalSubstance.class);
+                factory.addValidator("substances", config);
+            }
 
-        File dataFile = new ClassPathResource(fileName).getFile();
-        loadGsrsFile(dataFile);
+            File dataFile = new ClassPathResource(TEST_DATA_FILE).getFile();
+            loadGsrsFile(dataFile);
+        }
         
     }
 

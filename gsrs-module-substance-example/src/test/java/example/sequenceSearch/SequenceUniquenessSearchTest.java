@@ -6,6 +6,7 @@ import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.GsrsFullStackTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -25,6 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +41,12 @@ import java.util.stream.Stream;
 @Slf4j
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class SequenceUniquenessSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
+
+    public SequenceUniquenessSearchTest() {
+        super(false);
+    }
 
     @Autowired
     private SubstanceLegacySearchService searchService;
@@ -60,22 +67,24 @@ public class SequenceUniquenessSearchTest extends AbstractSubstanceJpaFullStackE
     @Autowired
     private TestGsrsValidatorFactory factory;
 
-    private String fileName = "rep18.gsrs";
+    private static final String TEST_DATA_FILE = "rep18.gsrs";
 
     @BeforeEach
     public void clearIndexers() throws IOException {
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        {
-            ValidatorConfig config = new DefaultValidatorConfig();
-            config.setValidatorClass(ChemicalValidator.class);
-            config.setNewObjClass(ChemicalSubstance.class);
-            factory.addValidator("substances", config);
-        }
+        if (substanceRepository.count() == 0) {
+            SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+            AutowireHelper.getInstance().autowire(hashIndexer);
+            testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+            {
+                ValidatorConfig config = new DefaultValidatorConfig();
+                config.setValidatorClass(ChemicalValidator.class);
+                config.setNewObjClass(ChemicalSubstance.class);
+                factory.addValidator("substances", config);
+            }
 
-        File dataFile = new ClassPathResource(fileName).getFile();
-        loadGsrsFile(dataFile);
+            File dataFile = new ClassPathResource(TEST_DATA_FILE).getFile();
+            loadGsrsFile(dataFile);
+        }
     }
 
     @Test
