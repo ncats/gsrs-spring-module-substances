@@ -17,3 +17,8 @@ having to make people track down those repositories, we provide sample jars that
 ```
 ./installExtraJars.cmd 
 ```
+
+## Additional documentation
+
+- Test refactoring and stabilization status: [`TEST_REFACTORING_STATUS.md`](./TEST_REFACTORING_STATUS.md)
+
