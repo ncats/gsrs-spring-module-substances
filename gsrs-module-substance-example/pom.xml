@@ -54,6 +54,13 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <inherited>true</inherited>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.maven.surefire</groupId>
+                    <artifactId>surefire-junit-platform</artifactId>
+                    <version>2.22.2</version>
+                </dependency>
+            </dependencies>
             <configuration>
                 <argLine>-Xmx3500m</argLine>
                 <reuseForks>true</reuseForks>
@@ -148,6 +155,13 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-surefire-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit-platform</artifactId>
+                                <version>2.22.2</version>
+                            </dependency>
+                        </dependencies>
                         <configuration>
                             <argLine>-Xmx3500m</argLine>
                             <reuseForks>true</reuseForks>
@@ -251,6 +265,11 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-fda-substance-extension</artifactId>
+            <version>${gsrs.substance.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>gsrs-ema-fhir-substance-extension</artifactId>
             <version>${gsrs.substance.version}</version>
         </dependency>
         <dependency>
