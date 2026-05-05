@@ -11,7 +11,9 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import javax.print.DocFlavor;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,7 +24,8 @@ class SmartsIndexValueMakerTest {
     void testNitroGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("Nitrobenzene");
-        builder.setStructureWithDefaultReference("[O-][N+](=O)c1ccccc1");
+        String inputSmiles = "[O-][N+](=O)C1=CC=CC=C1";
+        builder.setStructureWithDefaultReference(inputSmiles);
         ChemicalSubstance nitrobenzene = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
@@ -35,7 +38,8 @@ class SmartsIndexValueMakerTest {
     void testNoNitroGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("Toluene");
-        builder.setStructureWithDefaultReference("Cc1ccccc1");
+        String inputSmiles = "CC1=CC=CC=C1";
+        builder.setStructureWithDefaultReference(inputSmiles);
         ChemicalSubstance nitrobenzene = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
@@ -48,7 +52,8 @@ class SmartsIndexValueMakerTest {
     void testCarboxylateGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("benzoic acid");
-        builder.setStructureWithDefaultReference("c1ccccc1C(=O)O");
+        String inputSmiles = "C1=CC=CC=C1C(=O)O";
+        builder.setStructureWithDefaultReference(inputSmiles);
         ChemicalSubstance nitrobenzene = builder.build();
 
         String acidGroupName = "carboxlic acid";
@@ -73,11 +78,12 @@ class SmartsIndexValueMakerTest {
                 this.getClass().getResourceAsStream(molfilePath),
                 "UTF-8"
         );
-
+        String smiles = "[Na+].CN1=CNC(=C1[O-])[N+](=O)[O-]";
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
         GinasChemicalStructure structure = new GinasChemicalStructure();
-        structure.molfile= molfileText;
+        //structure.molfile= molfileText;
+        structure.smiles = smiles;
         builder.setStructure(structure);
         ChemicalSubstance mol1 = builder.build();
 
@@ -102,7 +108,7 @@ class SmartsIndexValueMakerTest {
     void testTetrazoleMatch() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
-        builder.setStructureWithDefaultReference("C(O)(=O)C1N2[C@@]([C@H](NC(/C(=N\\OC)/c3nc(N)sc3)=O)C2=O)(SC=C1Cn4nc(C)nn4)[H]");
+        builder.setStructureWithDefaultReference("C(O)(=O)C1N2[C@@]([C@H](NC(/C(=N\\OC)/C3=NC(N)S=C3)=O)C2=O)(SC=C1CN4N=C(C)N=N4)[H]");
         ChemicalSubstance mol1 = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
