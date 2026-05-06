@@ -6,7 +6,6 @@ import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -83,7 +82,6 @@ class SmartsIndexValueMakerTest {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
         GinasChemicalStructure structure = new GinasChemicalStructure();
-        //structure.molfile= molfileText;
         structure.smiles = smiles;
         builder.setStructure(structure);
         ChemicalSubstance mol1 = builder.build();
