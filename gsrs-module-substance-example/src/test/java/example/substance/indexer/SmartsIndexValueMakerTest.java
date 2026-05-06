@@ -1,6 +1,5 @@
 package example.substance.indexer;
 
-import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.indexers.SmartsIndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -11,9 +10,7 @@ import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import javax.print.DocFlavor;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -45,7 +42,8 @@ class SmartsIndexValueMakerTest {
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().noneMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals("true")));
+        Assertions.assertTrue(indexedValues.stream().noneMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL)
+                && i.value().equals("nitro")));
     }
 
     @Test
@@ -73,11 +71,14 @@ class SmartsIndexValueMakerTest {
 
     @Test
     void testImidazoleOnce() throws IOException {
+        //todo: make this test work using a molfile
+
+        /*
         String molfilePath = "/molfiles/4XXR6FT8ZA.mol";
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream(molfilePath),
                 "UTF-8"
-        );
+        );*/
         String smiles = "[Na+].CN1=CNC(=C1[O-])[N+](=O)[O-]";
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
@@ -95,7 +96,7 @@ class SmartsIndexValueMakerTest {
         Map<String, String> smarts = new LinkedHashMap<>();
         smarts.put("0", "c1cnc[nH]1");
         smarts.put("1", "C1=CN=CN1");
-        configItems.put("smarts", smarts); //₠
+        configItems.put("smarts", smarts);
         config.put(1, configItems);
         indexer.setRawIndexables(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
