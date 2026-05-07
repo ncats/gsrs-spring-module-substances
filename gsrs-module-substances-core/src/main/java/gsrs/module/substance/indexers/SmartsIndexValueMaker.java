@@ -1,6 +1,8 @@
 package gsrs.module.substance.indexers;
 
 import gov.nih.ncats.common.stream.StreamUtil;
+import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.molwitch.cdk.search.CdkMolSearcher;
 import gov.nih.ncats.molwitch.search.MolSearcher;
 import gov.nih.ncats.molwitch.search.MolSearcherFactory;
 import ix.core.search.text.IndexValueMaker;
@@ -8,7 +10,9 @@ import ix.core.search.text.IndexableValue;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.compress.archivers.sevenz.SevenZOutputFile;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -72,20 +76,36 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
             setupComplete=true;
         }
             ChemicalSubstance chemical = (ChemicalSubstance) substance;
-            indexables.forEach(i->{
+        Chemical toMatch = null;
+        try {
+            toMatch = Chemical.parseMol(chemical.getStructureMolfile());
+            System.out.printf("toMatch SMILES: %s %n", toMatch.toSmiles());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        final Chemical toUse = toMatch;
+        indexables.forEach(i->{
                 log.trace("Looking for chemical matches using smarts with name {} with {} SMARTS patterns to match", i.getName(), i.getSMARTSList().size());
                 boolean foundMatchWithCurrentIdea =false;
                 for(int item = 0; item< i.getSMARTSList().size() && !foundMatchWithCurrentIdea; item++) {
                     String smarts = i.getSMARTSList().get(item);
-                    Optional<MolSearcher> optSearcher= MolSearcherFactory.create(smarts);
-                    if( optSearcher.isPresent()) {
-                        MolSearcher searcher= optSearcher.get();
-                        Optional<int[]> matches= searcher.search(chemical.toChemical());
+                    Chemical searchChemical = null;
+                    try {
+                        searchChemical = Chemical.createFromSmarts(smarts);
+                        System.out.printf("searchable smarts: %s\n", searchChemical.toSmarts());
+                    } catch (IOException e) {
+                        log.error("Error parsing SMARTS {}. Message: {}", smarts, e.getMessage());
+                        continue;
+                    }
+                    CdkMolSearcher searcher = new CdkMolSearcher(searchChemical);
+                    //Optional<MolSearcher> optSearcher= MolSearcherFactory.create(smarts);
+                        //MolSearcher searcher= optSearcher.get();
+                        Optional<int[]> matches= searcher.search(toUse);
                         if( matches.isPresent() && matches.get().length>0) {
                             foundMatchWithCurrentIdea=true;
                         }
                     }
-                }
+
                 if( foundMatchWithCurrentIdea) {
                     log.trace("chemical matches smarts with name {}", i.getName());
                     consumer.accept(IndexableValue.simpleFacetStringValue(FACET_NAME_FULL, i.getName()));

@@ -8,6 +8,7 @@ import ix.ginas.models.v1.GinasChemicalStructure;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -72,17 +73,17 @@ class SmartsIndexValueMakerTest {
     void testImidazoleOnce() throws IOException {
         //todo: make this test work using a molfile
 
-        /*
         String molfilePath = "/molfiles/4XXR6FT8ZA.mol";
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream(molfilePath),
                 "UTF-8"
-        );*/
+        );
         String smiles = "[Na+].CN1=CNC(=C1[O-])[N+](=O)[O-]";
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
         GinasChemicalStructure structure = new GinasChemicalStructure();
-        structure.smiles = smiles;
+        //structure.smiles = smiles;
+        structure.molfile = molfileText;
         builder.setStructure(structure);
         ChemicalSubstance mol1 = builder.build();
 
