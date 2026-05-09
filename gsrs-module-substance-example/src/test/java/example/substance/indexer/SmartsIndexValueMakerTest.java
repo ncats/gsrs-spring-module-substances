@@ -71,8 +71,6 @@ class SmartsIndexValueMakerTest {
 
     @Test
     void testImidazoleOnce() throws IOException {
-        //todo: make this test work using a molfile
-
         String molfilePath = "/molfiles/4XXR6FT8ZA.mol";
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream(molfilePath),
