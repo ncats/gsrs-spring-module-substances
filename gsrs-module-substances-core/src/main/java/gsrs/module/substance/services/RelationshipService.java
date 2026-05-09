@@ -1,22 +1,17 @@
 package gsrs.module.substance.services;
 
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import gov.nih.ncats.common.Tuple;
-import gsrs.DefaultDataSourceConfig;
 import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
@@ -30,6 +25,7 @@ import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.utils.RelationshipUtil;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
@@ -46,12 +42,31 @@ public class RelationshipService {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-//    @Autowired
-    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
-    private EntityManager entityManager;
-
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
+
+    private Reference copyReferenceForInverseRelationship(Reference original) {
+        Reference copy = new Reference();
+        copy.citation = original.citation;
+        copy.docType = original.docType;
+        copy.documentDate = copyDate(original.documentDate);
+        copy.publicDomain = original.publicDomain;
+        copy.tags = original.tags == null ? new EmbeddedKeywordList() : new EmbeddedKeywordList(original.tags);
+        copy.uploadedFile = original.uploadedFile;
+        copy.id = original.id;
+        copy.url = original.url;
+        copy.deprecated = original.deprecated;
+        copy.setCreated(copyDate(original.getCreated()));
+        copy.setLastEdited(copyDate(original.getLastEdited()));
+        copy.createdBy = original.createdBy;
+        copy.lastEditedBy = original.lastEditedBy;
+        copy.setAccess(new LinkedHashSet<>(original.getAccess()));
+        return copy;
+    }
+
+    private Date copyDate(Date date) {
+        return date == null ? null : new Date(date.getTime());
+    }
     
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
 
@@ -216,27 +231,27 @@ public class RelationshipService {
             List<Reference> refsToRemove = new ArrayList<>();
 
             //TODO: fix this to remove the actual references from the substance
-            Set<Keyword> keepRefs= r1.getReferences()
-                    .stream()
-                    .map(r->osub2.getReferenceByUUID(r.term))
-                    .map(r-> Tuple.of("SYSTEM".equals(r.docType),r))
-                    .filter(t->{
-                        if(!t.k()){
-                            Reference toRemove=t.v();
-                            long dependencies=toRemove.getElementsReferencing()
-                                    .stream()
-                                    .map(elm-> EntityUtils.EntityWrapper.of(elm))
-                                    .filter(ew->!r1.uuid.equals(ew.getId().orElse(null)))
-                                    .count();
-                            if(dependencies<=0){
-                                refsToRemove.add(toRemove);
-                            }
-                        }
-                        return t.k();
-                    })
-                    .map(t->t.v())
-                    .map(ref->ref.asKeyword())
-                    .collect(Collectors.toSet());
+            Set<Keyword> keepRefs = new LinkedHashSet<>();
+            for (Keyword relationshipReference : r1.getReferences()) {
+                Reference existingRef = osub2.getReferenceByUUID(relationshipReference.term);
+                if (existingRef == null) {
+                    log.warn("Removing dangling reference {} from inverse relationship {} on substance {}",
+                            relationshipReference.term, r1.uuid, osub2.uuid);
+                    continue;
+                }
+                if ("SYSTEM".equals(existingRef.docType)) {
+                    keepRefs.add(existingRef.asKeyword());
+                    continue;
+                }
+                long dependencies = existingRef.getElementsReferencing()
+                        .stream()
+                        .map(elm -> EntityUtils.EntityWrapper.of(elm))
+                        .filter(ew -> !r1.uuid.equals(ew.getId().orElse(null)))
+                        .count();
+                if (dependencies <= 0) {
+                    refsToRemove.add(existingRef);
+                }
+            }
 
 
             r1.setComments(inverse.comments);
@@ -279,20 +294,17 @@ public class RelationshipService {
             for (Keyword k : updatedInverseRelationship.getReferences()) {
 
                 Reference ref = otherSubstance.getReferenceByUUID(k.getValue());
+                if (ref == null) {
+                    log.warn("Skipping dangling source reference {} while updating inverse relationship {} on substance {}",
+                            k.getValue(), r1.uuid, osub2.uuid);
+                    continue;
+                }
                 if("SYSTEM".equals(ref.docType)){
                     continue;
                 }
 
-                if(ref!=null){
-                    try {
-                        Reference newRef = EntityUtils.EntityWrapper.of(ref).getClone();
-                        newRef.uuid =null;
-                        r1.addReference(newRef, osub2);
-                        this.entityManager.merge(newRef);
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
-                }
+                Reference newRef = copyReferenceForInverseRelationship(ref);
+                r1.addReference(newRef, osub2);
             }
             osub2.forceUpdate();
             Substance osub3=RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
@@ -396,13 +408,13 @@ public class RelationshipService {
 
                         for (Keyword kw : obj.getReferences()) {
                             Reference origRef = obj.fetchOwner().getReferenceByUUID(kw.getValue());
-                            try {
-                                Reference newRef = EntityUtils.EntityWrapper.of(origRef).getClone();
-                                newRef.uuid = null; //blank out UUID so it generates a new one on save
-                                r.addReference(newRef, newSub);
-                            } catch (JsonProcessingException e) {
-                                e.printStackTrace();
+                            if (origRef == null) {
+                                log.warn("Skipping dangling source reference {} while creating inverse relationship {} on substance {}",
+                                        kw.getValue(), r.uuid, newSub.uuid);
+                                continue;
                             }
+                            Reference newRef = copyReferenceForInverseRelationship(origRef);
+                            r.addReference(newRef, newSub);
                         }
 
                         if (newSub != null) {

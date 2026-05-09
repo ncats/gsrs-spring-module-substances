@@ -14,6 +14,7 @@ import ix.core.models.Group;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Note;
+import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
@@ -660,6 +661,61 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
             assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
             assertEquals(oid1, oid2);
         
+    }
+
+    @Test
+    public void updateRelationshipWithDanglingReferenceShouldUpdateInverseAndSkipDanglingReference() throws Exception {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID danglingReference = UUID.randomUUID();
+        String foo_bar = "foo->bar";
+        String bar_foo = "bar->foo";
+        String updatedComment = "updated relationship comment";
+
+        new SubstanceBuilder()
+                .addName("sub1")
+                .setUUID(uuid1)
+                .buildJsonAnd(this::assertCreatedAPI);
+        new SubstanceBuilder()
+                .addName("sub2")
+                .setUUID(uuid2)
+                .buildJsonAnd(this::assertCreatedAPI);
+
+        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
+        final Substance sub2ForRelationship = sub2Fetched;
+
+        sub1Fetched.toBuilder()
+                .andThen(s -> {
+                    Reference relationshipReference = new Reference();
+                    relationshipReference.citation = "relationship reference";
+                    relationshipReference.docType = "Notes";
+
+                    Relationship rel = new Relationship();
+                    rel.type = foo_bar;
+                    rel.relatedSubstance = sub2ForRelationship.asSubstanceReference();
+                    rel.addReference(relationshipReference, s);
+                    s.addRelationship(rel);
+                })
+                .buildJsonAnd(this::assertUpdatedAPI);
+
+        sub1Fetched = substanceEntityService.get(uuid1).get();
+        sub1Fetched.toBuilder()
+                .andThen(s -> {
+                    Relationship rel = s.relationships.get(0);
+                    rel.comments = updatedComment;
+                    rel.addReference(danglingReference.toString());
+                })
+                .buildJsonAnd(this::assertUpdatedAPI);
+
+        sub2Fetched = substanceEntityService.get(uuid2).get();
+        assertEquals("3", sub2Fetched.version);
+        assertEquals(1, sub2Fetched.relationships.size());
+        assertEquals(bar_foo, sub2Fetched.relationships.get(0).type);
+        assertEquals(updatedComment, sub2Fetched.relationships.get(0).comments);
+        assertTrue(sub2Fetched.relationships.get(0).getReferences()
+                .stream()
+                .noneMatch(ref -> danglingReference.toString().equals(ref.getValue())));
     }
     
     
