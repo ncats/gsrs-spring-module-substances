@@ -72,7 +72,7 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
 
         //TODO do we need to toUpper() here or is EqualsIgnoreCase OK ?
         String upper = substanceKeyType.toUpperCase();
-        if("APPROVAL_ID".equals(upper) || "UUID".equals(upper)){
+        if("APPROVAL_ID".equals(upper) || "UNII".equals(upper) || "UUID".equals(upper)){
             return findByResolvedId(substanceKey);
         }
         //root_codes_<CODE_SYSTEM>:"^<CODE>$"
