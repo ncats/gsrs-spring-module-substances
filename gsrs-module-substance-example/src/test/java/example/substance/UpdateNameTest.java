@@ -1,6 +1,7 @@
 package example.substance;
 
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.NameOrg;
@@ -46,6 +47,34 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         assertEquals("MyName org", actualNameOrg.nameOrg);
         UUID nameOrgId = actualNameOrg.getUuid();
         assertNotNull(nameOrgId);
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = "Admin")
+    public void updateChemicalStructureWithExistingNameOrg(){
+        UUID nameOrgUuid = UUID.randomUUID();
+
+        Substance created = assertCreated(new SubstanceBuilder()
+                .asChemical()
+                .setStructureWithDefaultReference("CCO")
+                .addName("Chemical Name", n -> {
+                    NameOrg org = new NameOrg();
+                    org.setUuid(nameOrgUuid);
+                    org.nameOrg = "MyName org";
+                    n.nameOrgs.add(org);
+                })
+                .buildJson());
+
+        ChemicalSubstanceBuilder updateBuilder = SubstanceBuilder.from(created.toFullJsonNode());
+        Substance updated = assertUpdated(updateBuilder
+                .setStructureWithDefaultReference("CCCO")
+                .buildJson());
+
+        List<NameOrg> actualNameOrgs = updated.getAllNames().get(0).nameOrgs;
+
+        assertThat(actualNameOrgs.stream().map(no -> no.nameOrg).collect(Collectors.toList()),
+                contains("MyName org"));
+        assertEquals(nameOrgUuid, actualNameOrgs.get(0).getUuid());
     }
 
 

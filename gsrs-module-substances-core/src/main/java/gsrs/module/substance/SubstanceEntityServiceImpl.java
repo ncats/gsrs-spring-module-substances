@@ -39,6 +39,7 @@ import ix.ginas.models.v1.MixtureSubstance;
 import ix.ginas.models.v1.NucleicAcid;
 import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.NameOrg;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.OtherLinks;
 import ix.ginas.models.v1.Polymer;
@@ -717,6 +718,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 : null;
         Map<UUID, Name> existingNames = mapByUuid(managed.names);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
+        Map<UUID, NameOrg> existingNameOrgs = mapNameOrgsByUuid(managed.names);
         Map<UUID, Note> existingNotes = mapByUuid(managed.notes);
         Map<UUID, Property> existingProperties = mapByUuid(managed.properties);
         Map<UUID, Parameter> existingParameters = mapByUuid(flattenParameters(managed.properties));
@@ -760,6 +762,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             replacedChemical.setMoieties(replacementMoieties);
         }
         replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
+        reconcileNestedNameOrgs(replaced.names, existingNameOrgs);
         replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
         replaced.notes = reconcileManagedChildren(replaced.notes, existingNotes, child -> child.setOwner(replaced));
         replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
@@ -785,6 +788,35 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             }
         }
         return mapped;
+    }
+
+    private Map<UUID, NameOrg> mapNameOrgsByUuid(List<Name> names) {
+        List<NameOrg> nameOrgs = new ArrayList<>();
+        if (names == null) {
+            return mapByUuid(nameOrgs);
+        }
+        for (Name name : names) {
+            if (name != null && name.nameOrgs != null) {
+                nameOrgs.addAll(name.nameOrgs);
+            }
+        }
+        return mapByUuid(nameOrgs);
+    }
+
+    private void reconcileNestedNameOrgs(List<Name> names, Map<UUID, NameOrg> existingNameOrgs) throws IOException {
+        if (names == null) {
+            return;
+        }
+        for (Name name : names) {
+            if (name == null) {
+                continue;
+            }
+            List<NameOrg> reconciledNameOrgs = reconcileManagedChildren(name.nameOrgs, existingNameOrgs, child -> {
+            });
+            if (reconciledNameOrgs != null) {
+                name.nameOrgs = reconciledNameOrgs;
+            }
+        }
     }
 
     private <T extends GinasCommonData> List<T> reconcileManagedChildren(List<T> updatedValues,
