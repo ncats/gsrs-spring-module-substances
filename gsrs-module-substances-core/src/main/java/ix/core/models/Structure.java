@@ -19,10 +19,12 @@ import ix.core.chem.ChemCleaner;
 import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.converters.StereoConverter;
+import ix.ginas.models.converters.TrimmedUUIDJavaType;
+import ix.ginas.models.converters.TrimmedUUIDStringConverter;
 import ix.utils.Util;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JavaType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -31,7 +33,6 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-//@MappedSuperclass
 @Entity
 @Inheritance
 @DiscriminatorValue("DEF")
@@ -43,8 +44,9 @@ public class Structure extends BaseModel {
     @Id
     @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
     @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by basic hibernate will store uuids as binary
- //   @Type(type = "uuid-char" )
+    // Maintain backwards compatibility with legacy GSRS varchar UUID storage.
+    @JavaType(TrimmedUUIDJavaType.class)
+    @Convert(converter = TrimmedUUIDStringConverter.class)
     @Column(length =40, updatable = false)
     public UUID id;
 
@@ -189,27 +191,6 @@ public class Structure extends BaseModel {
     @Indexable(name = "Molecular Formula", facet = true)
     public String formula;
 
-//    @JsonProperty("_formulaHTML")
-//    public String getHtmlFormula() {
-//        if (formula == null) {
-//            return "";
-//        }
-//        String HTMLFormula = formula.replaceAll("([a-zA-Z])([0-9]+)", "$1<sub>$2</sub>");
-//        if (charge != null && charge != 0 && !HTMLFormula.contains(".")) {
-//            String sCharge = Integer.toString(charge);
-//            String sSign = "+";
-//            if (charge < 0) {
-//                sCharge = sCharge.substring(1);
-//                sSign = "-";
-//            }
-//            if ("1".equals(sCharge)) {
-//                sCharge = "";
-//            }
-//            HTMLFormula = HTMLFormula + "<sup>" + sCharge + sSign + "</sup>";
-//        }
-//        return HTMLFormula;
-//    }
-
     public void updateStructureFields(Structure other){
         if(other !=null) {
             this.properties.clear();
@@ -318,7 +299,6 @@ public class Structure extends BaseModel {
         if(atropisomerism==null){
             atropisomerism= NYU.No;
         }
-//        System.out.println("before = "+ this.molfile);
         //GSRS-1515 clean up structure
         if(this.molfile !=null && !this.molfile.trim().isEmpty()){
             try {
@@ -328,7 +308,6 @@ public class Structure extends BaseModel {
                 //don't update it
             }
         }
-//        System.out.println("after = "+ this.molfile);
     }
 
 
@@ -379,21 +358,6 @@ public class Structure extends BaseModel {
 		return id.toString();
 	}
 
-    //TODO katzelda Feb 2021 : this is done elsewhere in the springboot
-//	@Override
-//	public void forceUpdate() {
-//		lastEdited=new Date();
-//		super.save();
-//	}
-//
-//	@Override
-//	public boolean tryUpdate() {
-//		long ov=version;
-//		super.save();
-//		return ov!=version;
-//	}
-
-
     public void setId(UUID newid){
         if(this.id==null){
             this.id=newid;
@@ -409,28 +373,6 @@ public class Structure extends BaseModel {
      * or not easily accessible due to some transient state.
      * @return
      */
-    /*
-    @JsonIgnore
-    public Structure getDisplayStructure(){
-    	Structure sfetch = StructureFactory.getStructure(this.id);
-    	
-    	if(sfetch==null || !sfetch.version.equals(this.version)){
-    		try{
-	    		Structure s= EntityWrapper.of(this).getClone();
-	    		s.id = Util.sha1UUID(s.molfile+":" + s.digest);
-	    		StructureFactory.saveTempStructure(s);
-	    		return s;
-    		}catch(Exception e){
-    			log.error("Error saving display structure" , e);
-    			StructureFactory.saveTempStructure(this);
-    			return this;
-    		}
-    	}
-    	return this;
-    	
-    }
-    */
-
     @JsonIgnore
     @Transient
     public Chemical toChemical() {

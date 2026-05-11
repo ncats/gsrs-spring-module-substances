@@ -1,6 +1,8 @@
 package ix.ginas.models.v1;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import ix.core.SingleParent;
@@ -10,7 +12,6 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
-import org.hibernate.annotations.Type;
 
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -77,17 +78,23 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
     @PrePersist
     @PreUpdate
     public void enforce(){
-    	if(structure.id==null){
-    		structure.id=UUID.randomUUID();
-    	}
-    	this.innerUuid=structure.id.toString();
+        if (structure != null && structure.id != null) {
+            this.innerUuid = structure.id.toString();
+        } else if (this.innerUuid == null) {
+            this.innerUuid = UUID.randomUUID().toString();
+        }
     	if(uuid==null){
     		uuid= UUID.randomUUID();
 		}
     }
-	public String fetchGlobalId() {
-		return this.uuid == null ? null : this.uuid.toString();
-	}
+    public String fetchGlobalId() {
+        return this.uuid == null ? null : this.uuid.toString();
+    }
+
+    @Indexable()
+    public UUID getUuid() {
+        return uuid;
+    }
 	/**
 	 * Set the Count {@link Amount} only if the count
 	 * is not already set.  If you really want o
@@ -148,13 +155,32 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 	
 	
 
-	public UUID getUUID(){
+	@JsonIgnore
+    public UUID getUUID(){
 		if(this.innerUuid!=null){
-			return UUID.fromString(this.innerUuid);
+			return UUID.fromString(this.innerUuid.trim());
 		}else{
 			return null;
 		}
 	}
+
+    /**
+     * Preserve the legacy wire format where a moiety's top-level "uuid"
+     * aliases the unwrapped structure id. The frontend render path expects
+     * this field to be the renderable structure identifier.
+     */
+    @JsonGetter("uuid")
+    public UUID getJsonUuid() {
+        if (structure != null && structure.id != null) {
+            return structure.id;
+        }
+        return uuid;
+    }
+
+    @JsonSetter("uuid")
+    public void setJsonUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
 	
 //	@Override
 //	public void forceUpdate() {

@@ -49,6 +49,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.MultiValueMap;
@@ -1193,6 +1194,31 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 error[0] = "error approving substance " + substance.getBestId() + ": " + e.getMessage();
                 return Optional.empty();
             }    	
+    }
+
+    @Override
+    @canEditPublicData
+    @PutGsrsRestApiMapping
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
+        if (getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in updateEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message,
+                    this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        log.info("updating entity {}", getEntityService().getContext());
+        GsrsEntityService.UpdateResult<Substance> result = getEntityService().updateEntity(updatedEntityJson);
+        if (result.getStatus() == GsrsEntityService.UpdateResult.STATUS.NOT_FOUND) {
+            return this.getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+        if (result.getStatus() == GsrsEntityService.UpdateResult.STATUS.ERROR) {
+            return new ResponseEntity<>(result.getValidationResponse(),
+                    this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
     }
 
     //@PreAuthorize("hasRole('SuperUpdate')")

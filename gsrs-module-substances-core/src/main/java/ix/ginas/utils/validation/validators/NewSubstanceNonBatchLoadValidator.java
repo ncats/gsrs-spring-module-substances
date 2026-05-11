@@ -38,7 +38,7 @@ public class NewSubstanceNonBatchLoadValidator extends AbstractValidatorPlugin<S
 
     @Override
     public boolean supports(Substance newValue, Substance oldValue, ValidatorConfig.METHOD_TYPE methodType) {
-        return methodType != ValidatorConfig.METHOD_TYPE.BATCH && oldValue ==null;
+        return (methodType != ValidatorConfig.METHOD_TYPE.BATCH) && oldValue ==null;
     }
 
 }

@@ -222,6 +222,7 @@ public class StructureProcessor {
 
         Chem.fixMetals(mol);
         molSupplier.resetCache();
+        Chemical moietySourceMol = mol.copy();
 
         int stereo = 0, def = 0, charge = 0, ez=0;
 
@@ -289,7 +290,7 @@ public class StructureProcessor {
         //This is currently intentional, as the standardized structure does some charge balancing that might be unexpected.
         //Nevertheless, there are times when a structure should really be prestandardized, and then have moieties generated
 
-        List<Chemical> frags = mol.connectedComponentsAsStream().collect(Collectors.toList());
+        List<Chemical> frags = moietySourceMol.connectedComponentsAsStream().collect(Collectors.toList());
 
         // used to not duplicate moieties
         Map<String, Structure> moietiesMap = new HashMap<>();

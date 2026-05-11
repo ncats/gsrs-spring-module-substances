@@ -19,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substance> {
@@ -68,11 +69,10 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
 
         String sins = structure.getStereoInsensitiveHash();
         log.trace("StereoInsensitiveHash: {}", sins);
-        String hash = "( root_structure_properties_STEREO_INSENSITIVE_HASH:" + sins + " )";
+        String hash = "( root_structure_properties_STEREO_INSENSITIVE_HASH:\"" + sins + "\" )";
         if(searchMoietiesAlongWithStructure) {
-            hash += "  OR ( root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins + "  )";
+            hash = makeFlexSearch(structure);
         }
-        //removed this clause from the query because we want to exclude moiety matches " OR " + "root_moieties_properties_STEREO_INSENSITIVE_HASH:" + sins +
         log.trace("query: {}", hash);
         SearchRequest.Builder builder = new SearchRequest.Builder()
                 .query(hash)
@@ -130,6 +130,39 @@ public class ChemicalUniquenessValidator extends AbstractValidatorPlugin<Substan
 
     public void setSearchMoietiesAlongWithStructure(boolean searchMoietiesAlongWithStructure) {
         this.searchMoietiesAlongWithStructure = searchMoietiesAlongWithStructure;
+    }
+
+    private String makeFlexSearch(Structure structure) {
+        String sins = structure.getStereoInsensitiveHash();
+        return "( root_structure_properties_STEREO_INSENSITIVE_HASH:\""
+                + sins
+                + "\" OR "
+                + makeFlexSearchMoietyClauses(structure)
+                + ")";
+    }
+
+    private String makeFlexSearchMoietyClauses(Structure structure) {
+        List<Structure> moieties = new ArrayList<>();
+        try {
+            structureProcessor.taskFor(structure.molfile)
+                    .components(moieties)
+                    .standardize(false)
+                    .build()
+                    .instrument()
+                    .getStructure();
+            String moietySearchString = moieties.stream()
+                    .map(m -> "root_moieties_properties_STEREO_INSENSITIVE_HASH:\""
+                            + m.getStereoInsensitiveHash()
+                            + "\"")
+                    .collect(Collectors.joining(" AND "));
+            if (moieties.size() > 1) {
+                moietySearchString = "(" + moietySearchString + ")";
+            }
+            return moietySearchString;
+        } catch (Exception e) {
+            log.error("Error constructing query", e);
+            throw new RuntimeException(e);
+        }
     }
 
 }
