@@ -1,9 +1,11 @@
 package gsrs.module.substance.services;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -27,9 +29,11 @@ import ix.core.util.EntityUtils.Key;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.utils.RelationshipUtil;
+import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -66,6 +70,117 @@ public class RelationshipService {
 
     private Date copyDate(Date date) {
         return date == null ? null : new Date(date.getTime());
+    }
+
+    private boolean isInverseRelationshipCurrent(Relationship existingInverse,
+                                                 Relationship expectedInverse,
+                                                 Substance inverseOwner,
+                                                 Relationship sourceRelationship,
+                                                 Substance sourceOwner) {
+        if (!Objects.equals(existingInverse.type, expectedInverse.type)
+                || !Objects.equals(existingInverse.comments, expectedInverse.comments)
+                || !Objects.equals(existingInverse.qualification, expectedInverse.qualification)
+                || !Objects.equals(existingInverse.interactionType, expectedInverse.interactionType)
+                || !sameAmount(existingInverse.amount, expectedInverse.amount)
+                || !sameSubstanceReference(existingInverse.mediatorSubstance, expectedInverse.mediatorSubstance)
+                || !sameGroups(existingInverse.getAccess(), expectedInverse.getAccess())) {
+            return false;
+        }
+        if (sourceOwner != null && sourceOwner.getUuid() != null) {
+            if (existingInverse.relatedSubstance == null
+                    || !Objects.equals(existingInverse.relatedSubstance.refuuid, sourceOwner.getUuid().toString())) {
+                return false;
+            }
+        }
+        List<String> existingRefs = nonSystemReferenceFingerprints(existingInverse, inverseOwner);
+        List<String> sourceRefs = nonSystemReferenceFingerprints(sourceRelationship, sourceOwner);
+        return existingRefs != null && sourceRefs != null && existingRefs.equals(sourceRefs);
+    }
+
+    private boolean sameAmount(Amount a, Amount b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return Objects.equals(a.type, b.type)
+                && Objects.equals(a.average, b.average)
+                && Objects.equals(a.highLimit, b.highLimit)
+                && Objects.equals(a.high, b.high)
+                && Objects.equals(a.lowLimit, b.lowLimit)
+                && Objects.equals(a.low, b.low)
+                && Objects.equals(a.units, b.units)
+                && Objects.equals(a.nonNumericValue, b.nonNumericValue)
+                && Objects.equals(a.approvalID, b.approvalID);
+    }
+
+    private boolean sameSubstanceReference(SubstanceReference a, SubstanceReference b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return Objects.equals(a.refuuid, b.refuuid)
+                && Objects.equals(a.refPname, b.refPname)
+                && Objects.equals(a.approvalID, b.approvalID)
+                && Objects.equals(a.substanceClass, b.substanceClass);
+    }
+
+    private boolean sameGroups(Set<?> a, Set<?> b) {
+        return groupFingerprints(a).equals(groupFingerprints(b));
+    }
+
+    private List<String> groupFingerprints(Set<?> groups) {
+        if (groups == null || groups.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return groups.stream()
+                .map(String::valueOf)
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    private List<String> nonSystemReferenceFingerprints(Relationship relationship, Substance owner) {
+        if (relationship == null || owner == null) {
+            return Collections.emptyList();
+        }
+        List<String> refs = new ArrayList<>();
+        for (Keyword keyword : relationship.getReferences()) {
+            Reference ref = owner.getReferenceByUUID(keyword.getValue());
+            if (ref == null) {
+                return null;
+            }
+            if (!"SYSTEM".equals(ref.docType)) {
+                refs.add(referenceFingerprint(ref));
+            }
+        }
+        Collections.sort(refs);
+        return refs;
+    }
+
+    private String referenceFingerprint(Reference ref) {
+        return String.join("|",
+                nullSafe(ref.citation),
+                nullSafe(ref.docType),
+                ref.documentDate == null ? "" : String.valueOf(ref.documentDate.getTime()),
+                String.valueOf(ref.publicDomain),
+                keywordFingerprints(ref.tags).toString(),
+                nullSafe(ref.uploadedFile),
+                nullSafe(ref.id),
+                nullSafe(ref.url),
+                groupFingerprints(ref.getAccess()).toString());
+    }
+
+    private List<String> keywordFingerprints(Iterable<Keyword> keywords) {
+        if (keywords == null) {
+            return Collections.emptyList();
+        }
+        List<String> values = new ArrayList<>();
+        for (Keyword keyword : keywords) {
+            values.add(nullSafe(keyword.label) + "=" + nullSafe(keyword.term));
+        }
+        Collections.sort(values);
+        return values;
+    }
+
+    private String nullSafe(String value) {
+        return value == null ? "" : value;
     }
 
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
@@ -227,6 +342,10 @@ public class RelationshipService {
             //so it's not much of a performance hit to do it inside the loop
 
             Relationship inverse = updatedInverseRelationship.fetchInverseRelationship();
+            Substance otherSubstance = updatedInverseRelationship.fetchOwner();
+            if (isInverseRelationshipCurrent(r1, inverse, osub2, updatedInverseRelationship, otherSubstance)) {
+                return Optional.empty();
+            }
 
             List<Reference> refsToRemove = new ArrayList<>();
 
@@ -290,7 +409,6 @@ public class RelationshipService {
             osub2.setIsDirty("relationships");
 
 
-            Substance otherSubstance = updatedInverseRelationship.fetchOwner();
             for (Keyword k : updatedInverseRelationship.getReferences()) {
 
                 Reference ref = otherSubstance.getReferenceByUUID(k.getValue());
