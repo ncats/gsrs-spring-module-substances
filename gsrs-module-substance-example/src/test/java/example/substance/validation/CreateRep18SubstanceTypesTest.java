@@ -45,9 +45,11 @@ public class CreateRep18SubstanceTypesTest extends AbstractSubstanceJpaEntityTes
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void createFirstNucleicAcidFromRep18() throws Exception {
+        JsonNode json = firstOfClass(Substance.SubstanceClass.nucleicAcid);
         NucleicAcidSubstance created = (NucleicAcidSubstance) ensurePass(
-                substanceEntityService.createEntity(firstOfClass(Substance.SubstanceClass.nucleicAcid), true));
+                substanceEntityService.createEntity(json, true));
 
+        assertEquals(json.get("uuid").asText(), created.getUuid().toString());
         assertNotNull(created.nucleicAcid);
         assertNotNull(created.nucleicAcid.getSubunits());
         assertTrue(created.nucleicAcid.getSubunits().size() > 0);
