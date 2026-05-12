@@ -10,9 +10,11 @@ import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.models.Edit;
 import ix.core.models.Group;
+import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Note;
+import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.Substance.SubstanceClass;
@@ -31,6 +33,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.util.List;
@@ -114,28 +118,37 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         }
     }
 
+    private Substance saveSubstanceWithAssignedUuid(Substance substance) {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        return transactionTemplate.execute(status -> {
+            Substance saved = substanceRepository.saveAndFlush(substance);
+            substanceRepository.flush();
+            return saved;
+        });
+    }
+
     @Test
     public void addSubstanceWithRelationshipThenAddRelatedSubstanceShouldResultInBirectionalRelationship()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
         Substance substance2 = new SubstanceBuilder()
                 .addName("sub2")
                 .setUUID(uuid2)
                 .build();
         //submit primary, with dangling relationship
-        new SubstanceBuilder()
+        Substance originalFetchedSubstance = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
                 .addRelationshipTo(substance2, "foo->bar")
-                .buildJsonAnd(this::assertCreatedAPI);
+                .buildJson());
+        UUID uuid1 = originalFetchedSubstance.getUuid();
 
         Mockito.verify(relationshipService, Mockito.times(1)).createNewInverseRelationshipFor(Mockito.any(TryToCreateInverseRelationshipEvent.class));
         Mockito.reset(relationshipService);
 
-        Substance originalFetchedSubstance = substanceEntityService.get(uuid1).get();
         assertEquals("1", originalFetchedSubstance.version);
         //now submit with one sided reference, processors should add the other side.
-        assertCreatedAPI(substance2.toFullJsonNode());
+        Substance createdSubstance2 = saveSubstanceWithAssignedUuid(substance2);
+        assertEquals(uuid2, createdSubstance2.getUuid());
 
 
         Mockito.verify(relationshipService, Mockito.times(1)).createNewInverseRelationshipFor(Mockito.any(TryToCreateInverseRelationshipEvent.class));
@@ -160,26 +173,22 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
 
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipShouldResultInBirectionalRelationship()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         sub1Fetched.toBuilder()
@@ -204,29 +213,101 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         
     }
 
+    @Test
+    public void updatingRelationshipSourceWithoutRelationshipChangesShouldNotVersionInverseOwner() throws Exception {
+        String childToParent = "SALT/SOLVATE->PARENT";
+        String parentToChild = "PARENT->SALT/SOLVATE";
+
+        Substance parent = assertCreatedAPI(new SubstanceBuilder()
+                .addName("Aspirin")
+                .asChemical()
+                .setStructureWithDefaultReference("CCO")
+                .setUUID(UUID.randomUUID())
+                .buildJson());
+        UUID parentUuid = parent.getUuid();
+
+        Reference relationshipReference = new Reference();
+        relationshipReference.citation = "SALT/SOLVATE relationship reference";
+        relationshipReference.docType = "SRS";
+
+        Substance child = assertCreatedAPI(new SubstanceBuilder()
+                .addName("Carbaspirin")
+                .asChemical()
+                .setStructureWithDefaultReference("CCCO")
+                .setUUID(UUID.randomUUID())
+                .addReference(relationshipReference)
+                .addRelationshipTo(parent, childToParent, r -> r.addReference(relationshipReference))
+                .buildJson());
+        UUID childUuid = child.getUuid();
+
+        Substance parentFetched = substanceEntityService.get(parentUuid).get();
+        Substance childFetched = substanceEntityService.get(childUuid).get();
+
+        assertEquals("2", parentFetched.version);
+        assertEquals("1", childFetched.version);
+        assertEquals(1, parentFetched.relationships.size());
+        assertEquals(1, childFetched.relationships.size());
+        assertEquals(parentToChild, parentFetched.relationships.get(0).type);
+        assertEquals(childToParent, childFetched.relationships.get(0).type);
+
+        Relationship childRelationship = childFetched.relationships.get(0);
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(status ->
+                relationshipService.updateInverseRelationshipFor(UpdateInverseRelationshipEvent.builder()
+                        .relationshipIdThatWasUpdated(childRelationship.uuid)
+                        .substanceIdThatWasUpdated(childUuid)
+                        .substanceIdToUpdate(parentUuid)
+                        .originatorUUID(UUID.fromString(childRelationship.originatorUuid))
+                        .build()));
+
+        parentFetched = substanceEntityService.get(parentUuid).get();
+        childFetched = substanceEntityService.get(childUuid).get();
+
+        assertEquals("2", parentFetched.version);
+        assertEquals("1", childFetched.version);
+
+        ChemicalSubstanceBuilder childUpdate = SubstanceBuilder.from(childFetched.toFullJsonNode());
+        assertUpdatedAPI(childUpdate
+                .setStructureWithDefaultReference("CCCC")
+                .buildJson());
+
+        parentFetched = substanceEntityService.get(parentUuid).get();
+        childFetched = substanceEntityService.get(childUuid).get();
+
+        assertEquals("2", parentFetched.version);
+        assertEquals("2", childFetched.version);
+
+        ChemicalSubstanceBuilder parentUpdate = SubstanceBuilder.from(parentFetched.toFullJsonNode());
+        assertUpdatedAPI(parentUpdate
+                .setStructureWithDefaultReference("CCOC")
+                .buildJson());
+
+        parentFetched = substanceEntityService.get(parentUuid).get();
+        childFetched = substanceEntityService.get(childUuid).get();
+
+        assertEquals("3", parentFetched.version);
+        assertEquals("2", childFetched.version);
+    }
+
     
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipThenRemoveShouldResultInNoRelationships()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         sub1Fetched.toBuilder()
@@ -273,26 +354,22 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
     
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipThenChangeSubstanceClassResultBiDirectionalRelationships()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         sub1Fetched.toBuilder()
@@ -335,29 +412,25 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
     
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipThenChangeRelationshipTypeShouldResultInBiDirectionalRelationship()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
         String foo_bat = "foo->bat";
         String bat_foo = "bat->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         
@@ -407,29 +480,25 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
 
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipThenChangeRelationshipTypeToNonInvertibleShouldResultInOneDirectionalRelationship()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
         String one_way = "ACTIVE MOIETY";
         
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         
@@ -477,29 +546,25 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
 
     @Test
     public void add2SubstancesWithNoRelationshipThenAddNonInvertibleRelationshipThenChangeRelationshipTypeToInvertibleShouldResultInBiDirectionalRelationship()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
         String one_way = "ACTIVE MOIETY";
         
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         
@@ -546,26 +611,22 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
 
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipThenChangeAccessShouldResultInBiDirectionalRelationshipWithSameAcces()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         
@@ -614,25 +675,21 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
 
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipShouldResultInBiDirectionalRelationshipWithExpectedOriginiatorUUID()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
 
-            Substance sub1Fetched = substanceEntityService.get(uuid1).get();
             assertEquals("1", sub1Fetched.version);
 
-            Substance sub2Fetched = substanceEntityService.get(uuid2).get();
             assertEquals("1", sub2Fetched.version);
 
 
@@ -664,25 +721,21 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
     
     @Test
     public void add2SubstancesWithNoRelationshipThenAdd2RelationshipsOfSameTypeWithDifferentQualifiersShouldResultInBiDirectionalRelationshipsWithExpectedOriginiatorUUID()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
        
 
-            Substance sub1Fetched = substanceEntityService.get(uuid1).get();
             assertEquals("1", sub1Fetched.version);
 
-            Substance sub2Fetched = substanceEntityService.get(uuid2).get();
             assertEquals("1", sub2Fetched.version);
 
 
@@ -733,26 +786,21 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
      */
     @Test
     public void addSubstanceThenAddAlternativeDefinitionAddsInverseRelationshipsAndEdits()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
-        
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("primary")
                 .asChemical()
                 .setStructureWithDefaultReference("CCCCC")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
         assertEquals("1", sub1Fetched.version);
         
-        new SubstanceBuilder()
-            .setUUID(uuid2)
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .asChemical()
             .setStructureWithDefaultReference("CCCCCO")
             .makeAlternativeFor(sub1Fetched)
-            .buildJsonAnd(this::assertCreatedAPI);       
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
         sub1Fetched = substanceEntityService.get(uuid1).get();
@@ -782,29 +830,25 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
      */
     @Test
     public void addSubstanceThenAddAlternativeDefinitionThenChangeAltSubClassAddsInverseRelationshipsAndEdits()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String noteTest="THIS IS A NOTE TEST";
         
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("primary")
                 .asChemical()
                 .setStructureWithDefaultReference("CCCCC")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
         assertEquals("1", sub1Fetched.version);
         
-        new SubstanceBuilder()
-            .setUUID(uuid2)
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .asChemical()
             .setStructureWithDefaultReference("CCCCCO")
             .makeAlternativeFor(sub1Fetched)
             .addNote(new Note(noteTest))
-            .buildJsonAnd(this::assertCreatedAPI);       
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("2", sub1Fetched.version);
@@ -843,30 +887,26 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
      */
     @Test
     public void addSubstanceThenAddAlternativeChemDefinitionThenChangeAltNotesAddsInverseRelationshipsAndEdits()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String noteTest="THIS IS A NOTE TEST";
         String newNote="AN UPDATE";
         
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("primary")
                 .asChemical()
                 .setStructureWithDefaultReference("CCCCC")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
         assertEquals("1", sub1Fetched.version);
         
-        new SubstanceBuilder()
-            .setUUID(uuid2)
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .asChemical()
             .setStructureWithDefaultReference("CCCCCO")
             .makeAlternativeFor(sub1Fetched)
             .addNote(new Note(noteTest))
-            .buildJsonAnd(this::assertCreatedAPI);       
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("2", sub1Fetched.version);
@@ -907,29 +947,20 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
      */
     @Test
     public void addSubstanceThenAddAlternativeDefinitionThenChangePrimaryLinkWorksAsExpected()   throws Exception {
-        UUID uuid1 = UUID.fromString("38026004-e3da-4a2b-be2b-0aaf3d674743");
-        UUID uuid2 = UUID.fromString("6bbb7f58-bf3d-454c-880a-08ded7d48694");
-        UUID uuid3 = UUID.fromString("3647b733-bb09-45ef-925b-6d6744883e33");
-        
-        
-        
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("primary 1")
                 .asChemical()
                 .setStructureWithDefaultReference("CCCCC")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
         assertEquals("1", sub1Fetched.version);
         
-        new SubstanceBuilder()
-            .setUUID(uuid2)
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .asChemical()
             .setStructureWithDefaultReference("CCCCCO")
             .makeAlternativeFor(sub1Fetched)
-            .buildJsonAnd(this::assertCreatedAPI);
-
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
         assertEquals("1", sub2Fetched.version);
         sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("2", sub1Fetched.version);
@@ -941,14 +972,12 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         assertEquals(0, sub2Fetched.codes.size());
         
         
-        new SubstanceBuilder()
+        Substance sub3Fetched = assertCreatedAPI(new SubstanceBuilder()
         .addName("primary 2")
         .asChemical()
         .setStructureWithDefaultReference("CCCCCN")
-        .setUUID(uuid3)
-        .buildJsonAnd(this::assertCreatedAPI);
-        
-        Substance sub3Fetched = substanceEntityService.get(uuid3).get();
+        .buildJson());
+        UUID uuid3 = sub3Fetched.getUuid();
         assertEquals("1", sub3Fetched.version);
         
         
@@ -986,34 +1015,28 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
     
     @Test
     public void add3SubstancesWithNoRelationshipThenAddRelationshipThenChangeRelationshipTargetShouldResultInBiDirectionalRelationship()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
-        UUID uuid3 = UUID.randomUUID();
         String foo_bar = "foo->bar";
         String bar_foo = "bar->foo";
         
-        new SubstanceBuilder()
+        Substance sub1Fetched = assertCreatedAPI(new SubstanceBuilder()
                 .addName("sub1")
-                .setUUID(uuid1)
-                .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+                .buildJson());
+        UUID uuid1 = sub1Fetched.getUuid();
+        Substance sub2Fetched = assertCreatedAPI(new SubstanceBuilder()
             .addName("sub2")
-            .setUUID(uuid2)
-            .buildJsonAnd(this::assertCreatedAPI);
-        new SubstanceBuilder()
+            .buildJson());
+        UUID uuid2 = sub2Fetched.getUuid();
+        Substance sub3Fetched = assertCreatedAPI(new SubstanceBuilder()
         .addName("sub3")
-        .setUUID(uuid3)
-        .buildJsonAnd(this::assertCreatedAPI);
+        .buildJson());
+        UUID uuid3 = sub3Fetched.getUuid();
        
        
 
-        Substance sub1Fetched = substanceEntityService.get(uuid1).get();
         assertEquals("1", sub1Fetched.version);
         
-        Substance sub2Fetched = substanceEntityService.get(uuid2).get();
         assertEquals("1", sub2Fetched.version);
         
-        Substance sub3Fetched = substanceEntityService.get(uuid3).get();
         assertEquals("1", sub3Fetched.version);
         
         sub1Fetched.toBuilder()

@@ -20,6 +20,7 @@ import org.jcvi.jillion.core.Ranges;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -181,6 +182,7 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
             extends SearchResultProcessor<SequenceIndexer.Result, Substance> {
         private SubunitRepositoryWrapper subunitRepoWrapper;
         private GsrsCache ixCache;
+        private Map<UUID, Double> highestScorePerSubstance = new ConcurrentHashMap<>();
 
         public GinasSequenceResultProcessor(SubunitRepositoryWrapper subunitRepoWrapper, GsrsCache ixCache) {
             this.subunitRepoWrapper = subunitRepoWrapper;
@@ -220,7 +222,14 @@ public class LegacySubstanceSequenceSearchService implements SubstanceSequenceSe
             Substance matched = substanceAndSubunit.map(t->{
                 Substance sub = t.k();
                 Subunit subunit = t.v();
-
+                if( sub.getUuid() != null && highestScorePerSubstance.containsKey(sub.getUuid())
+                        && highestScorePerSubstance.get(sub.getUuid()) >= r.score ) {
+                    log.trace("We have seen this substance before");
+                    return null;
+                }
+                if( sub.getUuid() != null ) {
+                    highestScorePerSubstance.put(sub.getUuid(), r.score);
+                }
 
                 //GSRS 1512 add target site info
                 // this is the only place in the alignment code we have the aligned sequence

@@ -3,6 +3,7 @@ package ix.ginas.utils.validation.validators;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.module.substance.repository.SubstanceRepository;
+import gsrs.services.PrivilegeService;
 import ix.core.models.Keyword;
 import ix.core.util.LogUtil;
 import ix.core.validator.GinasProcessingMessage;
@@ -31,11 +32,18 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
     private ReferenceRepository referenceRepository;
     @Autowired
     private SubstanceRepository substanceRepository;
+
+    @Autowired
+    PrivilegeService privilegeService;
+
     // Currently, this is false at FDA; it maybe confusing if used together with TagsValidator.
     boolean extractLocators = false;
     private boolean duplicateNameIsError = false;
 
     private String caseSearchType = "Explicit";
+
+    public static final String PRIVILEGE_FOR_DISPLAY_NAME_CHANGE = "Change Display Name";
+    public static final String PRIVILEGE_FOR_DISPLAY_NAME_CHANGE_FOR_VALIDATED = "Change Display Name for Approved";
 
     // Keep consistent with NamesUtilities
     // This and other replacers should be handled later in a new NameStandardizer class similar to HTMLNameStandardizer
@@ -256,7 +264,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
 
             while (iter.hasNext()) {
                 String language = iter.next().getValue();
-//				System.out.println("language for " + n + "  = " + language);
                 Set<String> names = nameSetByLanguage.computeIfAbsent(language, k -> new HashSet<>());
                 if (!names.add(uppercasedName)) {
                     GinasProcessingMessage mes;
@@ -267,7 +274,6 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
                 }
 
             }
-            //nameSet.add(n.getName());
             try {
                 List<SubstanceRepository.SubstanceSummary> sr =
                         (!this.caseSearchType.equalsIgnoreCase("IMPLICIT"))
@@ -286,13 +292,27 @@ public class NamesValidator extends AbstractValidatorPlugin<Substance> {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
-                    && (s.changeReason == null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
+
+            if(oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
+                    && Substance.STATUS_APPROVED.equals(s.status) && ! privilegeService.canDo(PRIVILEGE_FOR_DISPLAY_NAME_CHANGE_FOR_VALIDATED)){
                 GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE(
-                                "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
-                                oldDisplayName.get().getName(), n.getName());
+                        .ERROR_MESSAGE(
+                                "Changing Display Name is not allowed for your user role.");
                 callback.addMessage(mes);
+            } else if (oldDisplayName.isPresent() && n.displayName && !oldDisplayName.get().getName().equalsIgnoreCase(n.getName())
+                    && (s.changeReason == null || !s.changeReason.equalsIgnoreCase(CHANGE_REASON_DISPLAYNAME_CHANGED))) {
+                if(privilegeService.canDo(PRIVILEGE_FOR_DISPLAY_NAME_CHANGE) || !Substance.STATUS_APPROVED.equals(s.status)) {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .WARNING_MESSAGE(
+                                    "Preferred Name has been changed from '%s' to '%s'. Please confirm that this change is intentional by submitting.",
+                                    oldDisplayName.get().getName(), n.getName());
+                    callback.addMessage(mes);
+                } else {
+                    GinasProcessingMessage mes = GinasProcessingMessage
+                            .ERROR_MESSAGE(
+                                    "Additional privilege is required to change display name of approved records");
+                    callback.addMessage(mes);
+                }
             }
         }
     }
