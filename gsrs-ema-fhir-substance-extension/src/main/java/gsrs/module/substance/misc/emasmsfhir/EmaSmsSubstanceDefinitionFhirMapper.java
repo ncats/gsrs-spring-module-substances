@@ -25,7 +25,7 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
 
     private static final Locale[] locales = Locale.getAvailableLocales();
 
-    private boolean includeGsrsSubstanceExtension = false;
+    private boolean includeGsrsSubstanceExtension = true;
 
     public SubstanceDefinition generateEmaSmsSubstanceDefinitionFromSubstance(Substance substance) {
 
