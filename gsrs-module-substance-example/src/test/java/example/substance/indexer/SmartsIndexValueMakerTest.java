@@ -6,9 +6,11 @@ import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -40,7 +42,8 @@ class SmartsIndexValueMakerTest {
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().noneMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals("nitro")));
+        Assertions.assertTrue(indexedValues.stream().noneMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL)
+                && i.value().equals("nitro")));
     }
 
     @Test
@@ -67,12 +70,18 @@ class SmartsIndexValueMakerTest {
     }
 
     @Test
-    void testImidazoleOnce() {
-        String smiles = "[Na+].CN1=CNC(=C1[O-])[N+](=O)[O-]";
+    void testImidazoleOnce() throws IOException {
+        //todo: make this test work using a molfile
+
+        String molfilePath = "/molfiles/4XXR6FT8ZA.mol";
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream(molfilePath),
+                "UTF-8"
+        );
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
         GinasChemicalStructure structure = new GinasChemicalStructure();
-        structure.smiles = smiles;
+        structure.molfile = molfileText;
         builder.setStructure(structure);
         ChemicalSubstance mol1 = builder.build();
 
@@ -82,7 +91,7 @@ class SmartsIndexValueMakerTest {
         Map<String, Object> configItems = new ConcurrentHashMap<>();
         configItems.put("indexableName", moleculeName);
         Map<String, String> smarts = new LinkedHashMap<>();
-        smarts.put("0", "c1cnc[nH]1");
+        smarts.put("0", "c1cncn1");
         smarts.put("1", "C1=CN=CN1");
         configItems.put("smarts", smarts);
         config.put(1, configItems);
