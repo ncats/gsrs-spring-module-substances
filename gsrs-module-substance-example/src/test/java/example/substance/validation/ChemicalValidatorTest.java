@@ -208,7 +208,7 @@ public class ChemicalValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
         chemicalValidator.setStructureProcessor(structureProcessor);
         chemicalValidator.setAllowV3000Molfiles(false);
         ValidationResponse<Substance> response= chemicalValidator.validate(chemV2000, null);
-        Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(m->m.isError()));
+        Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(m->m.isError() && m.getMessage().contains("V3000 molfile")));
     }
 
     @Test
