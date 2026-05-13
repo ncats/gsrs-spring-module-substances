@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,24 +24,22 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void addNameOrg(){
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created = assertCreated(new SubstanceBuilder()
                 .addName("Concept Name")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+                .buildJson());
+        UUID uuid = created.getUuid();
 
-        Optional<Substance> old= substanceEntityService.get(uuid);
+        Substance old= substanceEntityService.get(uuid).get();
 
-        old.get().toBuilder()
+        old.toBuilder()
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
                     s.getAllNames().get(0).nameOrgs.add(org);
                 })
                 .buildJsonAnd(this::assertUpdated);
-        Optional<Substance> updated = substanceEntityService.get(uuid);
-        NameOrg actualNameOrg = updated.get().getAllNames().get(0).nameOrgs.get(0);
+        Substance updated = substanceEntityService.get(uuid).get();
+        NameOrg actualNameOrg = updated.getAllNames().get(0).nameOrgs.get(0);
 
         assertEquals("MyName org", actualNameOrg.nameOrg);
         UUID nameOrgId = actualNameOrg.getUuid();
@@ -88,16 +85,14 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         // Perhaps provides a clue on a broader fix of the problems
         // with UUID generation in the database
 
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created = assertCreated(new SubstanceBuilder()
                 .addName("Concept Name")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+                .buildJson());
+        UUID uuid = created.getUuid();
 
-        Optional<Substance> old= substanceEntityService.get(uuid);
+        Substance old= substanceEntityService.get(uuid).get();
 
-        old.get().toBuilder()
+        old.toBuilder()
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.setUuid(UUID.randomUUID());
@@ -106,8 +101,8 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                     s.version = "2";
                 })
                 .buildJsonAnd(this::assertUpdated);
-        Optional<Substance> updated = substanceEntityService.get(uuid);
-        NameOrg actualNameOrg = updated.get().getAllNames().get(0).nameOrgs.get(0);
+        Substance updated = substanceEntityService.get(uuid).get();
+        NameOrg actualNameOrg = updated.getAllNames().get(0).nameOrgs.get(0);
 
         assertEquals("MyName org", actualNameOrg.nameOrg);
         UUID nameOrgId = actualNameOrg.getUuid();
@@ -119,24 +114,22 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void addNameOrgToSecondName(){
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created = assertCreated(new SubstanceBuilder()
                 .addName("Concept Name")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+                .buildJson());
+        UUID uuid = created.getUuid();
 
-        Optional<Substance> old= substanceEntityService.get(uuid);
+        Substance old= substanceEntityService.get(uuid).get();
 
-        old.get().toBuilder()
+        old.toBuilder()
                 .addName("name2", n-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
                     n.nameOrgs.add(org);
                 })
                 .buildJsonAnd(this::assertUpdated);
-        Optional<Substance> updated = substanceEntityService.get(uuid);
-        List<Name> allNames = updated.get().getAllNames();
+        Substance updated = substanceEntityService.get(uuid).get();
+        List<Name> allNames = updated.getAllNames();
         assertThat(allNames.get(0).nameOrgs, is(empty()));
 
         NameOrg actualNameOrg = allNames.get(1).nameOrgs.get(0);
@@ -149,20 +142,18 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void updateNameOrg(){
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created = assertCreated(new SubstanceBuilder()
                 .addName("Concept Name",n->{
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
                     org.setUuid(UUID.randomUUID());
                     n.nameOrgs.add(org);
                 })
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
-        Optional<Substance> old= substanceEntityService.get(uuid);
+                .buildJson());
+        UUID uuid = created.getUuid();
+        Substance old= substanceEntityService.get(uuid).get();
 
-        old.get().toBuilder()
+        old.toBuilder()
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -171,10 +162,10 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                     s.changeReason ="changed name orgs";
                 })
                 .buildJsonAnd(this::assertUpdated);
-        Optional<Substance> updated = substanceEntityService.get(uuid);
-        List<NameOrg> actualNameOrgs = updated.get().getAllNames().get(0).nameOrgs;
+        Substance updated = substanceEntityService.get(uuid).get();
+        List<NameOrg> actualNameOrgs = updated.getAllNames().get(0).nameOrgs;
 
-        assertThat(updated.get().getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+        assertThat(updated.getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
                 containsInAnyOrder("MyName org", "MyName org2"));
 
     }
@@ -187,19 +178,17 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         // Perhaps provides a clue on a broader fix of the problems
         // with UUID generation in the database
 
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created = assertCreated(new SubstanceBuilder()
                 .addName("Concept Name",n->{
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
                     n.nameOrgs.add(org);
                 })
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
-        Optional<Substance> old= substanceEntityService.get(uuid);
+                .buildJson());
+        UUID uuid = created.getUuid();
+        Substance old= substanceEntityService.get(uuid).get();
 
-        old.get().toBuilder()
+        old.toBuilder()
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -210,10 +199,10 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                     s.version = Integer.toString(oldVersionNumber+1);
                 })
                 .buildJsonAnd(this::assertUpdated);
-        Optional<Substance> updated = substanceEntityService.get(uuid);
-        List<NameOrg> actualNameOrgs = updated.get().getAllNames().get(0).nameOrgs;
+        Substance updated = substanceEntityService.get(uuid).get();
+        List<NameOrg> actualNameOrgs = updated.getAllNames().get(0).nameOrgs;
 
-        assertThat(updated.get().getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+        assertThat(updated.getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
                 containsInAnyOrder("MyName org", "MyName org2"));
 
     }
@@ -222,20 +211,18 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void update2ndNameOrg(){
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created = assertCreated(new SubstanceBuilder()
                 .addName("Concept Name",n->{
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
                     n.nameOrgs.add(org);
                 })
                 .addName("name 2")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
-        Optional<Substance> old= substanceEntityService.get(uuid);
+                .buildJson());
+        UUID uuid = created.getUuid();
+        Substance old= substanceEntityService.get(uuid).get();
 
-        SubstanceBuilder.from(old.get().toFullJsonNode())
+        SubstanceBuilder.from(old.toFullJsonNode())
                 .andThen(s -> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -243,12 +230,12 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                     s.getAllNames().get(1).nameOrgs.add(org);
                 })
                 .buildJsonAnd(this::assertUpdated);
-        Optional<Substance> updated = substanceEntityService.get(uuid);
+        Substance updated = substanceEntityService.get(uuid).get();
 
 
-        assertThat(updated.get().getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+        assertThat(updated.getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
                 containsInAnyOrder("MyName org"));
-        assertThat(updated.get().getAllNames().get(1).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+        assertThat(updated.getAllNames().get(1).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
                 containsInAnyOrder("MyName org2"));
 
     }
@@ -262,9 +249,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         // Perhaps provides a clue on a broader fix of the problems
         // with UUID generation in the database
 
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created = assertCreated(new SubstanceBuilder()
                 .addName("Concept Name",n->{
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
@@ -272,11 +257,11 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                     n.nameOrgs.add(org);
                 })
                 .addName("name 2")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
-        Optional<Substance> old= substanceEntityService.get(uuid);
+                .buildJson());
+        UUID uuid = created.getUuid();
+        Substance old= substanceEntityService.get(uuid).get();
 
-        old.get().toBuilder()
+        old.toBuilder()
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -285,12 +270,12 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                     s.version = "2";
                 })
                 .buildJsonAnd(this::assertUpdated);
-        Optional<Substance> updated = substanceEntityService.get(uuid);
+        Substance updated = substanceEntityService.get(uuid).get();
 
 
-        assertThat(updated.get().getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+        assertThat(updated.getAllNames().get(0).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
                 containsInAnyOrder("MyName org"));
-        assertThat(updated.get().getAllNames().get(1).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
+        assertThat(updated.getAllNames().get(1).nameOrgs.stream().map(n-> n.nameOrg).collect(Collectors.toList()),
                 containsInAnyOrder("MyName org2"));
 
     }

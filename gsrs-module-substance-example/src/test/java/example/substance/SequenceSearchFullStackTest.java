@@ -41,7 +41,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -162,25 +161,16 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     public void addProteinSequenceAndThenSearchShouldGiveExactMatchResult()   throws Exception {
 
 
-
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String seq="ACDEFGHIJKLMN";
 
         ProteinSubstance substance2 = new SubstanceBuilder()
                 .asProtein()
                 .addName("SUB1")
-                .setUUID(uuid1)
                 .addSubunitWithDefaultReference(seq)
-                .andThen(ps->{ps.protein.subunits.get(0).setUuid(uuid2);})
                 .build();
 
-        TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
-        transactionSearch.execute(t->{
-
-            assertCreatedAPI(substance2.toFullJsonNode());
-            return null;
-        });
+        ProteinSubstance created = (ProteinSubstance) assertCreatedAPI(substance2.toFullJsonNode());
+        UUID uuid2 = firstProteinSubunitUuid(getProteinSubstance(created.getUuid()));
 
         List<Result> lres=getGlobalResults(seq,"protein");
 
@@ -191,21 +181,20 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
     @Test
     public void addProteinSequenceAndThenEditSearchShouldNotHonorOldSearch() throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String seq="ACDEFGHIJKLMN";
         String seq2="TTTTTTTTTTATCGHHHH";
 
         ProteinSubstance substance = new SubstanceBuilder()
                 .asProtein()
                 .addName("SUB1")
-                .setUUID(uuid1)
                 .addSubunitWithDefaultReference(seq)
-                .andThen(ps->{ps.protein.subunits.get(0).setUuid(uuid2);})
                 .build();
 
 
-        assertCreatedAPI(substance.toFullJsonNode());
+        ProteinSubstance created = (ProteinSubstance) assertCreatedAPI(substance.toFullJsonNode());
+        UUID uuid1 = created.getUuid();
+        ProteinSubstance sup = getProteinSubstance(uuid1);
+        UUID uuid2 = firstProteinSubunitUuid(sup);
 
 
         List<Result> lres=getGlobalResults(seq,"protein");
@@ -213,8 +202,6 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
         assertEquals("Should return 1 exact match for this protein subunit", 1, countResultsForSubunit(lres, uuid2));
 
-
-        ProteinSubstance sup = (ProteinSubstance) substanceEntityService.get(uuid1).get();
 
         sup.protein.subunits.get(0).sequence=seq2;
 
@@ -236,18 +223,15 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
     @Test
     public void addNASequenceAndThenSearchShouldGiveExactMatchResult()   throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String seq="ATCATCATCATCATCGATACAGATACAGTCAGTCAGTCGATCAGTCGTTATATATCGCGATTACG";
 
         NucleicAcidSubstance substance2 = new SubstanceBuilder()
                 .asNucleicAcid()
                 .addName("SUB1")
-                .setUUID(uuid1)
                 .addDnaSubunit(seq)
-                .andThen(ps->{ps.nucleicAcid.subunits.get(0).setUuid(uuid2);})
                 .build();
-        assertCreatedAPI(substance2.toFullJsonNode());
+        NucleicAcidSubstance created = (NucleicAcidSubstance) assertCreatedAPI(substance2.toFullJsonNode());
+        UUID uuid2 = firstNucleicAcidSubunitUuid(getNucleicAcidSubstance(created.getUuid()));
 
         List<Result> lres=getGlobalResults(seq,"nucleicAcid");
 
@@ -259,8 +243,6 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
     @Test
     public void addNASequenceAndThenEditSearchShouldNotHonorOldSearch() throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String seq="ATCATCATCATCATCGATACAGATACAGTCAGTCAGTCGATCAGTCGTTATATATCGCGATTACG";
 
         String seq2="CCCCCCCCCCCCCCCCCCAAAAAAATTTTTTTAAAACCACAC";
@@ -268,19 +250,18 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
         NucleicAcidSubstance substance2 = new SubstanceBuilder()
                 .asNucleicAcid()
                 .addName("SUB1")
-                .setUUID(uuid1)
                 .addDnaSubunit(seq)
-                .andThen(ps->{ps.nucleicAcid.subunits.get(0).setUuid(uuid2);})
                 .build();
-        assertCreatedAPI(substance2.toFullJsonNode());
+        NucleicAcidSubstance created = (NucleicAcidSubstance) assertCreatedAPI(substance2.toFullJsonNode());
+        UUID uuid1 = created.getUuid();
+        NucleicAcidSubstance sup = getNucleicAcidSubstance(uuid1);
+        UUID uuid2 = firstNucleicAcidSubunitUuid(sup);
 
         List<Result> lres=getGlobalResults(seq,"nucleicAcid");
 
         assertEquals("Should return 1 exact match for na search",1,lres.size());
         assertEquals(uuid2.toString(),lres.get(0).id);
 
-
-        NucleicAcidSubstance sup = (NucleicAcidSubstance) substanceEntityService.get(uuid1).get();
 
         sup.nucleicAcid.subunits.get(0).sequence=seq2;
 
@@ -299,8 +280,6 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
     @Test
     public void addNASequenceAndThenEditSearchThenSearchForProteinShouldNotReturnResults() throws Exception {
-        UUID uuid1 = UUID.randomUUID();
-        UUID uuid2 = UUID.randomUUID();
         String seq="ATCATCATCATCATCGATACAGATACAGTCAGTCAGTCGATCAGTCGTTATATATCGCGATTACG";
 
         String seq2="CCCCCCCCCCCCCCCCCCAAAAAAATTTTTTTAAAACCACAC";
@@ -308,19 +287,18 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
         NucleicAcidSubstance substance2 = new SubstanceBuilder()
                 .asNucleicAcid()
                 .addName("SUB1")
-                .setUUID(uuid1)
                 .addDnaSubunit(seq)
-                .andThen(ps->{ps.nucleicAcid.subunits.get(0).setUuid(uuid2);})
                 .build();
-        assertCreatedAPI(substance2.toFullJsonNode());
+        NucleicAcidSubstance created = (NucleicAcidSubstance) assertCreatedAPI(substance2.toFullJsonNode());
+        UUID uuid1 = created.getUuid();
+        NucleicAcidSubstance sup = getNucleicAcidSubstance(uuid1);
+        UUID uuid2 = firstNucleicAcidSubunitUuid(sup);
 
         List<Result> lres=getGlobalResults(seq,"nucleicAcid");
 
         assertEquals("Should return 1 exact match for na search",1,lres.size());
         assertEquals(uuid2.toString(),lres.get(0).id);
 
-
-        NucleicAcidSubstance sup = (NucleicAcidSubstance) substanceEntityService.get(uuid1).get();
 
         sup.nucleicAcid.subunits.get(0).sequence=seq2;
 
@@ -354,6 +332,22 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
         return results.stream()
                 .filter(result -> id.equals(result.id))
                 .count();
+    }
+
+    private ProteinSubstance getProteinSubstance(UUID uuid) {
+        return (ProteinSubstance) substanceEntityService.get(uuid).get();
+    }
+
+    private NucleicAcidSubstance getNucleicAcidSubstance(UUID uuid) {
+        return (NucleicAcidSubstance) substanceEntityService.get(uuid).get();
+    }
+
+    private UUID firstProteinSubunitUuid(ProteinSubstance substance) {
+        return substance.protein.subunits.get(0).uuid;
+    }
+
+    private UUID firstNucleicAcidSubunitUuid(NucleicAcidSubstance substance) {
+        return substance.nucleicAcid.subunits.get(0).uuid;
     }
 
     @Test
