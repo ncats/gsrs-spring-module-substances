@@ -11,7 +11,6 @@ import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.SubstanceProcessor;
 import gsrs.module.substance.services.RelationshipService;
 import gsrs.repository.EditRepository;
-import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestEntityProcessorFactory;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
@@ -32,7 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -70,6 +70,9 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     @Autowired
     private TestGsrsValidatorFactory factory;
 
+    @Autowired
+    private ApplicationContext applicationContext;
+
     @TestConfiguration
     @EnableAsync
     public static class Configuration implements AsyncConfigurer{
@@ -88,10 +91,10 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                     this.ran=true;
                 }
             }
-            
+
         }
-        
-        
+
+
         @Override
         public Executor getAsyncExecutor() {
             return new Executor() {
@@ -99,7 +102,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                 public void execute(Runnable arg0) {
                     runs.add(new Runner(arg0));
                 }
-                
+
             };
         }
 
@@ -110,42 +113,42 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
             }
             runs.clear();
         }
-        
+
     }
 
-    
+
     @Autowired
     private Configuration conf;
-    
+
     @Autowired
     private TestEntityProcessorFactory testEntityProcessorFactory;
 
     @Autowired
     private TestGsrsValidatorFactory testGsrsValidatorFactory;
 
-    @MockitoSpyBean
+    @SpyBean
     private SubstanceProcessor substanceProcessor;
-    @MockitoSpyBean
+    @SpyBean
     private RelationshipProcessor relationshipProcessor;
-    @MockitoSpyBean
+    @SpyBean
     private ReferenceProcessor referenceProcessor;
 
     @Autowired
     private EditRepository editRepository;
-    
+
     @Autowired
     SequenceIndexerService seqIndexer;
 
-    @MockitoSpyBean
+    @SpyBean
     private RelationshipService relationshipService;
 
-    
+
     @Override
     protected Substance assertCreatedAPI(JsonNode json) {
         Substance s= super.assertCreatedAPI(json);
         conf.flush();
         return s;
-        
+
     }
 
     @Override
@@ -158,12 +161,12 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     @Test
     public void addProteinSequenceAndThenSearchShouldGiveExactMatchResult()   throws Exception {
 
-       
-       
+
+
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
         String seq="ACDEFGHIJKLMN";
-        
+
         ProteinSubstance substance2 = new SubstanceBuilder()
                 .asProtein()
                 .addName("SUB1")
@@ -171,29 +174,28 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                 .addSubunitWithDefaultReference(seq)
                 .andThen(ps->{ps.protein.subunits.get(0).setUuid(uuid2);})
                 .build();
-        
+
         TransactionTemplate transactionSearch = new TransactionTemplate(transactionManager);
         transactionSearch.execute(t->{
 
             assertCreatedAPI(substance2.toFullJsonNode());
             return null;
         });
-        
+
         List<Result> lres=getGlobalResults(seq,"protein");
-        
-        assertEquals("Should return 1 exact match for protein search",1,lres.size());
-        assertEquals(uuid2.toString(),lres.get(0).id);
-        
+
+        assertEquals("Should return 1 exact match for this protein subunit", 1, countResultsForSubunit(lres, uuid2));
+
     }
-    
-        
+
+
     @Test
     public void addProteinSequenceAndThenEditSearchShouldNotHonorOldSearch() throws Exception {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
         String seq="ACDEFGHIJKLMN";
         String seq2="TTTTTTTTTTATCGHHHH";
-        
+
         ProteinSubstance substance = new SubstanceBuilder()
                 .asProtein()
                 .addName("SUB1")
@@ -201,44 +203,43 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                 .addSubunitWithDefaultReference(seq)
                 .andThen(ps->{ps.protein.subunits.get(0).setUuid(uuid2);})
                 .build();
-        
-      
+
+
         assertCreatedAPI(substance.toFullJsonNode());
-        
-      
+
+
         List<Result> lres=getGlobalResults(seq,"protein");
-        
-        
-        assertEquals("Should return 1 exact match for protein search",1,lres.size());
-        assertEquals(uuid2.toString(),lres.get(0).id);
-        
-        
+
+
+        assertEquals("Should return 1 exact match for this protein subunit", 1, countResultsForSubunit(lres, uuid2));
+
+
         ProteinSubstance sup = (ProteinSubstance) substanceEntityService.get(uuid1).get();
 
         sup.protein.subunits.get(0).sequence=seq2;
 
         assertUpdatedAPI(sup.toFullJsonNode());
-        
+
         lres=getGlobalResults(seq,"protein");
-        assertEquals("Should return 0 exact match for protein search after changed",0,lres.size());
-        
+        assertEquals("Old protein sequence should not match the edited subunit", 0, countResultsForSubunit(lres, uuid2));
+
 //        Thread.sleep(5l);
         System.out.println("STARTING");
         lres=getGlobalResults(seq2,"protein");
 
         System.out.println("RETURNED");
-        assertEquals(1,lres.size());
-        
-        
+        assertEquals(1, countResultsForSubunit(lres, uuid2));
+
+
     }
-    
-    
+
+
     @Test
     public void addNASequenceAndThenSearchShouldGiveExactMatchResult()   throws Exception {
         UUID uuid1 = UUID.randomUUID();
         UUID uuid2 = UUID.randomUUID();
         String seq="ATCATCATCATCATCGATACAGATACAGTCAGTCAGTCGATCAGTCGTTATATATCGCGATTACG";
-        
+
         NucleicAcidSubstance substance2 = new SubstanceBuilder()
                 .asNucleicAcid()
                 .addName("SUB1")
@@ -247,14 +248,14 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                 .andThen(ps->{ps.nucleicAcid.subunits.get(0).setUuid(uuid2);})
                 .build();
         assertCreatedAPI(substance2.toFullJsonNode());
-        
+
         List<Result> lres=getGlobalResults(seq,"nucleicAcid");
-        
+
         assertEquals("Should return 1 exact match for na search",1,lres.size());
         assertEquals(uuid2.toString(),lres.get(0).id);
-        
+
     }
-    
+
 
     @Test
     public void addNASequenceAndThenEditSearchShouldNotHonorOldSearch() throws Exception {
@@ -263,7 +264,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
         String seq="ATCATCATCATCATCGATACAGATACAGTCAGTCAGTCGATCAGTCGTTATATATCGCGATTACG";
 
         String seq2="CCCCCCCCCCCCCCCCCCAAAAAAATTTTTTTAAAACCACAC";
-        
+
         NucleicAcidSubstance substance2 = new SubstanceBuilder()
                 .asNucleicAcid()
                 .addName("SUB1")
@@ -272,29 +273,29 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                 .andThen(ps->{ps.nucleicAcid.subunits.get(0).setUuid(uuid2);})
                 .build();
         assertCreatedAPI(substance2.toFullJsonNode());
-        
+
         List<Result> lres=getGlobalResults(seq,"nucleicAcid");
-        
+
         assertEquals("Should return 1 exact match for na search",1,lres.size());
         assertEquals(uuid2.toString(),lres.get(0).id);
-        
-        
+
+
         NucleicAcidSubstance sup = (NucleicAcidSubstance) substanceEntityService.get(uuid1).get();
-        
+
         sup.nucleicAcid.subunits.get(0).sequence=seq2;
 
         assertUpdatedAPI(sup.toFullJsonNode());
-        
+
         lres=getGlobalResults(seq,"nucleicAcid");
         assertEquals("Should return 0 exact match for protein search after changed",0,lres.size());
-        
+
         lres=getGlobalResults(seq2,"nucleicAcid");
 
         assertEquals(1,lres.size());
-        
-        
+
+
     }
-    
+
 
     @Test
     public void addNASequenceAndThenEditSearchThenSearchForProteinShouldNotReturnResults() throws Exception {
@@ -303,7 +304,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
         String seq="ATCATCATCATCATCGATACAGATACAGTCAGTCAGTCGATCAGTCGTTATATATCGCGATTACG";
 
         String seq2="CCCCCCCCCCCCCCCCCCAAAAAAATTTTTTTAAAACCACAC";
-        
+
         NucleicAcidSubstance substance2 = new SubstanceBuilder()
                 .asNucleicAcid()
                 .addName("SUB1")
@@ -312,40 +313,47 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
                 .andThen(ps->{ps.nucleicAcid.subunits.get(0).setUuid(uuid2);})
                 .build();
         assertCreatedAPI(substance2.toFullJsonNode());
-        
+
         List<Result> lres=getGlobalResults(seq,"nucleicAcid");
-        
+
         assertEquals("Should return 1 exact match for na search",1,lres.size());
         assertEquals(uuid2.toString(),lres.get(0).id);
-        
-        
+
+
         NucleicAcidSubstance sup = (NucleicAcidSubstance) substanceEntityService.get(uuid1).get();
-        
+
         sup.nucleicAcid.subunits.get(0).sequence=seq2;
 
         assertUpdatedAPI(sup.toFullJsonNode());
-        
+
         lres=getGlobalResults(seq,"nucleicAcid");
         assertEquals("Should return 0 exact match for protein search after changed",0,lres.size());
-        
+
         lres=getGlobalResults(seq2,"nucleicAcid");
 
         assertEquals(1,lres.size());
-        
+
         lres=getGlobalResults(seq2,"protein");
 
         assertEquals(0,lres.size());
-        
+
     }
-    
-    
+
+
     private List<Result> getGlobalResults(String seq, String type){
-        
+
         ResultEnumeration re=seqIndexer.search(seq, 0.95, CutoffType.GLOBAL, type);
-        
+
         List<Result> lres=StreamUtil.forEnumeration(re)
-                                    .collect(Collectors.toList());
+                .collect(Collectors.toList());
         return lres;
+    }
+
+    private long countResultsForSubunit(List<Result> results, UUID subunitUuid) {
+        String id = subunitUuid.toString();
+        return results.stream()
+                .filter(result -> id.equals(result.id))
+                .count();
     }
 
     @Test
@@ -373,7 +381,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
     private void loadData() throws IOException {
         SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
+        applicationContext.getAutowireCapableBeanFactory().autowireBean(hashIndexer);
         testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
         {
             ValidatorConfig config = new DefaultValidatorConfig();

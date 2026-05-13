@@ -443,8 +443,6 @@ public class RelationshipService {
         final Substance osub = r1.fetchOwner();
         if (osub != null) {
             entityPersistAdapter.performChangeOn(osub, osub2 -> {
-//									System.out.println("Okay, going to delete the inverse");
-
                 Relationship rem = null;
                 for (Relationship r : osub2.relationships) {
                     if (r.uuid.equals(r1.uuid)) {
@@ -461,7 +459,6 @@ public class RelationshipService {
                 }
                 osub2.forceUpdate();
                 substanceRepository.saveAndFlush(osub2);
-//									System.out.println("Inverse should be deleted now");
                 return Optional.of(osub2);
             });
         }
@@ -518,7 +515,6 @@ public class RelationshipService {
                     Reference ref1 = Reference.SYSTEM_GENERATED();
                     ref1.citation = "Generated from relationship on:'" + r.relatedSubstance.refPname + "'";
 
-
                     r.addReference(ref1, newSub);
                     newSub.addRelationship(r);
                     //GSRS-736 copy over references
@@ -539,17 +535,11 @@ public class RelationshipService {
                         // TODO: Are we sure about this? This feels like a hack to make something
                         // behave as it used to in Play, but I think it's brittle. [TP]
                         newSub.updateVersion();
-//                            relationshipRepository.save(r);
                         Substance upSub=newSub;
                         newSub = RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
-
                     }
                     return Optional.ofNullable(newSub);
 
                 });
-
     }
-
-
-
 }

@@ -10,6 +10,7 @@ import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.utils.ChemicalUtils;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.GsrsFullStackTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -35,6 +36,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.LinkedMultiValueMap;
@@ -55,8 +57,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Slf4j
 public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
+
+    public FlexSearchTest() {
+        super(false);
+    }
 
     @Autowired
     StructureProcessor structureProcessor;
@@ -81,11 +88,9 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     private String dataFileName = "testdumps/tartrate_set.gsrs";
 
-    private boolean loadedData = false;
-
     @BeforeEach
     public void clearIndexers() throws IOException {
-        if( !loadedData) {
+        if (substanceRepository.count() == 0) {
             log.trace("starting to load data");
             SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
             AutowireHelper.getInstance().autowire(hashIndexer);
@@ -100,7 +105,6 @@ public class FlexSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
             File dataFile = new ClassPathResource(dataFileName).getFile();
             Assertions.assertTrue(dataFile.exists());
             loadGsrsFile(dataFile);
-            loadedData = true;
             log.info("loaded data. total substances: {}", substanceRepository.count());
             dumpDb();
         }
