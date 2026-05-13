@@ -21,10 +21,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import java.io.IOException;
-import java.util.UUID;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+@WithMockUser(username = "admin", roles = "Admin")
 public class CreateBatchProcessingActionTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
@@ -55,10 +56,7 @@ public class CreateBatchProcessingActionTest extends AbstractSubstanceJpaFullSta
         ChemicalSubstanceBuilder chemicalSubstanceBuilder = new ChemicalSubstanceBuilder();
         chemicalSubstanceBuilder.setStructureWithDefaultReference("CCCCCCN");
         chemicalSubstanceBuilder.addName("hexane amine");
-        UUID parentSubstanceId = UUID.randomUUID();
-        chemicalSubstanceBuilder.setUUID(parentSubstanceId);
-        ChemicalSubstance parentSubstance = chemicalSubstanceBuilder.build();
-        this.substanceRepository.saveAndFlush(parentSubstance);
+        ChemicalSubstance parentSubstance = (ChemicalSubstance) assertCreated(chemicalSubstanceBuilder.buildJson());
 
         String BATCH_RELATIONSHIP_TYPE= "BATCH->PARENT";
         String reverseBatchRelationshipType = "PARENT->BATCH";
@@ -71,8 +69,7 @@ public class CreateBatchProcessingActionTest extends AbstractSubstanceJpaFullSta
         batch1Relationship.type=reverseBatchRelationshipType;
         batch1Relationship.relatedSubstance= parentSubstance.asSubstanceReference();
         batch1Builder.addRelationship(batch1Relationship);
-        Substance batch1= batch1Builder.build();
-        substanceRepository.saveAndFlush(batch1);
+        batch1Builder.buildJsonAnd(this::assertCreated);
 
         SubstanceBuilder batch2Builder = new SubstanceBuilder();
         batch2Builder.addName("hexane batch2");
@@ -81,8 +78,7 @@ public class CreateBatchProcessingActionTest extends AbstractSubstanceJpaFullSta
         batch2Relationship.type=reverseBatchRelationshipType;
         batch2Relationship.relatedSubstance= parentSubstance.asSubstanceReference();
         batch2Builder.addRelationship(batch2Relationship);
-        Substance batch2= batch2Builder.build();
-        substanceRepository.saveAndFlush(batch2);
+        batch2Builder.buildJsonAnd(this::assertCreated);
 
         CreateBatchProcessingAction action = new CreateBatchProcessingAction();
         AutowireHelper.getInstance().autowireAndProxy(action);

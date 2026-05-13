@@ -73,8 +73,8 @@ public interface SubstanceSequenceSearchService {
             this.type = unsanitized.type == null? SequenceIndexer.CutoffType.SUB: unsanitized.type;
             this.cutoff = sanitizeCutOff(unsanitized.cutoff, 0.8D);
             this.top = sanitizeNumber(unsanitized.top, 10);
-            this.skip = sanitizeNumber(unsanitized.top, 0);
-            this.fdim = sanitizeNumber(unsanitized.top, 10);
+            this.skip = sanitizeNumber(unsanitized.skip, 0);
+            this.fdim = sanitizeNumber(unsanitized.fdim, 10);
             this.field = unsanitized.field;
             this.seqType = unsanitized.seqType ==null? "Protein" : unsanitized.seqType;
 //            this.identity = Math.min(1, Math.max(identity, 0.5D));

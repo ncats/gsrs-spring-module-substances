@@ -270,19 +270,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     protected Substance create(Substance substance) {
         normalizeCreateGraph(substance);
         try {
-            if (substance instanceof NucleicAcidSubstance
-                    || substance instanceof MixtureSubstance
-                    || substance instanceof ChemicalSubstance
-                    || substance instanceof ProteinSubstance
-                    || substance instanceof PolymerSubstance
-                    || substance instanceof StructurallyDiverseSubstance
-                    || substance instanceof SpecifiedSubstanceGroup1Substance) {
-                EntityManager entityManager = getEntityManager();
-                entityManager.persist(substance);
-                entityManager.flush();
-                return substance;
-            }
-            return repository.saveAndFlush(substance);
+            EntityManager entityManager = getEntityManager();
+            entityManager.persist(substance);
+            entityManager.flush();
+            return substance;
         }catch(Throwable t){
             t.printStackTrace();
             throw t;
