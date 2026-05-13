@@ -303,6 +303,12 @@
             <artifactId>molwitch</artifactId>
             <version>0.6.10</version>
         </dependency>
+        <dependency>
+            <groupId>gov.nih.ncats</groupId>
+            <artifactId>molwitch-cdk</artifactId>
+            <version>1.0.24</version>
+            <scope>test</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.jcvi.jillion</groupId>
