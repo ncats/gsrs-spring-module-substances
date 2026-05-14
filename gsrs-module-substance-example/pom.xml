@@ -54,8 +54,28 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <inherited>true</inherited>
+            <dependencies>
+                <dependency>
+                    <groupId>org.apache.maven.surefire</groupId>
+                    <artifactId>surefire-junit-platform</artifactId>
+                    <version>2.22.2</version>
+                </dependency>
+            </dependencies>
             <configuration>
                 <argLine>-Xmx3500m</argLine>
+                <reuseForks>true</reuseForks>
+                <forkCount>1</forkCount>
+<!--                <useModulePath>false</useModulePath>-->
+                <includes>
+                    <include>**/*Test.java</include>
+                    <include>**/*Tests.java</include>
+                </includes>
+                <excludes>
+                    <exclude>**/*IT.java</exclude>
+                    <exclude>**/*ITTest.java</exclude>
+                    <exclude>**/*FullStackTest.java</exclude>
+                    <exclude>**/*BulkLoadTest.java</exclude>
+                </excludes>
            </configuration>
         </plugin>
         <plugin>
@@ -127,6 +147,41 @@
             </resource>
         </resources>
     </build>
+
+    <profiles>
+        <profile>
+            <id>full-test-suite</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.surefire</groupId>
+                                <artifactId>surefire-junit-platform</artifactId>
+                                <version>2.22.2</version>
+                            </dependency>
+                        </dependencies>
+                        <configuration>
+                            <argLine>-Xmx3500m</argLine>
+                            <reuseForks>true</reuseForks>
+                            <forkCount>1</forkCount>
+                            <includes>
+                                <include>**/*Test.java</include>
+                                <include>**/*Tests.java</include>
+                                <include>**/*ITTest.java</include>
+                                <include>**/*FullStackTest.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/*IT.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 
 
@@ -288,7 +343,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.24</version>
+            <version>1.0.26</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

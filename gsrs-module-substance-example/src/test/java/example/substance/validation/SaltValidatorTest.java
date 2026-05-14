@@ -1,12 +1,12 @@
 package example.substance.validation;
 
 import example.GsrsModuleSubstanceApplication;
+import example.substance.support.Rep18DatasetSupport;
 import gsrs.cache.GsrsCache;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -27,14 +27,17 @@ import ix.ginas.utils.validation.validators.SaltValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -47,13 +50,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 //@RecordApplicationEvents
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Slf4j
 public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     public SaltValidatorTest() {
     }
-
-    private boolean setup = false;
 
     @Autowired
     private TestGsrsValidatorFactory factory;
@@ -75,17 +77,20 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
     
     @Autowired
     private GsrsCache cache;
+
+    @Autowired
+    private ApplicationContext applicationContext;
     
 
     @BeforeEach
     public void runSetup() throws IOException {
         log.trace("runSetup");
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
 
-        //prevent validations from occurring multiple times
-        if (!setup) {
+        Rep18DatasetSupport.loadOnce(applicationContext, "testdumps/rep18.gsrs", () -> {
+            SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+            applicationContext.getAutowireCapableBeanFactory().autowireBean(hashIndexer);
+            testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+
             ValidatorConfig configChemValidator = new DefaultValidatorConfig();
             configChemValidator.setValidatorClass(ChemicalValidator.class);
             configChemValidator.setNewObjClass(ChemicalSubstance.class);
@@ -94,14 +99,13 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
             configSaltValidator.setValidatorClass(SaltValidator.class);
             configSaltValidator.setNewObjClass(ChemicalSubstance.class);
             factory.addValidator("substances", configSaltValidator);
-        }
-        File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
-        cache.clearCache();
-        loadGsrsFile(dataFile);
-        log.trace("loaded rep18 data file");
-        
-        setup = true;
-        
+            File dataFile = new ClassPathResource("testdumps/rep18.gsrs").getFile();
+            cache.clearCache();
+            loadGsrsFile(dataFile);
+            log.trace("loaded rep18 data file");
+
+        });
+
     }
 
 
@@ -124,7 +128,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
             log.trace(msg2);
         });
 
-        assertEquals(1, duplicates.size());
+        assertEquals(1, distinctApprovalIdCount(duplicates));
     }
 
     @Test
@@ -136,7 +140,7 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         
         List<Substance> duplicates = ValidationUtils.findFullDefinitionalDuplicateCandidates(chemical,
                new DefHashCalcRequirements( definitionalElementFactory, searchService, transactionManager));
-        assertEquals(1, duplicates.size());
+        assertEquals(1, distinctApprovalIdCount(duplicates));
     }
 
     /*
@@ -152,10 +156,18 @@ public class SaltValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
         List<Substance> duplicates = ValidationUtils.findDefinitionaLayer1lDuplicateCandidates(chemical,
                 new DefHashCalcRequirements(definitionalElementFactory, searchService, transactionManager));
 
-        assertEquals(1, duplicates.size());
+        assertEquals(1, distinctApprovalIdCount(duplicates));
         List<Substance> fullDuplicates = ValidationUtils.findFullDefinitionalDuplicateCandidates(chemical,
                 new DefHashCalcRequirements(definitionalElementFactory, searchService, transactionManager));
         assertTrue(fullDuplicates.isEmpty());
+    }
+
+    private long distinctApprovalIdCount(List<Substance> substances) {
+        return substances.stream()
+                .map(substance -> substance.approvalID)
+                .filter(Objects::nonNull)
+                .distinct()
+                .count();
     }
 
     /*

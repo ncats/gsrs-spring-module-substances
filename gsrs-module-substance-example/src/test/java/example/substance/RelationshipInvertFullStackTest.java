@@ -1,6 +1,7 @@
 package example.substance;
 
 import example.GsrsModuleSubstanceApplication;
+import example.substance.support.TestContextBootstrap;
 import gsrs.module.substance.SubstanceValidatorConfig;
 import gsrs.module.substance.processors.*;
 import gsrs.module.substance.services.RelationshipService;
@@ -26,6 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.SpyBean;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -67,6 +69,9 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
     @SpyBean
     private RelationshipService relationshipService;
 
+    @Autowired
+    private ApplicationContext applicationContext;
+
     
 
     @TestConfiguration
@@ -87,17 +92,13 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         }
     }
     
-    private boolean configured = false;
-    
     @BeforeEach
     public void setup() throws IOException {
+        TestContextBootstrap.runOnce(applicationContext, "relationship-invert-processors", () -> {
+            testEntityProcessorFactory.addEntityProcessor(substanceProcessor);
+            testEntityProcessorFactory.addEntityProcessor(relationshipProcessor);
+            testEntityProcessorFactory.addEntityProcessor(referenceProcessor);
 
-        testEntityProcessorFactory.addEntityProcessor(substanceProcessor);
-        testEntityProcessorFactory.addEntityProcessor(relationshipProcessor);
-        testEntityProcessorFactory.addEntityProcessor(referenceProcessor);
-
-        
-        if (!configured) {
             SubstanceValidatorConfig configPri = new SubstanceValidatorConfig();
             configPri.setValidatorClass(PrimaryDefinitionValidator.class);
             configPri.setNewObjClass(Substance.class);
@@ -109,9 +110,9 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
             configAlt.setNewObjClass(Substance.class);
             configAlt.setType(SubstanceDefinitionType.ALTERNATIVE);
             testGsrsValidatorFactory.addValidator("substances", configAlt);
-            
-            configured = true;
-        }
+        });
+
+        Mockito.clearInvocations(relationshipService);
     }
 
     @Test
