@@ -1,7 +1,7 @@
 package example.substance.validation;
 
 import example.GsrsModuleSubstanceApplication;
-import gsrs.startertests.TestGsrsValidatorFactory;
+import gsrs.module.substance.repository.ReferenceRepository;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.validator.ValidationResponse;
@@ -27,7 +27,7 @@ public class ChemicalValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
     StructureProcessor structureProcessor;
 
     @Autowired
-    private TestGsrsValidatorFactory factory;
+    private ReferenceRepository referenceRepository;
 
     private final String molV3000= "\n" +
             "  SciTegic05122218582D\n" +
@@ -190,37 +190,31 @@ public class ChemicalValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
                 .addName("Some name")
                 .setStructureWithDefaultReference(molV3000)
                 .build();
-        ChemicalValidator chemicalValidator = new ChemicalValidator();
-        chemicalValidator.setStructureProcessor(structureProcessor);
-        chemicalValidator.setAllowV3000Molfiles(true);
+        ChemicalValidator chemicalValidator = buildValidator(true);
         ValidationResponse<Substance> response= chemicalValidator.validate(chemV3000, null);
         Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(m->m.isError() && m.getMessage().contains("V3000 molfile")));
     }
 
     @Test
-    public void testV2000V3000MolNotAllowed() {
+    public void testV2000MolNotFlaggedAsV3000WhenV3000Disallowed() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         ChemicalSubstance chemV2000 = builder
                 .addName("Some name")
                 .setStructureWithDefaultReference(molV2000)
                 .build();
-        ChemicalValidator chemicalValidator = new ChemicalValidator();
-        chemicalValidator.setStructureProcessor(structureProcessor);
-        chemicalValidator.setAllowV3000Molfiles(false);
+        ChemicalValidator chemicalValidator = buildValidator(false);
         ValidationResponse<Substance> response= chemicalValidator.validate(chemV2000, null);
         Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(m->m.isError() && m.getMessage().contains("V3000 molfile")));
     }
 
     @Test
-    public void testV2000V3000MolAllowed() {
+    public void testV2000MolAllowedWhenV3000Allowed() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         ChemicalSubstance chemV2000 = builder
                 .addName("Some name")
                 .setStructureWithDefaultReference(molV2000)
                 .build();
-        ChemicalValidator chemicalValidator = new ChemicalValidator();
-        chemicalValidator.setStructureProcessor(structureProcessor);
-        chemicalValidator.setAllowV3000Molfiles(true);
+        ChemicalValidator chemicalValidator = buildValidator(true);
         ValidationResponse<Substance> response= chemicalValidator.validate(chemV2000, null);
         Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(m->m.isError() && m.getMessage().contains("V3000 molfile")));
     }
@@ -232,10 +226,26 @@ public class ChemicalValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
                 .addName("Some name")
                 .setStructureWithDefaultReference(molV3000)
                 .build();
-        ChemicalValidator chemicalValidator = new ChemicalValidator();
-        chemicalValidator.setStructureProcessor(structureProcessor);
-        chemicalValidator.setAllowV3000Molfiles(false);
+        ChemicalValidator chemicalValidator = buildValidator(false);
         ValidationResponse<Substance> response= chemicalValidator.validate(chemV3000, null);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(m->m.isError() && m.getMessage().contains("V3000 molfile")));
+    }
+
+    // -----------------------------------------------------------------------
+    // Helper
+    // -----------------------------------------------------------------------
+
+    /**
+     * Creates a fully-wired {@link ChemicalValidator} suitable for unit testing.
+     *
+     * @param allowV3000 whether to permit V3000 molfile format
+     * @return a configured validator instance
+     */
+    private ChemicalValidator buildValidator(boolean allowV3000) {
+        ChemicalValidator validator = new ChemicalValidator();
+        validator.setStructureProcessor(structureProcessor);
+        validator.setReferenceRepository(referenceRepository);
+        validator.setAllowV3000Molfiles(allowV3000);
+        return validator;
     }
 }

@@ -5,9 +5,12 @@ import ix.core.models.Structure;
 import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
+import gov.nih.ncats.molwitch.Chemical;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,10 +50,24 @@ public class ChemicalValidatorMolecularFormulaTest {
         when(mockStructureProcessor.instrument(anyString(), any(), anyBoolean()))
                 .thenAnswer(invocation -> {
                     String molfile = invocation.getArgument(0);
+                    List<Structure> moietiesList = invocation.getArgument(1);
+
+                    // Compute the real formula from the molfile so tests see realistic values
+                    String computedFormula = "CH4"; // safe default
+                    try {
+                        Chemical chem = Chemical.parseMol(molfile);
+                        String f = chem.getFormula();
+                        if (f != null && !f.isEmpty()) {
+                            computedFormula = f;
+                        }
+                    } catch (Exception ignored) {
+                        // invalid molfile – keep the default
+                    }
+
                     GinasChemicalStructure structure = new GinasChemicalStructure();
                     structure.molfile = molfile;
                     structure.smiles = "C";
-                    structure.formula = "CH4";
+                    structure.formula = computedFormula;
                     structure.charge = 0;
                     structure.stereoCenters = 0;
                     structure.definedStereo = 0;
@@ -58,6 +75,23 @@ public class ChemicalValidatorMolecularFormulaTest {
                     structure.mwt = 16.0;
                     structure.stereoChemistry = Structure.Stereo.ACHIRAL;
                     structure.opticalActivity = Structure.Optical.NONE;
+
+                    // Populate the moieties list the way the real StructureProcessor would
+                    if (moietiesList != null) {
+                        GinasChemicalStructure moiety = new GinasChemicalStructure();
+                        moiety.molfile = molfile;
+                        moiety.smiles = "C";
+                        moiety.formula = computedFormula;
+                        moiety.charge = 0;
+                        moiety.stereoCenters = 0;
+                        moiety.definedStereo = 0;
+                        moiety.ezCenters = 0;
+                        moiety.mwt = 16.0;
+                        moiety.stereoChemistry = Structure.Stereo.ACHIRAL;
+                        moiety.opticalActivity = Structure.Optical.NONE;
+                        moietiesList.add(moiety);
+                    }
+
                     return structure;
                 });
     }
