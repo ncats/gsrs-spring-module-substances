@@ -289,6 +289,125 @@ public class RelationshipInvertFullStackTest  extends AbstractSubstanceJpaFullSt
         assertEquals("2", childFetched.version);
     }
 
+    @Test
+    public void addingNameToRelationshipParentShouldNotVersionInverseOwners() throws Exception {
+        String childToParent = "SALT/SOLVATE->PARENT";
+        String parentToChild = "PARENT->SALT/SOLVATE";
+
+        Substance parent = assertCreatedAPI(new SubstanceBuilder()
+                .addName("Aspirin")
+                .asChemical()
+                .setStructureWithDefaultReference("CCO")
+                .setUUID(UUID.randomUUID())
+                .buildJson());
+        UUID parentUuid = parent.getUuid();
+
+        Substance carbaspirin = assertCreatedAPI(new SubstanceBuilder()
+                .addName("Carbaspirin")
+                .asChemical()
+                .setStructureWithDefaultReference("CCCO")
+                .setUUID(UUID.randomUUID())
+                .addRelationshipTo(parent, childToParent)
+                .buildJson());
+        UUID carbaspirinUuid = carbaspirin.getUuid();
+
+        Substance aloxiprin = assertCreatedAPI(new SubstanceBuilder()
+                .addName("Aloxiprin")
+                .asChemical()
+                .setStructureWithDefaultReference("CCCCO")
+                .setUUID(UUID.randomUUID())
+                .addRelationshipTo(parent, childToParent)
+                .buildJson());
+        UUID aloxiprinUuid = aloxiprin.getUuid();
+
+        Substance parentFetched = substanceEntityService.get(parentUuid).orElseThrow();
+        Substance carbaspirinFetched = substanceEntityService.get(carbaspirinUuid).orElseThrow();
+        Substance aloxiprinFetched = substanceEntityService.get(aloxiprinUuid).orElseThrow();
+
+        assertEquals("3", parentFetched.version);
+        assertEquals("1", carbaspirinFetched.version);
+        assertEquals("1", aloxiprinFetched.version);
+        assertEquals(2, parentFetched.relationships.size());
+        assertEquals(1, carbaspirinFetched.relationships.size());
+        assertEquals(1, aloxiprinFetched.relationships.size());
+        assertEquals(parentToChild, parentFetched.relationships.get(0).type);
+        assertEquals(parentToChild, parentFetched.relationships.get(1).type);
+
+        SubstanceBuilder.from(parentFetched.toFullJsonNode())
+                .addName("Aspirin added name")
+                .buildJsonAnd(this::assertUpdatedAPI);
+
+        parentFetched = substanceEntityService.get(parentUuid).orElseThrow();
+        carbaspirinFetched = substanceEntityService.get(carbaspirinUuid).orElseThrow();
+        aloxiprinFetched = substanceEntityService.get(aloxiprinUuid).orElseThrow();
+
+        assertEquals("4", parentFetched.version);
+        assertEquals("1", carbaspirinFetched.version);
+        assertEquals("1", aloxiprinFetched.version);
+        assertEquals(2, parentFetched.relationships.size());
+        assertEquals(1, carbaspirinFetched.relationships.size());
+        assertEquals(1, aloxiprinFetched.relationships.size());
+    }
+
+    @Test
+    public void updateInverseRelationshipShouldUseReciprocalFallbackWhenOriginatorDoesNotMatch() throws Exception {
+        String childToParent = "SALT/SOLVATE->PARENT";
+        String parentToChild = "PARENT->SALT/SOLVATE";
+
+        Substance parent = assertCreatedAPI(new SubstanceBuilder()
+                .addName("Aspirin")
+                .asChemical()
+                .setStructureWithDefaultReference("CCO")
+                .setUUID(UUID.randomUUID())
+                .buildJson());
+        UUID parentUuid = parent.getUuid();
+
+        Substance child = assertCreatedAPI(new SubstanceBuilder()
+                .addName("Carbaspirin")
+                .asChemical()
+                .setStructureWithDefaultReference("CCCO")
+                .setUUID(UUID.randomUUID())
+                .addRelationshipTo(parent, childToParent, r -> r.setComments("old comments"))
+                .buildJson());
+        UUID childUuid = child.getUuid();
+
+        Substance parentFetched = substanceEntityService.get(parentUuid).orElseThrow();
+        Relationship parentRelationship = parentFetched.relationships.get(0);
+        assertEquals(parentToChild, parentRelationship.type);
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(status -> RelationshipProcessor.doWithoutEventTracking(() -> {
+            Substance managedParent = substanceRepository.findById(parentUuid).orElseThrow();
+            Relationship managedParentRelationship = managedParent.relationships.get(0);
+            managedParentRelationship.originatorUuid = managedParentRelationship.uuid.toString();
+            managedParentRelationship.setComments("updated comments");
+            managedParentRelationship.setIsDirty("comments");
+            managedParent.forceUpdate();
+            substanceRepository.saveAndFlush(managedParent);
+        }));
+
+        parentFetched = substanceEntityService.get(parentUuid).orElseThrow();
+        parentRelationship = parentFetched.relationships.get(0);
+        assertEquals(parentRelationship.uuid.toString(), parentRelationship.originatorUuid);
+        assertEquals("updated comments", parentRelationship.comments);
+        UUID parentRelationshipUuid = parentRelationship.uuid;
+        UUID parentRelationshipOriginatorUuid = UUID.fromString(parentRelationship.originatorUuid);
+
+        transactionTemplate.executeWithoutResult(status ->
+                relationshipService.updateInverseRelationshipFor(UpdateInverseRelationshipEvent.builder()
+                        .relationshipIdThatWasUpdated(parentRelationshipUuid)
+                        .substanceIdThatWasUpdated(parentUuid)
+                        .substanceIdToUpdate(childUuid)
+                        .originatorUUID(parentRelationshipOriginatorUuid)
+                        .build()));
+
+        Substance childFetched = substanceEntityService.get(childUuid).orElseThrow();
+        assertEquals(1, childFetched.relationships.size());
+        assertEquals(childToParent, childFetched.relationships.get(0).type);
+        assertEquals(parentUuid.toString(), childFetched.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals("updated comments", childFetched.relationships.get(0).comments);
+    }
+
 
     @Test
     public void add2SubstancesWithNoRelationshipThenAddRelationshipThenRemoveShouldResultInNoRelationships()   throws Exception {
