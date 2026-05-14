@@ -12,6 +12,7 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
+import ix.utils.pojopatch.PojoDiffAware;
 
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ import java.util.UUID;
 @Table(name = "ix_ginas_moiety", indexes = {@Index(name = "moiety_owner_index", columnList = "owner_uuid")})
 @SingleParent
 //@JsonIgnoreProperties({ "id" })
-public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
+public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>, PojoDiffAware {
     public static String JSON_NULL="JSON_NULL";
     /**
      * The UUID of this moiety
@@ -89,6 +90,17 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
     }
     public String fetchGlobalId() {
         return this.uuid == null ? null : this.uuid.toString();
+    }
+
+    @Override
+    public boolean pojoDiffEquivalentIdTo(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        String normalizedId = id.trim();
+        return normalizedId.equals(innerUuid)
+                || (uuid != null && normalizedId.equals(uuid.toString()))
+                || (structure != null && structure.id != null && normalizedId.equals(structure.id.toString()));
     }
 
     @Indexable()
