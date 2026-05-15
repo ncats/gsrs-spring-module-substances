@@ -82,6 +82,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -737,50 +738,58 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, SubstanceReference> existingRelationshipReferences = mapRelationshipSubstanceReferences(managed.relationships);
         Map<UUID, SubstanceReference> existingPropertyReferences = mapPropertySubstanceReferences(managed.properties);
         Map<UUID, SubstanceReference> existingParameterReferences = mapParameterSubstanceReferences(managed.properties);
-        JsonNode updatedJson = objectMapper.valueToTree(updated);
-        if (updatedJson instanceof ObjectNode updatedObject
-                && updated instanceof ChemicalSubstance
-                && replacementMoieties != null) {
-            updatedObject.remove("moieties");
-        }
-        Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
-        if (replaced instanceof ChemicalSubstance replacedChemical && existingStructure != null) {
-            GinasChemicalStructure updatedStructure = replacedChemical.getStructure();
-            if (updatedStructure != null && updatedStructure != existingStructure
-                    && Objects.equals(updatedStructure.id, existingStructure.id)) {
-                JsonNode updatedStructureJson = objectMapper.valueToTree(updatedStructure);
-                objectMapper.readerForUpdating(existingStructure).readValue(updatedStructureJson);
-                existingStructure.version = updatedStructure.version != null
-                        ? updatedStructure.version
-                        : existingStructure.version;
-                replacedChemical.setStructure(existingStructure);
+
+        FlushModeType previousFlushMode = entityManager.getFlushMode();
+        // Jackson creates same-id child instances before reconciliation restores managed children.
+        entityManager.setFlushMode(FlushModeType.COMMIT);
+        try {
+            JsonNode updatedJson = objectMapper.valueToTree(updated);
+            if (updatedJson instanceof ObjectNode updatedObject
+                    && updated instanceof ChemicalSubstance
+                    && replacementMoieties != null) {
+                updatedObject.remove("moieties");
             }
-        }
-        if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
-            if (existingMoieties != null) {
-                for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
-                    existingMoiety.setOwner(null);
-                    entityManager.remove(entityManager.contains(existingMoiety)
-                            ? existingMoiety
-                            : entityManager.merge(existingMoiety));
+            Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
+            if (replaced instanceof ChemicalSubstance replacedChemical && existingStructure != null) {
+                GinasChemicalStructure updatedStructure = replacedChemical.getStructure();
+                if (updatedStructure != null && updatedStructure != existingStructure
+                        && Objects.equals(updatedStructure.id, existingStructure.id)) {
+                    JsonNode updatedStructureJson = objectMapper.valueToTree(updatedStructure);
+                    objectMapper.readerForUpdating(existingStructure).readValue(updatedStructureJson);
+                    existingStructure.version = updatedStructure.version != null
+                            ? updatedStructure.version
+                            : existingStructure.version;
+                    replacedChemical.setStructure(existingStructure);
                 }
             }
-            replacedChemical.setMoieties(replacementMoieties);
+            if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
+                if (existingMoieties != null) {
+                    for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
+                        existingMoiety.setOwner(null);
+                        entityManager.remove(entityManager.contains(existingMoiety)
+                                ? existingMoiety
+                                : entityManager.merge(existingMoiety));
+                    }
+                }
+                replacedChemical.setMoieties(replacementMoieties);
+            }
+            replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
+            reconcileNestedNameOrgs(replaced.names, existingNameOrgs);
+            replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
+            replaced.notes = reconcileManagedChildren(replaced.notes, existingNotes, child -> child.setOwner(replaced));
+            replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
+            replaced.relationships = reconcileManagedChildren(replaced.relationships, existingRelationships, child -> child.assignOwner(replaced));
+            replaced.references = reconcileManagedChildren(replaced.references, existingReferences, child -> child.setOwner(replaced));
+            reconcileNestedPropertyData(replaced.properties, existingParameters, existingPropertyAmounts, existingParameterAmounts,
+                    existingPropertyReferences, existingParameterReferences);
+            reconcileNestedRelationshipData(replaced.relationships, existingRelationshipAmounts, existingRelationshipReferences);
+            if (replaced instanceof ChemicalSubstance replacedChemical) {
+                reconcileNestedMoietyAmounts(replacedChemical.getMoieties(), existingMoietyAmounts);
+            }
+            return replaced;
+        } finally {
+            entityManager.setFlushMode(previousFlushMode);
         }
-        replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
-        reconcileNestedNameOrgs(replaced.names, existingNameOrgs);
-        replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
-        replaced.notes = reconcileManagedChildren(replaced.notes, existingNotes, child -> child.setOwner(replaced));
-        replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
-        replaced.relationships = reconcileManagedChildren(replaced.relationships, existingRelationships, child -> child.assignOwner(replaced));
-        replaced.references = reconcileManagedChildren(replaced.references, existingReferences, child -> child.setOwner(replaced));
-        reconcileNestedPropertyData(replaced.properties, existingParameters, existingPropertyAmounts, existingParameterAmounts,
-                existingPropertyReferences, existingParameterReferences);
-        reconcileNestedRelationshipData(replaced.relationships, existingRelationshipAmounts, existingRelationshipReferences);
-        if (replaced instanceof ChemicalSubstance replacedChemical) {
-            reconcileNestedMoietyAmounts(replacedChemical.getMoieties(), existingMoietyAmounts);
-        }
-        return replaced;
     }
 
     private <T extends GinasCommonData> Map<UUID, T> mapByUuid(List<T> values) {
