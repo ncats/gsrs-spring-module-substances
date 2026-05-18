@@ -1,4 +1,4 @@
-package ix.ginas.models.v1;
+ackage ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -81,8 +81,8 @@ public class SubstanceReference extends GinasCommonSubData {
         ref.refPname =this.refPname;
         ref.approvalID = this.approvalID;
         ref.substanceClass = this.substanceClass;
-        //this should be null anyway but make it explicit.
-        ref.uuid = null;
+        // Generate a new UUID so Hibernate 6 assigned-ID strategy does not fail on persist.
+        ref.uuid = UUID.randomUUID();
         return ref;
     }
 
