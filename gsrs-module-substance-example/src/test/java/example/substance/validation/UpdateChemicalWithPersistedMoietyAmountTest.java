@@ -18,6 +18,7 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Name;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -32,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+@Tag("fullstack")
 public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String ORIGINAL_MOIETY_COORDINATE = "   12.3760   -7.9040    0.0000 C";

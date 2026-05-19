@@ -54,7 +54,6 @@ import gsrs.autoconfigure.GsrsExportConfiguration;
 import gsrs.cache.GsrsCache;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.SubstanceEntityService;
-import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.module.substance.autoconfigure.GsrsSubstanceModuleAutoConfiguration;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.payload.LegacyPayloadConfiguration;
@@ -111,9 +110,10 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
             return new TestGsrsValidatorFactory();
         }
 
-        @Bean
+        @Bean(name = {"substanceEntityService", "substanceEntityServiceImpl"})
+        @Primary
         SubstanceEntityService substanceEntityService(){
-            return new SubstanceEntityServiceImpl();
+            return new TestSubstanceEntityServiceImpl();
         }
         @Bean
         @Primary
@@ -191,12 +191,14 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
             return new EntityManagerFacade() {
                 @Override
                 public <T> T persistAndFlush(T entity) {
+                    TestPersistUuidSupport.ensurePersistableIds(entity);
                     em.persist(entity);
                     em.flush();
                     return entity;
                 }
                 @Override
                 public <T> T persist(T entity) {
+                    TestPersistUuidSupport.ensurePersistableIds(entity);
                     em.persist(entity);
 
                     return entity;
@@ -208,10 +210,12 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
             return new EntityManagerFacade() {
                 @Override
                 public <T> T persistAndFlush(T entity) {
+                    TestPersistUuidSupport.ensurePersistableIds(entity);
                     return em.persistAndFlush(entity);
                 }
                 @Override
                 public <T> T persist(T entity) {
+                    TestPersistUuidSupport.ensurePersistableIds(entity);
                     return em.persist(entity);
                 }
             };

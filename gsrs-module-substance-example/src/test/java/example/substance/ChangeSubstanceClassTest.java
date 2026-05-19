@@ -7,6 +7,7 @@ import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.substances.tests.SubstanceJsonUtil;
 import gsrs.substances.tests.SubstanceTestUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -19,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 @WithMockUser(username = "admin", roles="Admin")
 @Transactional
+@Tag("fullstack")
 public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
 
 

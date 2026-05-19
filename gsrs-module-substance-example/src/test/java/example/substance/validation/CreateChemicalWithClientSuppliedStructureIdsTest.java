@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -14,6 +15,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@Tag("fullstack")
 public class CreateChemicalWithClientSuppliedStructureIdsTest extends AbstractSubstanceJpaEntityTest {
 
     private static final UUID CLIENT_STRUCTURE_ID = UUID.fromString("6bdc786d-809e-4da4-b635-5077970e61a9");

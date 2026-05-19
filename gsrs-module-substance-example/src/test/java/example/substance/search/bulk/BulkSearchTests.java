@@ -12,6 +12,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -52,6 +53,7 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Tag("fullstack")
 @Import(AutowireHelper.class)
 public class BulkSearchTests extends AbstractSubstanceJpaFullStackEntityTest {
 

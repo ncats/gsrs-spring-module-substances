@@ -55,16 +55,10 @@
             <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
-        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch</artifactId>
             <version>0.6.10</version>
-        </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-core</artifactId>
-            <version>${gsrs.version}</version>
         </dependency>
     </dependencies>
     <!-- Uncomment this for maven public release deployment

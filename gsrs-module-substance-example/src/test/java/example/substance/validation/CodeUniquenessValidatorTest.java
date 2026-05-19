@@ -13,6 +13,7 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.CodeUniquenessValidator;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -22,6 +23,7 @@ import java.util.LinkedHashMap;
  *
  * @author mitch
  */
+@Tag("fullstack")
 public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test

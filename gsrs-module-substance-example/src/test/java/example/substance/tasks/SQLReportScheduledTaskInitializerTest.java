@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -34,6 +35,7 @@ import java.sql.Statement;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Tag("fullstack")
 @Import(AutowireHelper.class)
 @Slf4j
 public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaFullStackEntityTest{

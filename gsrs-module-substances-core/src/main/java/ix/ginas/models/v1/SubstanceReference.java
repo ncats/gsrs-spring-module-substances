@@ -1,4 +1,4 @@
-ackage ix.ginas.models.v1;
+package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 

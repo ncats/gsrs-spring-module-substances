@@ -6,6 +6,7 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.NameOrg;
 import ix.ginas.models.v1.Substance;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -18,6 +19,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@Tag("fullstack")
 public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
 
