@@ -15,7 +15,6 @@ import gsrs.module.substance.events.SubstanceUpdatedEvent;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import gsrs.service.AbstractGsrsEntityService;
-import gsrs.service.GsrsEntityService;
 import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
@@ -101,7 +100,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             "approved",
             "approvedBy"
     );
-    private final ThreadLocal<Boolean> preserveCreateSubstanceUuid = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
 
     public SubstanceEntityServiceImpl() {
@@ -257,17 +255,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     @Override
-    public GsrsEntityService.CreationResult<Substance> createEntity(JsonNode json, boolean isBatch) {
-        Boolean previous = preserveCreateSubstanceUuid.get();
-        preserveCreateSubstanceUuid.set(isBatch || Boolean.TRUE.equals(previous));
-        try {
-            return super.createEntity(json, isBatch);
-        } finally {
-            preserveCreateSubstanceUuid.set(previous);
-        }
-    }
-
-    @Override
     protected Substance create(Substance substance) {
         normalizeCreateGraph(substance);
         try {
@@ -284,9 +271,6 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private void normalizeCreateGraph(Substance substance) {
         if (substance == null) {
             return;
-        }
-        if (!preserveCreateSubstanceUuid.get()) {
-            substance.uuid = null;
         }
         substance.version = "1";
         if (substance.modifications != null) {
