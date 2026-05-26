@@ -1,9 +1,9 @@
 package ix.utils;
 
 
-public class LiteralReference<K>{
+public class SubstanceLiteralReference<K>{
 	private K o;
-	public LiteralReference(K o){
+	public SubstanceLiteralReference(K o){
 		this.o=o;
 	}
 	
@@ -17,14 +17,14 @@ public class LiteralReference<K>{
 	@Override
 	public boolean equals(Object oref){
 		if(oref==null)return false;
-		if(oref instanceof LiteralReference){
-			LiteralReference<?> or=(LiteralReference<?>)oref;
+		if(oref instanceof SubstanceLiteralReference){
+			SubstanceLiteralReference<?> or=(SubstanceLiteralReference<?>)oref;
 			return (this.o == or.o);
 		}
 		return false;
 	}
-	public static <K> LiteralReference<K> of(K k) {
-		return new LiteralReference<K>(k);
+	public static <K> SubstanceLiteralReference<K> of(K k) {
+		return new SubstanceLiteralReference<K>(k);
 	}
 	
 	public String toString(){
