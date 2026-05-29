@@ -286,6 +286,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 name2.languages.add(new Keyword("en"));
                 name2.languages.add(new Keyword("fr"));
                 s1.names.add(name2);
+                s1.getOrGenerateUUID();
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
                 ValidationResponse<Substance> response = validator.validate(s1, null);
@@ -321,6 +322,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 name2.languages.add(new Keyword("en"));
                 name2.languages.add(new Keyword("fr"));
                 s1.names.add(name2);
+                s1.getOrGenerateUUID();
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
                 ValidationResponse<Substance> response = validator.validate(s1, null);

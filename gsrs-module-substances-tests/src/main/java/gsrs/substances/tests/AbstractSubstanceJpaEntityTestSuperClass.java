@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
 import gsrs.services.PrivilegeService;
@@ -33,6 +34,7 @@ import org.springframework.boot.test.util.TestPropertyValues;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.io.Resource;
@@ -96,6 +98,7 @@ import ix.ginas.models.v1.Substance;
 @Import({AbstractSubstanceJpaEntityTest.TestConfig.class,  GsrsSubstanceModuleAutoConfiguration.class})
 public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractGsrsJpaEntityJunit5Test {
     @TestConfiguration
+    @EnableAspectJAutoProxy(proxyTargetClass = true)
 //    @AutoConfigureAfter(JpaRepositoriesAutoConfiguration.class)
     public static class TestConfig{
 
@@ -125,6 +128,11 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         @Primary
         TestEntityProcessorFactory entityProcessorFactory(){
             return new TestEntityProcessorFactory();
+        }
+
+        @Bean
+        RepositoryUuidAssignmentAspect repositoryUuidAssignmentAspect() {
+            return new RepositoryUuidAssignmentAspect();
         }
 
 
@@ -241,6 +249,9 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected PlatformTransactionManager transactionManager;
 
+    @PersistenceContext
+    protected EntityManager entityManager;
+
     @Autowired
     protected GsrsCache gsrsCache;
 
@@ -284,13 +295,53 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
             transactionTemplate.executeWithoutResult(s -> {
                 List<Role> roleList =PrivilegeService.instance().getAllRoleNames().stream().map(r->Role.of(r)).collect(Collectors.toList());
                 Role[] roles = roleList.toArray(new Role[]{});
-                createUser("admin", roles);
+                if (!adminPrincipalExists()) {
+                    createUser("admin", roles);
+                }
 
-                //some  integration tests will make validation messages which will get assigned an "admin" access group
-                groupRepository.saveAndFlush(new Group("admin"));
+                //some integration tests will make validation messages which will get assigned an "admin" access group
+                if (!adminGroupExists()) {
+                    groupRepository.saveAndFlush(new Group("admin"));
+                }
 
             });
         }
+    }
+
+    private boolean adminPrincipalExists() {
+        return !entityManager.createQuery("select p from Principal p where lower(p.username) = :username", Principal.class)
+                .setParameter("username", "admin")
+                .getResultList()
+                .isEmpty();
+    }
+
+    private boolean adminGroupExists() {
+        for (Group group : groupRepository.findAll()) {
+            if (group == null) {
+                continue;
+            }
+            try {
+                var getter = group.getClass().getMethod("getName");
+                Object value = getter.invoke(group);
+                if (value != null && "admin".equalsIgnoreCase(value.toString())) {
+                    return true;
+                }
+            } catch (ReflectiveOperationException ignored) {
+                try {
+                    var field = group.getClass().getDeclaredField("name");
+                    field.setAccessible(true);
+                    Object value = field.get(group);
+                    if (value != null && "admin".equalsIgnoreCase(value.toString())) {
+                        return true;
+                    }
+                } catch (ReflectiveOperationException ignoredToo) {
+                    if (group.toString() != null && group.toString().toLowerCase().contains("admin")) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     protected Principal createUser(String username, Role... roles){
@@ -368,7 +419,7 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         stream1.forEach(json->{
             list.add(transactionTemplate.execute(status ->{
                 try {
-                    GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json,true);
+                    GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json,false);
                     //full fetch
                     if(result.isCreated()){
                         result.getCreatedEntity().toFullJsonNode();

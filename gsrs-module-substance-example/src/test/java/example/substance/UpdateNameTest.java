@@ -36,6 +36,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         old.toBuilder()
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
+                    org.setUuid(UUID.randomUUID());
                     org.nameOrg = "MyName org";
                     s.getAllNames().get(0).nameOrgs.add(org);
                 })

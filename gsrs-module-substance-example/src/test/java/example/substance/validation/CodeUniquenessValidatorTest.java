@@ -34,6 +34,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
@@ -66,6 +67,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
@@ -98,6 +100,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
@@ -162,6 +165,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.code = "DB01190";
         code1.codeSystem = "DrugBank";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
