@@ -49,6 +49,36 @@ public class RelationshipService {
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
 
+    private static final class ReverseRelationshipLookup {
+        private final Relationship relationship;
+        private final boolean ambiguous;
+
+        private ReverseRelationshipLookup(Relationship relationship, boolean ambiguous) {
+            this.relationship = relationship;
+            this.ambiguous = ambiguous;
+        }
+
+        private static ReverseRelationshipLookup found(Relationship relationship) {
+            return new ReverseRelationshipLookup(relationship, false);
+        }
+
+        private static ReverseRelationshipLookup notFound() {
+            return new ReverseRelationshipLookup(null, false);
+        }
+
+        private static ReverseRelationshipLookup ambiguous() {
+            return new ReverseRelationshipLookup(null, true);
+        }
+
+        private Optional<Relationship> relationship() {
+            return Optional.ofNullable(relationship);
+        }
+
+        private boolean isAmbiguous() {
+            return ambiguous;
+        }
+    }
+
     private Reference copyReferenceForInverseRelationship(Reference original) {
         Reference copy = new Reference();
         copy.citation = original.citation;
@@ -183,13 +213,32 @@ public class RelationshipService {
         return value == null ? "" : value;
     }
 
+    private boolean isOwnedBy(Relationship relationship, UUID ownerUuid) {
+        if (relationship == null || ownerUuid == null) {
+            return false;
+        }
+        Substance owner = relationship.fetchOwner();
+        return owner != null && Objects.equals(owner.getUuid(), ownerUuid);
+    }
+
+    private boolean referencesSubstance(Relationship relationship, UUID substanceUuid) {
+        return relationship != null
+                && relationship.relatedSubstance != null
+                && substanceUuid != null
+                && Objects.equals(relationship.relatedSubstance.refuuid, substanceUuid.toString());
+    }
+
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
 
 
 
+        UUID expectedInverseOwner = UUID.fromString(event.getRelatedSubstanceRefId());
+        UUID expectedInverseReference = UUID.fromString(event.getSubstanceRefIdOfRemovedRelationship());
         Optional<Relationship> opt = relationshipRepository.findByOriginatorUuid(event.getRelationshipOriginatorIdToRemove().toString())
                 .stream()
                 .filter(r-> !event.getRelationshipIdThatWasRemoved().equals(r.uuid))
+                .filter(r -> isOwnedBy(r, expectedInverseOwner))
+                .filter(r -> referencesSubstance(r, expectedInverseReference))
                 .findAny();
 
         if(opt.isPresent()){
@@ -217,22 +266,40 @@ public class RelationshipService {
         return Optional.empty();
     }
 
-    private Optional<Relationship> findReverseRelationship(UpdateInverseRelationshipEvent event){
+    private ReverseRelationshipLookup findReverseRelationship(UpdateInverseRelationshipEvent event){
 
-        Substance owner = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated()).get().fetchOwner();
+        Optional<Relationship> updatedRelationshipOpt = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated());
+        if (!updatedRelationshipOpt.isPresent()) {
+            return ReverseRelationshipLookup.notFound();
+        }
+        Relationship updatedRelationship = updatedRelationshipOpt.get();
+        Substance owner = updatedRelationship.fetchOwner();
 
 
-        Optional<Relationship> opt = relationshipRepository.findByOriginatorUuid(event.getOriginatorUUID().toString())
+        List<Relationship> originatorCandidates = relationshipRepository.findByOriginatorUuid(event.getOriginatorUUID().toString())
                 .stream()
                 .filter(r-> !event.getRelationshipIdThatWasUpdated().equals(r.uuid))
-                .findAny();
+                .filter(r -> referencesSubstance(r, event.getSubstanceIdThatWasUpdated()))
+                .collect(Collectors.toList());
+        List<Relationship> exactOwnerOriginatorCandidates = originatorCandidates.stream()
+                .filter(r -> isOwnedBy(r, event.getSubstanceIdToUpdate()))
+                .collect(Collectors.toList());
 
-        if(opt.isPresent()){
-            return opt;
+        if(exactOwnerOriginatorCandidates.size() == 1){
+            return ReverseRelationshipLookup.found(exactOwnerOriginatorCandidates.get(0));
         }
-        Optional<String> oldType = findOldType(event, owner);
-        if(!oldType.isPresent()){
-            return Optional.empty();
+        if(exactOwnerOriginatorCandidates.size() > 1){
+            return ReverseRelationshipLookup.ambiguous();
+        }
+        if(originatorCandidates.size() == 1){
+            return ReverseRelationshipLookup.found(originatorCandidates.get(0));
+        }
+        if(originatorCandidates.size() > 1){
+            return ReverseRelationshipLookup.ambiguous();
+        }
+        String typeToReverse = findOldType(event, owner).orElse(updatedRelationship.type);
+        if(typeToReverse == null){
+            return ReverseRelationshipLookup.notFound();
         }
         //GSRS-860 sometimes when grabbing substance json from public data
         //and loading it on local system and then making edits without pulling latest version from GSRS
@@ -243,17 +310,20 @@ public class RelationshipService {
             List<Relationship> relationships = relatedSubstance.get().relationships;
             if(relationships !=null){
                 List<Relationship> candidates = relationships.stream()
-                        .filter(r->event.getRelationshipIdThatWasUpdated().equals(r.relatedSubstance.refuuid))
-                        .filter(r -> r.isAutomaticInvertible() && RelationshipUtil.reverseRelationship(oldType.get()).equals(r.type))
+                        .filter(r->referencesSubstance(r, event.getSubstanceIdThatWasUpdated()))
+                        .filter(r -> r.isAutomaticInvertible() && RelationshipUtil.reverseRelationship(typeToReverse).equals(r.type))
                         .collect(Collectors.toList());
                 if(candidates.size() ==1){
-                    return Optional.of(candidates.get(0));
+                    return ReverseRelationshipLookup.found(candidates.get(0));
                 }
-                //It's a bigger deal to accidentally delete a relationship you're not sure about, so don't do it if
-                //there's some ambiguity
+                if(candidates.size() > 1){
+                    return ReverseRelationshipLookup.ambiguous();
+                }
+                //Do not synthesize another inverse relationship when the existing reciprocal rows
+                //are already ambiguous.
             }
         }
-        return Optional.empty();
+        return ReverseRelationshipLookup.notFound();
     }
 
     //TODO: This needs tests, it is unlikely to work as consistently as desired
@@ -291,13 +361,19 @@ public class RelationshipService {
     }
 
     public void updateInverseRelationshipFor(UpdateInverseRelationshipEvent event){
-        Optional<Relationship> opt=Optional.empty();
+        ReverseRelationshipLookup lookup = ReverseRelationshipLookup.notFound();
         try {
-            opt = findReverseRelationship(event);
+            lookup = findReverseRelationship(event);
         }catch(Exception e) {
             log.warn("Trouble finding inverted relationship", e);
         }
+        Optional<Relationship> opt = lookup.relationship();
         if(!opt.isPresent()) {
+            if (lookup.isAmbiguous()) {
+                log.warn("Not updating inverse relationship for {} because multiple reciprocal relationships matched",
+                        event.getRelationshipIdThatWasUpdated());
+                return;
+            }
             //if no suitable inverted form is found to be updated, chances are that
             //there was no suitable inverse yet. This can happen if the data was loaded
             //in a particular order sometimes, or more likely when a non-invertible

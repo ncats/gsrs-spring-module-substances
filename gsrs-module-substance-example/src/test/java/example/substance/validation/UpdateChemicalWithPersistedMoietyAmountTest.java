@@ -9,6 +9,7 @@ import gov.nih.ncats.molwitch.AtomCoordinates;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.service.GsrsEntityService;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
+import ix.core.models.Group;
 import ix.core.models.Keyword;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.ValidatorCategory;
@@ -18,13 +19,14 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Name;
-import org.junit.jupiter.api.Tag;
+import ix.ginas.models.v1.Note;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +35,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-@Tag("fullstack")
 public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String ORIGINAL_MOIETY_COORDINATE = "   12.3760   -7.9040    0.0000 C";
@@ -112,6 +113,29 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         ChemicalSubstance updated = (ChemicalSubstance) assertUpdated(updateJson);
 
         assertEquals(2, updated.names.size());
+    }
+
+    @Test
+    void updateChemicalStructureWithRestrictedNoteAccessDoesNotDuplicateManagedName() throws Exception {
+        Note restrictedNote = new Note("restricted note");
+        restrictedNote.setAccess(Collections.singleton(new Group("protected")));
+
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(new ChemicalSubstanceBuilder()
+                .addName("chemical with restricted note")
+                .setStructureWithDefaultReference("CCO")
+                .addNote(restrictedNote)
+                .build()
+                .toFullJsonNode());
+
+        ChemicalSubstanceBuilder updateBuilder = SubstanceBuilder.from(created.toFullJsonNode());
+        ChemicalSubstance updated = (ChemicalSubstance) assertUpdated(updateBuilder
+                .setStructureWithDefaultReference("CCCO")
+                .buildJson());
+
+        assertEquals(created.uuid, updated.uuid);
+        assertEquals(1, updated.names.size());
+        assertEquals(1, updated.notes.size());
+        assertEquals("CCCO", updated.getStructure().smiles);
     }
 
     @Test
