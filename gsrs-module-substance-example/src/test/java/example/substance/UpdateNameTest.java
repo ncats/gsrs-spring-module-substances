@@ -32,7 +32,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         UUID uuid = created.uuid;
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
@@ -59,7 +59,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .addName("name2", n-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
@@ -92,7 +92,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .buildJsonAnd(this::assertCreated);
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -123,7 +123,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .buildJsonAnd(this::assertCreated);
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -156,7 +156,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         Optional<Substance> old= substanceEntityService.get(uuid);
 
         String currentNameOrg ="MyName org2";
-        Substance toUpdate = old.get().toBuilder()
+        Substance toUpdate = SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = currentNameOrg;
