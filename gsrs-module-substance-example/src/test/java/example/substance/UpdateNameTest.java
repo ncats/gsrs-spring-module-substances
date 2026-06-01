@@ -24,13 +24,12 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void addNameOrg(){
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created =assertCreated(
+                new SubstanceBuilder()
                 .addName("Concept Name")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+                .buildJson());
 
+        UUID uuid = created.uuid;
         Optional<Substance> old= substanceEntityService.get(uuid);
 
         old.get().toBuilder()
