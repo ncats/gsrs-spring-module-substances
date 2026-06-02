@@ -94,7 +94,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
     public void setup() throws IOException {
         invrelate1 = new ClassPathResource("testJSON/invrelate1.json").getFile();
         invrelate2 = new ClassPathResource("testJSON/invrelate2.json").getFile();
-
+        testEntityProcessorFactory.clearAll();
         testEntityProcessorFactory.addEntityProcessor(substanceProcessor);
         testEntityProcessorFactory.addEntityProcessor(relationshipProcessor);
         testEntityProcessorFactory.addEntityProcessor(referenceProcessor);
@@ -307,11 +307,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
         assertEquals(uuid1.toString(), relationships.get(0).relatedSubstance.refuuid);
         assertEquals(uuid1.toString(), relationships.get(1).relatedSubstance.refuuid);
-
-
     }
-
-
 
     @Test
     public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndShouldBeInHistoryOnlyOnce(@Autowired ApplicationEvents applicationEvents)   throws Exception {
@@ -331,11 +327,9 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
         String uuid = js.get("uuid").asText();
 
-
         //submit alternative
         JsonNode jsA = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate2));
         String uuidA = jsA.get("uuid").asText();
-
 
         applicationEvents.clear();
         transactionTemplate.executeWithoutResult( status-> {
@@ -355,10 +349,15 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                     .ignoreMissing()
                     .build();
             assertUpdated(updated);
-            //update the substance for real
-            return updated;
-        });
 
+            // previously had this, but certain fields were missing for comparison, since not persisted?
+            // return updated;
+
+            // Do a get to get the persisted updated json ... Does this defeat the purpose of the test?
+            return new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
+                    .ignoreMissing()
+                    .build();
+        });
 
         String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updatedJson);
         String[] parts=type1.split("->");
@@ -376,16 +375,19 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         List<TryToCreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toList());
 
         Substance updatedSubstance = SubstanceBuilder.from(updatedJson).build();
-
         assertEquals(1, createInverseEvents.size());
-        assertEquals(TryToCreateInverseRelationshipEvent.builder()
+
+        TryToCreateInverseRelationshipEvent expectedEvent = TryToCreateInverseRelationshipEvent.builder()
                 .relationshipIdToInvert(updatedSubstance.relationships.get(0).uuid)
                 .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING_DEEP_CHECK)
                 .fromSubstance(UUID.fromString(uuidA))
                 .toSubstance(updatedSubstance.uuid)
                 .originatorUUID(updatedSubstance.relationships.get(0).uuid)
-                .build(),
-                createInverseEvents.get(0));
+                .build();
+
+        TryToCreateInverseRelationshipEvent actualEvent = createInverseEvents.get(0);
+
+        assertEquals(expectedEvent, actualEvent);
 
         transactionTemplate.executeWithoutResult( status-> {
             relationshipService.createNewInverseRelationshipFor(createInverseEvents.get(0));
@@ -398,10 +400,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 );
 
         List<Edit> edits = editRepository.findByRefidOrderByCreatedDesc(uuid);
-        //    	assertEquals( 2, edits.size());
-        //
         assertEquals("1", edits.get(0).version);
-
     }
 
     @Test
@@ -423,7 +422,8 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         assertCreated(js);
         transactionTemplate.executeWithoutResult( status->
         applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
-                );
+            );
+
         applicationEvents.clear();
 
         //submit alternative
@@ -453,8 +453,6 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         transactionTemplate.executeWithoutResult( status->
         {
             List<CreateEditEvent> list = applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList());
-
-
             list.forEach(editEventService::createNewEditFromEvent);
         }
                 );
@@ -551,9 +549,6 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
                 .ignoreMissing().build();
 
         assertUpdated(updatedA);
-
-
-
 
         assertEquals(Collections.emptyList(),  substanceEntityService.get(UUID.fromString(uuid)).get().relationships);
         assertEquals(Collections.emptyList(),  substanceEntityService.get(UUID.fromString(uuidA)).get().relationships);

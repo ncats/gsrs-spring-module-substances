@@ -5,7 +5,6 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.NameOrg;
 import ix.ginas.models.v1.Substance;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
