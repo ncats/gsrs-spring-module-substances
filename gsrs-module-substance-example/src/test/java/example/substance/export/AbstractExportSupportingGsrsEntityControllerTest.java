@@ -39,8 +39,11 @@ import java.util.*;
 @WithMockUser(username = "admin", roles = "Admin")
 
 @TestPropertySource(properties = {
-        "gsrs.entityProcessors.list.UniqueCodeGenerator.disabled=true"
-        })
+    "gsrs.entityProcessors.list.UniqueCodeGenerator.disabled=true"
+})
+// This class was giving errors because there was an older versioned database in ginas.ix/h2
+// Maybe we have to wipe out the database before starting?
+
 public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
     AbstractExportSupportingGsrsEntityController controller = new AbstractExportSupportingGsrsEntityController() {
@@ -53,7 +56,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         protected Object createSearchResponse(List results, SearchResult result, HttpServletRequest request) {
             return null;
         }
-      
+
         @SneakyThrows
         @Override
         protected GsrsEntityService getEntityService() {
@@ -63,7 +66,6 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         }
     };
     private void setup(){
-
         controller = AutowireHelper.getInstance().autowireAndProxy(controller);
     }
 
