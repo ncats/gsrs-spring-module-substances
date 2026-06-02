@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
@@ -36,6 +37,10 @@ import java.util.*;
 @ActiveProfiles("test")
 @SpringBootTest(classes = { GsrsEntityTestConfiguration.class})
 @WithMockUser(username = "admin", roles = "Admin")
+
+@TestPropertySource(properties = {
+        "gsrs.entityProcessors.list.UniqueCodeGenerator.disabled=true"
+        })
 public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
     AbstractExportSupportingGsrsEntityController controller = new AbstractExportSupportingGsrsEntityController() {
