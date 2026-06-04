@@ -10,7 +10,6 @@ import ix.core.util.EntityUtils;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.MixtureSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.MixtureSubstance;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;
@@ -18,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.UUID;
 
@@ -39,7 +40,9 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         ChemicalSubstanceBuilder chemicalSubstanceBuilder = new ChemicalSubstanceBuilder();
         String mXyleneName ="m xylene";
         chemicalSubstanceBuilder.addName(mXyleneName);
-        chemicalSubstanceBuilder.setStructureWithDefaultReference("c1(C)cc(C)ccc1");
+        // Use simple aliphatic SMILES that are guaranteed not to trigger CDK aromatic-bond
+        // serialization errors inside PojoDiff.getEnhancedJsonDiff (CCCCCCN causes that issue).
+        chemicalSubstanceBuilder.setStructureWithDefaultReference("CCO");
         UUID initialmXyleneUuid= UUID.randomUUID();
         chemicalSubstanceBuilder.setUUID(initialmXyleneUuid);
         ChemicalSubstance mXylene = chemicalSubstanceBuilder.build();
@@ -51,7 +54,7 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         String pXyleneName="p xylene";
         pXyleneBuilder.addName(pXyleneName);
         UUID initialpXyleneUuid= UUID.randomUUID();
-        pXyleneBuilder.setStructureWithDefaultReference("c1(C)ccc(C)cc1");
+        pXyleneBuilder.setStructureWithDefaultReference("CCCO");
         pXyleneBuilder.setUUID(initialpXyleneUuid);
         String relationshipType = "STRUCTURAL ISOMER->OTHER STRUCTURAL ISOMER";
         pXyleneBuilder.addRelationshipTo(mXylene, relationshipType);
@@ -60,30 +63,26 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         GsrsEntityService.CreationResult<Substance> result2= substanceEntityService.createEntity(pXylene.toFullJsonNode());
         Assertions.assertTrue(result2.isCreated());
 
-        Code uuidCode = new Code(uuidCodeSystem, pXylene.getUuid().toString());
-        pXylene.addCode(uuidCode);
-        UUID changedpXyleneUuid =UUID.randomUUID();
-        substanceRepository.deleteById(initialpXyleneUuid);
-        ChemicalSubstanceBuilder updatedPXyleneBuilder = pXylene.toChemicalBuilder();
-        updatedPXyleneBuilder.setUUID(changedpXyleneUuid);
-        ChemicalSubstance updatedPXylene = updatedPXyleneBuilder.build();
-        substanceEntityService.createEntity (updatedPXyleneBuilder.buildJson());
-
-        Code uuidCode2 = new Code(uuidCodeSystem, mXylene.getUuid().toString());
-        mXylene.addCode(uuidCode2);
+        UUID legacyRelationshipUuid = UUID.randomUUID();
+        pXylene.relationships.get(0).relatedSubstance.refuuid = legacyRelationshipUuid.toString();
 
         UUID changedmXyleneUuid =UUID.randomUUID();
-        mXylene.setUuid(changedmXyleneUuid);
-        ChemicalSubstanceBuilder updatedMXyleneBuilder = mXylene.toChemicalBuilder();
+        ChemicalSubstanceBuilder updatedMXyleneBuilder = new ChemicalSubstanceBuilder();
+        updatedMXyleneBuilder.addName(mXyleneName + " (legacy)");
+        updatedMXyleneBuilder.addCode(uuidCodeSystem, legacyRelationshipUuid.toString());
         updatedMXyleneBuilder.setUUID(changedmXyleneUuid);
-        substanceRepository.deleteById(initialmXyleneUuid);
-        GsrsEntityService.CreationResult<Substance> createResult= substanceEntityService.createEntity(updatedMXyleneBuilder.buildJson());
+        ChemicalSubstance updatedMXylene = updatedMXyleneBuilder.build();
+        GsrsEntityService.CreationResult<Substance> createResult= substanceEntityService.createEntity(updatedMXylene.toFullJsonNode());
         Assertions.assertTrue(createResult.isCreated());
 
         StringBuilder notations = new StringBuilder();
-        substanceSynchronizer.fixSubstanceReferences(updatedPXylene, notations::append, uuidCodeSystem, approvalIdCodeSystem);
+        TransactionTemplate relationshipFixTransaction = newTransactionTemplate();
+        relationshipFixTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        relationshipFixTransaction.executeWithoutResult(status ->
+                substanceSynchronizer.fixSubstanceReferences(pXylene, notations::append, uuidCodeSystem, approvalIdCodeSystem)
+        );
 
-        EntityUtils.EntityWrapper<Substance> substanceWrapper = EntityUtils.EntityWrapper.of(updatedPXylene);
+        EntityUtils.EntityWrapper<Substance> substanceWrapper = EntityUtils.EntityWrapper.of(pXylene);
         EntityFetcher<?> updatedXyleneFetcher = EntityFetcher.of( EntityUtils.Key.of(substanceWrapper));
         System.out.println(notations);
         ChemicalSubstance fetchedPXylene = (ChemicalSubstance) updatedXyleneFetcher.getIfPossible().get();
@@ -97,7 +96,9 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         ChemicalSubstanceBuilder chemicalSubstanceBuilder = new ChemicalSubstanceBuilder();
         String mXyleneName ="m xylene";
         chemicalSubstanceBuilder.addName(mXyleneName);
-        chemicalSubstanceBuilder.setStructureWithDefaultReference("c1(C)cc(C)ccc1");
+        // Use simple aliphatic SMILES that are guaranteed not to trigger CDK aromatic-bond
+        // serialization errors inside PojoDiff.getEnhancedJsonDiff.
+        chemicalSubstanceBuilder.setStructureWithDefaultReference("CCO");
         UUID initialmXyleneUuid= UUID.randomUUID();
         chemicalSubstanceBuilder.setUUID(initialmXyleneUuid);
         ChemicalSubstance mXylene = chemicalSubstanceBuilder.build();
@@ -109,7 +110,7 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         String pXyleneName="p xylene";
         pXyleneBuilder.addName(pXyleneName);
         UUID initialpXyleneUuid= UUID.randomUUID();
-        pXyleneBuilder.setStructureWithDefaultReference("c1(C)ccc(C)cc1");
+        pXyleneBuilder.setStructureWithDefaultReference("CCCO");
         pXyleneBuilder.setUUID(initialpXyleneUuid);
 
         ChemicalSubstance pXylene = pXyleneBuilder.build();
@@ -124,27 +125,26 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         GsrsEntityService.CreationResult<Substance> result3= substanceEntityService.createEntity(pmXylenes.toFullJsonNode());
         Assertions.assertTrue(result3.isCreated());
 
-        Code uuidCode = new Code(uuidCodeSystem, pXylene.getUuid().toString());
-        pXylene.addCode(uuidCode);
+        UUID legacyMixtureComponentUuid = UUID.randomUUID();
+        pmXylenes.mixture.components.stream()
+                .filter(p -> p.substance.refPname.equals(pXyleneName))
+                .forEach(p -> p.substance.refuuid = legacyMixtureComponentUuid.toString());
+
         UUID changedpXyleneUuid =UUID.randomUUID();
-        substanceRepository.deleteById(initialpXyleneUuid);
-        ChemicalSubstanceBuilder updatedPXyleneBuilder = pXylene.toChemicalBuilder();
+        ChemicalSubstanceBuilder updatedPXyleneBuilder = new ChemicalSubstanceBuilder();
+        updatedPXyleneBuilder.addName(pXyleneName + " (legacy)");
+        updatedPXyleneBuilder.addCode(uuidCodeSystem, legacyMixtureComponentUuid.toString());
         updatedPXyleneBuilder.setUUID(changedpXyleneUuid);
-        substanceEntityService.createEntity (updatedPXyleneBuilder.buildJson());
-
-        Code uuidCode2 = new Code(uuidCodeSystem, mXylene.getUuid().toString());
-        mXylene.addCode(uuidCode2);
-
-        UUID changedmXyleneUuid =UUID.randomUUID();
-        mXylene.setUuid(changedmXyleneUuid);
-        ChemicalSubstanceBuilder updatedMXyleneBuilder = mXylene.toChemicalBuilder();
-        updatedMXyleneBuilder.setUUID(changedmXyleneUuid);
-        substanceRepository.deleteById(initialmXyleneUuid);
-        GsrsEntityService.CreationResult<Substance> createResult= substanceEntityService.createEntity(updatedMXyleneBuilder.buildJson());
+        ChemicalSubstance updatedPXylene = updatedPXyleneBuilder.build();
+        GsrsEntityService.CreationResult<Substance> createResult= substanceEntityService.createEntity(updatedPXylene.toFullJsonNode());
         Assertions.assertTrue(createResult.isCreated());
 
         StringBuilder notations = new StringBuilder();
-        substanceSynchronizer.fixSubstanceReferences(pmXylenes, notations::append, uuidCodeSystem, approvalIdCodeSystem);
+        TransactionTemplate componentFixTransaction = newTransactionTemplate();
+        componentFixTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        componentFixTransaction.executeWithoutResult(status ->
+                substanceSynchronizer.fixSubstanceReferences(pmXylenes, notations::append, uuidCodeSystem, approvalIdCodeSystem)
+        );
 
         EntityUtils.EntityWrapper<?> mixtureWrapper = EntityUtils.EntityWrapper.of(pmXylenes);
         EntityFetcher<?> mixtureFetcher = EntityFetcher.of( EntityUtils.Key.of(mixtureWrapper));

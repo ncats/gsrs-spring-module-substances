@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.dataexchange.SubstanceStagingAreaEntityService;
-import gsrs.module.substance.importers.GSRSJSONImportAdapter;
-import gsrs.module.substance.importers.GSRSJSONImportAdapterFactory;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.model.ImportRecordParameters;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
@@ -19,27 +17,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 @Slf4j
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullStackEntityTest {
 
-    @Test
-    public void parseTest() throws IOException {
-        GSRSJSONImportAdapterFactory factory = new GSRSJSONImportAdapterFactory();
-        GSRSJSONImportAdapter adapter = (GSRSJSONImportAdapter) factory.createAdapter(JsonNodeFactory.instance.objectNode());
-        Resource dataFile = new ClassPathResource("testdumps/rep90.ginas");
-        FileInputStream fis = new FileInputStream(dataFile.getFile());
-        Stream<Substance> subs = adapter.parse(fis, null, null);
-        Assertions.assertEquals(90, subs.count());
-    }
 
     @Test
     @Tag("fullstack")

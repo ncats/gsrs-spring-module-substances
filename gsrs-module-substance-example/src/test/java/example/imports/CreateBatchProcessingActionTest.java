@@ -85,5 +85,7 @@ public class CreateBatchProcessingActionTest extends AbstractSubstanceJpaFullSta
         String batchCode= action.getNextBatchCode(parentSubstance, reverseBatchRelationshipType, BATCH_CODE_SYSTEM);
         String expectedCode="0003";
         Assertions.assertEquals(expectedCode, batchCode);
+
+
     }
 }

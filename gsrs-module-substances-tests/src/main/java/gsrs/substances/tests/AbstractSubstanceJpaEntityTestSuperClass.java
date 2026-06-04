@@ -131,12 +131,6 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         }
 
         @Bean
-        RepositoryUuidAssignmentAspect repositoryUuidAssignmentAspect() {
-            return new RepositoryUuidAssignmentAspect();
-        }
-
-
-        @Bean
         @Primary
         public Scheduler getScheduler() throws SchedulerException {
             return StdSchedulerFactory.getDefaultScheduler();
