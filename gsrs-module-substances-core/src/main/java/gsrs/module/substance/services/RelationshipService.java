@@ -52,7 +52,10 @@ public class RelationshipService {
 
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
-    
+
+    private static String RELATIONSHIP_CHANGE_REASON ="Inverse relationship added/updated";
+    private static String RELATIONSHIP_DELETION_REASON ="Inverse relationship deleted";
+
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
 
 
@@ -330,8 +333,9 @@ public class RelationshipService {
                     osub2.removeRelationship(rem);
                 }
                 osub2.forceUpdate();
+                osub2.changeReason = RELATIONSHIP_DELETION_REASON;
                 substanceRepository.saveAndFlush(osub2);
-//									System.out.println("Inverse should be deleted now");
+                log.info("set change reason for deleted relationship");
                 return Optional.of(osub2);
             });
         }
@@ -409,10 +413,10 @@ public class RelationshipService {
                             // TODO: Are we sure about this? This feels like a hack to make something
                             // behave as it used to in Play, but I think it's brittle. [TP]
                             newSub.updateVersion();
-//                            relationshipRepository.save(r);
                             Substance upSub=newSub;
+                            upSub.changeReason = RELATIONSHIP_CHANGE_REASON;
                             newSub = RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
-                            
+                            log.info("set changeReason to {} once", RELATIONSHIP_CHANGE_REASON);
                         }
                         return Optional.ofNullable(newSub);
 
