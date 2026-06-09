@@ -293,9 +293,11 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
-    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndShouldBeInHistoryOnlyOnce(@Autowired ApplicationEvents applicationEvents) throws Exception {
+    public void addRelationshipAfterAddingEachSubstanceShouldAddInvertedRelationshipAndShouldBeInHistoryOnlyOnce(@Autowired ApplicationEvents applicationEvents)   throws Exception {
 
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+
+        //This is very hard to read right now. A substanceBuilder would make this easy.
 
         //submit primary
         JsonNode tmp = SubstanceJsonUtil.prepareUnapprovedPublic(JsonUtil.parseJsonFile(invrelate1));
@@ -313,35 +315,30 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         String uuidA = jsA.get("uuid").asText();
 
         applicationEvents.clear();
-        transactionTemplate.executeWithoutResult(status -> {
+        transactionTemplate.executeWithoutResult( status-> {
             assertCreated(js);
             assertCreated(jsA);
         });
 
-        transactionTemplate.executeWithoutResult(status ->
+        transactionTemplate.executeWithoutResult( status->
                 applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
         );
         applicationEvents.clear();
 
-        JsonNode updatedJson = transactionTemplate.execute(status -> {
+        JsonNode updatedJson = transactionTemplate.execute(status-> {
             //add relationship To
             JsonNode updated = new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
                     .add("/relationships/-", newRelate)
                     .ignoreMissing()
                     .build();
             assertUpdated(updated);
-
-            // previously had this, but certain fields were missing for comparison, since not persisted?
-            // return updated;
-
-            // Do a get to get the persisted updated json ... Does this defeat the purpose of the test?
-            return new JsonUtil.JsonNodeBuilder(substanceEntityService.get(UUID.fromString(uuid)).get().toFullJsonNode())
-                    .ignoreMissing()
-                    .build();
+            //update the substance for real
+            return updated;
         });
 
-        String type1 = SubstanceJsonUtil.getTypeOnFirstRelationship(updatedJson);
-        String[] parts = type1.split("->");
+
+        String type1=SubstanceJsonUtil.getTypeOnFirstRelationship(updatedJson);
+        String[] parts=type1.split("->");
 
         //check inverse relationship with primary
         //        Substance substanceA = substanceEntityService.get(UUID.fromString(uuidA)).get();
@@ -356,31 +353,31 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         List<TryToCreateInverseRelationshipEvent> createInverseEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class).collect(Collectors.toList());
 
         Substance updatedSubstance = SubstanceBuilder.from(updatedJson).build();
+
         assertEquals(1, createInverseEvents.size());
+        TryToCreateInverseRelationshipEvent inverseEvent = createInverseEvents.get(0);
+        assertEquals(UUID.fromString(uuidA), inverseEvent.getFromSubstance());
+        assertEquals(updatedSubstance.uuid, inverseEvent.getToSubstance());
+        assertEquals(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING_DEEP_CHECK, inverseEvent.getCreationMode());
+        assertNotNull(inverseEvent.getOriginatorUUID());
+        assertNotNull(inverseEvent.getRelationshipIdToInvert());
+        assertEquals(inverseEvent.getOriginatorUUID(), inverseEvent.getRelationshipIdToInvert());
 
-        TryToCreateInverseRelationshipEvent expectedEvent = TryToCreateInverseRelationshipEvent.builder()
-                .relationshipIdToInvert(updatedSubstance.relationships.get(0).uuid)
-                .creationMode(TryToCreateInverseRelationshipEvent.CreationMode.CREATE_IF_MISSING_DEEP_CHECK)
-                .fromSubstance(UUID.fromString(uuidA))
-                .toSubstance(updatedSubstance.uuid)
-                .originatorUUID(updatedSubstance.relationships.get(0).uuid)
-                .build();
+        transactionTemplate.executeWithoutResult( status-> {
+            relationshipService.createNewInverseRelationshipFor(inverseEvent);
 
-        TryToCreateInverseRelationshipEvent actualEvent = createInverseEvents.get(0);
-
-        assertEquals(expectedEvent, actualEvent);
-
-        transactionTemplate.executeWithoutResult(status -> {
-            relationshipService.createNewInverseRelationshipFor(createInverseEvents.get(0));
         });
         List<CreateEditEvent> editsFromInverseCreation = applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList());
         assertFalse(editsFromInverseCreation.isEmpty());
-        transactionTemplate.executeWithoutResult(status ->
-            editsFromInverseCreation.forEach(editEventService::createNewEditFromEvent)
+        transactionTemplate.executeWithoutResult( status->
+                editsFromInverseCreation.forEach(editEventService::createNewEditFromEvent)
         );
 
         List<Edit> edits = editRepository.findByRefidOrderByCreatedDesc(uuid);
+        //    	assertEquals( 2, edits.size());
+        //
         assertEquals("1", edits.get(0).version);
+
     }
 
     @Test
@@ -401,7 +398,7 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         String uuid = js.get("uuid").asText();
         assertCreated(js);
         transactionTemplate.executeWithoutResult(status ->
-            applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
+                applicationEvents.stream(CreateEditEvent.class).collect(Collectors.toList()).forEach(editEventService::createNewEditFromEvent)
         );
 
         applicationEvents.clear();
