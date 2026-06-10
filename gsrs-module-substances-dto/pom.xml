@@ -60,6 +60,14 @@
             <artifactId>molwitch</artifactId>
             <version>0.6.10</version>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
     </dependencies>
     <!-- Uncomment this for maven public release deployment
     <build>
