@@ -263,11 +263,6 @@
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
-            <artifactId>gsrs-ema-fhir-substance-extension</artifactId>
-            <version>${gsrs.substance.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>gov.nih.ncats</groupId>
             <artifactId>gsrs-module-substances-tests</artifactId>
             <version>${gsrs.substance.version}</version>
         </dependency>
