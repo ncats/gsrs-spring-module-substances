@@ -32,6 +32,22 @@ class SmartsIndexValueMakerTest {
     }
 
     @Test
+    void testNitroGroupUsingNonDefaultName() {
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.addName("Nitrobenzene");
+        String inputSmiles = "[O-][N+](=O)C1=CC=CC=C1";
+        builder.setStructureWithDefaultReference(inputSmiles);
+        ChemicalSubstance nitrobenzene = builder.build();
+        String facetName = "Structure Stuff";
+
+        SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
+        indexer.setFacetName(facetName);
+        List<IndexableValue> indexedValues= new ArrayList<>();
+        indexer.createIndexableValues(nitrobenzene, indexedValues::add);
+        Assertions.assertTrue(indexedValues.stream().anyMatch(i->i.name().contains(facetName) && i.value().equals("nitro")));
+    }
+
+    @Test
     void testNoNitroGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("Toluene");
