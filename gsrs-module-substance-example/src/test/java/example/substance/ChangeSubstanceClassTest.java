@@ -130,4 +130,31 @@ public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
         assertEquals("protein", updatedProtein.at("/substanceClass").asText());
         assertEquals("AC", updatedProtein.at("/protein/subunits/0/sequence").asText());
     }
+
+    @Test
+    public void updateChemicalStructureWhenJsonContainsInheritedModificationsShouldPass() throws Exception {
+        JsonNode emptyModifications = MAPPER.readTree("""
+                {
+                  "agentModifications": [],
+                  "physicalModifications": [],
+                  "structuralModifications": []
+                }
+                """);
+
+        JsonNode chemical = new JsonUtil.JsonNodeBuilder(SubstanceTestUtil.makeChemicalSubstance("CC").toFullJsonNode())
+                .set("/modifications", emptyModifications)
+                .build();
+
+        JsonNode createdChemical = assertCreated(chemical).toFullJsonNode();
+        JsonNode replacementChemical = SubstanceTestUtil.makeChemicalSubstance("CCC").toFullJsonNode();
+
+        JsonNode update = new JsonUtil.JsonNodeBuilder(createdChemical)
+                .set("/structure", replacementChemical.at("/structure"))
+                .set("/moieties", replacementChemical.at("/moieties"))
+                .build();
+
+        JsonNode updatedChemical = assertUpdated(update).toFullJsonNode();
+        assertEquals("chemical", updatedChemical.at("/substanceClass").asText());
+        assertTrue(updatedChemical.at("/modifications").isObject());
+    }
 }

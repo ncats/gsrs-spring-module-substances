@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 @Slf4j
-public class cccccc implements IndexValueMaker<Substance> {
+public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
     public static final String FACET_NAME_FULL ="Structural Feature";
 

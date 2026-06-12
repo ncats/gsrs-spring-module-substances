@@ -28,6 +28,7 @@ import ix.ginas.models.v1.Linkage;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.v1.Amount;
+import ix.ginas.models.v1.AgentModification;
 import ix.ginas.models.v1.Component;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.GinasChemicalStructure;
@@ -36,12 +37,14 @@ import ix.ginas.models.v1.Material;
 import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Mixture;
 import ix.ginas.models.v1.MixtureSubstance;
+import ix.ginas.models.v1.Modifications;
 import ix.ginas.models.v1.NucleicAcid;
 import ix.ginas.models.v1.NucleicAcidSubstance;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.NameOrg;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.OtherLinks;
+import ix.ginas.models.v1.PhysicalModification;
 import ix.ginas.models.v1.Polymer;
 import ix.ginas.models.v1.PolymerClassification;
 import ix.ginas.models.v1.PolymerSubstance;
@@ -54,6 +57,7 @@ import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.SpecifiedSubstanceComponent;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
+import ix.ginas.models.v1.StructuralModification;
 import ix.ginas.models.v1.StructurallyDiverse;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Sugar;
@@ -722,6 +726,17 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, SubstanceReference> existingRelationshipReferences = mapRelationshipSubstanceReferences(managed.relationships);
         Map<UUID, SubstanceReference> existingPropertyReferences = mapPropertySubstanceReferences(managed.properties);
         Map<UUID, SubstanceReference> existingParameterReferences = mapParameterSubstanceReferences(managed.properties);
+        Modifications existingModifications = managed.modifications;
+        UUID existingModificationsUuid = existingModifications == null ? null : existingModifications.getUuid();
+        Map<UUID, AgentModification> existingAgentModifications = existingModifications == null
+                ? Collections.emptyMap()
+                : mapByUuid(existingModifications.agentModifications);
+        Map<UUID, PhysicalModification> existingPhysicalModifications = existingModifications == null
+                ? Collections.emptyMap()
+                : mapByUuid(existingModifications.physicalModifications);
+        Map<UUID, StructuralModification> existingStructuralModifications = existingModifications == null
+                ? Collections.emptyMap()
+                : mapByUuid(existingModifications.structuralModifications);
 
         FlushModeType previousFlushMode = entityManager.getFlushMode();
         // Jackson creates same-id child instances before reconciliation restores managed children.
@@ -746,6 +761,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     replacedChemical.setStructure(existingStructure);
                 }
             }
+            replaced.modifications = reconcileManagedModifications(replaced.modifications, existingModifications,
+                    existingModificationsUuid, existingAgentModifications, existingPhysicalModifications,
+                    existingStructuralModifications);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
                 if (existingMoieties != null) {
                     for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
@@ -774,6 +792,36 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         } finally {
             entityManager.setFlushMode(previousFlushMode);
         }
+    }
+
+    private Modifications reconcileManagedModifications(Modifications updatedModifications,
+                                                        Modifications existingModifications,
+                                                        UUID existingModificationsUuid,
+                                                        Map<UUID, AgentModification> existingAgentModifications,
+                                                        Map<UUID, PhysicalModification> existingPhysicalModifications,
+                                                        Map<UUID, StructuralModification> existingStructuralModifications)
+            throws IOException {
+        if (updatedModifications == null) {
+            return null;
+        }
+        if (existingModifications == null) {
+            return updatedModifications;
+        }
+        if (updatedModifications != existingModifications) {
+            JsonNode updatedJson = objectMapper.valueToTree(updatedModifications);
+            objectMapper.readerForUpdating(existingModifications).readValue(updatedJson);
+        }
+        existingModifications.uuid = existingModificationsUuid;
+        existingModifications.agentModifications = reconcileManagedChildren(existingModifications.agentModifications,
+                existingAgentModifications, child -> {
+                });
+        existingModifications.physicalModifications = reconcileManagedChildren(existingModifications.physicalModifications,
+                existingPhysicalModifications, child -> {
+                });
+        existingModifications.structuralModifications = reconcileManagedChildren(existingModifications.structuralModifications,
+                existingStructuralModifications, child -> {
+                });
+        return existingModifications;
     }
 
     private <T extends GinasCommonData> Map<UUID, T> mapByUuid(List<T> values) {
