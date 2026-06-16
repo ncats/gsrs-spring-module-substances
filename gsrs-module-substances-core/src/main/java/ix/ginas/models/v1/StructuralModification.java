@@ -6,7 +6,6 @@ import ix.core.models.ParentReference;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.utils.JSONEntity;
-import lombok.extern.slf4j.Slf4j;
 
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -16,7 +15,6 @@ import java.util.List;
 @Table(name="ix_ginas_structuralmod")
 @JSONEntity(title = "Structural Modification", isFinal = true)
 @SingleParent
-@Slf4j
 public class StructuralModification extends GinasCommonSubData {
 	@ParentReference
 	@ManyToOne(
@@ -105,10 +103,9 @@ public class StructuralModification extends GinasCommonSubData {
    	
     @Override
     public void forceUpdate() {
-   	    super.forceUpdate();
-		   if( siteContainer==null){
-			   log.error("Error!  siteContainer is null. modifications ID: {}", this.owner.getUuid());
-		   }
-   	    siteContainer.forceUpdate();
+        super.forceUpdate();
+        if(siteContainer!=null) {
+            siteContainer.forceUpdate();
+        }
     }
 }
