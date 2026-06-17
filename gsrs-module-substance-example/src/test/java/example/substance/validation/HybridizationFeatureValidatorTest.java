@@ -55,11 +55,65 @@ public class HybridizationFeatureValidatorTest extends AbstractSubstanceJpaEntit
         sub.nucleicAcid.subunits.add(subunit);
 
         ValidationResponse<Substance> response = substanceEntityService.validateEntity(sub.toFullJsonNode());
+        assertTrue(response.isValid());
+
+        assertTrue(response.getValidationMessages().stream()
+                .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR || m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING  )
+                .findAny().isEmpty());
+    }
+
+    @Test
+    public void mustHaveComplementarySequencesAndDoesNot() throws Exception{
+        Property hybridizationProperty = new Property();
+        hybridizationProperty.setName(HybridizationFeatureValidator.COMPLEMENTARY_REGION_PROPERTY_NAME);
+        Amount hybridizationValue = new Amount();
+        hybridizationValue.nonNumericValue= "1_1-1_3;2_1-2_3";
+        hybridizationProperty.setValue(hybridizationValue);
+
+        NucleicAcidSubstance sub  = new NucleicAcidSubstanceBuilder()
+                .addName("name")
+                .addDnaSubunit("ATG")
+                .addProperty(hybridizationProperty)
+                .build();
+        Subunit subunit = new Subunit();
+        subunit.subunitIndex = 1;
+        subunit.sequence = "TAT";
+        sub.nucleicAcid.subunits = new ArrayList<>(sub.nucleicAcid.subunits);
+        sub.nucleicAcid.subunits.add(subunit);
+
+        ValidationResponse<Substance> response = substanceEntityService.validateEntity(sub.toFullJsonNode());
+        assertTrue(response.isValid());
+
+        assertTrue(response.getValidationMessages().stream()
+                .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.WARNING )
+                .findAny().isPresent());
+    }
+
+    @Test
+    public void mustHaveSimilarSizedSites() throws Exception{
+        Property hybridizationProperty = new Property();
+        hybridizationProperty.setName(HybridizationFeatureValidator.COMPLEMENTARY_REGION_PROPERTY_NAME);
+        Amount hybridizationValue = new Amount();
+        hybridizationValue.nonNumericValue= "1_1-1_3;2_1-2_5";
+        hybridizationProperty.setValue(hybridizationValue);
+
+        NucleicAcidSubstance sub  = new NucleicAcidSubstanceBuilder()
+                .addName("name")
+                .addDnaSubunit("ATG")
+                .addProperty(hybridizationProperty)
+                .build();
+        Subunit subunit = new Subunit();
+        subunit.subunitIndex = 1;
+        subunit.sequence = "TAT";
+        sub.nucleicAcid.subunits = new ArrayList<>(sub.nucleicAcid.subunits);
+        sub.nucleicAcid.subunits.add(subunit);
+
+        ValidationResponse<Substance> response = substanceEntityService.validateEntity(sub.toFullJsonNode());
         assertFalse(response.isValid());
 
         assertTrue(response.getValidationMessages().stream()
                 .filter(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR )
-                .findAny().isEmpty());
+                .findAny().isPresent());
     }
 
 }

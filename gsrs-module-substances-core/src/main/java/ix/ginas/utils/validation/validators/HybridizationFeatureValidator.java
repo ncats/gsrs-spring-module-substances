@@ -3,16 +3,12 @@ package ix.ginas.utils.validation.validators;
 import ix.core.util.ModelUtils;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidatorCallback;
-import ix.ginas.models.v1.NucleicAcidSubstance;
-import ix.ginas.models.v1.Property;
-import ix.ginas.models.v1.Site;
-import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.*;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class HybridizationFeatureValidator extends AbstractValidatorPlugin<Substance> {
@@ -67,27 +63,22 @@ public class HybridizationFeatureValidator extends AbstractValidatorPlugin<Subst
                             .ERROR_MESSAGE(String.format("Error sites %s and %s have different counts", regions[i], regions[i+1])));
                     return;
                 }
-                List<Character> chars1 = new ArrayList<>();
-                for(int s = 0; s< sites1.size(); s++) {
-                    chars1.add(nucleicAcidSubstance.nucleicAcid.subunits.get(sites1.get(s).subunitIndex).sequence.toUpperCase().charAt(sites1.get(s).residueIndex));
-                }
-                List<Character> chars2 = new ArrayList<>();
-                for(int s = 0; s< sites2.size(); s++) {
-                    chars2.add(nucleicAcidSubstance.nucleicAcid.subunits.get(sites2.get(s).subunitIndex).sequence.toUpperCase().charAt(sites2.get(s).residueIndex));
-                }
+                List<Character> bases1 = parseBases(sites1, nucleicAcidSubstance.nucleicAcid.subunits);
+                List<Character> bases2 = parseBases(sites2, nucleicAcidSubstance.nucleicAcid.subunits);
+
                 boolean complementary = true;
-                for(int p=0; p< chars1.size(); p++) {
-                    if(!AreComplementary(chars1.get(p), chars2.get(p))){
+                for(int p=0; p< bases1.size(); p++) {
+                    if(!areComplementary(bases1.get(p), bases2.get(p))){
                         complementary = false;
                     }
                 }
                 if(!complementary){
-                    StringBuilder sb1 = new StringBuilder(chars1.size());
-                    for (Character c : chars1) {
+                    StringBuilder sb1 = new StringBuilder(bases1.size());
+                    for (Character c : bases1) {
                         sb1.append(c);
                     }
-                    StringBuilder sb2 = new StringBuilder(chars1.size());
-                    for (Character c : chars2) {
+                    StringBuilder sb2 = new StringBuilder(bases1.size());
+                    for (Character c : bases2) {
                         sb2.append(c);
                     }
                     callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(String.format("sequences '%s' and '%s' are not complementary",
@@ -96,10 +87,9 @@ public class HybridizationFeatureValidator extends AbstractValidatorPlugin<Subst
             }
         });
 
-
     }
 
-    private boolean AreComplementary(Character char1, Character char2) {
+    private boolean areComplementary(Character char1, Character char2) {
         if(char1 == null || char2 ==null) {
             return false;
         }
@@ -112,5 +102,20 @@ public class HybridizationFeatureValidator extends AbstractValidatorPlugin<Subst
             return false;
         }
         return true;
+    }
+
+    private List<Character> parseBases(List<Site> sites, List<Subunit> subunits) {
+        List<Character> bases = new ArrayList<>();
+        try {
+            for(int s = 0; s< sites.size(); s++) {
+                //data in sites is 1-based for users; data within the subunits is 0-based for programmers
+                int subunitIndex = sites.get(s).subunitIndex-1;
+                int residueIndex =sites.get(s).residueIndex-1;
+                bases.add(subunits.get(subunitIndex).sequence.toUpperCase().charAt(residueIndex));
+            }
+        } catch (Exception ex){
+            log.warn("Error parsing bases", ex);
+        }
+        return bases;
     }
 }
