@@ -26,6 +26,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Field;
@@ -36,6 +37,13 @@ import java.util.*;
 @ActiveProfiles("test")
 @SpringBootTest(classes = { GsrsEntityTestConfiguration.class})
 @WithMockUser(username = "admin", roles = "Admin")
+
+@TestPropertySource(properties = {
+    "gsrs.entityProcessors.list.UniqueCodeGenerator.disabled=true"
+})
+// This class was giving errors because there was an older versioned database in ginas.ix/h2
+// Maybe we have to wipe out the database before starting?
+
 public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGsrsJpaEntityJunit5Test {
 
     AbstractExportSupportingGsrsEntityController controller = new AbstractExportSupportingGsrsEntityController() {
@@ -48,7 +56,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         protected Object createSearchResponse(List results, SearchResult result, HttpServletRequest request) {
             return null;
         }
-      
+
         @SneakyThrows
         @Override
         protected GsrsEntityService getEntityService() {
@@ -58,7 +66,6 @@ public class AbstractExportSupportingGsrsEntityControllerTest extends AbstractGs
         }
     };
     private void setup(){
-
         controller = AutowireHelper.getInstance().autowireAndProxy(controller);
     }
 
