@@ -12,6 +12,7 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.TransactionException;
@@ -27,6 +28,7 @@ import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+@Tag("fullstack")
 public class SimpleLoadTest extends AbstractSubstanceJpaEntityTest {
 
     // Draft, trying to make a test that does a load more simply so we can debug without extraneous procedures. 

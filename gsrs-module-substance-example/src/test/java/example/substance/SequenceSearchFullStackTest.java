@@ -96,20 +96,11 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
         @Override
         public Executor getAsyncExecutor() {
-            return new Executor() {
-                @Override
-                public void execute(Runnable arg0) {
-                    runs.add(new Runner(arg0));
-                }
-
-            };
+            return Runnable::run;
         }
 
 
         public void flush() {
-            for(Runner r: runs.stream().collect(Collectors.toList())) {
-                r.run();
-            }
             runs.clear();
         }
 

@@ -13,6 +13,7 @@ import ix.ginas.utils.MolecularWeightAndFormulaContribution;
 import ix.ginas.utils.ProteinUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 
@@ -26,6 +27,7 @@ import java.util.logging.Logger;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
+@Tag("fullstack")
 public class ProtCalculationTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String CV_AMINO_ACID_SUBSTITUTION = "AMINO_ACID_SUBSTITUTION";

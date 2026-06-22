@@ -10,6 +10,7 @@ import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
 import ix.ginas.models.v1.StructurallyDiverseSubstance;
 import ix.ginas.models.v1.Substance;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -17,9 +18,11 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@Tag("fullstack")
 public class CreateRep18SubstanceTypesTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
@@ -39,7 +42,7 @@ public class CreateRep18SubstanceTypesTest extends AbstractSubstanceJpaEntityTes
 
         assertNotNull(created.protein);
         assertNotNull(created.protein.subunits);
-        assertTrue(created.protein.subunits.size() > 0);
+        assertFalse(created.protein.subunits.isEmpty());
     }
 
     @Test
@@ -52,7 +55,7 @@ public class CreateRep18SubstanceTypesTest extends AbstractSubstanceJpaEntityTes
         assertEquals(json.get("uuid").asText(), created.getUuid().toString());
         assertNotNull(created.nucleicAcid);
         assertNotNull(created.nucleicAcid.getSubunits());
-        assertTrue(created.nucleicAcid.getSubunits().size() > 0);
+        assertFalse(created.nucleicAcid.getSubunits().isEmpty());
     }
 
     @Test
@@ -84,7 +87,7 @@ public class CreateRep18SubstanceTypesTest extends AbstractSubstanceJpaEntityTes
 
         assertNotNull(created.specifiedSubstance);
         assertNotNull(created.specifiedSubstance.constituents);
-        assertTrue(created.specifiedSubstance.constituents.size() > 0);
+        assertFalse(created.specifiedSubstance.constituents.isEmpty());
     }
 
     @Test
@@ -95,7 +98,7 @@ public class CreateRep18SubstanceTypesTest extends AbstractSubstanceJpaEntityTes
 
         assertNotNull(created.mixture);
         assertNotNull(created.mixture.getMixture());
-        assertTrue(created.mixture.getMixture().size() > 0);
+        assertFalse(created.mixture.getMixture().isEmpty());
     }
 
     @Test

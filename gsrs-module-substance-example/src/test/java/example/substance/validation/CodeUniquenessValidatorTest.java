@@ -13,6 +13,7 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.CodeUniquenessValidator;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
@@ -22,6 +23,7 @@ import java.util.LinkedHashMap;
  *
  * @author mitch
  */
+@Tag("fullstack")
 public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
@@ -32,6 +34,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
@@ -64,6 +67,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
@@ -96,6 +100,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.codeSystem = "DrugBank";
         code1.type = "PRIMARY";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();
@@ -160,6 +165,7 @@ public class CodeUniquenessValidatorTest extends AbstractSubstanceJpaEntityTest 
         code1.code = "DB01190";
         code1.codeSystem = "DrugBank";
         substance.addCode(code1);
+        substance.getOrGenerateUUID();
         substanceRepository.saveAndFlush(substance);
 
         Substance substance2 = createSimpleSubstance();

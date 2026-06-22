@@ -17,6 +17,7 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -46,6 +47,7 @@ import static org.junit.Assert.*;
 @RecordApplicationEvents
 @Import({RelationshipInvertTest.Configuration.class, RelationEventListener.class})
 @WithMockUser(username = "admin", roles="Admin")
+@Tag("fullstack")
 public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
     File invrelate1, invrelate2;

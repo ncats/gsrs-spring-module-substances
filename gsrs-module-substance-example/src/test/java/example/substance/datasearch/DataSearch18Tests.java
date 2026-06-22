@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +67,7 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Tag("fullstack")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class DataSearch18Tests extends AbstractSubstanceJpaFullStackEntityTest {
 

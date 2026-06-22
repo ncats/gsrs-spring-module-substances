@@ -22,6 +22,7 @@ class EmaSmsFhirExporterFactoryTest {
 
     private static final String FACTORY_CLASS = "gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirExporterFactory";
     private static final String MAPPER_CLASS = "gsrs.module.substance.misc.emasmsfhir.EmaSmsSubstanceDefinitionFhirMapper";
+    private static final String CONFIGURATION_CLASS = "gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirConfiguration";
 
     private static final String PRIMARY_CODE_SYSTEM_PARAMETERS = "PRIMARY_CODE_SYSTEM_PARAMETERS";
     private static final String APPROVAL_ID_NAME_PARAMETERS = "APPROVAL_ID_NAME_PARAMETERS";
@@ -112,6 +113,10 @@ class EmaSmsFhirExporterFactoryTest {
     }
 
     private static Object configuredFactory() {
+        Assumptions.assumeTrue(isClassPresent(FACTORY_CLASS)
+                        && isClassPresent(MAPPER_CLASS)
+                        && isClassPresent(CONFIGURATION_CLASS),
+                "EMA SMS FHIR extension classes are not present on core test classpath");
         Object cfg = EmaSmsFhirTestData.configuration();
         Object mapper = newInstance(MAPPER_CLASS);
         invokeNamed(mapper, "setEmaSmsFhirConfiguration", cfg);
