@@ -49,8 +49,8 @@ import static org.junit.Assert.*;
 public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String PREVIOUS_CHANGE_REASON = "previous change reason";
-    private static final String INVERSE_RELATIONSHIP_CHANGE_REASON = "Inverse relationship added/updated";
-    private static final String INVERSE_RELATIONSHIP_DELETION_REASON = "Inverse relationship deleted";
+    private static final String INVERSE_RELATIONSHIP_CHANGE_REASON = "Custom configured inverse relationship updated reason";
+    private static final String INVERSE_RELATIONSHIP_DELETION_REASON = "Custom configured inverse relationship deleted reason";
 
     File invrelate1, invrelate2;
 
