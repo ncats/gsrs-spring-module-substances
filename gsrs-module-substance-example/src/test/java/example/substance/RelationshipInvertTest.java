@@ -47,6 +47,10 @@ import static org.junit.Assert.*;
 @WithMockUser(username = "admin", roles = "Admin")
 public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
+    private static final String PREVIOUS_CHANGE_REASON = "previous change reason";
+    private static final String INVERSE_RELATIONSHIP_CHANGE_REASON = "Custom configured inverse relationship updated reason";
+    private static final String INVERSE_RELATIONSHIP_DELETION_REASON = "Custom configured inverse relationship deleted reason";
+
     File invrelate1, invrelate2;
 
     @Autowired
@@ -221,6 +225,89 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
         List<TryToCreateInverseRelationshipEvent> secondPassEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
                 .collect(Collectors.toList());
         assertEquals(0, secondPassEvents.size());
+    }
+
+    @Test
+    public void creatingInverseRelationshipShouldReplaceOldChangeReasonOnRelatedSubstance(@Autowired ApplicationEvents applicationEvents) {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        createNamedSubstance(uuid1, "sub1");
+        createNamedSubstance(uuid2, "sub2");
+        updateChangeReason(uuid2, PREVIOUS_CHANGE_REASON);
+
+        addRelationshipAndCreateInverse(applicationEvents, uuid1, uuid2, "foo->bar");
+
+        Substance substance2 = substanceEntityService.get(uuid2).get();
+        assertEquals("3", substance2.version);
+        assertEquals(1, substance2.relationships.size());
+        assertEquals("bar->foo", substance2.relationships.get(0).type);
+        assertEquals(uuid1.toString(), substance2.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(INVERSE_RELATIONSHIP_CHANGE_REASON, substance2.changeReason);
+    }
+
+    @Test
+    public void updatingInverseRelationshipShouldReplaceOldChangeReasonOnRelatedSubstance(@Autowired ApplicationEvents applicationEvents) {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        createNamedSubstance(uuid1, "sub1");
+        createNamedSubstance(uuid2, "sub2");
+        addRelationshipAndCreateInverse(applicationEvents, uuid1, uuid2, "foo->bar");
+        updateChangeReason(uuid2, PREVIOUS_CHANGE_REASON);
+
+        updateSourceRelationshipAndUpdateInverse(applicationEvents, uuid1, r -> r.type = "foo->bat");
+
+        Substance substance2 = substanceEntityService.get(uuid2).get();
+        assertEquals("bat->foo", substance2.relationships.get(0).type);
+        assertEquals(uuid1.toString(), substance2.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(INVERSE_RELATIONSHIP_CHANGE_REASON, substance2.changeReason);
+    }
+
+    @Test
+    public void removingInverseRelationshipShouldReplaceOldChangeReasonOnRelatedSubstance(@Autowired ApplicationEvents applicationEvents) {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+
+        createNamedSubstance(uuid1, "sub1");
+        createNamedSubstance(uuid2, "sub2");
+        addRelationshipAndCreateInverse(applicationEvents, uuid1, uuid2, "foo->bar");
+        updateChangeReason(uuid2, PREVIOUS_CHANGE_REASON);
+
+        removeSourceRelationshipAndRemoveInverse(applicationEvents, uuid1);
+
+        Substance substance2 = substanceEntityService.get(uuid2).get();
+        assertEquals(Collections.emptyList(), substance2.relationships);
+        assertEquals(INVERSE_RELATIONSHIP_DELETION_REASON, substance2.changeReason);
+    }
+
+    @Test
+    public void changingRelationshipTargetShouldSetChangeReasonsOnOldAndNewRelatedSubstances(@Autowired ApplicationEvents applicationEvents) {
+        UUID uuid1 = UUID.randomUUID();
+        UUID uuid2 = UUID.randomUUID();
+        UUID uuid3 = UUID.randomUUID();
+
+        createNamedSubstance(uuid1, "sub1");
+        createNamedSubstance(uuid2, "sub2");
+        createNamedSubstance(uuid3, "sub3");
+        addRelationshipAndCreateInverse(applicationEvents, uuid1, uuid2, "foo->bar");
+        updateChangeReason(uuid2, PREVIOUS_CHANGE_REASON);
+        updateChangeReason(uuid3, PREVIOUS_CHANGE_REASON);
+
+        updateSourceRelationshipAndUpdateInverse(applicationEvents, uuid1, r -> {
+            Substance substance3 = substanceEntityService.get(uuid3).get();
+            r.relatedSubstance = substance3.asSubstanceReference();
+        });
+
+        Substance substance2 = substanceEntityService.get(uuid2).get();
+        assertEquals(Collections.emptyList(), substance2.relationships);
+        assertEquals(INVERSE_RELATIONSHIP_DELETION_REASON, substance2.changeReason);
+
+        Substance substance3 = substanceEntityService.get(uuid3).get();
+        assertEquals(1, substance3.relationships.size());
+        assertEquals("bar->foo", substance3.relationships.get(0).type);
+        assertEquals(uuid1.toString(), substance3.relationships.get(0).relatedSubstance.refuuid);
+        assertEquals(INVERSE_RELATIONSHIP_CHANGE_REASON, substance3.changeReason);
     }
 
     // Are we sure about this test?
@@ -522,6 +609,81 @@ public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
         assertEquals(Collections.emptyList(), substanceEntityService.get(UUID.fromString(uuid)).get().relationships);
         assertEquals(Collections.emptyList(), substanceEntityService.get(UUID.fromString(uuidA)).get().relationships);
+    }
+
+    private Substance createNamedSubstance(UUID uuid, String name) {
+        new SubstanceBuilder()
+                .addName(name)
+                .setUUID(uuid)
+                .buildJsonAnd(this::assertCreated);
+        return substanceEntityService.get(uuid).get();
+    }
+
+    private void updateChangeReason(UUID uuid, String changeReason) {
+        Substance substance = substanceEntityService.get(uuid).get();
+        SubstanceBuilder.from(substance.toFullJsonNode())
+                .andThenMutate(s -> s.changeReason = changeReason)
+                .buildJsonAnd(this::assertUpdated);
+    }
+
+    private void addRelationshipAndCreateInverse(ApplicationEvents applicationEvents, UUID sourceUuid,
+            UUID relatedUuid, String relationshipType) {
+        applicationEvents.clear();
+
+        Substance source = substanceEntityService.get(sourceUuid).get();
+        Substance related = substanceEntityService.get(relatedUuid).get();
+        SubstanceBuilder.from(source.toFullJsonNode())
+                .addRelationshipTo(related, relationshipType)
+                .buildJsonAnd(this::assertUpdated);
+
+        List<TryToCreateInverseRelationshipEvent> inverseCreateEvents = applicationEvents.stream(TryToCreateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, inverseCreateEvents.size());
+        applicationEvents.clear();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s ->
+                relationshipService.createNewInverseRelationshipFor(inverseCreateEvents.get(0))
+        );
+    }
+
+    private void updateSourceRelationshipAndUpdateInverse(ApplicationEvents applicationEvents, UUID sourceUuid,
+            java.util.function.Consumer<Relationship> relationshipMutator) {
+        applicationEvents.clear();
+
+        Substance source = substanceEntityService.get(sourceUuid).get();
+        SubstanceBuilder.from(source.toFullJsonNode())
+                .andThenMutate(s -> relationshipMutator.accept(s.relationships.get(0)))
+                .buildJsonAnd(this::assertUpdated);
+
+        List<UpdateInverseRelationshipEvent> inverseUpdateEvents = applicationEvents.stream(UpdateInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, inverseUpdateEvents.size());
+        applicationEvents.clear();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s ->
+                relationshipService.updateInverseRelationshipFor(inverseUpdateEvents.get(0))
+        );
+    }
+
+    private void removeSourceRelationshipAndRemoveInverse(ApplicationEvents applicationEvents, UUID sourceUuid) {
+        applicationEvents.clear();
+
+        Substance source = substanceEntityService.get(sourceUuid).get();
+        SubstanceBuilder.from(source.toFullJsonNode())
+                .andThenMutate(s -> s.removeRelationshipByUUID(s.relationships.get(0).uuid))
+                .buildJsonAnd(this::assertUpdated);
+
+        List<RemoveInverseRelationshipEvent> inverseRemoveEvents = applicationEvents.stream(RemoveInverseRelationshipEvent.class)
+                .collect(Collectors.toList());
+        assertEquals(1, inverseRemoveEvents.size());
+        applicationEvents.clear();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s ->
+                relationshipService.removeInverseRelationshipFor(inverseRemoveEvents.get(0))
+        );
     }
 
 }
