@@ -12,6 +12,7 @@ import javax.persistence.PersistenceContext;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
@@ -53,8 +54,11 @@ public class RelationshipService {
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
 
-    private static final String RELATIONSHIP_CHANGE_REASON = "Inverse relationship added/updated";
-    private static final String RELATIONSHIP_DELETION_REASON = "Inverse relationship deleted";
+    @Value("${gsrs.substance.relationship.change-reason:Inverse relationship added/updated}")
+    private String relationshipChangeReason;
+
+    @Value("${gsrs.substance.relationship.deletion-reason:Inverse relationship deleted}")
+    private String relationshipDeletionReason;
 
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
 
@@ -201,7 +205,7 @@ public class RelationshipService {
                 });
                 osub2.removeRelationship(toUpdate);
                 osub2.forceUpdate();
-                osub2.changeReason = RELATIONSHIP_DELETION_REASON;
+                osub2.changeReason = relationshipDeletionReason;
                 Substance osub3=substanceRepository.saveAndFlush(osub2);
                 //trigger new creation event as if this had been a new relationship just
                 //created
@@ -299,7 +303,7 @@ public class RelationshipService {
                 }
             }
             osub2.forceUpdate();
-            osub2.changeReason = RELATIONSHIP_CHANGE_REASON;
+            osub2.changeReason = relationshipChangeReason;
             Substance osub3=RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
             
             return Optional.of(osub3);
@@ -335,7 +339,7 @@ public class RelationshipService {
                     osub2.removeRelationship(rem);
                 }
                 osub2.forceUpdate();
-                osub2.changeReason = RELATIONSHIP_DELETION_REASON;
+                osub2.changeReason = relationshipDeletionReason;
                 substanceRepository.saveAndFlush(osub2);
                 return Optional.of(osub2);
             });
@@ -414,7 +418,7 @@ public class RelationshipService {
                             // TODO: Are we sure about this? This feels like a hack to make something
                             // behave as it used to in Play, but I think it's brittle. [TP]
                             newSub.updateVersion();
-                            newSub.changeReason = RELATIONSHIP_CHANGE_REASON;
+                            newSub.changeReason = relationshipChangeReason;
                             Substance upSub=newSub;
                             newSub = RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
                         }
