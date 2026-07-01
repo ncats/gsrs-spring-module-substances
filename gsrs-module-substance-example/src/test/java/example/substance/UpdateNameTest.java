@@ -5,7 +5,6 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.NameOrg;
 import ix.ginas.models.v1.Substance;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -24,16 +23,15 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void addNameOrg(){
-        UUID uuid = UUID.randomUUID();
-
-        new SubstanceBuilder()
+        Substance created =assertCreated(
+                new SubstanceBuilder()
                 .addName("Concept Name")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+                .buildJson());
 
+        UUID uuid = created.uuid;
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
@@ -60,7 +58,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .addName("name2", n-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org";
@@ -93,7 +91,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .buildJsonAnd(this::assertCreated);
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -124,7 +122,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                 .buildJsonAnd(this::assertCreated);
         Optional<Substance> old= substanceEntityService.get(uuid);
 
-        old.get().toBuilder()
+        SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = "MyName org2";
@@ -157,7 +155,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
         Optional<Substance> old= substanceEntityService.get(uuid);
 
         String currentNameOrg ="MyName org2";
-        Substance toUpdate = old.get().toBuilder()
+        Substance toUpdate = SubstanceBuilder.from(old.get().toFullJsonNode())
                 .andThen(s-> {
                     NameOrg org = new NameOrg();
                     org.nameOrg = currentNameOrg;
