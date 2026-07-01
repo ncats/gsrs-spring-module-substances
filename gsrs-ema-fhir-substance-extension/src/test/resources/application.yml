@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: gsrs-substances-test
+  profiles:
+    active: test
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL
+    driverClassName: org.h2.Driver
+    username: sa
+    password:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - gsrs.autoconfigure.GsrsApiAutoConfiguration
+
+logging:
+  level:
+    root: WARN
+    gsrs: DEBUG
+

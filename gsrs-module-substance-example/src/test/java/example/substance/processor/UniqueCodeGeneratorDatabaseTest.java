@@ -1,483 +1,361 @@
 package example.substance.processor;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import example.GsrsModuleSubstanceApplication;
-import gsrs.module.substance.controllers.SubstanceLegacySearchService;
-import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
-import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.service.GsrsEntityService;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.TestEntityProcessorFactory;
-import gsrs.startertests.TestGsrsValidatorFactory;
-import gsrs.startertests.TestIndexValueMakerFactory;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
-import ix.core.chem.StructureProcessor;
-import ix.core.search.text.TextIndexerFactory;
-import ix.core.util.EntityUtils;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.*;
+import example.substance.support.TestTransactionManagers;
+import gsrs.module.substance.repository.CodeRepository;
+import gsrs.module.substance.services.CodeEntityService;
+import ix.ginas.models.v1.Code;
+import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.CodeSequentialGenerator;
 import ix.ginas.utils.LegacyCodeSequentialGenerator;
-import ix.ginas.utils.validation.validators.ChemicalValidator;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.context.support.WithMockUser;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.stream.Stream;
+import java.util.function.Function;
 
-@Slf4j
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
-@WithMockUser(username = "admin", roles = "Admin")
-public class UniqueCodeGeneratorDatabaseTest extends AbstractSubstanceJpaFullStackEntityTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-    @Autowired
-    private SubstanceLegacySearchService searchService;
+@ExtendWith(MockitoExtension.class)
+class UniqueCodeGeneratorDatabaseTest {
 
-    @Autowired
-    private TextIndexerFactory textIndexerFactory;
+    @Mock
+    private CodeRepository codeRepository;
 
-    @Autowired
-    private DefinitionalElementFactory definitionalElementFactory;
+    @Mock
+    private CodeEntityService codeEntityService;
 
-    @Autowired
-    private TestIndexValueMakerFactory testIndexValueMakerFactory;
-
-    @Autowired
-    StructureProcessor structureProcessor;
-
-    @Autowired
-    private TestGsrsValidatorFactory factory;
-
-    @Autowired
-    private TestEntityProcessorFactory entityProcessorFactory;
-
-    ObjectMapper objectMapper = new ObjectMapper();
+    private CodeSequentialGenerator generator;
 
     @BeforeEach
-    public void clearIndexers() throws IOException {
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        {
-            ValidatorConfig config = new DefaultValidatorConfig();
-            config.setValidatorClass(ChemicalValidator.class);
-            config.setNewObjClass(ChemicalSubstance.class);
-            factory.addValidator("substances", config);
+    void setUp() {
+        generator = newGenerator(6, "AB", 9999L, true, "BDNUM");
+    }
+
+    @Test
+    void constructorNormalizesLenWhenNegative() {
+        CodeSequentialGenerator local = newGenerator(-5, null, 10L, true, "MYCS");
+        assertEquals(2, local.getLen());
+    }
+
+    @Test
+    void constructorRejectsLenShorterThanMaxAndSuffix() {
+        Exception ex = assertThrows(Exception.class,
+                () -> newGenerator(2, "XYZ", 10L, true, "MYCS"));
+        assertTrue(ex.getMessage().contains("The len value should be greater than or equal"));
+    }
+
+    @Test
+    void constructorDerivesMaxWhenNull() {
+        CodeSequentialGenerator local = new CodeSequentialGenerator(
+                "test", 5, "ZZ", true, null, "MYCS", null);
+        assertEquals(999L, local.getMax());
+        assertEquals("test", local.getName());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "3,4,true",
+            "4,4,true",
+            "5,4,false",
+            "-1,4,false"
+    })
+    void checkNextNumberWithinRange(Long next, Long max, boolean expected) {
+        assertEquals(expected, generator.checkNextNumberWithinRange(next, max));
+    }
+
+    @Test
+    void checkNextNumberWithinRangeRejectsNulls() {
+        NullPointerException nextNull = assertThrows(NullPointerException.class,
+                () -> generator.checkNextNumberWithinRange(null, 4L));
+        assertTrue(nextNull.getMessage().contains("nextNumber can not be null"));
+
+        NullPointerException maxNull = assertThrows(NullPointerException.class,
+                () -> generator.checkNextNumberWithinRange(1L, null));
+        assertTrue(maxNull.getMessage().contains("maxNumber can not be null"));
+    }
+
+    @Test
+    void checkCodeIdLengthCoversValidAndInvalidValues() {
+        assertTrue(generator.checkCodeIdLength("0001AB"));
+        assertFalse(generator.checkCodeIdLength("123456789AB"));
+    }
+
+    @Test
+    void checkCodeIdLengthRejectsNullInputsAndNullMax() {
+        NullPointerException codeNull = assertThrows(NullPointerException.class,
+                () -> generator.checkCodeIdLength(null));
+        assertTrue(codeNull.getMessage().contains("codeId can not be null"));
+
+        generator.setMax(null);
+        NullPointerException maxNull = assertThrows(NullPointerException.class,
+                () -> generator.checkCodeIdLength("0001AB"));
+        assertTrue(maxNull.getMessage().contains("max number can not be null"));
+    }
+
+    @Test
+    void getNextNumberFallsBackToOneWhenRepositoryFails() {
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan(any(), any(), any()))
+                .thenThrow(new RuntimeException("DB down"));
+        assertEquals(1L, generator.getNextNumber());
+    }
+
+    @Test
+    void getNextNumberFallsBackToOneWhenRepositoryReturnsNull() {
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%AB", 9999L))
+                .thenReturn(null);
+
+        assertEquals(1L, generator.getNextNumber());
+    }
+
+    @Test
+    void getNextNumberUsesRepositoryValue() {
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%AB", 9999L))
+                .thenReturn(41L);
+        assertEquals(42L, generator.getNextNumber());
+    }
+
+    @Test
+    void getNextNumberThrowsWhenOutOfRange() {
+        CodeSequentialGenerator smallRange = newGenerator(3, "", 1L, false, "BDNUM");
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%", 1L))
+                .thenReturn(1L);
+
+        Exception ex = assertThrows(Exception.class, smallRange::getNextNumber);
+        assertTrue(ex.getMessage().contains("out of range"));
+    }
+
+    @Test
+    void getCodeBuildsPrimaryCode() {
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%AB", 9999L))
+                .thenReturn(0L);
+
+        Code code = generator.getCode();
+
+        assertNotNull(code);
+        assertEquals("BDNUM", code.codeSystem);
+        assertEquals("PRIMARY", code.type);
+        assertEquals("0001AB", code.code);
+        verify(codeRepository).findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%AB", 9999L);
+    }
+
+    @Test
+    void generateIdOmitsLeftPaddingWhenConfiguredOff() {
+        CodeSequentialGenerator unpadded = newGenerator(4, "ZX", 99L, false, "BDNUM");
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%ZX", 99L))
+                .thenReturn(7L);
+
+        assertEquals("8ZX", unpadded.generateID());
+    }
+
+    @Test
+    void getCodeWrapsExceptionWhenIdGenerationFails() {
+        CodeSequentialGenerator smallRange = newGenerator(3, "", 1L, false, "BDNUM");
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%", 1L))
+                .thenReturn(1L);
+
+        Exception ex = assertThrows(Exception.class, smallRange::getCode);
+        assertTrue(ex.getMessage().contains("Exception getting code in CodeSequentialGenerator"));
+    }
+
+    @Test
+    void addCodeDelegatesToCodeEntityService() {
+        when(codeRepository.findMaxCodeByCodeSystemAndCodeLikeAndCodeLessThan("BDNUM", "%AB", 9999L))
+                .thenReturn(0L);
+
+        Substance substance = new Substance();
+        substance.substanceClass = Substance.SubstanceClass.chemical;
+
+        when(codeEntityService.createNewSystemCode(eq(substance), eq("BDNUM"), any(), isNull()))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    Function<Code, String> idGenerator = invocation.getArgument(2, Function.class);
+                    Code c = new Code();
+                    c.codeSystem = "BDNUM";
+                    c.type = "PRIMARY";
+                    c.code = idGenerator.apply(c);
+                    return c;
+                });
+
+        Code created = generator.addCode(substance);
+        assertEquals("BDNUM", created.codeSystem);
+        assertEquals("PRIMARY", created.type);
+        assertTrue(created.code.endsWith("AB"));
+    }
+
+    @Test
+    void addCodePassesConfiguredGroupsToCodeEntityService() {
+        CodeSequentialGenerator grouped = new CodeSequentialGenerator(
+                "test", 6, "AB", true, 9999L, "BDNUM", Collections.singletonMap(0, "protected"));
+        grouped.setCodeRepository(codeRepository);
+        setField(grouped, "codeEntityService", codeEntityService);
+        Substance substance = new Substance();
+        substance.substanceClass = Substance.SubstanceClass.chemical;
+
+        when(codeEntityService.createNewSystemCode(eq(substance), eq("BDNUM"), any(), eq("protected")))
+                .thenReturn(new Code());
+
+        grouped.addCode(substance);
+
+        verify(codeEntityService).createNewSystemCode(eq(substance), eq("BDNUM"), any(), eq("protected"));
+    }
+
+    @Test
+    void addCodeWrapsServiceException() {
+        Substance substance = new Substance();
+        substance.substanceClass = Substance.SubstanceClass.chemical;
+
+        when(codeEntityService.createNewSystemCode(eq(substance), eq("BDNUM"), any(), isNull()))
+                .thenThrow(new IllegalStateException("service failure"));
+
+        Exception ex = assertThrows(Exception.class, () -> generator.addCode(substance));
+        assertTrue(ex.getMessage().contains("Throwing exception in addCode in CodeSequentialGenerator"));
+    }
+
+    @Test
+    void legacyGeneratorAllowsClassicConfiguration() {
+        LegacyCodeSequentialGenerator legacy = new LegacyCodeSequentialGenerator(
+                "BDNUM NAME", 9, "AB", true, "BDNUM");
+        setField(legacy, "codeRepository", codeRepository);
+        setField(legacy, "codeEntityService", codeEntityService);
+        setField(legacy, "transactionManager", TestTransactionManagers.mockTransactionManager());
+
+        when(codeRepository.findCodeByCodeSystemAndCodeLike("BDNUM", "%AB"))
+            .thenReturn(Stream.of("0000002AB"));
+
+        assertEquals("0000003AB", legacy.getCode().code);
+    }
+
+    @Test
+    void legacyGeneratorCachesHighestCodeAndIncrementsInMemory() {
+        LegacyCodeSequentialGenerator legacy = newLegacyGenerator();
+        when(codeRepository.findCodeByCodeSystemAndCodeLike("BDNUM", "%AB"))
+                .thenReturn(Stream.of("0000002AB"));
+
+        assertEquals(3L, legacy.getNextNumber());
+        assertEquals(4L, legacy.getNextNumber());
+        verify(codeRepository).findCodeByCodeSystemAndCodeLike("BDNUM", "%AB");
+    }
+
+    @Test
+    void legacyAddCodeDelegatesWithProtectedGroupAndGeneratedId() {
+        LegacyCodeSequentialGenerator legacy = newLegacyGenerator();
+        Substance substance = new Substance();
+        substance.substanceClass = Substance.SubstanceClass.chemical;
+        when(codeRepository.findCodeByCodeSystemAndCodeLike("BDNUM", "%AB"))
+                .thenReturn(Stream.of("0000002AB"));
+        when(codeEntityService.createNewSystemCode(eq(substance), eq("BDNUM"), any(), eq("protected")))
+                .thenAnswer(invocation -> {
+                    @SuppressWarnings("unchecked")
+                    Function<Code, String> idGenerator = invocation.getArgument(2, Function.class);
+                    Code code = new Code();
+                    code.codeSystem = "BDNUM";
+                    code.type = "PRIMARY";
+                    code.code = idGenerator.apply(code);
+                    return code;
+                });
+
+        Code created = legacy.addCode(substance);
+
+        assertEquals("0000003AB", created.code);
+        verify(codeEntityService).createNewSystemCode(eq(substance), eq("BDNUM"), any(), eq("protected"));
+    }
+
+    @Test
+    void legacyAccessorsComparatorAndValidationRoundTrip() {
+        TestableLegacyCodeSequentialGenerator legacy = new TestableLegacyCodeSequentialGenerator(
+                "BDNUM NAME", 9, "AB", true, "BDNUM");
+        legacy.setCodeRepository(codeRepository);
+        legacy.setCodeSystem("ALT");
+        Comparator<String> comparator = legacy.codeSystemComparator();
+
+        assertEquals(codeRepository, legacy.getCodeRepository());
+        assertEquals("ALT", legacy.getCodeSystem());
+        assertEquals("BDNUM NAME", legacy.getName());
+        assertTrue(legacy.isValidId("anything"));
+        assertTrue(comparator.compare("0000002AB", "0000010AB") < 0);
+    }
+
+    @Test
+    void isValidIdAlwaysReturnsTrue() {
+        assertTrue(generator.isValidId("anything"));
+    }
+
+    @Test
+    void accessorMethodsRoundTrip() {
+        assertNotNull(generator.getCodeRepository());
+        generator.setCodeSystem("ALT");
+        assertEquals("ALT", generator.getCodeSystem());
+
+        generator.setMax(500L);
+        assertEquals(500L, generator.getMax());
+    }
+
+    private CodeSequentialGenerator newGenerator(int len,
+                                                 String suffix,
+                                                 Long max,
+                                                 boolean padding,
+                                                 String codeSystem) {
+        CodeSequentialGenerator local = new CodeSequentialGenerator(
+                "test", len, suffix, padding, max, codeSystem, null);
+        local.setCodeRepository(codeRepository);
+        setField(local, "codeEntityService", codeEntityService);
+        return local;
+    }
+
+    private LegacyCodeSequentialGenerator newLegacyGenerator() {
+        LegacyCodeSequentialGenerator legacy = new LegacyCodeSequentialGenerator(
+                "BDNUM NAME", 9, "AB", true, "BDNUM");
+        setField(legacy, "codeRepository", codeRepository);
+        setField(legacy, "codeEntityService", codeEntityService);
+        setField(legacy, "transactionManager", TestTransactionManagers.mockTransactionManager());
+        return legacy;
+    }
+
+    private static void setField(Object target, String fieldName, Object value) {
+        Class<?> current = target.getClass();
+        while (current != null) {
+            try {
+                Field field = current.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException ignored) {
+                current = current.getSuperclass();
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        throw new IllegalArgumentException("Could not find field: " + fieldName);
+    }
+
+    private static class TestableLegacyCodeSequentialGenerator extends LegacyCodeSequentialGenerator {
+        private TestableLegacyCodeSequentialGenerator(String name,
+                                                     int len,
+                                                     String suffix,
+                                                     boolean padding,
+                                                     String codeSystem) {
+            super(name, len, suffix, padding, codeSystem);
+        }
+
+        private Comparator<String> codeSystemComparator() {
+            return getCodeSystemComparator();
         }
     }
-
-    @Test
-    public void testConstructor1() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "whatever");
-        m.put("length", -50);
-        m.put("suffix", null);
-        m.put("padding", true);
-        m.put("max", 10L);
-        m.put("codeSystem", "MYCS");
-
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-        (String) m.get("name"),
-        (int) m.get("length"),
-        (String) m.get("suffix"),
-        (boolean) m.get("padding"),
-        (Long) m.get("max"),
-        (String) m.get("codeSystem"),
-        null
-        );
-        assertEquals(2, codeGenerator.getLen());
-    }
-
-    @Test
-    public void testConstructor2() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "whatever");
-        m.put("length", 2);
-        m.put("suffix", "XYZ");
-        m.put("padding", true);
-        m.put("max", 10L);
-        m.put("codeSystem", "MYCS");
-        String message = "";
-        try {
-            CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-            (String) m.get("name"),
-            (int) m.get("length"),
-            (String) m.get("suffix"),
-            (boolean) m.get("padding"),
-            (Long) m.get("max"),
-            (String) m.get("codeSystem"),
-            null
-            );
-        } catch (Exception e)  {
-            message = e.getMessage();
-        }
-        assertTrue(message.contains("The len value should be greater than or equal"));
-    }
-
-    @Test
-    public void testCheckNextNumberWithinRange() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "whatever");
-        m.put("length", 9);
-        m.put("suffix", "OO");
-        m.put("padding", true);
-        m.put("max", 4L);
-        m.put("codeSystem", "MYCS");
-
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-        (String) m.get("name"),
-        (int) m.get("length"),
-        (String) m.get("suffix"),
-        (boolean) m.get("padding"),
-        (Long) m.get("max"),
-        (String) m.get("codeSystem"),
-        null
-        );
-        assertTrue(codeGenerator.checkNextNumberWithinRange(3L, (Long) m.get("max")));
-        assertTrue(codeGenerator.checkNextNumberWithinRange(4L, (Long) m.get("max")));
-        assertTrue(!codeGenerator.checkNextNumberWithinRange(5L, (Long) m.get("max")));
-        assertTrue(!codeGenerator.checkNextNumberWithinRange(-1L, (Long) m.get("max")));
-        String message1 = "";
-        try {
-            codeGenerator.checkNextNumberWithinRange(null, (Long) m.get("max"));
-        } catch (Exception e)  {
-            message1 = e.getMessage();
-        }
-        assertTrue(message1.contains("nextNumber can not be null"));
-
-        String message2 = "";
-        try {
-            codeGenerator.checkNextNumberWithinRange(3L, null);
-        } catch (Exception e)  {
-            message2 = e.getMessage();
-        }
-        assertTrue(message2.contains("maxNumber can not be null"));
-    }
-
-    @Test
-    public void testDistinguishDifferentSuffix() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        // if bdnum 0000001AA exists, we should still be able to create 0000001AB
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "bdnum");
-        m.put("length", 9);
-        m.put("suffix", "AB");
-        m.put("padding", true);
-        m.put("max", 9999999L);
-        m.put("codeSystem", "BDNUM");
-
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-        (String) m.get("name"),
-        (int)m.get("length"),
-        (String)m.get("suffix"),
-        (boolean)m.get("padding"),
-        (Long)m.get("max"),
-        (String)m.get("codeSystem"),
-        null
-        );
-
-        UUID uuid1 = UUID.randomUUID();
-        Code code1 = new Code();
-        code1.codeSystem="BDNUM";
-        code1.type="PRIMARY";
-        code1.code="0000001AA";   // Creating a bdnum without generator; note AA suffix is different
-
-        UUID uuid2 = UUID.randomUUID();
-        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-        .addName("TEST1 ABC", n->n.stdName="TEST1 ABC")
-        .setUUID(uuid1)
-        .addCode(code1);
-        Substance built1 = substanceBuilder1.build();
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
-
-        // Only use code generator on substance 2
-        AutowireHelper.getInstance().autowire(codeGenerator);
-
-        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-        .addName("TEST2 ABC", n->n.stdName="TEST2 ABC")
-        .setUUID(uuid2);
-        Substance built2 = substanceBuilder2.build();
-        codeGenerator.addCode(built2);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
-
-        Optional<Substance> so1 = substanceEntityService.get(uuid1);
-        Substance s1 = so1.get();
-        assertTrue(s1.getCodes().stream().anyMatch(c -> c.code.equals("0000001AA")));
-
-        Optional<Substance> so2 = substanceEntityService.get(uuid2);
-        Substance s2 = so2.get();
-        assertTrue(s2.getCodes().stream().anyMatch(c -> c.code.equals("0000001AB")));
-    }
-
-    @Test
-    public void testAddTwoSubstances() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "whatever");
-        m.put("length", String.valueOf(9999L).length()+2);
-        m.put("suffix", "XX");
-        m.put("padding", true);
-        m.put("max", 9999L);
-        m.put("codeSystem", "MYCS");
-
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-            (String) m.get("name"),
-            (int)m.get("length"),
-            (String)m.get("suffix"),
-            (boolean)m.get("padding"),
-            (Long)m.get("max"),
-            (String)m.get("codeSystem"),
-            null
-        );
-        AutowireHelper.getInstance().autowire(codeGenerator);
-        UUID uuid1 = UUID.randomUUID();
-        Code code1 = new Code();
-        code1.codeSystem="CodeSystem1";
-        code1.type="PRIMARY";
-        code1.code="CODE1";
-
-        UUID uuid2 = UUID.randomUUID();
-        Code code2 = new Code();
-        code2.codeSystem="CodeSystem2";
-        code2.code="CODE2";
-        code2.type="PRIMARY";
-
-        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-        .addName("TEST1 ABC", n->n.stdName="TEST1 ABC")
-        .setUUID(uuid1)
-        .addCode(code1);
-        Substance built1 = substanceBuilder1.build();
-        codeGenerator.addCode(built1);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
-
-        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-        .addName("TEST2 ABC", n->n.stdName="TEST2 ABC")
-        .setUUID(uuid2)
-        .addCode(code2);
-        Substance built2 = substanceBuilder2.build();
-        codeGenerator.addCode(built2);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
-
-        Optional<Substance> so1 = substanceEntityService.get(uuid1);
-        Substance s1 = so1.get();
-        assertTrue(s1.getCodes().stream().anyMatch(c -> c.code.equals("0001XX")));
-
-        Optional<Substance> so2 = substanceEntityService.get(uuid2);
-        Substance s2 = so2.get();
-        assertTrue(s2.getCodes().stream().anyMatch(c -> c.code.equals("0002XX")));
-    }
-
-    @Test
-    public void testAddThreeSubstancesMaxTooSmall() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "whatever");
-        m.put("length", String.valueOf(2L).length()+2);
-        m.put("suffix", "XX");
-        m.put("padding", true);
-        m.put("max", 2L); // Setting this to a small value so that on 3rd substance we get an exception.
-        m.put("codeSystem", "MYCS");
-
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-            (String) m.get("name"),
-            (int) m.get("length"),
-            (String) m.get("suffix"),
-            (boolean) m.get("padding"),
-            (Long) m.get("max"),
-            (String) m.get("codeSystem"),
-            null
-        );
-        AutowireHelper.getInstance().autowire(codeGenerator);
-
-        UUID uuid1 = UUID.randomUUID();
-        Code code1 = new Code();
-        code1.codeSystem = "CodeSystem1";
-        code1.type = "PRIMARY";
-        code1.code = "CODE1";
-        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-        .addName("TEST1 ABC", n -> n.stdName = "TEST1 ABC")
-        .setUUID(uuid1)
-        .addCode(code1);
-        Substance built1 = substanceBuilder1.build();
-        codeGenerator.addCode(built1);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
-
-        UUID uuid2 = UUID.randomUUID();
-        Code code2 = new Code();
-        code2.codeSystem = "CodeSystem2";
-        code2.code = "CODE2";
-        code2.type = "PRIMARY";
-        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-        .addName("TEST2 ABC", n -> n.stdName = "TEST2 ABC")
-        .setUUID(uuid2)
-        .addCode(code2);
-        Substance built2 = substanceBuilder2.build();
-        codeGenerator.addCode(built2);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
-
-        UUID uuid3 = UUID.randomUUID();
-        Code code3 = new Code();
-        code2.codeSystem = "CodeSystem3";
-        code2.code = "CODE3";
-        code2.type = "PRIMARY";
-        SubstanceBuilder substanceBuilder3 = new SubstanceBuilder()
-        .addName("TEST3 ABC", n -> n.stdName = "TEST3 ABC")
-        .setUUID(uuid3)
-        .addCode(code3);
-        Substance built3 = substanceBuilder3.build();
-        String message = "";
-        try {
-            codeGenerator.addCode(built3);
-        } catch (Exception e)  {
-            message = e.getMessage();
-        }
-        assertTrue(message.contains("The value for nextNumber is out of range."));
-    }
-
-    @Test
-    public void testUseLegacy() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "BDNUM NAME");
-        m.put("length", 9);
-        m.put("suffix", "AB");
-        m.put("padding", true);
-        m.put("codeSystem", "BDNUM");
-
-        LegacyCodeSequentialGenerator codeGenerator = new LegacyCodeSequentialGenerator(
-        (String) m.get("name"),
-        (int) m.get("length"),
-        (String) m.get("suffix"),
-        (boolean) m.get("padding"),
-        (String) m.get("codeSystem")
-        );
-        AutowireHelper.getInstance().autowire(codeGenerator);
-
-        UUID uuid1 = UUID.randomUUID();
-        Code code1 = new Code();
-        code1.codeSystem = "CodeSystem1";
-        code1.type = "PRIMARY";
-        code1.code = "CODE1";
-        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-        .addName("TEST1 ABC", n -> n.stdName = "TEST1 ABC")
-        .setUUID(uuid1)
-        .addCode(code1);
-        Substance built1 = substanceBuilder1.build();
-        codeGenerator.addCode(built1);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
-
-        UUID uuid2 = UUID.randomUUID();
-        Code code2 = new Code();
-        code2.codeSystem = "CodeSystem2";
-        code2.code = "CODE2";
-        code2.type = "PRIMARY";
-        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-        .addName("TEST2 ABC", n -> n.stdName = "TEST2 ABC")
-        .setUUID(uuid2)
-        .addCode(code2);
-        Substance built2 = substanceBuilder2.build();
-        codeGenerator.addCode(built2);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
-
-        UUID uuid3 = UUID.randomUUID();
-        Code code3 = new Code();
-        code2.codeSystem = "CodeSystem3";
-        code2.code = "CODE3";
-        code2.type = "PRIMARY";
-        SubstanceBuilder substanceBuilder3 = new SubstanceBuilder()
-        .addName("TEST3 ABC", n -> n.stdName = "TEST3 ABC")
-        .setUUID(uuid3)
-        .addCode(code3);
-        Substance built3 = substanceBuilder3.build();
-        String message = "";
-        assertEquals("0000003AB", codeGenerator.getCode().code);
-    }
-
-    @Test
-    public void testDontUseLegacy() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        Map<String, Object> m = new HashMap<>();
-        m.put("name", "BDNUM NAME");
-        m.put("length", 9);
-        m.put("suffix", "AB");
-        m.put("padding", true);
-        m.put("codeSystem", "BDNUM");
-        m.put("max", 9999999L);
-
-        CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(
-        (String) m.get("name"),
-        (int) m.get("length"),
-        (String) m.get("suffix"),
-        (boolean) m.get("padding"),
-        (Long) m.get("max"),
-        (String) m.get("codeSystem"),
-        null
-        );
-        AutowireHelper.getInstance().autowire(codeGenerator);
-
-        UUID uuid1 = UUID.randomUUID();
-        Code code1 = new Code();
-        code1.codeSystem = "CodeSystem1";
-        code1.type = "PRIMARY";
-        code1.code = "CODE1";
-        SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-        .addName("TEST1 ABC", n -> n.stdName = "TEST1 ABC")
-        .setUUID(uuid1)
-        .addCode(code1);
-        Substance built1 = substanceBuilder1.build();
-        codeGenerator.addCode(built1);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built1).toFullJson());
-
-        UUID uuid2 = UUID.randomUUID();
-        Code code2 = new Code();
-        code2.codeSystem = "CodeSystem2";
-        code2.code = "CODE2";
-        code2.type = "PRIMARY";
-        SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-        .addName("TEST2 ABC", n -> n.stdName = "TEST2 ABC")
-        .setUUID(uuid2)
-        .addCode(code2);
-        Substance built2 = substanceBuilder2.build();
-        codeGenerator.addCode(built2);
-        loadSubstanceFromJsonString(EntityUtils.EntityWrapper.of(built2).toFullJson());
-
-        UUID uuid3 = UUID.randomUUID();
-        Code code3 = new Code();
-        code2.codeSystem = "CodeSystem3";
-        code2.code = "CODE3";
-        code2.type = "PRIMARY";
-        SubstanceBuilder substanceBuilder3 = new SubstanceBuilder()
-        .addName("TEST3 ABC", n -> n.stdName = "TEST3 ABC")
-        .setUUID(uuid3)
-        .addCode(code3);
-        Substance built3 = substanceBuilder3.build();
-        String message = "";
-        assertEquals("0000003AB", codeGenerator.getCode().code);
-    }
-
-    public Substance loadSubstanceFromJsonString(String jsonText) {
-        Substance substance = null;
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode json = null;
-        try {
-            json = mapper.readTree(jsonText);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        try {
-            GsrsEntityService.CreationResult<Substance> result= substanceEntityService.createEntity(json, false);
-            substance = result.getCreatedEntity();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
-        return substance;
-    }
-
 }
