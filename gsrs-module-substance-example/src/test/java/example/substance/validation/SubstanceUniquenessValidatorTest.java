@@ -1,264 +1,254 @@
 package example.substance.validation;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.UUID;
-
-import ix.ginas.models.v1.StructurallyDiverseSubstance;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.TestPropertySource;
-
-import example.GsrsModuleSubstanceApplication;
-import gov.nih.ncats.common.io.IOUtil;
-import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.startertests.TestGsrsValidatorFactory;
-import gsrs.startertests.TestIndexValueMakerFactory;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
-import gsrs.validator.DefaultValidatorConfig;
-import gsrs.validator.ValidatorConfig;
-import ix.core.chem.StructureProcessor;
+import example.substance.support.TestTransactionManagers;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
+import gsrs.module.substance.definitional.DefinitionalElement;
+import gsrs.module.substance.definitional.DefinitionalElements;
+import gsrs.module.substance.services.DefinitionalElementFactory;
+import ix.core.search.SearchOptions;
+import ix.core.search.SearchResult;
 import ix.core.validator.GinasProcessingMessage;
 import ix.core.validator.ValidationResponse;
-import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.modelBuilders.StructurallyDiverseSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
-import ix.ginas.utils.validation.validators.ChemicalValidator;
+import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.validators.SubstanceUniquenessValidator;
-import ix.utils.Util;
-import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.PlatformTransactionManager;
 
-/**
- *
- * @author mitch
- */
-@ActiveProfiles("test")
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
-@WithMockUser(username = "admin", roles = "Admin")
-@Slf4j
-//@TestPropertySource(properties = {
-//        "logging.level.gsrs.module.substance.definitional=trace"
-        //,
-//        "logging.level.ix.core.util=trace",
-//        "logging.level.ix.ginas.utils.validation=trace",
-//        "logging.level.gsrs.module.substance.indexers=trace"
-//})
-public class SubstanceUniquenessValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.UUID;
 
-    public SubstanceUniquenessValidatorTest() {
-    }
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
-    @Autowired
-    private TestIndexValueMakerFactory testIndexValueMakerFactory;
+@org.junit.jupiter.api.extension.ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
+class SubstanceUniquenessValidatorTest {
 
-    @Autowired
-    private TestGsrsValidatorFactory factory;
+    @Mock
+    private DefinitionalElementFactory definitionalElementFactory;
 
-    @Autowired
-    StructureProcessor structureProcessor;
-    
-    private TestInfo tinfo = null;
-    
-    private boolean logit = true;
+    @Mock
+    private SubstanceLegacySearchService searchService;
 
-    private final String fileName = "rep18.gsrs";
+    private PlatformTransactionManager transactionManager;
 
-    @BeforeAll
-    public static void deleteOld() {
-        IOUtil.deleteRecursivelyQuitely(tempDir);
-    }
-  
-    @AfterEach
-    public void deleteOldAfter(TestInfo info) {
-        logit=false;
-        IOUtil.deleteRecursivelyQuitely(tempDir);
-        System.out.println("Finished test:" + info.getDisplayName());
-    }
-    
+    private SubstanceUniquenessValidator validator;
+
     @BeforeEach
-    public void setupIndexers(TestInfo info) throws IOException {
-        System.gc();
-        logit=true;
-        tinfo=info;
-        System.out.println("Starting next test:" + info.getDisplayName());
-        
-//        IOUtil.deleteRecursivelyQuitely(tempDir);
-        System.out.println("Found :" + tempDir.getAbsolutePath());
-        
-        log.trace("setupIndexers");
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        {
-            ValidatorConfig config = new DefaultValidatorConfig();
-            //ensure calculation of def hash
-            config.setValidatorClass(ChemicalValidator.class);
-            config.setNewObjClass(ChemicalSubstance.class);
-            factory.addValidator("substances", config);
-            log.trace("completed set-up of validator config");
-        }
+    void setUp() {
+        validator = new SubstanceUniquenessValidator();
+        transactionManager = TestTransactionManagers.mockTransactionManager();
 
-        File dataFile = new ClassPathResource(fileName).getFile();
-        System.out.println("Loading file:" + info.getDisplayName());
-        loadGsrsFile(dataFile);
-        log.trace("setupIndexers complete");
-        System.out.println("Finished setup:" + info.getDisplayName());
-        
-        new Thread(()->{
-           int c= 0;
-           while(logit) {
-               try {
-                System.out.println("Running:" + tinfo.getDisplayName() + " :" + (c++));
-                Util.printAllExecutingStackTraces();
+        ReflectionTestUtils.setField(validator, "definitionalElementFactory", definitionalElementFactory);
+        ReflectionTestUtils.setField(validator, "searchService", searchService);
+        ReflectionTestUtils.setField(validator, "transactionManager", transactionManager);
+    }
 
-                long heapSize = Runtime.getRuntime().totalMemory()/(1024*1024);
-                long heapMaxSize = Runtime.getRuntime().maxMemory()/(1024*1024);
-                long heapFreeSize = Runtime.getRuntime().freeMemory()/(1024*1024);
+    @ParameterizedTest
+    @EnumSource(value = Substance.SubstanceClass.class, names = {
+            "protein",
+            "nucleicAcid",
+            "specifiedSubstanceG2",
+            "specifiedSubstanceG3",
+            "specifiedSubstanceG4",
+            "unspecifiedSubstance",
+            "reference"
+    })
+    @DisplayName("Skips unsupported substance classes")
+    void skipsUnsupportedClass(Substance.SubstanceClass substanceClass) {
+        Substance testSubstance = createSubstance("Unsupported", substanceClass);
 
-                System.out.println("HEAP Size:" + heapSize + " HEAP Max:" + heapMaxSize + " HEAP Free:" + heapFreeSize);
-                Thread.sleep(30_000); 
-            } catch (Exception e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-                logit=false;
-            }
-               
-           }
-            System.out.println("StoppingNow:" + tinfo.getDisplayName() + " :" + (c));
-        }).start();
+        ValidationResponse<Substance> response = validator.validate(testSubstance, null);
+
+        assertTrue(response.getValidationMessages().isEmpty());
+        verifyNoInteractions(definitionalElementFactory, searchService);
     }
 
     @Test
-    public void testValidation() {
-        log.trace("Starting in testValidation");
-        String name ="G6867RWN6N";
-        String completeDuplicateMessage= "appears to be a full duplicate";
-        ChemicalSubstance protein = getChemicalSubstanceFromFile(name);
-        protein.uuid= UUID.randomUUID();
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(protein, null);
-        Assertions.assertTrue( response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
+    @DisplayName("Skips validation when dependencies have not been injected")
+    void skipsWhenDefinitionalElementFactoryIsMissing() {
+        SubstanceUniquenessValidator unconfiguredValidator = new SubstanceUniquenessValidator();
+
+        ValidationResponse<Substance> response = unconfiguredValidator.validate(
+                createSubstance("No Dependency", Substance.SubstanceClass.chemical), null);
+
+        assertTrue(response.getValidationMessages().isEmpty());
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = Substance.SubstanceClass.class, names = {
+            "chemical",
+            "mixture",
+            "structurallyDiverse",
+            "polymer",
+            "concept",
+            "specifiedSubstanceG1"
+    })
+    @DisplayName("Skips validation when definitional elements are empty")
+    void skipsWhenNoDefinitionalElements(Substance.SubstanceClass substanceClass) {
+        Substance testSubstance = createSubstance("No Def Elements", substanceClass);
+        when(definitionalElementFactory.computeDefinitionalElementsFor(testSubstance))
+                .thenReturn(new DefinitionalElements(Collections.emptyList()));
+
+        ValidationResponse<Substance> response = validator.validate(testSubstance, null);
+
+        assertTrue(response.getValidationMessages().isEmpty());
     }
 
     @Test
-    public void testExactDuplicateStrDiv() {
-        log.trace("Starting in testValidation");
-        String name ="N5WWR36MDJ";
-        String completeDuplicateMessage= "appears to be a full duplicate";
-        Substance substance = getSubstanceFromFile(name);
-        substance.uuid= UUID.randomUUID();
-        
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(substance, null);
-        Assertions.assertTrue( response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
-    }
-    @Test
-    public void testValidationDiastereomer() {
-        log.trace("Starting in testValidation");
-        String name ="G6867RWN6N-diast";
-        String possibleDuplicateMessage= "is a possible duplicate";
-        ChemicalSubstance chem = getChemicalSubstanceFromFile(name);
-        chem.uuid=UUID.randomUUID();
-        
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(chem, null);
-        Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
-    }
-    
-    @Test
-    public void testDuplicateDoesNotFindItself() {
-        log.trace("Starting in testValidation");
-        String name ="G6867RWN6N-diast";
-        String possibleDuplicateMessage= "is a possible duplicate";
-        ChemicalSubstance chem = getChemicalSubstanceFromFile(name);
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(chem, null);
-        //should not contain a duplicate message
-        Assertions.assertFalse(response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(possibleDuplicateMessage)));
+    @DisplayName("Reports full duplicate candidates as errors")
+    void reportsFullDuplicates() throws Exception {
+        Substance testSubstance = createSubstance("Test", Substance.SubstanceClass.chemical);
+        when(definitionalElementFactory.computeDefinitionalElementsFor(testSubstance))
+                .thenReturn(defElementsWithTwoLayers());
+
+        Substance duplicate = mockSubstanceMatch("Known Duplicate");
+        SearchResult fullSearchResult = searchResultWith(duplicate, "non-substance-hit");
+        SearchResult emptySearchResult = searchResultWith();
+
+        when(searchService.search(anyString(), any(SearchOptions.class)))
+                .thenAnswer(invocation -> {
+                    String query = invocation.getArgument(0, String.class);
+                    if (query.contains("root_definitional_hash_layer_2")) {
+                        return fullSearchResult;
+                    }
+                    return emptySearchResult;
+                });
+
+        ValidationResponse<Substance> response = validator.validate(testSubstance, null);
+
+        assertEquals(1, response.getValidationMessages().size());
+        String message = ((GinasProcessingMessage) response.getValidationMessages().get(0)).getMessage();
+        assertTrue(message.contains("appears to be a full duplicate"));
     }
 
     @Test
-    public void testValidationNoDuplicates() {
-        log.trace("Starting in testValidationNoDuplicates");
-        String name ="G6867RWN6N-Si";//one carbon in the starting structure was replaced with Si to make the structure unique
-        String completeDuplicateMessage= "appears to be a full duplicate";
-        ChemicalSubstance protein = getChemicalSubstanceFromFile(name);
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(protein, null);
-        Assertions.assertTrue( response.getValidationMessages().stream().noneMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
+    @DisplayName("Reports layer-1 candidates as warnings when no full duplicate exists")
+    void reportsPossibleDuplicatesWhenOnlyLayerOneMatches() throws Exception {
+        Substance testSubstance = createSubstance("Test", Substance.SubstanceClass.chemical);
+        when(definitionalElementFactory.computeDefinitionalElementsFor(testSubstance))
+                .thenReturn(defElementsWithTwoLayers());
+
+        Substance possibleDuplicate = mockSubstanceMatch("Possible Duplicate");
+        SearchResult emptySearchResult = searchResultWith();
+        SearchResult possibleSearchResult = searchResultWith(possibleDuplicate);
+
+        when(searchService.search(anyString(), any(SearchOptions.class)))
+                .thenAnswer(invocation -> {
+                    String query = invocation.getArgument(0, String.class);
+                    if (query.contains("root_definitional_hash_layer_2")) {
+                        return emptySearchResult;
+                    }
+                    if (query.contains("root_definitional_hash_layer_1")) {
+                        return possibleSearchResult;
+                    }
+                    return emptySearchResult;
+                });
+
+        ValidationResponse<Substance> response = validator.validate(testSubstance, null);
+
+        assertEquals(1, response.getValidationMessages().size());
+        String message = ((GinasProcessingMessage) response.getValidationMessages().get(0)).getMessage();
+        assertTrue(message.contains("is a possible duplicate"));
     }
 
     @Test
-    public void testSameStrDiv() {
-        log.trace("Starting in testSameStrDiv");
-        String name ="N5WWR36MDJ";
-        String completeDuplicateMessage= "appears to be a full duplicate";
-        StructurallyDiverseSubstance structurallyDiverseSubstance = (StructurallyDiverseSubstance) getSubstanceFromFile(name);
-        structurallyDiverseSubstance.uuid= UUID.randomUUID();
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(structurallyDiverseSubstance, null);
-        Assertions.assertTrue( response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
+    @DisplayName("Does not report duplicate when search only returns the same substance")
+    void doesNotReportItselfAsDuplicate() throws Exception {
+        Substance testSubstance = createSubstance("Self", Substance.SubstanceClass.chemical);
+        when(definitionalElementFactory.computeDefinitionalElementsFor(testSubstance))
+                .thenReturn(defElementsWithTwoLayers());
+
+        SearchResult selfOnlyResult = searchResultWith(testSubstance);
+        when(searchService.search(anyString(), any(SearchOptions.class))).thenReturn(selfOnlyResult);
+
+        ValidationResponse<Substance> response = validator.validate(testSubstance, null);
+
+        assertTrue(response.getValidationMessages().isEmpty());
     }
 
     @Test
-    public void testDiffStrDiv() {
-        log.trace("Starting in testSameStrDiv");
-        String name ="N5WWR36MDJ";
-        String completeDuplicateMessage= "appears to be a full duplicate";
-        StructurallyDiverseSubstance structurallyDiverseSubstance = (StructurallyDiverseSubstance) getSubstanceFromFile(name);
-        structurallyDiverseSubstance.uuid= UUID.randomUUID();
-        structurallyDiverseSubstance.structurallyDiverse.infraSpecificType =structurallyDiverseSubstance.structurallyDiverse.infraSpecificType+ " Other";
-        SubstanceUniquenessValidator validator = new SubstanceUniquenessValidator();
-        AutowireHelper.getInstance().autowire(validator);
-        ValidationResponse response = validator.validate(structurallyDiverseSubstance, null);
-        Assertions.assertFalse( response.getValidationMessages().stream().anyMatch(m-> ((GinasProcessingMessage) m).message.contains(completeDuplicateMessage)));
+    @DisplayName("Search failures are contained and do not create false duplicate messages")
+    void searchFailureDoesNotCreateDuplicateMessages() throws Exception {
+        Substance testSubstance = createSubstance("Search Failure", Substance.SubstanceClass.chemical);
+        when(definitionalElementFactory.computeDefinitionalElementsFor(testSubstance))
+                .thenReturn(defElementsWithTwoLayers());
+        when(searchService.search(anyString(), any(SearchOptions.class)))
+                .thenThrow(new IllegalStateException("index unavailable"));
+
+        ValidationResponse<Substance> response = validateSilencingSystemErr(validator, testSubstance);
+
+        assertTrue(response.getValidationMessages().isEmpty());
     }
 
+    private static Substance createSubstance(String name, Substance.SubstanceClass cls) {
+        Substance s = new SubstanceBuilder()
+                .asChemical()
+                .setUUID(UUID.randomUUID())
+                .addName(name, n -> {
+                    n.name = name;
+                    n.stdName = name;
+                    n.displayName = true;
+                })
+                .build();
+        s.substanceClass = cls;
+        return s;
+    }
 
-    private ChemicalSubstance getChemicalSubstanceFromFile(String name) {
+    private static DefinitionalElements defElementsWithTwoLayers() {
+        return new DefinitionalElements(Arrays.asList(
+                DefinitionalElement.of("k1", "v1", 1),
+                DefinitionalElement.of("k2", "v2", 2)
+        ));
+    }
+
+    private static SearchResult searchResultWith(Object... matches) throws Exception {
+        SearchResult result = mock(SearchResult.class);
+        doNothing().when(result).waitForFinish();
+        when(result.getMatches()).thenReturn(Arrays.asList(matches));
+        return result;
+    }
+
+    private static ValidationResponse<Substance> validateSilencingSystemErr(SubstanceUniquenessValidator validator,
+                                                                            Substance substance) {
+        PrintStream originalErr = System.err;
         try {
-            File proteinFile = new ClassPathResource("testJSON/" + name + ".json").getFile();
-            ChemicalSubstanceBuilder builder = SubstanceBuilder.from(proteinFile);
-            ChemicalValidator chemicalValidator = new ChemicalValidator();
-            chemicalValidator.setStructureProcessor(structureProcessor);
-            ChemicalSubstance chem=builder.build();
-            chemicalValidator.validate(chem, null);
-            
-            return builder.build();
-        } catch (IOException ex) {
-            log.error("Error retrieving substance from file", ex);
+            System.setErr(new PrintStream(new ByteArrayOutputStream()));
+            return validator.validate(substance, null);
+        } finally {
+            System.setErr(originalErr);
         }
-        return null;
     }
 
-    private Substance getSubstanceFromFile(String name) {
-        try {
-            File substanceFile = new ClassPathResource("testJSON/" + name + ".json").getFile();
-            StructurallyDiverseSubstanceBuilder builder = SubstanceBuilder.from(substanceFile);
-            
-            return builder.build();
-        } catch (IOException ex) {
-            log.error("Error retrieving substance from file", ex);
-        }
-        return null;
-    }
+    private static Substance mockSubstanceMatch(String name) {
+        Substance match = mock(Substance.class);
+        SubstanceReference reference = new SubstanceReference();
+        reference.refuuid = UUID.randomUUID().toString();
+        reference.refPname = name;
 
+        when(match.getName()).thenReturn(name);
+        when(match.asSubstanceReference()).thenReturn(reference);
+        when(match.getOrGenerateUUID()).thenReturn(UUID.randomUUID());
+        return match;
+    }
 }

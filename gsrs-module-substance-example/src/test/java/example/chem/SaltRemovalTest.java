@@ -1,47 +1,42 @@
 package example.chem;
 
-import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.molwitch.Chemical;
-
+import gsrs.module.substance.StructureHandlingConfiguration;
 import gsrs.module.substance.controllers.SubstanceController;
 import gsrs.module.substance.utils.ChemicalUtils;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.core.chem.InchiStandardizer;
+import ix.core.chem.InchiStructureHasher;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.*;
-import java.util.List;
 import java.util.stream.Stream;
 
 @Slf4j
-@SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
-@WithMockUser(username = "admin", roles = "Admin")
-class SaltRemovalTest extends AbstractSubstanceJpaFullStackEntityTest {
+class SaltRemovalTest {
 
-    @Data
-    @AllArgsConstructor
-    private class SaltRemovalTestArgs {
-        private String smiles;
-        private String expectedCleanedSmiles;
+    private static ChemicalUtils chemicalUtils;
+    private static StructureProcessor structureProcessor;
+
+    @BeforeAll
+    static void setUpChemistryHelpers() {
+        StructureHandlingConfiguration configuration = new StructureHandlingConfiguration();
+        configuration.setSaltFilePath("salt_data_public.tsv");
+
+        chemicalUtils = new ChemicalUtils();
+        ReflectionTestUtils.setField(chemicalUtils, "structureHandlingConfiguration", configuration);
+        ReflectionTestUtils.invokeMethod(chemicalUtils, "setUpSalts");
+
+        structureProcessor = new StructureProcessor(new InchiStandardizer(), new InchiStructureHasher());
     }
-
-    @Autowired
-    private ChemicalUtils chemicalUtils;
-
-    @Autowired
-    private StructureProcessor structureProcessor;
 
     @Test
     void testRemoveSalts() throws IOException {
@@ -76,9 +71,7 @@ class SaltRemovalTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .build()
                 .instrument()
                 .getStructure();
-        SubstanceController controller = new SubstanceController();
-        AutowireHelper.getInstance().autowire(controller);
-        Structure saltStrippedStructure = controller.stripSalts(structure);
+        Structure saltStrippedStructure = controller().stripSalts(structure);
         Assertions.assertEquals("", saltStrippedStructure.formula);
     }
 
@@ -91,9 +84,7 @@ class SaltRemovalTest extends AbstractSubstanceJpaFullStackEntityTest {
                 .build()
                 .instrument()
                 .getStructure();
-        SubstanceController controller = new SubstanceController();
-        AutowireHelper.getInstance().autowire(controller);
-        Structure saltStrippedStructure = controller.stripSalts(structure);
+        Structure saltStrippedStructure = controller().stripSalts(structure);
         Assertions.assertEquals("", saltStrippedStructure.formula);
     }
 
@@ -116,5 +107,12 @@ class SaltRemovalTest extends AbstractSubstanceJpaFullStackEntityTest {
                 Arguments.of("c1ccc(cc1)N.[O-]P(=O)([O-])[O-]", 5),
                 Arguments.of("c1ccc(cc1)N.[O-]P(=O)([O-])OP(=O)([O-])[O-]", 9)
         );
+    }
+
+    private static SubstanceController controller() {
+        SubstanceController controller = new SubstanceController();
+        ReflectionTestUtils.setField(controller, "chemicalUtils", chemicalUtils);
+        ReflectionTestUtils.setField(controller, "structureProcessor", structureProcessor);
+        return controller;
     }
 }

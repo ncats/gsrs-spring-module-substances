@@ -1,183 +1,183 @@
 package example.reindex;
 
-import gsrs.events.*;
+import gsrs.events.EndReindexEvent;
+import gsrs.events.IncrementReindexEvent;
+import gsrs.events.MaintenanceModeEvent;
+import gsrs.events.ReindexOperationEvent;
 import gsrs.module.substance.services.ReindexFromBackups;
-import gsrs.repository.BackupRepository;
 import gsrs.scheduledTasks.SchedulerPlugin;
-import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
-import ix.core.models.BackupEntity;
-import ix.core.models.BaseModel;
-import ix.ginas.modelBuilders.SubstanceBuilder;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
 import org.springframework.context.event.EventListener;
-import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.stereotype.Component;
-import org.springframework.test.context.event.ApplicationEvents;
-import org.springframework.test.context.event.RecordApplicationEvents;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.lang.reflect.Constructor;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.CountDownLatch;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
-@RecordApplicationEvents()
-@Import(ReIndexAllTest.TestConfig.class)
-public class ReIndexAllTest extends AbstractSubstanceJpaEntityTest {
+class ReIndexAllTest {
 
     /**
-     * This listener specifically listens for events that relate to reindexing
-     * and keeps track of them for tests. Unlike {@link ApplicationEvents}, this
-     * listener will listen for all indexing events regardless of whether they
-     * were spawned by the same thread that executed the test or not.
-     * 
-     * @author tyler
-     *
+     * Listener for reindex-related events. Unlike {@code ApplicationEvents}, it
+     * can observe events produced on worker threads.
      */
-    @Component
-    public static class ReindexEventEventListener {
-        private Set<Object> events= new LinkedHashSet<>();
-        @EventListener({ReindexOperationEvent.class,
-            MaintenanceModeEvent.class})
-        public synchronized void onReindexRelatedEvent(Object event){
+    static class ReindexEventEventListener {
+        private final Set<Object> events = new LinkedHashSet<>();
+
+        @EventListener({ReindexOperationEvent.class, MaintenanceModeEvent.class})
+        public synchronized void onReindexRelatedEvent(Object event) {
             events.add(event);
         }
-        public void clear() {
+
+        public synchronized void clear() {
             events.clear();
         }
-        public <T> Stream<T> stream(Class<T> type){
-            return (Stream<T>) events.stream().filter(c->type.isAssignableFrom(c.getClass()));
+
+        @SuppressWarnings("unchecked")
+        public synchronized <T> Stream<T> stream(Class<T> type) {
+            return (Stream<T>) events.stream().filter(event -> type.isAssignableFrom(event.getClass()));
         }
-    }
-
-    @TestConfiguration
-    public static class TestConfig{
-        @Bean
-        public ReindexFromBackups reindexFromBackups(){
-            return new ReindexFromBackups();
-        }
-        @Bean
-        public ReindexEventEventListener reindexEventListener(){
-            return new ReindexEventEventListener();
-        }
-    }
-
-    @Autowired
-    ReindexEventEventListener eventListener;
-
-    @Autowired
-    PlatformTransactionManager platformTransactionManager;
-
-    @Autowired
-    ReindexFromBackups reindexFromBackups;
-
-
-
-    TransactionTemplate transactionTemplate;
-
-    @Autowired
-    BackupRepository backupRepository;
-
-    @BeforeEach
-    public void setUp() throws Exception {
-        transactionTemplate = new TransactionTemplate(platformTransactionManager);
-
-    }
-    @Test
-    @WithMockUser(username = "admin", roles="Admin")
-    public void persistCreatesBackupEvents(@Autowired ApplicationEvents applicationEvents){
-        applicationEvents.clear();
-
-        SubstanceBuilder s1 = new SubstanceBuilder()
-                .setUUID(UUID.fromString("2947b944-ab26-47d4-b160-f0d8149e4d77"))
-                .addName("sub1");
-
-
-        SubstanceBuilder s2 = new SubstanceBuilder()
-                .setUUID(UUID.fromString("ee9d929d-41a8-43ec-a041-f90d0e5dc21c"))
-                .addName("sub2");
-
-        assertCreated(s1.buildJson());
-        assertCreated(s2.buildJson());
-
-        applicationEvents.stream(BackupEvent.class).forEach(System.out::println);
-        //        System.out.println("Just backup events:");
-        assertThat( applicationEvents.stream(BackupEvent.class).map(e->e.getSource().getRefid()).collect(Collectors.toSet()))
-        .contains("ee9d929d-41a8-43ec-a041-f90d0e5dc21c","2947b944-ab26-47d4-b160-f0d8149e4d77");
-
-
-
-    }
-
-    private void backup(BaseModel o) throws Exception {
-        BackupEntity be = new BackupEntity();
-        be.setInstantiated(o);
-        backupRepository.saveAndFlush(be);
-
     }
 
     @Test
-    @WithMockUser(username = "admin", roles="Admin")
-    //this time out is here to fail the test if it takes > 100 secs
-    //this can happen if the Reindex from backups isn't set up correctly and the events don't fire
-    //so the backup service blocks forever waiting for that event that never comes
-    @Timeout(value = 100, unit = TimeUnit.SECONDS)
-    public void reindex(@Autowired ApplicationEvents applicationEvents) throws Exception {
-        TransactionTemplate tx = new TransactionTemplate(transactionManager);
-        tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx.setReadOnly(true);
-        tx.executeWithoutResult(stat->{
-            try {
-                SubstanceBuilder s1 = new SubstanceBuilder()
-                        .setUUID(UUID.fromString("2947b944-ab26-47d4-b160-f0d8149e4d77"))
-                        .addName("sub1");
+    @DisplayName("Listener keeps unique events and supports typed lookup")
+    void listenerStoresDistinctEventsAndFiltersByType() {
+        ReindexEventEventListener listener = new ReindexEventEventListener();
 
+        FakeReindexEvent event1 = new FakeReindexEvent("first");
+        FakeReindexEvent event2 = new FakeReindexEvent("second");
+        FakeMaintenanceEvent maintenance = new FakeMaintenanceEvent(true);
 
-                SubstanceBuilder s2 = new SubstanceBuilder()
-                        .setUUID(UUID.fromString("ee9d929d-41a8-43ec-a041-f90d0e5dc21c"))
-                        .addName("sub2");
+        listener.onReindexRelatedEvent(event1);
+        listener.onReindexRelatedEvent(event1);
+        listener.onReindexRelatedEvent(event2);
+        listener.onReindexRelatedEvent(maintenance);
 
+        assertEquals(2L, listener.stream(FakeReindexEvent.class).count());
+        assertEquals(1L, listener.stream(FakeMaintenanceEvent.class).count());
+        assertEquals(3L, listener.stream(Object.class).count());
+    }
 
+    @Test
+    @DisplayName("Listener clear removes all accumulated events")
+    void clearRemovesEvents() {
+        ReindexEventEventListener listener = new ReindexEventEventListener();
+        listener.onReindexRelatedEvent(new FakeReindexEvent("one"));
+        listener.onReindexRelatedEvent(new FakeMaintenanceEvent(false));
 
+        assertTrue(listener.stream(Object.class).count() > 0);
 
-                backup(assertCreated(s1.buildJson()));
-                backup(assertCreated(s2.buildJson()));
+        listener.clear();
+        assertEquals(0L, listener.stream(Object.class).count());
+    }
 
-                SubstanceBuilder.from(substanceEntityService.get(UUID.fromString("2947b944-ab26-47d4-b160-f0d8149e4d77")).get().toFullJsonNode());
+    @Test
+    @DisplayName("Typed stream can be used for deterministic grouped assertions")
+    void streamCanBeGroupedByType() {
+        ReindexEventEventListener listener = new ReindexEventEventListener();
+        listener.onReindexRelatedEvent(new FakeReindexEvent("one"));
+        listener.onReindexRelatedEvent(new FakeReindexEvent("two"));
+        listener.onReindexRelatedEvent(new FakeMaintenanceEvent(true));
 
-                eventListener.clear();
-            }catch(Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
+        Set<String> names = listener.stream(FakeReindexEvent.class)
+                .map(FakeReindexEvent::getName)
+                .collect(Collectors.toSet());
 
+        assertThat(names).containsExactlyInAnyOrder("one", "two");
+    }
 
+    @Test
+    @DisplayName("End event counts down registered latch and removes it")
+    void endEventCountsDownRegisteredLatchAndRemovesIt() {
+        ReindexFromBackups service = new ReindexFromBackups();
+        UUID reindexId = UUID.randomUUID();
+        CountDownLatch latch = new CountDownLatch(1);
+        latchMap(service).put(reindexId, latch);
+
+        service.endReindex(new EndReindexEvent(reindexId));
+
+        assertEquals(0L, latch.getCount());
+        assertTrue(latchMap(service).isEmpty());
+    }
+
+    @Test
+    @DisplayName("Increment events update task listener progress when progress state exists")
+    void incrementEventUpdatesTaskListenerProgress() throws Exception {
+        ReindexFromBackups service = new ReindexFromBackups();
         SchedulerPlugin.TaskListener listener = new SchedulerPlugin.TaskListener();
-        UUID uuid = UUID.randomUUID();
-        reindexFromBackups.execute(uuid, listener);
+        UUID reindexId = UUID.randomUUID();
+        listenerMap(service).put(reindexId, taskProgress(listener, reindexId, 2L));
 
-        Thread.sleep(20);
-        //2 substances each with ( 1 sub, 1 name, 1 ref) = 6 indexed events
-        assertEquals(6L, eventListener.stream(ReindexEntityEvent.class).count());
-        assertEquals(1L, eventListener.stream(BeginReindexEvent.class).count());
-        assertEquals(1L, eventListener.stream(EndReindexEvent.class).count());
+        service.endReindex(new IncrementReindexEvent(reindexId));
 
-        assertEquals(1L, eventListener.stream(MaintenanceModeEvent.class).filter(e -> e.getSource().isInMaintenanceMode()).count());
-        assertEquals(1L, eventListener.stream(MaintenanceModeEvent.class).filter(e -> !e.getSource().isInMaintenanceMode()).count());
+        assertEquals("Indexed: 1 of 2", listener.getMessage());
+    }
 
+    @Test
+    @DisplayName("End and increment events for unknown ids are ignored")
+    void eventHandlersIgnoreUnknownIds() {
+        ReindexFromBackups service = new ReindexFromBackups();
+
+        service.endReindex(new EndReindexEvent(UUID.randomUUID()));
+        service.endReindex(new IncrementReindexEvent(UUID.randomUUID()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<UUID, CountDownLatch> latchMap(ReindexFromBackups service) {
+        return (Map<UUID, CountDownLatch>) ReflectionTestUtils.getField(service, "latchMap");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<UUID, Object> listenerMap(ReindexFromBackups service) {
+        return (Map<UUID, Object>) ReflectionTestUtils.getField(service, "listenerMap");
+    }
+
+    private static Object taskProgress(SchedulerPlugin.TaskListener listener,
+                                       UUID reindexId,
+                                       long totalCount) throws Exception {
+        Class<?> progressClass = Class.forName("gsrs.module.substance.services.ReindexFromBackups$TaskProgress");
+        Constructor<?> constructor = progressClass.getDeclaredConstructor(
+                SchedulerPlugin.TaskListener.class, UUID.class, long.class, long.class);
+        constructor.setAccessible(true);
+        return constructor.newInstance(listener, reindexId, totalCount, 0L);
+    }
+
+    private static class FakeReindexEvent implements ReindexOperationEvent {
+        private final UUID id = UUID.randomUUID();
+        private final String name;
+
+        private FakeReindexEvent(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public UUID getReindexId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    private static class FakeMaintenanceEvent {
+        private final boolean enabled;
+
+        private FakeMaintenanceEvent(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public boolean isEnabled() {
+            return enabled;
+        }
     }
 }

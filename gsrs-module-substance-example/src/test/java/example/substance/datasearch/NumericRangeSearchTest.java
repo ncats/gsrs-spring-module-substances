@@ -4,7 +4,7 @@ import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.GsrsFullStackTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -23,8 +23,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.File;
@@ -39,10 +41,12 @@ import java.util.stream.Collectors;
  */
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @Slf4j
 public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     
     public NumericRangeSearchTest() {
+        super(false);
     }
     
     @Autowired
@@ -59,23 +63,27 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
     
     @Autowired
     private TestGsrsValidatorFactory factory;
+
+    @Autowired
+    private ApplicationContext applicationContext;
     
-    private String fileName = "rep18.gsrs";
+    private static final String FILE_NAME = "rep18.gsrs";
     
     @BeforeEach
     public void clearIndexers() throws IOException {
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
-        testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
-        {
+        example.substance.support.Rep18DatasetSupport.loadOnce(applicationContext, FILE_NAME, () -> {
+            SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+            applicationContext.getAutowireCapableBeanFactory().autowireBean(hashIndexer);
+            testIndexValueMakerFactory.addIndexValueMaker(hashIndexer);
+
             ValidatorConfig config = new DefaultValidatorConfig();
             config.setValidatorClass(ChemicalValidator.class);
             config.setNewObjClass(ChemicalSubstance.class);
             factory.addValidator("substances", config);
-        }
-        
-        File dataFile = new ClassPathResource(fileName).getFile();
-        loadGsrsFile(dataFile);
+
+            File dataFile = new ClassPathResource(FILE_NAME).getFile();
+            loadGsrsFile(dataFile);
+        });
     }
     
     @Test
@@ -113,7 +121,7 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
         log.trace("starting in testSearchByDateRange");
         Date now = new Date();
         long nowMillis = now.getTime();
-        long startRange = nowMillis - 10000;
+        long startRange = nowMillis - 120000;
         long endRange = nowMillis + 1000;
         String start = "" + (startRange);
         String end = "" + (endRange);
@@ -142,7 +150,7 @@ public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityT
         log.trace("starting in testSearchBy2DateRanges2");
         Date now = new Date();
         long nowMillis = now.getTime();
-        long startRange = nowMillis - 3000;
+        long startRange = nowMillis - 120000;
         long endRange = nowMillis + 3000;
         String start = "" + (startRange);
         String end = "" + (endRange);

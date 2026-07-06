@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -24,7 +25,6 @@ import gsrs.cache.GsrsCache;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.service.GsrsEntityService;
-import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -57,6 +57,11 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         @Autowired
         private GsrsCache cache;
 
+        @Autowired
+        private ApplicationContext applicationContext;
+
+        private static final String CONCEPT_WITH_STANDARD_NAME_TEMPLATE = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
+
         
         @BeforeEach
         public void clearIndexers() throws IOException {
@@ -65,60 +70,53 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         	factory.addValidator("substances", config);
         }
 
+        private StandardNameDuplicateValidator newValidator() {
+                StandardNameDuplicateValidator validator = new StandardNameDuplicateValidator();
+                applicationContext.getAutowireCapableBeanFactory().autowireBean(validator);
+                return (StandardNameDuplicateValidator) applicationContext
+                        .getAutowireCapableBeanFactory()
+                        .initializeBean(validator, "testStandardNameDuplicateValidator");
+        }
+
+        private String conceptJson(UUID substanceUuid, UUID referenceUuid, String name, String stdName) {
+                return CONCEPT_WITH_STANDARD_NAME_TEMPLATE
+                        .replaceAll("__UUID__", substanceUuid.toString())
+                        .replaceAll("__REFERENCE_ID1__", referenceUuid.toString())
+                        .replaceAll("__NAME1__", name)
+                        .replaceAll("__STDNAME1__", stdName);
+        }
+
         @Test
         public void testCheckStdNameForDuplicateInOtherRecordsViaIndexer() {
-                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                StandardNameDuplicateValidator validator = newValidator();
 
-                String template = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
-
-                Substance s1 = null;
-                Substance s2 = null;
-
-                String j1 = template;
-                String subId_a = "25cc4754-ccf1-4db2-bb6a-367581fa17ea";
-                String refId1_a = "a7dcc059-7f47-4815-8444-2157381b8f17";
-                String name1_a = "Test1";
-                String stdName1_a = "Test1 Std";
-                j1 = j1.replaceAll("__UUID__", subId_a);
-                j1 = j1.replaceAll("__REFERENCE_ID1__", refId1_a);
-                j1 = j1.replaceAll("__NAME1__", name1_a);
-                j1 = j1.replaceAll("__STDNAME1__", stdName1_a);
-
-                String j2 = template;
-                String subId_b = "72c9ee92-8e97-4a19-b208-faf7739ad60d";
-                String refId1_b = "b7dcc059-7f47-4815-8444-2157381b8f18";
-                String name1_b = "Test2";
-                String stdName1_b = "Test1 Std";  // The 1 is on purpose
-                j2 = j2.replaceAll("__UUID__", subId_b);
-                j2 = j2.replaceAll("__REFERENCE_ID1__", refId1_b);
-                j2 = j2.replaceAll("__NAME1__", name1_b);
-                j2 = j2.replaceAll("__STDNAME1__", stdName1_b);
+                String stdName1_b = "Test1 Std " + UUID.randomUUID();
+                String j1 = conceptJson(UUID.randomUUID(), UUID.randomUUID(), "Test1", stdName1_b);
+                String j2 = conceptJson(UUID.randomUUID(), UUID.randomUUID(), "Test2", stdName1_b);
 
 
-                s1 = loadSubstanceFromJsonString(j1);
-                s2 = loadSubstanceFromJsonString(j2);
-
-                assertEquals(substanceRepository.count(), 2);
+                Substance s1 = loadSubstanceFromJsonString(j1);
+                Substance s2 = loadSubstanceFromJsonString(j2);
 
                 List<Substance> substances1 = validator.findIndexedSubstancesByStdName(stdName1_b);
-                assertEquals(substances1.size(), 2);
+                assertEquals(2, substances1.size());
                 Substance otherSubstance1 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
-                assertEquals(otherSubstance1.getUuid(), s1.getUuid());
+                assertEquals(s1.getUuid(), otherSubstance1.getUuid());
 
                 Optional<Substance> substances2 = validator.findOneIndexedSubstanceByStdNameExcludingUuid(stdName1_b, s1.getUuid());
                 assertTrue(substances2.isPresent());
                 Substance otherSubstance2 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, stdName1_b);
-                assertEquals(otherSubstance2.getUuid(), s1.getUuid());
+                assertEquals(s1.getUuid(), otherSubstance2.getUuid());
 
                 String wontBeFound3 = "Strange thing";
                 List<Substance> substances3 = validator.findIndexedSubstancesByStdName(wontBeFound3);
-                assertEquals(substances3.size(), 0);
+                assertEquals(0, substances3.size());
                 Substance otherSubstance3 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, wontBeFound3);
                 assertNull(otherSubstance3);
 
                 String wontBeFound4 = "Strange thing";
                 List<Substance> substances4 = validator.findIndexedSubstancesByStdName(wontBeFound4);
-                assertEquals(substances4.size(), 0);
+                assertEquals(0, substances4.size());
                 Substance otherSubstance4 = validator.checkStdNameForDuplicateInOtherRecordsViaIndexer(s2, wontBeFound4);
                 assertNull(otherSubstance4);
 
@@ -127,40 +125,19 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         @Test
         public void testStdNameDuplicateInOtherRecordViaIndexer() {
-                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                StandardNameDuplicateValidator validator = newValidator();
                 
                 validator.setCheckDuplicateInOtherRecord(true);
                 validator.setOnDuplicateInOtherRecordShowError(true);
 
-                String template = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
+                String stdName1_b = "Test1 Std " + UUID.randomUUID();
+                String j1 = conceptJson(UUID.randomUUID(), UUID.randomUUID(), "Test1", stdName1_b);
+                String j2 = conceptJson(UUID.randomUUID(), UUID.randomUUID(), "Test2", stdName1_b);
 
-                Substance s1 = null;
-                Substance s2 = null;
+                loadSubstanceFromJsonString(j1);
+                Substance s2 = loadSubstanceFromJsonString(j2);
 
-                String j1 = template;
-                String subId_a = "25cc4754-ccf1-4db2-bb6a-367581fa17ea";
-                String refId1_a = "a7dcc059-7f47-4815-8444-2157381b8f17";
-                String name1_a = "Test1";
-                String stdName1_a = "Test1 Std";
-                j1 = j1.replaceAll("__UUID__", subId_a);
-                j1 = j1.replaceAll("__REFERENCE_ID1__", refId1_a);
-                j1 = j1.replaceAll("__NAME1__", name1_a);
-                j1 = j1.replaceAll("__STDNAME1__", stdName1_a);
-
-                String j2 = template;
-                String subId_b = "72c9ee92-8e97-4a19-b208-faf7739ad60d";
-                String refId1_b = "b7dcc059-7f47-4815-8444-2157381b8f18";
-                String name1_b = "Test2";
-                String stdName1_b = "Test1 Std";  // The 1 is on purpose
-                j2 = j2.replaceAll("__UUID__", subId_b);
-                j2 = j2.replaceAll("__REFERENCE_ID1__", refId1_b);
-                j2 = j2.replaceAll("__NAME1__", name1_b);
-                j2 = j2.replaceAll("__STDNAME1__", stdName1_b);
-
-                s1 = loadSubstanceFromJsonString(j1);
-                s2 = loadSubstanceFromJsonString(j2);
-
-                assertEquals(substanceRepository.count(), 2);
+                assertEquals(2, validator.findIndexedSubstancesByStdName(stdName1_b).size());
 
                 ValidationResponse<Substance> response = validator.validate(s2, null);
 
@@ -172,7 +149,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         @Test
         public void testStdNameDuplicateInOtherRecordViaIndexerWhenNameHasWildcard() {
-                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                StandardNameDuplicateValidator validator = newValidator();
                 
                 validator.setCheckDuplicateInOtherRecord(true);
                 validator.setOnDuplicateInOtherRecordShowError(true);
@@ -180,19 +157,17 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 
                 UUID uuid1 = UUID.randomUUID();
                 UUID uuid2 = UUID.randomUUID();
+                String stdName = "TEST" + UUID.randomUUID().toString().replace("-", "") + "* ABC";
                 
                 SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-                		.addName("TEST* ABC", n->n.stdName="TEST* ABC")
+                		.addName(stdName, n->n.stdName=stdName)
                 		.setUUID(uuid1);
                 assertCreated(substanceBuilder1.buildJson());
                 
                 SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-                		.addName("TEST2* ABC", n->n.stdName="TEST2* ABC")
+                		.addName(stdName.replace("*", "2*"), n->n.stdName=stdName.replace("*", "2*"))
                 		.setUUID(uuid2);
                 assertCreated(substanceBuilder2.buildJson());
-                
-              
-                assertEquals(substanceRepository.count(), 2);
 
                 ValidationResponse<Substance> response = validator.validate(substanceBuilder1.build(), null);
 
@@ -204,7 +179,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         @Test
         public void testStdNameDuplicateInOtherRecordViaIndexerWhenNameHasWildcardDuplicate() {
-                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                StandardNameDuplicateValidator validator = newValidator();
                 
                 validator.setCheckDuplicateInOtherRecord(true);
                 validator.setOnDuplicateInOtherRecordShowError(true);
@@ -212,19 +187,19 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 
                 UUID uuid1 = UUID.randomUUID();
                 UUID uuid2 = UUID.randomUUID();
+                String stdName = "TEST" + UUID.randomUUID().toString().replace("-", "") + "* ABC";
                 
                 SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-                		.addName("TEST* ABC", n->n.stdName="TEST* ABC")
+                		.addName(stdName, n->n.stdName=stdName)
                 		.setUUID(uuid1);
                 assertCreated(substanceBuilder1.buildJson());
                 
                 SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-                		.addName("TEST2* ABC", n->n.stdName="TEST* ABC")
+                		.addName(stdName.replace("*", "2*"), n->n.stdName=stdName)
                 		.setUUID(uuid2);
                 assertCreated(substanceBuilder2.buildJson());
                 
-              
-                assertEquals(substanceRepository.count(), 2);
+                assertEquals(2, validator.findIndexedSubstancesByStdName(stdName).size());
 
                 ValidationResponse<Substance> response = validator.validate(substanceBuilder1.build(), null);
 
@@ -235,7 +210,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         
         @Test
         public void testStdNameDuplicateInOtherRecordViaIndexerWhenNameHasWildcardDuplicateQuestionMark() {
-                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                StandardNameDuplicateValidator validator = newValidator();
                 
                 validator.setCheckDuplicateInOtherRecord(true);
                 validator.setOnDuplicateInOtherRecordShowError(true);
@@ -243,19 +218,19 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 
                 UUID uuid1 = UUID.randomUUID();
                 UUID uuid2 = UUID.randomUUID();
+                String stdName = "TEST" + UUID.randomUUID().toString().replace("-", "") + "? ABC";
                 
                 SubstanceBuilder substanceBuilder1 = new SubstanceBuilder()
-                		.addName("TEST* ABC", n->n.stdName="TEST? ABC")
+                		.addName(stdName.replace("?", "*"), n->n.stdName=stdName)
                 		.setUUID(uuid1);
                 assertCreated(substanceBuilder1.buildJson());
                 
                 SubstanceBuilder substanceBuilder2 = new SubstanceBuilder()
-                		.addName("TEST2* ABC", n->n.stdName="TEST? ABC")
+                		.addName(stdName.replace("?", "2*"), n->n.stdName=stdName)
                 		.setUUID(uuid2);
                 assertCreated(substanceBuilder2.buildJson());
                 
-              
-                assertEquals(substanceRepository.count(), 2);
+                assertEquals(2, validator.findIndexedSubstancesByStdName(stdName).size());
 
                 ValidationResponse<Substance> response = validator.validate(substanceBuilder1.build(), null);
 
@@ -286,7 +261,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         @Test
         public void testDuplicateInSameRecordShowWarning() {
                 boolean showError = false;
-                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                StandardNameDuplicateValidator validator = newValidator();
                 validator.setCheckDuplicateInSameRecord(true);
 //                validator.setCheckDuplicateInOtherRecord(false);
                 validator.setOnDuplicateInSameRecordShowError(showError);
@@ -321,7 +296,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
         @Test
         public void testDuplicateInSameRecordShowError() {
                 boolean showError = true;
-                StandardNameDuplicateValidator validator = AutowireHelper.getInstance().autowireAndProxy(new StandardNameDuplicateValidator());
+                StandardNameDuplicateValidator validator = newValidator();
                 validator.setCheckDuplicateInSameRecord(true);
 //                validator.setCheckDuplicateInOtherRecord(false);
                 validator.setOnDuplicateInSameRecordShowError(showError);

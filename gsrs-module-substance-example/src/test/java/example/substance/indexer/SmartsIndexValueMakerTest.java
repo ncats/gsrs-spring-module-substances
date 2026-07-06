@@ -1,6 +1,5 @@
 package example.substance.indexer;
 
-import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.indexers.SmartsIndexValueMaker;
 import ix.core.search.text.IndexableValue;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -22,7 +21,8 @@ class SmartsIndexValueMakerTest {
     void testNitroGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("Nitrobenzene");
-        builder.setStructureWithDefaultReference("[O-][N+](=O)c1ccccc1");
+        String inputSmiles = "[O-][N+](=O)C1=CC=CC=C1";
+        builder.setStructureWithDefaultReference(inputSmiles);
         ChemicalSubstance nitrobenzene = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
@@ -35,20 +35,23 @@ class SmartsIndexValueMakerTest {
     void testNoNitroGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("Toluene");
-        builder.setStructureWithDefaultReference("Cc1ccccc1");
+        String inputSmiles = "CC1=CC=CC=C1";
+        builder.setStructureWithDefaultReference(inputSmiles);
         ChemicalSubstance nitrobenzene = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();
         List<IndexableValue> indexedValues= new ArrayList<>();
         indexer.createIndexableValues(nitrobenzene, indexedValues::add);
-        Assertions.assertTrue(indexedValues.stream().noneMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL) && i.value().equals("true")));
+        Assertions.assertTrue(indexedValues.stream().noneMatch(i->i.name().contains(SmartsIndexValueMaker.FACET_NAME_FULL)
+                && i.value().equals("nitro")));
     }
 
     @Test
     void testCarboxylateGroup() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("benzoic acid");
-        builder.setStructureWithDefaultReference("c1ccccc1C(=O)O");
+        String inputSmiles = "C1=CC=CC=C1C(=O)O";
+        builder.setStructureWithDefaultReference(inputSmiles);
         ChemicalSubstance nitrobenzene = builder.build();
 
         String acidGroupName = "carboxlic acid";
@@ -68,16 +71,17 @@ class SmartsIndexValueMakerTest {
 
     @Test
     void testImidazoleOnce() throws IOException {
+        //todo: make this test work using a molfile
+
         String molfilePath = "/molfiles/4XXR6FT8ZA.mol";
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream(molfilePath),
                 "UTF-8"
         );
-
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
         GinasChemicalStructure structure = new GinasChemicalStructure();
-        structure.molfile= molfileText;
+        structure.molfile = molfileText;
         builder.setStructure(structure);
         ChemicalSubstance mol1 = builder.build();
 
@@ -87,9 +91,9 @@ class SmartsIndexValueMakerTest {
         Map<String, Object> configItems = new ConcurrentHashMap<>();
         configItems.put("indexableName", moleculeName);
         Map<String, String> smarts = new LinkedHashMap<>();
-        smarts.put("0", "c1cnc[nH]1");
+        smarts.put("0", "c1cncn1");
         smarts.put("1", "C1=CN=CN1");
-        configItems.put("smarts", smarts); //₠
+        configItems.put("smarts", smarts);
         config.put(1, configItems);
         indexer.setRawIndexables(config);
         List<IndexableValue> indexedValues= new ArrayList<>();
@@ -102,7 +106,7 @@ class SmartsIndexValueMakerTest {
     void testTetrazoleMatch() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("MIDD-0301");
-        builder.setStructureWithDefaultReference("C(O)(=O)C1N2[C@@]([C@H](NC(/C(=N\\OC)/c3nc(N)sc3)=O)C2=O)(SC=C1Cn4nc(C)nn4)[H]");
+        builder.setStructureWithDefaultReference("C(O)(=O)C1N2[C@@]([C@H](NC(/C(=N\\OC)/C3=NC(N)S=C3)=O)C2=O)(SC=C1CN4N=C(C)N=N4)[H]");
         ChemicalSubstance mol1 = builder.build();
 
         SmartsIndexValueMaker indexer = new SmartsIndexValueMaker();

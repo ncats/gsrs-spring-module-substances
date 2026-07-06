@@ -6,6 +6,7 @@ import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.expanders.basic.BasicRecordExpander;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.GsrsFullStackTest;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,8 +36,13 @@ import java.util.stream.Stream;
 @Slf4j
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEntityTest {
     private String fileName = "rep18+12.tsv";
+
+    public BasicSubstanceExpanderTest() {
+        super(false);
+    }
 
     @Autowired
     private TestIndexValueMakerFactory testIndexValueMakerFactory;

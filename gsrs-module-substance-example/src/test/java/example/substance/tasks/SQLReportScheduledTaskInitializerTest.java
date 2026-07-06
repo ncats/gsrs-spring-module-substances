@@ -5,6 +5,7 @@ import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
 import gsrs.module.substance.tasks.SQLReportScheduledTaskInitializer;
 import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.GsrsFullStackTest;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -12,8 +13,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,18 +33,26 @@ import java.sql.Statement;
  */
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Import(AutowireHelper.class)
 @Slf4j
 public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaFullStackEntityTest{
 
-    private final String fileName = "rep18.gsrs";
+    private static final String TEST_DATA_FILE = "rep18.gsrs";
+
+    public SQLReportScheduledTaskInitializerTest() {
+        super(false);
+    }
 
     @BeforeEach
     public void setup() throws IOException {
-        SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
-        AutowireHelper.getInstance().autowire(hashIndexer);
+        if (substanceRepository.count() == 0) {
+            SubstanceDefinitionalHashIndexer hashIndexer = new SubstanceDefinitionalHashIndexer();
+            AutowireHelper.getInstance().autowire(hashIndexer);
 
-        File dataFile = new ClassPathResource(fileName).getFile();
-        loadGsrsFile(dataFile);
+            File dataFile = new ClassPathResource(TEST_DATA_FILE).getFile();
+            loadGsrsFile(dataFile);
+        }
     }
 
     @Test
@@ -78,13 +89,14 @@ public class SQLReportScheduledTaskInitializerTest extends AbstractSubstanceJpaF
     @Test
     public void testSqlConnection() throws SQLException {
         SQLReportScheduledTaskInitializer taskInit = new SQLReportScheduledTaskInitializer();
-        Connection con = taskInit.getConnection();
-        Statement statement = con.createStatement();
         String sql = "select dtype from ix_ginas_substance where uuid ='1cf410f9-3eeb-41ed-ab69-eeb5076901e5'";
-        ResultSet results=  statement.executeQuery(sql);
-        Assertions.assertTrue(results.next(), "Must be able to move to first record");
-        String compoundClass= results.getString(1);
-        String expectedClass = "NA";
-        Assertions.assertEquals(expectedClass, compoundClass);
+        try (Connection con = taskInit.getConnection();
+             Statement statement = con.createStatement();
+             ResultSet results = statement.executeQuery(sql)) {
+            Assertions.assertTrue(results.next(), "Must be able to move to first record");
+            String compoundClass = results.getString(1);
+            String expectedClass = "NA";
+            Assertions.assertEquals(expectedClass, compoundClass);
+        }
     }
 }

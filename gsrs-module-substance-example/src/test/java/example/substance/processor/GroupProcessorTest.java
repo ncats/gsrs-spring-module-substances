@@ -1,122 +1,107 @@
 package example.substance.processor;
 
-import gsrs.cv.ControlledVocabularyEntityService;
-import gsrs.cv.ControlledVocabularyEntityServiceImpl;
-import gsrs.cv.CvApiAdapter;
 import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsControlledVocabularyDTO;
 import gsrs.cv.api.GsrsVocabularyTermDTO;
 import gsrs.module.substance.processors.GroupProcessor;
-import gsrs.springUtils.AutowireHelper;
-import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Group;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
-/**
- *
- * @author mitch
- */
-@Slf4j
-@Import(GroupProcessorTest.TestConfig.class)
-public class GroupProcessorTest extends AbstractSubstanceJpaEntityTest {
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-    public GroupProcessorTest() {
-    }
+@ExtendWith(MockitoExtension.class)
+class GroupProcessorTest {
+
+    private static final String ACCESS_DOMAIN = "ACCESS_GROUP";
+
+    @Mock
+    private ControlledVocabularyApi controlledVocabularyApi;
 
     private GroupProcessor processor;
 
-    private final String ACCESS_DOMAIN = "ACCESS_GROUP";
-
-    @TestConfiguration
-    static class TestConfig {
-
-        @Bean
-        public ControlledVocabularyEntityService controlledVocabularyEntityService() {
-            return new ControlledVocabularyEntityServiceImpl();
-        }
-
-        @Bean
-        public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service) {
-            return new CvApiAdapter(service);
-        }
-    }
-
     @BeforeEach
-    public void setup() throws IOException {
-        log.trace("starting in setup");
+    void setup() {
         processor = new GroupProcessor();
-        AutowireHelper.getInstance().autowire(processor);
-
-        createCv();
-        log.debug("completed setup");
+        ReflectionTestUtils.setField(processor, "cvApi", controlledVocabularyApi);
     }
 
-    private void createCv() throws IOException {
-        log.trace("starting in createCv");
-        String accessGroup = "protected";
-        Optional<GsrsControlledVocabularyDTO> vocabOpt= controlledVocabularyApi.findByDomain(ACCESS_DOMAIN);
-        if( vocabOpt.isPresent()) {
-            log.trace("CV for ACCESS_DOMAIN already exists");
-            return;
-        }
-        List<GsrsVocabularyTermDTO> list = new ArrayList<>();
-        list.add(GsrsVocabularyTermDTO.builder()
-                .display(accessGroup)
-                .value(accessGroup)
+    @Test
+    void postPersistAddsMissingGroupToAccessVocabulary() throws IOException {
+        when(controlledVocabularyApi.findByDomain(ACCESS_DOMAIN)).thenReturn(Optional.of(accessGroupVocabulary()));
+
+        Group labWorkers = group("Lab Workers");
+        processor.postPersist(labWorkers);
+
+        ArgumentCaptor<GsrsControlledVocabularyDTO> updatedVocabulary =
+                ArgumentCaptor.forClass(GsrsControlledVocabularyDTO.class);
+        verify(controlledVocabularyApi).update(updatedVocabulary.capture());
+
+        GsrsControlledVocabularyDTO vocabulary = updatedVocabulary.getValue();
+        assertTrue(vocabulary.getTerms().stream()
+                .anyMatch(term -> labWorkers.name.equals(term.getValue()) && labWorkers.name.equals(term.getDisplay())));
+        assertEquals("ix.ginas.models.v1.ControlledVocabulary", vocabulary.getVocabularyTermType());
+    }
+
+    @Test
+    void postPersistDoesNotAddDuplicateGroupTerm() throws IOException {
+        when(controlledVocabularyApi.findByDomain(ACCESS_DOMAIN)).thenReturn(Optional.of(accessGroupVocabulary()));
+
+        processor.postPersist(group("protected"));
+
+        verify(controlledVocabularyApi, never()).update(any(GsrsControlledVocabularyDTO.class));
+    }
+
+    @Test
+    void postPersistDoesNothingWhenAccessVocabularyIsMissing() throws IOException {
+        when(controlledVocabularyApi.findByDomain(ACCESS_DOMAIN)).thenReturn(Optional.empty());
+
+        processor.postPersist(group("Lab Workers"));
+
+        verify(controlledVocabularyApi, never()).update(any(GsrsControlledVocabularyDTO.class));
+    }
+
+    @Test
+    void postUpdateUsesSameVocabularyUpdatePath() throws IOException {
+        when(controlledVocabularyApi.findByDomain(ACCESS_DOMAIN)).thenReturn(Optional.of(accessGroupVocabulary()));
+
+        processor.postUpdate(group("Reviewers"));
+
+        verify(controlledVocabularyApi).update(any(GsrsControlledVocabularyDTO.class));
+    }
+
+    private static GsrsControlledVocabularyDTO accessGroupVocabulary() {
+        ArrayList<GsrsVocabularyTermDTO> terms = new ArrayList<>();
+        terms.add(GsrsVocabularyTermDTO.builder()
+                .display("protected")
+                .value("protected")
                 .hidden(true)
                 .build());
 
-        GsrsControlledVocabularyDTO vocab =GsrsControlledVocabularyDTO.builder()
+        return GsrsControlledVocabularyDTO.builder()
                 .domain(ACCESS_DOMAIN)
-                .terms(list)
-                .vocabularyTermType("ix.ginas.models.v1.ControlledVocabulary") // "gsrs.cv.api.GsrsVocabularyTermDTO")//ix.ginas.models.v1.VocabularyTerm"
+                .terms(terms)
+                .vocabularyTermType("ix.ginas.models.v1.ControlledVocabulary")
                 .build();
-                
-        controlledVocabularyApi.create(vocab);
-        log.trace("createCv worked");
     }
 
-    @Autowired(required = true)
-    private ControlledVocabularyApi controlledVocabularyApi;
-
-    @Test
-    public void testProcessGroup() throws IOException {
-        //verify that a term is added to the CV when necessary
-        GsrsControlledVocabularyDTO vocabBefore= (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
-        long totalBefore =vocabBefore.getTerms().size();
-        Group labWorkers= new Group();
-        labWorkers.name="Lab Workers";
-        processor.postPersist(labWorkers);
-        GsrsControlledVocabularyDTO vocabAfter = (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
-        Assertions.assertTrue(vocabAfter.getTerms().stream().anyMatch(t-> t.getValue().equalsIgnoreCase(labWorkers.name)));
-        long totalAfter = vocabAfter.getTerms().size();
-        Assertions.assertEquals(totalAfter, (totalBefore+1));
+    private static Group group(String name) {
+        Group group = new Group();
+        group.name = name;
+        return group;
     }
-
-     @Test
-    public void testProcessGroupNotAdded() throws IOException {
-        //verify that when the CV already contains an item for the group, a duplicate is NOT created
-        GsrsControlledVocabularyDTO vocabBefore= (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
-        long totalBefore =vocabBefore.getTerms().size();
-        Group protectedGroup= new Group();
-        protectedGroup.name="protected";
-        processor.postPersist(protectedGroup);
-        GsrsControlledVocabularyDTO vocabAfter = (GsrsControlledVocabularyDTO) controlledVocabularyApi.findByDomain(ACCESS_DOMAIN).get();
-        Assertions.assertEquals(1, vocabAfter.getTerms().stream().filter(t-> t.getValue().equalsIgnoreCase(protectedGroup.name)).count());
-        long totalAfter = vocabAfter.getTerms().size();
-        Assertions.assertEquals(totalAfter, totalBefore);
-    }
-
 }
