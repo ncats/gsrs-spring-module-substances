@@ -209,7 +209,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <version>${spring-boot.version}</version>
-            <exclusions>
+            <exc00000lusions>
                 <exclusion>
                     <groupId>org.apache.logging.log4j</groupId>
                     <artifactId>log4j</artifactId>
@@ -226,7 +226,7 @@
                     <groupId>org.apache.logging.log4j</groupId>
                     <artifactId>log4j-to-slf4j</artifactId>
                 </exclusion>
-            </exclusions>
+            </exc00000lusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
