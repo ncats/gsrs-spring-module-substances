@@ -153,7 +153,7 @@
                     <plugin>
                         <groupId>org.projectlombok</groupId>
                         <artifactId>lombok-maven-plugin</artifactId>
-                        <version>1.18.20.0</version>
+                        <version>1.18.22.0</version>
                         <executions>
                             <execution>
                                 <phase>generate-sources</phase>
@@ -164,6 +164,7 @@
                                     <sourceDirectory>${project.basedir}/src/main/java</sourceDirectory>
                                     <outputDirectory>${project.build.directory}/generated-sources/delombok</outputDirectory>
                                     <addOutputDirectory>false</addOutputDirectory>
+									<encoding>UTF-8</encoding>
                                 </configuration>
                             </execution>
                         </executions>
