@@ -2,7 +2,6 @@ package example.substance.service;
 
 import gsrs.module.substance.services.IupacNameService;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Assertions;

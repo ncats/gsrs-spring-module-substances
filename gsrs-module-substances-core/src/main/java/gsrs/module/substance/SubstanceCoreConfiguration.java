@@ -25,6 +25,7 @@ import ix.core.search.bulk.UserSavedListService;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
 import ix.ginas.utils.SubstanceFieldNameDecoratorConfiguration;
+import ix.ncats.resolvers.PubChemNameListResolver;
 import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
@@ -71,7 +72,9 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ChemicalUtils.class,
         SubstanceEntityServiceConfiguration.class,
         UserRoleConfiguration.class,
-        RolesConfig.class
+        RolesConfig.class,
+        IupacNameService.class,
+        PubChemNameListResolver.class
 })
 public class SubstanceCoreConfiguration {
 

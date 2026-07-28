@@ -17,13 +17,7 @@ import java.util.List;
 
 @Slf4j
 public class PubChemNameListResolver implements Resolver<List<String>> {
-    public static final String PUBCHEM_RESOLVER =
-            "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name";
-    public static final String PUBCHEM_RESOLVER_SID =
-            "https://pubchem.ncbi.nlm.nih.gov/rest/pug/substance/name";
-
     private static final  String PUG      = "https://pubchem.ncbi.nlm.nih.gov/rest/pug";
-    private static final String PUG_VIEW = "https://pubchem.ncbi.nlm.nih.gov/rest/pug_view";
 
     @Override
     public Class<List<String>> getType() {
@@ -38,7 +32,6 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
     @Override
     public List<String> resolve(String name) {
         //this name is really SMILES
-
         return List.of();
     }
 
@@ -72,17 +65,16 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
                     cids.add(cidNode.asText());
                 }
             }
-            if(cids== null ){
-                log.warn("No CID found for SMILES {}", smiles);
-            } else if(cids.size()==1) {
-                System.out.printf("cid: %s%n", cids.get(0));
-                return getIupacNameForCid(cids.get(0));
+            if(cids.size()==1) {
+                log.trace("cid: {}}", cids.get(0));
+                if( cids.get(0) != "0") {
+                    return getIupacNameForCid(cids.get(0));
+                }
             }
-            log.warn("search for {} returned nothing", smiles);
+            log.warn("search for {} returned nothing useful", smiles);
         }
         else {
             log.info("Error looking up {}: {}", smiles, response.body());
-            System.out.printf("Error looking up %s: %s%n", smiles, response.body());
         }
         return null;
     }
