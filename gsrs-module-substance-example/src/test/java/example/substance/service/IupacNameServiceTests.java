@@ -45,8 +45,9 @@ public class IupacNameServiceTests {
         return baseSubstance;
     }
     
-    private Substance createSubstanceWithoutPubchemReference() {
+    public static Substance createSubstanceWithoutPubchemReference() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        builder.addName("dibenzylmethane");
         builder.setStructureWithDefaultReference("c1ccccc1CCCc2ccccc2");
         Reference ref1 = new Reference();
         ref1.docType = "CHEBI";

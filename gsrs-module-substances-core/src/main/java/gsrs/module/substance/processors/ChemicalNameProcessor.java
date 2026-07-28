@@ -23,6 +23,7 @@ public class ChemicalNameProcessor implements EntityProcessor<Substance> {
             }
             catch (Exception ex){
                 log.error("Error looking up PubChem name for {}", obj.getOrGenerateUUID());
+                ex.printStackTrace();
             }
         }
     }
