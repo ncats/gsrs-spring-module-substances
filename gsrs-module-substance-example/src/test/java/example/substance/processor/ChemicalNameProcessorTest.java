@@ -14,11 +14,11 @@ import org.springframework.test.annotation.DirtiesContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static example.substance.service.IupacNameServiceTests.createSubstanceWithoutPubchemReference;
+import static example.testutilities.substanceUtility.createSubstanceWithoutPubchemReference;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class ChemicalNameProcessorTest extends AbstractSubstanceJpaFullStackEntityTest {
+class ChemicalNameProcessorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Test
     void prepersistTest() throws EntityProcessor.FailProcessingException {
