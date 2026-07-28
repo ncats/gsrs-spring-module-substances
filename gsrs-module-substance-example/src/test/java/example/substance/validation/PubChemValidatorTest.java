@@ -1,9 +1,9 @@
 package example.substance.validation;
 
 import example.GsrsModuleSubstanceApplication;
-import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.models.Group;
+import ix.core.chem.PubChemResult;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -13,11 +13,14 @@ import ix.ginas.utils.validation.validators.PubChemValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Collections;
+import java.util.List;
 
 @ActiveProfiles("test")
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
@@ -119,8 +122,17 @@ public class PubChemValidatorTest extends AbstractSubstanceJpaFullStackEntityTes
                 .setAccess(Collections.singleton(new Group("protected")))
                 .build();
 
-        PubChemValidator validator = new PubChemValidator();
-        ValidationResponse<Substance> response = validator.validate(chemAspirin, null);
+        PubChemResult result = new PubChemResult();
+        result.setInChIKey(chemAspirin.getStructure().getInChIKey());
+        result.setCID(2244);
+
+        ValidationResponse<Substance> response;
+        try (MockedStatic<gsrs.module.substance.utils.PubChemUtils> mocked = Mockito.mockStatic(gsrs.module.substance.utils.PubChemUtils.class)) {
+            mocked.when(() -> gsrs.module.substance.utils.PubChemUtils.lookupInChiKeys(Collections.singletonList(chemAspirin.getStructure().getInChIKey())))
+                    .thenReturn(Collections.singletonList(result));
+            PubChemValidator validator = new PubChemValidator();
+            response = validator.validate(chemAspirin, null);
+        }
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(m -> m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.WARNING) && m.getMessage().contains("marked non-public")));
     }
 
@@ -132,8 +144,17 @@ public class PubChemValidatorTest extends AbstractSubstanceJpaFullStackEntityTes
                 .setStructureWithDefaultReference(molfileAspirin)
                 .build();
 
-        PubChemValidator validator = new PubChemValidator();
-        ValidationResponse<Substance> response = validator.validate(chemAspirin, null);
+        PubChemResult result = new PubChemResult();
+        result.setInChIKey(chemAspirin.getStructure().getInChIKey());
+        result.setCID(2244);
+
+        ValidationResponse<Substance> response;
+        try (MockedStatic<gsrs.module.substance.utils.PubChemUtils> mocked = Mockito.mockStatic(gsrs.module.substance.utils.PubChemUtils.class)) {
+            mocked.when(() -> gsrs.module.substance.utils.PubChemUtils.lookupInChiKeys(Collections.singletonList(chemAspirin.getStructure().getInChIKey())))
+                    .thenReturn(Collections.singletonList(result));
+            PubChemValidator validator = new PubChemValidator();
+            response = validator.validate(chemAspirin, null);
+        }
         Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(m -> m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.WARNING) && m.getMessage().contains("marked non-public")));
     }
 
@@ -146,8 +167,13 @@ public class PubChemValidatorTest extends AbstractSubstanceJpaFullStackEntityTes
                 .setAccess(Collections.singleton(new Group("protected")))
                 .build();
 
-        PubChemValidator validator = new PubChemValidator();
-        ValidationResponse<Substance> response = validator.validate(chemWeird, null);
+        ValidationResponse<Substance> response;
+        try (MockedStatic<gsrs.module.substance.utils.PubChemUtils> mocked = Mockito.mockStatic(gsrs.module.substance.utils.PubChemUtils.class)) {
+            mocked.when(() -> gsrs.module.substance.utils.PubChemUtils.lookupInChiKeys(Collections.singletonList(chemWeird.getStructure().getInChIKey())))
+                    .thenReturn(Collections.emptyList());
+            PubChemValidator validator = new PubChemValidator();
+            response = validator.validate(chemWeird, null);
+        }
         Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(m -> m.getMessageType().equals(ValidationMessage.MESSAGE_TYPE.WARNING) && m.getMessage().contains("marked non-public")));
     }
 
