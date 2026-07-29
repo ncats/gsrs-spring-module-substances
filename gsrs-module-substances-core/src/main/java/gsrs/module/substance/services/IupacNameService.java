@@ -52,6 +52,7 @@ public class IupacNameService {
             pubchemReference = new Reference();
             pubchemReference.docType = PUBCHEM_REFERENCE_TYPE;
             pubchemReference.citation = PUBCHEM_REFERENCE_TYPE;
+            pubchemReference.publicDomain = true;
         }
         return pubchemReference;
     }
