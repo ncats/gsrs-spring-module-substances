@@ -18,7 +18,8 @@ public class IupacNameService {
     public final static String PUBCHEM_REFERENCE_TYPE = "PUBCHEM";
     private final static String IUPAC_NAME_LANGUAGE = "en";
 
-    public boolean ensureIupacName(ChemicalSubstance substance) throws IOException, InterruptedException {
+    public boolean ensureIupacName(ChemicalSubstance substance, String nameType, String nameLanguage)
+            throws IOException, InterruptedException {
         String iupacName = resolver.getNamesData(substance.getStructure().smiles);
         if(iupacName == null || iupacName.length() ==0) {
             log.info("no IUPAC name found for this substance");
@@ -32,12 +33,13 @@ public class IupacNameService {
         }
         Name iupacNameObject = new Name();
         iupacNameObject.name = iupacName;
-        iupacNameObject.type = "sys";
-        iupacNameObject.addLanguage(IUPAC_NAME_LANGUAGE);
+        iupacNameObject.type = nameType;
+        iupacNameObject.addLanguage(nameLanguage);
         iupacNameObject.assignOwner(substance);
         Reference newReference = findOrCreatePubchemReference(substance);
         iupacNameObject.addReference(newReference);
         substance.references.add(newReference);
+        newReference.setOwner(substance);
         substance.names.add(iupacNameObject);
         return true;
     }

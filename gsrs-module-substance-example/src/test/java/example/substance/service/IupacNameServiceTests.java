@@ -13,9 +13,9 @@ import java.util.stream.Collectors;
 import static example.testutilities.substanceUtility.createSubstanceWithPubchemReference;
 import static example.testutilities.substanceUtility.createSubstanceWithoutPubchemReference;
 
-public class IupacNameServiceTests {
+class IupacNameServiceTests {
 
-    private IupacNameService service = new IupacNameService();
+    private final IupacNameService service = new IupacNameService();
 
     @Test
     void testFindOrCreatePubchemReference() {
