@@ -143,7 +143,7 @@ public class ChemicalUtils {
         try {
             String path = structureHandlingConfiguration.getSaltFilePath();
             log.info("Trying to read salt file at path: " + path);
-            File file = new ClassPathResource(path).getFile();
+            File file = new File(path);
             Assert.assertTrue("input salt data file must exist! The path was: " + path, file.exists());
             List<String> lines = Files.readAllLines(file.toPath());
             for (String line : lines) {
