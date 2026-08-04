@@ -2,6 +2,7 @@ package ix.ncats.resolvers;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ix.core.models.PubChemResolutionResult;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class PubChemNameListResolver implements Resolver<List<String>> {
@@ -35,10 +37,11 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
         return List.of();
     }
 
-    public String getNamesData(String smiles) throws IOException, InterruptedException {
+    public PubChemResolutionResult getDataForChemical(String inchikey) throws IOException, InterruptedException {
 
-        String url = String.format("%s/compound/smiles/cids/JSON", PUG);
-        String smilesForm = "smiles=" + URLEncoder.encode(smiles, StandardCharsets.UTF_8);
+        PubChemResolutionResult result = new PubChemResolutionResult();
+        String url = String.format("%s/compound/inchikey/cids/JSON", PUG);
+        String smilesForm = "inchikey=" + URLEncoder.encode(inchikey, StandardCharsets.UTF_8);
         String contentTypeForPubChem = "application/x-www-form-urlencoded";
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
@@ -57,24 +60,26 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
         int status = response.statusCode();
         if( status>= 200 && status < 300) {
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode o= mapper.readTree(response.body());
-            JsonNode cidsNode =o.path("IdentifierList").path("CID");
-            List<String> cids = new ArrayList<>();
-            if (cidsNode.isArray()) {
-                for (JsonNode cidNode : cidsNode) {
-                    cids.add(cidNode.asText());
-                }
-            }
+            JsonNode cidsNode = mapper.readTree(response.body())
+                    .path("IdentifierList")
+                    .path("CID");
+
+            List<String> cids = StreamSupport.stream(cidsNode.spliterator(), false)
+                    .map(JsonNode::asText)
+                    .toList();
+
             if(cids.size()==1) {
                 log.trace("cid: {}}", cids.get(0));
+                result.setCid(cids.get(0));
                 if( cids.get(0) != "0") {
-                    return getIupacNameForCid(cids.get(0));
+                    result.setIupacName(getIupacNameForCid(cids.get(0)));
+                    return result;
                 }
             }
-            log.warn("search for {} returned nothing useful", smiles);
+            log.warn("search for {} returned nothing useful", inchikey);
         }
         else {
-            log.info("Error looking up {}: {}", smiles, response.body());
+            log.info("Error looking up {}: {}", inchikey, response.body());
         }
         return null;
     }

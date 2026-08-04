@@ -21,7 +21,7 @@ public class substanceUtility {
     public static Substance createSubstanceWithoutPubchemReference() {
         ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
         builder.addName("dibenzylmethane");
-        builder.setStructureWithDefaultReference("c1ccccc1CCCc2ccccc2");
+        builder.setStructureWithDefaultReference("C1=CC=CC=C1CCCC2=CC=CC=C2");
         Reference ref1 = new Reference();
         ref1.docType = "CHEBI";
         ref1.citation = "CHEBI:27732";

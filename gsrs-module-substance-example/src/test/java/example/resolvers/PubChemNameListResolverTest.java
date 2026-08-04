@@ -19,11 +19,20 @@ public class PubChemNameListResolverTest {
     }
 
     @Test
-    void getNameForSmilesTest() throws IOException, InterruptedException {
-        String smiles = "c1cccc(OC(C)=O)c1C(=O)O";
+    void getNameForInchiKeyTest() throws IOException, InterruptedException {
+        String inChIKey = "BSYNRYMUTXBXSQ-UHFFFAOYSA-N";
         PubChemNameListResolver resolver = new PubChemNameListResolver();
         String expectedName = "2-acetyloxybenzoic acid";
-        String name = resolver.getNamesData(smiles);
+        String name = resolver.getDataForChemical(inChIKey).getIupacName();
         Assertions.assertEquals(expectedName, name);
+    }
+
+    @Test
+    void getCidForInchiKeyTest() throws IOException, InterruptedException {
+        String smiles = "RWWYLEGWBNMMLJ-YSOARWBDSA-N";
+        PubChemNameListResolver resolver = new PubChemNameListResolver();
+        String expectedCid = "121304016";
+        String cid = resolver.getDataForChemical(smiles).getCid();
+        Assertions.assertEquals(expectedCid, cid);
     }
 }

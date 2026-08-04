@@ -29,7 +29,7 @@ class ChemicalNameProcessorTest extends AbstractSubstanceJpaFullStackEntityTest 
         Substance testSubstance = createSubstanceWithoutPubchemReference();
         List<String> namesBefore = testSubstance.names.stream()
                 .map(n->n.name)
-                .collect(Collectors.toList());
+                .toList();
         String expectedIupacName = "3-phenylpropylbenzene";
 
         ChemicalNameProcessor processor = new ChemicalNameProcessor();
@@ -40,7 +40,7 @@ class ChemicalNameProcessorTest extends AbstractSubstanceJpaFullStackEntityTest 
         processor.prePersist(testSubstance);
         List<String> namesAfter = testSubstance.names.stream()
                 .map(n->n.name)
-                .collect(Collectors.toList());
+                .toList();
         Assertions.assertEquals(namesAfter.size(), namesBefore.size()+1);
         Assertions.assertTrue(namesAfter.contains(expectedIupacName));
     }
@@ -51,7 +51,7 @@ class ChemicalNameProcessorTest extends AbstractSubstanceJpaFullStackEntityTest 
         ((ChemicalSubstance)testSubstance).getStructure().setAccess(Collections.singleton(new Group("protected")));
         List<String> namesBefore = testSubstance.names.stream()
                 .map(n->n.name)
-                .collect(Collectors.toList());
+                .toList();
         String expectedIupacName = "3-phenylpropylbenzene";
 
         ChemicalNameProcessor processor = new ChemicalNameProcessor();
@@ -63,7 +63,7 @@ class ChemicalNameProcessorTest extends AbstractSubstanceJpaFullStackEntityTest 
         processor.prePersist(testSubstance);
         List<String> namesAfter = testSubstance.names.stream()
                 .map(n->n.name)
-                .collect(Collectors.toList());
+                .toList();
         Assertions.assertEquals(namesAfter.size(), namesBefore.size());
         Assertions.assertFalse(namesAfter.contains(expectedIupacName));
     }

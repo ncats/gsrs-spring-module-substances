@@ -474,11 +474,6 @@ public class Structure extends BaseModel {
         log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}, opticalActivity: {}", this.stereoChemistry, this.opticalActivity);
         try {
 
-//        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
-//            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
-//            //handle non-epimers
-//            return Collections.singletonList(getInChIKey());
-//        }
             if( this.opticalActivity != Optical.PLUS_MINUS || this.definedStereo.intValue() == 0) {
                 return Collections.singletonList(getInChIKey());
             }
