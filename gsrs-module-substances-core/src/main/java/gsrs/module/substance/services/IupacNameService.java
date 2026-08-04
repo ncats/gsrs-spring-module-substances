@@ -18,6 +18,7 @@ public class IupacNameService {
     private final static String IUPAC_NAME_LANGUAGE = "en";
     private final static String PUBCHEM_CODE_SYSTEM = "PUBCHEM";
     private final static String PUBCHEM_CODE_TYPE = "PRIMARY";
+    private final static String PUBCHEM_CODE_URL_STEM = "https://pubchem.ncbi.nlm.nih.gov/compound/";
 
     public boolean ensureIupacName(ChemicalSubstance substance, String nameType, String nameLanguage)
             throws IOException, InterruptedException {
@@ -31,6 +32,10 @@ public class IupacNameService {
             return false;
         }
         PubChemResolutionResult result= resolver.getDataForChemical(inchiKeys.get(0));
+        if(result==null) {
+            log.info("No PubChem info found for substances");
+            return false;
+        }
         String iupacName = result.getIupacName();
         if(iupacName == null || iupacName.length() ==0) {
             log.info("no IUPAC name found for this substance");
@@ -53,12 +58,13 @@ public class IupacNameService {
         newReference.setOwner(substance);
         substance.names.add(iupacNameObject);
         boolean foundCode = substance.codes.stream()
-                .anyMatch(c->c.code.equalsIgnoreCase(result.getCid()) && c.codeSystem.equalsIgnoreCase("pubchem"));
+                .anyMatch(c->c.code.equalsIgnoreCase(result.getCid()) && c.codeSystem.equalsIgnoreCase(PUBCHEM_CODE_SYSTEM));
         if(!foundCode) {
             Code cidCode = new Code();
             cidCode.codeSystem= PUBCHEM_CODE_SYSTEM;
             cidCode.code = result.getCid();
             cidCode.type=PUBCHEM_CODE_TYPE;
+            cidCode.url = PUBCHEM_CODE_URL_STEM + result.getCid();
             cidCode.setOwner(substance);
             substance.codes.add(cidCode);
         } else {
