@@ -36,14 +36,8 @@ final class EmaSmsFhirTestData {
         return c;
     }
 
-    static Object configuration() {
-        Object cfg;
-        try {
-            Class<?> cfgClass = Class.forName("gsrs.module.substance.misc.emasmsfhir.EmaSmsFhirConfiguration");
-            cfg = cfgClass.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException("EMA SMS FHIR extension classes are not available on the core test classpath", e);
-        }
+    static EmaSmsFhirConfiguration configuration() {
+        EmaSmsFhirConfiguration cfg = new EmaSmsFhirConfiguration();
 
         Map<String, Map<String, String>> codeConfigs = new HashMap<>();
         codeConfigs.put("ecListNumber", codeConfig("EC-TID", "ECHA (EC/EINECS)", "https://sms/codes/ec"));
@@ -51,14 +45,14 @@ final class EmaSmsFhirTestData {
         codeConfigs.put("innNumber", codeConfig("INN-TID", "INN", "https://sms/codes/inn"));
         codeConfigs.put("smsId", codeConfig("SMS-TID", "SMS ID", "https://sms/codes/sms"));
         codeConfigs.put("unii", codeConfig("UNII-TID", "FDA UNII", "https://sms/codes/unii"));
-        invokeSetter(cfg, "setCodeConfigs", codeConfigs);
+        cfg.setCodeConfigs(codeConfigs);
 
         Map<String, Map<String, String>> substanceTypeConfigs = new HashMap<>();
         Map<String, String> chemical = new HashMap<>();
         chemical.put("SMS Term ID", "CHEM-TID");
         chemical.put("SMS URL", "https://sms/types/chemical");
         substanceTypeConfigs.put("chemical", chemical);
-        invokeSetter(cfg, "setSubstanceTypeConfigs", substanceTypeConfigs);
+        cfg.setSubstanceTypeConfigs(substanceTypeConfigs);
 
         Map<String, Map<String, String>> miscDefaults = new HashMap<>();
         Map<String, String> nameLanguageCoding = new HashMap<>();
@@ -71,16 +65,8 @@ final class EmaSmsFhirTestData {
         nameStatusCoding.put("display", "Official");
         miscDefaults.put("name_status_coding", nameStatusCoding);
 
-        invokeSetter(cfg, "setMiscDefaultConfigs", miscDefaults);
+        cfg.setMiscDefaultConfigs(miscDefaults);
         return cfg;
-    }
-
-    private static void invokeSetter(Object target, String methodName, Object value) {
-        try {
-            target.getClass().getMethod(methodName, Map.class).invoke(target, value);
-        } catch (Exception e) {
-            throw new RuntimeException("Could not call method " + methodName + " on " + target.getClass().getName(), e);
-        }
     }
 
     static void setField(Object target, String fieldName, Object value) {
@@ -100,22 +86,6 @@ final class EmaSmsFhirTestData {
         throw new IllegalArgumentException("Could not find field: " + fieldName);
     }
 
-    static Object getField(Object target, String fieldName) {
-        Class<?> current = target.getClass();
-        while (current != null) {
-            try {
-                java.lang.reflect.Field field = current.getDeclaredField(fieldName);
-                field.setAccessible(true);
-                return field.get(target);
-            } catch (NoSuchFieldException ignored) {
-                current = current.getSuperclass();
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        throw new IllegalArgumentException("Could not find field: " + fieldName);
-    }
-
     private static Map<String, String> codeConfig(String smsTermId, String gsrsCvTerm, String smsUrl) {
         Map<String, String> config = new HashMap<>();
         config.put("smsTermId", smsTermId);
@@ -124,3 +94,4 @@ final class EmaSmsFhirTestData {
         return config;
     }
 }
+

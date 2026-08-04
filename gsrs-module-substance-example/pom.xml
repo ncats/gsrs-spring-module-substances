@@ -72,7 +72,7 @@
          <quarantine.hibernate.id.exclude.21>__quarantine_disabled__/UpdateChemicalWithPersistedMoietyAmountTest.java</quarantine.hibernate.id.exclude.21>
          <quarantine.hibernate.id.exclude.22>__quarantine_disabled__/UpdateNameTest.java</quarantine.hibernate.id.exclude.22>
          <quarantine.hibernate.id.exclude.23>__quarantine_disabled__/CreateChemicalWithClientSuppliedStructureIdsTest.java</quarantine.hibernate.id.exclude.23>
-     </properties>
+    </properties>
 
     <build>
         <plugins>
@@ -125,8 +125,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>11</source>
-                    <target>11</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
             <!-- Uncomment this for maven public release deployment start
@@ -193,6 +193,7 @@
 
     <profiles>
         <profile>
+
             <id>test-no-fork</id>
             <build>
                 <plugins>
@@ -437,6 +438,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <version>2.1.214</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -582,17 +584,17 @@
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-<!--            <version>${jackson.version}</version>-->
+            <version>${jackson.version.core}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-<!--            <version>${jackson.version}</version>-->
+            <version>${jackson.version.databind}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
-<!--            <version>${jackson.version}</version>-->
+            <version>${jackson.version.annotations}</version>
         </dependency>
     </dependencies>
 </project>

@@ -1,5 +1,8 @@
 package example.substance;
 
+// __GETANEH__ please review 
+// Alex went with springBoot3x version
+
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
