@@ -15,13 +15,13 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>3.5.7</version>
+        <version>4.1.0</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <groupId>gov.nih.ncats</groupId>
     <artifactId>gsrs-module-applications</artifactId>
-    <version>3.2.5-SNAPSHOT</version>
+    <version>3.2.6-SNAPSHOT</version>
     <name>GSRS Application Module</name>
     <description>GSRS Application Module for Spring Boot</description>
 
@@ -31,13 +31,13 @@
 
     <properties>
         <java.version>17</java.version>
-        <spring-boot.version>3.5.7</spring-boot.version>
-        <spring-cloud.version>2025.0.0</spring-cloud.version>
-        <gsrs.version>3.2.5-SNAPSHOT</gsrs.version>
-        <gsrs.application.version>3.2.5-SNAPSHOT</gsrs.application.version>
+        <spring-boot.version>4.1.0</spring-boot.version>
+        <spring-cloud.version>2025.1.0</spring-cloud.version>
+        <gsrs.version>3.2.6-SNAPSHOT</gsrs.version>
+        <gsrs.application.version>3.2.6-SNAPSHOT</gsrs.application.version>
         <log4j2.version>2.22.1</log4j2.version>
         <!-- TO BE REMOVE -->
-        <gsrs.substance.version>3.2.5-SNAPSHOT</gsrs.substance.version>
+        <gsrs.substance.version>3.2.6-SNAPSHOT</gsrs.substance.version>
     </properties>
 
     <build>
