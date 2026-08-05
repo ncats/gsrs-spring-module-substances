@@ -136,10 +136,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--        <dependency>-->
-        <!--            <groupId>org.springframework.cloud</groupId>-->
-        <!--            <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>-->
-        <!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
@@ -313,11 +309,6 @@
             <artifactId>jsoup</artifactId>
             <version>1.17.1</version>
         </dependency>
-        <!-- dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>5.5</version>
-        </dependency -->
 
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
@@ -434,6 +425,10 @@
             <groupId>gov.fda.gsrs</groupId>
             <artifactId>Featureize-Nitrosamines</artifactId>
             <version>0.0.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-restclient</artifactId>
         </dependency>
     </dependencies>
 </project>

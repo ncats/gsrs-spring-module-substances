@@ -9,7 +9,8 @@ import gsrs.substances.dto.NameDTO;
 import gsrs.substances.dto.ReferenceDTO;
 import gsrs.substances.dto.SubstanceDTO;
 import gsrs.substances.util.SubstanceKey;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.restclient.RestTemplateBuilder;
+
 import org.springframework.http.ResponseEntity;
 
 import java.io.IOException;
