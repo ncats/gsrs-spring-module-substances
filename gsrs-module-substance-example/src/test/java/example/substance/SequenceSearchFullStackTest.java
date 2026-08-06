@@ -31,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
@@ -40,6 +39,7 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.io.IOException;
@@ -116,11 +116,11 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     @Autowired
     private TestGsrsValidatorFactory testGsrsValidatorFactory;
 
-    @SpyBean
+    @MockitoSpyBean
     private SubstanceProcessor substanceProcessor;
-    @SpyBean
+    @MockitoSpyBean
     private RelationshipProcessor relationshipProcessor;
-    @SpyBean
+    @MockitoSpyBean
     private ReferenceProcessor referenceProcessor;
 
     @Autowired
@@ -129,7 +129,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     @Autowired
     SequenceIndexerService seqIndexer;
 
-    @SpyBean
+    @MockitoSpyBean
     private RelationshipService relationshipService;
 
 

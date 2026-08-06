@@ -8,7 +8,6 @@ import gov.hhs.gsrs.products.api.ProductsApi;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
 
 @Configuration
 public class FdaSubstanceExtensionConfiguration {
@@ -35,5 +34,5 @@ public class FdaSubstanceExtensionConfiguration {
         return new ClinicalTrialsEuropeApi(clinicalTrialsEuropeApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialsEuropeApiConfiguration.getBaseURL(), mapper);
     }
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 }

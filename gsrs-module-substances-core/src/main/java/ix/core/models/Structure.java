@@ -46,7 +46,7 @@ public class Structure extends BaseModel {
     @GeneratedValue(generator = "NullUUIDGenerator")
     // Maintain backwards compatibility with legacy GSRS varchar UUID storage.
     @JavaType(TrimmedUUIDJavaType.class)
-    @Convert(converter = TrimmedUUIDStringConverter.class)
+    //@Convert(converter = TrimmedUUIDStringConverter.class)
     @Column(length =40, updatable = false)
     public UUID id;
 
