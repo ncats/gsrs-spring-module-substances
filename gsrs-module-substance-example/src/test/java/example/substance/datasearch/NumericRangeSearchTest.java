@@ -20,6 +20,7 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Tag("fullstack")
 @Slf4j
 public class NumericRangeSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
     

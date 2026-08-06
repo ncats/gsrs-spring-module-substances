@@ -19,7 +19,7 @@ import ix.ginas.models.GinasCommonSubData;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;

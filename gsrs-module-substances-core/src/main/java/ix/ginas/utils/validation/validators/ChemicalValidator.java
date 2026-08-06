@@ -19,6 +19,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -149,7 +150,14 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
             //GSRS-1648 deduplicate messages in moieties
             DeduplicateCallback deduplicateCallback = new DeduplicateCallback(callback);
-            if (cs.moieties != null
+            if (rootStructureMolfileChanged(cs, objold)) {
+                preserveRootMolfileForSingleMoiety(payload, moietiesForSub);
+                cs.moieties = moietiesForSub;
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .INFO_MESSAGE("Chemical structure changed. Moieties will be regenerated from the submitted structure.")
+                        .appliableChange(true);
+                callback.addMessage(mes, ()-> cs.moieties = moietiesForSub);
+            } else if (cs.moieties != null
             		&& !cs.moieties.isEmpty()
                     && cs.moieties.size() != moietiesForSub.size()) {
 
@@ -198,6 +206,25 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
         }
 
+    }
+
+    private void preserveRootMolfileForSingleMoiety(String rootMolfile, List<Moiety> moietiesForSub) {
+        if (rootMolfile == null || moietiesForSub == null || moietiesForSub.size() != 1) {
+            return;
+        }
+        Moiety moiety = moietiesForSub.get(0);
+        if (moiety != null && moiety.structure != null) {
+            moiety.structure.molfile = rootMolfile;
+        }
+    }
+
+    private boolean rootStructureMolfileChanged(ChemicalSubstance updated, Substance oldSubstance) {
+        if (!(oldSubstance instanceof ChemicalSubstance oldChemical)) {
+            return false;
+        }
+        String oldMolfile = oldChemical.getStructure() == null ? null : oldChemical.getStructure().molfile;
+        String updatedMolfile = updated.getStructure() == null ? null : updated.getStructure().molfile;
+        return !Objects.equals(oldMolfile, updatedMolfile);
     }
 
     private void verifyValidAtoms(Supplier<Chemical> chemical, ValidatorCallback callback) {

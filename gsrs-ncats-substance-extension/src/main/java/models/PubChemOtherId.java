@@ -3,15 +3,17 @@ package models;
 import gsrs.model.AbstractGsrsEntity;
 import ix.core.models.IndexableRoot;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @IndexableRoot
 //@Backup
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Entity
 @Table(name="PUBCHEM_ID")
 public class PubChemOtherId extends AbstractGsrsEntity {

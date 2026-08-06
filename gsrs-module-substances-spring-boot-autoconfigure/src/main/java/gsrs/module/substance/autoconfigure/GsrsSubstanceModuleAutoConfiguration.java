@@ -18,12 +18,13 @@ import gsrs.service.PayloadService;
 import ix.seqaln.service.SequenceIndexerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
 
-@Configuration
+@AutoConfiguration
 @EnableConfigurationProperties
 //@EnableEurekaClient
 @EnableGsrsAkka

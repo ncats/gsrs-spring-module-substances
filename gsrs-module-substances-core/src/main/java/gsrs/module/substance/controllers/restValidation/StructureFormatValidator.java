@@ -1,7 +1,7 @@
 package gsrs.module.substance.controllers.restValidation;
 
-import javax.validation.ConstraintValidator;
-import javax.validation.ConstraintValidatorContext;
+import jakarta.validation.ConstraintValidator;
+import jakarta.validation.ConstraintValidatorContext;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;

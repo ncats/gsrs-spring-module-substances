@@ -7,9 +7,9 @@ import ix.ginas.models.v1.Substance;
 
 import org.springframework.stereotype.Service;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-import javax.persistence.Query;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
 import java.io.IOException;
 import java.util.Optional;
 import java.util.UUID;

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flipkart.zjsonpatch.JsonDiff;
 import ix.ginas.models.v1.GinasChemicalStructure;
+import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
 import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
@@ -30,7 +31,7 @@ public class MoietyDiffTest{
 
         old.uuid = uuid;
         old.structure = new GinasChemicalStructure();
-        old.structure.smiles = "c1cccc1";
+        old.structure.smiles = "CC";
         old.structure.id = uuid2;
 
         old.enforce();
@@ -38,7 +39,7 @@ public class MoietyDiffTest{
         Moiety newMoiety = new Moiety();
         newMoiety.uuid = uuid;
         newMoiety.structure = new GinasChemicalStructure();
-        newMoiety.structure.smiles = "c1cccc1OH";
+        newMoiety.structure.smiles = "CCO";
         newMoiety.structure.id = uuid2;
 
         newMoiety.enforce();
@@ -47,6 +48,38 @@ public class MoietyDiffTest{
         patch.apply(old);
 
         JsonMatches(newMoiety, old);
+    }
+
+    @Test
+    public void changeMoietyFieldWhenSerializedIdDiffersFromEntityKey() throws Exception {
+        UUID serializedStructureId = UUID.randomUUID();
+        String jpaKey = UUID.randomUUID().toString();
+        UUID moietyUuid = UUID.randomUUID();
+
+        ChemicalSubstance oldChemical = new ChemicalSubstance();
+        oldChemical.uuid = UUID.randomUUID();
+        oldChemical.moieties.add(moiety(serializedStructureId, jpaKey, moietyUuid, "old-digest"));
+
+        ChemicalSubstance newChemical = new ChemicalSubstance();
+        newChemical.uuid = oldChemical.uuid;
+        newChemical.moieties.add(moiety(serializedStructureId, jpaKey, moietyUuid, "new-digest"));
+
+        PojoPatch<ChemicalSubstance> patch = PojoDiff.getDiff(oldChemical, newChemical);
+        patch.apply(oldChemical);
+
+        assertEquals("new-digest", oldChemical.moieties.get(0).structure.digest);
+        assertEquals(jpaKey, oldChemical.moieties.get(0).innerUuid);
+    }
+
+    private Moiety moiety(UUID structureId, String innerUuid, UUID moietyUuid, String digest) {
+        Moiety moiety = new Moiety();
+        moiety.uuid = moietyUuid;
+        moiety.innerUuid = innerUuid;
+        moiety.structure = new GinasChemicalStructure();
+        moiety.structure.id = structureId;
+        moiety.structure.digest = digest;
+        moiety.structure.smiles = "CC";
+        return moiety;
     }
 
     private void JsonMatches(Object expected, Object actual){

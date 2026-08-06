@@ -11,6 +11,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,6 +41,7 @@ import ix.ginas.utils.validation.validators.StandardNameDuplicateValidator;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@Tag("fullstack")
 public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
         @Autowired
@@ -284,6 +286,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 name2.languages.add(new Keyword("en"));
                 name2.languages.add(new Keyword("fr"));
                 s1.names.add(name2);
+                s1.getOrGenerateUUID();
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
                 ValidationResponse<Substance> response = validator.validate(s1, null);
@@ -319,6 +322,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 name2.languages.add(new Keyword("en"));
                 name2.languages.add(new Keyword("fr"));
                 s1.names.add(name2);
+                s1.getOrGenerateUUID();
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
                 ValidationResponse<Substance> response = validator.validate(s1, null);

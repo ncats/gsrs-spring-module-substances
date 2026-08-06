@@ -39,7 +39,7 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         ChemicalSubstanceBuilder chemicalSubstanceBuilder = new ChemicalSubstanceBuilder();
         String mXyleneName ="m xylene";
         chemicalSubstanceBuilder.addName(mXyleneName);
-        chemicalSubstanceBuilder.setStructureWithDefaultReference("c1(C)cc(C)ccc1");
+        chemicalSubstanceBuilder.setStructureWithDefaultReference("C1(C)=CC(C)=CC=C1");
         UUID initialmXyleneUuid= UUID.randomUUID();
         chemicalSubstanceBuilder.setUUID(initialmXyleneUuid);
         ChemicalSubstance mXylene = chemicalSubstanceBuilder.build();
@@ -51,7 +51,7 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         String pXyleneName="p xylene";
         pXyleneBuilder.addName(pXyleneName);
         UUID initialpXyleneUuid= UUID.randomUUID();
-        pXyleneBuilder.setStructureWithDefaultReference("c1(C)ccc(C)cc1");
+        pXyleneBuilder.setStructureWithDefaultReference("C1(C)=CC=C(C)C=C1");
         pXyleneBuilder.setUUID(initialpXyleneUuid);
         String relationshipType = "STRUCTURAL ISOMER->OTHER STRUCTURAL ISOMER";
         pXyleneBuilder.addRelationshipTo(mXylene, relationshipType);
@@ -97,7 +97,7 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         ChemicalSubstanceBuilder chemicalSubstanceBuilder = new ChemicalSubstanceBuilder();
         String mXyleneName ="m xylene";
         chemicalSubstanceBuilder.addName(mXyleneName);
-        chemicalSubstanceBuilder.setStructureWithDefaultReference("c1(C)cc(C)ccc1");
+        chemicalSubstanceBuilder.setStructureWithDefaultReference("C1(C)=CC(C)=CC=C1");
         UUID initialmXyleneUuid= UUID.randomUUID();
         chemicalSubstanceBuilder.setUUID(initialmXyleneUuid);
         ChemicalSubstance mXylene = chemicalSubstanceBuilder.build();
@@ -109,7 +109,7 @@ public class SubstanceSynchronizerTest extends AbstractSubstanceJpaFullStackEnti
         String pXyleneName="p xylene";
         pXyleneBuilder.addName(pXyleneName);
         UUID initialpXyleneUuid= UUID.randomUUID();
-        pXyleneBuilder.setStructureWithDefaultReference("c1(C)ccc(C)cc1");
+        pXyleneBuilder.setStructureWithDefaultReference("C1(C)=CC=C(C)C=C1");
         pXyleneBuilder.setUUID(initialpXyleneUuid);
 
         ChemicalSubstance pXylene = pXyleneBuilder.build();

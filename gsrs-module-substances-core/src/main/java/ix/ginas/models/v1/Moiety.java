@@ -1,6 +1,8 @@
 package ix.ginas.models.v1;
 
+import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import ix.core.SingleParent;
@@ -10,9 +12,9 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.NoIdGinasCommonSubData;
 import ix.ginas.models.serialization.MoietyDeserializer;
 import ix.ginas.models.utils.JSONEntity;
-import org.hibernate.annotations.Type;
+import ix.utils.pojopatch.PojoDiffAware;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -29,19 +31,17 @@ import java.util.UUID;
 @Table(name = "ix_ginas_moiety", indexes = {@Index(name = "moiety_owner_index", columnList = "owner_uuid")})
 @SingleParent
 //@JsonIgnoreProperties({ "id" })
-public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>{
-	public static String JSON_NULL="JSON_NULL";
-	/**
-	 * The UUID of this moiety
-	 */
+public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>, PojoDiffAware {
+    public static String JSON_NULL="JSON_NULL";
+    /**
+     * The UUID of this moiety
+     */
 
-	@Type(type = "uuid-char" )
-	@Column(length =40, updatable = false, unique = true)
-	public UUID uuid;
+    public UUID uuid;
 
     @ManyToOne(cascade = CascadeType.PERSIST)
     @JsonIgnore
-	@ParentReference
+    @ParentReference
     private ChemicalSubstance owner;
 
     public ChemicalSubstance getOwner(){
@@ -79,17 +79,34 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
     @PrePersist
     @PreUpdate
     public void enforce(){
-    	if(structure.id==null){
-    		structure.id=UUID.randomUUID();
-    	}
-    	this.innerUuid=structure.id.toString();
+        if (structure != null && structure.id != null) {
+            this.innerUuid = structure.id.toString();
+        } else if (this.innerUuid == null) {
+            this.innerUuid = UUID.randomUUID().toString();
+        }
     	if(uuid==null){
     		uuid= UUID.randomUUID();
 		}
     }
-	public String fetchGlobalId() {
-		return this.uuid == null ? null : this.uuid.toString();
-	}
+    public String fetchGlobalId() {
+        return this.uuid == null ? null : this.uuid.toString();
+    }
+
+    @Override
+    public boolean pojoDiffEquivalentIdTo(String id) {
+        if (id == null || id.isBlank()) {
+            return false;
+        }
+        String normalizedId = id.trim();
+        return normalizedId.equals(innerUuid)
+                || (uuid != null && normalizedId.equals(uuid.toString()))
+                || (structure != null && structure.id != null && normalizedId.equals(structure.id.toString()));
+    }
+
+    @Indexable()
+    public UUID getUuid() {
+        return uuid;
+    }
 	/**
 	 * Set the Count {@link Amount} only if the count
 	 * is not already set.  If you really want o
@@ -150,13 +167,32 @@ public class Moiety extends NoIdGinasCommonSubData implements Comparable<Moiety>
 	
 	
 
-	public UUID getUUID(){
+	@JsonIgnore
+    public UUID getUUID(){
 		if(this.innerUuid!=null){
-			return UUID.fromString(this.innerUuid);
+			return UUID.fromString(this.innerUuid.trim());
 		}else{
 			return null;
 		}
 	}
+
+    /**
+     * Preserve the legacy wire format where a moiety's top-level "uuid"
+     * aliases the unwrapped structure id. The frontend render path expects
+     * this field to be the renderable structure identifier.
+     */
+    @JsonGetter("uuid")
+    public UUID getJsonUuid() {
+        if (structure != null && structure.id != null) {
+            return structure.id;
+        }
+        return uuid;
+    }
+
+    @JsonSetter("uuid")
+    public void setJsonUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
 	
 //	@Override
 //	public void forceUpdate() {
