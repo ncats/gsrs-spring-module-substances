@@ -7,7 +7,6 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
@@ -16,9 +15,6 @@ import org.springframework.core.io.ClassPathResource;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
 
 @Slf4j
@@ -69,13 +65,10 @@ public class ImageUtilitiesTest {
 
     @Test
     public void resizeImageTest1() {
-        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        String imagePath ="testImage/puppy1.png";
         try {
-            URL fileUrl = new URL(imageUrl);
-            URLConnection connection = fileUrl.openConnection();
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0"); // Mimic a real browser
-            InputStream is = connection.getInputStream();
-            byte[] imageBytes = IOUtils.toByteArray(is);
+            File imageFile = new ClassPathResource(imagePath).getFile();
+            byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 50, 50, "jpg");
 
             File basicFile = File.createTempFile ("del2Resized", "jpg");
@@ -85,7 +78,7 @@ public class ImageUtilitiesTest {
             Assertions.assertTrue(resizedBytes.length>0);
         }
         catch (IOException e) {
-            System.err.printf ("Failed while reading bytes from %s: %s", imageUrl, e.getMessage());
+            System.err.printf ("Failed while reading bytes from %s: %s", imagePath, e.getMessage());
             e.printStackTrace ();
             Assertions.fail("error processing image fails test");
         }
@@ -113,13 +106,10 @@ public class ImageUtilitiesTest {
 
     @Test
     public void resizeImageTest3() {
-        String imageUrl ="https://upload.wikimedia.org/wikipedia/commons/1/1d/Feldspar-Group-291254.jpg";
+        String imagePath ="testImage/puppy1.png";
         try {
-            URL fileUrl = new URL(imageUrl);
-            URLConnection connection = fileUrl.openConnection();
-            connection.setRequestProperty("User-Agent", "Mozilla/5.0"); // Mimic a real browser
-            InputStream is = connection.getInputStream();
-            byte[] imageBytes = IOUtils.toByteArray(is);
+            File imageFile = new ClassPathResource(imagePath).getFile();
+            byte[] imageBytes = Files.readAllBytes(imageFile.toPath());
             byte[] resizedBytes= ImageUtilities.resizeImage(imageBytes, 50, 50, "jpeg");
             File basicFile = File.createTempFile ("del2Resized", "jpg");
             assert resizedBytes != null;
@@ -127,7 +117,7 @@ public class ImageUtilitiesTest {
             Assertions.assertTrue(resizedBytes.length>0);
         }
         catch (IOException e) {
-            System.err.printf ("Failed while reading bytes from %s: %s", imageUrl, e.getMessage());
+            System.err.printf ("Failed while reading bytes from %s: %s", imagePath, e.getMessage());
             e.printStackTrace ();
             Assertions.fail("error processing image fails test");
         }
