@@ -210,7 +210,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         substance.forceUpdate();
 
         //postUpdate/etc only gets called on flush, apparently?
-        return repository.saveAndFlush(getEntityManager().merge(substance));
+        EntityManager entityManager = getEntityManager();
+        Substance merged = entityManager.contains(substance) ? substance : entityManager.merge(substance);
+        entityManager.flush();
+        return merged;
     }
 
     @Override
@@ -711,9 +714,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         List<Moiety> replacementMoieties = updated instanceof ChemicalSubstance updatedChemical
                 ? (updatedChemical.getMoieties() == null ? null : new ArrayList<>(updatedChemical.getMoieties()))
                 : null;
-        Map<UUID, Name> existingNames = mapByUuid(managed.names);
+        List<Name> existingNameList = managed.names;
+        Map<UUID, Name> existingNames = mapByUuid(existingNameList);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
-        Map<UUID, NameOrg> existingNameOrgs = mapNameOrgsByUuid(managed.names);
+        Map<UUID, NameOrg> existingNameOrgs = mapNameOrgsByUuid(existingNameList);
         Map<UUID, Note> existingNotes = mapByUuid(managed.notes);
         Map<UUID, Property> existingProperties = mapByUuid(managed.properties);
         Map<UUID, Parameter> existingParameters = mapByUuid(flattenParameters(managed.properties));
@@ -775,8 +779,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 }
                 replacedChemical.setMoieties(replacementMoieties);
             }
-            replaced.names = reconcileManagedChildren(replaced.names, existingNames, child -> child.setOwner(replaced));
-            reconcileNestedNameOrgs(replaced.names, existingNameOrgs);
+            replaced.names = replaceListContents(existingNameList,
+                    reconcileManagedNames(replaced.names, existingNames, existingNameOrgs, replaced));
             replaced.codes = reconcileManagedChildren(replaced.codes, existingCodes, child -> child.setOwner(replaced));
             replaced.notes = reconcileManagedChildren(replaced.notes, existingNotes, child -> child.setOwner(replaced));
             replaced.properties = reconcileManagedChildren(replaced.properties, existingProperties, child -> child.setOwner(replaced));
@@ -850,20 +854,79 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return mapByUuid(nameOrgs);
     }
 
-    private void reconcileNestedNameOrgs(List<Name> names, Map<UUID, NameOrg> existingNameOrgs) throws IOException {
-        if (names == null) {
-            return;
+    private List<Name> reconcileManagedNames(List<Name> updatedNames,
+                                             Map<UUID, Name> existingNames,
+                                             Map<UUID, NameOrg> existingNameOrgs,
+                                             Substance owner) throws IOException {
+        if (updatedNames == null) {
+            return null;
         }
-        for (Name name : names) {
-            if (name == null) {
+        List<Name> reconciled = new ArrayList<>(updatedNames.size());
+        for (Name updatedName : updatedNames) {
+            if (updatedName == null) {
                 continue;
             }
-            List<NameOrg> reconciledNameOrgs = reconcileManagedChildren(name.nameOrgs, existingNameOrgs, child -> {
-            });
-            if (reconciledNameOrgs != null) {
-                name.nameOrgs = reconciledNameOrgs;
+            Name managedName = updatedName.getUuid() == null ? null : existingNames.get(updatedName.getUuid());
+            if (managedName != null && managedName != updatedName) {
+                List<NameOrg> updatedNameOrgs = updatedName.nameOrgs;
+                JsonNode updatedJson = objectMapper.valueToTree(updatedName);
+                if (updatedJson instanceof ObjectNode updatedObject) {
+                    updatedObject.remove("nameOrgs");
+                }
+                objectMapper.readerForUpdating(managedName).readValue(updatedJson);
+                managedName.setOwner(owner);
+                reconcileNameOrgCollection(managedName, updatedNameOrgs, existingNameOrgs);
+                reconciled.add(managedName);
+            } else {
+                updatedName.setOwner(owner);
+                reconcileNameOrgCollection(updatedName, updatedName.nameOrgs, existingNameOrgs);
+                reconciled.add(updatedName);
             }
         }
+        return reconciled;
+    }
+
+    private void reconcileNameOrgCollection(Name targetName,
+                                            List<NameOrg> updatedNameOrgs,
+                                            Map<UUID, NameOrg> existingNameOrgs) throws IOException {
+        if (targetName == null) {
+            return;
+        }
+        List<NameOrg> reconciledNameOrgs = reconcileManagedChildren(updatedNameOrgs, existingNameOrgs, child -> {
+        });
+        targetName.nameOrgs = replaceListContents(targetName.nameOrgs, reconciledNameOrgs);
+    }
+
+    private <T> List<T> replaceListContents(List<T> target, List<T> values) {
+        if (values == null) {
+            return null;
+        }
+        if (target == null) {
+            return values;
+        }
+        if (target != values) {
+            target.clear();
+            target.addAll(values);
+        }
+        return target;
+    }
+
+    private Object resolveManagedPatchValue(Object value,
+                                            Map<UUID, Name> existingNames,
+                                            Map<UUID, NameOrg> existingNameOrgs) {
+        if (value instanceof Name name && name.getUuid() != null) {
+            Name existingName = existingNames.get(name.getUuid());
+            if (existingName != null) {
+                return existingName;
+            }
+        }
+        if (value instanceof NameOrg nameOrg && nameOrg.getUuid() != null) {
+            NameOrg existingNameOrg = existingNameOrgs.get(nameOrg.getUuid());
+            if (existingNameOrg != null) {
+                return existingNameOrg;
+            }
+        }
+        return value;
     }
 
     private <T extends GinasCommonData> List<T> reconcileManagedChildren(List<T> updatedValues,
@@ -1331,6 +1394,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         }
                         if (usePojoPatch) {
                             normalizeUpdatedEntityForDiff(oldEntity, updatedEntity);
+                            List<Name> existingNameListForPatch = oldEntity.names;
+                            Map<UUID, Name> existingNamesForPatch = mapByUuid(existingNameListForPatch);
+                            Map<UUID, NameOrg> existingNameOrgsForPatch = mapNameOrgsByUuid(existingNameListForPatch);
                             PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
                             LogUtil.debug(() -> "changes = " + patch.getChanges());
                             final List<Object> removed = new ArrayList<Object>();
@@ -1348,6 +1414,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
                             }
                             oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
+                            oldEntity.names = replaceListContents(existingNameListForPatch,
+                                    reconcileManagedNames(oldEntity.names, existingNamesForPatch, existingNameOrgsForPatch, oldEntity));
+                            oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
                             //This is the last line of defense for making sure that the patch worked
                             //Should throw an exception here if there's a major problem
                             //This is inefficient, but forces confirmation that the object is fully realized
@@ -1356,6 +1425,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
                             while (!changeStack.isEmpty()) {
                                 Object v = changeStack.pop();
+                                v = resolveManagedPatchValue(v, existingNamesForPatch, existingNameOrgsForPatch);
                                 EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
                                 if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
                                     Object o = ewchanged.getValue();
