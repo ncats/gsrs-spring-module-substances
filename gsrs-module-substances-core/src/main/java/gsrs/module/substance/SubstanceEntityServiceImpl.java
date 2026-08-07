@@ -209,11 +209,42 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         //first bump version?
         substance.forceUpdate();
 
+        markCollectionOwnersDirtyForFlush(substance);
+
         //postUpdate/etc only gets called on flush, apparently?
         EntityManager entityManager = getEntityManager();
         Substance merged = entityManager.contains(substance) ? substance : entityManager.merge(substance);
         entityManager.flush();
         return merged;
+    }
+
+    private void markCollectionOwnersDirtyForFlush(Substance substance) {
+        if (substance.names != null) {
+            for (Name name : substance.names) {
+                if (name != null) {
+                    name.setIsDirty("nameOrgs");
+                }
+            }
+        }
+        if (!(substance instanceof ChemicalSubstance chemicalSubstance)) {
+            return;
+        }
+        markStructureCollectionsDirty(chemicalSubstance.getStructure());
+        if (chemicalSubstance.getMoieties() != null) {
+            for (Moiety moiety : chemicalSubstance.getMoieties()) {
+                if (moiety != null) {
+                    markStructureCollectionsDirty(moiety.structure);
+                }
+            }
+        }
+    }
+
+    private void markStructureCollectionsDirty(GinasChemicalStructure structure) {
+        if (structure == null) {
+            return;
+        }
+        structure.setIsDirty("links");
+        structure.setIsDirty("properties");
     }
 
     @Override
@@ -544,7 +575,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     private void reusePersistedStructureComputedPropertiesForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
         if (persisted != null && updated != null) {
-            updated.properties = persisted.properties;
+            updated.properties = persisted.properties == null ? new ArrayList<>() : new ArrayList<>(persisted.properties);
         }
     }
 
@@ -705,9 +736,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     private Substance applyReplacementToManagedEntity(Substance managed, Substance updated) throws IOException {
         EntityManager entityManager = getEntityManager();
-        GinasChemicalStructure existingStructure = managed instanceof ChemicalSubstance chemicalManaged
-                ? chemicalManaged.getStructure()
+        GinasChemicalStructure replacementStructure = updated instanceof ChemicalSubstance updatedChemical
+                ? updatedChemical.getStructure()
                 : null;
+        Map<UUID, GinasChemicalStructure> existingStructures = mapChemicalStructuresById(managed);
         List<Moiety> existingMoieties = managed instanceof ChemicalSubstance chemicalManaged
                 ? chemicalManaged.getMoieties()
                 : null;
@@ -748,22 +780,17 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         try {
             JsonNode updatedJson = objectMapper.valueToTree(updated);
             if (updatedJson instanceof ObjectNode updatedObject
-                    && updated instanceof ChemicalSubstance
-                    && replacementMoieties != null) {
-                updatedObject.remove("moieties");
+                    && updated instanceof ChemicalSubstance) {
+                if (replacementStructure != null) {
+                    updatedObject.remove("structure");
+                }
+                if (replacementMoieties != null) {
+                    updatedObject.remove("moieties");
+                }
             }
             Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
-            if (replaced instanceof ChemicalSubstance replacedChemical && existingStructure != null) {
-                GinasChemicalStructure updatedStructure = replacedChemical.getStructure();
-                if (updatedStructure != null && updatedStructure != existingStructure
-                        && Objects.equals(updatedStructure.id, existingStructure.id)) {
-                    JsonNode updatedStructureJson = objectMapper.valueToTree(updatedStructure);
-                    objectMapper.readerForUpdating(existingStructure).readValue(updatedStructureJson);
-                    existingStructure.version = updatedStructure.version != null
-                            ? updatedStructure.version
-                            : existingStructure.version;
-                    replacedChemical.setStructure(existingStructure);
-                }
+            if (replaced instanceof ChemicalSubstance replacedChemical && replacementStructure != null) {
+                replacedChemical.setStructure(reconcileManagedChemicalStructure(replacementStructure, existingStructures));
             }
             replaced.modifications = reconcileManagedModifications(replaced.modifications, existingModifications,
                     existingModificationsUuid, existingAgentModifications, existingPhysicalModifications,
@@ -854,6 +881,77 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return mapByUuid(nameOrgs);
     }
 
+    private Map<UUID, GinasChemicalStructure> mapChemicalStructuresById(Substance substance) {
+        Map<UUID, GinasChemicalStructure> mapped = new LinkedHashMap<>();
+        if (!(substance instanceof ChemicalSubstance chemicalSubstance)) {
+            return mapped;
+        }
+        putChemicalStructureById(mapped, chemicalSubstance.getStructure());
+        if (chemicalSubstance.getMoieties() != null) {
+            for (Moiety moiety : chemicalSubstance.getMoieties()) {
+                if (moiety != null) {
+                    putChemicalStructureById(mapped, moiety.structure);
+                }
+            }
+        }
+        return mapped;
+    }
+
+    private void putChemicalStructureById(Map<UUID, GinasChemicalStructure> mapped,
+                                          GinasChemicalStructure structure) {
+        if (structure != null && structure.id != null) {
+            mapped.put(structure.id, structure);
+        }
+    }
+
+    private void reconcileManagedChemicalStructures(Substance substance,
+                                                    Map<UUID, GinasChemicalStructure> existingStructures)
+            throws IOException {
+        if (!(substance instanceof ChemicalSubstance chemicalSubstance) || existingStructures.isEmpty()) {
+            return;
+        }
+        chemicalSubstance.setStructure(reconcileManagedChemicalStructure(chemicalSubstance.getStructure(), existingStructures));
+        if (chemicalSubstance.getMoieties() == null) {
+            return;
+        }
+        for (Moiety moiety : chemicalSubstance.getMoieties()) {
+            if (moiety != null) {
+                moiety.structure = reconcileManagedChemicalStructure(moiety.structure, existingStructures);
+            }
+        }
+    }
+
+    private GinasChemicalStructure reconcileManagedChemicalStructure(GinasChemicalStructure updatedStructure,
+                                                                    Map<UUID, GinasChemicalStructure> existingStructures)
+            throws IOException {
+        if (updatedStructure == null || updatedStructure.id == null) {
+            return updatedStructure;
+        }
+        GinasChemicalStructure managedStructure = existingStructures.get(updatedStructure.id);
+        if (managedStructure == null || managedStructure == updatedStructure) {
+            return updatedStructure;
+        }
+        updateManagedStructurePreservingCollections(managedStructure, updatedStructure);
+        return managedStructure;
+    }
+
+    private void updateManagedStructurePreservingCollections(GinasChemicalStructure managedStructure,
+                                                             GinasChemicalStructure updatedStructure)
+            throws IOException {
+        JsonNode updatedJson = objectMapper.valueToTree(updatedStructure);
+        if (updatedJson instanceof ObjectNode updatedObject) {
+            updatedObject.remove("properties");
+            updatedObject.remove("links");
+        }
+        objectMapper.readerForUpdating(managedStructure).readValue(updatedJson);
+        managedStructure.version = updatedStructure.version != null
+                ? updatedStructure.version
+                : managedStructure.version;
+        if (updatedStructure.properties != null) {
+            managedStructure.properties = replaceListContents(managedStructure.properties, updatedStructure.properties);
+        }
+    }
+
     private List<Name> reconcileManagedNames(List<Name> updatedNames,
                                              Map<UUID, Name> existingNames,
                                              Map<UUID, NameOrg> existingNameOrgs,
@@ -913,7 +1011,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     private Object resolveManagedPatchValue(Object value,
                                             Map<UUID, Name> existingNames,
-                                            Map<UUID, NameOrg> existingNameOrgs) {
+                                            Map<UUID, NameOrg> existingNameOrgs,
+                                            Map<UUID, GinasChemicalStructure> existingStructures,
+                                            Substance managedSubstance) {
+        if (value instanceof Substance substance && substance.uuid != null
+                && managedSubstance != null && Objects.equals(substance.uuid, managedSubstance.uuid)) {
+            return managedSubstance;
+        }
         if (value instanceof Name name && name.getUuid() != null) {
             Name existingName = existingNames.get(name.getUuid());
             if (existingName != null) {
@@ -924,6 +1028,18 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             NameOrg existingNameOrg = existingNameOrgs.get(nameOrg.getUuid());
             if (existingNameOrg != null) {
                 return existingNameOrg;
+            }
+        }
+        if (value instanceof GinasChemicalStructure structure && structure.id != null) {
+            GinasChemicalStructure existingStructure = existingStructures.get(structure.id);
+            if (existingStructure != null) {
+                return existingStructure;
+            }
+        }
+        if (value instanceof Moiety moiety && moiety.structure != null && moiety.structure.id != null) {
+            GinasChemicalStructure existingStructure = existingStructures.get(moiety.structure.id);
+            if (existingStructure != null) {
+                moiety.structure = existingStructure;
             }
         }
         return value;
@@ -1397,6 +1513,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             List<Name> existingNameListForPatch = oldEntity.names;
                             Map<UUID, Name> existingNamesForPatch = mapByUuid(existingNameListForPatch);
                             Map<UUID, NameOrg> existingNameOrgsForPatch = mapNameOrgsByUuid(existingNameListForPatch);
+                            Map<UUID, GinasChemicalStructure> existingStructuresForPatch = mapChemicalStructuresById(oldEntity);
                             PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
                             LogUtil.debug(() -> "changes = " + patch.getChanges());
                             final List<Object> removed = new ArrayList<Object>();
@@ -1414,9 +1531,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 LogUtil.debug(() -> "Found:" + changeStack.size() + " changes");
                             }
                             oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
+                            reconcileManagedChemicalStructures(oldEntity, existingStructuresForPatch);
                             oldEntity.names = replaceListContents(existingNameListForPatch,
                                     reconcileManagedNames(oldEntity.names, existingNamesForPatch, existingNameOrgsForPatch, oldEntity));
                             oldEntity = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldEntity, true));
+                            reconcileManagedChemicalStructures(oldEntity, existingStructuresForPatch);
                             //This is the last line of defense for making sure that the patch worked
                             //Should throw an exception here if there's a major problem
                             //This is inefficient, but forces confirmation that the object is fully realized
@@ -1425,7 +1544,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
                             while (!changeStack.isEmpty()) {
                                 Object v = changeStack.pop();
-                                v = resolveManagedPatchValue(v, existingNamesForPatch, existingNameOrgsForPatch);
+                                v = resolveManagedPatchValue(v, existingNamesForPatch, existingNameOrgsForPatch, existingStructuresForPatch, oldEntity);
                                 EntityUtils.EntityWrapper<Object> ewchanged = EntityUtils.EntityWrapper.of(v);
                                 if (!ewchanged.isIgnoredModel() && ewchanged.isEntity()) {
                                     Object o = ewchanged.getValue();
@@ -1434,7 +1553,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                         ((ForceUpdatableModel) o).forceUpdate();
                                     }
 
-                                    entityManager.merge(o);
+                                    if (entityManager.contains(o)) {
+                                        entityManager.merge(o);
+                                    }
                                 }
                             }
 
@@ -1719,7 +1840,12 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         try {
             Structure instrumented = structureProcessor.instrument(structureText);
-            structure.properties = instrumented.properties;
+            if (structure.properties == null) {
+                structure.properties = new ArrayList<>();
+            } else {
+                structure.properties.clear();
+            }
+            structure.properties.addAll(instrumented.properties);
             if (structure.stereoChemistry == null) {
                 structure.stereoChemistry = instrumented.stereoChemistry;
             }

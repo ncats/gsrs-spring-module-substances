@@ -193,9 +193,14 @@ public class Structure extends BaseModel {
 
     public void updateStructureFields(Structure other){
         if(other !=null) {
-            this.properties.clear();
-
-            this.properties = new ArrayList(other.properties); //add properties
+            if (this.properties == null) {
+                this.properties = new ArrayList<Value>();
+            } else {
+                this.properties.clear();
+            }
+            if (other.properties != null) {
+                this.properties.addAll(other.properties);
+            }
             this.ezCenters = other.ezCenters;
             this.definedStereo = other.definedStereo;
             this.charge = other.charge;
