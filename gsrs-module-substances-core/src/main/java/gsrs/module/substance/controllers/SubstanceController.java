@@ -31,6 +31,7 @@ import javax.imageio.ImageIO;
 
 import gov.nih.ncats.molwitch.*;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
+import ix.ginas.models.utils.MavenUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
 
