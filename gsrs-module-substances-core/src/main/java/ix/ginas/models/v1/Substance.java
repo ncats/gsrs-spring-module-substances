@@ -666,6 +666,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
      */
     @JsonIgnore
     public SubstanceReference getParentSubstanceReference() {
+        if (!SubstanceClass.concept.equals(this.substanceClass)) {
+            return null;
+        }
         for (Relationship r : relationships) {
             //flipped type equality check to avoid NPE GSRS-1439
             if ("SUBSTANCE->SUB_CONCEPT".equals(r.type)) {
