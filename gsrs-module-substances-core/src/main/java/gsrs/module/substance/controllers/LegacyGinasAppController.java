@@ -19,10 +19,12 @@ import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidatorCategory;
 import ix.ginas.models.v1.*;
 import ix.utils.UUIDUtil;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.hateoas.server.EntityLinks;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -109,15 +111,17 @@ public class LegacyGinasAppController {
     }
 
     //GET         /export/$id<[a-f0-9\-]+>.$format<(mol|sdf|smi|smiles|fas)>
-    // ix.ginas.controllers.GinasApp.structureExport(id: String, format: String, context: String ?= null)
-    @GetMapping({"export/{id:[a-f0-9\\-]+}.{format}","/ginas/app/export/{id:[a-f0-9\\-]+}.{format}"})
+    @GetMapping(value = {"export/{id:[a-f0-9\\-]+}.{format}","/ginas/app/export/{id:[a-f0-9\\-]+}.{format}"},
+            produces = MediaType.TEXT_HTML_VALUE)
     public Object exportStructure(@PathVariable String id, @PathVariable String format,
                               @RequestParam(value = "size", required = false, defaultValue = "150") int size,
                               @RequestParam("context") Optional<String> context,
                               @RequestParam("version") Optional<String> version,
                               @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
-                              HttpServletRequest httpRequest, RedirectAttributes attributes,
-                                  @RequestParam Map<String, String> queryParameters){
+                              HttpServletRequest httpRequest,
+                              HttpServletResponse response,
+                              RedirectAttributes attributes,
+                              @RequestParam Map<String, String> queryParameters){
         if (!checkId(id)) {
             // This is to satisfy Snyk security analysis, probably never gets here if annotation works.
             return gsrsControllerConfiguration.handleBadRequest(400, "Badly formatted id in url placeholder", null);
@@ -125,7 +129,6 @@ public class LegacyGinasAppController {
         if("mol".equalsIgnoreCase(format) || "sdf".equalsIgnoreCase(format) ||
                 "smi".equalsIgnoreCase(format) ||  "smiles".equalsIgnoreCase(format) ) {
             //TODO: use cache where possible here
-            
             //this is a copy and paste of SubstanceController#render but without caring about the
             //parent substance since we don't need to set context ?
             if (UUIDUtil.isUUID(id)) {
@@ -154,6 +157,7 @@ public class LegacyGinasAppController {
                         }
                     }
                 }
+                response.setContentType("text/html;charset=UTF-8");
                 if (!structure.isPresent()) {
                     return gsrsControllerConfiguration.handleNotFound(queryParameters);
                 }
@@ -172,9 +176,11 @@ public class LegacyGinasAppController {
                     return gsrsControllerConfiguration.handleNotFound(queryParameters);
                 }
                 if(substance.get() instanceof ProteinSubstance){
+                    response.setContentType("text/html;charset=UTF-8");
                     return makeFastaFromProtein( (ProteinSubstance)substance.get());
 
                 }else if(substance.get() instanceof NucleicAcidSubstance){
+                    response.setContentType("text/html;charset=UTF-8");
                     return makeFastaFromNA( (NucleicAcidSubstance)substance.get());
 
                 }
@@ -243,12 +249,13 @@ public class LegacyGinasAppController {
                               @RequestParam(value = "stereo", required = false, defaultValue = "") Boolean stereo,
                               @RequestParam(value = "standardize", required = false, defaultValue = "") Boolean standardize,
                               HttpServletRequest httpRequest, RedirectAttributes attributes,
+                              HttpServletResponse response,
                               @RequestParam Map<String, String> queryParameters){
 
         //Beta UI calls this method img/$id.mol  !? redirect to other method
         if("mol".equalsIgnoreCase(format) || "sdf".equalsIgnoreCase(format) ||
                 "smi".equalsIgnoreCase(format) ||  "smiles".equalsIgnoreCase(format) ) {
-            return exportStructure(id, format, size, context, version, stereo, httpRequest, attributes, queryParameters);
+            return exportStructure(id, format, size, context, version, stereo, httpRequest, response, attributes, queryParameters);
         }
         httpRequest.setAttribute(
                 View.RESPONSE_STATUS_ATTRIBUTE, HttpStatus.MOVED_PERMANENTLY);
