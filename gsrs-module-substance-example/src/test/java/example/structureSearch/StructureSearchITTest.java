@@ -1,12 +1,23 @@
 package example.structureSearch;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import example.GsrsModuleSubstanceApplication;
+import example.substance.FlexAndExactSearchFullStackTest;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
+import gsrs.module.substance.controllers.SubstanceController;
+import gsrs.module.substance.indexers.ChemicalSubstanceStructureHashIndexValueMaker;
 import gsrs.services.PrincipalServiceImpl;
+import gsrs.springUtils.AutowireHelper;
+import gsrs.startertests.TestIndexValueMakerFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import ix.core.models.ETag;
+import ix.core.search.SearchResultContext;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -15,9 +26,13 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -31,6 +46,11 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     @Autowired
     private StructureIndexerService indexer;
 
+    @Autowired
+    private SubstanceController substanceController;
+
+    @Autowired
+    private TestIndexValueMakerFactory testIndexValueMakerFactory;
 
 
     @Autowired
@@ -40,6 +60,24 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     public void clearIndexers() throws IOException {
         indexer.removeAll();
         principalService.clearCache();
+    }
+
+    private void registerStructureHashIndexer() {
+        ChemicalSubstanceStructureHashIndexValueMaker structureHashIndexer =
+                new ChemicalSubstanceStructureHashIndexValueMaker();
+        AutowireHelper.getInstance().autowire(structureHashIndexer);
+        testIndexValueMakerFactory.addIndexValueMaker(structureHashIndexer);
+    }
+
+    private static String anyBondMolfile() {
+        return "\n" +
+                "  Ketcher  8122621122D 1   1.00000     0.00000     0\n" +
+                "\n" +
+                "  2  1  0  0  0  0            999 V2000\n" +
+                "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    1.5000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "  1  2  8  0  0  0  0\n" +
+                "M  END";
     }
 
     @Test
@@ -171,6 +209,76 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         StructureIndexer.ResultEnumeration result = indexer.substructure(mol1);
         assertTrue(result.hasMoreElements());
 
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void registeredMolfileWithExplicitStereoHydrogensShouldFindItselfBySubstructureSearch() throws Exception {
+        registerStructureHashIndexer();
+        String molfile = Files.readString(new ClassPathResource("molfiles/d8a979a7-f6b7-423a-be7b-c62e8651eb92.mol").getFile().toPath());
+        UUID uuid = UUID.randomUUID();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+            new ChemicalSubstanceBuilder()
+                    .setStructureWithDefaultReference(molfile)
+                    .addName("Explicit stereo hydrogens")
+                    .setUUID(uuid)
+                    .buildJsonAnd(this::assertCreated);
+        });
+
+        MultiValueMap<String, String> exactQueryMap = new LinkedMultiValueMap<>();
+        exactQueryMap.put("type", Collections.singletonList("exact"));
+        exactQueryMap.put("q", Collections.singletonList(molfile));
+        Object exactResults = substanceController.structureSearchPost(
+                exactQueryMap,
+                new MockHttpServletRequest(),
+                new FlexAndExactSearchFullStackTest.MockRedirectAttributes());
+        ETag exactResult = (ETag) ((ResponseEntity) exactResults).getBody();
+        assertEquals(1, exactResult.count);
+
+        MultiValueMap<String, String> queryMap = new LinkedMultiValueMap<>();
+        queryMap.put("type", Collections.singletonList("sub"));
+        queryMap.put("q", Collections.singletonList(molfile));
+
+        Object results = substanceController.structureSearchPost(
+                queryMap,
+                new MockHttpServletRequest(),
+                new FlexAndExactSearchFullStackTest.MockRedirectAttributes());
+
+        assertNotNull(results);
+        ResponseEntity responseEntity = (ResponseEntity) results;
+        SearchResultContext result = (SearchResultContext) responseEntity.getBody();
+        result.getDeterminedFuture().get();
+        assertEquals(1, result.getCount());
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void anyBondMolfileQueryShouldPrepareAndRunSubstructureSearch() throws Exception {
+        String molfile = anyBondMolfile();
+
+        ResponseEntity<Object> interpreted = substanceController.interpretStructure(
+                molfile,
+                Collections.emptyMap());
+        assertTrue(interpreted.getStatusCode().is2xxSuccessful());
+        JsonNode interpretedBody = (JsonNode) interpreted.getBody();
+        assertTrue(interpretedBody.has("structure"));
+
+        MultiValueMap<String, String> queryMap = new LinkedMultiValueMap<>();
+        queryMap.put("type", Collections.singletonList("sub"));
+        queryMap.put("q", Collections.singletonList(molfile));
+
+        Object results = substanceController.structureSearchPost(
+                queryMap,
+                new MockHttpServletRequest(),
+                new FlexAndExactSearchFullStackTest.MockRedirectAttributes());
+
+        assertNotNull(results);
+        ResponseEntity responseEntity = (ResponseEntity) results;
+        SearchResultContext result = (SearchResultContext) responseEntity.getBody();
+        result.getDeterminedFuture().get();
+        assertEquals(0, result.getCount());
     }
 
     @Test

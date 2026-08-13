@@ -193,6 +193,7 @@ public class LegacyGinasAppController {
 
     public static String makeFastaFromProtein(ProteinSubstance p) {
         StringBuilder sb = new StringBuilder();
+        String fastaId = getFastaExportId(p);
 
         List<Subunit> subs = p.protein.getSubunits();
         Collections.sort(subs, new Comparator<Subunit>() {
@@ -203,7 +204,7 @@ public class LegacyGinasAppController {
         });
         for (Subunit s : subs) {
 
-            sb.append(">" + p.getBestId().replace(" ", "_") + "|SUBUNIT_" + s.subunitIndex + "\n");
+            sb.append(">" + fastaId + "|SUBUNIT_" + s.subunitIndex + "\n");
             for (String seq : splitBuffer(s.sequence, 80)) {
                 sb.append(seq + "\n");
             }
@@ -213,6 +214,7 @@ public class LegacyGinasAppController {
 
     public static String makeFastaFromNA(NucleicAcidSubstance p) {
         String resp = "";
+        String fastaId = getFastaExportId(p);
         List<Subunit> subs = p.nucleicAcid.getSubunits();
         Collections.sort(subs, new Comparator<Subunit>() {
             @Override
@@ -222,13 +224,28 @@ public class LegacyGinasAppController {
         });
 
         for (Subunit s : subs) {
-            resp += ">" + p.getBestId().replace(" ", "_") + "|SUBUNIT_" + s.subunitIndex + "\n";
+            resp += ">" + fastaId + "|SUBUNIT_" + s.subunitIndex + "\n";
             for (String seq : splitBuffer(s.sequence, 80)) {
                 resp += seq + "\n";
             }
         }
         return resp;
     }
+
+    private static String getFastaExportId(Substance substance) {
+        String id = substance.approvalID;
+        if(id == null || id.trim().isEmpty()) {
+            UUID uuid = substance.getUuid();
+            if(uuid != null) {
+                id = uuid.toString();
+            }
+        }
+        if(id == null || id.trim().isEmpty()) {
+            return "UNKNOWN_SUBSTANCE";
+        }
+        return id.replace(" ", "_");
+    }
+
     public static String[] splitBuffer(String input, int maxLength) {
         int elements = (input.length() - 1) / maxLength + 1;
         String[] ret = new String[elements];

@@ -8,6 +8,7 @@ import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
+import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.MixtureSubstanceRepository;
 import gsrs.module.substance.repository.ModificationRepository;
 import gsrs.module.substance.repository.StructureRepository;
@@ -16,6 +17,7 @@ import gsrs.module.substance.utils.SanitizerUtil;
 import gsrs.springUtils.AutowireHelper;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
+import ix.core.search.SearchResult;
 import ix.core.search.SearchResultContext;
 import ix.core.search.SearchResultProcessor;
 import ix.core.search.text.IndexerService;
@@ -39,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 @Service
+@Slf4j
 public class SubstanceStructureSearchService {
     @Data
     @Builder
@@ -215,6 +218,10 @@ public class SubstanceStructureSearchService {
     private MixtureSubstanceRepository mixtureSubstanceRepository;
     @Autowired
     private GsrsCache gsrsCache;
+    @Autowired
+    private StructureProcessor structureProcessor;
+    @Autowired
+    private SubstanceLegacySearchService legacySearchService;
     
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
 //    @Autowired
@@ -242,8 +249,17 @@ public class SubstanceStructureSearchService {
             if(resultEnumeration ==null){
                 throw new Exception("invalid request type "+ request.getType());
             }
-            processor.setResults(1, resultEnumeration);
             SearchResultContext ctx = processor.getContext();
+            if(request.getType() == StructureSearchType.SUBSTRUCTURE) {
+                if(!resultEnumeration.hasMoreElements()) {
+                    completeWithExactStructureFallback(ctx, request.getQueryStructure());
+                } else {
+                    processor.setResults(1, resultEnumeration);
+                    addExactStructureFallbackResultsIfEmpty(ctx, request.getQueryStructure());
+                }
+            } else {
+                processor.setResults(1, resultEnumeration);
+            }
             ctx.setKey(hashKey);
 
             return ctx;
@@ -255,6 +271,74 @@ public class SubstanceStructureSearchService {
 
 
     }
+
+    private void completeWithExactStructureFallback(SearchResultContext ctx, String queryStructure) {
+        long now = System.currentTimeMillis();
+        ctx.setStart(now);
+
+        addExactStructureFallbackResultsIfEmpty(ctx, queryStructure);
+
+        ctx.setTotal(ctx.getCount());
+        ctx.setStatus(SearchResultContext.Status.Done);
+        ctx.setStop(System.currentTimeMillis());
+    }
+
+    private void addExactStructureFallbackResultsIfEmpty(SearchResultContext ctx, String queryStructure) {
+        if(ctx.getCount() > 0) {
+            return;
+        }
+
+        exactHashForPlainChemicalQuery(queryStructure)
+                .ifPresent(exactHash -> addExactStructureFallbackResults(ctx, exactHash));
+    }
+
+    private Optional<String> exactHashForPlainChemicalQuery(String queryStructure) {
+        if(queryStructure == null || queryStructure.trim().isEmpty()) {
+            return Optional.empty();
+        }
+        try {
+            Chemical query = Chemical.parse(queryStructure);
+            if(StructureProcessor.hasQueryFeatures(query)) {
+                return Optional.empty();
+            }
+
+            Structure structure = structureProcessor.instrument(queryStructure);
+            return Optional.ofNullable(structure.getExactHash())
+                    .filter(hash -> !hash.trim().isEmpty());
+        } catch (Exception e) {
+            log.debug("Unable to compute exact structure fallback hash", e);
+            return Optional.empty();
+        }
+    }
+
+    private void addExactStructureFallbackResults(SearchResultContext ctx, String exactHash) {
+        try {
+            ix.core.search.SearchRequest exactSearchRequest = new ix.core.search.SearchRequest.Builder()
+                    .kind(Substance.class)
+                    .query("root_structure_properties_EXACT_HASH:" + exactHash)
+                    .build();
+            SearchResult exactSearchResult = legacySearchService.search(
+                    exactSearchRequest.getQuery(),
+                    exactSearchRequest.getOptions());
+            exactSearchResult.waitForFinish();
+
+            Set<UUID> seen = new LinkedHashSet<>();
+            for(Object match : exactSearchResult.getMatches()) {
+                if(match instanceof Substance) {
+                    addIfNotSeen(ctx, seen, (Substance) match);
+                }
+            }
+        } catch (Exception e) {
+            log.debug("Unable to run exact structure fallback search", e);
+        }
+    }
+
+    private void addIfNotSeen(SearchResultContext ctx, Set<UUID> seen, Substance substance) {
+        if(substance.uuid == null || seen.add(substance.uuid)) {
+            ctx.add(substance);
+        }
+    }
+
     @Slf4j
     public static class StructureSearchResultProcessor
             extends SearchResultProcessor<StructureIndexer.Result, Substance> {
