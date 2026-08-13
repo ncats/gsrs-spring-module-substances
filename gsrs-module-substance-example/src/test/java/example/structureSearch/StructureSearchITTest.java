@@ -8,6 +8,7 @@ import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.controllers.SubstanceController;
 import gsrs.module.substance.indexers.ChemicalSubstanceStructureHashIndexValueMaker;
+import gsrs.module.substance.services.SubstanceStructureSearchService;
 import gsrs.services.PrincipalServiceImpl;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestIndexValueMakerFactory;
@@ -50,6 +51,9 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     private SubstanceController substanceController;
 
     @Autowired
+    private SubstanceStructureSearchService substanceStructureSearchService;
+
+    @Autowired
     private TestIndexValueMakerFactory testIndexValueMakerFactory;
 
 
@@ -78,6 +82,51 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                 "    1.5000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n" +
                 "  1  2  8  0  0  0  0\n" +
                 "M  END";
+    }
+
+    private static String singleBondMolfile() {
+        return anyBondMolfile().replace("  1  2  8  0  0  0  0",
+                "  1  2  1  0  0  0  0");
+    }
+
+    private static String replaceFirstSingleBondType(String molfile, int bondType) {
+        return molfile.replaceFirst("  1  2  1  0  0  0  0",
+                "  1  2  " + bondType + "  0  0  0  0");
+    }
+
+    private SearchResultContext substructureSearch(String molfile) throws Exception {
+        MultiValueMap<String, String> queryMap = new LinkedMultiValueMap<>();
+        queryMap.put("type", Collections.singletonList("sub"));
+        queryMap.put("q", Collections.singletonList(molfile));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/api/v1/substances/structureSearch");
+        request.addParameter("type", "sub");
+        request.addParameter("q", molfile);
+
+        Object results = substanceController.structureSearchPost(
+                queryMap,
+                request,
+                new FlexAndExactSearchFullStackTest.MockRedirectAttributes());
+
+        assertNotNull(results);
+        ResponseEntity responseEntity = (ResponseEntity) results;
+        SearchResultContext result = (SearchResultContext) responseEntity.getBody();
+        result.getDeterminedFuture().get();
+        return result;
+    }
+
+    private SearchResultContext substructureServiceSearch(String molfile) throws Exception {
+        SubstanceStructureSearchService.SanitizedSearchRequest searchRequest =
+                SubstanceStructureSearchService.SearchRequest.builder()
+                        .type(SubstanceStructureSearchService.StructureSearchType.SUBSTRUCTURE)
+                        .q(molfile)
+                        .build()
+                        .sanitize();
+
+        SearchResultContext result = substanceStructureSearchService.search(searchRequest, UUID.randomUUID().toString());
+        result.getDeterminedFuture().get();
+        return result;
     }
 
     @Test
@@ -265,20 +314,28 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         JsonNode interpretedBody = (JsonNode) interpreted.getBody();
         assertTrue(interpretedBody.has("structure"));
 
-        MultiValueMap<String, String> queryMap = new LinkedMultiValueMap<>();
-        queryMap.put("type", Collections.singletonList("sub"));
-        queryMap.put("q", Collections.singletonList(molfile));
-
-        Object results = substanceController.structureSearchPost(
-                queryMap,
-                new MockHttpServletRequest(),
-                new FlexAndExactSearchFullStackTest.MockRedirectAttributes());
-
-        assertNotNull(results);
-        ResponseEntity responseEntity = (ResponseEntity) results;
-        SearchResultContext result = (SearchResultContext) responseEntity.getBody();
-        result.getDeterminedFuture().get();
+        SearchResultContext result = substructureSearch(molfile);
         assertEquals(0, result.getCount());
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void queryBondMolfileShouldFindConcreteStartingStructureBySubstructureSearch() throws Exception {
+        String molfile = singleBondMolfile();
+        UUID uuid = UUID.randomUUID();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+            new ChemicalSubstanceBuilder()
+                    .setStructureWithDefaultReference(molfile)
+                    .addName("Query bond searchable concrete structure")
+                    .setUUID(uuid)
+                    .buildJsonAnd(this::assertCreated);
+        });
+
+        assertEquals(1, substructureServiceSearch(molfile).getCount());
+        assertEquals(1, substructureServiceSearch(replaceFirstSingleBondType(molfile, 8)).getCount());
+        assertEquals(1, substructureServiceSearch(replaceFirstSingleBondType(molfile, 5)).getCount());
     }
 
     @Test

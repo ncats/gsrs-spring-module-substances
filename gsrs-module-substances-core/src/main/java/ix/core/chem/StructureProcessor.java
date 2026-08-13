@@ -388,7 +388,7 @@ public class StructureProcessor {
         return mol.hasQueryAtoms() || mol.hasPseudoAtoms() || hasQueryBonds;
     }
 
-    private static boolean hasQueryBonds(Chemical mol) {
+    public static boolean hasQueryBonds(Chemical mol) {
         return mol.bonds().anyMatch(StructureProcessor::isQueryBond);
     }
 

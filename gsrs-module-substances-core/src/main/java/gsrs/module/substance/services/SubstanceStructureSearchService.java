@@ -7,6 +7,8 @@ import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
+import gsrs.legacy.structureIndexer.LegacyStructureIndexerService;
+import gsrs.legacy.structureIndexer.StandardizedStructureIndexer;
 import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.MixtureSubstanceRepository;
@@ -36,6 +38,7 @@ import org.springframework.stereotype.Service;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
@@ -241,7 +244,7 @@ public class SubstanceStructureSearchService {
             processor = AutowireHelper.getInstance().autowireAndProxy(processor);
             StructureIndexer.ResultEnumeration resultEnumeration=null;
             if(request.getType() == StructureSearchType.SUBSTRUCTURE) {
-                resultEnumeration = structureIndexerService.substructure(request.getQueryStructure());
+                resultEnumeration = substructure(request.getQueryStructure());
             }else if(request.getType() == StructureSearchType.SIMILARITY){
                 resultEnumeration = structureIndexerService.similarity(request.getQueryStructure(), request.cutoff);
             }
@@ -270,6 +273,40 @@ public class SubstanceStructureSearchService {
 
 
 
+    }
+
+    private StructureIndexer.ResultEnumeration substructure(String queryStructure) throws Exception {
+        Chemical query = Chemical.parse(queryStructure);
+        if(!StructureProcessor.hasQueryBonds(query)) {
+            return structureIndexerService.substructure(queryStructure);
+        }
+
+        Optional<StructureIndexer> rawIndexer = getRawStructureIndexerDelegate();
+        if(rawIndexer.isPresent()) {
+            return rawIndexer.get().substructure(query);
+        }
+
+        log.debug("Unable to locate raw structure indexer delegate; using standard substructure path for query-bond search");
+        return structureIndexerService.substructure(queryStructure);
+    }
+
+    private Optional<StructureIndexer> getRawStructureIndexerDelegate() {
+        if(!(structureIndexerService instanceof LegacyStructureIndexerService)) {
+            return Optional.empty();
+        }
+
+        try {
+            Field indexerField = LegacyStructureIndexerService.class.getDeclaredField("indexer");
+            indexerField.setAccessible(true);
+            Object indexer = indexerField.get(structureIndexerService);
+            if(indexer instanceof StandardizedStructureIndexer) {
+                return Optional.of(((StandardizedStructureIndexer) indexer).getDelegate());
+            }
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            log.debug("Unable to access legacy structure indexer delegate", e);
+        }
+
+        return Optional.empty();
     }
 
     private void completeWithExactStructureFallback(SearchResultContext ctx, String queryStructure) {

@@ -74,6 +74,7 @@
         <gsrs.products-api.version>3.2.6-SNAPSHOT</gsrs.products-api.version>
         <log4j2.version>2.22.1</log4j2.version>
         <lombok.version>1.18.30</lombok.version>
+        <structure-indexer.version>0.0.17</structure-indexer.version>
     </properties>
 
     <licenses>
