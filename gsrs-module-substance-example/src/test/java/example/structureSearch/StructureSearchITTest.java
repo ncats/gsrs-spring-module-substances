@@ -457,6 +457,22 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
 
     @Test
     @WithMockUser(value = "admin", roles = "Admin")
+    public void smartsAtomListShouldMatchRegisteredStructureBySubstructureSearch() throws Exception {
+        new ChemicalSubstanceBuilder()
+                .setStructureWithDefaultReference("CCNCC")
+                .addName("Atom list SMARTS positive")
+                .buildJsonAnd(this::assertCreated);
+
+        new ChemicalSubstanceBuilder()
+                .setStructureWithDefaultReference("CCOCC")
+                .addName("Atom list SMARTS negative")
+                .buildJsonAnd(this::assertCreated);
+
+        assertEquals(1, substructureServiceSearch("CC[#6,#7]C").getCount());
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
     public void explicitHShouldWork() throws Exception {
 
 

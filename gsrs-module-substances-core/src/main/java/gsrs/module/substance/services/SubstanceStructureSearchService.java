@@ -5,6 +5,8 @@ import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
 import gov.nih.ncats.molwitch.io.ChemFormat;
+import gov.nih.ncats.molwitch.search.MolSearcher;
+import gov.nih.ncats.molwitch.search.MolSearcherFactory;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
@@ -243,7 +245,7 @@ public class SubstanceStructureSearchService {
                     entityManager);
 
             processor = AutowireHelper.getInstance().autowireAndProxy(processor);
-            StructureIndexer.ResultEnumeration resultEnumeration=null;
+            Enumeration<StructureIndexer.Result> resultEnumeration=null;
             if(request.getType() == StructureSearchType.SUBSTRUCTURE) {
                 resultEnumeration = substructure(request.getQueryStructure());
             }else if(request.getType() == StructureSearchType.SIMILARITY){
@@ -276,11 +278,18 @@ public class SubstanceStructureSearchService {
 
     }
 
-    private StructureIndexer.ResultEnumeration substructure(String queryStructure) throws Exception {
+    private Enumeration<StructureIndexer.Result> substructure(String queryStructure) throws Exception {
         Chemical query = Chemical.parse(queryStructure);
         List<QueryBondState> queryBonds = queryBondStatesFromV2000(queryStructure);
+        boolean needsQueryAtomPostFilter = query.hasQueryAtoms()
+                || query.hasPseudoAtoms()
+                || hasSmartsQueryAtomExpression(queryStructure);
         if(queryBonds.isEmpty() && !StructureProcessor.hasQueryBonds(query)) {
-            return structureIndexerService.substructure(queryStructure);
+            return filterQueryAtomSubstructureResults(
+                    structureIndexerService.substructure(queryStructure),
+                    queryStructure,
+                    query,
+                    needsQueryAtomPostFilter);
         }
 
         Optional<StructureIndexer> rawIndexer = getRawStructureIndexerDelegate();
@@ -288,11 +297,88 @@ public class SubstanceStructureSearchService {
             if(!queryBonds.isEmpty()) {
                 query = prepareQueryBondSubstructureQuery(queryStructure, query, queryBonds);
             }
-            return rawIndexer.get().substructure(query);
+            return filterQueryAtomSubstructureResults(
+                    rawIndexer.get().substructure(query),
+                    queryStructure,
+                    query,
+                    needsQueryAtomPostFilter);
         }
 
         log.debug("Unable to locate raw structure indexer delegate; using standard substructure path for query-bond search");
-        return structureIndexerService.substructure(queryStructure);
+        return filterQueryAtomSubstructureResults(
+                structureIndexerService.substructure(queryStructure),
+                queryStructure,
+                query,
+                needsQueryAtomPostFilter);
+    }
+
+    private Enumeration<StructureIndexer.Result> filterQueryAtomSubstructureResults(
+            Enumeration<StructureIndexer.Result> results,
+            String queryStructure,
+            Chemical query,
+            boolean needsQueryAtomPostFilter) {
+        if(!needsQueryAtomPostFilter) {
+            return results;
+        }
+
+        Optional<MolSearcher> searcher = MolSearcherFactory.create(queryStructure);
+        if(!searcher.isPresent()) {
+            searcher = MolSearcherFactory.create(query);
+        }
+        if(!searcher.isPresent()) {
+            return results;
+        }
+
+        MolSearcher finalSearcher = searcher.get();
+        Iterator<StructureIndexer.Result> filteredIterator = StreamUtil.forEnumeration(results)
+                .filter(result -> {
+                    try {
+                        Optional<int[]> hit = finalSearcher.search(result.getMol());
+                        return hit.isPresent() && hit.get().length > 0;
+                    } catch (Exception e) {
+                        log.debug("Unable to post-filter query-atom substructure result", e);
+                        return false;
+                    }
+                })
+                .iterator();
+
+        return new Enumeration<StructureIndexer.Result>() {
+            @Override
+            public boolean hasMoreElements() {
+                return filteredIterator.hasNext();
+            }
+
+            @Override
+            public StructureIndexer.Result nextElement() {
+                return filteredIterator.next();
+            }
+        };
+    }
+
+    private boolean hasSmartsQueryAtomExpression(String queryStructure) {
+        if(queryStructure == null) {
+            return false;
+        }
+
+        int start = -1;
+        while((start = queryStructure.indexOf('[', start + 1)) >= 0) {
+            int end = queryStructure.indexOf(']', start + 1);
+            if(end < 0) {
+                return false;
+            }
+
+            String atomExpression = queryStructure.substring(start + 1, end);
+            if(atomExpression.indexOf(',') >= 0
+                    || atomExpression.indexOf(';') >= 0
+                    || atomExpression.indexOf('!') >= 0
+                    || atomExpression.indexOf('#') >= 0
+                    || atomExpression.indexOf('$') >= 0
+                    || atomExpression.indexOf('*') >= 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Chemical prepareQueryBondSubstructureQuery(String queryStructure, Chemical query, List<QueryBondState> queryBonds) {
