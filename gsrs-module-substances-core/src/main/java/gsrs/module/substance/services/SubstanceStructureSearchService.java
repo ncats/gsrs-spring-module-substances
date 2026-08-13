@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.Chemical;
+import gov.nih.ncats.molwitch.io.ChemFormat;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.cache.GsrsCache;
@@ -277,17 +278,209 @@ public class SubstanceStructureSearchService {
 
     private StructureIndexer.ResultEnumeration substructure(String queryStructure) throws Exception {
         Chemical query = Chemical.parse(queryStructure);
-        if(!StructureProcessor.hasQueryBonds(query)) {
+        List<QueryBondState> queryBonds = queryBondStatesFromV2000(queryStructure);
+        if(queryBonds.isEmpty() && !StructureProcessor.hasQueryBonds(query)) {
             return structureIndexerService.substructure(queryStructure);
         }
 
         Optional<StructureIndexer> rawIndexer = getRawStructureIndexerDelegate();
         if(rawIndexer.isPresent()) {
+            if(!queryBonds.isEmpty()) {
+                query = prepareQueryBondSubstructureQuery(queryStructure, query, queryBonds);
+            }
             return rawIndexer.get().substructure(query);
         }
 
         log.debug("Unable to locate raw structure indexer delegate; using standard substructure path for query-bond search");
         return structureIndexerService.substructure(queryStructure);
+    }
+
+    private Chemical prepareQueryBondSubstructureQuery(String queryStructure, Chemical query, List<QueryBondState> queryBonds) {
+        if(query.hasQueryAtoms() || query.hasPseudoAtoms()) {
+            return query;
+        }
+
+        if(queryBonds.isEmpty()) {
+            return query;
+        }
+
+        try {
+            Optional<String> concreteQueryStructure = concretizeV2000QueryBondTypes(queryStructure, queryBonds);
+            if(!concreteQueryStructure.isPresent()) {
+                return query;
+            }
+
+            Chemical standardizedConcreteQuery = StandardizedStructureIndexer.getSSSStandardized(
+                    Chemical.parse(concreteQueryStructure.get()));
+            String standardizedMolfile = standardizedConcreteQuery.toMol(
+                    new ChemFormat.MolFormatSpecification()
+                            .setKekulization(ChemFormat.KekulizationEncoding.FORCE_AROMATIC));
+            Optional<String> standardizedQueryStructure = restoreV2000QueryBondTypes(standardizedMolfile, queryBonds);
+            if(standardizedQueryStructure.isPresent()) {
+                return Chemical.parse(standardizedQueryStructure.get());
+            }
+        } catch (Exception e) {
+            log.debug("Unable to standardize query-bond substructure query", e);
+        }
+
+        return query;
+    }
+
+    private List<QueryBondState> queryBondStatesFromV2000(String queryStructure) {
+        String[] lines = queryStructure.split("\\R", -1);
+        if(lines.length < 4 || !lines[3].contains("V2000")) {
+            return Collections.emptyList();
+        }
+
+        OptionalInt atomCount = parseV2000Count(lines[3], 0, 3, 0);
+        OptionalInt bondCount = parseV2000Count(lines[3], 3, 6, 1);
+        if(!atomCount.isPresent() || !bondCount.isPresent()) {
+            return Collections.emptyList();
+        }
+
+        int firstBondLine = 4 + atomCount.getAsInt();
+        if(firstBondLine + bondCount.getAsInt() > lines.length) {
+            return Collections.emptyList();
+        }
+
+        List<QueryBondState> queryBonds = new ArrayList<>();
+        for(int i = 0; i < bondCount.getAsInt(); i++) {
+            int lineIndex = firstBondLine + i;
+            if(lines[lineIndex].length() < 9) {
+                continue;
+            }
+            OptionalInt atom1 = parseV2000Count(lines[lineIndex], 0, 3, 0);
+            OptionalInt atom2 = parseV2000Count(lines[lineIndex], 3, 6, 1);
+            OptionalInt bondType = parseV2000Count(lines[lineIndex], 6, 9, 2);
+            if(atom1.isPresent() && atom2.isPresent() && bondType.isPresent() && isV2000QueryBondType(bondType.getAsInt())) {
+                queryBonds.add(new QueryBondState(i, atom1.getAsInt(), atom2.getAsInt(), lines[lineIndex].substring(6, 9)));
+            }
+        }
+
+        return queryBonds;
+    }
+
+    private boolean isV2000QueryBondType(int bondType) {
+        return bondType >= 4 && bondType <= 8;
+    }
+
+    private Optional<String> concretizeV2000QueryBondTypes(String queryStructure, List<QueryBondState> queryBonds) {
+        String[] lines = queryStructure.split("\\R", -1);
+        if(lines.length < 4 || !lines[3].contains("V2000")) {
+            return Optional.empty();
+        }
+
+        OptionalInt atomCount = parseV2000Count(lines[3], 0, 3, 0);
+        OptionalInt bondCount = parseV2000Count(lines[3], 3, 6, 1);
+        if(!atomCount.isPresent() || !bondCount.isPresent()) {
+            return Optional.empty();
+        }
+
+        int firstBondLine = 4 + atomCount.getAsInt();
+        if(firstBondLine + bondCount.getAsInt() > lines.length) {
+            return Optional.empty();
+        }
+
+        boolean updated = false;
+        for(QueryBondState queryBond : queryBonds) {
+            OptionalInt lineIndex = findV2000BondLine(lines, firstBondLine, bondCount.getAsInt(), queryBond);
+            if(lineIndex.isPresent() && lines[lineIndex.getAsInt()].length() >= 9) {
+                lines[lineIndex.getAsInt()] = replaceV2000BondType(lines[lineIndex.getAsInt()], "  1");
+                updated = true;
+            }
+        }
+
+        return updated ? Optional.of(String.join("\n", lines)) : Optional.empty();
+    }
+
+    private Optional<String> restoreV2000QueryBondTypes(String molfile, List<QueryBondState> queryBonds) {
+        String[] lines = molfile.split("\\R", -1);
+        if(lines.length < 4 || !lines[3].contains("V2000")) {
+            return Optional.empty();
+        }
+
+        OptionalInt atomCount = parseV2000Count(lines[3], 0, 3, 0);
+        OptionalInt bondCount = parseV2000Count(lines[3], 3, 6, 1);
+        if(!atomCount.isPresent() || !bondCount.isPresent()) {
+            return Optional.empty();
+        }
+
+        int firstBondLine = 4 + atomCount.getAsInt();
+        if(firstBondLine + bondCount.getAsInt() > lines.length) {
+            return Optional.empty();
+        }
+
+        boolean restored = false;
+        for(QueryBondState queryBond : queryBonds) {
+            OptionalInt lineIndex = findV2000BondLine(lines, firstBondLine, bondCount.getAsInt(), queryBond);
+            if(queryBond.v2000BondType != null && lineIndex.isPresent() && lines[lineIndex.getAsInt()].length() >= 9) {
+                lines[lineIndex.getAsInt()] = replaceV2000BondType(lines[lineIndex.getAsInt()], queryBond.v2000BondType);
+                restored = true;
+            }
+        }
+
+        return restored ? Optional.of(String.join("\n", lines)) : Optional.empty();
+    }
+
+    private OptionalInt findV2000BondLine(String[] lines, int firstBondLine, int bondCount, QueryBondState queryBond) {
+        for(int i = 0; i < bondCount; i++) {
+            int lineIndex = firstBondLine + i;
+            if(lines[lineIndex].length() < 6) {
+                continue;
+            }
+            OptionalInt atom1 = parseV2000Count(lines[lineIndex], 0, 3, 0);
+            OptionalInt atom2 = parseV2000Count(lines[lineIndex], 3, 6, 1);
+            if(atom1.isPresent() && atom2.isPresent() && queryBond.matches(atom1.getAsInt(), atom2.getAsInt())) {
+                return OptionalInt.of(lineIndex);
+            }
+        }
+
+        int lineIndex = firstBondLine + queryBond.bondIndex;
+        return queryBond.bondIndex < bondCount && lineIndex < lines.length
+                ? OptionalInt.of(lineIndex)
+                : OptionalInt.empty();
+    }
+
+    private String replaceV2000BondType(String bondLine, String bondType) {
+        return bondLine.substring(0, 6) + bondType + bondLine.substring(9);
+    }
+
+    private OptionalInt parseV2000Count(String countsLine, int start, int end, int tokenIndex) {
+        if(countsLine.length() >= end) {
+            try {
+                return OptionalInt.of(Integer.parseInt(countsLine.substring(start, end).trim()));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        String[] tokens = countsLine.trim().split("\\s+");
+        if(tokens.length > tokenIndex) {
+            try {
+                return OptionalInt.of(Integer.parseInt(tokens[tokenIndex]));
+            } catch (NumberFormatException ignored) {
+            }
+        }
+
+        return OptionalInt.empty();
+    }
+
+    private static class QueryBondState {
+        private final int bondIndex;
+        private final int atom1Index;
+        private final int atom2Index;
+        private final String v2000BondType;
+
+        private QueryBondState(int bondIndex, int atom1Index, int atom2Index, String v2000BondType) {
+            this.bondIndex = bondIndex;
+            this.atom1Index = atom1Index;
+            this.atom2Index = atom2Index;
+            this.v2000BondType = v2000BondType;
+        }
+
+        private boolean matches(int atom1, int atom2) {
+            return (atom1Index == atom1 && atom2Index == atom2)
+                    || (atom1Index == atom2 && atom2Index == atom1);
+        }
     }
 
     private Optional<StructureIndexer> getRawStructureIndexerDelegate() {

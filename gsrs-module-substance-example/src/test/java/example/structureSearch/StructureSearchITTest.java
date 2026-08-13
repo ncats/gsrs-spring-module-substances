@@ -94,6 +94,45 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                 "  1  2  " + bondType + "  0  0  0  0");
     }
 
+    private static String complexAnyBondMolfile() throws IOException {
+        return Files.readString(new ClassPathResource("molfiles/substance_structure_any_bond.mol").getFile().toPath());
+    }
+
+    private static String replaceComplexQueryBondType(String molfile, int bondType) {
+        return molfile.replace(" 19 20  8  0  0  0  0",
+                " 19 20  " + bondType + "  0  0  0  0");
+    }
+
+    private static String benzeneMolfile() {
+        return "\n" +
+                "  Ketcher  8122621122D 1   1.00000     0.00000     0\n" +
+                "\n" +
+                "  6  6  0  0  0  0            999 V2000\n" +
+                "    0.0000    1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    0.0000   -1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   -1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "   -1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "  1  2  1  0  0  0  0\n" +
+                "  2  3  2  0  0  0  0\n" +
+                "  3  4  1  0  0  0  0\n" +
+                "  4  5  2  0  0  0  0\n" +
+                "  5  6  1  0  0  0  0\n" +
+                "  6  1  2  0  0  0  0\n" +
+                "M  END";
+    }
+
+    private static String aromaticBenzeneQueryMolfile() {
+        return benzeneMolfile()
+                .replace("  1  2  1  0  0  0  0", "  1  2  4  0  0  0  0")
+                .replace("  2  3  2  0  0  0  0", "  2  3  4  0  0  0  0")
+                .replace("  3  4  1  0  0  0  0", "  3  4  4  0  0  0  0")
+                .replace("  4  5  2  0  0  0  0", "  4  5  4  0  0  0  0")
+                .replace("  5  6  1  0  0  0  0", "  5  6  4  0  0  0  0")
+                .replace("  6  1  2  0  0  0  0", "  6  1  4  0  0  0  0");
+    }
+
     private SearchResultContext substructureSearch(String molfile) throws Exception {
         MultiValueMap<String, String> queryMap = new LinkedMultiValueMap<>();
         queryMap.put("type", Collections.singletonList("sub"));
@@ -336,6 +375,52 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         assertEquals(1, substructureServiceSearch(molfile).getCount());
         assertEquals(1, substructureServiceSearch(replaceFirstSingleBondType(molfile, 8)).getCount());
         assertEquals(1, substructureServiceSearch(replaceFirstSingleBondType(molfile, 5)).getCount());
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void complexQueryBondMolfileShouldFindConcreteStartingStructureBySubstructureSearch() throws Exception {
+        String anyBondQuery = complexAnyBondMolfile();
+        String molfile = replaceComplexQueryBondType(anyBondQuery, 1);
+        UUID uuid = UUID.randomUUID();
+
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+            new ChemicalSubstanceBuilder()
+                    .setStructureWithDefaultReference(molfile)
+                    .addName("Complex query bond searchable concrete structure")
+                    .setUUID(uuid)
+                    .buildJsonAnd(this::assertCreated);
+
+            new ChemicalSubstanceBuilder()
+                    .setStructureWithDefaultReference("C1CCCCC1")
+                    .addName("Unrelated query bond non-match")
+                    .buildJsonAnd(this::assertCreated);
+        });
+
+        assertEquals(1, substructureServiceSearch(molfile).getCount());
+        assertEquals(1, substructureServiceSearch(anyBondQuery).getCount());
+        assertEquals(1, substructureServiceSearch(replaceComplexQueryBondType(anyBondQuery, 5)).getCount());
+        assertEquals(0, substructureServiceSearch(replaceComplexQueryBondType(anyBondQuery, 4)).getCount());
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void aromaticBondMolfileQueryShouldFindAromaticStartingStructureBySubstructureSearch() throws Exception {
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+            new ChemicalSubstanceBuilder()
+                    .setStructureWithDefaultReference(benzeneMolfile())
+                    .addName("Aromatic query bond searchable structure")
+                    .buildJsonAnd(this::assertCreated);
+
+            new ChemicalSubstanceBuilder()
+                    .setStructureWithDefaultReference("C1CCCCC1")
+                    .addName("Non-aromatic query bond non-match")
+                    .buildJsonAnd(this::assertCreated);
+        });
+
+        assertEquals(1, substructureServiceSearch(aromaticBenzeneQueryMolfile()).getCount());
     }
 
     @Test
