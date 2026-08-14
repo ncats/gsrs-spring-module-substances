@@ -334,7 +334,10 @@ public class StructureProcessor {
                 Chemical cc=polymerSimplify(stdMol);
                 // TODO: this only makes sense on standardization.
                 // Need to evaluate that this call is intended as-is.
-
+                if(cc.hasQueryAtoms() || cc.bonds().anyMatch(b->b.isQueryBond())) {
+                    log.info("in StructureProcessiner.instrument, structure has query features so process will be skipped");
+                    return;
+                }
                 hasher.hash(cc, cc.toMol(), new BiConsumer<String, String>() {
                     @Override
                     public void accept(String key, String value){
@@ -357,8 +360,6 @@ public class StructureProcessor {
         struc.stereoCenters = stereo;
         struc.ezCenters = ez;
         struc.charge = charge;
-        //struc.formula = mol.getFormula();
-
 
         Chem.setFormula(struc);
         try {

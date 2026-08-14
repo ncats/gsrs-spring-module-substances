@@ -30,6 +30,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.Arrays;
@@ -73,37 +74,19 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         testIndexValueMakerFactory.addIndexValueMaker(structureHashIndexer);
     }
 
-    private static String anyBondMolfile() {
-        return "\n" +
-                "  Ketcher  8122621122D 1   1.00000     0.00000     0\n" +
-                "\n" +
-                "  2  1  0  0  0  0            999 V2000\n" +
-                "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    1.5000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  8  0  0  0  0\n" +
-                "M  END";
+    private static String anyBondMolfile() throws IOException {
+        String molfileSource = "molfiles/anybond_cn.mol";
+        File molfile = new ClassPathResource(molfileSource).getFile();
+        return  Files.readString(molfile.toPath());
     }
 
-    private static String singleBondMolfile() {
+    private static String singleBondMolfile() throws IOException {
         return anyBondMolfile().replace("  1  2  8  0  0  0  0",
                 "  1  2  1  0  0  0  0");
     }
 
-    private static String atomListMolfile() {
-        return "\n" +
-                "  Ketcher  8132615362D 1   1.00000     0.00000     0\n" +
-                "\n" +
-                "  4  3  0  0  0  0            999 V2000\n" +
-                "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    3.0000    0.0000    0.0000 L   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    4.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  1  0  0  0  0\n" +
-                "  2  3  1  0  0  0  0\n" +
-                "  3  4  1  0  0  0  0\n" +
-                "M  ALS   3  2 F C   N   \n" +
-                "M  END";
-    }
+    private static String atomListMolfile() throws IOException {
+        return Files.readString(new ClassPathResource("molfiles/atomlist_cn.mol").getFile().toPath());    }
 
     private static String replaceFirstSingleBondType(String molfile, int bondType) {
         return molfile.replaceFirst("  1  2  1  0  0  0  0",
@@ -119,27 +102,11 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                 " 19 20  " + bondType + "  0  0  0  0");
     }
 
-    private static String benzeneMolfile() {
-        return "\n" +
-                "  Ketcher  8122621122D 1   1.00000     0.00000     0\n" +
-                "\n" +
-                "  6  6  0  0  0  0            999 V2000\n" +
-                "    0.0000    1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    0.0000   -1.5000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "   -1.2990   -0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "   -1.2990    0.7500    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  1  0  0  0  0\n" +
-                "  2  3  2  0  0  0  0\n" +
-                "  3  4  1  0  0  0  0\n" +
-                "  4  5  2  0  0  0  0\n" +
-                "  5  6  1  0  0  0  0\n" +
-                "  6  1  2  0  0  0  0\n" +
-                "M  END";
+    private static String benzeneMolfile() throws IOException {
+        return Files.readString(new ClassPathResource("molfiles/benzene.mol").getFile().toPath());
     }
 
-    private static String aromaticBenzeneQueryMolfile() {
+    private static String aromaticBenzeneQueryMolfile() throws IOException {
         return benzeneMolfile()
                 .replace("  1  2  1  0  0  0  0", "  1  2  4  0  0  0  0")
                 .replace("  2  3  2  0  0  0  0", "  2  3  4  0  0  0  0")
@@ -425,10 +392,15 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     public void aromaticBondMolfileQueryShouldFindAromaticStartingStructureBySubstructureSearch() throws Exception {
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.executeWithoutResult(s -> {
-            new ChemicalSubstanceBuilder()
-                    .setStructureWithDefaultReference(benzeneMolfile())
-                    .addName("Aromatic query bond searchable structure")
-                    .buildJsonAnd(this::assertCreated);
+            try {
+                new ChemicalSubstanceBuilder()
+                        .setStructureWithDefaultReference(benzeneMolfile())
+                        .addName("Aromatic query bond searchable structure")
+                        .buildJsonAnd(this::assertCreated);
+            } catch (IOException e) {
+                System.err.printf("Error during test: %s%n", e.getMessage());
+                throw new RuntimeException(e);
+            }
 
             new ChemicalSubstanceBuilder()
                     .setStructureWithDefaultReference("C1CCCCC1")
