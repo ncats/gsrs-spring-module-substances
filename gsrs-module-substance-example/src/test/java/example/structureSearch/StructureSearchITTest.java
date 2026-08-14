@@ -89,6 +89,22 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                 "  1  2  1  0  0  0  0");
     }
 
+    private static String atomListMolfile() {
+        return "\n" +
+                "  Ketcher  8132615362D 1   1.00000     0.00000     0\n" +
+                "\n" +
+                "  4  3  0  0  0  0            999 V2000\n" +
+                "    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    3.0000    0.0000    0.0000 L   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "    4.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
+                "  1  2  1  0  0  0  0\n" +
+                "  2  3  1  0  0  0  0\n" +
+                "  3  4  1  0  0  0  0\n" +
+                "M  ALS   3  2 F C   N   \n" +
+                "M  END";
+    }
+
     private static String replaceFirstSingleBondType(String molfile, int bondType) {
         return molfile.replaceFirst("  1  2  1  0  0  0  0",
                 "  1  2  " + bondType + "  0  0  0  0");
@@ -469,6 +485,22 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                 .buildJsonAnd(this::assertCreated);
 
         assertEquals(1, substructureServiceSearch("CC[#6,#7]C").getCount());
+    }
+
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void v2000AtomListShouldMatchRegisteredStructureBySubstructureSearch() throws Exception {
+        new ChemicalSubstanceBuilder()
+                .setStructureWithDefaultReference("CCNCC")
+                .addName("Atom list V2000 positive")
+                .buildJsonAnd(this::assertCreated);
+
+        new ChemicalSubstanceBuilder()
+                .setStructureWithDefaultReference("CCOCC")
+                .addName("Atom list V2000 negative")
+                .buildJsonAnd(this::assertCreated);
+
+        assertEquals(1, substructureServiceSearch(atomListMolfile()).getCount());
     }
 
     @Test
