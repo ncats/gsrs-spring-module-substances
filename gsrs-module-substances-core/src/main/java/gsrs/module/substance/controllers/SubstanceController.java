@@ -1959,7 +1959,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         if(!Structure.Optical.UNSPECIFIED.equals(struc.opticalActivity)
                 && struc.opticalActivity!=null){
-            if(struc.definedStereo>0){
+            if(struc.definedStereo!= null && struc.definedStereo>0){
                 if(Structure.Optical.PLUS_MINUS.equals(struc.opticalActivity)){
                     if(Structure.Stereo.EPIMERIC.equals(struc.stereoChemistry)
                             || Structure.Stereo.RACEMIC.equals(struc.stereoChemistry)
