@@ -4,18 +4,24 @@ import example.GsrsModuleSubstanceApplication;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.chem.StructureProcessor;
+import ix.core.models.Structure;
+import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
+import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.ChemicalValidator;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+
+import java.io.IOException;
 
 @ActiveProfiles("test")
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
@@ -238,4 +244,50 @@ public class ChemicalValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
         ValidationResponse<Substance> response= chemicalValidator.validate(chemV3000, null);
         Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(m->m.isError() && m.getMessage().contains("V3000 molfile")));
     }
+
+    @Test
+    public void testFlagAtomList() throws IOException {
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream("/molfiles/atomlist_cn.mol"),
+                "UTF-8"
+        );
+
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance chemWithList = builder
+                .addName("Listy Molecule")
+                .setStructureWithDefaultReference(molfileText)
+                .build();
+        ChemicalValidator chemicalValidator = new ChemicalValidator();
+        chemicalValidator.setStructureProcessor(structureProcessor);
+        ValidationResponse<Substance> response= chemicalValidator.validate(chemWithList, null);
+        response.getValidationMessages().forEach(m-> System.out.printf("type: %s message: %s%n", m.getMessageType(), m.getMessage()));
+        Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(m->m.getMessageType() == ValidationMessage.MESSAGE_TYPE.ERROR && m.getMessage().toUpperCase().contains("LIST")));
+    }
+
+    @Test
+    public void testAtomListNegative()throws IOException {
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream("/molfiles/no_atom_list_mol"),
+                "UTF-8"
+        );
+        GinasChemicalStructure structure = new GinasChemicalStructure();
+        structure.molfile = molfileText;
+        ChemicalValidator validator = new ChemicalValidator();
+        boolean has = validator.hasAtomLists(structure);
+        Assertions.assertFalse(has);
+    }
+
+    @Test
+    public void testAtomListPositive()throws IOException {
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream("/molfiles/atomlist_cn.mol"),
+                "UTF-8"
+        );
+        GinasChemicalStructure structure = new GinasChemicalStructure();
+        structure.molfile = molfileText;
+        ChemicalValidator validator = new ChemicalValidator();
+        boolean has = validator.hasAtomLists(structure);
+        Assertions.assertTrue(has);
+    }
+
 }

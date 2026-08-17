@@ -1,7 +1,6 @@
 package ix.ginas.utils.validation.validators;
 
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
@@ -13,8 +12,6 @@ import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -38,8 +35,12 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     private boolean allowV3000Molfiles = false;
 
+    private boolean allowAtomLists = false;
+
     private final String V3000_MOLFILE_MARKER = "M  V30";
     private final String V3000_MOLFILE_MARKER2 = "V3000";
+
+    private static String ATOM_LIST_SIGN = "M  ALS ";
 
     public ReferenceRepository getReferenceRepository() {
         return referenceRepository;
@@ -99,6 +100,20 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
         String payload = cs.getStructure().molfile;
         if (payload != null) {
+            boolean keepAnalyzing = true;
+            if( hasQueryFeatures(cs.getStructure()))  {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .WARNING_MESSAGE("This chemical contains query features that are generally not useful in database structures ");
+                callback.addMessage(mes);
+                keepAnalyzing = false;
+            }
+            if(!allowAtomLists && hasAtomLists(cs.getStructure())) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .ERROR_MESSAGE("Atom lists are not allowed for registration");
+                callback.addMessage(mes);
+                keepAnalyzing = false;
+            }
+            if( !keepAnalyzing) return;
 
             try {
                 ix.ginas.utils.validation.PeptideInterpreter.Protein p = PeptideInterpreter
@@ -190,7 +205,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             // check on Racemic stereochemistry October 2020 MAM
             ChemUtils.checkRacemicStereo(cs.getStructure(), callback);
 
-//            ChemUtils.checkChargeBalance(cs.structure, gpm);
             if (cs.getStructure().charge != 0) {
                 GinasProcessingMessage mes = GinasProcessingMessage
                         .WARNING_MESSAGE("Structure is not charged balanced, net charge of: %s", cs.getStructure().charge);
@@ -248,22 +262,12 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             GinasChemicalStructure oldstr, Structure newstr,
             ValidatorCallback callback) {
         List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
-//
-//        String oldhash = null;
-//        String newhash = null;
-        // oldhash = oldstr.getExactHash();
-        // newhash = newstr.getExactHash();
-        // // Should always use the calculated pieces
-        // // TODO: Come back to this and allow for SOME things to be overloaded
-        // if (true || !newhash.equals(oldhash)) {
-        
+
         GinasProcessingMessage mes = GinasProcessingMessage
                 .INFO_MESSAGE("Recomputing structure hash");
-//                .appliableChange(true);
         Structure struc2 = new GinasChemicalStructure(newstr);
         oldstr.updateStructureFields(struc2);
         
-        // }
         if (oldstr.digest == null) {
             oldstr.digest = newstr.digest;
         }
@@ -301,7 +305,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
         gpm.forEach(m -> {
             callback.addMessage(m);
-            // System.out.println(m);
         });
     }
 
@@ -378,4 +381,34 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         this.allowV3000Molfiles = allowV3000Molfiles;
     }
 
+    public boolean isAllowAtomLists() {
+        return allowAtomLists;
+    }
+
+    public void setAllowAtomLists(boolean allowAtomLists) {
+        this.allowAtomLists = allowAtomLists;
+    }
+
+
+    public boolean hasAtomLists(Structure structure) {
+        if(structure.molfile == null || structure.molfile.length() ==0 ) return false;
+
+        if(!structure.molfile.contains(ATOM_LIST_SIGN)) return false;
+
+        String[] molfileLines = structure.molfile.split(("\\n"));
+
+        if( molfileLines.length  >= 4) {
+            int firstValuePoint = structure.molfile.indexOf(molfileLines[3] + molfileLines[3].length());
+            if( structure.molfile.indexOf(molfileLines[3]) > firstValuePoint) {
+                return true;
+            }
+        }
+        return true;
+    }
+
+    public boolean hasQueryFeatures(Structure structure) {
+        Chemical structureAsChemical =structure.toChemical();
+        if( structureAsChemical == null)return true;
+        return StructureProcessor.hasQueryFeatures(structureAsChemical);
+    }
 }
