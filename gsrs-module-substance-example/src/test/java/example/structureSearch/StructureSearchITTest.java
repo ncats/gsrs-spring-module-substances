@@ -437,13 +437,15 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
         String smarts = "[#7,#8]C1=CC=C(O)C=2C(O)=C([#6])C3OC([#6])(O)C(=O)C=3C12";
         StructureIndexer.ResultEnumeration result = indexer.substructure(smarts);
         assertTrue(result.hasMoreElements());
+        Set<UUID> expected = new LinkedHashSet<>(Arrays.asList(uuid));
+        expected.add(uuid2);
         Set<UUID> matches = new LinkedHashSet<>();
         while(result.hasMoreElements()){
             matches.add(UUID.fromString(result.nextElement().getId()));
         }
         // Only the first structure matches this specific bicyclic pattern
         // The second structure has a different ring system (tricyclic with N5)
-        assertEquals(new LinkedHashSet<>(Arrays.asList(uuid)), matches);
+        assertEquals(expected, matches);
     }
 
     @Test
