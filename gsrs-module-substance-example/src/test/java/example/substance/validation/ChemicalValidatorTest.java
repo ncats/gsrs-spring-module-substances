@@ -309,6 +309,46 @@ public class ChemicalValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
     }
 
     @Test
+    public void testZeroAtomStructureAllowed()throws IOException {
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream("/molfiles/zero_atom.mol"),
+                "UTF-8"
+        );
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance zeroAtomSubstance = builder
+                .addName("Some name")
+                .setStructureWithDefaultReference(molfileText)
+                .build();
+
+        ChemicalValidator validator = new ChemicalValidator();
+        validator.setAllow0AtomStructures(true);
+        validator.setStructureProcessor(structureProcessor);
+        ValidationResponse<Substance> response = validator.validate(zeroAtomSubstance, null);
+        Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(
+                m->m.isError() && m.getMessage().contains("structure with one or more atoms")));
+    }
+
+    @Test
+    public void testMultiAtomStructureAllowed()throws IOException {
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream("/molfiles/4XXR6FT8ZA.mol"),
+                "UTF-8"
+        );
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance zeroAtomSubstance = builder
+                .addName("Some name")
+                .setStructureWithDefaultReference(molfileText)
+                .build();
+
+        ChemicalValidator validator = new ChemicalValidator();
+        validator.setAllow0AtomStructures(true);
+        validator.setStructureProcessor(structureProcessor);
+        ValidationResponse<Substance> response = validator.validate(zeroAtomSubstance, null);
+        Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(
+                m->m.isError() && m.getMessage().contains("structure with one or more atoms")));
+    }
+
+    @Test
     public void testZeroAtomStructureBeforeAndAfter()throws IOException {
         String molfileText = IOUtils.toString(
                 this.getClass().getResourceAsStream("/molfiles/zero_atom.mol"),
