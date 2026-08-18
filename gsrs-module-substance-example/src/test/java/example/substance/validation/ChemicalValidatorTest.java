@@ -4,7 +4,6 @@ import example.GsrsModuleSubstanceApplication;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.chem.StructureProcessor;
-import ix.core.models.Structure;
 import ix.core.validator.ValidationMessage;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
@@ -288,6 +287,45 @@ public class ChemicalValidatorTest extends AbstractSubstanceJpaFullStackEntityTe
         ChemicalValidator validator = new ChemicalValidator();
         boolean has = validator.hasAtomLists(structure);
         Assertions.assertTrue(has);
+    }
+
+    @Test
+    public void testZeroAtomStructure()throws IOException {
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream("/molfiles/zero_atom.mol"),
+                "UTF-8"
+        );
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance zeroAtomSubstance = builder
+                .addName("Some name")
+                .setStructureWithDefaultReference(molfileText)
+                .build();
+
+        ChemicalValidator validator = new ChemicalValidator();
+        validator.setStructureProcessor(structureProcessor);
+        ValidationResponse<Substance> response = validator.validate(zeroAtomSubstance, null);
+        Assertions.assertTrue(response.getValidationMessages().stream().anyMatch(
+                m->m.isError() && m.getMessage().contains("structure with one or more atoms")));
+    }
+
+    @Test
+    public void testZeroAtomStructureBeforeAndAfter()throws IOException {
+        String molfileText = IOUtils.toString(
+                this.getClass().getResourceAsStream("/molfiles/zero_atom.mol"),
+                "UTF-8"
+        );
+        ChemicalSubstanceBuilder builder = new ChemicalSubstanceBuilder();
+        ChemicalSubstance zeroAtomSubstance = builder
+                .addName("Some name")
+                .setStructureWithDefaultReference(molfileText)
+                .build();
+
+        ChemicalSubstance substanceBefore = builder.build();
+        ChemicalValidator validator = new ChemicalValidator();
+        validator.setStructureProcessor(structureProcessor);
+        ValidationResponse<Substance> response = validator.validate(zeroAtomSubstance, substanceBefore);
+        Assertions.assertTrue(response.getValidationMessages().stream().noneMatch(
+                m->m.isError() && m.getMessage().contains("structure with one or more atoms")));
     }
 
 }

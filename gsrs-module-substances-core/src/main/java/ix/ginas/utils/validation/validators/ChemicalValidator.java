@@ -292,14 +292,18 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
         return true;
     }
-    
-    private boolean isV3000(ChemicalSubstance cs) {
-        if( (cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER) && cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER2))
-                || (cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER) && cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER2))) {
-            log.info("V3000 molfile detected");
-            return true;
-        }
-        return false;
+
+    private boolean isV3000(ChemicalSubstance chemical) {
+        Structure structure = chemical.getStructure();
+
+        return containsV3000Markers(structure.molfile)
+                || containsV3000Markers(structure.smiles);
+    }
+
+    private boolean containsV3000Markers(String value) {
+        return value != null
+                && value.contains(V3000_MOLFILE_MARKER)
+                && value.contains(V3000_MOLFILE_MARKER2);
     }
 
     private ProcessedStructure processStructure(ChemicalSubstance cs, ValidatorCallback callback) {
