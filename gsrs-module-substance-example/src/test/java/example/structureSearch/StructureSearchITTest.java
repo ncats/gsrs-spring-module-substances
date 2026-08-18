@@ -415,24 +415,27 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
     @WithMockUser(value = "admin", roles = "Admin")
     public void ensureSubstructureSearchHasBasicSmartsSupport() throws Exception {
         UUID uuid = UUID.randomUUID();
-        new ChemicalSubstanceBuilder()
-
-                .setStructureWithDefaultReference("COC1=CC=C(O)C2=C(O)C(C)=C3OC(C)(O)C(=O)C3=C12")
-                .addName("Test")
-                .setUUID(uuid)
-                .buildJsonAnd(this::assertCreated);
+        String smiles1 = "COC1=CC=C(O)C2=C(O)C(C)=C3OC(C)(O)C(=O)C3=C12";
 
         UUID uuid2 = UUID.randomUUID();
+        String smiles2 = "CC1=C2OC(C)(O)C(=O)C2=C3C4=C(C=C(O)C3=C1O)N5C=CC=CC5N4";
         new ChemicalSubstanceBuilder()
-
-                .setStructureWithDefaultReference("CC1=C2OC(C)(O)C(=O)C2=C3C4=C(C=C(O)C3=C1O)N5C=CC=CC5=N4")
+                .setStructureWithDefaultReference(smiles2)
                 .addName("Test2")
                 .setUUID(uuid2)
                 .buildJsonAnd(this::assertCreated);
+        System.out.printf("UUID2: %s, SMILES2: %s%n", uuid2, smiles2);
 
-        // Search for the specific bicyclic structure in first compound
-        // Using a SMARTS pattern that matches oxygen or nitrogen attached to aromatic rings
-        StructureIndexer.ResultEnumeration result = indexer.substructure("[#7,#8]c1ccc(O)c2c(O)c([#6])c3OC([#6])(O)C(=O)c3c12");
+        new ChemicalSubstanceBuilder()
+                .setStructureWithDefaultReference(smiles1)
+                .addName("Test")
+                .setUUID(uuid)
+                .buildJsonAnd(this::assertCreated);
+        System.out.printf("UUID1: %s, SMILES1: %s%n", uuid, smiles1);
+
+        String oldSmartsForComparison ="[#7,#8]c1ccc(O)c2c(O)c([#6])c3OC([#6])(O)C(=O)c3c12";
+        String smarts = "[#7,#8]C1=CC=C(O)C=2C(O)=C([#6])C3OC([#6])(O)C(=O)C=3C12";
+        StructureIndexer.ResultEnumeration result = indexer.substructure(smarts);
         assertTrue(result.hasMoreElements());
         Set<UUID> matches = new LinkedHashSet<>();
         while(result.hasMoreElements()){

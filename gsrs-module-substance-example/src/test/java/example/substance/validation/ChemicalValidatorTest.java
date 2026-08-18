@@ -1,7 +1,6 @@
 package example.substance.validation;
 
 import example.GsrsModuleSubstanceApplication;
-import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
 import ix.core.chem.StructureProcessor;
 import ix.core.validator.ValidationMessage;
