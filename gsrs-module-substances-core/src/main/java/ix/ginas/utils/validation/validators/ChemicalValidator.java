@@ -130,14 +130,13 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         }
 
         ProcessedStructure processed =
-                processStructure(chemical);
+                processStructure(chemical,callback);
 
         if (processed == null) {
             return;
         }
 
         validatePossiblePeptide(chemical, callback);
-        reconcileMoieties(chemical, oldSubstance, processed, callback);
         DeduplicateCallback deduplicateCallback = new DeduplicateCallback(callback);
 
         reconcileMoieties(
@@ -176,8 +175,8 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         }
 
         if (!allow0AtomStructures
-                && substanceIs0AtomChemical(cs) == ChemicalClassification.ZERO_ATOM_CHEMICAL &&
-                substanceIs0AtomChemical(oldSubstance) != ChemicalClassification.ZERO_ATOM_CHEMICAL) {
+                && classifySubstanceByNumberOfAtoms(cs) == ChemicalClassification.ZERO_ATOM_CHEMICAL &&
+                classifySubstanceByNumberOfAtoms(oldSubstance) != ChemicalClassification.ZERO_ATOM_CHEMICAL) {
 
             callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "Chemical substance must have a chemical structure with one or more atoms"));
@@ -194,12 +193,9 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     }
 
     @Override
-    public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory c) {
-        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)) {
-            return true;
-        }else {
-            return false;
-        }
+    public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory category) {
+        return ValidatorCategory.CATEGORY_DEFINITION().equals(category)
+            || ValidatorCategory.CATEGORY_ALL().equals(category);
     }
 
 	public boolean isAllow0AtomStructures() {
@@ -249,7 +245,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         return StructureProcessor.hasQueryFeatures(structureAsChemical);
     }
 
-    private ChemicalClassification substanceIs0AtomChemical(Substance substance) {
+    private ChemicalClassification classifySubstanceByNumberOfAtoms(Substance substance) {
         if( ! (substance instanceof ChemicalSubstance chemicalSubstance)) {
             log.trace("previous substance was other than a Chemical");
             return ChemicalClassification.INVALID_OR_NON_CHEMICAL;
@@ -263,7 +259,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             log.info("no valid Chemical found");
             return ChemicalClassification.INVALID_OR_NON_CHEMICAL;
         }
-        return chemical.getAtomCount() <= 0 ? ChemicalClassification.ZERO_ATOM_CHEMICAL : ChemicalClassification.MULTI_ATOM_CHEMICAL;
+        return chemical.getAtomCount() == 0 ? ChemicalClassification.ZERO_ATOM_CHEMICAL : ChemicalClassification.MULTI_ATOM_CHEMICAL;
     }
 
     private boolean validateSupportedMolfileFeatures(
@@ -271,7 +267,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         ValidatorCallback callback) {
         Structure structure = cs.getStructure();
 
-        if (!allowV3000Molfiles && isV3000(cs, callback)) {
+        if (!allowV3000Molfiles && isV3000(cs)) {
             log.info("V3000 molfile detected");
             callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
                     "GSRS does not currently support V3000 molfiles. " +
@@ -297,23 +293,22 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         return true;
     }
     
-    private boolean isV3000(ChemicalSubstance cs, ValidatorCallback callback) {
+    private boolean isV3000(ChemicalSubstance cs) {
         if( (cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER) && cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER2))
                 || (cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER) && cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER2))) {
             log.info("V3000 molfile detected");
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "GSRS does not currently support V3000 molfiles. Use another program to convert the structure to an earlier format."));
             return true;
         }
         return false;
     }
 
-    private ProcessedStructure processStructure(ChemicalSubstance cs) {
+    private ProcessedStructure processStructure(ChemicalSubstance cs, ValidatorCallback callback) {
         String payload = cs.getStructure().molfile;
 
         List<Structure> computedMoieties = new ArrayList<>();
 
         Structure computedRoot =structureProcessor.instrument(payload, computedMoieties, true);
+        suggestMolfileConversion(cs, computedRoot,callback);
 
         List<Moiety> moieties = computedMoieties.stream()
             .map(this::toMoiety)
@@ -325,6 +320,7 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     private Moiety toMoiety(Structure structure ){
             Moiety moiety = new Moiety();
             moiety.structure = new GinasChemicalStructure(structure);
+            moiety.setCount(structure.count);
             return moiety;
     }
 
@@ -482,5 +478,24 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             callback.addMessage(mes);
         }
 
+    }
+
+    private void suggestMolfileConversion(
+        ChemicalSubstance chemicalSubstance, Structure processed, ValidatorCallback callback) {
+        if(!chemicalSubstance.getStructure().molfile.contains("M  END")){
+            //not a mol convert it
+            //struc is already standardized
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(
+                            "Structure should always be specified as mol file converting to format to mol automatically").appliableChange(true),
+                    () -> {
+                        try {
+                            chemicalSubstance.setStructure(chemicalSubstance.getStructure().copy());
+                            chemicalSubstance.getStructure().molfile = processed.molfile;
+                        }catch(Exception e){
+                            e.printStackTrace();
+                            callback.addMessage(new ExceptionValidationMessage(e));
+                        }
+                    } );
+        }
     }
 }
