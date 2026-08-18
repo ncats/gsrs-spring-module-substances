@@ -25,6 +25,7 @@ import ix.core.search.bulk.UserSavedListService;
 import ix.ginas.utils.SubstanceFieldNameDecoratorConfiguration;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
+import ix.ncats.resolvers.PubChemNameListResolver;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.boot.tomcat.ConfigurableTomcatWebServerFactory;
 import org.springframework.context.annotation.Bean;
@@ -89,7 +90,9 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ChemicalUtils.class,
         SubstanceEntityServiceConfiguration.class,
         UserRoleConfiguration.class,
-        RolesConfig.class
+        RolesConfig.class,
+        IupacNameService.class,
+        PubChemNameListResolver.class
 })
 public class SubstanceCoreConfiguration {
     private static final String RELAXED_CHARS = "<>[\\]^`{|}";
