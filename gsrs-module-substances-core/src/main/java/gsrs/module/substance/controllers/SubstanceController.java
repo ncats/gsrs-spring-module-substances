@@ -1472,6 +1472,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             return ByteWrapper.of(b);
         }, ByteWrapper.class));
+        if(bdat== null) {
+            log.warn("error generating image for {}", idOrSmiles);
+            return new ResponseEntity<>("No luck!",  HttpStatus.NOT_FOUND);
+        }
 
         HttpHeaders headers = new HttpHeaders();
 
