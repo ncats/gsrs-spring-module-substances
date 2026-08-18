@@ -275,20 +275,15 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
             return false;
         }
 
-        boolean keepGoing = true;
-        if (hasQueryFeatures(structure)) {
-            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(
-                    "This chemical contains query features that are generally " +
-                    "not useful in database structures "));
-            keepGoing= false;
-        }
-
         if (!allowAtomLists && hasAtomLists(structure)) {
             callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                "Atom lists are not allowed for registration"));
-            keepGoing= false;
+                    "Atom lists are not allowed for registration"));
+            return false;//atom lists prevent some future processing...
         }
-        if(!keepGoing) return false;
+        if (hasQueryFeatures(structure)) {
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "This chemical contains query features that are not alloweed in database structures "));
+        }
 
         return true;
     }
