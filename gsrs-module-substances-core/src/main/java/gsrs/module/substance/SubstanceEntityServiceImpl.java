@@ -695,6 +695,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     private void normalizeUpdatedEntityForDiff(Substance persisted, Substance updated) {
+        normalizeEmptyModificationsForDiff(persisted, updated);
+        reuseUnchangedDefinitionGraphForDiff(persisted, updated);
         if (!(persisted instanceof ChemicalSubstance persistedChemical)
                 || !(updated instanceof ChemicalSubstance updatedChemical)) {
             return;
@@ -874,7 +876,66 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private boolean hasModificationsChange(Substance persisted, Substance updated) {
         Modifications persistedModifications = persisted == null ? null : persisted.modifications;
         Modifications updatedModifications = updated == null ? null : updated.modifications;
+        if (isEmptyModifications(persistedModifications) && isEmptyModifications(updatedModifications)) {
+            return false;
+        }
         return !sameJson(persistedModifications, updatedModifications);
+    }
+
+    private void normalizeEmptyModificationsForDiff(Substance persisted, Substance updated) {
+        if (persisted == null || updated == null
+                || !isEmptyModifications(persisted.modifications)
+                || !isEmptyModifications(updated.modifications)) {
+            return;
+        }
+        updated.modifications = persisted.modifications;
+    }
+
+    private boolean isEmptyModifications(Modifications modifications) {
+        return modifications == null
+                || (isEmptyCollection(modifications.agentModifications)
+                && isEmptyCollection(modifications.physicalModifications)
+                && isEmptyCollection(modifications.structuralModifications));
+    }
+
+    private boolean isEmptyCollection(Collection<?> values) {
+        return values == null || values.isEmpty();
+    }
+
+    private void reuseUnchangedDefinitionGraphForDiff(Substance persisted, Substance updated) {
+        if (persisted instanceof SpecifiedSubstanceGroup1Substance persistedSsg1
+                && updated instanceof SpecifiedSubstanceGroup1Substance updatedSsg1
+                && sameJson(persistedSsg1.specifiedSubstance, updatedSsg1.specifiedSubstance)) {
+            updatedSsg1.specifiedSubstance = persistedSsg1.specifiedSubstance;
+        }
+        if (persisted instanceof ProteinSubstance persistedProteinSubstance
+                && updated instanceof ProteinSubstance updatedProteinSubstance
+                && sameJson(persistedProteinSubstance.protein, updatedProteinSubstance.protein)) {
+            updatedProteinSubstance.setProtein(persistedProteinSubstance.protein);
+        }
+        if (persisted instanceof MixtureSubstance persistedMixtureSubstance
+                && updated instanceof MixtureSubstance updatedMixtureSubstance
+                && sameJson(persistedMixtureSubstance.mixture, updatedMixtureSubstance.mixture)) {
+            updatedMixtureSubstance.mixture = persistedMixtureSubstance.mixture;
+        }
+        if (persisted instanceof PolymerSubstance persistedPolymerSubstance
+                && updated instanceof PolymerSubstance updatedPolymerSubstance
+                && sameJson(persistedPolymerSubstance.polymer, updatedPolymerSubstance.polymer)) {
+            updatedPolymerSubstance.polymer = persistedPolymerSubstance.polymer;
+        }
+        if (persisted instanceof StructurallyDiverseSubstance persistedStructurallyDiverseSubstance
+                && updated instanceof StructurallyDiverseSubstance updatedStructurallyDiverseSubstance
+                && sameJson(persistedStructurallyDiverseSubstance.structurallyDiverse,
+                updatedStructurallyDiverseSubstance.structurallyDiverse)) {
+            updatedStructurallyDiverseSubstance.structurallyDiverse =
+                    persistedStructurallyDiverseSubstance.structurallyDiverse;
+        }
+        if (persisted instanceof NucleicAcidSubstance persistedNucleicAcidSubstance
+                && updated instanceof NucleicAcidSubstance updatedNucleicAcidSubstance
+                && sameJson(persistedNucleicAcidSubstance.nucleicAcid,
+                updatedNucleicAcidSubstance.nucleicAcid)) {
+            updatedNucleicAcidSubstance.setNucleicAcid(persistedNucleicAcidSubstance.nucleicAcid);
+        }
     }
 
     private boolean sameJson(Object persisted, Object updated) {
@@ -949,8 +1010,25 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Protein existingProtein = managed instanceof ProteinSubstance managedProteinSubstance
                 ? managedProteinSubstance.protein
                 : null;
+        Mixture existingMixture = managed instanceof MixtureSubstance managedMixtureSubstance
+                ? managedMixtureSubstance.mixture
+                : null;
+        Polymer existingPolymer = managed instanceof PolymerSubstance managedPolymerSubstance
+                ? managedPolymerSubstance.polymer
+                : null;
+        StructurallyDiverse existingStructurallyDiverse =
+                managed instanceof StructurallyDiverseSubstance managedStructurallyDiverseSubstance
+                        ? managedStructurallyDiverseSubstance.structurallyDiverse
+                        : null;
+        NucleicAcid existingNucleicAcid = managed instanceof NucleicAcidSubstance managedNucleicAcidSubstance
+                ? managedNucleicAcidSubstance.nucleicAcid
+                : null;
         boolean preserveSpecifiedSubstance = existingSpecifiedSubstance != null;
         boolean preserveProtein = existingProtein != null;
+        boolean preserveMixture = existingMixture != null;
+        boolean preservePolymer = existingPolymer != null;
+        boolean preserveStructurallyDiverse = existingStructurallyDiverse != null;
+        boolean preserveNucleicAcid = existingNucleicAcid != null;
         List<Name> existingNameList = managed.names;
         Map<UUID, Name> existingNames = mapByUuid(existingNameList);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
@@ -1030,6 +1108,18 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 if (preserveProtein) {
                     updatedObject.remove("protein");
                 }
+                if (preserveMixture) {
+                    updatedObject.remove("mixture");
+                }
+                if (preservePolymer) {
+                    updatedObject.remove("polymer");
+                }
+                if (preserveStructurallyDiverse) {
+                    updatedObject.remove("structurallyDiverse");
+                }
+                if (preserveNucleicAcid) {
+                    updatedObject.remove("nucleicAcid");
+                }
             }
             Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementStructure != null) {
@@ -1041,11 +1131,25 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             if (preserveProtein && replaced instanceof ProteinSubstance replacedProteinSubstance) {
                 replacedProteinSubstance.setProtein(existingProtein);
             }
-            replaced.modifications = reconcileManagedModifications(replacementModifications, existingModifications,
+            if (preserveMixture && replaced instanceof MixtureSubstance replacedMixtureSubstance) {
+                replacedMixtureSubstance.mixture = existingMixture;
+            }
+            if (preservePolymer && replaced instanceof PolymerSubstance replacedPolymerSubstance) {
+                replacedPolymerSubstance.polymer = existingPolymer;
+            }
+            if (preserveStructurallyDiverse
+                    && replaced instanceof StructurallyDiverseSubstance replacedStructurallyDiverseSubstance) {
+                replacedStructurallyDiverseSubstance.structurallyDiverse = existingStructurallyDiverse;
+            }
+            if (preserveNucleicAcid && replaced instanceof NucleicAcidSubstance replacedNucleicAcidSubstance) {
+                replacedNucleicAcidSubstance.setNucleicAcid(existingNucleicAcid);
+            }
+            Modifications reconciledModifications = reconcileManagedModifications(replacementModifications, existingModifications,
                     existingModificationsUuid, existingAgentModificationList, existingPhysicalModificationList,
                     existingStructuralModificationList, existingAgentModifications, existingPhysicalModifications,
                     existingStructuralModifications, existingPhysicalParameters, existingPhysicalParameterLists,
                     existingPhysicalParameterAmounts, existingOwnedAmounts, existingOwnedSubstanceReferences);
+            setManagedModifications(replaced, reconciledModifications);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
                 if (existingMoieties != null) {
                     for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
@@ -1074,6 +1178,18 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         } finally {
             entityManager.setFlushMode(previousFlushMode);
         }
+    }
+
+    private void setManagedModifications(Substance substance, Modifications modifications) {
+        if (substance instanceof ProteinSubstance proteinSubstance) {
+            proteinSubstance.setModifications(modifications);
+            return;
+        }
+        if (substance instanceof NucleicAcidSubstance nucleicAcidSubstance) {
+            nucleicAcidSubstance.setModifications(modifications);
+            return;
+        }
+        substance.modifications = modifications;
     }
 
     private Modifications reconcileManagedModifications(Modifications updatedModifications,
