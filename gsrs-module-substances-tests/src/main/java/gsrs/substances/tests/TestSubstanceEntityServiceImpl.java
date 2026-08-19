@@ -2,9 +2,6 @@ package gsrs.substances.tests;
 
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.service.GsrsEntityService;
-import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.v1.GinasChemicalStructure;
-import ix.ginas.models.v1.Moiety;
 import ix.ginas.models.v1.Substance;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.EntityManager;
@@ -28,7 +25,6 @@ public class TestSubstanceEntityServiceImpl extends SubstanceEntityServiceImpl {
     @Override
     protected Substance create(Substance substance) {
         normalizeCreateGraphForTest(substance);
-        TestPersistUuidSupport.refreshReferenceIds(substance);
         // Hibernate 6 requires assigned-id entities in the graph to have IDs pre-set.
         TestPersistUuidSupport.ensurePersistableIds(substance);
         EntityManager entityManager = getEntityManager();
@@ -41,39 +37,10 @@ public class TestSubstanceEntityServiceImpl extends SubstanceEntityServiceImpl {
         if (substance == null) {
             return;
         }
+        super.normalizeCreateGraph(substance);
         if (!preserveCreateSubstanceUuid.get()) {
             substance.uuid = null;
         }
-        substance.version = "1";
-        if (substance.modifications != null) {
-            substance.modifications.uuid = null;
-        }
-
-        if (substance instanceof ChemicalSubstance chemicalSubstance) {
-            resetChemicalGraphIds(chemicalSubstance);
-        }
-    }
-
-    private void resetChemicalGraphIds(ChemicalSubstance chemicalSubstance) {
-        if (chemicalSubstance == null) {
-            return;
-        }
-        resetChemicalStructureIds(chemicalSubstance.getStructure());
-        if (chemicalSubstance.getMoieties() != null) {
-            for (Moiety moiety : chemicalSubstance.getMoieties()) {
-                moiety.uuid = null;
-                moiety.innerUuid = null;
-                resetChemicalStructureIds(moiety.structure);
-            }
-        }
-    }
-
-    private void resetChemicalStructureIds(GinasChemicalStructure structure) {
-        if (structure == null) {
-            return;
-        }
-        structure.id = null;
-        structure.version = null;
     }
 
     @Override
