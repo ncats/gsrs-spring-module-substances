@@ -690,8 +690,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private boolean hasModificationsChange(Substance persisted, Substance updated) {
         Modifications persistedModifications = persisted == null ? null : persisted.modifications;
         Modifications updatedModifications = updated == null ? null : updated.modifications;
-        return !Objects.equals(objectMapper.valueToTree(persistedModifications),
-                objectMapper.valueToTree(updatedModifications));
+        return !sameJson(persistedModifications, updatedModifications);
+    }
+
+    private boolean sameJson(Object persisted, Object updated) {
+        return Objects.equals(objectMapper.valueToTree(persisted), objectMapper.valueToTree(updated));
     }
 
     private boolean sameMoietyCollectionForDiff(List<Moiety> persistedMoieties, List<Moiety> updatedMoieties) {
@@ -759,9 +762,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         SpecifiedSubstanceGroup1 existingSpecifiedSubstance = managed instanceof SpecifiedSubstanceGroup1Substance managedSsg1
                 ? managedSsg1.specifiedSubstance
                 : null;
-        SpecifiedSubstanceGroup1 replacementSpecifiedSubstance = updated instanceof SpecifiedSubstanceGroup1Substance updatedSsg1
-                ? updatedSsg1.specifiedSubstance
+        Protein existingProtein = managed instanceof ProteinSubstance managedProteinSubstance
+                ? managedProteinSubstance.protein
                 : null;
+        boolean preserveSpecifiedSubstance = existingSpecifiedSubstance != null;
+        boolean preserveProtein = existingProtein != null;
         List<Name> existingNameList = managed.names;
         Map<UUID, Name> existingNames = mapByUuid(existingNameList);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
@@ -821,18 +826,22 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             }
             if (updatedJson instanceof ObjectNode updatedObject) {
                 updatedObject.remove("modifications");
-                if (updated instanceof SpecifiedSubstanceGroup1Substance) {
+                if (preserveSpecifiedSubstance) {
                     updatedObject.remove("specifiedSubstance");
+                }
+                if (preserveProtein) {
+                    updatedObject.remove("protein");
                 }
             }
             Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementStructure != null) {
                 replacedChemical.setStructure(reconcileManagedChemicalStructure(replacementStructure, existingStructures));
             }
-            if (replaced instanceof SpecifiedSubstanceGroup1Substance replacedSsg1) {
-                replacedSsg1.specifiedSubstance = existingSpecifiedSubstance == null
-                        ? replacementSpecifiedSubstance
-                        : existingSpecifiedSubstance;
+            if (preserveSpecifiedSubstance && replaced instanceof SpecifiedSubstanceGroup1Substance replacedSsg1) {
+                replacedSsg1.specifiedSubstance = existingSpecifiedSubstance;
+            }
+            if (preserveProtein && replaced instanceof ProteinSubstance replacedProteinSubstance) {
+                replacedProteinSubstance.setProtein(existingProtein);
             }
             replaced.modifications = reconcileManagedModifications(replacementModifications, existingModifications,
                     existingModificationsUuid, existingAgentModificationList, existingPhysicalModificationList,

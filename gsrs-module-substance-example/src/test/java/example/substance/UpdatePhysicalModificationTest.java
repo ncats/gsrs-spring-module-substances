@@ -8,9 +8,11 @@ import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.SpecifiedSubstanceGroup1SubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.PhysicalModification;
+import ix.ginas.models.v1.ProteinSubstance;
 import ix.ginas.models.v1.SpecifiedSubstanceComponent;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
+import ix.ginas.models.v1.StructuralModification;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -18,6 +20,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @WithMockUser(username = "admin", roles = "Admin")
 public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTest {
@@ -48,6 +51,32 @@ public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTe
         assertEquals("PHYSICAL PROCESS", modification.physicalModificationRole);
         assertEquals(1, modification.parameters.size());
         assertEquals("TEMPERATURE", modification.parameters.get(0).parameterName);
+    }
+
+    @Test
+    void addStructuralModificationWithAmountToProtein() throws Exception {
+        ObjectNode createJson = (ObjectNode) new SubstanceBuilder()
+                .asProtein()
+                .addName("Protein with structural modification")
+                .addSubunitWithDefaultReference("ACDEFGHIK")
+                .buildJson();
+        createJson.set("modifications", emptyModificationsJson());
+
+        ProteinSubstance created = (ProteinSubstance) assertCreated(createJson);
+
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        ((ArrayNode) updateJson.at("/modifications/structuralModifications"))
+                .add(structuralModificationWithAmountJson());
+
+        ProteinSubstance updated = (ProteinSubstance) assertUpdated(updateJson);
+        StructuralModification modification = updated.modifications.structuralModifications.get(0);
+
+        assertEquals(1, updated.modifications.structuralModifications.size());
+        assertEquals("AMINO_ACID_SUBSTITUTION", modification.structuralModificationType);
+        assertEquals("COMPLETE", modification.extent);
+        assertEquals(1, modification.getSites().size());
+        assertNotNull(modification.extentAmount);
+        assertEquals(1.0, modification.extentAmount.average);
     }
 
     private SpecifiedSubstanceGroup1 specifiedSubstanceFor(Substance basis) {
@@ -85,6 +114,30 @@ public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTe
                       "references": []
                     }
                   ],
+                  "references": []
+                }
+                """);
+    }
+
+    private JsonNode structuralModificationWithAmountJson() throws Exception {
+        return mapper.readTree("""
+                {
+                  "structuralModificationType": "AMINO_ACID_SUBSTITUTION",
+                  "locationType": "SITE-SPECIFIC",
+                  "residueModified": "GLYCINE",
+                  "sites": [
+                    {
+                      "subunitIndex": 1,
+                      "residueIndex": 1
+                    }
+                  ],
+                  "extent": "COMPLETE",
+                  "extentAmount": {
+                    "type": "EXACT",
+                    "average": 1.0,
+                    "units": "mol"
+                  },
+                  "modificationGroup": "1",
                   "references": []
                 }
                 """);
