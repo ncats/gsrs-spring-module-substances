@@ -19,14 +19,17 @@ import gsrs.validator.GsrsValidatorFactory;
 import gsrs.validator.ValidatorConfig;
 import ix.core.EntityFetcher;
 import ix.core.chem.StructureProcessor;
-import ix.core.models.Structure;
 import ix.core.models.ForceUpdatableModel;
+import ix.core.models.Keyword;
+import ix.core.models.Structure;
 import ix.core.util.EntityUtils;
 import ix.core.util.LogUtil;
 import ix.core.validator.*;
+import ix.ginas.models.GinasAccessReferenceControlled;
+import ix.ginas.models.GinasCommonData;
+import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.v1.Linkage;
 import ix.ginas.models.v1.ChemicalSubstance;
-import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.AgentModification;
 import ix.ginas.models.v1.Component;
@@ -308,7 +311,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
     }
 
-    private void normalizeCreateGraph(Substance substance) {
+    protected void normalizeCreateGraph(Substance substance) {
         if (substance == null) {
             return;
         }
@@ -316,6 +319,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         if (substance.modifications != null) {
             substance.modifications.uuid = null;
         }
+        resetSubstanceOwnedGraphIds(substance);
         if (substance instanceof ChemicalSubstance chemicalSubstance) {
             resetChemicalGraphIds(chemicalSubstance);
         }
@@ -336,6 +340,186 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         if (substance instanceof NucleicAcidSubstance nucleicAcidSubstance) {
             resetNucleicAcidGraphIds(nucleicAcidSubstance.nucleicAcid);
+        }
+    }
+
+    private void resetSubstanceOwnedGraphIds(Substance substance) {
+        if (substance.names != null) {
+            for (Name name : substance.names) {
+                if (name == null) {
+                    continue;
+                }
+                name.uuid = null;
+                if (name.nameOrgs != null) {
+                    for (NameOrg nameOrg : name.nameOrgs) {
+                        if (nameOrg != null) {
+                            nameOrg.uuid = null;
+                        }
+                    }
+                }
+            }
+        }
+        if (substance.codes != null) {
+            for (Code code : substance.codes) {
+                if (code != null) {
+                    code.uuid = null;
+                }
+            }
+        }
+        if (substance.notes != null) {
+            for (Note note : substance.notes) {
+                if (note != null) {
+                    note.uuid = null;
+                }
+            }
+        }
+        resetPropertyGraphIds(substance.properties);
+        resetRelationshipGraphIds(substance.relationships);
+        remapReferenceKeywords(substance, resetReferenceGraphIds(substance.references));
+        resetModificationGraphIds(substance.modifications);
+    }
+
+    private Map<String, String> resetReferenceGraphIds(List<Reference> references) {
+        Map<String, String> replacements = new LinkedHashMap<>();
+        if (references == null) {
+            return replacements;
+        }
+        for (Reference reference : references) {
+            if (reference == null || reference.uuid == null) {
+                continue;
+            }
+            UUID replacement = UUID.randomUUID();
+            replacements.put(reference.uuid.toString(), replacement.toString());
+            reference.uuid = replacement;
+        }
+        return replacements;
+    }
+
+    private void remapReferenceKeywords(Substance substance, Map<String, String> replacements) {
+        if (substance == null || replacements.isEmpty()) {
+            return;
+        }
+        for (GinasAccessReferenceControlled child : substance.getAllChildrenCapableOfHavingReferences()) {
+            if (child == null || child.getReferences() == null || child.getReferences().isEmpty()) {
+                continue;
+            }
+            Set<Keyword> remappedReferences = new LinkedHashSet<>();
+            boolean changed = false;
+            for (Keyword keyword : child.getReferences()) {
+                if (keyword == null) {
+                    continue;
+                }
+                String replacement = shouldRemapReferenceKeyword(keyword)
+                        ? replacements.get(keyword.term)
+                        : null;
+                if (replacement == null) {
+                    remappedReferences.add(keyword);
+                    continue;
+                }
+                remappedReferences.add(new Keyword(keyword.label, replacement));
+                changed = true;
+            }
+            if (changed) {
+                child.setReferences(remappedReferences);
+            }
+        }
+    }
+
+    private boolean shouldRemapReferenceKeyword(Keyword keyword) {
+        return keyword != null
+                && keyword.term != null
+                && (keyword.label == null || GinasCommonSubData.REFERENCE.equals(keyword.label));
+    }
+
+    private void resetPropertyGraphIds(List<Property> properties) {
+        if (properties == null) {
+            return;
+        }
+        for (Property property : properties) {
+            if (property == null) {
+                continue;
+            }
+            property.uuid = null;
+            resetAmountIds(property.getValue());
+            resetSubstanceReferenceIds(property.getReferencedSubstance());
+            if (property.getParameters() == null) {
+                continue;
+            }
+            for (Parameter parameter : property.getParameters()) {
+                if (parameter == null) {
+                    continue;
+                }
+                parameter.uuid = null;
+                resetAmountIds(parameter.value);
+                resetSubstanceReferenceIds(parameter.referencedSubstance);
+            }
+        }
+    }
+
+    private void resetRelationshipGraphIds(List<Relationship> relationships) {
+        if (relationships == null) {
+            return;
+        }
+        for (Relationship relationship : relationships) {
+            if (relationship == null) {
+                continue;
+            }
+            relationship.uuid = null;
+            relationship.originatorUuid = null;
+            resetAmountIds(relationship.amount);
+            resetSubstanceReferenceIds(relationship.relatedSubstance);
+            resetSubstanceReferenceIds(relationship.mediatorSubstance);
+        }
+    }
+
+    private void resetModificationGraphIds(Modifications modifications) {
+        if (modifications == null) {
+            return;
+        }
+        modifications.uuid = null;
+        if (modifications.agentModifications != null) {
+            for (AgentModification modification : modifications.agentModifications) {
+                if (modification == null) {
+                    continue;
+                }
+                modification.uuid = null;
+                resetSubstanceReferenceIds(modification.agentSubstance);
+                resetAmountIds(modification.amount);
+            }
+        }
+        if (modifications.physicalModifications != null) {
+            for (PhysicalModification modification : modifications.physicalModifications) {
+                if (modification == null) {
+                    continue;
+                }
+                modification.uuid = null;
+                if (modification.parameters == null) {
+                    continue;
+                }
+                for (PhysicalParameter parameter : modification.parameters) {
+                    if (parameter == null) {
+                        continue;
+                    }
+                    parameter.uuid = null;
+                    resetAmountIds(parameter.amount);
+                }
+            }
+        }
+        if (modifications.structuralModifications != null) {
+            for (StructuralModification modification : modifications.structuralModifications) {
+                if (modification == null) {
+                    continue;
+                }
+                modification.uuid = null;
+                resetAmountIds(modification.extentAmount);
+                resetSubstanceReferenceIds(modification.molecularFragment);
+            }
+        }
+    }
+
+    private void resetAmountIds(Amount amount) {
+        if (amount != null) {
+            amount.uuid = null;
         }
     }
 

@@ -19,10 +19,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @WithMockUser(username = "admin", roles = "Admin")
 public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTest {
@@ -91,6 +94,49 @@ public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTe
         assertNotNull(modification.molecularFragment);
         assertEquals(fragment.getUuid().toString(), modification.molecularFragment.refuuid);
         assertNotEquals(copiedReferenceUuid, modification.molecularFragment.getUuid().toString());
+    }
+
+    @Test
+    void createCopiedProteinWithStructuralModificationAmountResetsOwnedChildIds() throws Exception {
+        Substance fragment = assertCreated(new SubstanceBuilder()
+                .addName("Protein copy structural fragment")
+                .buildJson());
+
+        ObjectNode createJson = (ObjectNode) new SubstanceBuilder()
+                .asProtein()
+                .addName("Original protein copied for create")
+                .addSubunitWithDefaultReference("ACDEFGHIK")
+                .addRelationshipTo(fragment, Relationship.ACTIVE_MOIETY_RELATIONSHIP_TYPE)
+                .buildJson();
+        createJson.set("modifications", emptyModificationsJson());
+
+        ProteinSubstance original = (ProteinSubstance) assertCreated(createJson);
+        String originalNameReference = original.names.get(0).getReferences().iterator().next().term;
+        ObjectNode copiedCreateJson = (ObjectNode) original.toFullJsonNode();
+        copiedCreateJson.remove("uuid");
+        ((ObjectNode) copiedCreateJson.at("/names/0")).put("name",
+                "Copied protein with structural modification");
+        ObjectNode structuralModification = (ObjectNode) structuralModificationWithAmountJson();
+        structuralModification.set("molecularFragment",
+                copiedCreateJson.at("/relationships/0/relatedSubstance").deepCopy());
+        ((ArrayNode) copiedCreateJson.at("/modifications/structuralModifications"))
+                .add(structuralModification);
+
+        ProteinSubstance copied = (ProteinSubstance) assertCreated(copiedCreateJson);
+        StructuralModification modification = copied.modifications.structuralModifications.get(0);
+
+        assertEquals("Copied protein with structural modification", copied.names.get(0).name);
+        assertNotEquals(original.names.get(0).getUuid(), copied.names.get(0).getUuid());
+        String copiedNameReference = copied.names.get(0).getReferences().iterator().next().term;
+        Set<String> copiedReferenceUuids = copied.references.stream()
+                .map(reference -> reference.getUuid().toString())
+                .collect(Collectors.toSet());
+        assertNotEquals(originalNameReference, copiedNameReference);
+        assertTrue(copiedReferenceUuids.contains(copiedNameReference));
+        assertNotNull(modification.extentAmount);
+        assertEquals(1.0, modification.extentAmount.average);
+        assertNotNull(modification.molecularFragment);
+        assertEquals(fragment.getUuid().toString(), modification.molecularFragment.refuuid);
     }
 
     private SpecifiedSubstanceGroup1 specifiedSubstanceFor(Substance basis) {
