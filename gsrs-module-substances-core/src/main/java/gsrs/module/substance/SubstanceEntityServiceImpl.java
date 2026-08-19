@@ -45,6 +45,7 @@ import ix.ginas.models.v1.NameOrg;
 import ix.ginas.models.v1.Note;
 import ix.ginas.models.v1.OtherLinks;
 import ix.ginas.models.v1.PhysicalModification;
+import ix.ginas.models.v1.PhysicalParameter;
 import ix.ginas.models.v1.Polymer;
 import ix.ginas.models.v1.PolymerClassification;
 import ix.ginas.models.v1.PolymerSubstance;
@@ -88,6 +89,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.FlushModeType;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -685,6 +687,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 || !sameMoietyCollectionForDiff(persistedChemical.getMoieties(), updatedChemical.getMoieties());
     }
 
+    private boolean hasModificationsChange(Substance persisted, Substance updated) {
+        Modifications persistedModifications = persisted == null ? null : persisted.modifications;
+        Modifications updatedModifications = updated == null ? null : updated.modifications;
+        return !Objects.equals(objectMapper.valueToTree(persistedModifications),
+                objectMapper.valueToTree(updatedModifications));
+    }
+
     private boolean sameMoietyCollectionForDiff(List<Moiety> persistedMoieties, List<Moiety> updatedMoieties) {
         if (persistedMoieties == null || persistedMoieties.isEmpty()) {
             return updatedMoieties == null || updatedMoieties.isEmpty();
@@ -746,6 +755,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         List<Moiety> replacementMoieties = updated instanceof ChemicalSubstance updatedChemical
                 ? (updatedChemical.getMoieties() == null ? null : new ArrayList<>(updatedChemical.getMoieties()))
                 : null;
+        Modifications replacementModifications = updated.modifications;
+        SpecifiedSubstanceGroup1 existingSpecifiedSubstance = managed instanceof SpecifiedSubstanceGroup1Substance managedSsg1
+                ? managedSsg1.specifiedSubstance
+                : null;
+        SpecifiedSubstanceGroup1 replacementSpecifiedSubstance = updated instanceof SpecifiedSubstanceGroup1Substance updatedSsg1
+                ? updatedSsg1.specifiedSubstance
+                : null;
         List<Name> existingNameList = managed.names;
         Map<UUID, Name> existingNames = mapByUuid(existingNameList);
         Map<UUID, Code> existingCodes = mapByUuid(managed.codes);
@@ -764,6 +780,15 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, SubstanceReference> existingParameterReferences = mapParameterSubstanceReferences(managed.properties);
         Modifications existingModifications = managed.modifications;
         UUID existingModificationsUuid = existingModifications == null ? null : existingModifications.getUuid();
+        List<AgentModification> existingAgentModificationList = existingModifications == null
+                ? null
+                : existingModifications.agentModifications;
+        List<PhysicalModification> existingPhysicalModificationList = existingModifications == null
+                ? null
+                : existingModifications.physicalModifications;
+        List<StructuralModification> existingStructuralModificationList = existingModifications == null
+                ? null
+                : existingModifications.structuralModifications;
         Map<UUID, AgentModification> existingAgentModifications = existingModifications == null
                 ? Collections.emptyMap()
                 : mapByUuid(existingModifications.agentModifications);
@@ -773,6 +798,12 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, StructuralModification> existingStructuralModifications = existingModifications == null
                 ? Collections.emptyMap()
                 : mapByUuid(existingModifications.structuralModifications);
+        Map<UUID, PhysicalParameter> existingPhysicalParameters = existingModifications == null
+                ? Collections.emptyMap()
+                : mapByUuid(flattenPhysicalParameters(existingModifications));
+        Map<UUID, List<PhysicalParameter>> existingPhysicalParameterLists =
+                mapPhysicalParameterListsByPhysicalModificationUuid(existingModifications);
+        Map<UUID, Amount> existingPhysicalParameterAmounts = mapPhysicalParameterAmounts(existingModifications);
 
         FlushModeType previousFlushMode = entityManager.getFlushMode();
         // Jackson creates same-id child instances before reconciliation restores managed children.
@@ -788,13 +819,26 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     updatedObject.remove("moieties");
                 }
             }
+            if (updatedJson instanceof ObjectNode updatedObject) {
+                updatedObject.remove("modifications");
+                if (updated instanceof SpecifiedSubstanceGroup1Substance) {
+                    updatedObject.remove("specifiedSubstance");
+                }
+            }
             Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementStructure != null) {
                 replacedChemical.setStructure(reconcileManagedChemicalStructure(replacementStructure, existingStructures));
             }
-            replaced.modifications = reconcileManagedModifications(replaced.modifications, existingModifications,
-                    existingModificationsUuid, existingAgentModifications, existingPhysicalModifications,
-                    existingStructuralModifications);
+            if (replaced instanceof SpecifiedSubstanceGroup1Substance replacedSsg1) {
+                replacedSsg1.specifiedSubstance = existingSpecifiedSubstance == null
+                        ? replacementSpecifiedSubstance
+                        : existingSpecifiedSubstance;
+            }
+            replaced.modifications = reconcileManagedModifications(replacementModifications, existingModifications,
+                    existingModificationsUuid, existingAgentModificationList, existingPhysicalModificationList,
+                    existingStructuralModificationList, existingAgentModifications, existingPhysicalModifications,
+                    existingStructuralModifications, existingPhysicalParameters, existingPhysicalParameterLists,
+                    existingPhysicalParameterAmounts);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
                 if (existingMoieties != null) {
                     for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
@@ -828,31 +872,169 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private Modifications reconcileManagedModifications(Modifications updatedModifications,
                                                         Modifications existingModifications,
                                                         UUID existingModificationsUuid,
+                                                        List<AgentModification> existingAgentModificationList,
+                                                        List<PhysicalModification> existingPhysicalModificationList,
+                                                        List<StructuralModification> existingStructuralModificationList,
                                                         Map<UUID, AgentModification> existingAgentModifications,
                                                         Map<UUID, PhysicalModification> existingPhysicalModifications,
-                                                        Map<UUID, StructuralModification> existingStructuralModifications)
+                                                        Map<UUID, StructuralModification> existingStructuralModifications,
+                                                        Map<UUID, PhysicalParameter> existingPhysicalParameters,
+                                                        Map<UUID, List<PhysicalParameter>> existingPhysicalParameterLists,
+                                                        Map<UUID, Amount> existingPhysicalParameterAmounts)
             throws IOException {
         if (updatedModifications == null) {
             return null;
         }
         if (existingModifications == null) {
+            assignModificationOwners(updatedModifications);
             return updatedModifications;
         }
+        List<AgentModification> updatedAgentModifications = updatedModifications.agentModifications;
+        List<PhysicalModification> updatedPhysicalModifications = updatedModifications.physicalModifications;
+        List<StructuralModification> updatedStructuralModifications = updatedModifications.structuralModifications;
         if (updatedModifications != existingModifications) {
             JsonNode updatedJson = objectMapper.valueToTree(updatedModifications);
+            if (updatedJson instanceof ObjectNode updatedObject) {
+                updatedObject.remove("agentModifications");
+                updatedObject.remove("physicalModifications");
+                updatedObject.remove("structuralModifications");
+            }
             objectMapper.readerForUpdating(existingModifications).readValue(updatedJson);
         }
         existingModifications.uuid = existingModificationsUuid;
-        existingModifications.agentModifications = reconcileManagedChildren(existingModifications.agentModifications,
-                existingAgentModifications, child -> {
-                });
-        existingModifications.physicalModifications = reconcileManagedChildren(existingModifications.physicalModifications,
-                existingPhysicalModifications, child -> {
-                });
-        existingModifications.structuralModifications = reconcileManagedChildren(existingModifications.structuralModifications,
-                existingStructuralModifications, child -> {
-                });
+        existingModifications.agentModifications = replaceListContents(existingAgentModificationList,
+                reconcileManagedChildren(updatedAgentModifications, existingAgentModifications, child -> {
+                    setOwnerField(child, existingModifications);
+                }));
+        existingModifications.physicalModifications = replaceListContents(existingPhysicalModificationList,
+                reconcileManagedPhysicalModifications(updatedPhysicalModifications,
+                        existingPhysicalModifications, existingPhysicalParameters, existingPhysicalParameterLists,
+                        existingPhysicalParameterAmounts, existingModifications));
+        existingModifications.structuralModifications = replaceListContents(existingStructuralModificationList,
+                reconcileManagedChildren(updatedStructuralModifications, existingStructuralModifications, child -> {
+                    setOwnerField(child, existingModifications);
+                }));
         return existingModifications;
+    }
+
+    private List<PhysicalModification> reconcileManagedPhysicalModifications(
+            List<PhysicalModification> updatedPhysicalModifications,
+            Map<UUID, PhysicalModification> existingPhysicalModifications,
+            Map<UUID, PhysicalParameter> existingPhysicalParameters,
+            Map<UUID, List<PhysicalParameter>> existingPhysicalParameterLists,
+            Map<UUID, Amount> existingPhysicalParameterAmounts,
+            Modifications owner) throws IOException {
+        if (updatedPhysicalModifications == null) {
+            return null;
+        }
+        List<PhysicalModification> reconciled = new ArrayList<>(updatedPhysicalModifications.size());
+        for (PhysicalModification updatedPhysicalModification : updatedPhysicalModifications) {
+            if (updatedPhysicalModification == null) {
+                continue;
+            }
+            PhysicalModification managedPhysicalModification = updatedPhysicalModification.getUuid() == null
+                    ? null
+                    : existingPhysicalModifications.get(updatedPhysicalModification.getUuid());
+            if (managedPhysicalModification != null && managedPhysicalModification != updatedPhysicalModification) {
+                List<PhysicalParameter> updatedParameters = updatedPhysicalModification.parameters;
+                JsonNode updatedJson = objectMapper.valueToTree(updatedPhysicalModification);
+                if (updatedJson instanceof ObjectNode updatedObject) {
+                    updatedObject.remove("parameters");
+                }
+                objectMapper.readerForUpdating(managedPhysicalModification).readValue(updatedJson);
+                setOwnerField(managedPhysicalModification, owner);
+                reconcilePhysicalParameterCollection(managedPhysicalModification, updatedParameters,
+                        existingPhysicalParameters, existingPhysicalParameterLists, existingPhysicalParameterAmounts);
+                reconciled.add(managedPhysicalModification);
+            } else {
+                setOwnerField(updatedPhysicalModification, owner);
+                reconcilePhysicalParameterCollection(updatedPhysicalModification, updatedPhysicalModification.parameters,
+                        existingPhysicalParameters, existingPhysicalParameterLists, existingPhysicalParameterAmounts);
+                reconciled.add(updatedPhysicalModification);
+            }
+        }
+        return reconciled;
+    }
+
+    private void reconcilePhysicalParameterCollection(PhysicalModification targetModification,
+                                                      List<PhysicalParameter> updatedParameters,
+                                                      Map<UUID, PhysicalParameter> existingPhysicalParameters,
+                                                      Map<UUID, List<PhysicalParameter>> existingPhysicalParameterLists,
+                                                      Map<UUID, Amount> existingPhysicalParameterAmounts)
+            throws IOException {
+        if (targetModification == null) {
+            return;
+        }
+        List<PhysicalParameter> reconciledParameters = reconcileManagedChildren(updatedParameters,
+                existingPhysicalParameters,
+                child -> {
+                    setOwnerField(child, targetModification);
+                });
+        if (reconciledParameters != null) {
+            for (PhysicalParameter parameter : reconciledParameters) {
+                if (parameter != null && parameter.amount != null && parameter.amount.getUuid() != null) {
+                    Amount existingAmount = existingPhysicalParameterAmounts.get(parameter.amount.getUuid());
+                    if (existingAmount != null) {
+                        parameter.amount = existingAmount;
+                    }
+                }
+            }
+        }
+        List<PhysicalParameter> targetParameters = targetModification.getUuid() == null
+                ? null
+                : existingPhysicalParameterLists.get(targetModification.getUuid());
+        if (targetParameters == null) {
+            targetParameters = targetModification.parameters;
+        }
+        targetModification.parameters = replaceListContents(targetParameters, reconciledParameters);
+    }
+
+    private void assignModificationOwners(Modifications modifications) {
+        if (modifications == null) {
+            return;
+        }
+        if (modifications.agentModifications != null) {
+            modifications.agentModifications.forEach(child -> setOwnerField(child, modifications));
+        }
+        if (modifications.physicalModifications != null) {
+            modifications.physicalModifications.forEach(child -> {
+                setOwnerField(child, modifications);
+                if (child != null && child.parameters != null) {
+                    child.parameters.forEach(parameter -> setOwnerField(parameter, child));
+                }
+            });
+        }
+        if (modifications.structuralModifications != null) {
+            modifications.structuralModifications.forEach(child -> setOwnerField(child, modifications));
+        }
+    }
+
+    private void setOwnerField(Object target, Object owner) {
+        if (target == null) {
+            return;
+        }
+        Field ownerField = findField(target.getClass(), "owner");
+        if (ownerField == null) {
+            return;
+        }
+        try {
+            ownerField.setAccessible(true);
+            ownerField.set(target, owner);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Unable to set owner on " + target.getClass().getName(), e);
+        }
+    }
+
+    private Field findField(Class<?> type, String name) {
+        Class<?> cursor = type;
+        while (cursor != null && cursor != Object.class) {
+            try {
+                return cursor.getDeclaredField(name);
+            } catch (NoSuchFieldException ignored) {
+                cursor = cursor.getSuperclass();
+            }
+        }
+        return null;
     }
 
     private <T extends GinasCommonData> Map<UUID, T> mapByUuid(List<T> values) {
@@ -1083,6 +1265,33 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return parameters;
     }
 
+    private List<PhysicalParameter> flattenPhysicalParameters(Modifications modifications) {
+        List<PhysicalParameter> parameters = new ArrayList<>();
+        if (modifications == null || modifications.physicalModifications == null) {
+            return parameters;
+        }
+        for (PhysicalModification modification : modifications.physicalModifications) {
+            if (modification != null && modification.parameters != null) {
+                parameters.addAll(modification.parameters);
+            }
+        }
+        return parameters;
+    }
+
+    private Map<UUID, List<PhysicalParameter>> mapPhysicalParameterListsByPhysicalModificationUuid(
+            Modifications modifications) {
+        Map<UUID, List<PhysicalParameter>> mapped = new LinkedHashMap<>();
+        if (modifications == null || modifications.physicalModifications == null) {
+            return mapped;
+        }
+        for (PhysicalModification modification : modifications.physicalModifications) {
+            if (modification != null && modification.getUuid() != null) {
+                mapped.put(modification.getUuid(), modification.parameters);
+            }
+        }
+        return mapped;
+    }
+
     private Map<UUID, Amount> mapRelationshipAmounts(List<Relationship> relationships) {
         Map<UUID, Amount> amounts = new LinkedHashMap<>();
         if (relationships == null) {
@@ -1091,6 +1300,24 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         for (Relationship relationship : relationships) {
             if (relationship != null && relationship.amount != null && relationship.amount.getUuid() != null) {
                 amounts.put(relationship.amount.getUuid(), relationship.amount);
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapPhysicalParameterAmounts(Modifications modifications) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (modifications == null || modifications.physicalModifications == null) {
+            return amounts;
+        }
+        for (PhysicalModification modification : modifications.physicalModifications) {
+            if (modification == null || modification.parameters == null) {
+                continue;
+            }
+            for (PhysicalParameter parameter : modification.parameters) {
+                if (parameter != null && parameter.amount != null && parameter.amount.getUuid() != null) {
+                    amounts.put(parameter.amount.getUuid(), parameter.amount);
+                }
             }
         }
         return amounts;
@@ -1504,7 +1731,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         boolean sameSubstanceClass = Objects.equals(oldEntity.substanceClass, updatedEntity.substanceClass);
                         boolean usePojoPatch = sameSubstanceClass;
                         boolean chemicalDefinitionChange = hasChemicalDefinitionChange(oldEntity, updatedEntity);
-                        boolean useReplacementUpdate = chemicalDefinitionChange || rootMolfileChange;
+                        boolean modificationsChange = hasModificationsChange(oldEntity, updatedEntity);
+                        boolean useReplacementUpdate = chemicalDefinitionChange || rootMolfileChange || modificationsChange;
                         if (usePojoPatch && useReplacementUpdate) {
                             usePojoPatch = false;
                         }
@@ -1514,6 +1742,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             Map<UUID, Name> existingNamesForPatch = mapByUuid(existingNameListForPatch);
                             Map<UUID, NameOrg> existingNameOrgsForPatch = mapNameOrgsByUuid(existingNameListForPatch);
                             Map<UUID, GinasChemicalStructure> existingStructuresForPatch = mapChemicalStructuresById(oldEntity);
+                            updatedEntity.modifications = oldEntity.modifications;
                             PojoPatch<Substance> patch = PojoDiff.getDiff(oldEntity, updatedEntity);
                             LogUtil.debug(() -> "changes = " + patch.getChanges());
                             final List<Object> removed = new ArrayList<Object>();
