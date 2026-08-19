@@ -809,6 +809,20 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         Map<UUID, List<PhysicalParameter>> existingPhysicalParameterLists =
                 mapPhysicalParameterListsByPhysicalModificationUuid(existingModifications);
         Map<UUID, Amount> existingPhysicalParameterAmounts = mapPhysicalParameterAmounts(existingModifications);
+        Map<UUID, SubstanceReference> existingOwnedSubstanceReferences = new LinkedHashMap<>();
+        existingOwnedSubstanceReferences.putAll(existingRelationshipReferences);
+        existingOwnedSubstanceReferences.putAll(existingPropertyReferences);
+        existingOwnedSubstanceReferences.putAll(existingParameterReferences);
+        existingOwnedSubstanceReferences.putAll(mapDefinitionSubstanceReferences(managed));
+        existingOwnedSubstanceReferences.putAll(mapModificationSubstanceReferences(existingModifications));
+        Map<UUID, Amount> existingOwnedAmounts = new LinkedHashMap<>();
+        existingOwnedAmounts.putAll(existingRelationshipAmounts);
+        existingOwnedAmounts.putAll(existingMoietyAmounts);
+        existingOwnedAmounts.putAll(existingPropertyAmounts);
+        existingOwnedAmounts.putAll(existingParameterAmounts);
+        existingOwnedAmounts.putAll(existingPhysicalParameterAmounts);
+        existingOwnedAmounts.putAll(mapDefinitionAmounts(managed));
+        existingOwnedAmounts.putAll(mapModificationAmounts(existingModifications));
 
         FlushModeType previousFlushMode = entityManager.getFlushMode();
         // Jackson creates same-id child instances before reconciliation restores managed children.
@@ -847,7 +861,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     existingModificationsUuid, existingAgentModificationList, existingPhysicalModificationList,
                     existingStructuralModificationList, existingAgentModifications, existingPhysicalModifications,
                     existingStructuralModifications, existingPhysicalParameters, existingPhysicalParameterLists,
-                    existingPhysicalParameterAmounts);
+                    existingPhysicalParameterAmounts, existingOwnedAmounts, existingOwnedSubstanceReferences);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementMoieties != null) {
                 if (existingMoieties != null) {
                     for (Moiety existingMoiety : new ArrayList<>(existingMoieties)) {
@@ -889,12 +903,23 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                                         Map<UUID, StructuralModification> existingStructuralModifications,
                                                         Map<UUID, PhysicalParameter> existingPhysicalParameters,
                                                         Map<UUID, List<PhysicalParameter>> existingPhysicalParameterLists,
-                                                        Map<UUID, Amount> existingPhysicalParameterAmounts)
+                                                        Map<UUID, Amount> existingPhysicalParameterAmounts,
+                                                        Map<UUID, Amount> existingOwnedAmounts,
+                                                        Map<UUID, SubstanceReference> existingOwnedSubstanceReferences)
             throws IOException {
         if (updatedModifications == null) {
             return null;
         }
         if (existingModifications == null) {
+            updatedModifications.agentModifications = reconcileManagedAgentModifications(
+                    updatedModifications.agentModifications, Collections.emptyMap(), existingOwnedAmounts,
+                    existingOwnedSubstanceReferences, updatedModifications);
+            updatedModifications.physicalModifications = reconcileManagedPhysicalModifications(
+                    updatedModifications.physicalModifications, Collections.emptyMap(), existingPhysicalParameters,
+                    existingPhysicalParameterLists, existingPhysicalParameterAmounts, updatedModifications);
+            updatedModifications.structuralModifications = reconcileManagedStructuralModifications(
+                    updatedModifications.structuralModifications, Collections.emptyMap(), existingOwnedAmounts,
+                    existingOwnedSubstanceReferences, updatedModifications);
             assignModificationOwners(updatedModifications);
             return updatedModifications;
         }
@@ -912,18 +937,61 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         existingModifications.uuid = existingModificationsUuid;
         existingModifications.agentModifications = replaceListContents(existingAgentModificationList,
-                reconcileManagedChildren(updatedAgentModifications, existingAgentModifications, child -> {
-                    setOwnerField(child, existingModifications);
-                }));
+                reconcileManagedAgentModifications(updatedAgentModifications, existingAgentModifications,
+                        existingOwnedAmounts, existingOwnedSubstanceReferences, existingModifications));
         existingModifications.physicalModifications = replaceListContents(existingPhysicalModificationList,
                 reconcileManagedPhysicalModifications(updatedPhysicalModifications,
                         existingPhysicalModifications, existingPhysicalParameters, existingPhysicalParameterLists,
                         existingPhysicalParameterAmounts, existingModifications));
         existingModifications.structuralModifications = replaceListContents(existingStructuralModificationList,
-                reconcileManagedChildren(updatedStructuralModifications, existingStructuralModifications, child -> {
-                    setOwnerField(child, existingModifications);
-                }));
+                reconcileManagedStructuralModifications(updatedStructuralModifications, existingStructuralModifications,
+                        existingOwnedAmounts, existingOwnedSubstanceReferences, existingModifications));
         return existingModifications;
+    }
+
+    private List<AgentModification> reconcileManagedAgentModifications(
+            List<AgentModification> updatedAgentModifications,
+            Map<UUID, AgentModification> existingAgentModifications,
+            Map<UUID, Amount> existingOwnedAmounts,
+            Map<UUID, SubstanceReference> existingOwnedSubstanceReferences,
+            Modifications owner) throws IOException {
+        if (updatedAgentModifications == null) {
+            return null;
+        }
+        List<AgentModification> reconciled = new ArrayList<>(updatedAgentModifications.size());
+        for (AgentModification updatedAgentModification : updatedAgentModifications) {
+            if (updatedAgentModification == null) {
+                continue;
+            }
+            AgentModification managedAgentModification = updatedAgentModification.getUuid() == null
+                    ? null
+                    : existingAgentModifications.get(updatedAgentModification.getUuid());
+            if (managedAgentModification != null && managedAgentModification != updatedAgentModification) {
+                Amount updatedAmount = updatedAgentModification.amount;
+                Amount currentAmount = managedAgentModification.amount;
+                SubstanceReference updatedAgentSubstance = updatedAgentModification.agentSubstance;
+                SubstanceReference currentAgentSubstance = managedAgentModification.agentSubstance;
+                JsonNode updatedJson = objectMapper.valueToTree(updatedAgentModification);
+                if (updatedJson instanceof ObjectNode updatedObject) {
+                    updatedObject.remove("amount");
+                    updatedObject.remove("agentSubstance");
+                }
+                objectMapper.readerForUpdating(managedAgentModification).readValue(updatedJson);
+                setOwnerField(managedAgentModification, owner);
+                managedAgentModification.amount = reconcileOwnedAmount(updatedAmount, currentAmount, existingOwnedAmounts);
+                managedAgentModification.agentSubstance = reconcileOwnedSubstanceReference(updatedAgentSubstance,
+                        currentAgentSubstance, existingOwnedSubstanceReferences);
+                reconciled.add(managedAgentModification);
+            } else {
+                setOwnerField(updatedAgentModification, owner);
+                updatedAgentModification.amount = reconcileOwnedAmount(updatedAgentModification.amount, null,
+                        existingOwnedAmounts);
+                updatedAgentModification.agentSubstance = reconcileOwnedSubstanceReference(
+                        updatedAgentModification.agentSubstance, null, existingOwnedSubstanceReferences);
+                reconciled.add(updatedAgentModification);
+            }
+        }
+        return reconciled;
     }
 
     private List<PhysicalModification> reconcileManagedPhysicalModifications(
@@ -998,6 +1066,95 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         targetModification.parameters = replaceListContents(targetParameters, reconciledParameters);
     }
 
+    private List<StructuralModification> reconcileManagedStructuralModifications(
+            List<StructuralModification> updatedStructuralModifications,
+            Map<UUID, StructuralModification> existingStructuralModifications,
+            Map<UUID, Amount> existingOwnedAmounts,
+            Map<UUID, SubstanceReference> existingOwnedSubstanceReferences,
+            Modifications owner) throws IOException {
+        if (updatedStructuralModifications == null) {
+            return null;
+        }
+        List<StructuralModification> reconciled = new ArrayList<>(updatedStructuralModifications.size());
+        for (StructuralModification updatedStructuralModification : updatedStructuralModifications) {
+            if (updatedStructuralModification == null) {
+                continue;
+            }
+            StructuralModification managedStructuralModification = updatedStructuralModification.getUuid() == null
+                    ? null
+                    : existingStructuralModifications.get(updatedStructuralModification.getUuid());
+            if (managedStructuralModification != null && managedStructuralModification != updatedStructuralModification) {
+                Amount updatedExtentAmount = updatedStructuralModification.extentAmount;
+                Amount currentExtentAmount = managedStructuralModification.extentAmount;
+                SubstanceReference updatedMolecularFragment = updatedStructuralModification.molecularFragment;
+                SubstanceReference currentMolecularFragment = managedStructuralModification.molecularFragment;
+                JsonNode updatedJson = objectMapper.valueToTree(updatedStructuralModification);
+                if (updatedJson instanceof ObjectNode updatedObject) {
+                    updatedObject.remove("extentAmount");
+                    updatedObject.remove("molecularFragment");
+                }
+                objectMapper.readerForUpdating(managedStructuralModification).readValue(updatedJson);
+                setOwnerField(managedStructuralModification, owner);
+                managedStructuralModification.extentAmount = reconcileOwnedAmount(updatedExtentAmount,
+                        currentExtentAmount, existingOwnedAmounts);
+                managedStructuralModification.molecularFragment = reconcileOwnedSubstanceReference(
+                        updatedMolecularFragment, currentMolecularFragment, existingOwnedSubstanceReferences);
+                reconciled.add(managedStructuralModification);
+            } else {
+                setOwnerField(updatedStructuralModification, owner);
+                updatedStructuralModification.extentAmount = reconcileOwnedAmount(
+                        updatedStructuralModification.extentAmount, null, existingOwnedAmounts);
+                updatedStructuralModification.molecularFragment = reconcileOwnedSubstanceReference(
+                        updatedStructuralModification.molecularFragment, null, existingOwnedSubstanceReferences);
+                reconciled.add(updatedStructuralModification);
+            }
+        }
+        return reconciled;
+    }
+
+    private Amount reconcileOwnedAmount(Amount updatedAmount,
+                                        Amount currentAmount,
+                                        Map<UUID, Amount> existingOwnedAmounts) throws IOException {
+        if (updatedAmount == null) {
+            return null;
+        }
+        UUID updatedUuid = updatedAmount.getUuid();
+        if (currentAmount != null && updatedUuid != null && Objects.equals(updatedUuid, currentAmount.getUuid())) {
+            JsonNode updatedJson = objectMapper.valueToTree(updatedAmount);
+            objectMapper.readerForUpdating(currentAmount).readValue(updatedJson);
+            existingOwnedAmounts.put(currentAmount.getUuid(), currentAmount);
+            return currentAmount;
+        }
+        if (updatedUuid != null && existingOwnedAmounts.containsKey(updatedUuid)) {
+            updatedAmount.uuid = UUID.randomUUID();
+        }
+        putAmountByUuid(existingOwnedAmounts, updatedAmount);
+        return updatedAmount;
+    }
+
+    private SubstanceReference reconcileOwnedSubstanceReference(SubstanceReference updatedReference,
+                                                               SubstanceReference currentReference,
+                                                               Map<UUID, SubstanceReference> existingOwnedSubstanceReferences)
+            throws IOException {
+        if (updatedReference == null) {
+            return null;
+        }
+        UUID updatedUuid = updatedReference.getUuid();
+        if (currentReference != null && updatedUuid != null && Objects.equals(updatedUuid, currentReference.getUuid())) {
+            JsonNode updatedJson = objectMapper.valueToTree(updatedReference);
+            objectMapper.readerForUpdating(currentReference).readValue(updatedJson);
+            existingOwnedSubstanceReferences.put(currentReference.getUuid(), currentReference);
+            return currentReference;
+        }
+        if (updatedUuid != null && existingOwnedSubstanceReferences.containsKey(updatedUuid)) {
+            SubstanceReference copiedReference = updatedReference.copyWithNullUUID();
+            putSubstanceReferenceByUuid(existingOwnedSubstanceReferences, copiedReference);
+            return copiedReference;
+        }
+        putSubstanceReferenceByUuid(existingOwnedSubstanceReferences, updatedReference);
+        return updatedReference;
+    }
+
     private void assignModificationOwners(Modifications modifications) {
         if (modifications == null) {
             return;
@@ -1057,6 +1214,127 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             }
         }
         return mapped;
+    }
+
+    private Map<UUID, SubstanceReference> mapDefinitionSubstanceReferences(Substance substance) {
+        Map<UUID, SubstanceReference> references = new LinkedHashMap<>();
+        if (substance instanceof SpecifiedSubstanceGroup1Substance ssg1Substance
+                && ssg1Substance.specifiedSubstance != null
+                && ssg1Substance.specifiedSubstance.constituents != null) {
+            for (SpecifiedSubstanceComponent component : ssg1Substance.specifiedSubstance.constituents) {
+                putSubstanceReferenceByUuid(references, component == null ? null : component.substance);
+            }
+        }
+        if (substance instanceof MixtureSubstance mixtureSubstance && mixtureSubstance.mixture != null) {
+            putSubstanceReferenceByUuid(references, mixtureSubstance.mixture.parentSubstance);
+            if (mixtureSubstance.mixture.getMixture() != null) {
+                for (Component component : mixtureSubstance.mixture.getMixture()) {
+                    putSubstanceReferenceByUuid(references, component == null ? null : component.substance);
+                }
+            }
+        }
+        if (substance instanceof PolymerSubstance polymerSubstance && polymerSubstance.polymer != null) {
+            if (polymerSubstance.polymer.classification != null) {
+                putSubstanceReferenceByUuid(references, polymerSubstance.polymer.classification.parentSubstance);
+            }
+            if (polymerSubstance.polymer.monomers != null) {
+                for (Material material : polymerSubstance.polymer.monomers) {
+                    putSubstanceReferenceByUuid(references, material == null ? null : material.monomerSubstance);
+                }
+            }
+        }
+        if (substance instanceof StructurallyDiverseSubstance structurallyDiverseSubstance
+                && structurallyDiverseSubstance.structurallyDiverse != null) {
+            putSubstanceReferenceByUuid(references, structurallyDiverseSubstance.structurallyDiverse.parentSubstance);
+            putSubstanceReferenceByUuid(references,
+                    structurallyDiverseSubstance.structurallyDiverse.hybridSpeciesMaternalOrganism);
+            putSubstanceReferenceByUuid(references,
+                    structurallyDiverseSubstance.structurallyDiverse.hybridSpeciesPaternalOrganism);
+        }
+        return references;
+    }
+
+    private Map<UUID, SubstanceReference> mapModificationSubstanceReferences(Modifications modifications) {
+        Map<UUID, SubstanceReference> references = new LinkedHashMap<>();
+        if (modifications == null) {
+            return references;
+        }
+        if (modifications.agentModifications != null) {
+            for (AgentModification modification : modifications.agentModifications) {
+                putSubstanceReferenceByUuid(references, modification == null ? null : modification.agentSubstance);
+            }
+        }
+        if (modifications.structuralModifications != null) {
+            for (StructuralModification modification : modifications.structuralModifications) {
+                putSubstanceReferenceByUuid(references, modification == null ? null : modification.molecularFragment);
+            }
+        }
+        return references;
+    }
+
+    private void putSubstanceReferenceByUuid(Map<UUID, SubstanceReference> references,
+                                             SubstanceReference reference) {
+        if (reference != null && reference.getUuid() != null) {
+            references.put(reference.getUuid(), reference);
+        }
+    }
+
+    private Map<UUID, Amount> mapDefinitionAmounts(Substance substance) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (substance instanceof SpecifiedSubstanceGroup1Substance ssg1Substance
+                && ssg1Substance.specifiedSubstance != null
+                && ssg1Substance.specifiedSubstance.constituents != null) {
+            for (SpecifiedSubstanceComponent component : ssg1Substance.specifiedSubstance.constituents) {
+                putAmountByUuid(amounts, component == null ? null : component.amount);
+            }
+        }
+        if (substance instanceof PolymerSubstance polymerSubstance && polymerSubstance.polymer != null) {
+            if (polymerSubstance.polymer.monomers != null) {
+                for (Material material : polymerSubstance.polymer.monomers) {
+                    putAmountByUuid(amounts, material == null ? null : material.amount);
+                }
+            }
+            if (polymerSubstance.polymer.structuralUnits != null) {
+                for (Unit unit : polymerSubstance.polymer.structuralUnits) {
+                    putAmountByUuid(amounts, unit == null ? null : unit.amount);
+                }
+            }
+        }
+        return amounts;
+    }
+
+    private Map<UUID, Amount> mapModificationAmounts(Modifications modifications) {
+        Map<UUID, Amount> amounts = new LinkedHashMap<>();
+        if (modifications == null) {
+            return amounts;
+        }
+        if (modifications.agentModifications != null) {
+            for (AgentModification modification : modifications.agentModifications) {
+                putAmountByUuid(amounts, modification == null ? null : modification.amount);
+            }
+        }
+        if (modifications.physicalModifications != null) {
+            for (PhysicalModification modification : modifications.physicalModifications) {
+                if (modification == null || modification.parameters == null) {
+                    continue;
+                }
+                for (PhysicalParameter parameter : modification.parameters) {
+                    putAmountByUuid(amounts, parameter == null ? null : parameter.amount);
+                }
+            }
+        }
+        if (modifications.structuralModifications != null) {
+            for (StructuralModification modification : modifications.structuralModifications) {
+                putAmountByUuid(amounts, modification == null ? null : modification.extentAmount);
+            }
+        }
+        return amounts;
+    }
+
+    private void putAmountByUuid(Map<UUID, Amount> amounts, Amount amount) {
+        if (amount != null && amount.getUuid() != null) {
+            amounts.put(amount.getUuid(), amount);
+        }
     }
 
     private Map<UUID, NameOrg> mapNameOrgsByUuid(List<Name> names) {
