@@ -16,14 +16,11 @@ import ix.core.AbstractValueDeserializer;
 import ix.core.EntityMapperOptions;
 import ix.core.chem.Chem;
 import ix.core.chem.ChemCleaner;
-import ix.core.util.EntityUtils.EntityWrapper;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.converters.StereoConverter;
 import ix.ginas.models.converters.TrimmedUUIDJavaType;
-import ix.ginas.models.converters.TrimmedUUIDStringConverter;
-import ix.utils.Util;
+import ix.ginas.models.generators.NullUUIDGeneratedValue;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.GenericGenerator;
 import org.hibernate.annotations.JavaType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -42,11 +39,10 @@ public class Structure extends BaseModel {
 
 
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", type = ix.ginas.models.generators.NullUUIDGenerator.class)
-    @GeneratedValue(generator = "NullUUIDGenerator")
+    @NullUUIDGeneratedValue
+    @GeneratedValue
     // Maintain backwards compatibility with legacy GSRS varchar UUID storage.
     @JavaType(TrimmedUUIDJavaType.class)
-    //@Convert(converter = TrimmedUUIDStringConverter.class)
     @Column(length =40, updatable = false)
     public UUID id;
 
