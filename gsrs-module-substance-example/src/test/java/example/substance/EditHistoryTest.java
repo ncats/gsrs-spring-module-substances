@@ -22,12 +22,14 @@ public class EditHistoryTest extends AbstractSubstanceJpaEntityTest {
 	@Test
 	@WithMockUser(username = "admin", roles = "Admin")
 	public void testRecordHistoryEditCanProduceDiff() {
-    			UUID uuid = UUID.randomUUID();
-    			
-    			new SubstanceBuilder()
-    				.addName("Concept Name")
-    				.setUUID(uuid)
-    				.buildJsonAnd(this::assertCreated);
+		UUID requestedUuid = UUID.randomUUID();
+
+		Substance createdSubstance = assertCreated(new SubstanceBuilder()
+				.addName("Concept Name")
+				.setUUID(requestedUuid)
+				.buildJson());
+
+		UUID uuid = createdSubstance.getUuid();
 
     			Optional<Substance> old= substanceEntityService.get(uuid);
 

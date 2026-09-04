@@ -157,9 +157,10 @@ public class StructureProcessor {
         }*/
 
         boolean standardize = settings.isStandardize();
+        boolean hasQueryBonds = hasQueryBonds(mol);
         boolean query = settings.isQuery();
 
-        if(mol.hasQueryAtoms() || mol.hasPseudoAtoms()) {
+        if(hasQueryFeatures(mol, hasQueryBonds)) {
             
             query=true; 
         }
@@ -222,6 +223,7 @@ public class StructureProcessor {
 
         Chem.fixMetals(mol);
         molSupplier.resetCache();
+        Chemical moietySourceMol = mol.copy();
 
         int stereo = 0, def = 0, charge = 0, ez=0;
 
@@ -229,11 +231,13 @@ public class StructureProcessor {
             charge += a.getCharge();
         }
 
-        List<Stereocenter> stereocenters = new ArrayList<>(mol.getTetrahedrals());
-        for(Stereocenter stereocenter : stereocenters) {
-            stereo++;
-            if(stereocenter.isDefined()){
-                def++;
+        if(!hasQueryBonds) {
+            List<Stereocenter> stereocenters = new ArrayList<>(mol.getTetrahedrals());
+            for(Stereocenter stereocenter : stereocenters) {
+                stereo++;
+                if(stereocenter.isDefined()){
+                    def++;
+                }
             }
         }
 
@@ -241,37 +245,39 @@ public class StructureProcessor {
         CachedSupplier<Map<Integer,Integer>> ringsizeMaker= CachedSupplier.of(()->ChemUtils.getSmallestRingSizeForEachBond(mol, 9));
         
 
-        for(DoubleBondStereochemistry doubleBondStereochemistry : mol.getDoubleBondStereochemistry()) {
-        	Bond doubleBond = doubleBondStereochemistry.getDoubleBond();
+        if(!hasQueryBonds) {
+            for(DoubleBondStereochemistry doubleBondStereochemistry : mol.getDoubleBondStereochemistry()) {
+                Bond doubleBond = doubleBondStereochemistry.getDoubleBond();
 
 
-        	if (!doubleBondStereochemistry.getStereo().equals(DoubleBondStereochemistry.DoubleBondStereo.NONE)) {
-        		boolean isRing=false;
-        		try{
-        			// This will only count a bond as a "ring bond" if the minimum ring size
-        			// that that bond shows up in is less than 8 bonds long. Otherwise it's
-        			// not considered a true ring bond and the double bond can be either E or Z.
-        			//
-        			// Note: this is still a simplification as there are other geometric effects which 
-        			// can still make some double bonds ineligible for both E and Z.
-        			if(doubleBond.isInRing()) {
-	        			int smallestRing= ringsizeMaker.get().getOrDefault(mol.indexOf(doubleBond),999);
-	        			if(smallestRing<8) {
-	        				isRing=true;
-	        			}
-        			}
-        		}catch(Exception e){
-        			log.warn("Trouble detecting ring geometry for EZ calculation");
-        		}
+                if (!doubleBondStereochemistry.getStereo().equals(DoubleBondStereochemistry.DoubleBondStereo.NONE)) {
+                    boolean isRing=false;
+                    try{
+                        // This will only count a bond as a "ring bond" if the minimum ring size
+                        // that that bond shows up in is less than 8 bonds long. Otherwise it's
+                        // not considered a true ring bond and the double bond can be either E or Z.
+                        //
+                        // Note: this is still a simplification as there are other geometric effects which
+                        // can still make some double bonds ineligible for both E and Z.
+                        if(doubleBond.isInRing()) {
+                            int smallestRing= ringsizeMaker.get().getOrDefault(mol.indexOf(doubleBond),999);
+                            if(smallestRing<8) {
+                                isRing=true;
+                            }
+                        }
+                    }catch(Exception e){
+                        log.warn("Trouble detecting ring geometry for EZ calculation");
+                    }
 
-        		if(!isRing){                	 
-        			ez++;
-        		}
-        	}
+                    if(!isRing){
+                        ez++;
+                    }
+                }
+            }
         }
 
         Chemical stdMol = mol.copy();
-        if (standardize) {
+        if (standardize && !hasQueryBonds) {
             try {
                 stdMol = standardizer.standardize(mol, molSupplier, struc.properties::add);
             } catch (Exception e) {
@@ -289,11 +295,11 @@ public class StructureProcessor {
         //This is currently intentional, as the standardized structure does some charge balancing that might be unexpected.
         //Nevertheless, there are times when a structure should really be prestandardized, and then have moieties generated
 
-        List<Chemical> frags = mol.connectedComponentsAsStream().collect(Collectors.toList());
+        List<Chemical> frags = moietySourceMol.connectedComponentsAsStream().collect(Collectors.toList());
 
         // used to not duplicate moieties
         Map<String, Structure> moietiesMap = new HashMap<>();
-        if (frags.size() >= 1 && components!=null) {
+        if (frags.size() >= 1 && components!=null && !hasQueryBonds) {
             for (Chemical frag : frags) {
                 Structure moiety = new Structure();
 
@@ -323,25 +329,30 @@ public class StructureProcessor {
         }
 
 
-        try{
-            Chemical cc=polymerSimplify(stdMol);
-            // TODO: this only makes sense on standardization.
-            // Need to evaluate that this call is intended as-is.
-            
-            hasher.hash(cc, cc.toMol(), new BiConsumer<String, String>() {
-                @Override
-                public void accept(String key, String value){
-                    if(value==null || value.length() < 255) {
-                        struc.properties.add(new Keyword(key, value));
-                    }else{
-                        log.debug("using Text!!! for " + value.length() + "  " + value);
-                        struc.properties.add(new Text(key, value));
-                    }
+        if(!hasQueryBonds) {
+            try{
+                Chemical cc=polymerSimplify(stdMol);
+                // TODO: this only makes sense on standardization.
+                // Need to evaluate that this call is intended as-is.
+                if(cc.hasQueryAtoms() || cc.bonds().anyMatch(b->b.isQueryBond())) {
+                    log.info("in StructureProcessiner.instrument, structure has query features so process will be skipped");
+                    return;
                 }
-            });
+                hasher.hash(cc, cc.toMol(), new BiConsumer<String, String>() {
+                    @Override
+                    public void accept(String key, String value){
+                        if(value==null || value.length() < 255) {
+                            struc.properties.add(new Keyword(key, value));
+                        }else{
+                            log.debug("using Text!!! for " + value.length() + "  " + value);
+                            struc.properties.add(new Text(key, value));
+                        }
+                    }
+                });
 
-        }catch(Exception e){
-            log.error("Error making structure hash", e);
+            }catch(Exception e){
+                log.error("Error making structure hash", e);
+            }
         }
 
 
@@ -349,8 +360,6 @@ public class StructureProcessor {
         struc.stereoCenters = stereo;
         struc.ezCenters = ez;
         struc.charge = charge;
-        //struc.formula = mol.getFormula();
-
 
         Chem.setFormula(struc);
         try {
@@ -370,6 +379,22 @@ public class StructureProcessor {
         calcStereo (struc);
 
 
+    }
+
+    public static boolean hasQueryFeatures(Chemical mol) {
+        return hasQueryFeatures(mol, hasQueryBonds(mol));
+    }
+
+    private static boolean hasQueryFeatures(Chemical mol, boolean hasQueryBonds) {
+        return mol.hasQueryAtoms() || mol.hasPseudoAtoms() || hasQueryBonds;
+    }
+
+    public static boolean hasQueryBonds(Chemical mol) {
+        return mol.bonds().anyMatch(StructureProcessor::isQueryBond);
+    }
+
+    private static boolean isQueryBond(Bond bond) {
+        return bond.isQueryBond() || bond.getBondType() == null;
     }
 
 

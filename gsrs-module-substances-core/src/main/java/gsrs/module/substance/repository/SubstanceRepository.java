@@ -64,7 +64,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 
     List<SubstanceSummary> findByNames_Name(String name);
 
-    List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
+    //List<SubstanceSummary> findByNames_StdNameIgnoreCase(String stdName);
 
     List<SubstanceSummary> findByCodes_CodeIgnoreCase(String code);
     List<SubstanceSummary> findByCodes_CodeAndCodes_CodeSystem(String code, String codeSystem);
@@ -100,7 +100,7 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
      * @return
      */
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
-    @Query("select s from Substance s where CONCAT(s.uuid, '') like ?1%")
+    @Query("select s from Substance s where SUBSTRING(s.uuid, 1, 8) = ?1")
     List<Substance> findByUuidStartingWith(String partialUUID);
     @Query("select case when count(s)> 0 then true else false end from Substance s where s.approvalID= ?1")
     boolean existsByApprovalID(String approvalID);
@@ -171,6 +171,6 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
     @Query("select s.id from Substance s")
     List<UUID> getAllIds();
 
-    @Query("select s.id from Substance s where dtype='CHE'")
+    @Query("select s.id from ChemicalSubstance s")
     List<UUID> getAllChemicalIds();
 }

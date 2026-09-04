@@ -1,4 +1,8 @@
+
 package example.substance;
+
+// __GETANEH__ please review
+// Alex went with springBoot3x version 
 
 import com.fasterxml.jackson.databind.JsonNode;
 import gsrs.events.CreateEditEvent;
@@ -17,6 +21,7 @@ import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -29,7 +34,7 @@ import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -45,6 +50,7 @@ import static org.junit.Assert.*;
 @RecordApplicationEvents
 @Import({RelationshipInvertTest.Configuration.class, RelationEventListener.class})
 @WithMockUser(username = "admin", roles = "Admin")
+@Tag("fullstack")
 public class RelationshipInvertTest extends AbstractSubstanceJpaEntityTest {
 
     File invrelate1, invrelate2;

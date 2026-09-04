@@ -18,18 +18,18 @@ import ix.core.chem.Chem;
 import ix.core.chem.ChemCleaner;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.converters.StereoConverter;
+import ix.ginas.models.converters.TrimmedUUIDJavaType;
+import ix.ginas.models.generators.NullUUIDGeneratedValue;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JavaType;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-//@MappedSuperclass
 @Entity
 @Inheritance
 @DiscriminatorValue("DEF")
@@ -39,10 +39,10 @@ public class Structure extends BaseModel {
 
 
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
-    @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by basic hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
+    @NullUUIDGeneratedValue
+    @GeneratedValue
+    // Maintain backwards compatibility with legacy GSRS varchar UUID storage.
+    @JavaType(TrimmedUUIDJavaType.class)
     @Column(length =40, updatable = false)
     public UUID id;
 
@@ -187,32 +187,16 @@ public class Structure extends BaseModel {
     @Indexable(name = "Molecular Formula", facet = true)
     public String formula;
 
-//    @JsonProperty("_formulaHTML")
-//    public String getHtmlFormula() {
-//        if (formula == null) {
-//            return "";
-//        }
-//        String HTMLFormula = formula.replaceAll("([a-zA-Z])([0-9]+)", "$1<sub>$2</sub>");
-//        if (charge != null && charge != 0 && !HTMLFormula.contains(".")) {
-//            String sCharge = Integer.toString(charge);
-//            String sSign = "+";
-//            if (charge < 0) {
-//                sCharge = sCharge.substring(1);
-//                sSign = "-";
-//            }
-//            if ("1".equals(sCharge)) {
-//                sCharge = "";
-//            }
-//            HTMLFormula = HTMLFormula + "<sup>" + sCharge + sSign + "</sup>";
-//        }
-//        return HTMLFormula;
-//    }
-
     public void updateStructureFields(Structure other){
         if(other !=null) {
-            this.properties.clear();
-
-            this.properties = new ArrayList(other.properties); //add properties
+            if (this.properties == null) {
+                this.properties = new ArrayList<Value>();
+            } else {
+                this.properties.clear();
+            }
+            if (other.properties != null) {
+                this.properties.addAll(other.properties);
+            }
             this.ezCenters = other.ezCenters;
             this.definedStereo = other.definedStereo;
             this.charge = other.charge;
@@ -316,7 +300,6 @@ public class Structure extends BaseModel {
         if(atropisomerism==null){
             atropisomerism= NYU.No;
         }
-//        System.out.println("before = "+ this.molfile);
         //GSRS-1515 clean up structure
         if(this.molfile !=null && !this.molfile.trim().isEmpty()){
             try {
@@ -326,7 +309,6 @@ public class Structure extends BaseModel {
                 //don't update it
             }
         }
-//        System.out.println("after = "+ this.molfile);
     }
 
 
@@ -377,21 +359,6 @@ public class Structure extends BaseModel {
 		return id.toString();
 	}
 
-    //TODO katzelda Feb 2021 : this is done elsewhere in the springboot
-//	@Override
-//	public void forceUpdate() {
-//		lastEdited=new Date();
-//		super.save();
-//	}
-//
-//	@Override
-//	public boolean tryUpdate() {
-//		long ov=version;
-//		super.save();
-//		return ov!=version;
-//	}
-
-
     public void setId(UUID newid){
         if(this.id==null){
             this.id=newid;
@@ -407,28 +374,6 @@ public class Structure extends BaseModel {
      * or not easily accessible due to some transient state.
      * @return
      */
-    /*
-    @JsonIgnore
-    public Structure getDisplayStructure(){
-    	Structure sfetch = StructureFactory.getStructure(this.id);
-    	
-    	if(sfetch==null || !sfetch.version.equals(this.version)){
-    		try{
-	    		Structure s= EntityWrapper.of(this).getClone();
-	    		s.id = Util.sha1UUID(s.molfile+":" + s.digest);
-	    		StructureFactory.saveTempStructure(s);
-	    		return s;
-    		}catch(Exception e){
-    			log.error("Error saving display structure" , e);
-    			StructureFactory.saveTempStructure(this);
-    			return this;
-    		}
-    	}
-    	return this;
-    	
-    }
-    */
-
     @JsonIgnore
     @Transient
     public Chemical toChemical() {
@@ -458,7 +403,6 @@ public class Structure extends BaseModel {
     	}
     }
 
-
     @JsonIgnore
     @Transient
     public String getInChIKeyAndThrow() throws Exception{
@@ -474,11 +418,6 @@ public class Structure extends BaseModel {
         log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}, opticalActivity: {}", this.stereoChemistry, this.opticalActivity);
         try {
 
-//        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
-//            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
-//            //handle non-epimers
-//            return Collections.singletonList(getInChIKey());
-//        }
             if( this.opticalActivity != Optical.PLUS_MINUS || this.definedStereo.intValue() == 0) {
                 return Collections.singletonList(getInChIKey());
             }

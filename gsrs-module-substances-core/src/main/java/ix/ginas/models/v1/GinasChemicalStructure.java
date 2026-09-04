@@ -17,7 +17,7 @@ import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 @Entity
@@ -64,11 +64,11 @@ public class GinasChemicalStructure extends Structure implements GinasAccessRefe
 		this.formula=s.formula;
 		this.id=s.id;
 		this.lastEdited=s.lastEdited;
-		this.links=s.links;
+		this.links=s.links == null ? new ArrayList<XRef>() : new ArrayList<XRef>(s.links);
 		this.molfile=s.molfile;
 		this.mwt=s.mwt;
 		this.opticalActivity=s.opticalActivity;
-		this.properties=s.properties;
+		this.properties=s.properties == null ? new ArrayList<Value>() : new ArrayList<Value>(s.properties);
 		this.smiles=s.smiles;
 		this.stereoCenters=s.stereoCenters;
 		this.stereoComments=s.stereoComments;

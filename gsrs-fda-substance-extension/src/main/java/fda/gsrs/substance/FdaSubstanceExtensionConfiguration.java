@@ -34,5 +34,5 @@ public class FdaSubstanceExtensionConfiguration {
         return new ClinicalTrialsEuropeApi(clinicalTrialsEuropeApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialsEuropeApiConfiguration.getBaseURL(), mapper);
     }
 
-    private ObjectMapper mapper = new ObjectMapper();
+    private final ObjectMapper mapper = new ObjectMapper();
 }

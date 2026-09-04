@@ -17,9 +17,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import javax.annotation.PreDestroy;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.annotation.PreDestroy;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import gsrs.security.canImportData;
 import org.slf4j.Logger;
@@ -576,7 +576,8 @@ public class SubstanceBulkLoadService {
                 }
                 //copy of rec to get the stats in a detached
 
-                processingRecordRepository.saveAndFlush(entityManager.contains(prec.rec)? prec.rec : entityManager.merge(prec.rec));
+                ProcessingRecord savedRecord = saveProcessingRecord(prec.rec);
+                prec.rec.id = savedRecord.id;
 
 
                 if (!worked){
@@ -591,6 +592,50 @@ public class SubstanceBulkLoadService {
                         + " record " + prec.rec.id);
                 throw t;
             }
+        }
+
+        private ProcessingRecord saveProcessingRecord(ProcessingRecord record) {
+            attachManagedJob(record);
+            ProcessingRecord recordToSave = record;
+
+            if (!entityManager.contains(record) && record.id != null) {
+                recordToSave = processingRecordRepository.findById(record.id)
+                        .map(managed -> copyProcessingRecordState(record, managed))
+                        .orElse(record);
+                attachManagedJob(recordToSave);
+            }
+
+            if (entityManager.contains(recordToSave)) {
+                entityManager.flush();
+                return recordToSave;
+            }
+
+            return processingRecordRepository.saveAndFlush(recordToSave);
+        }
+
+        private void attachManagedJob(ProcessingRecord record) {
+            if (record.job != null && record.job.id != null && !entityManager.contains(record.job)) {
+                record.job = entityManager.getReference(ProcessingJob.class, record.job.id);
+            }
+        }
+
+        private ProcessingRecord copyProcessingRecordState(ProcessingRecord source, ProcessingRecord target) {
+            target.start = source.start;
+            target.stop = source.stop;
+            target.name = source.name;
+            target.status = source.status;
+            target.message = source.message;
+            target.xref = source.xref;
+            target.job = source.job;
+
+            if (source.properties != target.properties) {
+                target.properties.clear();
+                if (source.properties != null) {
+                    target.properties.addAll(source.properties);
+                }
+            }
+
+            return target;
         }
 
 
@@ -634,7 +679,7 @@ public class SubstanceBulkLoadService {
                     //use static pattern so we don't recompile on every split call
                     //which is what String.split() does
                     String[] toks = TOKEN_SPLIT_PATTERN.split(line);
-                    if(toks ==null || toks.length <2){
+                    if(toks ==null || toks.length < 3){
                         continue;
                     }
 

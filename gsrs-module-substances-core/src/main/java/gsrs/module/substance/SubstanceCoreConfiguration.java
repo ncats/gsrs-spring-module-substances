@@ -22,37 +22,56 @@ import gsrs.services.RolesConfig;
 import ix.core.chem.StructureProcessorConfiguration;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
+import ix.ginas.utils.SubstanceFieldNameDecoratorConfiguration;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
-import ix.ginas.utils.SubstanceFieldNameDecoratorConfiguration;
-import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
-import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
+import ix.ncats.resolvers.PubChemNameListResolver;
 import org.springframework.boot.web.server.WebServerFactoryCustomizer;
+import org.springframework.boot.tomcat.ConfigurableTomcatWebServerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
 
 @Configuration
-@Import({SubstanceController.class, EditController2.class, NameController.class, CodeController.class, ReferenceController.class,
-        SubstanceLegacySearchService.class,  StructureProcessingConfiguration.class, StructureStandardizerConfiguration.class,
-        EditEntityService.class, NameLegacySearchService.class, CodeLegacySearchService.class, ReferenceLegacySearchService.class,
-        SubstanceEntityServiceImpl.class, RelationEventListener.class,
-        ConfigBasedDefinitionalElementConfiguration.class, ConfigBasedDefinitionalElementFactory.class,
+@Import({
+        SubstanceController.class,
+        EditController2.class,
+        NameController.class,
+        CodeController.class,
+        ReferenceController.class,
+        SubstanceLegacySearchService.class,
+        StructureProcessingConfiguration.class,
+        StructureStandardizerConfiguration.class,
+        EditEntityService.class,
+        NameLegacySearchService.class,
+        CodeLegacySearchService.class,
+        ReferenceLegacySearchService.class,
+        SubstanceEntityServiceImpl.class,
+        RelationEventListener.class,
+        ConfigBasedDefinitionalElementConfiguration.class,
+        ConfigBasedDefinitionalElementFactory.class,
         LegacyGinasAppController.class,
         NameStandardizerConfiguration.class,
         ProxyConfiguration.class,
         GSRSRendererConfiguration.class,
-        StructureResolverService.class, StructureResolverServiceConfiguration.class,
+        StructureResolverService.class,
+        StructureResolverServiceConfiguration.class,
         SubstanceDataConfiguration.class,
         StructureResolverController.class,
         SubstanceSpreadsheetExporterConfiguration.class,
-        SubstanceHierarchyFinder.class, SubstanceHierarchyFinderConfig.class,
-        ApprovalIdConfiguration.class,RendererOptionsConfig.class, MolWeightCalculatorProperties.class,
-            //legacy bulk load
-        SubstanceBulkLoadService.class, SubstanceBulkLoadServiceConfiguration.class, SubstanceLegacyBulkLoadController.class,
-        ProcessingJobController.class, ProcessingJobEntityService.class,
-        //used by bulk loader
+        SubstanceHierarchyFinder.class,
+        SubstanceHierarchyFinderConfig.class,
+        ApprovalIdConfiguration.class,
+        RendererOptionsConfig.class,
+        MolWeightCalculatorProperties.class,
+        //legacy bulk load
+        SubstanceBulkLoadService.class,
+        SubstanceBulkLoadServiceConfiguration.class,
+        SubstanceLegacyBulkLoadController.class,
+        ProcessingJobController.class,
+        ProcessingJobEntityService.class,
+        //used by bulk load
         ConsoleFilterService.class,
         BulkSearchService.class,
         UserSavedListService.class,
@@ -71,24 +90,22 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         ChemicalUtils.class,
         SubstanceEntityServiceConfiguration.class,
         UserRoleConfiguration.class,
-        RolesConfig.class
+        RolesConfig.class,
+        IupacNameService.class,
+        PubChemNameListResolver.class
 })
 public class SubstanceCoreConfiguration {
+    private static final String RELAXED_CHARS = "<>[\\]^`{|}";
 
     @Bean
-    public WebServerFactoryCustomizer<TomcatServletWebServerFactory>
-    containerCustomizer(){
-        return new EmbeddedTomcatCustomizer();
-    }
-
-    private static class EmbeddedTomcatCustomizer implements WebServerFactoryCustomizer<TomcatServletWebServerFactory> {
-
-        @Override
-        public void customize(TomcatServletWebServerFactory factory) {
-            factory.addConnectorCustomizers((TomcatConnectorCustomizer) connector -> {
-                connector.setAttribute("relaxedPathChars", "<>[\\]^`{|}");
-                connector.setAttribute("relaxedQueryChars", "<>[\\]^`{|}");
-            });
-        }
+    public WebServerFactoryCustomizer<?> containerCustomizer() {
+        return factory -> {
+            if (factory instanceof ConfigurableTomcatWebServerFactory tomcatFactory) {
+                tomcatFactory.addConnectorCustomizers(connector -> {
+                    connector.setProperty("relaxedPathChars", RELAXED_CHARS);
+                    connector.setProperty("relaxedQueryChars", RELAXED_CHARS);
+                });
+            }
+        };
     }
 }

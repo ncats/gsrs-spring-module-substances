@@ -4,6 +4,8 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.services.GroupService;
+import gsrs.springUtils.StaticContextAccessor;
 
 import ix.core.models.*;
 import ix.core.search.SearchOptions;
@@ -34,6 +36,14 @@ public class ValidationUtils {
 
 
 	private static final String VALIDATION_CONF = "validation.conf";
+
+    private static void clearGroupCacheBeforeSearchResultDeserialization() {
+        try {
+            StaticContextAccessor.getBean(GroupService.class).clearCache();
+        } catch (Exception e) {
+            log.trace("Unable to clear GroupService cache before search result deserialization", e);
+        }
+    }
 
 	public static interface ValidationRule<K>{
 		public GinasProcessingMessage validate(K obj);
@@ -445,6 +455,7 @@ public class ValidationUtils {
                     SearchResult sr = defHashCalcRequirements.getSubstanceLegacySearchService().search(request.getQuery(), options);
                     
                     //this might not be necessary anymore
+                    clearGroupCacheBeforeSearchResultDeserialization();
                     sr.waitForFinish();
                     
                     List<Object> fut = sr.getMatches();
@@ -497,6 +508,7 @@ public class ValidationUtils {
 					SearchResult sr = searchService.search(request.getQuery(), options);
 
 					//this might not be necessary anymore
+                    clearGroupCacheBeforeSearchResultDeserialization();
 					sr.waitForFinish();
 
 					List<Object> fut = sr.getMatches();
@@ -542,6 +554,7 @@ public class ValidationUtils {
 					SearchResult sr = searchService.search(request.getQuery(), options);
 
 					//this might not be necessary anymore
+                    clearGroupCacheBeforeSearchResultDeserialization();
 					sr.waitForFinish();
 
 					List<Object> fut = sr.getMatches();

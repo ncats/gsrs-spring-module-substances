@@ -1,13 +1,10 @@
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate;
-import gsrs.substances.dto.SubstanceDTO;
-import gsrs.substances.util.SubstanceKey;
-import gsrs.substances.util.SubstanceKeyResolver;
 import models.PubChemChemical;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.stereotype.Service;
+import org.springframework.boot.restclient.RestTemplateBuilder;
 
 import java.io.IOException;
 import java.util.Optional;

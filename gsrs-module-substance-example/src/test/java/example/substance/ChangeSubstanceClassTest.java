@@ -1,16 +1,18 @@
 package example.substance;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.junit.json.JsonUtil;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.substances.tests.SubstanceJsonUtil;
 import gsrs.substances.tests.SubstanceTestUtil;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 
@@ -18,8 +20,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 @WithMockUser(username = "admin", roles="Admin")
 @Transactional
+@Tag("fullstack")
 public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
 
+
+     private static final ObjectMapper MAPPER = new ObjectMapper();
 
      File resource;
 
@@ -93,4 +98,65 @@ public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
             
 
    	}
+
+    @Test
+    public void changeChemicalToProteinWithRetainedChemicalPayloadTest() throws Exception {
+        JsonNode createdChemical = assertCreated(
+                SubstanceTestUtil.makeChemicalSubstance("CC").toFullJsonNode())
+                .toFullJsonNode();
+
+        JsonNode protein = MAPPER.readTree("""
+                {
+                  "proteinType": "",
+                  "references": [],
+                  "subunits": [
+                    {
+                      "references": [],
+                      "access": [],
+                      "sequence": "AC",
+                      "subunitIndex": 1
+                    }
+                  ],
+                  "otherLinks": [],
+                  "disulfideLinks": [],
+                  "glycosylation": {}
+                }
+                """);
+
+        JsonNode update = new JsonUtil.JsonNodeBuilder(createdChemical)
+                .set("/substanceClass", "protein")
+                .add("/protein", protein)
+                .build();
+
+        JsonNode updatedProtein = assertUpdated(update).toFullJsonNode();
+        assertEquals("protein", updatedProtein.at("/substanceClass").asText());
+        assertEquals("AC", updatedProtein.at("/protein/subunits/0/sequence").asText());
+    }
+
+    @Test
+    public void updateChemicalStructureWhenJsonContainsInheritedModificationsShouldPass() throws Exception {
+        JsonNode emptyModifications = MAPPER.readTree("""
+                {
+                  "agentModifications": [],
+                  "physicalModifications": [],
+                  "structuralModifications": []
+                }
+                """);
+
+        JsonNode chemical = new JsonUtil.JsonNodeBuilder(SubstanceTestUtil.makeChemicalSubstance("CC").toFullJsonNode())
+                .set("/modifications", emptyModifications)
+                .build();
+
+        JsonNode createdChemical = assertCreated(chemical).toFullJsonNode();
+        JsonNode replacementChemical = SubstanceTestUtil.makeChemicalSubstance("CCC").toFullJsonNode();
+
+        JsonNode update = new JsonUtil.JsonNodeBuilder(createdChemical)
+                .set("/structure", replacementChemical.at("/structure"))
+                .set("/moieties", replacementChemical.at("/moieties"))
+                .build();
+
+        JsonNode updatedChemical = assertUpdated(update).toFullJsonNode();
+        assertEquals("chemical", updatedChemical.at("/substanceClass").asText());
+        assertTrue(updatedChemical.at("/modifications").isObject());
+    }
 }
