@@ -679,7 +679,7 @@ public class SubstanceBulkLoadService {
                     //use static pattern so we don't recompile on every split call
                     //which is what String.split() does
                     String[] toks = TOKEN_SPLIT_PATTERN.split(line);
-                    if(toks ==null || toks.length <2){
+                    if(toks ==null || toks.length < 3){
                         continue;
                     }
 
