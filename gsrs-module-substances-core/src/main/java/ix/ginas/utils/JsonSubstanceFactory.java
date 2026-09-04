@@ -24,14 +24,6 @@ public class JsonSubstanceFactory {
         return JsonEntityUtil.fixOwners(s, true);
     }
 
-
-
-
-
-
-
-
-
     public static Substance makeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
         return JsonEntityUtil.fixOwners(internalMakeSubstance(tree, messages), true);
     }

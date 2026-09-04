@@ -86,8 +86,8 @@ TODO: consider other data types like:
     public static Set<String> getSdFileFields(InputStream istream) throws IOException {
         LinkedHashSet<String> fields = new LinkedHashSet<>();
         try (BufferedReader br = new BufferedReader(new InputStreamReader(istream, StandardCharsets.UTF_8))) {
-            while (br.ready()) {
-                String line = br.readLine();
+            String line;
+            while ((line = br.readLine()) != null) {
                 Matcher matcher = sdFileFieldPattern.matcher(line);
                 if(matcher.find()) { 
                     String fieldName = matcher.group(1);
@@ -116,8 +116,8 @@ TODO: consider other data types like:
             String fieldName=null;
             String value="";
             boolean inValue=false;
-            while (br.ready()) {
-                String line = br.readLine();
+            String line;
+            while ((line = br.readLine()) != null) {
                 Matcher matcher = sdFileFieldPattern.matcher(line);
                 Matcher endmatcher = endRecordPattern.matcher(line);
                 if(matcher.find()) { 
@@ -159,8 +159,8 @@ TODO: consider other data types like:
             if( fieldNames!=null && fieldNames.size()>0) {
                 fields.addAll(fieldNames);
             }
-            while (br.ready()) {
-                String line = br.readLine();
+            String line;
+            while ((line = br.readLine()) != null) {
                 Matcher matcher = sdFileFieldPattern.matcher(line);
                 Matcher endmatcher = endRecordPattern.matcher(line);
                 if(matcher.find()) {
