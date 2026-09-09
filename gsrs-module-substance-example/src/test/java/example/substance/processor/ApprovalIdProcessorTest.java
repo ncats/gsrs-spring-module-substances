@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +45,7 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
         }
         @Bean
         public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service){
-            return new CvApiAdapter(service);
+            return new CvApiAdapter(service, JsonMapper.builderWithJackson2Defaults().build());
         }
     }
     @BeforeEach
@@ -59,7 +60,7 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
     the substance read in from file has an approval ID but no corresponding code.  We expect one to be created
      */
     @Test
-    public void testCopyCodeIfNecessary() throws IOException {
+    public void testCopyCodeIfNecessary()  {
         String unii = "88ECG9H7RA_minus_code";
         Substance approvedSubstance = getSubstanceFromFile(unii);
 

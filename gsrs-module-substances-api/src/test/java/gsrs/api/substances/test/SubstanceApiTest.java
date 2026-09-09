@@ -1,14 +1,11 @@
 package gsrs.api.substances.test;
-import com.fasterxml.jackson.core.ObjectCodec;
-import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate;
 import gsrs.api.GsrsEntityRestTemplate;
 import gsrs.api.substances.SubstanceRestApi;
 import gsrs.assertions.GsrsMatchers;
 import gsrs.substances.dto.*;
-import org.apache.commons.io.FileExistsException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +33,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
+import tools.jackson.databind.json.JsonMapper;
 
 @RestClientTest(SubstanceRestApi.class)
 public class SubstanceApiTest {
@@ -55,7 +53,7 @@ public class SubstanceApiTest {
         @Bean
         public SubstanceRestApi substanceRestApi(RestTemplateBuilder restTemplateBuilder) {
 
-            return new SubstanceRestApi(restTemplateBuilder, "http://example.com", new ObjectMapper());
+            return new SubstanceRestApi(restTemplateBuilder, "http://example.com", JsonMapper.builderWithJackson2Defaults().build());
         }
     }
 

@@ -1,8 +1,6 @@
 package example.pojodiff;
 
-import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.flipkart.zjsonpatch.JsonDiff;
+import com.flipkart.zjsonpatch.Jackson3JsonDiff;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
@@ -10,6 +8,8 @@ import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.UUID;
 
@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class MoietyDiffTest{
 
-    ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
 
     @Test
@@ -88,7 +88,7 @@ public class MoietyDiffTest{
         try{
             assertEquals(js1,js2);
         }catch(Throwable e){
-            System.out.println(JsonDiff.asJson(js1, js2));
+            System.out.println(Jackson3JsonDiff.asJson(js1, js2));
             throw e;
         }
     }

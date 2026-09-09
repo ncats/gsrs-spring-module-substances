@@ -3,7 +3,6 @@ package example.imports;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import gsrs.imports.ActionConfig;
 import gsrs.imports.ActionConfigImpl;
 import gsrs.imports.CodeProcessorFieldImpl;
@@ -20,11 +19,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.StaticApplicationContext;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.node.StringNode;
 
 import java.io.*;
 import java.nio.file.Files;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -154,7 +153,7 @@ Confirm ability to read data
 
         ArrayNode actionListNode = JsonNodeFactory.instance.arrayNode();
         ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
-        TextNode actionNameNode = JsonNodeFactory.instance.textNode("protein_import");
+        StringNode actionNameNode = JsonNodeFactory.instance.stringNode("protein_import");
         actionNode.set("actionName", actionNameNode);
         ObjectNode adapter1Parameters = JsonNodeFactory.instance.objectNode();
         adapter1Parameters.put("proteinSequence","{{PROTEIN_SEQUENCE}}");
@@ -162,7 +161,7 @@ Confirm ability to read data
         actionListNode.add(actionNode);
 
         ObjectNode nameNode = JsonNodeFactory.instance.objectNode();
-        TextNode nameActionNameNode = JsonNodeFactory.instance.textNode("common_name");
+        StringNode nameActionNameNode = JsonNodeFactory.instance.stringNode("common_name");
         nameNode.set("actionName", nameActionNameNode);
         ObjectNode adapter2Parameters = JsonNodeFactory.instance.objectNode();
         adapter2Parameters.put("name","{{DISPLAY_NAME}}");
@@ -172,7 +171,7 @@ Confirm ability to read data
         actionListNode.add(nameNode);
 
         ObjectNode rnNode = JsonNodeFactory.instance.objectNode();
-        TextNode rnActionNameNode = JsonNodeFactory.instance.textNode("cas_code");
+        StringNode rnActionNameNode = JsonNodeFactory.instance.stringNode("cas_code");
         rnNode.set("actionName", rnActionNameNode);
         ObjectNode adapterRn = JsonNodeFactory.instance.objectNode();
         adapterRn.put("code","{{RN}}");
@@ -182,9 +181,9 @@ Confirm ability to read data
         actionListNode.add(rnNode);
 
         ObjectNode refNode = JsonNodeFactory.instance.objectNode();
-        TextNode refActionNameNode = JsonNodeFactory.instance.textNode("public_reference");
+        StringNode refActionNameNode = JsonNodeFactory.instance.stringNode("public_reference");
         refNode.set("actionName", refActionNameNode);
-        refNode.set("actionClass", JsonNodeFactory.instance.textNode("gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory"));
+        refNode.set("actionClass", JsonNodeFactory.instance.stringNode("gsrs.module.substance.importers.importActionFactories.ReferenceExtractorActionFactory"));
         ObjectNode adapterRef = JsonNodeFactory.instance.objectNode();
         adapterRef.put("docType","CATALOG");
         adapterRef.put("citation","INSERT REFERENCE CITATION HERE");
@@ -216,7 +215,7 @@ Confirm ability to read data
         Stream<Substance> substanceBuilderStream= excelFileImportAdapter.parse(fis, settingsNode, null);
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
                 .map(p->((ProteinSubstance)p))
-                .collect(Collectors.toList());
+                .toList();
         Assertions.assertTrue(proteinSubstances.stream().anyMatch(p->p.names.get(0).name.equals("D-ALANINE AMINOTRANSFERASE (STAPHYLOCOCCUS EPIDERMIDIS (STRAIN ATCC 12228))")
                 && p.protein.subunits.stream().anyMatch(s->s.sequence.equals("MTKVFINGEFVNEEDAKVSYEDRGYVFGDGIYEYIRAYDGKLFTVKEHFERFLRSAEEIGLDLNYTIEELIELVRRLLKENNVVNGGIYIQATRGAAPRNHSFPTPPVKPVIMAFTKSYDRPYEELEQGVYAITTEDIRWLRCDIKSLNLLGNVLAKEYAVKYNAAEAIQHRGDIVTEGASSNVYAIKDGVIYTHPVNNFILNGITRRVIKWIAEDEQIPFKEEKFTVEFLKSADEVIISSTSAEVMPITKIDGENVQDGQVGTITRQLQQGFEKYIQSHSI"))
                 ));
@@ -226,7 +225,7 @@ Confirm ability to read data
     }
 
     @Test
-    public void testParseSmiles() throws IOException {
+    public void testParseSmiles() {
         ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
         ObjectNode generalParameters = JsonNodeFactory.instance.objectNode();
         generalParameters.put("substanceClassName", "Chemical");
@@ -254,14 +253,14 @@ Confirm ability to read data
         idActionFields.put("codeSystem", "pubchem");
         idActionFields.put("codeType", "PRIMARY");
         ObjectNode idConfigNode = JsonNodeFactory.instance.objectNode();
-        idConfigNode.put("fields", idActionFields);
+        idConfigNode.set("fields", idActionFields);
         idConfigNode.put("actionName", "pubchem_code");
         idConfigNode.put("actionClass", CodeExtractorActionFactory.class.getName());
         ObjectNode idActionParameters = JsonNodeFactory.instance.objectNode();
         idActionParameters.put("code","{{id}}");
         idActionParameters.put("codeSystem","pubchem");
         idActionParameters.put("codeType","PRIMARY");
-        idConfigNode.put("actionParameters", idActionParameters);
+        idConfigNode.set("actionParameters", idActionParameters);
         actionListNode.add(idConfigNode);
         List<CodeProcessorFieldImpl> fieldsRn = new ArrayList<>();
         CodeProcessorFieldImpl rnField = new CodeProcessorFieldImpl();
@@ -274,7 +273,6 @@ Confirm ability to read data
         ImportAdapter<Substance> importAdapter= factory.createAdapter(adapterSettings);
         ChemicalDelimTextImportAdapter testFieldAdapter = (ChemicalDelimTextImportAdapter) importAdapter;
 
-        String delim = "\t";
         String testData = "id\tPUBCHEM_OPENEYE_CAN_SMILES\n137695\tCOC1=CC(=CC=C1)[Se]C";
         InputStream inputStream = new ByteArrayInputStream(testData.getBytes());
         ObjectNode settingsNode = JsonNodeFactory.instance.objectNode();

@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,6 +48,8 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
     private final String CV_DOMAIN = "CODE_SYSTEM";
 
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     @TestConfiguration
     static class TestConfig {
 
@@ -57,7 +60,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
         @Bean
         public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service) {
-            return new CvApiAdapter(service);
+            return new CvApiAdapter(service, JsonMapper.builderWithJackson2Defaults().build());
         }
     }
 
@@ -113,7 +116,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
     @Test
     public void testSeqGenNoSuffix() {
         String seqGenName = "not used";
-        int length = String.valueOf(Long.MAX_VALUE).length()+0;
+        int length = String.valueOf(Long.MAX_VALUE).length();
         String suffix = "";
         boolean padding = true;
         String codeSystem = "Codes R Us";
@@ -154,6 +157,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
+            assert substance != null;
             Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
         }
         {
@@ -168,6 +172,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             ChemicalSubstance substance = getAnotherSubstanceFromFile("660YQ98I10");
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
+            assert substance != null;
             Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
         }
     }
@@ -181,11 +186,10 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         Long max = null;
         String codeSystem = "Codes R Us";
         CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
-        assertEquals(codeGenerator.getMax(), (Long) Long.MAX_VALUE);
+        Assertions.assertEquals(codeGenerator.getMax(), (Long) Long.MAX_VALUE);
 
-        assertEquals(codeGenerator.getLen(),String.valueOf(codeGenerator.getMax()).length()+codeGenerator.getSuffix().length());
+        Assertions.assertEquals(codeGenerator.getLen(), String.valueOf(codeGenerator.getMax()).length()+codeGenerator.getSuffix().length());
     }
 
     // ==== B
@@ -276,7 +280,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
         ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         uniqueCodeGenerator.prePersist(substance);
-        assertEquals(new HashSet<Group>(Arrays.asList(new Group("protected"), new Group("admin"))),
+        assertEquals(new HashSet<>(Arrays.asList(new Group("protected"), new Group("admin"))),
             substance.codes.stream().filter(c -> c.codeSystem.equals(codeSystemName)).findFirst().get().getAccess());
     }
 

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
+import tools.jackson.databind.node.ArrayNode;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
@@ -42,7 +43,7 @@ public class UpdateValidationPreviousVersionTest extends AbstractSubstanceJpaEnt
                 .buildJson());
 
         JsonNode updateJson = created.toFullJsonNode();
-        ((com.fasterxml.jackson.databind.node.ArrayNode) updateJson.get("names")).addObject()
+        ((ArrayNode) updateJson.get("names")).addObject()
                 .put("name", "validation-update-test-2")
                 .put("type", "cn")
                 .putArray("languages").add("en");

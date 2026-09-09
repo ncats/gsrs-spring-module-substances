@@ -50,8 +50,8 @@ public final class SubstanceJsonUtil {
 			return false;
 		}
 		ObjectNode other = (ObjectNode) o;
-		Map<String, JsonNode> m1 = toMap(a.fields());
-		Map<String, JsonNode> m2 = toMap(other.fields());
+		Map<String, JsonNode> m1 = toMap(a.properties().iterator());
+		Map<String, JsonNode> m2 = toMap(other.properties().iterator());
 
 		final int len = m1.size();
 		if (m2.size() != len) {
@@ -78,10 +78,9 @@ public final class SubstanceJsonUtil {
 	}
 	private static boolean arrayNodeEqualTraversal(ArrayNode a, JsonNode o, Comparator<JsonNode> comparator){
 
-			if (!(o instanceof ArrayNode)) {
+			if (!(o instanceof ArrayNode other)) {
 				return false;
 			}
-			ArrayNode other = (ArrayNode) o;
 			final int len = a.size();
 			if (other.size() != len) {
 				return false;
@@ -95,15 +94,15 @@ public final class SubstanceJsonUtil {
 
 			Iterator<JsonNode> aIter = aList.iterator();
 			Iterator<JsonNode> oIter = oList.iterator();
-			for(; aIter.hasNext() & oIter.hasNext(); ){
-				if(! equals(aIter.next(), oIter.next(), comparator)){
-					System.out.println("FAILED\n" + aList+"\n"+ oList);
-					return false;
-				}
-
+		while (aIter.hasNext() & oIter.hasNext()) {
+			if(! equals(aIter.next(), oIter.next(), comparator)){
+				System.out.println("FAILED\n" + aList+"\n"+ oList);
+				return false;
 			}
 
-			return true;
+		}
+
+		return true;
 
 
 	}
@@ -136,7 +135,7 @@ public final class SubstanceJsonUtil {
 			jnb=jnb.set("/references/0/publicDomain", true);
 			jnb=jnb.set("/references/0/access", Collections.emptyList());
 		}else{
-			List<String> acc=new ArrayList<String>();
+			List<String> acc=new ArrayList<>();
 			acc.add("protected");
 			jnb = jnb.set("/access", acc);
 			
@@ -280,20 +279,20 @@ public final class SubstanceJsonUtil {
 	}
 
     public static String getApprovalStatus(JsonNode js){
-        return js.get("status").asText().toLowerCase();
+        return js.get("status").asString().toLowerCase();
     }
 
     public static String getApprovalId(JsonNode js){
-        return js.get("approvalID").asText();
+        return js.get("approvalID").asString();
     }
 
 	public static String getRefUuidOnFirstRelationship(JsonNode js){
 		JsonNode relations = js.get("relationships").get(0);
 		JsonNode relatedSubs = relations.get("relatedSubstance");
-		return relatedSubs.get("refuuid").asText();
+		return relatedSubs.get("refuuid").asString();
 	}
 	public static String getTypeOnFirstRelationship(JsonNode js){
-		return js.at("/relationships/0/type").asText();
+		return js.at("/relationships/0/type").asString();
 	}
 
 

@@ -19,7 +19,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import example.GsrsModuleSubstanceApplication;
 import gsrs.cache.GsrsCache;
@@ -38,6 +37,7 @@ import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.StandardNameDuplicateValidator;
+import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
@@ -64,9 +64,10 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         private static final String CONCEPT_WITH_STANDARD_NAME_TEMPLATE = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
 
-        
+        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
         @BeforeEach
-        public void clearIndexers() throws IOException {
+        public void clearIndexers() {
         	ValidatorConfig config = new DefaultValidatorConfig();
         	config.setNewObjClass(Substance.class);
         	factory.addValidator("substances", config);
@@ -243,7 +244,6 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         public Substance loadSubstanceFromJsonString(String jsonText) {
                 Substance substance = null;
-                ObjectMapper mapper = new ObjectMapper();
                 JsonNode json = null;
                 try {
                         json = mapper.readTree(jsonText);

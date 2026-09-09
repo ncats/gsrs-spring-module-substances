@@ -1,7 +1,7 @@
 package example.substance;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @WithMockUser(username = "admin", roles = "Admin")
 public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     @Test
     void addPhysicalModificationToSpecifiedSubstanceGroup1() throws Exception {

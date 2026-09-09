@@ -1,7 +1,6 @@
     package example.substance;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
@@ -41,6 +40,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -149,7 +149,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     }
 
     @Test
-    public void addProteinSequenceAndThenSearchShouldGiveExactMatchResult()   throws Exception {
+    public void addProteinSequenceAndThenSearchShouldGiveExactMatchResult() {
 
 
         String seq="ACDEFGHIJKLMN";
@@ -171,7 +171,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
 
     @Test
-    public void addProteinSequenceAndThenEditSearchShouldNotHonorOldSearch() throws Exception {
+    public void addProteinSequenceAndThenEditSearchShouldNotHonorOldSearch() {
         String seq="ACDEFGHIJKLMN";
         String seq2="TTTTTTTTTTATCGHHHH";
 
@@ -375,7 +375,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
             factory.addValidator("substances", config);
         }
 
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         Resource dataFile = new ClassPathResource("testJSON/XLR461MD3M.json");
         String recordJson1 = Files.readString(dataFile.getFile().toPath());
         JsonNode json = mapper.readTree(recordJson1);

@@ -1,7 +1,6 @@
 package example.substance;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -12,6 +11,7 @@ import java.util.function.Supplier;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,8 +28,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.controllers.SubstanceController;
@@ -58,11 +56,13 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
     protected StructureStandardizer standardizer;
 
 
+    private final JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
+
 
     @TestConfiguration
     public static class Configuration{
         @Bean
-        public StructureStandardizer getStructureStandardizer() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+        public StructureStandardizer getStructureStandardizer() {
             InchiStandardizer istd = new InchiStandardizer();
             return new LoggingStructureStandardizer(istd);
         }
@@ -185,7 +185,6 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
     @Test
     public void ensureAFlexSearchForATempStoredStructureGetsStandardized() throws Exception {
 
-        ObjectMapper om = new ObjectMapper();
         String smiles = "FC(F)(F)C(N(CCN2C(=O)C[C@H](N)CC(C(F)=CC3F)=CC(F)=3)C=1C2)=NN1";
         UUID uuid1 = UUID.randomUUID();
         new SubstanceBuilder()
@@ -212,7 +211,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         ResponseEntity<Object> istruct = substanceController.interpretStructure(smiles, new HashMap<>());
                 
         JsonNode jsn = om.readTree(istruct.getBody().toString());
-        String strID=jsn.at("/structure/id").asText();        
+        String strID=jsn.at("/structure/id").asString();
         substanceController.structureSearchGet(strID, "exact", null, null, null, null, null, false, null, null, mockedRequest, mockAtt);
         
         //Should get called twice: once in full structure and once in moiety
@@ -229,7 +228,6 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
     @Test
     public void ensureAFlexSearchForADirectSmilesGetsStandardized() throws Exception {
 
-        ObjectMapper om = new ObjectMapper();
         String smiles = "FC(F)(F)C(N(CCN2C(=O)C[C@H](N)CC(C(F)=CC3F)=CC(F)=3)C=1C2)=NN1";
         UUID uuid1 = UUID.randomUUID();
         new SubstanceBuilder()
@@ -262,7 +260,6 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
     @Test
     public void ensureSmilesLeadsToReasonableMolfile() throws Exception {
         //expect a SMILES with no query bonds to yield a molfile with no query bonds
-        ObjectMapper om = new ObjectMapper();
         String smiles = "c1ccc(cc1)P(CCCC#N)(c2ccccc2)c3ccccc3";
         LoggingStructureStandardizer lstd=(LoggingStructureStandardizer)standardizer;
         lstd.reset();
@@ -272,7 +269,7 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
         assertTrue(response.getBody() instanceof ObjectNode);
         ObjectNode baseNode = (ObjectNode)response.getBody();
         ObjectNode structureNode = (ObjectNode) baseNode.get("structure");
-        String molfile = structureNode.get("molfile").asText();
+        String molfile = structureNode.get("molfile").asString();
         assertNotNull(molfile);
         Chemical chem = Chemical.parseMol(molfile);
         assertTrue(chem.bonds().noneMatch(b->b.isQueryBond()));

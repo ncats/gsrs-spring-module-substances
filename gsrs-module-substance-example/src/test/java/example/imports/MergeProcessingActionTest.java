@@ -1,7 +1,6 @@
 package example.imports;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import example.substance.support.TestJsonSanitizer;
 import gsrs.dataexchange.processingactions.MergeProcessingAction;
 import ix.core.models.Keyword;
@@ -14,6 +13,7 @@ import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public class MergeProcessingActionTest {
+
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     @Test
     public void testMergeNames() {
@@ -68,33 +70,6 @@ public class MergeProcessingActionTest {
     @Test
     public void testMergeStructures() {
 
-        String cleanMolfile ="\n" +
-                "  ACCLDraw03062319102D\n" +
-                "\n" +
-                "  5  3  0  0  0  0  0  0  0  0999 V2000\n" +
-                "    2.6138   -5.4326    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    3.6517   -4.8689    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    3.6827   -3.6879    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    4.6591   -5.4863    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    7.7500   -3.9500    0.0000 Na  0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  1  0  0  0  0\n" +
-                "  2  3  2  0  0  0  0\n" +
-                "  2  4  1  0  0  0  0\n" +
-                "M  END\n";
-        String disorganizedMolfile = "\n" +
-                "  ACCLDraw03062319112D\n" +
-                "\n" +
-                "  5  3  0  0  0  0  0  0  0  0999 V2000\n" +
-                "    2.1450   -8.2451    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    3.6517   -4.8689    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    1.5265   -2.1879    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n" +
-                "    7.7216  -12.9550    0.0000 O   0  5  0  0  0  0  0  0  0  0  0  0\n" +
-                "    7.7500   -3.9500    0.0000 Na  0  3  0  0  0  0  0  0  0  0  0  0\n" +
-                "  1  2  1  0  0  0  0\n" +
-                "  2  3  2  0  0  0  0\n" +
-                "  2  4  1  0  0  0  0\n" +
-                "M  CHG  2   4  -1   5   1\n" +
-                "M  END\n";
         String smilesNoCharge="[Na].CC(=O)O";
         String smilesWithCharges ="[Na+].CC(=O)[O-]";
 
@@ -1097,7 +1072,7 @@ Map<String, Object> parms = new HashMap<>();
     @Test
     public void mergeMods1Test() throws IOException {
         File proteinFile =new ClassPathResource("testJSON/YYD6UT8T47.json").getFile();
-        JsonNode proteinJson = TestJsonSanitizer.stripAccessFields(new ObjectMapper().readTree(proteinFile));
+        JsonNode proteinJson = TestJsonSanitizer.stripAccessFields(mapper.readTree(proteinFile));
         ProteinSubstanceBuilder builder = SubstanceBuilder.from(proteinJson);
         ProteinSubstance proteinSubstanceSource= builder.build();
         ProteinSubstance proteinSubstanceTarget= builder.build();

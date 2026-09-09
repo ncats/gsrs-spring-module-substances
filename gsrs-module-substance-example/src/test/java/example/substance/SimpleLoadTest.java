@@ -1,32 +1,21 @@
 package example.substance;
 
-import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import tools.jackson.databind.node.ObjectNode;
-import gov.nih.ncats.common.sneak.Sneak;
-import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
-import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Keyword;
 import ix.ginas.modelBuilders.SubstanceBuilder;
-import ix.ginas.models.v1.*;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import ix.ginas.models.v1.Name;
+import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.transaction.TransactionDefinition;
-import org.springframework.transaction.TransactionException;
-import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Tag("fullstack")
 public class SimpleLoadTest extends AbstractSubstanceJpaEntityTest {
@@ -51,8 +40,8 @@ public class SimpleLoadTest extends AbstractSubstanceJpaEntityTest {
         substanceBuilder.addReference(publicReference);
         Substance testConcept = substanceBuilder.build();
         // testConcept.uuid = UUID.randomUUID();
-        ObjectMapper objectMapper = new ObjectMapper();
-        JsonNode jsonNode  = objectMapper.valueToTree(testConcept);
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonNode jsonNode  = mapper.valueToTree(testConcept);
         ((ObjectNode)jsonNode).put("uuid", UUID.randomUUID().toString());
         try {
             substanceEntityService.createEntity(jsonNode);

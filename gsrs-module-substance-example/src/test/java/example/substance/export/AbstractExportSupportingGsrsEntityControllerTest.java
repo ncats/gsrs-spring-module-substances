@@ -1,8 +1,6 @@
 package example.substance.export;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.controller.AbstractExportSupportingGsrsEntityController;
 import gsrs.legacy.LegacyGsrsSearchService;
 import gsrs.service.GsrsEntityService;
@@ -24,24 +22,28 @@ import static org.mockito.Mockito.when;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.NonNull;
+import org.jspecify.annotations.NonNull;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.AbstractPlatformTransactionManager;
 import org.springframework.transaction.support.DefaultTransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import jakarta.servlet.http.HttpServletRequest;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
-
 
 @Slf4j
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class AbstractExportSupportingGsrsEntityControllerTest {
 
     private final Map<String, Text> savedExporterKeys = new HashMap<>();
+
     private final AtomicLong nextTextId = new AtomicLong(1L);
+
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     private final TextRepository textRepository = mock(TextRepository.class, invocation -> {
         String methodName = invocation.getMethod().getName();
@@ -247,7 +249,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest {
     }
 
     @Test
-    public void testDoesExporterKeyExist() throws JsonProcessingException {
+    public void testDoesExporterKeyExist() {
         //create 2 configurations with identical keys
         String madeUpKey = "Made Up Key" + UUID.randomUUID();
         String config1 = createBogusConfig(madeUpKey);
@@ -268,21 +270,19 @@ public class AbstractExportSupportingGsrsEntityControllerTest {
     }
 
     private String createBogusConfig(String expConfKey){
-        ObjectMapper objectMapper = new ObjectMapper();
-
         ExporterSpecificExportSettings exporterSpecificExportSettings = ExporterSpecificExportSettings.builder()
                 .columnNames(Arrays.asList("molfile", "UNII", "PT", "CAS"))
                 .includeRepeatingDataOnEveryRow(false)
                 .build();
-        JsonNode exporterSettings = objectMapper.valueToTree(exporterSpecificExportSettings);
+        JsonNode exporterSettings = mapper.valueToTree(exporterSpecificExportSettings);
         SpecificExporterSettings config =  SpecificExporterSettings.builder()
                 .exporterKey(expConfKey)
                 .exporterSettings(exporterSettings)
                 .configurationKey("Advanced SDFiles " + UUID.randomUUID().toString().substring(0, 10))
                 .build();
         try {
-            return objectMapper.writeValueAsString(config);
-        } catch (JsonProcessingException e) {
+            return mapper.writeValueAsString(config);
+        } catch (Exception e) {
             log.error("Error creating test config", e);
         }
         return "";

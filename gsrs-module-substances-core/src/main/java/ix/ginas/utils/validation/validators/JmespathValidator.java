@@ -1,12 +1,12 @@
 package ix.ginas.utils.validation.validators;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 
 import gsrs.module.substance.utils.HtmlUtil;
 import gsrs.validator.ValidatorConfig;
+import gsrs.module.substance.utils.Jackson3Runtime;
 import gsrs.module.substance.utils.SplitFunction;
 import gsrs.module.substance.utils.UniqueFunction;
 
@@ -14,7 +14,6 @@ import io.burt.jmespath.JmesPath;
 import io.burt.jmespath.Expression;
 import io.burt.jmespath.RuntimeConfiguration;
 import io.burt.jmespath.function.FunctionRegistry;
-import io.burt.jmespath.jackson.JacksonRuntime;
 
 import ix.core.controllers.EntityFactory;
 import ix.core.validator.GinasProcessingMessage;
@@ -38,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
 
-    private List<ValidatorExpression> expressions = new ArrayList<ValidatorExpression>();
+    private List<ValidatorExpression> expressions = new ArrayList<>();
     private final EntityFactory.EntityMapper.EntityWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
 
     private final static String CHARSET = "UTF-8";
@@ -54,19 +53,19 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
 
         public ValidatorExpression(Map<String, String> m) {
             FunctionRegistry customFunctions = FunctionRegistry.defaultRegistry().extend(
-                                                           new SplitFunction(),
-                                                           new UniqueFunction());
+                    new SplitFunction(),
+                    new UniqueFunction());
             RuntimeConfiguration configuration = new RuntimeConfiguration.Builder()
-                                       .withFunctionRegistry(customFunctions)
-                                       .build();
-            JmesPath<JsonNode> jmespath = new JacksonRuntime(configuration);
+                    .withFunctionRegistry(customFunctions)
+                    .build();
+            JmesPath<JsonNode> jmespath = new Jackson3Runtime(configuration);
             this.messageType = GinasProcessingMessage.MESSAGE_TYPE.valueOf(m.getOrDefault("messageType", "NOTICE"));
             this.messageTemplate = m.get("messageTemplate");
             this.messageId = m.getOrDefault("messageId", this.messageType.toString().substring(0,1)
-                                    + String.valueOf("JmespathValidator".hashCode()).substring(2,5)
-                                    + String.valueOf(this.messageTemplate.hashCode()).substring(1,5));
+                    + String.valueOf("JmespathValidator".hashCode()).substring(2,5)
+                    + String.valueOf(this.messageTemplate.hashCode()).substring(1,5));
             this.rawExpression = m.get("expression");
-            this.expression = (Expression<JsonNode>) jmespath.compile(this.rawExpression);
+            this.expression = jmespath.compile(this.rawExpression);
         }
 
         public boolean isValid() {
@@ -82,12 +81,12 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
             log.debug("Validation Results: " + results.toString());
             if (results != null && !results.isNull() && !(results.isArray() && results.size() < 1) && !(results.isBoolean() && !results.asBoolean())) {
                 if (!results.isArray()) {
-                    results = (JsonNode) mapper.createArrayNode().add(results);
+                    results = mapper.createArrayNode().add(results);
                 }
                 Object[] args = StreamSupport.stream(results.spliterator(), false)
-                                            .map(JsonNode::asText)
-                                            .map(s->HtmlUtil.clean(s, CHARSET))
-                                            .toArray(Object[]::new);
+                        .map(JsonNode::asString)
+                        .map(s->HtmlUtil.clean(s, CHARSET))
+                        .toArray(Object[]::new);
                 String msg = String.format(messageTemplate, args);
                 log.debug("Validation Message: " + messageId + " " + msg);
                 callback.addMessage(new GinasProcessingMessage(messageType, msg, messageId));
@@ -130,15 +129,15 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
         ArrayNode references = (ArrayNode)tree.at("/references");
         Map<String, Integer> refMap = new HashMap<>();
         for (int i = 0; i < references.size(); i++) {
-            refMap.put(references.get(i).get("uuid").textValue(), i);
+            refMap.put(references.get(i).get("uuid").stringValue(), i);
         }
         for (JsonNode refsNode: tree.findValues("references")) {
             if (refsNode.isArray()) {
                 ArrayNode refs = (ArrayNode) refsNode;
                 for (int i = 0; i < refs.size(); i++) {
                     JsonNode ref = refs.get(i);
-                    if (ref.isTextual()) {
-                        Integer index = refMap.get(ref.asText());
+                    if (ref.isString()) {
+                        Integer index = refMap.get(ref.asString());
                         if(index !=null) {
                             refs.set(i, references.get(index));
                         }

@@ -1,8 +1,6 @@
 package gsrs.dataexchange.processingactions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.module.substance.importers.model.MergeProcessingActionParameters;
@@ -13,6 +11,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.FileCopyUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -24,9 +23,10 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
     private JsonNode settings;
 
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){
-        ObjectMapper mapper = new ObjectMapper();
         if( !parameters.containsKey("mergeSettings")) {
             log.warn("no mergeSettings found!");
             return existing;
@@ -491,11 +491,10 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
     private final static String JSONSchema = getSchemaString();
 
     private static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
-        ObjectMapper mapper =new ObjectMapper();
         try {
             JsonNode schemaNode=mapper.readTree(JSONSchema);
             return schemaNode;
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;//todo: alternate return?
@@ -511,35 +510,4 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
         return schemaString;
     }
 
-    /* under construction...or maybe destruction  not used for now
-    private boolean copyReferences(GinasCommonSubData source, GinasCommonSubData target, Map<String, String> referencesToCopy,
-                                   Consumer<String> processLog, AbstractSubstanceBuilder builder ){
-        EntityUtils.EntityInfo<GinasCommonSubData> eics= EntityUtils.getEntityInfoFor(GinasCommonSubData.class);
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            GinasCommonSubData copiedItem = eics.fromJson(mapper.writeValueAsString(source));
-            Set<UUID> newRefs = new HashSet<>();
-            source.getReferences().forEach(ref->{
-                String oldRefValue = ref.getValue();
-                String newRefValue="";
-                if(referencesToCopy.containsKey(oldRefValue)){
-                    newRefValue= referencesToCopy.get(oldRefValue);
-                } else {
-                    newRefValue=UUID.randomUUID().toString();
-                    referencesToCopy.put(ref.getValue(), newRefValue);
-                }
-                newRefs.add(UUID.fromString(newRefValue));
-                log.trace("looking for reference with term {} and value {}", ref.term, ref.getValue());
-            });
-            copiedItem.setReferenceUuids(newRefs);
-            copiedItem.setUuid(UUID.randomUUID());
-            //builder.setDefinition(Sub)
-            ((ProteinSubstanceBuilder)builder).setProtein(copiedItem);
-
-        } catch (IOException e) {
-            processLog.accept("Error copying protein " );
-            log.error("Error copying protein");
-        }
-
-    }*/
 }

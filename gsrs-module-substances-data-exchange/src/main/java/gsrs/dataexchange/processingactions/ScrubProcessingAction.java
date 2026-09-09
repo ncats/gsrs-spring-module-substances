@@ -1,8 +1,7 @@
 package gsrs.dataexchange.processingactions;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
@@ -23,10 +22,11 @@ import java.util.function.Consumer;
 @Slf4j
 public class ScrubProcessingAction implements ProcessingAction<Substance> {
 
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     @Override
     public Substance process(Substance stagingAreaRecord, Substance additionalRecord, Map<String, Object> parameters, Consumer<String> logger) throws Exception {
         log.trace("Starting in process");
-        ObjectMapper mapper = new ObjectMapper();
         if( !parameters.containsKey("scrubberSettings")) {
             log.warn("no scrubberSettings found!");
             return stagingAreaRecord;
@@ -53,11 +53,10 @@ public class ScrubProcessingAction implements ProcessingAction<Substance> {
     private final static String JSONSchema = getSchemaString();
 
     private final static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
-        ObjectMapper mapper =new ObjectMapper();
         try {
             JsonNode schemaNode=mapper.readTree(JSONSchema);
             return schemaNode;
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;//todo: alternate return?
@@ -75,10 +74,9 @@ public class ScrubProcessingAction implements ProcessingAction<Substance> {
 
     @Override
     public JsonNode getAvailableSettingsSchema(){
-        ObjectMapper mapper = new ObjectMapper();
         try {
             return mapper.readTree(getSchemaString());
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

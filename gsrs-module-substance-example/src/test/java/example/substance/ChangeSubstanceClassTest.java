@@ -1,7 +1,6 @@
 package example.substance;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.junit.json.JsonUtil;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.substances.tests.SubstanceJsonUtil;
@@ -13,6 +12,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import jakarta.transaction.Transactional;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -24,7 +25,7 @@ import static org.junit.Assert.assertTrue;
 public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
 
 
-     private static final ObjectMapper MAPPER = new ObjectMapper();
+     private static final JsonMapper MAPPER = JsonMapper.builderWithJackson2Defaults().build();
 
      File resource;
 

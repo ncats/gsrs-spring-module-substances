@@ -1,11 +1,10 @@
 package example.imports;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.PropertyBasedDataRecordContext;
@@ -24,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.node.StringNode;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -33,11 +33,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Slf4j
 public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest {
+
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     /*
     Make sure the initialize method populates the registry (a Map)
@@ -100,7 +101,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
 
         ArrayNode actionListNode = JsonNodeFactory.instance.arrayNode();
         ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
-        TextNode actionNameNode = JsonNodeFactory.instance.textNode("protein_import");
+        StringNode actionNameNode = JsonNodeFactory.instance.stringNode("protein_import");
         actionNode.set("actionName", actionNameNode);
         actionListNode.add(actionNode);
         ObjectNode adapterSettings = JsonNodeFactory.instance.objectNode();
@@ -117,7 +118,6 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         Map<String, Object> parameterSet = new HashMap<>();
         parameterSet.put("substanceClassName", requiredClass);
         parameterSet.put("","");
-        //parameterSet.put("","");
         DelimTextImportAdapter delimTextImportAdapter = new DelimTextImportAdapter(actionSet, parameterSet);
         Field substanceClassField= DelimTextImportAdapter.class.getDeclaredField("substanceClassName");
         substanceClassField.setAccessible(true);
@@ -240,7 +240,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
 
         ArrayNode actionListNode = JsonNodeFactory.instance.arrayNode();
         ObjectNode actionNode = JsonNodeFactory.instance.objectNode();
-        TextNode actionNameNode = JsonNodeFactory.instance.textNode("protein_import");
+        StringNode actionNameNode = JsonNodeFactory.instance.stringNode("protein_import");
         actionNode.set("actionName", actionNameNode);
         ObjectNode adapter1Parameters = JsonNodeFactory.instance.objectNode();
         adapter1Parameters.put("proteinSequence","{{PROTEIN_SEQUENCE}}");
@@ -248,7 +248,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         actionListNode.add(actionNode);
 
         ObjectNode nameNode = JsonNodeFactory.instance.objectNode();
-        TextNode nameActionNameNode = JsonNodeFactory.instance.textNode("common_name");
+        StringNode nameActionNameNode = JsonNodeFactory.instance.stringNode("common_name");
         nameNode.set("actionName", nameActionNameNode);
         ObjectNode adapter2Parameters = JsonNodeFactory.instance.objectNode();
         adapter2Parameters.put("name","{{DISPLAY_NAME}}");
@@ -258,7 +258,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         actionListNode.add(nameNode);
 
         ObjectNode rnNode = JsonNodeFactory.instance.objectNode();
-        TextNode rnActionNameNode = JsonNodeFactory.instance.textNode("cas_code");
+        StringNode rnActionNameNode = JsonNodeFactory.instance.stringNode("cas_code");
         rnNode.set("actionName", rnActionNameNode);
         ObjectNode adapterRn = JsonNodeFactory.instance.objectNode();
         adapterRn.put("code","{{RN}}");
@@ -268,7 +268,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         actionListNode.add(rnNode);
 
         ObjectNode refNode = JsonNodeFactory.instance.objectNode();
-        TextNode refActionNameNode = JsonNodeFactory.instance.textNode("public_reference");
+        StringNode refActionNameNode = JsonNodeFactory.instance.stringNode("public_reference");
         refNode.set("actionName", refActionNameNode);
         ObjectNode adapterRef = JsonNodeFactory.instance.objectNode();
         adapterRef.put("docType","CATALOG");
@@ -299,7 +299,7 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         Stream<Substance> substanceBuilderStream= delimTextImportAdapter.parse(fis, settingsNode, null);
         List<ProteinSubstance> proteinSubstances = substanceBuilderStream
                 .map(p->((ProteinSubstance)p))
-                .collect(Collectors.toList());
+                .toList();
         Assertions.assertTrue(proteinSubstances.stream().anyMatch(p->p.names.get(0).name.equals("ASPARTOCIN")
                 && p.protein.subunits.stream().anyMatch(s->s.sequence.equals("CYINNCPLG"))
                 && p.codes.get(0).code.equals("4117-65-1") && p.codes.get(0).type.equals("PRIMARY")));
@@ -314,10 +314,9 @@ public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest 
         exampleData.put("key1", "value one");
         exampleData.put("key2", "value two");
         exampleData.put("key3", "THREE");
-        ObjectMapper mapper = new ObjectMapper();
         JsonNode jsonNode = mapper.valueToTree(exampleData);
         ObjectNode node = (ObjectNode)jsonNode;
-        Assertions.assertTrue( exampleData.keySet().stream().allMatch(k-> exampleData.get(k).equals(node.get(k).asText())));
+        Assertions.assertTrue( exampleData.keySet().stream().allMatch(k-> exampleData.get(k).equals(node.get(k).asString())));
     }
 
     @Test

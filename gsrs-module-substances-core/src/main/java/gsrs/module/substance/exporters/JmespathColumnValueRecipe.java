@@ -1,6 +1,7 @@
 package gsrs.module.substance.exporters;
 
 import tools.jackson.databind.JsonNode;
+import gsrs.module.substance.utils.Jackson3Runtime;
 import gsrs.module.substance.utils.SplitFunction;
 import gsrs.module.substance.utils.UniqueFunction;
 
@@ -8,7 +9,6 @@ import io.burt.jmespath.JmesPath;
 import io.burt.jmespath.Expression;
 import io.burt.jmespath.RuntimeConfiguration;
 import io.burt.jmespath.function.FunctionRegistry;
-import io.burt.jmespath.jackson.JacksonRuntime;
 import ix.ginas.exporters.*;
 import java.util.Date;
 import java.util.Objects;
@@ -42,12 +42,12 @@ public class JmespathColumnValueRecipe<T> implements ColumnValueRecipe<T> {
 
     static <T>  ColumnValueRecipe<T> create(String columnName, String expression, String delimiter, String datetime) {
         FunctionRegistry customFunctions = FunctionRegistry.defaultRegistry().extend(
-                                                       new SplitFunction(),
-                                                       new UniqueFunction());
+                new SplitFunction(),
+                new UniqueFunction());
         RuntimeConfiguration configuration = new RuntimeConfiguration.Builder()
-                                   .withFunctionRegistry(customFunctions)
-                                   .build();
-        JmesPath<JsonNode> jmespath = new JacksonRuntime(configuration);
+                .withFunctionRegistry(customFunctions)
+                .build();
+        JmesPath<JsonNode> jmespath = new Jackson3Runtime(configuration);
         SimpleDateFormat dtf = null;
         try {
             dtf = new SimpleDateFormat(datetime);
@@ -60,10 +60,10 @@ public class JmespathColumnValueRecipe<T> implements ColumnValueRecipe<T> {
     public int writeValuesFor(Spreadsheet.SpreadsheetRow row, int currentOffset, T obj) {
         JsonNode results = expression.search((JsonNode) obj);
         if (results.isValueNode() && ! results.isNull()) {
-            String value = results.asText();
+            String value = results.asString();
             if (datetime != null) {
                 try {
-                    value = datetime.format(new Date(Long.valueOf(value)));
+                    value = datetime.format(new Date(value));
                 } catch (Exception ex) {
                 }
             }
@@ -72,7 +72,7 @@ public class JmespathColumnValueRecipe<T> implements ColumnValueRecipe<T> {
             StringBuilder sb = new StringBuilder();
             for(JsonNode result: results){
                 if (result.isValueNode() && ! result.isNull()) {
-                    String value = result.asText();
+                    String value = result.asString();
                     if (value != null && !value.isEmpty()) {
                         if(sb.length()!=0){
                             sb.append(delimiter);

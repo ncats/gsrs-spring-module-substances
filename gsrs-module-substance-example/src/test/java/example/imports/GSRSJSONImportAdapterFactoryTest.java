@@ -1,5 +1,6 @@
 package example.imports;
 
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
 import example.GsrsModuleSubstanceApplication;
@@ -27,6 +28,7 @@ import java.util.UUID;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullStackEntityTest {
 
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     @Test
     @Tag("fullstack")
@@ -36,7 +38,7 @@ public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullSt
         List<String> resultingSubstanceIds = new ArrayList<>();
 
         final DefaultStagingAreaService<Substance> stagingAreaService =
-                AutowireHelper.getInstance().autowireAndProxy(new DefaultStagingAreaService<>());
+                AutowireHelper.getInstance().autowireAndProxy(new DefaultStagingAreaService<>(mapper));
         final SubstanceStagingAreaEntityService substanceStagingAreaEntityService =
                 AutowireHelper.getInstance().autowireAndProxy(new SubstanceStagingAreaEntityService());
         stagingAreaService.registerEntityService(substanceStagingAreaEntityService);

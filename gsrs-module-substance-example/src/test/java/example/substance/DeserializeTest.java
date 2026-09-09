@@ -1,13 +1,11 @@
 package example.substance;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import ix.ginas.models.v1.Substance;
 import org.apache.commons.io.FileUtils;
-import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,9 +18,9 @@ public class DeserializeTest {
         String testJsonFile ="testJSON//ba88b751-f44a-4b38-8d17-fbcd45591844.json";
         File resource=new ClassPathResource(testJsonFile).getFile();
         String substanceJson =FileUtils.readFileToString(resource, Charset.defaultCharset());
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         JsonNode substanceNode = mapper.valueToTree(substanceJson);
-        Assertions.assertEquals(56818, substanceNode.asText().length());
+        Assertions.assertEquals(56818, substanceNode.asString().length());
 
     }
 }

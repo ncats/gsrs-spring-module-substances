@@ -1,7 +1,7 @@
 package example.substance;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @WithMockUser(username = "admin", roles = "Admin")
 public class UpdateRelationshipWithAmountTest extends AbstractSubstanceJpaEntityTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     @Test
-    void addRelationshipWithAmountToStructurallyDiverseSubstance() throws Exception {
+    void addRelationshipWithAmountToStructurallyDiverseSubstance() {
         Substance related = assertCreated(new SubstanceBuilder()
                 .addName("Relationship amount target")
                 .buildJson());
@@ -48,7 +48,7 @@ public class UpdateRelationshipWithAmountTest extends AbstractSubstanceJpaEntity
         assertEquals("mg", relationship.amount.units);
     }
 
-    private JsonNode emptyModificationsJson() throws Exception {
+    private JsonNode emptyModificationsJson() {
         return mapper.readTree("""
                 {
                   "agentModifications": [],

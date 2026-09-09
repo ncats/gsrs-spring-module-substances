@@ -2,7 +2,6 @@ package gsrs.api.substances;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate;
 import gsrs.substances.dto.CodeDTO;
 import gsrs.substances.dto.NameDTO;
@@ -12,6 +11,7 @@ import gsrs.substances.util.SubstanceKey;
 import org.springframework.boot.restclient.RestTemplateBuilder;
 
 import org.springframework.http.ResponseEntity;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -19,13 +19,13 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate<SubstanceDTO, UUID> implements SubstanceApi{
-    public SubstanceRestApi(RestTemplateBuilder restTemplateBuilder, String baseUrl, ObjectMapper mapper) {
+    public SubstanceRestApi(RestTemplateBuilder restTemplateBuilder, String baseUrl, JsonMapper mapper) {
         super(restTemplateBuilder, baseUrl, "substances", mapper);
     }
 
     @Override
     protected SubstanceDTO parseFromJson(JsonNode node) {
-        return getObjectMapper().convertValue(node, SubstanceDTO.class);
+        return getMapper().convertValue(node, SubstanceDTO.class);
     }
 
     @Override
@@ -44,8 +44,8 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
         if(!response.getStatusCode().is2xxSuccessful()) {
             return Optional.empty();
         }
-        JsonNode node = getObjectMapper().readTree(response.getBody());
-        return Optional.of(getObjectMapper().convertValue(node, new TypeReference<List<NameDTO>>() {}));
+        JsonNode node = getMapper().readTree(response.getBody());
+        return Optional.of(getMapper().convertValue(node, new TypeReference<List<NameDTO>>() {}));
     }
 
     @Override
@@ -54,8 +54,8 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
         if(!response.getStatusCode().is2xxSuccessful()) {
             return Optional.empty();
         }
-        JsonNode node = getObjectMapper().readTree(response.getBody());
-        return Optional.of(getObjectMapper().convertValue(node, new TypeReference<List<CodeDTO>>() {}));
+        JsonNode node = getMapper().readTree(response.getBody());
+        return Optional.of(getMapper().convertValue(node, new TypeReference<List<CodeDTO>>() {}));
     }
 
     @Override
@@ -64,8 +64,8 @@ public class SubstanceRestApi extends AbstractLegacySearchGsrsEntityRestTemplate
         if(!response.getStatusCode().is2xxSuccessful()) {
             return Optional.empty();
         }
-        JsonNode node = getObjectMapper().readTree(response.getBody());
-        return Optional.of(getObjectMapper().convertValue(node, new TypeReference<List<ReferenceDTO>>() {}));
+        JsonNode node = getMapper().readTree(response.getBody());
+        return Optional.of(getMapper().convertValue(node, new TypeReference<>() {}));
     }
 
     @Override

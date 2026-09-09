@@ -1,13 +1,13 @@
 package example.substance.validation;
 
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Moiety;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.UUID;
 
@@ -21,10 +21,12 @@ public class CreateChemicalWithClientSuppliedStructureIdsTest extends AbstractSu
     private static final UUID CLIENT_STRUCTURE_ID = UUID.fromString("6bdc786d-809e-4da4-b635-5077970e61a9");
     private static final UUID CLIENT_MOIETY_STRUCTURE_ID = UUID.fromString("b75478e8-b7bb-4d92-8ab3-994b51bdb708");
 
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void createChemicalWithClientSuppliedStructureIds() throws Exception {
-        JsonNode json = new ObjectMapper().readTree("""
+        JsonNode json =mapper.readTree("""
                 {
                   "substanceClass": "chemical",
                   "references": [

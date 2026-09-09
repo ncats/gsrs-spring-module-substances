@@ -26,7 +26,7 @@ public final class TestJsonSanitizer {
             objectNode.remove("createdBy");
             objectNode.remove("lastEditedBy");
             objectNode.remove("approvedBy");
-            objectNode.fields().forEachRemaining(entry -> removeAccessRecursively(entry.getValue()));
+            objectNode.properties().forEach(entry -> removeAccessRecursively(entry.getValue()));
             return;
         }
         if (node.isArray()) {
