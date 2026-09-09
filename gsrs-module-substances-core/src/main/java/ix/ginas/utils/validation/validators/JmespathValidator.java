@@ -7,6 +7,7 @@ import tools.jackson.databind.node.ArrayNode;
 
 import gsrs.module.substance.utils.HtmlUtil;
 import gsrs.validator.ValidatorConfig;
+import gsrs.module.substance.utils.Jackson3Runtime;
 import gsrs.module.substance.utils.SplitFunction;
 import gsrs.module.substance.utils.UniqueFunction;
 
@@ -14,7 +15,6 @@ import io.burt.jmespath.JmesPath;
 import io.burt.jmespath.Expression;
 import io.burt.jmespath.RuntimeConfiguration;
 import io.burt.jmespath.function.FunctionRegistry;
-import io.burt.jmespath.jackson.JacksonRuntime;
 
 import ix.core.controllers.EntityFactory;
 import ix.core.validator.GinasProcessingMessage;
@@ -59,7 +59,7 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
             RuntimeConfiguration configuration = new RuntimeConfiguration.Builder()
                                        .withFunctionRegistry(customFunctions)
                                        .build();
-            JmesPath<JsonNode> jmespath = new JacksonRuntime(configuration);
+            JmesPath<JsonNode> jmespath = new Jackson3Runtime(configuration);
             this.messageType = GinasProcessingMessage.MESSAGE_TYPE.valueOf(m.getOrDefault("messageType", "NOTICE"));
             this.messageTemplate = m.get("messageTemplate");
             this.messageId = m.getOrDefault("messageId", this.messageType.toString().substring(0,1)

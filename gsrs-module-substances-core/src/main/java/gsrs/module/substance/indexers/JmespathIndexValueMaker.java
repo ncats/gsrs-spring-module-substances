@@ -4,6 +4,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 
+import gsrs.module.substance.utils.Jackson3Runtime;
 import gsrs.module.substance.utils.SplitFunction;
 import gsrs.module.substance.utils.UniqueFunction;
 
@@ -11,7 +12,6 @@ import io.burt.jmespath.JmesPath;
 import io.burt.jmespath.Expression;
 import io.burt.jmespath.RuntimeConfiguration;
 import io.burt.jmespath.function.FunctionRegistry;
-import io.burt.jmespath.jackson.JacksonRuntime;
 
 import ix.core.controllers.EntityFactory;
 import ix.core.search.text.IndexValueMaker;
@@ -55,7 +55,7 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
             RuntimeConfiguration configuration = new RuntimeConfiguration.Builder()
                                        .withFunctionRegistry(customFunctions)
                                        .build();
-            JmesPath<JsonNode> jmespath = new JacksonRuntime(configuration);
+            JmesPath<JsonNode> jmespath = new Jackson3Runtime(configuration);
             this.type = m.getOrDefault("type", "String");
             this.ranges = Arrays.asList(m.getOrDefault("ranges", "").split(" "));
             this.expression = (Expression<JsonNode>) jmespath.compile(m.get("expression"));
