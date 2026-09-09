@@ -36,7 +36,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
 
 import gsrs.controller.*;
-import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
 import gsrs.security.canApproveRecords;
@@ -45,6 +44,7 @@ import gsrs.service.AbstractGsrsEntityService;
 import ix.ginas.utils.validation.validators.StandardNameValidator;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -66,12 +66,11 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import gov.fda.gsrs.ndsri.FeaturizeNitrosamine;
 import gov.fda.gsrs.ndsri.FeaturizeNitrosamine.FeatureResponse;
@@ -102,7 +101,6 @@ import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
-import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.services.PrincipalServiceImpl;
@@ -168,7 +166,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
 
-	
 	@Autowired
 	private ResultListRecordGenerator resultListRecordGenerator;
 	
@@ -182,6 +179,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private ChemicalUtils chemicalUtils;
+
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper objectMapper;
 
     private static final int MAX_NAME_STANDARDIZATION_INPUT_LENGTH = 500;
 
@@ -654,7 +655,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
-        log.trace("sanitizedRequest.getType(): {}", sanitizedRequest.getType());
 
         boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT
                 || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
@@ -1002,8 +1002,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
-            ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
-            ObjectNode node = mapper.createObjectNode();
+            ObjectNode node = objectMapper.createObjectNode();
             try {
                 Structure struc = structureProcessor.taskFor(payload)
                         .components(moieties)
@@ -1025,18 +1024,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
 
 
-                ArrayNode an = mapper.createArrayNode();
+                ArrayNode an = objectMapper.createArrayNode();
                 for (Structure m : moieties) {
                     saveTempStructure(m);
-                    ObjectNode on = mapper.valueToTree(m);
+                    ObjectNode on = objectMapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
-                    JsonNode amt = mapper.valueToTree(c1);
+                    JsonNode amt = objectMapper.valueToTree(c1);
                     on.set("countAmount", amt);
                     an.add(on);
                 }
                 saveTempStructure(struc);
-                node.put("structure", mapper.valueToTree(struc));
-                node.put("moieties", an);
+                node.set("structure", objectMapper.valueToTree(struc));
+                node.set("moieties", an);
                 if( appendFeatures) {
                     log.trace("going to append nitrosamine features");
                     appendFeatureStuff(struc.toChemical(), node);
@@ -1051,7 +1050,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     saveTempStructure(struc);
                     su._structure = struc;
                 }
-                node.put("structuralUnits", mapper.valueToTree(o));
+                node.set("structuralUnits", objectMapper.valueToTree(o));
             } catch (Throwable e) {
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
@@ -1091,8 +1090,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
-            ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
-            ObjectNode node = mapper.createObjectNode();
+            ObjectNode node = objectMapper.createObjectNode();
             try {
                 Structure struc = structureProcessor.taskFor(payload)
                         .components(moieties)
@@ -1113,19 +1111,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     struc.molfile=simpStd.standardize(struc.molfile);
                 }
 
-                ArrayNode an = mapper.createArrayNode();
+                ArrayNode an = objectMapper.createArrayNode();
                 for (Structure m : moieties) {
                     saveTempStructure(m);
-                    ObjectNode on = mapper.valueToTree(m);
+                    ObjectNode on = objectMapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
-                    JsonNode amt = mapper.valueToTree(c1);
+                    JsonNode amt = objectMapper.valueToTree(c1);
                     on.set("countAmount", amt);
                     an.add(on);
                 }
                 //TODO: fill in calculation
                 //saveTempStructure(struc);
-                node.put("structure", mapper.valueToTree(struc));
-                node.put("moieties", an);
+                node.set("structure", objectMapper.valueToTree(struc));
+                node.set("moieties", an);
                 appendFeatureStuff(struc.toChemical(), node);
 
             } catch (Exception e) {
@@ -2010,17 +2008,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         log.trace("returning substance-specific comparator");
         return new ExportingSubstanceComparator();
     }
-    public List<Text> getHardcodedConfigsBackup() throws JsonProcessingException {
+    public List<Text> getHardcodedConfigsBackup() {
         List<Text> items = new ArrayList<>();
 
-        ObjectMapper mapper = new ObjectMapper();
         SpecificExporterSettings allDataSettings = new SpecificExporterSettings();
         allDataSettings.setExpanderSettings(JsonNodeFactory.instance.objectNode());
         allDataSettings.setScrubberSettings(JsonNodeFactory.instance.objectNode());
         allDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
         allDataSettings.setExporterKey("ALL_DATA");
         allDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
-        Text allItems = new Text("settings", mapper.writeValueAsString(allDataSettings));
+        Text allItems = new Text("settings", objectMapper.writeValueAsString(allDataSettings));
         allItems.id=0l;
         items.add(allItems);
 
@@ -2034,7 +2031,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         publicDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
         publicDataSettings.setExporterKey("PUBLIC_DATA_ONLY");
         publicDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
-        Text publicItems = new Text("settings", mapper.writeValueAsString(publicDataSettings));
+        Text publicItems = new Text("settings", objectMapper.writeValueAsString(publicDataSettings));
         publicItems.id=-1l;
         items.add(publicItems);
         return items;
@@ -2085,17 +2082,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     private void appendFeatureStuff(Chemical chemical, ObjectNode topLevelNode ) throws Exception {
         log.trace("in appendFeatureStuff");
-        ObjectMapper mapper = new ObjectMapper();
         List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(chemical);
-        ObjectNode allFeatures = mapper.createObjectNode();
-        ArrayNode featureArrayNode = mapper.createArrayNode();
+        ObjectNode allFeatures = objectMapper.createObjectNode();
+        ArrayNode featureArrayNode = objectMapper.createArrayNode();
         featureList.forEach(features ->{
-            ObjectNode oneSet = mapper.createObjectNode();
+            ObjectNode oneSet = objectMapper.createObjectNode();
             features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
             featureArrayNode.add(oneSet);
         });
-        allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
-        topLevelNode.put("featureList", allFeatures);
+        allFeatures.set("nitrosamineAnalysisFeatures", featureArrayNode);
+        topLevelNode.set("featureList", allFeatures);
     }
 
     public Structure stripSalts(Structure structure) throws IOException {

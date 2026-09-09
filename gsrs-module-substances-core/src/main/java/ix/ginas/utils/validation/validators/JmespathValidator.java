@@ -1,9 +1,9 @@
 package ix.ginas.utils.validation.validators;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 import gsrs.module.substance.utils.HtmlUtil;
 import gsrs.validator.ValidatorConfig;
@@ -39,8 +39,11 @@ import lombok.extern.slf4j.Slf4j;
 public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
 
     private List<ValidatorExpression> expressions = new ArrayList<ValidatorExpression>();
-    private final ObjectWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
+    private final EntityFactory.EntityMapper.EntityWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
+
     private final static String CHARSET = "UTF-8";
+
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     private class ValidatorExpression {
         private final GinasProcessingMessage.MESSAGE_TYPE messageType;
@@ -79,7 +82,7 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
             log.debug("Validation Results: " + results.toString());
             if (results != null && !results.isNull() && !(results.isArray() && results.size() < 1) && !(results.isBoolean() && !results.asBoolean())) {
                 if (!results.isArray()) {
-                    results = (JsonNode) new ObjectMapper().createArrayNode().add(results);
+                    results = (JsonNode) mapper.createArrayNode().add(results);
                 }
                 Object[] args = StreamSupport.stream(results.spliterator(), false)
                                             .map(JsonNode::asText)
@@ -99,7 +102,6 @@ public class JmespathValidator extends AbstractValidatorPlugin<Substance>{
 
     @Override
     public void validate(Substance objnew, Substance objold, ValidatorCallback callback) {
-        ObjectMapper mapper = new ObjectMapper();
         try {
             JsonNode tree = mapper.readTree("{\"new\":" + writer.writeValueAsString(objnew) + ",\"old\":" + writer.writeValueAsString(objold) + "}");
             log.debug("Validation Tree: " + tree.toString());

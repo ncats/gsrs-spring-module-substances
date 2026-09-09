@@ -1,6 +1,5 @@
 package fda.gsrs.substance;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.hhs.gsrs.applications.api.ApplicationsApi;
 import gov.hhs.gsrs.clinicaltrial.europe.api.ClinicalTrialsEuropeApi;
 import gov.hhs.gsrs.clinicaltrial.us.api.ClinicalTrialsUSApi;
@@ -8,6 +7,7 @@ import gov.hhs.gsrs.products.api.ProductsApi;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
 public class FdaSubstanceExtensionConfiguration {
@@ -34,5 +34,5 @@ public class FdaSubstanceExtensionConfiguration {
         return new ClinicalTrialsEuropeApi(clinicalTrialsEuropeApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialsEuropeApiConfiguration.getBaseURL(), mapper);
     }
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 }

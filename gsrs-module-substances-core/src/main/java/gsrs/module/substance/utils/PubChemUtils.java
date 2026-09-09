@@ -1,10 +1,9 @@
 package gsrs.module.substance.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 import ix.core.chem.PubChemResult;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
@@ -12,8 +11,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-// import org.apache.http.impl.client.CloseableHttpClient;
-// import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 
@@ -27,6 +24,8 @@ public class PubChemUtils {
 
     private final static String PUBCHEM_LOOKUP_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/inchikey/property/inchikey/JSON";
 
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     /*
     return CIDs for InChIKey input
      */
@@ -36,22 +35,20 @@ public class PubChemUtils {
         String json = performPostUsingClient(PUBCHEM_LOOKUP_URL, postData);
         try {
             return deserializePubChemResult(json);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             log.error("Error deserializing results", e);
             throw new RuntimeException(e);
         }
     }
 
-    public static List<PubChemResult> deserializePubChemResult(String resultJson) throws JsonProcessingException {
+    public static List<PubChemResult> deserializePubChemResult(String resultJson) {
         if( resultJson==null || resultJson.trim().length()==0) {
             log.warn("Empty input in deserializePubChemResult");
             return new ArrayList<>();
         }
-        ObjectMapper mapper = new ObjectMapper();
         JsonNode resultNode = mapper.readTree(resultJson);
-        if( resultNode.at("/PropertyTable/Properties") instanceof ArrayNode) {
-            ArrayNode properties = (ArrayNode) resultNode.at("/PropertyTable/Properties");
-            return mapper.readValue(properties.toString(), new TypeReference<List<PubChemResult>>() {
+        if(resultNode.at("/PropertyTable/Properties") instanceof ArrayNode properties) {
+            return mapper.readValue(properties.toString(), new TypeReference<>() {
             });
         }
         return new ArrayList<>();

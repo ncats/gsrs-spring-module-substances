@@ -1,9 +1,9 @@
 package ix.ncats.resolvers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import ix.core.models.PubChemResolutionResult;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.net.URI;
@@ -29,6 +29,8 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
     public String getName() {
         return this.getClass().getName();
     }
+
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     @Override
     public List<String> resolve(String name) {
@@ -58,13 +60,13 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
 
         int status = response.statusCode();
         if( status>= 200 && status < 300) {
-            ObjectMapper mapper = new ObjectMapper();
+
             JsonNode cidsNode = mapper.readTree(response.body())
                     .path("IdentifierList")
                     .path("CID");
 
             List<String> cids = StreamSupport.stream(cidsNode.spliterator(), false)
-                    .map(JsonNode::asText)
+                    .map(JsonNode::asString)
                     .toList();
 
             if(cids.size()==1) {
@@ -84,7 +86,6 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
     }
 
     public String getIupacNameForCid(String cid)  throws IOException, InterruptedException {
-        ObjectMapper mapper = new ObjectMapper();
         String url = String.format("%s/compound/cid/%s/property/IUPACName,InChIKey/JSON", PUG, cid);
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
@@ -102,7 +103,7 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
             JsonNode dataNode = mapper.readTree(response.body());
             JsonNode nameNode =dataNode.findPath("IUPACName");
             if(nameNode!= null) {
-                return  nameNode.asText();
+                return  nameNode.asString();
             }
             return response.body();
         } else {

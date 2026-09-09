@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -33,10 +33,10 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
 
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -48,7 +48,7 @@ import gsrs.module.substance.repository.ProcessingRecordRepository;
 import gsrs.module.substance.repository.XRefRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.AdminService;
-import gsrs.security.hasAdminRole;
+
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import ix.core.EntityFetcher;
@@ -104,7 +104,7 @@ public class SubstanceBulkLoadService {
     private static Map<String,Long> queueStatistics = new ConcurrentHashMap<String,Long>();
     private static Map<String,Statistics> jobCacheStatistics = new ConcurrentHashMap<>();
 
-    private static ObjectMapper om = new ObjectMapper();
+    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     private static int MAX_EXTRACTION_QUEUE = 100;
 
@@ -184,7 +184,7 @@ public class SubstanceBulkLoadService {
         } else {
             job.status = ProcessingJob.Status.COMPLETE;
         }
-        job.statistics = om.valueToTree(stats).toString();
+        job.statistics = mapper.valueToTree(stats).toString();
 
         job.setIsAllDirty();
         return processingJobRepository.saveAndFlush(job);
@@ -664,7 +664,7 @@ public class SubstanceBulkLoadService {
             if (buff == null)
                 return null;
             String line=null;
-            ObjectMapper mapper = new ObjectMapper();
+
             while(true){
                 try {
                     line = buff.readLine();
@@ -721,7 +721,6 @@ public class SubstanceBulkLoadService {
                 return null;
 
             try {
-                ObjectMapper mapper = new ObjectMapper();
                 JsonNode tree = mapper.readTree(is);
                 is.close();
                 is = null;
@@ -758,7 +757,6 @@ public class SubstanceBulkLoadService {
         private static final String PROCESSING_PLUGIN_KEY = "ix.utils.Util.GinasRecordProcessorPlugin";
         private static final String DOC_TYPE_BATCH_IMPORT = "BATCH_IMPORT";
 
-        private ObjectMapper mapper = new ObjectMapper();
 
         /**
          * This method copied from GSRS 2.x Substance class that didn't belong in substance

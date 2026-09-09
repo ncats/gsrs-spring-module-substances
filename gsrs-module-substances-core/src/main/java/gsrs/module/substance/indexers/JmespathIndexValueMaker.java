@@ -1,9 +1,8 @@
 package gsrs.module.substance.indexers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 import gsrs.module.substance.utils.SplitFunction;
 import gsrs.module.substance.utils.UniqueFunction;
@@ -36,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
 
     private List<IndexExpression> expressions = new ArrayList<IndexExpression>();
-    private final ObjectWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
+    private final EntityFactory.EntityMapper.EntityWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
 
     private class IndexExpression {
         private final String index;
@@ -81,7 +80,8 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
                 JsonNode results = expression.search(tree);
                 log.debug("Results: " + results.toString());
                 if (!results.isArray()) {
-                    results = (JsonNode) new ObjectMapper().createArrayNode().add(results);
+                    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+                    results = mapper.createArrayNode().add(results);
                 }
                 for(JsonNode result: (ArrayNode)results){
                     if (result.isValueNode() && ! result.isNull()) {
@@ -148,7 +148,7 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         try {
             JsonNode tree = mapper.readTree(writer.writeValueAsString(substance));
             updateReferences(tree);

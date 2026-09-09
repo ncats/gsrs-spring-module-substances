@@ -1,9 +1,9 @@
 package gsrs.module.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
 import gov.nih.ncats.common.sneak.Sneak;
 import gsrs.EntityPersistAdapter;
 import gsrs.controller.IdHelpers;
@@ -118,8 +118,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Autowired
     private SubstanceRepository repository;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private JsonMapper  objectMapper  = JsonMapper.builderWithJackson2Defaults().build();
 
     @Autowired
     private StructureProcessor structureProcessor;
@@ -211,6 +210,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 //        controlledVocabulary.
 
 //        JsonSubstanceFactory.fixOwners(substance, true);
+        initializeExistingStructureVersions(substance);
+
         //first bump version?
         substance.forceUpdate();
 
@@ -250,6 +251,36 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         structure.setIsDirty("links");
         structure.setIsDirty("properties");
+    }
+
+    private void initializeExistingStructureVersions(Substance substance) {
+        if (substance instanceof ChemicalSubstance chemicalSubstance) {
+            initializeExistingStructureVersion(chemicalSubstance.getStructure());
+            if (chemicalSubstance.getMoieties() != null) {
+                for (Moiety moiety : chemicalSubstance.getMoieties()) {
+                    if (moiety != null) {
+                        initializeExistingStructureVersion(moiety.structure);
+                    }
+                }
+            }
+        }
+        if (substance instanceof PolymerSubstance polymerSubstance && polymerSubstance.polymer != null) {
+            initializeExistingStructureVersion(polymerSubstance.polymer.displayStructure);
+            initializeExistingStructureVersion(polymerSubstance.polymer.idealizedStructure);
+        }
+    }
+
+    private void initializeExistingStructureVersion(GinasChemicalStructure structure) {
+        if (structure != null && structure.id != null && structure.version == null) {
+            structure.version = 0L;
+        }
+    }
+
+    private Long existingStructureVersionOrInitial(GinasChemicalStructure structure) {
+        if (structure == null) {
+            return null;
+        }
+        return structure.id != null && structure.version == null ? 0L : structure.version;
     }
 
     @Override
@@ -667,7 +698,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private void scrubServerManagedAuditFields(JsonNode node) {
         if (node instanceof ObjectNode objectNode) {
             SERVER_MANAGED_AUDIT_FIELDS.forEach(objectNode::remove);
-            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.fields();
+            Iterator<Map.Entry<String, JsonNode>> fields = objectNode.properties().iterator();
             while (fields.hasNext()) {
                 scrubServerManagedAuditFields(fields.next().getValue());
             }
@@ -757,7 +788,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private void reusePersistedStructureIdentityForDiff(GinasChemicalStructure persisted, GinasChemicalStructure updated) {
         if (persisted != null && updated != null) {
             updated.id = persisted.id;
-            updated.version = persisted.version;
+            updated.version = existingStructureVersionOrInitial(persisted);
         }
     }
 
@@ -970,7 +1001,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         if (persistedChemical.getStructure() != null && updatedChemical.getStructure() != null) {
             updatedChemical.getStructure().id = persistedChemical.getStructure().id;
-            updatedChemical.getStructure().version = persistedChemical.getStructure().version;
+            updatedChemical.getStructure().version = existingStructureVersionOrInitial(persistedChemical.getStructure());
         }
         if (updatedChemical.getMoieties() == null) {
             return;
@@ -1715,7 +1746,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         objectMapper.readerForUpdating(managedStructure).readValue(updatedJson);
         managedStructure.version = updatedStructure.version != null
                 ? updatedStructure.version
-                : managedStructure.version;
+                : existingStructureVersionOrInitial(managedStructure);
         if (updatedStructure.properties != null) {
             managedStructure.properties = replaceListContents(managedStructure.properties, updatedStructure.properties);
         }
@@ -2226,7 +2257,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         return Optional.empty();
     }
-    
+
+
 
     @Override
     protected Optional<UUID> flexLookupIdOnly(String someKindOfId) {
@@ -2425,6 +2457,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 Substance newValue = (Substance) nWrap.getValue();
                                 oldValue = applyReplacementToManagedEntity(oldValue, newValue);
                                 oldValue = fixUpdatedIfNeeded(JsonEntityUtil.fixOwners(oldValue, true));
+                                initializeExistingStructureVersions(oldValue);
                                 entityManager.flush();
 
                                 Substance saved = transactionalUpdate(oldValue, oldJson);

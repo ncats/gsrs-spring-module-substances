@@ -1,7 +1,6 @@
 package ix.ginas.utils;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.SingleThreadCounter;
@@ -20,6 +19,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Autowired;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 public class ProteinUtils
@@ -27,6 +27,8 @@ public class ProteinUtils
 
     @Autowired(required = true)
     private MolWeightCalculatorProperties molWeightCalculatorProperties;
+
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     //Based on analysis from existing MAB entries
     private static final CachedSupplier<Map<String, List<int[]>>> KNOWN_DISULFIDE_PATTERNS = CachedSupplier.of(() -> {
@@ -433,8 +435,7 @@ public class ProteinUtils
         List<Property> props = new ArrayList<Property>();
         if (ps.properties != null) {
             for (Property p : ps.properties) {
-                ObjectMapper om = new ObjectMapper();
-                JsonNode asJson = om.valueToTree(p);
+                JsonNode asJson = mapper.valueToTree(p);
                 //System.out.println(p.type + "\t" + p.name +"\t" + p.propertyType + "\t" + p.value.average +"\t" + asJson);
                 if (p.getName() != null && p.getName().startsWith("MOL_WEIGHT")) {
                     props.add(p);
@@ -445,7 +446,7 @@ public class ProteinUtils
     }
 
     public static List<Property> getMolFormulaProperties(ProteinSubstance ps) {
-        List<Property> props = new ArrayList<Property>();
+        List<Property> props = new ArrayList<>();
         if (ps.properties != null) {
             for (Property p : ps.properties) {
                 if (p.getName() != null && p.getName().startsWith(MOLECULAR_FORMULA_PROPERTY_NAME)) {
@@ -553,7 +554,7 @@ public class ProteinUtils
     /**
      * Return a stream of the sites for a protein, labeled by their residue
      *
-     * @param su
+     * @param su the subunit from which to extract sites
      * @return
      */
     public static Stream<Tuple<String, Site>> extractSites(Subunit su) {

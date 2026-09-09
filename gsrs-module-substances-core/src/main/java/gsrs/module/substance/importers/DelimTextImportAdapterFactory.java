@@ -1,11 +1,11 @@
 package gsrs.module.substance.importers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
@@ -75,8 +75,8 @@ public class DelimTextImportAdapterFactory extends SubstanceImportAdapterFactory
         Map<String, Object> initializationParameters = null;
         if (adapterSettings.hasNonNull("parameters")) {
             log.trace("adapterSettings has parameters");
-            ObjectMapper mapper = new ObjectMapper();
-            initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+            initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<>() {
             });
         } else {
             log.trace("adapterSettings has NO parameters");

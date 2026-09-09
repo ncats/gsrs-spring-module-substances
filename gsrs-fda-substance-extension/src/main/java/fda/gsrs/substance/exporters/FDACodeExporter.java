@@ -1,6 +1,6 @@
 package fda.gsrs.substance.exporters;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
 import ix.ginas.models.v1.Code;

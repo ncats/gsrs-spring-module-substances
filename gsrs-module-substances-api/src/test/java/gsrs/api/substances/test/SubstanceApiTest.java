@@ -1,6 +1,6 @@
 package gsrs.api.substances.test;
 import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.api.AbstractLegacySearchGsrsEntityRestTemplate;

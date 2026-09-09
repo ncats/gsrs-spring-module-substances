@@ -1,6 +1,6 @@
 package example.pojodiff;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.flipkart.zjsonpatch.JsonDiff;
 import ix.ginas.models.v1.GinasChemicalStructure;

@@ -1,9 +1,6 @@
 package ix.ginas.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.models.Keyword;
 import ix.ginas.models.serialization.ReferenceSetDeserializer;
 import ix.ginas.models.serialization.ReferenceSetSerializer;
@@ -14,6 +11,10 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Transient;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -88,7 +89,7 @@ public abstract class NoIdGinasCommonSubData extends NoIdGinasCommonData impleme
 	}
 	
 	public String toJson(){
-		ObjectMapper om = new ObjectMapper();
+		JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
 		return om.valueToTree(this).toString();
 	}
 	

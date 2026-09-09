@@ -1,6 +1,6 @@
 package gsrs.module.substance.importers;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;

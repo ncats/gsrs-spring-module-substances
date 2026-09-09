@@ -1,9 +1,9 @@
 package example.substance.validation;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.Atom;
 import gov.nih.ncats.molwitch.AtomCoordinates;
 import gov.nih.ncats.molwitch.Chemical;
@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
 
@@ -44,7 +45,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
     private static final double EDITED_MOIETY_COORDINATE_Y = -7.9040;
     private static final double COORDINATE_TOLERANCE = 0.0005;
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     @Test
     void updateChemicalWithPersistedMoietyAmountUuid() throws Exception {
@@ -58,7 +59,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         assertNotNull(createdMoiety.getCountAmount().uuid);
 
         JsonNode updateJson = created.toFullJsonNode();
-        ((com.fasterxml.jackson.databind.node.ArrayNode) updateJson.get("names")).add(
+        ((ArrayNode) updateJson.get("names")).add(
                 mapper.readTree("""
                         {
                           "references": ["ba459ffe-4fd9-4be3-8c11-98a79d0da0ca"],
@@ -148,7 +149,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
 
         ChemicalSubstance existing = (ChemicalSubstance) substanceEntityService.get(created.uuid).orElseThrow();
         JsonNode updateJson = existing.toFullJsonNode();
-        ((com.fasterxml.jackson.databind.node.ArrayNode) updateJson.get("names")).add(
+        ((ArrayNode) updateJson.get("names")).add(
                 mapper.readTree("""
                         {
                           "references": ["ba459ffe-4fd9-4be3-8c11-98a79d0da0ca"],
@@ -175,7 +176,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         ChemicalSubstance existing = (ChemicalSubstance) substanceEntityService.get(created.uuid).orElseThrow();
         JsonNode updateJson = existing.toFullJsonNode();
 
-        ((com.fasterxml.jackson.databind.node.ArrayNode) updateJson.get("references")).add(
+        ((ArrayNode) updateJson.get("references")).add(
                 mapper.readTree("""
                         {
                           "tags": [],
@@ -186,7 +187,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                           "uuid": "05b45c53-b18b-47c4-a36f-fb9cb5f50e31"
                         }
                         """));
-        ((com.fasterxml.jackson.databind.node.ArrayNode) updateJson.get("names")).add(
+        ((ArrayNode) updateJson.get("names")).add(
                 mapper.readTree("""
                         {
                           "references": ["05b45c53-b18b-47c4-a36f-fb9cb5f50e31"],
@@ -334,6 +335,31 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
     }
 
     @Test
+    void updateChemicalWithNullPersistedRootStructureVersionPersistsMolfile() throws Exception {
+        GinasChemicalStructure structure = new GinasChemicalStructure();
+        structure.molfile = readMolfile("coordinate_edit_before.mol");
+        ChemicalSubstance created = (ChemicalSubstance) assertCreated(new ChemicalSubstanceBuilder()
+                .addName("null persisted structure version molfile edit")
+                .setStructure(structure)
+                .build()
+                .toFullJsonNode());
+        assertNotNull(created.getStructure());
+        assertNotNull(created.getStructure().id);
+
+        nullStoredStructureVersion(created.getStructure().id);
+
+        ChemicalSubstance existing = (ChemicalSubstance) substanceEntityService.get(created.uuid).orElseThrow();
+        assertNull(existing.getStructure().version);
+
+        ObjectNode updateJson = (ObjectNode) existing.toFullJsonNode();
+        ((ObjectNode) updateJson.get("structure")).put("molfile", readMolfile("coordinate_edit_after.mol"));
+
+        ChemicalSubstance updated = (ChemicalSubstance) assertUpdated(updateJson);
+        assertEditedCoordinatesPersisted(updated);
+        assertNotNull(updated.getStructure().version);
+    }
+
+    @Test
     void updateChemicalWithRootMolfileCoordinateChangeRegeneratesMoietyMolfiles() throws Exception {
         File jsonFile = new ClassPathResource("testJSON/1_5-naphthyridin-3-ol.json").getFile();
         ChemicalSubstance created = (ChemicalSubstance) assertCreated(SubstanceBuilder.from(jsonFile).build().toFullJsonNode());
@@ -342,11 +368,11 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                 () -> "fixture should create persisted moiety molfiles for " + created.uuid);
 
         ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
-        assertEquals(created.uuid.toString(), updateJson.get("uuid").asText());
+        assertEquals(created.uuid.toString(), updateJson.get("uuid").asString());
         ObjectNode updateStructure = (ObjectNode) updateJson.get("structure");
-        updateStructure.put("molfile", updateStructure.get("molfile").asText()
+        updateStructure.put("molfile", updateStructure.get("molfile").asString()
                 .replace(ORIGINAL_MOIETY_COORDINATE, EDITED_MOIETY_COORDINATE));
-        assertTrue(updateStructure.get("molfile").asText().contains(EDITED_MOIETY_COORDINATE));
+        assertTrue(updateStructure.get("molfile").asString().contains(EDITED_MOIETY_COORDINATE));
 
         ChemicalSubstance updated = (ChemicalSubstance) assertUpdated(updateJson);
         assertMoietiesUpdated(originalMoietyMolfiles, updated);
@@ -421,6 +447,15 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
 
     private String normalizeMolfile(String molfile) {
         return molfile == null ? "" : molfile.replace("\r\n", "\n").replace('\r', '\n');
+    }
+
+    private void nullStoredStructureVersion(UUID structureId) {
+        entityManager.getEntityManager()
+                .createNativeQuery("update ix_core_structure set version = null where id = ?")
+                .setParameter(1, structureId.toString())
+                .executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
     }
 
     private JsonNode sanitizeCapturedChemicalForCreate(JsonNode json) {

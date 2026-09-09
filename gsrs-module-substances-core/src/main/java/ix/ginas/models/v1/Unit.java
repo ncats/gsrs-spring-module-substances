@@ -1,11 +1,7 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.core.type.TypeReference;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
 import ix.core.models.ParentReference;
@@ -16,6 +12,10 @@ import ix.ginas.models.serialization.IntArrayDeserializer;
 import ix.ginas.models.serialization.IntArraySerializer;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,10 +57,10 @@ public class Unit extends GinasCommonSubData {
     private String _attachmentMap;
     
     public Map<String,LinkedHashSet<String>> getAttachmentMap(){
-    	ObjectMapper om = new ObjectMapper();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
     	Map<String, LinkedHashSet<String>> amap=null;
 		try {
-			amap = om.readValue(_attachmentMap, new TypeReference<Map<String, LinkedHashSet<String>>>(){});
+			amap = mapper.readValue(_attachmentMap, new TypeReference<Map<String, LinkedHashSet<String>>>(){});
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -68,11 +68,11 @@ public class Unit extends GinasCommonSubData {
     }
     
     public void setAttachmentMap(Map<String,LinkedHashSet<String>> amap){
-    	ObjectMapper om = new ObjectMapper();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
     	_attachmentMap=null;
     	try {
-			_attachmentMap=om.writeValueAsString(amap);
-		} catch (JsonProcessingException e) {
+			_attachmentMap=mapper.writeValueAsString(amap);
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
     }
@@ -101,7 +101,7 @@ public class Unit extends GinasCommonSubData {
     @JsonIgnore
     public List<String> getMentionedConnections(){
     	Map<String,LinkedHashSet<String>> mymap=this.getAttachmentMap();
-    	List<String> conset=new ArrayList<String>();
+    	List<String> conset=new ArrayList<>();
 		if(mymap!=null){
 			for(String k:mymap.keySet()){
 				conset.add(k);
@@ -113,7 +113,7 @@ public class Unit extends GinasCommonSubData {
     public void addConnection(String rgroup1, String rgroup2){
     	Map<String,LinkedHashSet<String>> amap=this.getAttachmentMap();
     	if(amap==null){
-    		amap=new HashMap<String,LinkedHashSet<String>>();
+    		amap=new HashMap<>();
     	}
     	LinkedHashSet<String> set1=amap.get(rgroup1);
     	if(set1==null){

@@ -4,11 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import gsrs.json.GsrsUrlLinkSerializer;
 import gsrs.model.GsrsUrlLink;
 import ix.core.models.BeanViews;
@@ -20,6 +15,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -52,7 +50,7 @@ public class Protein extends GinasCommonSubData {
 	private ProteinSubstance proteinSubstance;
 
 	@Transient
-	protected transient ObjectMapper mapper = new ObjectMapper();
+	protected transient JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
 	@Transient
 	List<DisulfideLink> tmpDisulfides = null;
@@ -64,11 +62,11 @@ public class Protein extends GinasCommonSubData {
 		List<DisulfideLink> rolekinds = new ArrayList<DisulfideLink>();
 		if (this.disulfJSON != null) {
 			try {
-				ObjectMapper om = new ObjectMapper();
-				List l = om.readValue(disulfJSON, List.class);
+
+				List l = mapper.readValue(disulfJSON, List.class);
 				for (Object o : l) {
 					try {
-						rolekinds.add(om.treeToValue(om.valueToTree(o), DisulfideLink.class));
+						rolekinds.add(mapper.treeToValue(mapper.valueToTree(o), DisulfideLink.class));
 					} catch (Exception e) {
 						System.err.println(e.getMessage());
 						log.trace("Error parsing disulfides", e);
@@ -121,32 +119,6 @@ public class Protein extends GinasCommonSubData {
 	@JsonView(BeanViews.Compact.class)
 	@JsonProperty("_glycosylation")
 	public GlycosylationSummary getJsonGlycosylation() {
-//		JsonNode node = null;
-//		Glycosylation glyc = this.glycosylation;
-//		if (glyc != null) {
-//			try {
-//				ObjectNode n = mapper.createObjectNode();
-//				if (glyc.glycosylationType != null) {
-//					n.put("type", glyc.glycosylationType);
-//				}
-//				if(glyc._NGlycosylationSiteContainer !=null) {
-//					n.put("nsites", glyc._NGlycosylationSiteContainer.siteCount);
-//				}
-//				if(glyc._OGlycosylationSiteContainer !=null) {
-//					n.put("osites", glyc._OGlycosylationSiteContainer.siteCount);
-//				}
-//				if(glyc._CGlycosylationSiteContainer !=null) {
-//					n.put("csites", glyc._CGlycosylationSiteContainer.siteCount);
-//				}
-//				n.put("href", Global.getRef(getProteinSubstance().getClass(), getProteinSubstance().getUuid())
-//						+ "/protein/glycosylation");
-//				node = n;
-//			} catch (Exception ex) {
-//				ex.printStackTrace();
-//				node = mapper.valueToTree(glyc);
-//			}
-//		}
-//		return node;
 		if( this.glycosylation ==null){
 			return null;
 		}
@@ -196,8 +168,7 @@ public class Protein extends GinasCommonSubData {
 	}
 
 	public void setDisulfideLinks(List<DisulfideLink> links) {
-		ObjectMapper om = new ObjectMapper();
-		disulfJSON = om.valueToTree(links).toString();
+		disulfJSON = mapper.valueToTree(links).toString();
 		tmpDisulfides = null;
 	}
 

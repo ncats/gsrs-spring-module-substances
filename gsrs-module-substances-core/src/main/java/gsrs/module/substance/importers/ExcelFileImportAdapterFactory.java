@@ -1,10 +1,10 @@
 package gsrs.module.substance.importers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
@@ -63,8 +63,8 @@ public class ExcelFileImportAdapterFactory extends DelimTextImportAdapterFactory
         Map<String, Object> initializationParameters;
         if (adapterSettings.hasNonNull("parameters")) {
             log.trace("adapterSettings has parameters");
-            ObjectMapper mapper = new ObjectMapper();
-            initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+            initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<>() {
             });
         } else {
             log.trace("adapterSettings has NO parameters");
@@ -84,7 +84,7 @@ public class ExcelFileImportAdapterFactory extends DelimTextImportAdapterFactory
     @Override
     public ImportAdapterStatistics predictSettings(InputStream is, ObjectNode settings) {
         log.trace("in predictSettings");
-        String sheetName = settings.get("dataSheetName").textValue();
+        String sheetName = settings.get("dataSheetName").stringValue();
         log.trace("using sheet name {}", sheetName);
         Set<String> fields;
         if (registry == null || registry.isEmpty()) {

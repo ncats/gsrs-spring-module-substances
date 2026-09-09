@@ -1,7 +1,7 @@
 package gsrs.module.substance.expanders.basic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
@@ -9,11 +9,15 @@ import ix.ginas.exporters.RecordExpander;
 import ix.ginas.exporters.RecordExpanderFactory;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.stream.Stream;
 
 @Slf4j
 public class BasicRecordExpanderFactory implements RecordExpanderFactory<Substance> {
+
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
     private final static String JSONSchema ="{\n" +
             "  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +
             "  \"$id\": \"https://gsrs.ncats.nih.gov/#/export.expander.schema.json\",\n" +
@@ -66,10 +70,10 @@ public class BasicRecordExpanderFactory implements RecordExpanderFactory<Substan
             "}\n";
 
     private static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
-        ObjectMapper mapper =new ObjectMapper();
+
         try {
             return mapper.readTree(JSONSchema);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;//todo: alternate return?

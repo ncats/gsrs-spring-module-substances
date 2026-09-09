@@ -1,6 +1,6 @@
 package example.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.ginas.models.v1.Substance;
 import org.apache.commons.io.FileUtils;

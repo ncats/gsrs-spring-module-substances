@@ -38,6 +38,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -73,8 +74,11 @@
         <gsrs.clinical-trials-api.version>3.2.6-SNAPSHOT</gsrs.clinical-trials-api.version>
         <gsrs.products-api.version>3.2.6-SNAPSHOT</gsrs.products-api.version>
         <log4j2.version>2.22.1</log4j2.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.46</lombok.version>
         <structure-indexer.version>0.0.17</structure-indexer.version>
+        <jackson.annotations.version>3.1.6</jackson.annotations.version>
+        <jackson.databind.version>3.1.6</jackson.databind.version>
+        <jackson.core.version>3.1.6</jackson.core.version>
     </properties>
 
     <licenses>

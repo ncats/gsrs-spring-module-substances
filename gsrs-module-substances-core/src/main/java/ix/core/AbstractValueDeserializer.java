@@ -1,30 +1,29 @@
 package ix.core;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.module.substance.repository.ValueRepository;
 import ix.core.models.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 @Data
 @EqualsAndHashCode(callSuper=false)
-public class AbstractValueDeserializer extends JsonDeserializer<Value> {
+public class AbstractValueDeserializer extends ValueDeserializer<Value> {
 	@Autowired
 	private ValueRepository valueRepository;
 
-	ObjectMapper om = new ObjectMapper();
-	public static List<Class<? extends Value>> classes = new ArrayList<Class<? extends Value>>();
+	private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
+	public static List<Class<? extends Value>> classes = new ArrayList<>();
 
 	static {
 		classes.add(Keyword.class);
@@ -38,20 +37,15 @@ public class AbstractValueDeserializer extends JsonDeserializer<Value> {
 		classes.add(Value.class);
 	}
 
-	public Value deserialize(JsonParser parser, DeserializationContext ctx)
-			throws IOException, JsonProcessingException {
+	public Value deserialize(JsonParser parser, DeserializationContext ctx) {
 		ObjectNode objectNode = parser.readValueAsTree();
 		JsonNode idNode = objectNode.at("/id");
 		Long l = idNode.isMissingNode()? null : idNode.longValue();
 		Value v = null;
 
 		for (Class<? extends Value> c : classes) {
-			try {
-				v = om.treeToValue(objectNode, c);
-				break;
-			} catch (Exception e) {
-
-			}
+			v = mapper.treeToValue(objectNode, c);
+			break;
 		}
 		if (v == null && l != null && valueRepository !=null) {
 			v = valueRepository.findById(l).orElse(null);

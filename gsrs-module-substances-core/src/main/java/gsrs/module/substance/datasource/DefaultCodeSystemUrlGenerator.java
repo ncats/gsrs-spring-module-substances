@@ -14,13 +14,13 @@ import org.springframework.core.io.UrlResource;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 
 import gsrs.module.substance.processors.CodeSystemUrlGenerator;
 import ix.ginas.models.v1.Code;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, CodeSystemUrlGenerator {
@@ -65,7 +65,7 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
             }
             codeSystems = new LinkedHashMap<String, Map<String, String>>();
             try (InputStream is = new UrlResource(getUrl(filename)).getInputStream();) {
-                ObjectMapper mapper = new ObjectMapper();
+                JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
                 for (JsonNode item : mapper.readTree(is)) {
                     Map<String, String> itemMap = mapper.convertValue(item, new TypeReference<Map<String, String>>(){});
                     codeSystems.put(itemMap.get("codeSystem"), itemMap);

@@ -1,16 +1,16 @@
 package ix.ginas.utils;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
-import com.fasterxml.jackson.databind.deser.DeserializationProblemHandler;
 import ix.core.models.Keyword;
 import ix.core.models.Structure;
 import ix.core.models.Value;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.GinasCommonSubData;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.deser.DeserializationProblemHandler;
+import tools.jackson.core.JsonParser;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -19,7 +19,7 @@ import java.util.List;
 
 public class GinasV1ProblemHandler extends DeserializationProblemHandler {
         
-		List<GinasProcessingMessage> messages = new ArrayList<GinasProcessingMessage>();
+		List<GinasProcessingMessage> messages = new ArrayList<>();
 		
 		public GinasV1ProblemHandler () {
         }
@@ -30,7 +30,7 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
         
         public boolean handleUnknownProperty
             (DeserializationContext ctx, JsonParser parser,
-             JsonDeserializer deser, Object bean, String property) {
+             ValueDeserializer deser, Object bean, String property) {
 
             try {
                 boolean parsed = true;
@@ -39,18 +39,8 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
                     //Logger.debug("value: "+parser.getText());
                     struc.properties.add(new Keyword
                                          (Structure.H_LyChI_L4,
-                                          parser.getText()));
+                                          parser.getString()));
                 }
-//                else if ("references".equals(property)) {
-//                    //Logger.debug(property+": "+bean.getClass());
-//                    if (bean instanceof Structure) {
-//                        Structure struc = (Structure)bean;
-//                        parseReferences (parser, struc.properties);
-//                    }
-//                    else {
-//                        parsed = false;
-//                    }
-//                }
                 else if ("count".equals(property)) {
                     if (bean instanceof Structure) {
                         // need to handle this.
@@ -66,7 +56,7 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
                     log.debug("Unknown property \""
                                 +property+"\" while parsing "
                                 +bean+"; skipping it..");
-                    log.debug("Token: "+parser.getCurrentToken());
+                    log.debug("Token: "+parser.currentToken());
                     parser.skipChildren();
                 }
             }
@@ -80,7 +70,7 @@ public class GinasV1ProblemHandler extends DeserializationProblemHandler {
         int parseReferences (JsonParser parser, List<Value> refs)
             throws IOException {
             int nrefs = 0;
-            if (parser.getCurrentToken() == JsonToken.START_ARRAY) {
+            if (parser.currentToken() == JsonToken.START_ARRAY) {
                 while (JsonToken.END_ARRAY != parser.nextToken()) {
                     String ref = parser.getValueAsString();
                     refs.add(new Keyword(GinasCommonSubData.REFERENCE, ref));

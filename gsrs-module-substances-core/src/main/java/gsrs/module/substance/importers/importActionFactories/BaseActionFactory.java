@@ -1,7 +1,7 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import ix.ginas.modelBuilders.AbstractSubstanceBuilder;

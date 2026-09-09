@@ -1,7 +1,7 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import ix.core.models.Group;
 import ix.ginas.exporters.DefaultParameters;
 import ix.ginas.exporters.OutputFormat;

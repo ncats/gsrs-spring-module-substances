@@ -3,10 +3,9 @@ package gsrs.module.substance.exporters;
 import java.io.IOException;
 import java.util.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 
 import ix.core.controllers.EntityFactory;
 import ix.ginas.exporters.*;
@@ -22,7 +21,7 @@ public class JmespathSpreadsheetExporter implements Exporter<Substance> {
     private final Spreadsheet spreadsheet;
     private int row=1;
     private final List<ColumnValueRecipe<JsonNode>> recipeMap;
-    private final ObjectWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
+    private final EntityFactory.EntityMapper.EntityWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
 
     private JmespathSpreadsheetExporter(Builder builder){
         this.spreadsheet = builder.spreadsheet;
@@ -36,7 +35,7 @@ public class JmespathSpreadsheetExporter implements Exporter<Substance> {
 
     @Override
     public void export(Substance s) throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         try {
             JsonNode tree = mapper.readTree(writer.writeValueAsString(s));
             updateReferences(tree);
@@ -57,17 +56,17 @@ public class JmespathSpreadsheetExporter implements Exporter<Substance> {
 
     private void updateReferences(JsonNode tree) {
         ArrayNode references = (ArrayNode)tree.at("/references");
-        Map<String, Integer> refMap = new HashMap<String, Integer>();
+        Map<String, Integer> refMap = new HashMap<>();
         for (int i = 0; i < references.size(); i++) {
-            refMap.put(references.get(i).get("uuid").textValue(), i);
+            refMap.put(references.get(i).get("uuid").stringValue(), i);
         }
         for (JsonNode refsNode: tree.findValues("references")) {
             if (refsNode.isArray()) {
                 ArrayNode refs = (ArrayNode) refsNode;
                 for (int i = 0; i < refs.size(); i++) {
                     JsonNode ref = refs.get(i);
-                    if (ref.isTextual()) {
-                        refs.set(i, references.get(refMap.get(ref.asText())));
+                    if (ref.isString()) {
+                        refs.set(i, references.get(refMap.get(ref.asString())));
                     }
                 }
             }

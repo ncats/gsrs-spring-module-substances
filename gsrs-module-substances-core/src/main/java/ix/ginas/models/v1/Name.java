@@ -1,12 +1,8 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import gsrs.module.substance.utils.HtmlUtil;
-import gsrs.springUtils.StaticContextAccessor;
 import ix.core.SingleParent;
 import ix.core.models.*;
 import ix.ginas.models.CommonDataElementOfCollection;
@@ -20,6 +16,9 @@ import ix.ginas.models.utils.JSONEntity;
 import org.apache.commons.lang3.ObjectUtils;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.util.*;
 
 @JSONEntity(title = "Name", isFinal = true)

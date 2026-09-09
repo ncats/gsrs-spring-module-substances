@@ -9,13 +9,12 @@ import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
 
 import ix.core.util.ModelUtils;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
+import tools.jackson.databind.json.JsonMapper;
 
 @SuppressWarnings("serial")
 @Entity
@@ -40,11 +39,13 @@ public class SiteContainer extends GinasCommonSubData{
 	}
 	
 	public List<Site> getSites(){
-		ObjectMapper om = new ObjectMapper();
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		JsonMapper mapper= JsonMapper.builderWithJackson2Defaults()
+				.disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
+		//om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		List<Site> sites=new ArrayList<Site>();
 		try {
-			sites = om.readValue(sitesJSON, new TypeReference<List<Site>>(){});
+			sites = mapper.readValue(sitesJSON, new TypeReference<List<Site>>(){});
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
@@ -61,9 +62,8 @@ public class SiteContainer extends GinasCommonSubData{
                 String beforeShorthand = sitesShortHand;
 		if(sites!=null){
 			sitesShortHand=generateShorthand(sites);
-			
-			ObjectMapper om = new ObjectMapper();
-			
+			JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+
 			List<Site> nlist = sites;
 			
 			//TODO: this used to be done as a normalizing step
@@ -71,7 +71,7 @@ public class SiteContainer extends GinasCommonSubData{
 //			List<Site> nlist=parseShorthandRanges(sitesShortHand);
 			
 			
-			sitesJSON=om.valueToTree(nlist).toString();
+			sitesJSON=mapper.valueToTree(nlist).toString();
 			siteCount=nlist.size();
 		}
 
@@ -98,7 +98,6 @@ public class SiteContainer extends GinasCommonSubData{
 	   	@JsonIgnore
 	   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
 	   		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
-
 	   		return temp;
 	   	}
 

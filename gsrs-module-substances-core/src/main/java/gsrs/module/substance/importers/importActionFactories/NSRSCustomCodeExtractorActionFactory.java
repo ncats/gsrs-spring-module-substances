@@ -1,8 +1,6 @@
 package gsrs.module.substance.importers.importActionFactories;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactoryMetadata;
 import gsrs.dataexchange.model.MappingActionFactoryMetadataBuilder;
@@ -13,6 +11,8 @@ import ix.ginas.models.v1.Code;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +33,8 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
     private String codeValueParameterName;*/
     //Do we need this?
     private List<Map<String, Object>> fields;
+
+    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     public NSRSCustomCodeExtractorActionFactory() {
     }
@@ -77,7 +79,7 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
         fields is a list of Map<String, Object> into a list of Mapping Parameters
         when you pass around types,
          */
-        List<MappingParameter> params= (new ObjectMapper()).convertValue(fields, new TypeReference<ArrayList<MappingParameter>>() {});
+        List<MappingParameter> params= (mapper.convertValue(fields, new TypeReference<ArrayList<MappingParameter>>() {}));
 
         MappingActionFactoryMetadataBuilder builder = new MappingActionFactoryMetadataBuilder();
         builder.setParameterFields(params);

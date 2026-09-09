@@ -1,8 +1,8 @@
 package gsrs.module.substance.kew;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import org.springframework.core.io.Resource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,19 +11,17 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 
 public class KewControlledPlantDataSet implements DataSet<String>{
-	private LinkedHashSet<String> controlledList = new LinkedHashSet<String>();
+	private final LinkedHashSet<String> controlledList = new LinkedHashSet<>();
+
+	private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
 	public KewControlledPlantDataSet(Resource kewJson) throws  IOException {
-		ObjectMapper mapper = new ObjectMapper();
-
 		try(InputStream in = kewJson.getInputStream()){
 			JsonNode tree = mapper.readTree(in);
 			parseControlledListFrom(tree);
 		}
 	}
-	public KewControlledPlantDataSet(File kewJson) throws  IOException{
-
-		ObjectMapper mapper = new ObjectMapper();
+	public KewControlledPlantDataSet(File kewJson) {
 		JsonNode tree = mapper.readTree(kewJson);
 
 		parseControlledListFrom(tree);
@@ -32,7 +30,7 @@ public class KewControlledPlantDataSet implements DataSet<String>{
 
 	private void parseControlledListFrom(JsonNode tree) {
 		for(JsonNode jsn:tree.at("/substanceNames")){
-			String unii=jsn.at("/externalIdentifier").asText();
+			String unii=jsn.at("/externalIdentifier").asString();
 			controlledList.add(unii);
 		}
 	}

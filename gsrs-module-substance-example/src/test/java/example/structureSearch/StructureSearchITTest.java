@@ -1,6 +1,6 @@
 package example.structureSearch;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import example.GsrsModuleSubstanceApplication;
 import example.substance.FlexAndExactSearchFullStackTest;
 import gov.nih.ncats.common.sneak.Sneak;

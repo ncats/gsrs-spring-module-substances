@@ -1,8 +1,7 @@
 package gsrs.module.substance.importers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.PropertyBasedDataRecordContext;
 import gsrs.imports.ImportAdapter;
@@ -11,6 +10,7 @@ import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
 import java.util.List;
@@ -26,8 +26,8 @@ public class ChemicalDelimTextImportAdapterFactory extends DelimTextImportAdapte
         Map<String, Object> initializationParameters = null;
         if (adapterSettings.hasNonNull("parameters")) {
             log.trace("adapterSettings has parameters");
-            ObjectMapper mapper = new ObjectMapper();
-            initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<Map<String, Object>>() {
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+            initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<>() {
             });
         } else {
             log.trace("adapterSettings has NO parameters");
