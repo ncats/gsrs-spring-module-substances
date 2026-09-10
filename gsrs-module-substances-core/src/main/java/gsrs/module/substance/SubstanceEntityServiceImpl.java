@@ -1,5 +1,6 @@
 package gsrs.module.substance;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -118,7 +119,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Autowired
     private SubstanceRepository repository;
 
-    private JsonMapper  objectMapper  = JsonMapper.builderWithJackson2Defaults().build();
+    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Autowired
     private StructureProcessor structureProcessor;
@@ -325,7 +328,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected JsonNode toJson(Substance substance) throws IOException {
-        return objectMapper.valueToTree(substance);
+        return mapper.valueToTree(substance);
     }
 
     @Override
@@ -970,7 +973,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     }
 
     private boolean sameJson(Object persisted, Object updated) {
-        return Objects.equals(objectMapper.valueToTree(persisted), objectMapper.valueToTree(updated));
+        return Objects.equals(mapper.valueToTree(persisted), mapper.valueToTree(updated));
     }
 
     private boolean sameMoietyCollectionForDiff(List<Moiety> persistedMoieties, List<Moiety> updatedMoieties) {
@@ -1121,7 +1124,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         // Jackson creates same-id child instances before reconciliation restores managed children.
         entityManager.setFlushMode(FlushModeType.COMMIT);
         try {
-            JsonNode updatedJson = objectMapper.valueToTree(updated);
+            JsonNode updatedJson = mapper.valueToTree(updated);
             if (updatedJson instanceof ObjectNode updatedObject
                     && updated instanceof ChemicalSubstance) {
                 if (replacementStructure != null) {
@@ -1152,7 +1155,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     updatedObject.remove("nucleicAcid");
                 }
             }
-            Substance replaced = objectMapper.readerForUpdating(managed).readValue(updatedJson);
+            Substance replaced = mapper.readerForUpdating(managed).readValue(updatedJson);
             if (replaced instanceof ChemicalSubstance replacedChemical && replacementStructure != null) {
                 replacedChemical.setStructure(reconcileManagedChemicalStructure(replacementStructure, existingStructures));
             }
@@ -1258,13 +1261,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         List<PhysicalModification> updatedPhysicalModifications = updatedModifications.physicalModifications;
         List<StructuralModification> updatedStructuralModifications = updatedModifications.structuralModifications;
         if (updatedModifications != existingModifications) {
-            JsonNode updatedJson = objectMapper.valueToTree(updatedModifications);
+            JsonNode updatedJson = mapper.valueToTree(updatedModifications);
             if (updatedJson instanceof ObjectNode updatedObject) {
                 updatedObject.remove("agentModifications");
                 updatedObject.remove("physicalModifications");
                 updatedObject.remove("structuralModifications");
             }
-            objectMapper.readerForUpdating(existingModifications).readValue(updatedJson);
+            mapper.readerForUpdating(existingModifications).readValue(updatedJson);
         }
         existingModifications.uuid = existingModificationsUuid;
         existingModifications.agentModifications = replaceListContents(existingAgentModificationList,
@@ -1302,12 +1305,12 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 Amount currentAmount = managedAgentModification.amount;
                 SubstanceReference updatedAgentSubstance = updatedAgentModification.agentSubstance;
                 SubstanceReference currentAgentSubstance = managedAgentModification.agentSubstance;
-                JsonNode updatedJson = objectMapper.valueToTree(updatedAgentModification);
+                JsonNode updatedJson = mapper.valueToTree(updatedAgentModification);
                 if (updatedJson instanceof ObjectNode updatedObject) {
                     updatedObject.remove("amount");
                     updatedObject.remove("agentSubstance");
                 }
-                objectMapper.readerForUpdating(managedAgentModification).readValue(updatedJson);
+                mapper.readerForUpdating(managedAgentModification).readValue(updatedJson);
                 setOwnerField(managedAgentModification, owner);
                 managedAgentModification.amount = reconcileOwnedAmount(updatedAmount, currentAmount, existingOwnedAmounts);
                 managedAgentModification.agentSubstance = reconcileOwnedSubstanceReference(updatedAgentSubstance,
@@ -1345,11 +1348,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     : existingPhysicalModifications.get(updatedPhysicalModification.getUuid());
             if (managedPhysicalModification != null && managedPhysicalModification != updatedPhysicalModification) {
                 List<PhysicalParameter> updatedParameters = updatedPhysicalModification.parameters;
-                JsonNode updatedJson = objectMapper.valueToTree(updatedPhysicalModification);
+                JsonNode updatedJson = mapper.valueToTree(updatedPhysicalModification);
                 if (updatedJson instanceof ObjectNode updatedObject) {
                     updatedObject.remove("parameters");
                 }
-                objectMapper.readerForUpdating(managedPhysicalModification).readValue(updatedJson);
+                mapper.readerForUpdating(managedPhysicalModification).readValue(updatedJson);
                 setOwnerField(managedPhysicalModification, owner);
                 reconcilePhysicalParameterCollection(managedPhysicalModification, updatedParameters,
                         existingPhysicalParameters, existingPhysicalParameterLists, existingPhysicalParameterAmounts);
@@ -1419,12 +1422,12 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 Amount currentExtentAmount = managedStructuralModification.extentAmount;
                 SubstanceReference updatedMolecularFragment = updatedStructuralModification.molecularFragment;
                 SubstanceReference currentMolecularFragment = managedStructuralModification.molecularFragment;
-                JsonNode updatedJson = objectMapper.valueToTree(updatedStructuralModification);
+                JsonNode updatedJson = mapper.valueToTree(updatedStructuralModification);
                 if (updatedJson instanceof ObjectNode updatedObject) {
                     updatedObject.remove("extentAmount");
                     updatedObject.remove("molecularFragment");
                 }
-                objectMapper.readerForUpdating(managedStructuralModification).readValue(updatedJson);
+                mapper.readerForUpdating(managedStructuralModification).readValue(updatedJson);
                 setOwnerField(managedStructuralModification, owner);
                 managedStructuralModification.extentAmount = reconcileOwnedAmount(updatedExtentAmount,
                         currentExtentAmount, existingOwnedAmounts);
@@ -1451,8 +1454,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         UUID updatedUuid = updatedAmount.getUuid();
         if (currentAmount != null && updatedUuid != null && Objects.equals(updatedUuid, currentAmount.getUuid())) {
-            JsonNode updatedJson = objectMapper.valueToTree(updatedAmount);
-            objectMapper.readerForUpdating(currentAmount).readValue(updatedJson);
+            JsonNode updatedJson = mapper.valueToTree(updatedAmount);
+            mapper.readerForUpdating(currentAmount).readValue(updatedJson);
             existingOwnedAmounts.put(currentAmount.getUuid(), currentAmount);
             return currentAmount;
         }
@@ -1472,8 +1475,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         UUID updatedUuid = updatedReference.getUuid();
         if (currentReference != null && updatedUuid != null && Objects.equals(updatedUuid, currentReference.getUuid())) {
-            JsonNode updatedJson = objectMapper.valueToTree(updatedReference);
-            objectMapper.readerForUpdating(currentReference).readValue(updatedJson);
+            JsonNode updatedJson = mapper.valueToTree(updatedReference);
+            mapper.readerForUpdating(currentReference).readValue(updatedJson);
             existingOwnedSubstanceReferences.put(currentReference.getUuid(), currentReference);
             return currentReference;
         }
@@ -1738,12 +1741,12 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     private void updateManagedStructurePreservingCollections(GinasChemicalStructure managedStructure,
                                                              GinasChemicalStructure updatedStructure)
             throws IOException {
-        JsonNode updatedJson = objectMapper.valueToTree(updatedStructure);
+        JsonNode updatedJson = mapper.valueToTree(updatedStructure);
         if (updatedJson instanceof ObjectNode updatedObject) {
             updatedObject.remove("properties");
             updatedObject.remove("links");
         }
-        objectMapper.readerForUpdating(managedStructure).readValue(updatedJson);
+        mapper.readerForUpdating(managedStructure).readValue(updatedJson);
         managedStructure.version = updatedStructure.version != null
                 ? updatedStructure.version
                 : existingStructureVersionOrInitial(managedStructure);
@@ -1767,11 +1770,11 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             Name managedName = updatedName.getUuid() == null ? null : existingNames.get(updatedName.getUuid());
             if (managedName != null && managedName != updatedName) {
                 List<NameOrg> updatedNameOrgs = updatedName.nameOrgs;
-                JsonNode updatedJson = objectMapper.valueToTree(updatedName);
+                JsonNode updatedJson = mapper.valueToTree(updatedName);
                 if (updatedJson instanceof ObjectNode updatedObject) {
                     updatedObject.remove("nameOrgs");
                 }
-                objectMapper.readerForUpdating(managedName).readValue(updatedJson);
+                mapper.readerForUpdating(managedName).readValue(updatedJson);
                 managedName.setOwner(owner);
                 reconcileNameOrgCollection(managedName, updatedNameOrgs, existingNameOrgs);
                 reconciled.add(managedName);
@@ -1858,8 +1861,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             }
             T managedValue = updatedValue.getUuid() == null ? null : existingByUuid.get(updatedValue.getUuid());
             if (managedValue != null && managedValue != updatedValue) {
-                JsonNode updatedJson = objectMapper.valueToTree(updatedValue);
-                objectMapper.readerForUpdating(managedValue).readValue(updatedJson);
+                JsonNode updatedJson = mapper.valueToTree(updatedValue);
+                mapper.readerForUpdating(managedValue).readValue(updatedJson);
                 ownerSetter.accept(managedValue);
                 reconciled.add(managedValue);
             } else {

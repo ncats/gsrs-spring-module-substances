@@ -2,6 +2,7 @@ package ix.core;
 
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.json.JsonMapper;
@@ -21,7 +22,9 @@ public class AbstractValueDeserializer extends ValueDeserializer<Value> {
 	@Autowired
 	private ValueRepository valueRepository;
 
-	private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+	private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	public static List<Class<? extends Value>> classes = new ArrayList<>();
 

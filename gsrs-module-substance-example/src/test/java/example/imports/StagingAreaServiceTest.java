@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Field;
@@ -28,7 +29,9 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
 
     String substanceContext = "ix.ginas.models.v1.Substance";
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @BeforeEach
     public void setup() throws NoSuchFieldException, IllegalAccessException {

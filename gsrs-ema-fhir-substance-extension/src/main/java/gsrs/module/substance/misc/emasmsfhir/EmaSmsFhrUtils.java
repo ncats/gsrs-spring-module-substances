@@ -1,6 +1,7 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
 import ix.ginas.models.v1.Substance;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
@@ -28,7 +29,9 @@ public class EmaSmsFhrUtils {
     }
 
 
-    private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public static String gsrsSubstanceToQuotedJson (Substance substance){
         try {

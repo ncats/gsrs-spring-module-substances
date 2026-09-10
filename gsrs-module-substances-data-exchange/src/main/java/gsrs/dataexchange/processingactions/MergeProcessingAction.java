@@ -1,5 +1,6 @@
 package gsrs.dataexchange.processingactions;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.model.ProcessingAction;
@@ -23,7 +24,9 @@ public class MergeProcessingAction implements ProcessingAction<Substance> {
 
     private JsonNode settings;
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Override
     public Substance process(Substance source, Substance existing, Map<String, Object> parameters, Consumer<String> processLog){

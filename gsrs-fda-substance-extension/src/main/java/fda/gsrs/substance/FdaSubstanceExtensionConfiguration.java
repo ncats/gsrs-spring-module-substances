@@ -7,6 +7,7 @@ import gov.hhs.gsrs.products.api.ProductsApi;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 @Configuration
@@ -34,5 +35,7 @@ public class FdaSubstanceExtensionConfiguration {
         return new ClinicalTrialsEuropeApi(clinicalTrialsEuropeApiConfiguration.createNewRestTemplateBuilder(),clinicalTrialsEuropeApiConfiguration.getBaseURL(), mapper);
     }
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 }

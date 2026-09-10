@@ -12,8 +12,6 @@ import ix.ginas.models.v1.Moiety;
 import tools.jackson.databind.ValueDeserializer;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.IOException;
-
 public class MoietyDeserializer extends ValueDeserializer<Moiety> {
 
     private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()

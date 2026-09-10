@@ -1,5 +1,6 @@
 package gsrs.module.substance.kew;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import org.springframework.core.io.Resource;
 import tools.jackson.databind.json.JsonMapper;
@@ -13,7 +14,9 @@ import java.util.LinkedHashSet;
 public class KewControlledPlantDataSet implements DataSet<String>{
 	private final LinkedHashSet<String> controlledList = new LinkedHashSet<>();
 
-	private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+	private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	public KewControlledPlantDataSet(Resource kewJson) throws  IOException {
 		try(InputStream in = kewJson.getInputStream()){

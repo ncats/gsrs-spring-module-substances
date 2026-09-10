@@ -1,5 +1,6 @@
 package gsrs.module.substance.scrubbers.basic;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
@@ -21,7 +22,9 @@ import java.util.Optional;
 public class BasicSubstanceScrubberFactory implements RecordScrubberFactory<Substance> {
     private final static String JSONSchema = getSchemaString();
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
         try {

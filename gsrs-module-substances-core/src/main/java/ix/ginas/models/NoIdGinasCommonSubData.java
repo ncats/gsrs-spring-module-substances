@@ -11,6 +11,7 @@ import jakarta.persistence.Convert;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Transient;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.json.JsonMapper;
@@ -89,7 +90,9 @@ public abstract class NoIdGinasCommonSubData extends NoIdGinasCommonData impleme
 	}
 	
 	public String toJson(){
-		JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
+		JsonMapper om = JsonMapper.builderWithJackson2Defaults()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
 		return om.valueToTree(this).toString();
 	}
 	
