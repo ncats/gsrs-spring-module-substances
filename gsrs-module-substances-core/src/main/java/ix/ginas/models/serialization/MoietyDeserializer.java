@@ -3,6 +3,7 @@ package ix.ginas.models.serialization;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import ix.core.controllers.EntityFactory.EntityMapper;
 import ix.ginas.models.v1.Amount;
@@ -15,7 +16,9 @@ import java.io.IOException;
 
 public class MoietyDeserializer extends ValueDeserializer<Moiety> {
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+        .build();
 
     public MoietyDeserializer () {
     }
