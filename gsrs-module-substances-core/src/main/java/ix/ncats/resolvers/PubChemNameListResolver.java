@@ -1,5 +1,6 @@
 package ix.ncats.resolvers;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import ix.core.models.PubChemResolutionResult;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import java.util.stream.StreamSupport;
 
 @Slf4j
 public class PubChemNameListResolver implements Resolver<List<String>> {
-    private static final  String PUG      = "https://pubchem.ncbi.nlm.nih.gov/rest/pug";
+    private static final  String PUG = "https://pubchem.ncbi.nlm.nih.gov/rest/pug";
 
     @Override
     public Class<List<String>> getType() {
@@ -30,7 +31,9 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
         return this.getClass().getName();
     }
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Override
     public List<String> resolve(String name) {
@@ -72,7 +75,7 @@ public class PubChemNameListResolver implements Resolver<List<String>> {
             if(cids.size()==1) {
                 log.trace("cid: {}}", cids.get(0));
                 result.setCid(cids.get(0));
-                if( cids.get(0) != "0") {
+                if( !cids.get(0).equals("0")) {
                     result.setIupacName(getIupacNameForCid(cids.get(0)));
                     return result;
                 }
