@@ -1,5 +1,6 @@
 package example;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
@@ -54,7 +55,9 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
     @Autowired
     private SubstanceEntityService substanceEntityService;
 
-    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Override
     public void run(ApplicationArguments args) throws Exception {

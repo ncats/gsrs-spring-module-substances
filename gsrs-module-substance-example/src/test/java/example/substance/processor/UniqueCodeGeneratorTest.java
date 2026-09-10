@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
@@ -48,7 +49,9 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
     private final String CV_DOMAIN = "CODE_SYSTEM";
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @TestConfiguration
     static class TestConfig {
@@ -60,7 +63,9 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
 
         @Bean
         public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service) {
-            return new CvApiAdapter(service, JsonMapper.builderWithJackson2Defaults().build());
+            return new CvApiAdapter(service, JsonMapper.builderWithJackson2Defaults()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build());
         }
     }
 

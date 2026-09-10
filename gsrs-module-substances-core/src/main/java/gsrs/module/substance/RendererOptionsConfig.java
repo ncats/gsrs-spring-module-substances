@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -76,7 +77,9 @@ public class RendererOptionsConfig {
             }
         }
         if(rendererOptionsJsonFilePath !=null) {
-            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
             Resource optionsJson = new ClassPathResource(rendererOptionsJsonFilePath);
             if(optionsJson !=null) {
                 try (InputStream in = optionsJson.getInputStream()) {

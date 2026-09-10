@@ -1,5 +1,6 @@
 package example.substance;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gsrs.junit.json.JsonUtil;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
@@ -25,7 +26,9 @@ import static org.junit.Assert.assertTrue;
 public class ChangeSubstanceClassTest extends AbstractSubstanceJpaEntityTest {
 
 
-     private static final JsonMapper MAPPER = JsonMapper.builderWithJackson2Defaults().build();
+     private static final JsonMapper MAPPER = JsonMapper.builderWithJackson2Defaults()
+             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+             .build();
 
      File resource;
 

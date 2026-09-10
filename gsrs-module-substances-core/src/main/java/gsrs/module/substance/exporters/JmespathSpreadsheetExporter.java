@@ -3,6 +3,7 @@ package gsrs.module.substance.exporters;
 import java.io.IOException;
 import java.util.*;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -35,7 +36,9 @@ public class JmespathSpreadsheetExporter implements Exporter<Substance> {
 
     @Override
     public void export(Substance s) throws IOException {
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         try {
             JsonNode tree = mapper.readTree(writer.writeValueAsString(s));
             updateReferences(tree);

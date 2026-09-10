@@ -1,5 +1,6 @@
 package example.substance;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -30,7 +31,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @WithMockUser(username = "admin", roles = "Admin")
 public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTest {
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Test
     void addPhysicalModificationToSpecifiedSubstanceGroup1() throws Exception {

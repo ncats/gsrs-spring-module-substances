@@ -1,6 +1,7 @@
 package gsrs.module.substance.utils;
 
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -24,7 +25,9 @@ public class PubChemUtils {
 
     private final static String PUBCHEM_LOOKUP_URL = "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/inchikey/property/inchikey/JSON";
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     /*
     return CIDs for InChIKey input

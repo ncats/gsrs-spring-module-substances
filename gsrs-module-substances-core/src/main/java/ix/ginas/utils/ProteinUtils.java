@@ -1,5 +1,6 @@
 package ix.ginas.utils;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.CachedSupplier;
@@ -28,7 +29,9 @@ public class ProteinUtils
     @Autowired(required = true)
     private MolWeightCalculatorProperties molWeightCalculatorProperties;
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     //Based on analysis from existing MAB entries
     private static final CachedSupplier<Map<String, List<int[]>>> KNOWN_DISULFIDE_PATTERNS = CachedSupplier.of(() -> {

@@ -1,5 +1,6 @@
 package example.imports;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -38,7 +39,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class DelimTextAdapterFactoryTest extends AbstractSubstanceJpaEntityTest {
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     /*
     Make sure the initialize method populates the registry (a Map)

@@ -15,6 +15,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 
 import gsrs.module.substance.processors.CodeSystemUrlGenerator;
@@ -65,7 +66,9 @@ public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, C
             }
             codeSystems = new LinkedHashMap<String, Map<String, String>>();
             try (InputStream is = new UrlResource(getUrl(filename)).getInputStream();) {
-                JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+                JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        .build();
                 for (JsonNode item : mapper.readTree(is)) {
                     Map<String, String> itemMap = mapper.convertValue(item, new TypeReference<Map<String, String>>(){});
                     codeSystems.put(itemMap.get("codeSystem"), itemMap);

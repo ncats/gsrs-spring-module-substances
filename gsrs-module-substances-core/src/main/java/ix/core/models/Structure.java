@@ -23,13 +23,9 @@ import jakarta.persistence.*;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonGenerator;
 import tools.jackson.core.JsonParser;
-import tools.jackson.databind.DeserializationContext;
-import tools.jackson.databind.SerializationContext;
-import tools.jackson.databind.ValueDeserializer;
-import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.*;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
-import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -91,7 +87,9 @@ public class Structure extends BaseModel {
 
     public static class StereoDeserializer extends ValueDeserializer<Stereo> {
         @Transient
-        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     	 public StereoDeserializer(){
     		 super();
     	 }

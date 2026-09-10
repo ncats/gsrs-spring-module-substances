@@ -12,6 +12,7 @@ import ix.ginas.models.serialization.IntArrayDeserializer;
 import ix.ginas.models.serialization.IntArraySerializer;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.json.JsonMapper;
@@ -57,7 +58,9 @@ public class Unit extends GinasCommonSubData {
     private String _attachmentMap;
     
     public Map<String,LinkedHashSet<String>> getAttachmentMap(){
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
     	Map<String, LinkedHashSet<String>> amap=null;
 		try {
 			amap = mapper.readValue(_attachmentMap, new TypeReference<Map<String, LinkedHashSet<String>>>(){});
@@ -68,7 +71,9 @@ public class Unit extends GinasCommonSubData {
     }
     
     public void setAttachmentMap(Map<String,LinkedHashSet<String>> amap){
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
     	_attachmentMap=null;
     	try {
 			_attachmentMap=mapper.writeValueAsString(amap);

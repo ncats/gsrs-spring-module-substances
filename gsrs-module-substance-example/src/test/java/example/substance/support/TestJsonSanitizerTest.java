@@ -1,5 +1,6 @@
 package example.substance.support;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -12,7 +13,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TestJsonSanitizerTest {
 
-    private static final JsonMapper MAPPER = JsonMapper.builderWithJackson2Defaults().build();
+    private static final JsonMapper MAPPER = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Test
     void stripAccessFieldsRemovesAuditFieldsRecursivelyWithoutMutatingSource() {

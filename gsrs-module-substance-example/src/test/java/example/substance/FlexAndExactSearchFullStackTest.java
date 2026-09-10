@@ -11,6 +11,7 @@ import java.util.function.Supplier;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Test;
@@ -56,8 +57,9 @@ public class FlexAndExactSearchFullStackTest  extends AbstractSubstanceJpaFullSt
     protected StructureStandardizer standardizer;
 
 
-    private final JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
-
+    private final JsonMapper om = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @TestConfiguration
     public static class Configuration{

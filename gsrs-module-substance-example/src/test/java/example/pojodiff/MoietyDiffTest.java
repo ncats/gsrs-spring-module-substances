@@ -8,6 +8,7 @@ import ix.utils.pojopatch.PojoDiff;
 import ix.utils.pojopatch.PojoPatch;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -20,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class MoietyDiffTest{
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
 
     @Test

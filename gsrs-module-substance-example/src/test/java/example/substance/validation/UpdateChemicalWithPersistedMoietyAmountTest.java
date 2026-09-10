@@ -1,5 +1,6 @@
 package example.substance.validation;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -45,7 +46,9 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
     private static final double EDITED_MOIETY_COORDINATE_Y = -7.9040;
     private static final double COORDINATE_TOLERANCE = 0.0005;
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Test
     void updateChemicalWithPersistedMoietyAmountUuid() throws Exception {

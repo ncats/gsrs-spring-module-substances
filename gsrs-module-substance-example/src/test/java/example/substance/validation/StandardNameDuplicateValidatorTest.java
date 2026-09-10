@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.test.context.support.WithMockUser;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 
 import example.GsrsModuleSubstanceApplication;
@@ -64,7 +65,9 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         private static final String CONCEPT_WITH_STANDARD_NAME_TEMPLATE = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
 
-        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
 
         @BeforeEach
         public void clearIndexers() {

@@ -9,6 +9,7 @@ import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -40,7 +41,9 @@ public class SimpleLoadTest extends AbstractSubstanceJpaEntityTest {
         substanceBuilder.addReference(publicReference);
         Substance testConcept = substanceBuilder.build();
         // testConcept.uuid = UUID.randomUUID();
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         JsonNode jsonNode  = mapper.valueToTree(testConcept);
         ((ObjectNode)jsonNode).put("uuid", UUID.randomUUID().toString());
         try {

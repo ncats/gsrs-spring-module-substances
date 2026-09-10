@@ -15,6 +15,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -50,7 +51,8 @@ public class Protein extends GinasCommonSubData {
 	private ProteinSubstance proteinSubstance;
 
 	@Transient
-	protected transient JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+	protected transient JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	@Transient
 	List<DisulfideLink> tmpDisulfides = null;

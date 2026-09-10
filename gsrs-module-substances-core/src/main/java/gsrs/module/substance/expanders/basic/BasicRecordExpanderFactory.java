@@ -1,6 +1,7 @@
 package gsrs.module.substance.expanders.basic;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
@@ -16,7 +17,9 @@ import java.util.stream.Stream;
 @Slf4j
 public class BasicRecordExpanderFactory implements RecordExpanderFactory<Substance> {
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private final static String JSONSchema ="{\n" +
             "  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n" +

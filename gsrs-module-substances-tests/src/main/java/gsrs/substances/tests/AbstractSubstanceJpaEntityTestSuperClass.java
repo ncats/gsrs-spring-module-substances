@@ -44,6 +44,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 
 import gov.nih.ncats.common.io.InputStreamSupplier;
@@ -407,7 +408,9 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
                 String line;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(InputStreamSupplier.forFile(gsrsFile).get()))) {
 
-                JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+                JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        .build();
                 Pattern gsrsFilePattern = Pattern.compile("\t");
                     while ((line = reader.readLine()) != null) {
                         if (line.isEmpty() || line.startsWith("#")) {

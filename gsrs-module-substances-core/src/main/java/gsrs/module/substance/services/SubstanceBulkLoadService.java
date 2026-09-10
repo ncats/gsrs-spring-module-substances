@@ -33,6 +33,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ObjectNode;
@@ -104,7 +105,9 @@ public class SubstanceBulkLoadService {
     private static Map<String,Long> queueStatistics = new ConcurrentHashMap<String,Long>();
     private static Map<String,Statistics> jobCacheStatistics = new ConcurrentHashMap<>();
 
-    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private static int MAX_EXTRACTION_QUEUE = 100;
 

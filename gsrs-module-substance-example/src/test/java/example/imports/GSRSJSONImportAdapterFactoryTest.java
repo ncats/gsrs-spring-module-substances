@@ -1,5 +1,6 @@
 package example.imports;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
@@ -28,7 +29,9 @@ import java.util.UUID;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullStackEntityTest {
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Test
     @Tag("fullstack")

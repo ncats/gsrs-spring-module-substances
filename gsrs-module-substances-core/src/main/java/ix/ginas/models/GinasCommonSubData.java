@@ -8,6 +8,7 @@ import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Substance;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
 import tools.jackson.databind.json.JsonMapper;
@@ -87,7 +88,9 @@ public abstract class GinasCommonSubData extends GinasCommonData implements Gina
 	}
 	
 	public String toJson(){
-		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+				.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+				.build();
 		return mapper.valueToTree(this).toString();
 	}
 	

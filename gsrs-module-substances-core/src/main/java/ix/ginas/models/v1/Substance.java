@@ -37,6 +37,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.annotation.JsonSerialize;
@@ -397,7 +398,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
 
     @Transient
-    protected transient JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    protected transient JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public static SubstanceBuilder builder(){
         return new SubstanceBuilder();

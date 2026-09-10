@@ -3,6 +3,7 @@ package gsrs.module.substance.processors;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.JsonParser;
 import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import ix.core.models.Principal;
 import tools.jackson.databind.ValueDeserializer;
@@ -10,7 +11,9 @@ import tools.jackson.databind.json.JsonMapper;
 
 public class FakePrincipalDeserializer extends ValueDeserializer<Principal> {
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Override
     public Principal deserialize(JsonParser jsonParser, tools.jackson.databind.DeserializationContext ctxt) throws JacksonException {

@@ -1,5 +1,6 @@
 package gsrs.dataexchange.processingactions;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
@@ -22,7 +23,9 @@ import java.util.function.Consumer;
 @Slf4j
 public class ScrubProcessingAction implements ProcessingAction<Substance> {
 
-    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Override
     public Substance process(Substance stagingAreaRecord, Substance additionalRecord, Map<String, Object> parameters, Consumer<String> logger) throws Exception {

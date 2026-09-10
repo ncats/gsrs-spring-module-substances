@@ -1,5 +1,6 @@
 package example.substance.export;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gsrs.controller.AbstractExportSupportingGsrsEntityController;
 import gsrs.legacy.LegacyGsrsSearchService;
@@ -43,7 +44,9 @@ public class AbstractExportSupportingGsrsEntityControllerTest {
 
     private final AtomicLong nextTextId = new AtomicLong(1L);
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private final TextRepository textRepository = mock(TextRepository.class, invocation -> {
         String methodName = invocation.getMethod().getName();

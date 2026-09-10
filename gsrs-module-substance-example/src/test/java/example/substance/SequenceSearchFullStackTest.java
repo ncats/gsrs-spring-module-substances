@@ -1,5 +1,6 @@
     package example.substance;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.stream.StreamUtil;
@@ -375,7 +376,9 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
             factory.addValidator("substances", config);
         }
 
-        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         Resource dataFile = new ClassPathResource("testJSON/XLR461MD3M.json");
         String recordJson1 = Files.readString(dataFile.getFile().toPath());
         JsonNode json = mapper.readTree(recordJson1);

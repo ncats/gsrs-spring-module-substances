@@ -14,6 +14,7 @@ import tools.jackson.core.type.TypeReference;
 import ix.core.util.ModelUtils;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 @SuppressWarnings("serial")
@@ -32,18 +33,18 @@ public class SiteContainer extends GinasCommonSubData{
 		
 	String siteType;
 
-	public SiteContainer() {};
+	public SiteContainer() {}
+
+	private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	public SiteContainer(String type){
 		this.siteType=type;
 	}
 	
 	public List<Site> getSites(){
-		JsonMapper mapper= JsonMapper.builderWithJackson2Defaults()
-				.disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-				.build();
-		//om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		List<Site> sites=new ArrayList<Site>();
+		List<Site> sites=new ArrayList<>();
 		try {
 			sites = mapper.readValue(sitesJSON, new TypeReference<List<Site>>(){});
 		} catch (Exception e) {
@@ -62,7 +63,6 @@ public class SiteContainer extends GinasCommonSubData{
                 String beforeShorthand = sitesShortHand;
 		if(sites!=null){
 			sitesShortHand=generateShorthand(sites);
-			JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
 			List<Site> nlist = sites;
 			

@@ -1,8 +1,8 @@
 package example.imports;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ObjectNode;
@@ -27,10 +27,14 @@ import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.util.*;
 
-public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaEntityTest {
+class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaEntityTest {
+
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Test
-    public void testSetup() throws IllegalAccessException, NoSuchFieldException, JsonProcessingException {
+    void testSetup() throws IllegalAccessException, NoSuchFieldException {
         String substanceContext = "substances";
         //build up a complete configuration
         GsrsFactoryConfiguration config = new GsrsFactoryConfiguration();
@@ -60,16 +64,13 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         configField.setAccessible(true);
         configField.set(factoryFactory, config);
 
-        ObjectMapper mapper = new ObjectMapper();
-        System.out.println("config: " + mapper.writeValueAsString(adapterConfig));
-
         List<ImportAdapterFactory<SubstanceBuilder>> adapterFactories = factoryFactory.newFactory(substanceContext,
                 SubstanceBuilder.class);
         Assertions.assertEquals(1, adapterFactories.size());
     }
 
     @Test
-    public void testSetupActions() throws Exception {
+    void testSetupActions() throws Exception {
         List<ActionConfig> actionConfigs= buildTypedConfig();
         SDFImportAdapterFactory factory = new SDFImportAdapterFactory();
         factory.setFileImportActions(actionConfigs);
@@ -83,7 +84,7 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
     }
 
     @Test
-    public void testConfigGeneration() throws JsonProcessingException {
+    void testConfigGeneration()  {
         DefaultImportAdapterFactoryConfig config = new DefaultImportAdapterFactoryConfig();
         config.setImportAdapterFactoryClass(NSRSSDFImportAdapterFactory.class);
         config.setAdapterName("Test adapter");
@@ -91,7 +92,6 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
         config.setStagingAreaServiceClass(DefaultStagingAreaService.class);
         config.setEntityServiceClass(SubstanceStagingAreaEntityService.class);
 
-        ObjectMapper mapper = new ObjectMapper();
         String configString =mapper.writeValueAsString(config);
 
         System.out.println("config: " + configString);
@@ -102,17 +102,15 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
     }
 
     @Test
-    public void testDeserialize() throws JsonProcessingException {
+    void testDeserialize() throws Exception {
         String serializedConfig="{  \"adapterName\": \"NSRS SDF Adapter\", \"importAdapterFactoryClass\": \"gsrs.module.substance.importers.SDFImportAdapterFactory\",  \"extensions\": [ \"sdf\", \"sd\" ],  \"parameters\": {   \"fileImportActions\": [   { \"actionClass\": \"gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory\", \"fields\": [ { \"fieldName\": \"code\", \"fieldLabel\": \"CAS Number\", \"defaultValue\": null, \"fieldType\": \"java.lang.String\", \"expectedToChange\": true, \"required\": true, \"lookupKey\": null }, { \"fieldName\": \"codeType\", \"fieldLabel\": \"Primary or Alternative\", \"defaultValue\": \"PRIMARY\", \"fieldType\": \"java.lang.String\", \"expectedToChange\": true, \"required\": false, \"lookupKey\": null } ], \"parameters\": { \"codeSystem\": \"CAS\" }, \"actionName\": \"cas_import\" }, { \"actionClass\": \"gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory\", \"fields\": [ { \"fieldName\": \"code\", \"fieldLabel\": \"NCI Number\", \"defaultValue\": null, \"fieldType\": \"java.lang.String\", \"expectedToChange\": true, \"required\": true, \"lookupKey\": null }, { \"fieldName\": \"codeType\", \"fieldLabel\": \"Primary or Alternative\", \"defaultValue\": \"PRIMARY\", \"fieldType\": \"java.lang.String\", \"expectedToChange\": true, \"required\": false, \"lookupKey\": null } ], \"parameters\": { \"codeSystem\": \"NCI\" }, \"actionName\": \"nci_import\" }  ] } } ";
-        ObjectMapper mapper = new ObjectMapper();
         DefaultImportAdapterFactoryConfig config =mapper.readValue(serializedConfig, DefaultImportAdapterFactoryConfig.class);
         Assertions.assertEquals("NSRS SDF Adapter", config.getAdapterName());
     }
     @Test
-    public void deserializeConfig1() throws UnsupportedEncodingException {
+    void deserializeConfig1() throws UnsupportedEncodingException {
         String rawConfig="%5B%7B%22adapterName%22%3A%22NSRS+SDF+Adapter%22%2C%22importAdapterFactoryClass%22%3A+%22gsrs.module.substance.importers.SDFImportAdapterFactory%22%2C+%22extensions%22%3A+%5B+%22sdf%22%2C+%22sd%22%2C+%22sdfile%22+%5D%2C+%22parameters%22%3A+%7B+%22fileImportActions%22%3A+%5B%7B+%22actionClass%22%3A+%22gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory%22%2C+%22fields%22%3A+%5B+%7B+%22fieldName%22%3A+%22code%22%2C+%22fieldLabel%22%3A+%22CAS+Number%22%2C+%22defaultValue%22%3A+null%2C+%22fieldType%22%3A+%22java.lang.String%22%2C+%22expectedToChange%22%3A+true%2C+%22required%22%3A+true%2C+%22lookupKey%22%3A+null+%7D%2C+%7B+%22fieldName%22%3A+%22codeType%22%2C+%22fieldLabel%22%3A+%22Primary+or+Alternative%22%2C+%22defaultValue%22%3A+%22PRIMARY%22%2C+%22fieldType%22%3A+%22java.lang.String%22%2C+%22expectedToChange%22%3A+true%2C+%22required%22%3A+false%2C+%22lookupKey%22%3A+null+%7D+%5D%2C+%22parameters%22%3A+%7B+%22codeSystem%22%3A+%22CAS%22+%7D%2C+%22actionName%22%3A+%22cas_import%22+%7D%2C+%7B+%22actionClass%22%3A+%22gsrs.module.substance.importers.importActionFactories.NSRSCustomCodeExtractorActionFactory%22%2C+%22fields%22%3A+%5B+%7B+%22fieldName%22%3A+%22code%22%2C+%22fieldLabel%22%3A+%22NCI+Number%22%2C+%22defaultValue%22%3A+null%2C+%22fieldType%22%3A+%22java.lang.String%22%2C+%22expectedToChange%22%3A+true%2C+%22required%22%3A+true%2C+%22lookupKey%22%3A+null+%7D%2C+%7B+%22fieldName%22%3A+%22codeType%22%2C+%22fieldLabel%22%3A+%22Primary+or+Alternative%22%2C+%22defaultValue%22%3A+%22PRIMARY%22%2C+%22fieldType%22%3A+%22java.lang.String%22%2C+%22expectedToChange%22%3A+true%2C+%22required%22%3A+false%2C+%22lookupKey%22%3A+null+%7D+%5D%2C+%22parameters%22%3A+%7B+%22codeSystem%22%3A+%22NCI%22+%7D%2C+%22actionName%22%3A+%22nci_import%22%7D%5D%7D%7D%5D";
         String config= URLDecoder.decode(rawConfig, Charset.defaultCharset().name());
-        ObjectMapper mapper = new ObjectMapper();
         try {
             List<DefaultImportAdapterFactoryConfig> configObjects = mapper.readValue(config, mapper.getTypeFactory().constructCollectionType(ArrayList.class, DefaultImportAdapterFactoryConfig.class));
             Assertions.assertTrue(configObjects.size()>0);
@@ -121,7 +119,6 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
             ex.printStackTrace();
 
             String config2 = config.substring(1, config.length()-1);
-            //config2="{\"adapterName\":\"NSRS SDF Adapter\",\"importAdapterFactoryClass\":\"gsrs.module.substance.importers.SDFImportAdapterFactory\",\"extensions\":[\"sdf\", \"sd\", \"sdfile\" ]}";
             try {
                 DefaultImportAdapterFactoryConfig extractedConfig = mapper.readValue(config2, DefaultImportAdapterFactoryConfig.class);
                 Assertions.assertNotNull(extractedConfig);
@@ -170,7 +167,6 @@ public class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaE
     private List<ActionConfig> buildTypedConfig(){
 
         List<ActionConfig> configList = new ArrayList<>();
-        //List< Map<String, Object>> actions = new ArrayList<>();
         ActionConfig config = new ActionConfigImpl();
         config.setActionClass(NSRSCustomCodeExtractorActionFactory.class);
         config.setActionName("code_import");

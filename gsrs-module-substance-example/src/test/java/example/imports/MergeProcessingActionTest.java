@@ -1,5 +1,6 @@
 package example.imports;
 
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import example.substance.support.TestJsonSanitizer;
 import gsrs.dataexchange.processingactions.MergeProcessingAction;
@@ -23,7 +24,9 @@ import java.util.function.Consumer;
 
 public class MergeProcessingActionTest {
 
-    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Test
     public void testMergeNames() {

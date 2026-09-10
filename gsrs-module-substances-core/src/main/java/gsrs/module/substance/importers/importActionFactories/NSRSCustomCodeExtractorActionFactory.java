@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
@@ -34,7 +35,9 @@ public class NSRSCustomCodeExtractorActionFactory extends BaseActionFactory {
     //Do we need this?
     private List<Map<String, Object>> fields;
 
-    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public NSRSCustomCodeExtractorActionFactory() {
     }

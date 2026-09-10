@@ -1,6 +1,7 @@
 package gsrs.module.substance.importers;
 
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.importer.PropertyBasedDataRecordContext;
@@ -26,7 +27,9 @@ public class ChemicalDelimTextImportAdapterFactory extends DelimTextImportAdapte
         Map<String, Object> initializationParameters = null;
         if (adapterSettings.hasNonNull("parameters")) {
             log.trace("adapterSettings has parameters");
-            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
             initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<>() {
             });
         } else {

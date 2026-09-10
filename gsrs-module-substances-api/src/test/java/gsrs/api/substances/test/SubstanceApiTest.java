@@ -33,6 +33,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import org.springframework.boot.restclient.test.autoconfigure.RestClientTest;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 @RestClientTest(SubstanceRestApi.class)
@@ -53,7 +54,7 @@ public class SubstanceApiTest {
         @Bean
         public SubstanceRestApi substanceRestApi(RestTemplateBuilder restTemplateBuilder) {
 
-            return new SubstanceRestApi(restTemplateBuilder, "http://example.com", JsonMapper.builderWithJackson2Defaults().build());
+            return new SubstanceRestApi(restTemplateBuilder, "http://example.com", JsonMapper.builderWithJackson2Defaults().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES).build());
         }
     }
 

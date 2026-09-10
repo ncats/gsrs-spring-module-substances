@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
@@ -45,7 +46,9 @@ public class ApprovalIdProcessorTest extends AbstractSubstanceJpaEntityTest {
         }
         @Bean
         public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service){
-            return new CvApiAdapter(service, JsonMapper.builderWithJackson2Defaults().build());
+            return new CvApiAdapter(service, JsonMapper.builderWithJackson2Defaults()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build());
         }
     }
     @BeforeEach

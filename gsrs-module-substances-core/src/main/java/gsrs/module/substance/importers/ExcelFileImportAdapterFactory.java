@@ -1,6 +1,7 @@
 package gsrs.module.substance.importers;
 
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
@@ -63,7 +64,9 @@ public class ExcelFileImportAdapterFactory extends DelimTextImportAdapterFactory
         Map<String, Object> initializationParameters;
         if (adapterSettings.hasNonNull("parameters")) {
             log.trace("adapterSettings has parameters");
-            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                    .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
             initializationParameters = mapper.convertValue(adapterSettings.get("parameters"), new TypeReference<>() {
             });
         } else {
