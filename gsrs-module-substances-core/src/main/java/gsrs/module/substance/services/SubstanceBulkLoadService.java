@@ -503,8 +503,8 @@ public class SubstanceBulkLoadService {
         if(stat !=null){
             stat.applyChange(change);
         }
-        saveJobInSeparateTransaction(job.id, stat);
     }
+
     public Statistics applyStatisticsChangeForJob(String jobTerm, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(jobTerm);
         if(stat !=null) {
