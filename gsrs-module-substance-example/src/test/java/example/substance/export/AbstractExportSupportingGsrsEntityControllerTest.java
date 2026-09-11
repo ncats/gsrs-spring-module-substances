@@ -1,5 +1,6 @@
 package example.substance.export;
 
+import org.springframework.context.annotation.Bean;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import gsrs.controller.AbstractExportSupportingGsrsEntityController;
@@ -48,6 +49,11 @@ public class AbstractExportSupportingGsrsEntityControllerTest {
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
 
+    @Bean("legacyJsonMapper")
+    public JsonMapper standardJsonMapper() {
+        return mapper;
+    }
+
     private final TextRepository textRepository = mock(TextRepository.class, invocation -> {
         String methodName = invocation.getMethod().getName();
         Object[] args = invocation.getArguments();
@@ -88,6 +94,7 @@ public class AbstractExportSupportingGsrsEntityControllerTest {
         savedExporterKeys.clear();
         controller = createController();
         injectField(controller, "textRepository", textRepository);
+        injectField(controller, "mapper", mapper);
 
         Class<?> exportConfigType = findGsrsExportConfigurationFieldType();
         if (exportConfigType != null) {
