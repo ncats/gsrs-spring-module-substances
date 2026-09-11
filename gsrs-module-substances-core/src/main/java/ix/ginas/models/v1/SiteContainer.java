@@ -7,6 +7,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import tools.jackson.core.type.TypeReference;
@@ -35,7 +36,8 @@ public class SiteContainer extends GinasCommonSubData{
 
 	public SiteContainer() {}
 
-	private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+	@Transient
+	private transient final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
 			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.build();
 
@@ -46,7 +48,8 @@ public class SiteContainer extends GinasCommonSubData{
 	public List<Site> getSites(){
 		List<Site> sites=new ArrayList<>();
 		try {
-			sites = mapper.readValue(sitesJSON, new TypeReference<List<Site>>(){});
+			sites = mapper.readValue(sitesJSON, new TypeReference<>() {
+			});
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
@@ -68,9 +71,7 @@ public class SiteContainer extends GinasCommonSubData{
 			
 			//TODO: this used to be done as a normalizing step
 			// but it caused problems with POJODiff
-//			List<Site> nlist=parseShorthandRanges(sitesShortHand);
-			
-			
+
 			sitesJSON=mapper.valueToTree(nlist).toString();
 			siteCount=nlist.size();
 		}
@@ -97,8 +98,7 @@ public class SiteContainer extends GinasCommonSubData{
 	 @Override
 	   	@JsonIgnore
 	   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
-	   		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
-	   		return temp;
+	   		return new ArrayList<GinasAccessReferenceControlled>();
 	   	}
 
 }
