@@ -275,18 +275,14 @@ public class SubstanceBulkLoadService {
 
             @Override
             public void run() {
-                //TransactionTemplate tx = new TransactionTemplate(transactionManager);
-                //tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                //tx.executeWithoutResult(ignore-> {
                 TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
                 tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 ProcessingJob job = tx2.execute(s -> {
                     ProcessingJob innerJob = processingJobRepository.findById(pp.jobId).get();
                     EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
-                    //log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
                     return innerJob;
                 });
-
+                saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.RUNNING, null);
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
                 //katzelda 6/2019: IDE says we don't ever use the FilterSessions but we do it's just a sideeffect that gets used when we
@@ -373,14 +369,13 @@ public class SubstanceBulkLoadService {
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
                     executorServices.remove(pp.key);
+                    saveJobInSeparateTransaction(pp.jobId, pp.key, ProcessingJob.Status.COMPLETE, null);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.STOPPED, "Interrupted");
                     e.printStackTrace();
                 }
-                //});
-
             }
         };
 
