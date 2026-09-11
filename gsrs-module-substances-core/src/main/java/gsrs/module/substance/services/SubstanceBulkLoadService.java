@@ -162,30 +162,34 @@ public class SubstanceBulkLoadService {
         return getStatisticsForJob(jobId);
     }
 
-    private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
+    private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats, ProcessingJob.Status desiredStatus,
+                                                       String desiredMessage){
         synchronized (jobLock) {
             if(stats==null ) {
                 //log.info("skipping save because stats is null");
                 return null;
             }
-            if(!stats._isDone()) {
-                //log.info("skipping save of job in process");
-                return null;
-            }
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
+            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats, desiredStatus, desiredMessage));
         }
     }
 
-    private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats) {
+    private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats, ProcessingJob.Status desiredStatus,
+                                                      String desiredMessage) {
         ProcessingJob job = processingJobRepository.findById(jobId).get();
-        if (!stats._isDone()) {
-
-            job.message = "Loading data";
-            job.status = ProcessingJob.Status.RUNNING;
-        } else {
+        if (desiredStatus != null) {
+            job.status = desiredStatus;
+        } else if (stats._isDone()) {
             job.status = ProcessingJob.Status.COMPLETE;
+        } else {
+            job.status = ProcessingJob.Status.RUNNING;
+        }
+
+        if (desiredMessage != null) {
+            job.message = desiredMessage;
+        } else if (!stats._isDone()) {
+            job.message = "Loading data";
         }
         job.statistics = mapper.valueToTree(stats).toString();
 
@@ -271,17 +275,17 @@ public class SubstanceBulkLoadService {
 
             @Override
             public void run() {
-                TransactionTemplate tx = new TransactionTemplate(transactionManager);
-                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                tx.executeWithoutResult(ignore-> {
-                    TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
-                    tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                    ProcessingJob job = tx2.execute(s -> {
-                        ProcessingJob innerJob=processingJobRepository.findById(pp.jobId).get();
-                        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
-                        //log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
-                        return innerJob;
-                    });
+                //TransactionTemplate tx = new TransactionTemplate(transactionManager);
+                //tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                //tx.executeWithoutResult(ignore-> {
+                TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
+                tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                ProcessingJob job = tx2.execute(s -> {
+                    ProcessingJob innerJob = processingJobRepository.findById(pp.jobId).get();
+                    EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
+                    //log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
+                    return innerJob;
+                });
 
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
@@ -308,7 +312,7 @@ public class SubstanceBulkLoadService {
                         //error figuring out estimate?
                     }
 
-                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), null, null);
 
                     BulkLoadServiceCallback callback = new BulkLoadServiceCallBackImpl(job);
                    
@@ -362,7 +366,8 @@ public class SubstanceBulkLoadService {
                             e.printStackTrace();
                             job.status =ProcessingJob.Status.FAILED;
                             job.message = e.getMessage();
-                            saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
+                            saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.FAILED,
+                                    e.getMessage());
                             }
                 }
                 try {
@@ -371,10 +376,10 @@ public class SubstanceBulkLoadService {
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
-                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.STOPPED, "Interrupted");
                     e.printStackTrace();
                 }
-                });
+                //});
 
             }
         };
@@ -495,7 +500,7 @@ public class SubstanceBulkLoadService {
     private void saveJobInSeparateTransaction(long jobId, String statKey){
         Statistics stat = getStatisticsForJob(statKey);
         if(stat !=null){
-            saveJobInSeparateTransaction(jobId, stat);
+            saveJobInSeparateTransaction(jobId, stat, null, null);
         }
     }
     public void applyStatisticsChangeForJob(ProcessingJob job, Statistics.CHANGE change){
