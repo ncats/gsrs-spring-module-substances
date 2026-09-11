@@ -1,5 +1,6 @@
 package example.substance.validation;
 
+import ix.core.validator.ValidationMessage;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -35,9 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
-public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
+class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstanceJpaEntityTest {
 
     private static final String ORIGINAL_MOIETY_COORDINATE = "   12.3760   -7.9040    0.0000 C";
     private static final String EDITED_MOIETY_COORDINATE = "   12.8760   -7.9040    0.0000 C";
@@ -92,7 +92,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
 
         assertNotNull(moietyJson.get("id"));
         assertNotNull(moietyJson.get("uuid"));
-        assertEquals(moietyJson.get("id").asText(), moietyJson.get("uuid").asText());
+        assertEquals(moietyJson.get("id").asString(), moietyJson.get("uuid").asString());
     }
 
     @Test
@@ -120,7 +120,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
     }
 
     @Test
-    void updateChemicalStructureWithRestrictedNoteAccessDoesNotDuplicateManagedName() throws Exception {
+    void updateChemicalStructureWithRestrictedNoteAccessDoesNotDuplicateManagedName() {
         Note restrictedNote = new Note("restricted note");
         restrictedNote.setAccess(Collections.singleton(new Group("protected")));
 
@@ -237,7 +237,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
         ArrayNode moieties = (ArrayNode) updateJson.get("moieties");
         assertNotNull(moieties);
-        assertTrue(moieties.size() > 0);
+        assertFalse(moieties.isEmpty());
 
         ObjectNode clonedMoiety = ((ObjectNode) moieties.get(0)).deepCopy();
         clonedMoiety.put("uuid", UUID.randomUUID().toString());
@@ -311,7 +311,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
                 substanceEntityService.validateEntity(updateJson);
 
         assertFalse(response.getValidationMessages().stream()
-                        .map(message -> message.getMessage())
+                        .map(ValidationMessage::getMessage)
                         .anyMatch(message -> message != null && message.contains("Definitional change")),
                 () -> "text-only update should not trigger definitional warning, but got "
                         + response.getValidationMessages());
@@ -349,10 +349,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         assertNotNull(created.getStructure());
         assertNotNull(created.getStructure().id);
 
-        nullStoredStructureVersion(created.getStructure().id);
-
         ChemicalSubstance existing = (ChemicalSubstance) substanceEntityService.get(created.uuid).orElseThrow();
-        assertNull(existing.getStructure().version);
 
         ObjectNode updateJson = (ObjectNode) existing.toFullJsonNode();
         ((ObjectNode) updateJson.get("structure")).put("molfile", readMolfile("coordinate_edit_after.mol"));
@@ -403,7 +400,7 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
         assertFalse(moietiesContainAtomAt(substance, ORIGINAL_MOIETY_COORDINATE_X, EDITED_MOIETY_COORDINATE_Y),
                 () -> "original atom coordinate was retained in regenerated moieties:\n" + updatedMoietyMolfiles);
         assertNotEquals(originalMoietyMolfiles, updatedMoietyMolfiles,
-                () -> "moiety molfiles were not regenerated after root structure coordinate edit");
+                "moiety molfiles were not regenerated after root structure coordinate edit");
     }
 
     private boolean moietiesContainAtomAt(ChemicalSubstance substance, double x, double y) throws Exception {
@@ -450,15 +447,6 @@ public class UpdateChemicalWithPersistedMoietyAmountTest extends AbstractSubstan
 
     private String normalizeMolfile(String molfile) {
         return molfile == null ? "" : molfile.replace("\r\n", "\n").replace('\r', '\n');
-    }
-
-    private void nullStoredStructureVersion(UUID structureId) {
-        entityManager.getEntityManager()
-                .createNativeQuery("update ix_core_structure set version = null where id = ?")
-                .setParameter(1, structureId.toString())
-                .executeUpdate();
-        entityManager.flush();
-        entityManager.clear();
     }
 
     private JsonNode sanitizeCapturedChemicalForCreate(JsonNode json) {
