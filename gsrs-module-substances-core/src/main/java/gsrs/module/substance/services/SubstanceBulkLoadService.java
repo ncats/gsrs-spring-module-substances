@@ -369,7 +369,7 @@ public class SubstanceBulkLoadService {
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
                     executorServices.remove(pp.key);
-                    saveJobInSeparateTransaction(pp.jobId, pp.key, ProcessingJob.Status.COMPLETE, null);
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.COMPLETE, null);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
