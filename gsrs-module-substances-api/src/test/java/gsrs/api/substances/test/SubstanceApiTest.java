@@ -91,9 +91,9 @@ public class SubstanceApiTest {
         assertEquals(substanceDTO.getUuid(), UUID.fromString("00003571-8a34-49de-a980-267d6394cfa3"));
         assertEquals(SubstanceDTO.SubstanceClass.structurallyDiverse, substanceDTO.getSubstanceClass());
 
-        assertEquals(substanceDTO.get_names(), new LazyFetchedCollection(11, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names"));
-        assertEquals(substanceDTO.get_codes(), new LazyFetchedCollection(4, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes"));
-        assertEquals(substanceDTO.get_references(), new LazyFetchedCollection(38, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references"));
+        assertEquals(new LazyFetchedCollection(11, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/names"), substanceDTO.get_names());
+        assertEquals(new LazyFetchedCollection(4, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/codes"), substanceDTO.get_codes());
+        assertEquals(new LazyFetchedCollection(38, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003571-8a34-49de-a980-267d6394cfa3)/references"), substanceDTO.get_references());
 
 
     }
@@ -111,9 +111,10 @@ public class SubstanceApiTest {
         ChemicalSubstanceDTO substanceDTO = opt.get();
 
         assertEquals(SubstanceDTO.SubstanceClass.chemical, substanceDTO.getSubstanceClass());
-        assertEquals(substanceDTO.get_names(), new LazyFetchedCollection(4, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/names"));
-        assertEquals(substanceDTO.get_codes(), new LazyFetchedCollection(5, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/codes"));
-        assertEquals(substanceDTO.get_references(), new LazyFetchedCollection(7, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/references"));
+        assertEquals(new LazyFetchedCollection(1, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/moieties"), substanceDTO.get_moieties());
+        assertEquals(new LazyFetchedCollection(4, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/names"), substanceDTO.get_names());
+        assertEquals(new LazyFetchedCollection(5, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/codes"), substanceDTO.get_codes());
+        assertEquals(new LazyFetchedCollection(7, "https://ginas.ncats.nih.gov/app/api/v1/substances(00003c75-39d4-4005-9fde-f5eca9abd4f1)/references"), substanceDTO.get_references());
 
         Chemical actualChemical = substanceDTO.getStructure().asChemical().get();
         assertEquals(15, actualChemical.getAtomCount());
