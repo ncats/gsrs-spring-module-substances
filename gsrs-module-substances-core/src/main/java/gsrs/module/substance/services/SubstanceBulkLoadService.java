@@ -87,7 +87,7 @@ public class SubstanceBulkLoadService {
     private static final Logger TransformFailLogger = LoggerFactory.getLogger("transformFail");
     private static final Logger ExtractFailLogger = LoggerFactory.getLogger("extractFail");
 
-    private final static int NUMBER_OF_LOADING_THREADS=1;
+    private static final int NUMBER_OF_LOADING_THREADS=1;
 
     public static Logger getPersistFailureLogger(){
         return PersistFailLogger;
@@ -99,13 +99,12 @@ public class SubstanceBulkLoadService {
 
     private final Object jobLock = new Object();
 
-    private static final String KEY_PROCESS_QUEUE_SIZE = "PROCESS_QUEUE_SIZE";
     //Hack variable for resisting buildup
     //of extracted records not yet transformed
     private static Map<String,Long> queueStatistics = new ConcurrentHashMap<String,Long>();
     private static Map<String,Statistics> jobCacheStatistics = new ConcurrentHashMap<>();
 
-    private static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+    private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
 
@@ -113,23 +112,23 @@ public class SubstanceBulkLoadService {
 
     private SubstanceBulkLoadServiceConfiguration configuration;
 
-    private Map<String, ExecutorService> executorServices = new ConcurrentHashMap<>();
+    private final Map<String, ExecutorService> executorServices = new ConcurrentHashMap<>();
 
-    private ProcessingJobRepository processingJobRepository;
+    private final ProcessingJobRepository processingJobRepository;
 
-    private PlatformTransactionManager transactionManager;
+    private final PlatformTransactionManager transactionManager;
 
-    private ConsoleFilterService consoleFilterService;
+    private final ConsoleFilterService consoleFilterService;
 
     private TaskExecutor taskExecutor;
 
-    private PayloadService payloadService;
+    private final PayloadService payloadService;
 
-    private AdminService adminService;
+    private final AdminService adminService;
 
-    private AuditConfig auditConfig;
+    private final AuditConfig auditConfig;
 
-    private PayloadRepository payloadRepository;
+    private final PayloadRepository payloadRepository;
 
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
@@ -179,10 +178,13 @@ public class SubstanceBulkLoadService {
                                                       String desiredMessage) {
         ProcessingJob job = processingJobRepository.findById(jobId).get();
         if (desiredStatus != null) {
+            log.trace("using supplied status in saveJobInSeparateTransaction");
             job.status = desiredStatus;
         } else if (stats._isDone()) {
+            log.trace("setting status to complete in saveJobInSeparateTransaction");
             job.status = ProcessingJob.Status.COMPLETE;
         } else {
+            log.trace("setting status to running in saveJobInSeparateTransaction");
             job.status = ProcessingJob.Status.RUNNING;
         }
 
@@ -282,6 +284,7 @@ public class SubstanceBulkLoadService {
                     EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
                     return innerJob;
                 });
+                log.trace("first call to saveJobInSeparateTransaction");
                 saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.RUNNING, null);
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
@@ -304,14 +307,13 @@ public class SubstanceBulkLoadService {
                         storeStatisticsForJob(pp.key, stat);
                         log.debug(stat.toString());
                     }catch(IOException e){
-                        e.printStackTrace();
-                        //error figuring out estimate?
+                        log.error("error retrieving payload", e);
+                        saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.FAILED, null);
                     }
-
+                    log.trace("saveJobInSeparateTransaction with no status");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), null, null);
 
                     BulkLoadServiceCallback callback = new BulkLoadServiceCallBackImpl(job);
-                   
 
                         try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
@@ -332,6 +334,7 @@ public class SubstanceBulkLoadService {
                                                 try {
                                                     auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
                                                 }finally{
+                                                    log.trace("saving job after one record because isPreserveOldEditInfo");
                                                     saveJobInSeparateTransaction(pp.jobId, pp.key);
                                                 }
                                             };
@@ -341,6 +344,7 @@ public class SubstanceBulkLoadService {
                                                 try{
                                                     factory.newWorkerFor(prg, configuration, parameters, callback).run();
                                                 }finally{
+                                                    log.trace("saving job after one record because NOT isPreserveOldEditInfo");
                                                     saveJobInSeparateTransaction(pp.jobId, pp.key);
                                                 }
                                             };
@@ -353,6 +357,7 @@ public class SubstanceBulkLoadService {
                                     stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
                                     storeStatisticsForJob(pp.key, stat);
                                     ExtractFailLogger.info("failed to extract record", e);
+                                    log.warn("Error processing record");
                                     // hack to keep iterator going...
                                     record = new Object();
                                 }
@@ -362,6 +367,7 @@ public class SubstanceBulkLoadService {
                             e.printStackTrace();
                             job.status =ProcessingJob.Status.FAILED;
                             job.message = e.getMessage();
+                            log.warn("IOExcepton processing record");
                             saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.FAILED,
                                     e.getMessage());
                             }
@@ -369,10 +375,12 @@ public class SubstanceBulkLoadService {
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
                     executorServices.remove(pp.key);
+                    log.trace("about to save job as COMPLETE");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.COMPLETE, null);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
+                    log.trace("about to save job as Interrupted");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.STOPPED, "Interrupted");
                     e.printStackTrace();
                 }
@@ -380,8 +388,7 @@ public class SubstanceBulkLoadService {
         };
 
        new Thread(r).start();
-
-
+        log.trace("after thread start");
         return pp;
     }
 
