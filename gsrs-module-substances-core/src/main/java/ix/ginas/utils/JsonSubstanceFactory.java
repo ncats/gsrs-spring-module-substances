@@ -1,9 +1,9 @@
 package ix.ginas.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.json.JsonEntityUtil;
 import ix.core.controllers.EntityFactory;
@@ -64,9 +64,11 @@ public class JsonSubstanceFactory {
     public static Substance internalMakeSubstance(JsonNode tree, List<GinasProcessingMessage> messages) {
 
         JsonNode subclass = tree.get("substanceClass");
-        ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
-
-        mapper.addHandler(new GinasV1ProblemHandler(messages));
+        JsonMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER()
+                .getJsonMapper()
+                .rebuild()
+                .addHandler(new GinasV1ProblemHandler(messages))
+                .build();
         Substance sub = null;
         if (subclass != null && !subclass.isNull()) {
 
@@ -127,7 +129,7 @@ public class JsonSubstanceFactory {
                         throw new IllegalStateException(
                                 "JSON parse error: Unimplemented substance class:\"" + subclass.asText() + "\"");
                 }
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 System.err.println(tree.toPrettyString());
                 throw new IllegalStateException("JSON parse error:" + e.getMessage(), e);
@@ -135,7 +137,7 @@ public class JsonSubstanceFactory {
         } else {
             try {
                 return mapper.treeToValue(tree, Substance.class);
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 throw new IllegalStateException("JSON parse error:" + e.getMessage(), e);
 

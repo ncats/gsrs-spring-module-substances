@@ -1,6 +1,6 @@
 package example.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.junit.json.Changes;
 import gsrs.junit.json.ChangesBuilder;
 import gsrs.junit.json.JsonUtil;

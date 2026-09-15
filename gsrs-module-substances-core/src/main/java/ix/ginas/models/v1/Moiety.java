@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
 import ix.core.models.ParentReference;
@@ -15,6 +14,8 @@ import ix.ginas.models.utils.JSONEntity;
 import ix.utils.pojopatch.PojoDiffAware;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;

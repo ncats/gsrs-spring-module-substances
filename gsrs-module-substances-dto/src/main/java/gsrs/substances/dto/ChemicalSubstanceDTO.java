@@ -1,5 +1,6 @@
 package gsrs.substances.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,6 +15,7 @@ public class ChemicalSubstanceDTO extends SubstanceDTO{
     private StructureDTO structure;
 
     @Setter(AccessLevel.NONE)
+    @JsonProperty("_moieties")
     private LazyFetchedCollection _moieties;
 
     public ChemicalSubstanceDTO(){

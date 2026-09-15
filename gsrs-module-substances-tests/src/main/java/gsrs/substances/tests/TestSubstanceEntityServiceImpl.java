@@ -3,7 +3,7 @@ package gsrs.substances.tests;
 import gsrs.module.substance.SubstanceEntityServiceImpl;
 import gsrs.service.GsrsEntityService;
 import ix.ginas.models.v1.Substance;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import jakarta.persistence.EntityManager;
 
 /** Test-only service that guarantees UUIDs exist before persistence. */

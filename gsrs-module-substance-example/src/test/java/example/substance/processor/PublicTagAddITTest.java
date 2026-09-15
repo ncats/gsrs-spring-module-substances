@@ -1,6 +1,6 @@
 package example.substance.processor;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.module.substance.processors.PublicTagFlagger;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.startertests.TestEntityProcessorFactory;

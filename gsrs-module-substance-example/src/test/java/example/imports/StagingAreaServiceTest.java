@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -27,10 +29,12 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
 
     String substanceContext = "ix.ginas.models.v1.Substance";
 
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+
     @BeforeEach
     public void setup() throws NoSuchFieldException, IllegalAccessException {
-        // gsrs.matchableCalculators.substances.list.KEY =
-
 
         if( stagingAreaService == null ){
             log.trace("setting up staging area service");
@@ -64,7 +68,7 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
             uuidExtractor.put("matchableCalculationClass", UUIDMatchableExtractor.class);
             configs.put("UUIDMatchableExtractor", uuidExtractor);
             matchableCalculatorConfig.put("substances",
-               new HashMap<String, Map<String, Map<String, Object>>>(){{ put("list", configs);}}
+               new HashMap<>(){{ put("list", configs);}}
             );
             SubstanceStagingAreaEntityService stagingAreaEntityService = new SubstanceStagingAreaEntityService();
             stagingAreaEntityService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaEntityService);

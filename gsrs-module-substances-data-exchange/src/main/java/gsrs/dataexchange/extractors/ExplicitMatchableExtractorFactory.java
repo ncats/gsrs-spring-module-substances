@@ -1,6 +1,6 @@
 package gsrs.dataexchange.extractors;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;

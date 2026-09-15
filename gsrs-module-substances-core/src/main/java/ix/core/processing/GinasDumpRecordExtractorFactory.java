@@ -1,6 +1,6 @@
 package ix.core.processing;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import ix.core.stats.Estimate;
 

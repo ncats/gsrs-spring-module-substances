@@ -4,7 +4,7 @@ package example.substance;
 // __GETANEH__ please review
 // Alex went with springBoot3x version 
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.events.CreateEditEvent;
 import gsrs.junit.json.ChangeFilter;
 import gsrs.junit.json.Changes;
