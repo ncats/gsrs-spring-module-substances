@@ -38,7 +38,7 @@ public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
 
         if( stagingAreaService == null ){
             log.trace("setting up staging area service");
-            stagingAreaService = new DefaultStagingAreaService(mapper);
+            stagingAreaService = new DefaultStagingAreaService();
             stagingAreaService = AutowireHelper.getInstance().autowireAndProxy(stagingAreaService);
             Map<String, Map<String, Map<String, Map<String, Object>>>> matchableCalculatorConfig = new HashMap<>();
             Map<String, Map<String, Object>> configs = new HashMap<>();

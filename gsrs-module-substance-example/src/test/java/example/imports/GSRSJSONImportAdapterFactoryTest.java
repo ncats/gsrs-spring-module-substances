@@ -41,7 +41,7 @@ public class GSRSJSONImportAdapterFactoryTest extends AbstractSubstanceJpaFullSt
         List<String> resultingSubstanceIds = new ArrayList<>();
 
         final DefaultStagingAreaService<Substance> stagingAreaService =
-                AutowireHelper.getInstance().autowireAndProxy(new DefaultStagingAreaService<>(mapper));
+                AutowireHelper.getInstance().autowireAndProxy(new DefaultStagingAreaService<>());
         final SubstanceStagingAreaEntityService substanceStagingAreaEntityService =
                 AutowireHelper.getInstance().autowireAndProxy(new SubstanceStagingAreaEntityService());
         stagingAreaService.registerEntityService(substanceStagingAreaEntityService);
