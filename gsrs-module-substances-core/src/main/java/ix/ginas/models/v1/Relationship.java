@@ -10,6 +10,8 @@ import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import ix.ginas.models.utils.RelationshipUtil;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 
@@ -50,7 +52,7 @@ public class Relationship extends /*CommonDataElementOfCollection */ GinasCommon
     public Amount amount;
     
     @JSONEntity(title = "Comments")
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     public String comments;
     

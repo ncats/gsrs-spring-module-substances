@@ -14,6 +14,8 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import tools.jackson.databind.annotation.JsonDeserialize;
@@ -122,12 +124,12 @@ public class Name extends CommonDataElementOfCollection {
     @Indexable(name="Name", suggest=true)
     public String name;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     @JsonIgnore
     public String fullName;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     //@JsonView(BeanViews.JsonDiff.class)  commenting this out to make the stdName field easier to see
 	@Indexable(name="Standardized Name", suggest=true)

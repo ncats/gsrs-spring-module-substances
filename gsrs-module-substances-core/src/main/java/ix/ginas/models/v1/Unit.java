@@ -10,6 +10,8 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.serialization.IntArrayDeserializer;
 import ix.ginas.models.serialization.IntArraySerializer;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import tools.jackson.databind.DeserializationFeature;
@@ -46,14 +48,14 @@ public class Unit extends GinasCommonSubData {
     public String label;
     
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     @Indexable(indexed = false)
     public String structure;    //TODO: should be changed to be a structure
     
     public String type;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Column(name="attachmentMap")
     private String _attachmentMap;
     

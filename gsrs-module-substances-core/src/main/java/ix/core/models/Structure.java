@@ -16,6 +16,8 @@ import ix.ginas.models.converters.TrimmedUUIDJavaType;
 import ix.ginas.models.generators.NullUUIDGeneratedValue;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JavaType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -183,12 +185,12 @@ public class Structure extends BaseModel {
     @Column(length = 128)
     public String digest; // digest checksum of the original structure
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String molfile;				
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String smiles;
@@ -246,7 +248,7 @@ public class Structure extends BaseModel {
     @Enumerated(EnumType.ORDINAL)
     public NYU atropisomerism = NYU.No;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     public String stereoComments;
     

@@ -13,6 +13,8 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import tools.jackson.databind.DeserializationFeature;
@@ -41,7 +43,7 @@ public class Protein extends GinasCommonSubData {
 	@Indexable(facet = true, name = "Sequence Type")
 	public String sequenceType;
 
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@JsonIgnore
 	@Indexable(indexed = false)
 	@Column(name="disulf_json")
