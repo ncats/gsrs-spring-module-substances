@@ -5,11 +5,12 @@ import java.util.List;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import tools.jackson.core.type.TypeReference;
 
 import ix.core.util.ModelUtils;
@@ -22,10 +23,10 @@ import tools.jackson.databind.json.JsonMapper;
 @Entity
 @Table(name="ix_ginas_site_lob")
 public class SiteContainer extends GinasCommonSubData{
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@JsonIgnore
 	String sitesShortHand;
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@JsonIgnore
 	@Column(name="sites_json")
 	String sitesJSON;	

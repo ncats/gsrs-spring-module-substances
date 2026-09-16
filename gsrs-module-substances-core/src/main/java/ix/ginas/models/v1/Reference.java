@@ -14,6 +14,8 @@ import ix.ginas.models.serialization.KeywordDeserializer;
 import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import tools.jackson.databind.annotation.JsonDeserialize;
@@ -49,7 +51,7 @@ public class Reference extends GinasCommonData {
 	}
 
 	@JSONEntity(title = "Citation Text", isRequired = true)
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     public String citation;
     
     @JSONEntity(title = "Reference Type", format = JSONConstants.CV_DOCUMENT_TYPE, values = "JSONConstants.ENUM_DOCUMENTTYPE", isRequired = true)
@@ -76,7 +78,7 @@ public class Reference extends GinasCommonData {
     public String id;
     
     @JSONEntity(title = "Reference URL", format = "URI")
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     public String url;
 
