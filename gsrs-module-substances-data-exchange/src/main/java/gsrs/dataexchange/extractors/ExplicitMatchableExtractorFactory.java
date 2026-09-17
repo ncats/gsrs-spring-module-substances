@@ -1,12 +1,12 @@
 package gsrs.dataexchange.extractors;
 
+import gsrs.springUtils.AutowireHelper;
 import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.formula.functions.T;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.lang.reflect.Constructor;
 
@@ -41,6 +41,7 @@ public class ExplicitMatchableExtractorFactory implements MatchableExtractorFact
                     //use default constructor
                     extractor = (MatchableKeyValueTupleExtractor) c.getMatchableCalculationClass().getConstructor().newInstance();
                 }
+                extractor = AutowireHelper.getInstance().autowireAndProxy(extractor);
                 returnExtractor[0] = returnExtractor[0].combine(extractor);
             } catch (Exception e) {
                 log.error("Error instantiating matchable calculator ", e);
