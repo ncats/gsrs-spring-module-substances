@@ -64,6 +64,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     @Autowired
     private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
 
+    @Autowired
+    ExplicitMatchableExtractorFactory explicitMatchableExtractorFactory;
+
     @Override
     public Class<Substance> getEntityClass() {
         return Substance.class;
@@ -158,10 +161,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             log.trace("other type of substance");
         }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
-        ExplicitMatchableExtractorFactory factory = new ExplicitMatchableExtractorFactory();
-        factory.setGsrsFactoryConfiguration(gsrsFactoryConfiguration);
-        factory=AutowireHelper.getInstance().autowireAndProxy(factory);
-        factory.createExtractorFor(Substance.class).extract(substance, allMatchables::add);
+        explicitMatchableExtractorFactory
+                .createExtractorFor(Substance.class)
+                .extract(substance, allMatchables::add);
         return allMatchables;
     }
 

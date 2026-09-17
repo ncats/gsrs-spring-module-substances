@@ -39,9 +39,7 @@ public class DefinitionalHashMatchableExtractor implements MatchableKeyValueTupl
         a daisy-chain of extractors called from a unit test
          */
         try {
-            ConfigBasedDefinitionalElementFactory configBasedDefinitionalElementFactory = new ConfigBasedDefinitionalElementFactory();
-            configBasedDefinitionalElementFactory= AutowireHelper.getInstance().autowireAndProxy(configBasedDefinitionalElementFactory);
-            DefinitionalElements elements =  configBasedDefinitionalElementFactory.computeDefinitionalElementsFor(substance);
+            DefinitionalElements elements =  definitionalElementFactory.computeDefinitionalElementsFor(substance);
             List<String> layerHashes = elements.getDefinitionalHashLayers();
             log.trace(String.format(" %d layers", layerHashes.size()));
             for (int layer = 1; layer <= layerHashes.size(); layer++){
