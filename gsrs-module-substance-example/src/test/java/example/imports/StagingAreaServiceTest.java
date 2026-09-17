@@ -3,6 +3,7 @@ package example.imports;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.extractors.*;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
 import gsrs.stagingarea.service.StagingAreaService;
