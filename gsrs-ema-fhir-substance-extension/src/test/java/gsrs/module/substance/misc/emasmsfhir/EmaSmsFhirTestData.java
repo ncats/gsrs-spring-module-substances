@@ -49,8 +49,8 @@ final class EmaSmsFhirTestData {
 
         Map<String, Map<String, String>> substanceTypeConfigs = new HashMap<>();
         Map<String, String> chemical = new HashMap<>();
-        chemical.put("SMS Term ID", "CHEM-TID");
-        chemical.put("SMS URL", "https://sms/types/chemical");
+        chemical.put("smsTerm", "CHEM-TID");
+        chemical.put("smsUrl", "https://sms/types/chemical");
         substanceTypeConfigs.put("chemical", chemical);
         cfg.setSubstanceTypeConfigs(substanceTypeConfigs);
 

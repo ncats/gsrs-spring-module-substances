@@ -1,5 +1,4 @@
 package gsrs.module.substance.misc.emasmsfhir;
-
 import gsrs.module.substance.SubstanceEntityService;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,8 +6,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.mock.web.MockHttpServletResponse;
 
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -44,14 +46,29 @@ class EmaSmsFhirControllerTest {
         when(substanceEntityService.flexLookup(testSubstanceId))
                 .thenReturn(Optional.of(testSubstance));
 
-        ResponseEntity<?> response = controller.makeSimpleEmaSmsRecord(testSubstanceId);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        try {
+            controller.makeSimpleEmaSmsRecord(testSubstanceId, response);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(HttpStatus.OK.value(), response.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
+        try {
+            assertNotNull(
+                    response.getContentAsString()
+            );
+            assertTrue(
+                    response.getContentAsString().contains("resourceType")
+            );
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
 
-        assertNotNull(response);
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertEquals(MediaType.APPLICATION_JSON, response.getHeaders().getContentType());
-        String responseBody = (String) response.getBody();
-        assertNotNull(responseBody);
-        assertTrue(responseBody.contains("resourceType"));
+// For, Getaneh should this be used?
+//        verify(emaSmsSimpleRecordFhirMapper, times(1))
+//                .generateEmaSmsSimpleRecordFromSubstance(testSubstance);
     }
 
     @Test
@@ -59,14 +76,19 @@ class EmaSmsFhirControllerTest {
     public void testMakeSimpleEmaSmsRecordNotFound() {
         when(substanceEntityService.flexLookup(testSubstanceId))
                 .thenReturn(Optional.empty());
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        ResponseEntity<?> response = controller.makeSimpleEmaSmsRecord(testSubstanceId);
+        try {
+            controller.makeSimpleEmaSmsRecord(testSubstanceId, response);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        assertNotNull(response);
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
-        String responseBody = (String) response.getBody();
-        assertNotNull(responseBody);
-        assertTrue(responseBody.contains("not found"));
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
+
+// For, Getaneh should this be used?
+//        verify(emaSmsSimpleRecordFhirMapper, never())
+//                .generateEmaSmsSimpleRecordFromSubstance(any());
     }
 
     @Test
@@ -75,14 +97,27 @@ class EmaSmsFhirControllerTest {
         when(substanceEntityService.flexLookup(testSubstanceId))
                 .thenThrow(new RuntimeException("Database connection error"));
 
-        ResponseEntity<?> response = controller.makeSimpleEmaSmsRecord(testSubstanceId);
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        assertNotNull(response);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        String responseBody = (String) response.getBody();
-        assertNotNull(responseBody);
-        assertTrue(responseBody.contains("Internal error"));
+        try {
+            controller.makeSimpleEmaSmsRecord(testSubstanceId, response);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
+        try {
+            assertEquals(
+                    "Internal error generating FHIR resource.",
+                    response.getContentAsString()
+            );
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+
     }
+
 
     @Test
     @DisplayName("SubstanceDefinition endpoint returns mapped resource")
@@ -94,12 +129,27 @@ class EmaSmsFhirControllerTest {
         when(emaSmsSubstanceDefinitionFhirMapper.generateEmaSmsSubstanceDefinitionFromSubstance(testSubstance))
                 .thenReturn(substanceDefinition);
 
-        ResponseEntity<?> response = controller.makeEmaSmsSubstanceDefinition(testSubstanceId);
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        String responseBody = (String) response.getBody();
-        assertNotNull(responseBody);
-        assertTrue(responseBody.contains("SubstanceDefinition"));
+        try {
+            controller.makeEmaSmsSubstanceDefinition(testSubstanceId, response);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        assertEquals(HttpStatus.OK.value(), response.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
+        try {
+            assertNotNull(
+                response.getContentAsString()
+            );
+            assertTrue(
+                response.getContentAsString().contains("SubstanceDefinition")
+            );
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
         verify(emaSmsSubstanceDefinitionFhirMapper, times(1))
                 .generateEmaSmsSubstanceDefinitionFromSubstance(testSubstance);
     }
@@ -109,10 +159,16 @@ class EmaSmsFhirControllerTest {
     public void testMakeEmaSmsSubstanceDefinitionNotFound() {
         when(substanceEntityService.flexLookup(testSubstanceId))
                 .thenReturn(Optional.empty());
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        ResponseEntity<?> response = controller.makeEmaSmsSubstanceDefinition(testSubstanceId);
+        try {
+            controller.makeEmaSmsSubstanceDefinition(testSubstanceId, response);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
-        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
+
         verify(emaSmsSubstanceDefinitionFhirMapper, never())
                 .generateEmaSmsSubstanceDefinitionFromSubstance(any());
     }
@@ -125,12 +181,24 @@ class EmaSmsFhirControllerTest {
         when(emaSmsSubstanceDefinitionFhirMapper.generateEmaSmsSubstanceDefinitionFromSubstance(testSubstance))
                 .thenThrow(new IllegalStateException("Mapper error"));
 
-        ResponseEntity<?> response = controller.makeEmaSmsSubstanceDefinition(testSubstanceId);
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-        String responseBody = (String) response.getBody();
-        assertNotNull(responseBody);
-        assertTrue(responseBody.contains("Internal error generating FHIR resource"));
+        try {
+            controller.makeEmaSmsSubstanceDefinition(testSubstanceId, response);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatus());
+        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
+        try {
+            assertEquals(
+                    "Internal error generating FHIR resource.",
+                    response.getContentAsString()
+            );
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test
@@ -139,9 +207,16 @@ class EmaSmsFhirControllerTest {
         when(substanceEntityService.flexLookup(testSubstanceId))
                 .thenReturn(Optional.of(testSubstance));
 
-        controller.makeSimpleEmaSmsRecord(testSubstanceId);
+        MockHttpServletResponse response = new MockHttpServletResponse();
 
-        verify(substanceEntityService, times(1)).flexLookup(testSubstanceId);
+        try {
+            controller.makeSimpleEmaSmsRecord(testSubstanceId, response);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        verify(substanceEntityService, times(1))
+        .flexLookup(testSubstanceId);
     }
 }
 
