@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -61,12 +62,15 @@ public class EmaSmsFhirController {
             if (!gsrsSubstance.isPresent()) {
                 response.setStatus(HttpStatus.NOT_FOUND.value());
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.getWriter().write("{\"message\": \"Substance entity for FHIR resource not found\"}");
                 return;
             }
             FhirContext ctx = FhirContext.forR5();
             EmaSmsSimpleRecord emaSmsSimpleRecord = emaSmsSimpleRecordFhirMapper.generateEmaSmsSimpleRecordFromSubstance(gsrsSubstance.get());
             jsonEncoded = ctx.newJsonParser().setPrettyPrint(prettyJson).encodeResourceToString(emaSmsSimpleRecord);
+            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.setStatus(HttpStatus.OK.value());
             response.getWriter().write(jsonEncoded);
             return;
@@ -76,6 +80,7 @@ public class EmaSmsFhirController {
             log.trace("{} {}", message, Arrays.toString(e.getStackTrace()));
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.getWriter().write(message);
         }
     }
@@ -92,7 +97,7 @@ public class EmaSmsFhirController {
             if (!gsrsSubstance.isPresent()) {
                 response.setStatus(HttpStatus.NOT_FOUND.value());
                 response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-//                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
                 response.getWriter().write("{\"message\": \"Substance entity for FHIR resource not found\"}");
                 return;
             }
@@ -101,7 +106,7 @@ public class EmaSmsFhirController {
             jsonEncoded = ctx.newJsonParser().setPrettyPrint(prettyJson).encodeResourceToString(substanceDefinition);
             response.setStatus(HttpStatus.OK.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-//            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.getWriter().write(jsonEncoded);
             return;
         } catch (Exception e) {
@@ -110,6 +115,7 @@ public class EmaSmsFhirController {
             log.trace("{} {}", message, Arrays.toString(e.getStackTrace()));
             response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.getWriter().write(message);
         }
     }

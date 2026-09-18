@@ -22,7 +22,7 @@ class EmaSmsFhirControllerTest {
     private SubstanceEntityService substanceEntityService;
     private EmaSmsFhirController controller;
     private EmaSmsSubstanceDefinitionFhirMapper emaSmsSubstanceDefinitionFhirMapper;
-
+    private EmaSmsSimpleRecordFhirMapper emaSmsSimpleRecordFhirMapper;
     private Substance testSubstance;
     private String testSubstanceId;
 
@@ -30,11 +30,12 @@ class EmaSmsFhirControllerTest {
     public void setUp() {
         substanceEntityService = mock(SubstanceEntityService.class);
         emaSmsSubstanceDefinitionFhirMapper = mock(EmaSmsSubstanceDefinitionFhirMapper.class);
+        emaSmsSimpleRecordFhirMapper = mock(EmaSmsSimpleRecordFhirMapper.class);
+
         controller = new EmaSmsFhirController();
         EmaSmsFhirTestData.setField(controller, "substanceEntityService", substanceEntityService);
-        EmaSmsFhirTestData.setField(controller, "emaSmsSimpleRecordFhirMapper", new EmaSmsSimpleRecordFhirMapper());
+        EmaSmsFhirTestData.setField(controller, "emaSmsSimpleRecordFhirMapper", emaSmsSimpleRecordFhirMapper);
         EmaSmsFhirTestData.setField(controller, "emaSmsSubstanceDefinitionFhirMapper", emaSmsSubstanceDefinitionFhirMapper);
-
         testSubstanceId = "306d24b9-a6b8-4091-8024-02f9ec24b705";
         testSubstance = EmaSmsFhirTestData.chemicalSubstanceWithDisplayName("Sodium Chloride");
         testSubstance.setUuid(UUID.fromString(testSubstanceId));
@@ -46,6 +47,12 @@ class EmaSmsFhirControllerTest {
         when(substanceEntityService.flexLookup(testSubstanceId))
                 .thenReturn(Optional.of(testSubstance));
 
+        EmaSmsSimpleRecord simpleRecord = new EmaSmsSimpleRecord();
+        simpleRecord.setId("example");
+
+        when(emaSmsSimpleRecordFhirMapper.generateEmaSmsSimpleRecordFromSubstance(testSubstance))
+                .thenReturn(simpleRecord);
+
         MockHttpServletResponse response = new MockHttpServletResponse();
         try {
             controller.makeSimpleEmaSmsRecord(testSubstanceId, response);
@@ -53,7 +60,10 @@ class EmaSmsFhirControllerTest {
             throw new RuntimeException(e);
         }
         assertEquals(HttpStatus.OK.value(), response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(
+                new MediaType("application", "json", StandardCharsets.UTF_8),
+                MediaType.parseMediaType(response.getContentType())
+        );
         assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
         try {
             assertNotNull(
@@ -66,10 +76,12 @@ class EmaSmsFhirControllerTest {
             throw new RuntimeException(e);
         }
 
-// For, Getaneh should this be used?
-//        verify(emaSmsSimpleRecordFhirMapper, times(1))
-//                .generateEmaSmsSimpleRecordFromSubstance(testSubstance);
+        verify(substanceEntityService, times(1)).flexLookup(testSubstanceId);
+
+        verify(emaSmsSimpleRecordFhirMapper, times(1))
+                .generateEmaSmsSimpleRecordFromSubstance(testSubstance);
     }
+
 
     @Test
     @DisplayName("Simple record endpoint returns 404 when not found")
@@ -83,12 +95,26 @@ class EmaSmsFhirControllerTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-
         assertEquals(HttpStatus.NOT_FOUND.value(), response.getStatus());
+        assertEquals(
+                new MediaType("application", "json", StandardCharsets.UTF_8),
+                MediaType.parseMediaType(response.getContentType())
+        );
+        assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
+        try {
+            assertNotNull(
+                    response.getContentAsString()
+            );
+            assertTrue(
+                    response.getContentAsString().contains("not found")
+            );
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
+        }
+        verify(substanceEntityService, times(1)).flexLookup(testSubstanceId);
 
-// For, Getaneh should this be used?
-//        verify(emaSmsSimpleRecordFhirMapper, never())
-//                .generateEmaSmsSimpleRecordFromSubstance(any());
+        verify(emaSmsSimpleRecordFhirMapper, never())
+                .generateEmaSmsSimpleRecordFromSubstance(any());
     }
 
     @Test
@@ -105,7 +131,10 @@ class EmaSmsFhirControllerTest {
             throw new RuntimeException(e);
         }
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(
+                new MediaType("application", "json", StandardCharsets.UTF_8),
+                MediaType.parseMediaType(response.getContentType())
+        );
         assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
         try {
             assertEquals(
@@ -138,7 +167,10 @@ class EmaSmsFhirControllerTest {
         }
 
         assertEquals(HttpStatus.OK.value(), response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(
+                new MediaType("application", "json", StandardCharsets.UTF_8),
+                MediaType.parseMediaType(response.getContentType())
+        );
         assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
         try {
             assertNotNull(
@@ -189,7 +221,10 @@ class EmaSmsFhirControllerTest {
             throw new RuntimeException(e);
         }
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), response.getStatus());
-        assertEquals(MediaType.APPLICATION_JSON_VALUE, response.getContentType());
+        assertEquals(
+                new MediaType("application", "json", StandardCharsets.UTF_8),
+                MediaType.parseMediaType(response.getContentType())
+        );
         assertEquals(StandardCharsets.UTF_8.name(), response.getCharacterEncoding());
         try {
             assertEquals(
