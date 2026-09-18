@@ -1,12 +1,13 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
+import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.processing.*;
 import ix.ginas.utils.validation.ValidatorFactory;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,6 +31,15 @@ public class SubstanceBulkLoadServiceConfiguration {
 
     private GinasSubstancePersisterFactory persister=  new GinasSubstancePersisterFactory();
 
+    private final GsrsJsonMapper mapper;
+
+    private final ValidatorFactory fakeValidatorFactory;
+    public SubstanceBulkLoadServiceConfiguration(
+            @Qualifier("gsrsJsonMapper") GsrsJsonMapper mapper) {
+        this.mapper = mapper;
+        this.fakeValidatorFactory = new FakeValidatorFactory(mapper);
+    }
+
     private CachedSupplier.CachedThrowingSupplier<PersistRecordWorkerFactory> persistRecordWorkerFactoryCachedSupplier = CachedSupplier.ofThrowing(()->{
         return AutowireHelper.getInstance().autowireAndProxy((PersistRecordWorkerFactory) Class.forName(persistRecordWorkerFactoryImpl).newInstance());
     });
@@ -52,19 +62,11 @@ public class SubstanceBulkLoadServiceConfiguration {
      public GinasSubstanceTransformerFactory getRecordTransformFactory(){
          //TODO move this validate check to entity service ?
          return GinasSubstanceTransformerFactory.INSTANCE;
-//         if(validate){
-//             return new GinasSubstanceTransformerFactory(validatorFactory.newFactory(SubstanceEntityServiceImpl.CONTEXT));
-//         }
-//         //no validation make a fake one
-//         return new GinasSubstanceTransformerFactory(FakeValidatorFactory.INSTANCE);
      }
 
-     private static class FakeValidatorFactory extends ValidatorFactory{
-         public static ValidatorFactory INSTANCE = new FakeValidatorFactory();
-        private static ObjectMapper MAPPER = new ObjectMapper();
-
-         public FakeValidatorFactory() {
-             super(Collections.emptyList(), MAPPER);
-         }
-     }
+    private static class FakeValidatorFactory extends ValidatorFactory {
+        FakeValidatorFactory(GsrsJsonMapper mapper) {
+            super(Collections.emptyList(), mapper);
+        }
+    }
 }

@@ -1,8 +1,8 @@
 package example.substance.support;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 public final class TestJsonSanitizer {
 
@@ -26,7 +26,7 @@ public final class TestJsonSanitizer {
             objectNode.remove("createdBy");
             objectNode.remove("lastEditedBy");
             objectNode.remove("approvedBy");
-            objectNode.fields().forEachRemaining(entry -> removeAccessRecursively(entry.getValue()));
+            objectNode.properties().forEach(entry -> removeAccessRecursively(entry.getValue()));
             return;
         }
         if (node.isArray()) {

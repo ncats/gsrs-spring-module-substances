@@ -24,6 +24,7 @@ import gsrs.scheduledTasks.SchedulerPlugin;
 import gsrs.scheduledTasks.SchedulerPlugin.TaskListener;
 import gsrs.springUtils.StaticContextAccessor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -35,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class SQLReportScheduledTaskInitializer
         extends ScheduledTaskInitializer {
 

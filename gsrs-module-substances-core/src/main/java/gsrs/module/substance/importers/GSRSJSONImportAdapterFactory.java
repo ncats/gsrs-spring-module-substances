@@ -1,6 +1,6 @@
 package gsrs.module.substance.importers;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.imports.ImportAdapter;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
 import gsrs.springUtils.AutowireHelper;

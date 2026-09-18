@@ -9,6 +9,7 @@ import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 @WithMockUser(username = "admin", roles="Admin")
 @Slf4j
+@Tag("fullstack")
 public class SubstanceRepoRetrieveTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired

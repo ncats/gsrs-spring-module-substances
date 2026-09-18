@@ -7,12 +7,14 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Created by katzelda on 5/14/18.
  */
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class PrimaryDefinitionValidator extends AbstractValidatorPlugin<Substance> {
 
     @Autowired

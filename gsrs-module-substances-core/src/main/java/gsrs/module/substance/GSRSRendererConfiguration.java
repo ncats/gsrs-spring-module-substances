@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class GSRSRendererConfiguration {
-	
+
 	private String selected;
 	
 	private LinkedHashMap<Integer,Map> list;

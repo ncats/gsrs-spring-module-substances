@@ -1,5 +1,13 @@
 # Example GSRS Substance microservice
 
+## Test profile note
+
+For team test-running standards and the temporary `quarantine-hibernate-id` profile guidance,
+see the root repository documentation in `README.md` under:
+
+- `Running tests (team standard)`
+- `Temporary Hibernate 6 test quarantine (opt-in)`
+
 ## How to run with Load file
 
 If you have a .gsrs file you can load it on start up like this:

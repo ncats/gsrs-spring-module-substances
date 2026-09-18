@@ -1,6 +1,5 @@
 package ix.ginas.utils.validation.validators;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gov.nih.ncats.common.Tuple;
 import gsrs.services.CommonPrivileges;
 import gsrs.services.PrivilegeService;
@@ -35,13 +34,13 @@ public class RelationshipModificationValidator extends AbstractValidatorPlugin<S
 
 		if(!privilegeService.canDo(CommonPrivileges.MODIFY_RELATIONSHIPS)){
 			Map<UUID, Relationship> oldRelationships = Optional.ofNullable(objold.relationships)
-					.map(r->r.stream())
+					.map(Collection::stream)
 					.orElse(Stream.empty())
 					.collect(Collectors.toMap(r->r.uuid, r->r));
 
 			//keep only old relationships
 			Optional.ofNullable(s.relationships)
-					.map(r->r.stream())
+					.map(Collection::stream)
 					.orElse(Stream.empty())
 					.map(r-> Tuple.of(r, oldRelationships.get(r.uuid)))
 					.filter(t->t.v()!=null)
@@ -71,7 +70,7 @@ public class RelationshipModificationValidator extends AbstractValidatorPlugin<S
 
 			//Return false if they are the same (looking for change)
 			return !r1.getDefinitionalHash().equals(r2temp.getDefinitionalHash());
-		} catch (JsonProcessingException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return true;
 		}

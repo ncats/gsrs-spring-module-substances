@@ -16,9 +16,11 @@ import ix.core.processing.RecordExtractorFactory;
 import ix.core.processing.RecordPersister;
 import ix.core.processing.RecordPersisterFactory;
 import ix.core.stats.Statistics;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedBy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.IOException;
 import java.util.*;
 
@@ -71,11 +73,11 @@ public class ProcessingJob extends LongBaseModel {
     @Column(name="job_stop")
     public Long stop;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     public String message;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     @JsonView(BeanViews.Private.class)
     public String statistics;

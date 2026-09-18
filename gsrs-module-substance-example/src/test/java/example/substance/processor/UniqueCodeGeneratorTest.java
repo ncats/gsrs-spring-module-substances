@@ -1,9 +1,7 @@
 package example.substance.processor;
 
 import gov.nih.ncats.common.sneak.Sneak;
-import gsrs.cv.ControlledVocabularyEntityService;
-import gsrs.cv.ControlledVocabularyEntityServiceImpl;
-import gsrs.cv.CvApiAdapter;
+import gsrs.cv.api.AbstractGsrsControlledVocabularyDTO;
 import gsrs.cv.api.CodeSystemTermDTO;
 import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsCodeSystemControlledVocabularyDTO;
@@ -12,9 +10,6 @@ import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.EntityProcessor;
 import ix.core.models.Group;
-import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
-import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
-import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.ProteinSubstance;
@@ -27,10 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -51,13 +44,49 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
     static class TestConfig {
 
         @Bean
-        public ControlledVocabularyEntityService controlledVocabularyEntityService() {
-            return new ControlledVocabularyEntityServiceImpl();
+        public ControlledVocabularyApi controlledVocabularyApi() {
+            return new InMemoryControlledVocabularyApi();
+        }
+    }
+
+    private static class InMemoryControlledVocabularyApi implements ControlledVocabularyApi {
+        private final Map<String, AbstractGsrsControlledVocabularyDTO> vocabulariesByDomain = new HashMap<>();
+
+        @Override
+        public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByDomain(String domain) {
+            return Optional.ofNullable((T) vocabulariesByDomain.get(domain));
         }
 
-        @Bean
-        public ControlledVocabularyApi controlledVocabularyApi(@Autowired ControlledVocabularyEntityService service) {
-            return new CvApiAdapter(service);
+        @Override
+        public long count() {
+            return vocabulariesByDomain.size();
+        }
+
+        @Override
+        public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findByResolvedId(String anyKindOfId) {
+            return Optional.empty();
+        }
+
+        @Override
+        public <T extends AbstractGsrsControlledVocabularyDTO> Optional<T> findById(Long id) {
+            return Optional.empty();
+        }
+
+        @Override
+        public boolean existsById(Long id) {
+            return false;
+        }
+
+        @Override
+        public <T extends AbstractGsrsControlledVocabularyDTO> T create(T dto) {
+            vocabulariesByDomain.put(dto.getDomain(), dto);
+            return dto;
+        }
+
+        @Override
+        public <T extends AbstractGsrsControlledVocabularyDTO> T update(T dto) {
+            vocabulariesByDomain.put(dto.getDomain(), dto);
+            return dto;
         }
     }
 
@@ -102,7 +131,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         String codeSystem = "Codes R Us";
         Long max = Long.MAX_VALUE;
         CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        ProteinSubstance substance = newProteinSubstance();
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
@@ -113,13 +142,13 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
     @Test
     public void testSeqGenNoSuffix() {
         String seqGenName = "not used";
-        int length = String.valueOf(Long.MAX_VALUE).length()+0;
+        int length = String.valueOf(Long.MAX_VALUE).length();
         String suffix = "";
         boolean padding = true;
         String codeSystem = "Codes R Us";
         Long max = Long.MAX_VALUE;
         CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        ProteinSubstance substance = newProteinSubstance();
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
@@ -134,7 +163,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         String codeSystem = "";
         Long max = Long.MAX_VALUE;
         CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        ProteinSubstance substance = newProteinSubstance();
         AutowireHelper.getInstance().autowire(codeGenerator);
         codeGenerator.addCode(substance);
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
@@ -151,9 +180,10 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             String codeSystem = "Codes R Us1";
             Long max = 1L;
             CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
-            ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+            ProteinSubstance substance = newProteinSubstance();
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
+            assert substance != null;
             Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
         }
         {
@@ -165,9 +195,10 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             String codeSystem = "Codes R Us1";
             Long max = 1L;
             CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
-            ChemicalSubstance substance = getAnotherSubstanceFromFile("660YQ98I10");
+            ChemicalSubstance substance = newChemicalSubstance();
             AutowireHelper.getInstance().autowire(codeGenerator);
             codeGenerator.addCode(substance);
+            assert substance != null;
             Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystem)));
         }
     }
@@ -181,11 +212,10 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         Long max = null;
         String codeSystem = "Codes R Us";
         CodeSequentialGenerator codeGenerator = new CodeSequentialGenerator(seqGenName, length, suffix, padding, max, codeSystem, null);
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
         AutowireHelper.getInstance().autowire(codeGenerator);
-        assertEquals(codeGenerator.getMax(), (Long) Long.MAX_VALUE);
+        Assertions.assertEquals(codeGenerator.getMax(), (Long) Long.MAX_VALUE);
 
-        assertEquals(codeGenerator.getLen(),String.valueOf(codeGenerator.getMax()).length()+codeGenerator.getSuffix().length());
+        Assertions.assertEquals(codeGenerator.getLen(), String.valueOf(codeGenerator.getMax()).length()+codeGenerator.getSuffix().length());
     }
 
     // ==== B
@@ -211,7 +241,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
             } catch (EntityProcessor.FailProcessingException e) {
                 Sneak.sneakyThrow(e);
             }
-            ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+            ProteinSubstance substance = newProteinSubstance();
                     uniqueCodeGenerator.generateCodeIfNecessary(substance);
                     try {
                         Optional<GsrsCodeSystemControlledVocabularyDTO> cvOpt = controlledVocabularyApi.findByDomain(CV_DOMAIN);
@@ -238,7 +268,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
 
         //verify that a call to the constructor of the class results in a new term added to the CV
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        ProteinSubstance substance = newProteinSubstance();
         uniqueCodeGenerator.prePersist(substance);
         Assertions.assertTrue(substance.codes.stream().anyMatch(c -> c.codeSystem.equals(codeSystemName)));
     }
@@ -254,7 +284,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         instantiationMap.put("max", Long.MAX_VALUE);
         UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        ProteinSubstance substance = newProteinSubstance();
         uniqueCodeGenerator.prePersist(substance);
         Assertions.assertTrue(substance.codes.stream().filter(c -> c.codeSystem.equals(codeSystemName)).findFirst().get().isPublic());
     }
@@ -274,9 +304,9 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         instantiationMap.put("groups", groupsMap);
         UniqueCodeGenerator uniqueCodeGenerator = new UniqueCodeGenerator(instantiationMap);
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        ProteinSubstance substance = newProteinSubstance();
         uniqueCodeGenerator.prePersist(substance);
-        assertEquals(new HashSet<Group>(Arrays.asList(new Group("protected"), new Group("admin"))),
+        assertEquals(new HashSet<>(Arrays.asList(new Group("protected"), new Group("admin"))),
             substance.codes.stream().filter(c -> c.codeSystem.equals(codeSystemName)).findFirst().get().getAccess());
     }
 
@@ -293,7 +323,7 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         AutowireHelper.getInstance().autowire(uniqueCodeGenerator);
 
         //verify that a call to the constructor of the class results in a new term added to the CV
-        ProteinSubstance substance = getSubstanceFromFile("YYD6UT8T47");
+        ProteinSubstance substance = newProteinSubstance();
         //manually create a code
         Code newCode = new Code();
         newCode.codeSystem= codeSystemName;
@@ -308,26 +338,12 @@ public class UniqueCodeGeneratorTest extends AbstractSubstanceJpaEntityTest {
         Assertions.assertEquals(totalBefore, totalAfter);
     }
 
-    private ProteinSubstance getSubstanceFromFile(String name) {
-        try {
-            File proteinFile = new ClassPathResource("testJSON/" + name + ".json").getFile();
-            ProteinSubstanceBuilder builder = SubstanceBuilder.from(proteinFile);
-            return builder.build();
-        } catch (IOException ex) {
-            log.error("Error retrieving substance from file", ex);
-        }
-        return null;
+    private ProteinSubstance newProteinSubstance() {
+        return new ProteinSubstance();
     }
 
-    private ChemicalSubstance getAnotherSubstanceFromFile(String name) {
-        try {
-            File chemicalFile = new ClassPathResource("testJSON/" + name + ".json").getFile();
-            ChemicalSubstanceBuilder builder = SubstanceBuilder.from(chemicalFile);
-            return builder.build();
-        } catch (IOException ex) {
-            log.error("Error retrieving substance from file", ex);
-        }
-        return null;
+    private ChemicalSubstance newChemicalSubstance() {
+        return new ChemicalSubstance();
     }
 
 }

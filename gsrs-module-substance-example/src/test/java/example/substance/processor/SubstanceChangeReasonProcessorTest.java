@@ -9,22 +9,24 @@ import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.UUID;
 
 import static org.junit.Assert.assertEquals;
 
+@Tag("fullstack")
 public class SubstanceChangeReasonProcessorTest extends AbstractSubstanceJpaEntityTest {
 
     @Autowired
     private TestEntityProcessorFactory entityProcessorFactory;
 
-    @MockBean
+    @MockitoBean
     private RelationshipProcessor relationshipProcessor;
 
     @Autowired
