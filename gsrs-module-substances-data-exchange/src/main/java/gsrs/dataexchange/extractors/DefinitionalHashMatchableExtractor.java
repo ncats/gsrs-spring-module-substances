@@ -5,9 +5,7 @@ import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.model.MatchableKeyValueTupleExtractor;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
-import gsrs.module.substance.services.ConfigBasedDefinitionalElementFactory;
 import gsrs.module.substance.services.DefinitionalElementFactory;
-import gsrs.springUtils.AutowireHelper;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,9 +37,7 @@ public class DefinitionalHashMatchableExtractor implements MatchableKeyValueTupl
         a daisy-chain of extractors called from a unit test
          */
         try {
-            ConfigBasedDefinitionalElementFactory configBasedDefinitionalElementFactory = new ConfigBasedDefinitionalElementFactory();
-            configBasedDefinitionalElementFactory= AutowireHelper.getInstance().autowireAndProxy(configBasedDefinitionalElementFactory);
-            DefinitionalElements elements =  configBasedDefinitionalElementFactory.computeDefinitionalElementsFor(substance);
+            DefinitionalElements elements =  definitionalElementFactory.computeDefinitionalElementsFor(substance);
             List<String> layerHashes = elements.getDefinitionalHashLayers();
             log.trace(String.format(" %d layers", layerHashes.size()));
             for (int layer = 1; layer <= layerHashes.size(); layer++){

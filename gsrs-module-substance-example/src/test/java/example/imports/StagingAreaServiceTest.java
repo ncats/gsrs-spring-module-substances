@@ -3,10 +3,13 @@ package example.imports;
 import gsrs.GsrsFactoryConfiguration;
 import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.dataexchange.extractors.*;
+import gsrs.springUtils.AutowireHelper;
 import gsrs.stagingarea.model.MatchableKeyValueTuple;
 import gsrs.stagingarea.service.DefaultStagingAreaService;
 import gsrs.stagingarea.service.StagingAreaService;
-import gsrs.springUtils.AutowireHelper;
+import gsrs.dataexchange.autoconfigure.SubstanceDataExchangeAutoConfiguration;
+import org.springframework.context.annotation.Import;
+
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
@@ -22,6 +25,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 
+@Import(SubstanceDataExchangeAutoConfiguration.class)
 @Slf4j
 public class StagingAreaServiceTest extends AbstractSubstanceJpaEntityTest {
 
