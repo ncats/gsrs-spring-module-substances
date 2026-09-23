@@ -1,6 +1,5 @@
 package gsrs.module.substance.exporters;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
 import ix.core.controllers.EntityFactory;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.Substance;
@@ -18,7 +17,7 @@ public class JsonExporter implements Exporter<Substance> {
     private final BufferedWriter out;
 
     private static final String LEADING_HEADER= "\t\t";
-    private final ObjectWriter writer =  EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
+    private final EntityFactory.EntityMapper.EntityWriter writer =  EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
 
     public JsonExporter(OutputStream out) throws IOException{
         Objects.requireNonNull(out);

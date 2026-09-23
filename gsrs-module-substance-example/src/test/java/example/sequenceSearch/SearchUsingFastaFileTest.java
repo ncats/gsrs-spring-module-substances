@@ -8,6 +8,7 @@ import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.NucleicAcidSubstanceBuilder;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Substance;
 import ix.seqaln.SequenceIndexer;
 import ix.seqaln.service.SequenceIndexerService;
 import org.junit.jupiter.api.Test;
@@ -49,7 +50,6 @@ public class SearchUsingFastaFileTest extends AbstractSubstanceJpaFullStackEntit
     }
 
     private void testSequenceFileIsSearchable(String sequence, boolean nucleicAcid) {
-        UUID uuid = UUID.randomUUID();
         TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         UUID payloadId = transactionTemplate.execute(s -> {
@@ -63,7 +63,7 @@ public class SearchUsingFastaFileTest extends AbstractSubstanceJpaFullStackEntit
                 return Sneak.sneakyThrow(t);
             }
         });
-        transactionTemplate.executeWithoutResult(ignored ->{
+        UUID substanceId = transactionTemplate.execute(ignored ->{
             try{
         Reference ref = new Reference();
 
@@ -72,14 +72,14 @@ public class SearchUsingFastaFileTest extends AbstractSubstanceJpaFullStackEntit
         ref.uploadedFile = "http://localhost/api/v1/payload("+payloadId +")";
         AbstractSubstanceBuilder<?,?> builder = nucleicAcid ? new NucleicAcidSubstanceBuilder() : new ProteinSubstanceBuilder();
 
-                    builder
-                    .setUUID(uuid)
+                    Substance created = assertCreatedAPI(builder
                     .addName("mySubstance")
                     .addReference(ref)
-                    .buildJsonAnd(this::assertCreatedAPI);
+                    .buildJson());
+                    return created.getUuid();
 
         }catch (Throwable e){
-            Sneak.sneakyThrow(e);
+            return Sneak.sneakyThrow(e);
         }
             });
         transactionTemplate.executeWithoutResult( ignore -> {
@@ -87,7 +87,7 @@ public class SearchUsingFastaFileTest extends AbstractSubstanceJpaFullStackEntit
 
             assertTrue(results.hasMoreElements());
             SequenceIndexer.Result result = results.nextElement();
-            assertEquals(">" + uuid + "|myFile.fasta|seq1", result.id);
+            assertEquals(">" + substanceId + "|myFile.fasta|seq1", result.id);
             assertEquals(1.0, result.alignments.get(0).iden);
             assertEquals(sequence, result.alignments.get(0).query);
             assertFalse(results.hasMoreElements());

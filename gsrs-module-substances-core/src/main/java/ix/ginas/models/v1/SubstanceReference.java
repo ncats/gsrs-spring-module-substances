@@ -10,7 +10,7 @@ import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.SubstanceReferenceEntityListener;
 import ix.ginas.models.utils.JSONEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 @Entity
@@ -81,8 +81,8 @@ public class SubstanceReference extends GinasCommonSubData {
         ref.refPname =this.refPname;
         ref.approvalID = this.approvalID;
         ref.substanceClass = this.substanceClass;
-        //this should be null anyway but make it explicit.
-        ref.uuid = null;
+        // Generate a new UUID so Hibernate 6 assigned-ID strategy does not fail on persist.
+        ref.uuid = UUID.randomUUID();
         return ref;
     }
 

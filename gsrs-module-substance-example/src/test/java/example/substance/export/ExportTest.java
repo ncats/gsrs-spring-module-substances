@@ -13,6 +13,7 @@ import ix.ginas.exporters.ExportProcess;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.models.v1.Substance;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Tag("fullstack")
 @Import(AutowireHelper.class)
 public class ExportTest extends AbstractSubstanceJpaFullStackEntityTest {
 

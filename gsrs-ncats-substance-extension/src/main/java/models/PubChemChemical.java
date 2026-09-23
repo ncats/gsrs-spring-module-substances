@@ -3,12 +3,14 @@ package models;
 import gsrs.model.AbstractGsrsEntity;
 import ix.core.models.IndexableRoot;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @IndexableRoot
 //@Backup
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Entity
 @Table(name="PUBCHEM_CHEMICAL")
 public class PubChemChemical extends AbstractGsrsEntity {

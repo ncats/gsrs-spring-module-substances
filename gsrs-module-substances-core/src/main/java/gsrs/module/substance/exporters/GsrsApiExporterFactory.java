@@ -1,9 +1,9 @@
 package gsrs.module.substance.exporters;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import gsrs.repository.UserProfileRepository;
 import gsrs.services.CommonPrivileges;
@@ -30,6 +30,7 @@ import javax.net.ssl.X509TrustManager;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
+
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 
@@ -160,7 +161,9 @@ public class GsrsApiExporterFactory implements ExporterFactory<Substance> {
             } catch (Exception ex) {
             }
         }
-        ClientHttpRequestFactory clientFactory = new HttpComponentsClientHttpRequestFactory(client.build());
+        ClientHttpRequestFactory clientFactory = new HttpComponentsClientHttpRequestFactory();
+
+//        ClientHttpRequestFactory clientFactory = new HttpComponentsClientHttpRequestFactory(client.build());
         RestTemplate restTemplate = new RestTemplate(clientFactory);
         restTemplate.setUriTemplateHandler(new DefaultUriBuilderFactory(baseUrl));
         UserProfile profile = userProfileRepository.findByUser_UsernameIgnoreCase(params.getUsername());

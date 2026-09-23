@@ -1,8 +1,6 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.SingleParent;
 import ix.core.models.Indexable;
 import ix.core.models.IndexableRoot;
@@ -16,8 +14,13 @@ import ix.ginas.models.serialization.KeywordDeserializer;
 import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -48,7 +51,7 @@ public class Reference extends GinasCommonData {
 	}
 
 	@JSONEntity(title = "Citation Text", isRequired = true)
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     public String citation;
     
     @JSONEntity(title = "Reference Type", format = JSONConstants.CV_DOCUMENT_TYPE, values = "JSONConstants.ENUM_DOCUMENTTYPE", isRequired = true)
@@ -75,7 +78,7 @@ public class Reference extends GinasCommonData {
     public String id;
     
     @JSONEntity(title = "Reference URL", format = "URI")
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     public String url;
 

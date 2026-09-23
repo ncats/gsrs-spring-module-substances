@@ -1,7 +1,7 @@
 package gsrs.dataexchange;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.GsrsFactoryConfiguration;
@@ -28,12 +28,15 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.ginas.utils.validation.ValidatorFactory;
+import ix.ginas.utils.validation.strategy.AbstractProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.validators.DefinitionalDependencyValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -58,10 +61,18 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
+    @Autowired
+    private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
+
+    @Autowired
+    ExplicitMatchableExtractorFactory explicitMatchableExtractorFactory;
+
     @Override
     public Class<Substance> getEntityClass() {
         return Substance.class;
     }
+
+    private final static String PROCESS_STRATEGY = "ACCEPT_APPLY_ALL";
 
     @Override
     public Substance parse(JsonNode json) {
@@ -117,8 +128,14 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             substance.uuid=originalUuid;
             log.trace("adding messages from DefinitionalDependencyValidator");
             boolean finalIgnoreMessageAboutUuid = ignoreMessageAboutUuid;
+            GsrsProcessingStrategy strategy= gsrsProcessingStrategyFactory.createNewStrategy(PROCESS_STRATEGY);
             response.getValidationMessages().forEach(m->{
+
                 if(!(finalIgnoreMessageAboutUuid && m.getMessage().startsWith("Substance has no UUID, will generate uuid"))){
+                    if( strategy instanceof AbstractProcessingStrategy abstractProcessingStrategy
+                            && m instanceof GinasProcessingMessage processingMessage) {
+                            abstractProcessingStrategy.overrideMessage(processingMessage);
+                    }
                     response2.addValidationMessage(m);
                 }
             });
@@ -144,10 +161,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             log.trace("other type of substance");
         }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
-        ExplicitMatchableExtractorFactory factory = new ExplicitMatchableExtractorFactory();
-        factory.setGsrsFactoryConfiguration(gsrsFactoryConfiguration);
-        factory=AutowireHelper.getInstance().autowireAndProxy(factory);
-        factory.createExtractorFor(Substance.class).extract(substance, allMatchables::add);
+        explicitMatchableExtractorFactory
+                .createExtractorFor(Substance.class)
+                .extract(substance, allMatchables::add);
         return allMatchables;
     }
 

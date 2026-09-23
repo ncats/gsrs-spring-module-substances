@@ -1,7 +1,7 @@
 package example.exports.expanders;
 
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.expanders.basic.BasicRecordExpander;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
@@ -19,6 +19,7 @@ import ix.ginas.utils.validation.validators.ChemicalValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,6 +38,7 @@ import java.util.stream.Stream;
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Tag("fullstack")
 public class BasicSubstanceExpanderTest extends AbstractSubstanceJpaFullStackEntityTest {
     private String fileName = "rep18+12.tsv";
 

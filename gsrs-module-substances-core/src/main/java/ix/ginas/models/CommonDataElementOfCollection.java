@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import ix.core.SingleParent;
 import ix.ginas.models.v1.Substance;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 /**
  * This abstract class is meant as a convenience tool to allow ownership for 
