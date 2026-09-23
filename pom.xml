@@ -41,12 +41,6 @@
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>ca.uhn.hapi.fhir</groupId>
-            <artifactId>org.hl7.fhir.r5</artifactId>
-            <version>6.6.7</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
 
     <parent>
@@ -76,7 +70,7 @@
         <log4j2.version>2.22.1</log4j2.version>
         <lombok.version>1.18.46</lombok.version>
         <structure-indexer.version>0.0.17</structure-indexer.version>
-        <jackson.annotations.version>3.1.6</jackson.annotations.version>
+        <jackson.annotations.version>2.22</jackson.annotations.version>
         <jackson.databind.version>3.1.6</jackson.databind.version>
         <jackson.core.version>3.1.6</jackson.core.version>
     </properties>
