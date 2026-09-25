@@ -41,6 +41,13 @@ public class SubstanceBulkLoadServiceConfiguration {
     private final GsrsJsonMapper mapper;
 
     private final ValidatorFactory fakeValidatorFactory;
+
+    public SubstanceBulkLoadServiceConfiguration() {
+        this.mapper = null;
+        this.fakeValidatorFactory = null;
+    }
+
+    @Autowired
     public SubstanceBulkLoadServiceConfiguration(
             @Qualifier("gsrsJsonMapper") GsrsJsonMapper mapper) {
         this.mapper = mapper;

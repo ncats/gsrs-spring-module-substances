@@ -451,13 +451,23 @@ public class SubstanceBulkLoadService {
         
         @Override
         public void persistedSuccess(Object persistedRecord) {
-            if (persistedRecord instanceof JsonNode json) {
-                JsonNode uuidNode = json.get("uuid");
-                if (uuidNode != null && !uuidNode.isNull()) {
-                    persistedSubstanceIds.add(UUID.fromString(uuidNode.asText()));
-                }
+            String persistedUuid = persistedUuid(persistedRecord);
+            if (persistedUuid != null) {
+                persistedSubstanceIds.add(UUID.fromString(persistedUuid));
             }
             applyStatisticsChangeForJob(jobKey, Statistics.CHANGE.ADD_PE_GOOD);
+        }
+
+        private String persistedUuid(Object persistedRecord) {
+            if (persistedRecord instanceof JsonNode json) {
+                JsonNode uuidNode = json.get("uuid");
+                return uuidNode == null || uuidNode.isNull() ? null : uuidNode.asText();
+            }
+            if (persistedRecord instanceof com.fasterxml.jackson.databind.JsonNode json) {
+                com.fasterxml.jackson.databind.JsonNode uuidNode = json.get("uuid");
+                return uuidNode == null || uuidNode.isNull() ? null : uuidNode.asText();
+            }
+            return null;
         }
 
         @Override
