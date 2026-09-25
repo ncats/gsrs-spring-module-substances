@@ -244,14 +244,36 @@ public class StandardNameDuplicateValidator extends AbstractValidatorPlugin<Subs
             try {
                 SearchResult sresult = searchService.search(sr.getQuery(), sr.getOptions());
                 List<Substance> first = sresult.getMatches();
-                return first.stream()
-                        //force fetching
-                        .peek(ss -> EntityUtils.EntityWrapper.of(ss).toInternalJson())
-                        .collect(Collectors.toList());
+                List<Substance> hydrated = new ArrayList<>();
+                for (int i = 0; i < first.size(); i++) {
+                    try {
+                        Substance ss = first.get(i);
+                        EntityUtils.EntityWrapper.of(ss).toInternalJson();
+                        hydrated.add(ss);
+                    } catch (RuntimeException e) {
+                        if (hasNoSuchElementCause(e)) {
+                            log.warn("Skipping stale search result index {} for query [{}]", i, sr.getQuery());
+                            continue;
+                        }
+                        throw e;
+                    }
+                }
+                return hydrated;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         });
         return substances;
+    }
+
+    private boolean hasNoSuchElementCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof NoSuchElementException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 }

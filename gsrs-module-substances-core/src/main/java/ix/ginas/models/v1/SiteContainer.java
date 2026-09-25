@@ -40,6 +40,9 @@ public class SiteContainer extends GinasCommonSubData{
 	}
 	
 	public List<Site> getSites(){
+		if (sitesShortHand != null && !sitesShortHand.isBlank()) {
+			return parseShorthandRanges(sitesShortHand);
+		}
 		ObjectMapper om = new ObjectMapper();
 		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		List<Site> sites=new ArrayList<Site>();
@@ -61,18 +64,10 @@ public class SiteContainer extends GinasCommonSubData{
                 String beforeShorthand = sitesShortHand;
 		if(sites!=null){
 			sitesShortHand=generateShorthand(sites);
-			
-			ObjectMapper om = new ObjectMapper();
-			
-			List<Site> nlist = sites;
-			
-			//TODO: this used to be done as a normalizing step
-			// but it caused problems with POJODiff
-//			List<Site> nlist=parseShorthandRanges(sitesShortHand);
-			
-			
-			sitesJSON=om.valueToTree(nlist).toString();
-			siteCount=nlist.size();
+			// Shorthand is lossless and range-compressed. Keep the legacy JSON
+			// column valid without duplicating the expanded site list.
+			sitesJSON="[]";
+			siteCount=sites.size();
 		}
 
                 //if something changed, set it to dirty

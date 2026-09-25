@@ -197,7 +197,15 @@ public class Protein extends GinasCommonSubData {
 
 	public void setDisulfideLinks(List<DisulfideLink> links) {
 		ObjectMapper om = new ObjectMapper();
-		disulfJSON = om.valueToTree(links).toString();
+		List<Map<String, String>> compactLinks = new ArrayList<>();
+		if (links != null) {
+			for (DisulfideLink link : links) {
+				if (link != null) {
+					compactLinks.add(Collections.singletonMap("sitesShorthand", link.getSitesShorthand()));
+				}
+			}
+		}
+		disulfJSON = om.valueToTree(compactLinks).toString();
 		tmpDisulfides = null;
 	}
 

@@ -1211,15 +1211,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             return null;
         }
         if (existingModifications == null) {
-            updatedModifications.agentModifications = reconcileManagedAgentModifications(
-                    updatedModifications.agentModifications, Collections.emptyMap(), existingOwnedAmounts,
-                    existingOwnedSubstanceReferences, updatedModifications);
-            updatedModifications.physicalModifications = reconcileManagedPhysicalModifications(
-                    updatedModifications.physicalModifications, Collections.emptyMap(), existingPhysicalParameters,
-                    existingPhysicalParameterLists, existingPhysicalParameterAmounts, updatedModifications);
-            updatedModifications.structuralModifications = reconcileManagedStructuralModifications(
-                    updatedModifications.structuralModifications, Collections.emptyMap(), existingOwnedAmounts,
-                    existingOwnedSubstanceReferences, updatedModifications);
+            resetModificationGraphIds(updatedModifications);
             assignModificationOwners(updatedModifications);
             return updatedModifications;
         }
