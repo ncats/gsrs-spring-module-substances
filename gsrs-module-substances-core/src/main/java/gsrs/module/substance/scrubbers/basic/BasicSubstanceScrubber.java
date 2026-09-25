@@ -514,7 +514,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             log.trace("Before code delete");
             JSONArray testArray = dc.read("$['codes']");
             if(!testArray.isEmpty()) {
-                dc.delete("$['codes'][?]", codeSystemPredicate);
+                deleteCodes(dc, scrubberSettings.getRemoveCodesBySystemCodeSystemsToRemove());
             }
         }
 
@@ -854,6 +854,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
         catch (Exception ex) {
             log.warn("error processing record; Will return empty", ex);
+            ex.printStackTrace();
         }
         return Optional.empty();
     }
@@ -874,6 +875,28 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static boolean deleteCodes(
+            DocumentContext dc,
+            List<String> codeSystems) {
+
+        Map<String, Object> root = dc.json();
+
+        Object codesValue = root.get("codes");
+        if (!(codesValue instanceof List<?> rawCodes)) {
+            return false;
+        }
+
+        List<Object> codes = (List<Object>) rawCodes;
+
+        return codes.removeIf(item -> {
+            if (!(item instanceof Map<?, ?> code)) {
+                return false;
+            }
+
+            return codeSystems.contains(code.get("codeSystem"));
+        });
+    }
     public static void main(String[] args) {
     	log.trace("main method");
     }

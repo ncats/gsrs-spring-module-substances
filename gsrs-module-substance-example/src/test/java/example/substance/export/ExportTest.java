@@ -22,6 +22,8 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -43,6 +45,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class ExportTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     private static final ClassPathResource REP90 = new ClassPathResource("/testdumps/rep90.ginas");
+
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Autowired
     private SubstanceRepository substanceRepository;
@@ -77,7 +83,7 @@ public class ExportTest extends AbstractSubstanceJpaFullStackEntityTest {
             try(Stream<Substance> stream = substanceRepository.findAll().stream()) {
                 ExecutorService executor = Executors.newSingleThreadExecutor();
                 try {
-                    ExportDir.ExportFile<ExportMetaData> exportFile= new ExportDir<>(tempDir, ExportMetaData.class).createFile("exportFile", exportMetaData);
+                    ExportDir.ExportFile<ExportMetaData> exportFile= new ExportDir<>(tempDir, ExportMetaData.class, mapper).createFile("exportFile", exportMetaData);
 
                     Set<String> ids = new HashSet<>();
                     Exporter<Substance> exporter = new Exporter<Substance>() {
