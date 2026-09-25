@@ -10,6 +10,8 @@ import ix.core.models.SequenceEntity;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
 import ix.ginas.models.GinasCommonSubData;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.*;
 import java.util.ArrayList;
@@ -23,7 +25,7 @@ import java.util.List;
                // for sequences actually indexes at the subunit level instead of the substance level,
                // so we need reindexing events to trigger for this
 public class Subunit extends GinasCommonSubData implements SequenceEntity {
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     @Indexable(sequence=true)
     public String sequence;

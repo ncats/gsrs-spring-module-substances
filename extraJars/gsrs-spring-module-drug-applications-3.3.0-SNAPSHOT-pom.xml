@@ -7,10 +7,9 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>clinical-trials-api</module>
-        <module>gsrs-module-clinical-trials-spring-boot-starter</module>
-        <module>gsrs-module-clinical-trials-spring-boot-autoconfigure</module>
-        <module>gsrs-module-clinical-trials-spring-boot-starter-tests</module>
+        <module>gsrs-module-applications-spring-boot-starter</module>
+        <module>gsrs-module-applications-spring-boot-autoconfigure</module>
+        <module>applications-api</module>
     </modules>
 
     <parent>
@@ -21,33 +20,37 @@
     </parent>
 
     <groupId>gov.nih.ncats</groupId>
-    <artifactId>gsrs-module-clinical-trials</artifactId>
-    <version>3.2.6-SNAPSHOT</version>
-    <name>GSRS Clinical Trials Module</name>
-    <description>GSRS Clinical Trials Module for Spring Boot</description>
+    <artifactId>gsrs-module-applications</artifactId>
+    <version>3.3.0-SNAPSHOT</version>
+    <name>GSRS Application Module</name>
+    <description>GSRS Application Module for Spring Boot</description>
 
     <scm>
-        <url>https://github.com/ncats/gsrs-spring-module-clinical-trials.git</url>
+        <url>https://github.com/ncats/gsrs-spring-module-drug-applications.git</url>
     </scm>
 
     <properties>
         <java.version>17</java.version>
         <spring-boot.version>4.1.0</spring-boot.version>
         <spring-cloud.version>2025.1.0</spring-cloud.version>
-        <gsrs.version>3.2.6-SNAPSHOT</gsrs.version>
-        <gsrs.substance.version>3.2.6-SNAPSHOT</gsrs.substance.version>
-        <gsrs.clinical-trials.version>3.2.6-SNAPSHOT</gsrs.clinical-trials.version>
+        <gsrs.version>3.3.0-SNAPSHOT</gsrs.version>
+        <gsrs.application.version>3.3.0-SNAPSHOT</gsrs.application.version>
         <log4j2.version>2.22.1</log4j2.version>
+        <!-- TO BE REMOVE -->
+        <gsrs.substance.version>3.3.0-SNAPSHOT</gsrs.substance.version>
+        <jackson.annotations.version>3.1.6</jackson.annotations.version>
+        <jackson.databind.version>3.1.6</jackson.databind.version>
+        <jackson.core.version>3.1.6</jackson.core.version>
     </properties>
 
     <repositories>
-        <repository>
+         <repository>
             <id>central-repo1-maven2</id>
             <url>https://repo1.maven.org/maven2</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-        </repository>
+        </repository>         
         <repository>
             <id>central</id>
             <url>https://central.sonatype.com/repository/maven-snapshots/</url>
@@ -167,4 +170,5 @@
             </build>
         </profile>
     </profiles>
+
 </project>

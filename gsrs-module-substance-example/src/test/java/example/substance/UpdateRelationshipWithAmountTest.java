@@ -1,9 +1,10 @@
 package example.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.Relationship;
@@ -20,10 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @WithMockUser(username = "admin", roles = "Admin")
 public class UpdateRelationshipWithAmountTest extends AbstractSubstanceJpaEntityTest {
 
-    private final ObjectMapper mapper = new ObjectMapper();
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Test
-    void addRelationshipWithAmountToStructurallyDiverseSubstance() throws Exception {
+    void addRelationshipWithAmountToStructurallyDiverseSubstance() {
         Substance related = assertCreated(new SubstanceBuilder()
                 .addName("Relationship amount target")
                 .buildJson());
@@ -48,7 +51,7 @@ public class UpdateRelationshipWithAmountTest extends AbstractSubstanceJpaEntity
         assertEquals("mg", relationship.amount.units);
     }
 
-    private JsonNode emptyModificationsJson() throws Exception {
+    private JsonNode emptyModificationsJson() {
         return mapper.readTree("""
                 {
                   "agentModifications": [],

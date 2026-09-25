@@ -2,6 +2,9 @@ package ix.core.models;
 
 import com.fasterxml.jackson.annotation.JsonView;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.*;
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -41,7 +44,7 @@ public class ProcessingRecord extends LongBaseModel {
     /**
      * detailed status message
      */
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     public String message;
 

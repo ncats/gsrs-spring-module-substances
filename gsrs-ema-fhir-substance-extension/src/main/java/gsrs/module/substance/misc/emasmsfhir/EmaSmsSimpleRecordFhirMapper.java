@@ -1,6 +1,5 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.Name;

@@ -19,6 +19,7 @@ import gsrs.module.substance.utils.SubstanceResultListRecordGenerator;
 import gsrs.security.LegacyAuthenticationConfiguration;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.services.RolesConfig;
+import gsrs.stagingarea.service.DefaultStagingAreaService;
 import ix.core.chem.StructureProcessorConfiguration;
 import ix.core.search.bulk.BulkSearchService;
 import ix.core.search.bulk.UserSavedListService;
@@ -92,7 +93,8 @@ import gsrs.stagingarea.service.ImportMetadataLegacySearchService;
         UserRoleConfiguration.class,
         RolesConfig.class,
         IupacNameService.class,
-        PubChemNameListResolver.class
+        PubChemNameListResolver.class,
+        DefaultStagingAreaService.class
 })
 public class SubstanceCoreConfiguration {
     private static final String RELAXED_CHARS = "<>[\\]^`{|}";

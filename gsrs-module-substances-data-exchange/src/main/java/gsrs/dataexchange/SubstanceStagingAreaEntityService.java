@@ -1,7 +1,7 @@
 package gsrs.dataexchange;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.GsrsFactoryConfiguration;
@@ -63,6 +63,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
 
     @Autowired
     private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
+
+    @Autowired
+    ExplicitMatchableExtractorFactory explicitMatchableExtractorFactory;
 
     @Override
     public Class<Substance> getEntityClass() {
@@ -158,10 +161,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             log.trace("other type of substance");
         }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
-        ExplicitMatchableExtractorFactory factory = new ExplicitMatchableExtractorFactory();
-        factory.setGsrsFactoryConfiguration(gsrsFactoryConfiguration);
-        factory=AutowireHelper.getInstance().autowireAndProxy(factory);
-        factory.createExtractorFor(Substance.class).extract(substance, allMatchables::add);
+        explicitMatchableExtractorFactory
+                .createExtractorFor(Substance.class)
+                .extract(substance, allMatchables::add);
         return allMatchables;
     }
 

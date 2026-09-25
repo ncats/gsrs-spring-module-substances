@@ -1,8 +1,5 @@
 package ix.ginas.models.v1;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.models.Indexable;
 import ix.core.models.Keyword;
 import ix.ginas.models.EmbeddedKeywordList;
@@ -11,8 +8,12 @@ import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.serialization.KeywordDeserializer;
 import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.util.ArrayList;
 import java.util.List;
 

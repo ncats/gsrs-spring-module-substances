@@ -1,6 +1,6 @@
 package example.prot;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import gsrs.validator.DefaultValidatorConfig;

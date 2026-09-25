@@ -44,8 +44,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 
 import gov.nih.ncats.common.io.InputStreamSupplier;
 import gov.nih.ncats.common.sneak.Sneak;
@@ -82,6 +82,8 @@ import ix.core.models.UserProfile;
 import ix.core.util.EntityUtils;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.models.v1.Substance;
+import tools.jackson.databind.json.JsonMapper;
+
 /**
  * Parent Super-class of that should be used to
  * test Substances interacting with a test database.
@@ -406,7 +408,9 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
                 String line;
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(InputStreamSupplier.forFile(gsrsFile).get()))) {
 
-                ObjectMapper mapper = new ObjectMapper();
+                JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                        .build();
                 Pattern gsrsFilePattern = Pattern.compile("\t");
                     while ((line = reader.readLine()) != null) {
                         if (line.isEmpty() || line.startsWith("#")) {

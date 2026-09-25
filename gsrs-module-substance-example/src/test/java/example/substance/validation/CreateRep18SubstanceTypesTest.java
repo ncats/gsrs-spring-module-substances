@@ -1,6 +1,6 @@
 package example.substance.validation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.MixtureSubstance;

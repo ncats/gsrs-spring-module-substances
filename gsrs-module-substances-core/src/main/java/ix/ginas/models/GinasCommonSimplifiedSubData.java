@@ -1,17 +1,12 @@
 package ix.ginas.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import ix.core.models.Group;
-import ix.core.models.Indexable;
 import ix.core.models.Keyword;
-import ix.core.models.Principal;
 import ix.ginas.models.serialization.GroupSerializer;
-import ix.ginas.models.serialization.PrincipalDeserializer;
-
 import jakarta.persistence.MappedSuperclass;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
@@ -54,14 +49,6 @@ public abstract class GinasCommonSimplifiedSubData extends GinasCommonSubData im
 	     	return super.getAccess();
 	     }
 	 	
-//	 	@JsonProperty("_self")
-//	 	@JsonIgnore
-//	    @Indexable(indexed=false)
-//	    public String getself () {
-//	 		return super.getself();
-//	    }
-	 	
-	 	
-	 	
+
 	
 }

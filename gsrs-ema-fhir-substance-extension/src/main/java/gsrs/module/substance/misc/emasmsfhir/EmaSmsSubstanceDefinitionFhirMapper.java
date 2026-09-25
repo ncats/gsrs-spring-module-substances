@@ -38,6 +38,7 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
 
         substanceDefinition.setId("example");
 
+
         // Name, Do we want all Names?
         optionalDisplayName.ifPresent(displayName -> substanceDefinition.addName(makeSubstanceDefinitionNameComponent(displayName)));
 
@@ -45,8 +46,8 @@ public class EmaSmsSubstanceDefinitionFhirMapper {
         substanceDefinition.getClassification()
             .add(new CodeableConcept()
             .addCoding(new Coding()
-                .setCode(emaSmsFhirConfiguration.getSubstanceTypeConfigs().get(emaSmsSubstanceType).get("SMS Term ID"))
-                .setSystem(emaSmsFhirConfiguration.getSubstanceTypeConfigs().get(emaSmsSubstanceType).get("SMS URL"))
+                .setCode(emaSmsFhirConfiguration.getSubstanceTypeConfigs().get(emaSmsSubstanceType).get("smsTerm"))
+                .setSystem(emaSmsFhirConfiguration.getSubstanceTypeConfigs().get(emaSmsSubstanceType).get("smsUrl"))
             ));
 
         // Codes

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>gsrs-module-substances</artifactId>
         <groupId>gov.nih.ncats</groupId>
-        <version>3.2.6-SNAPSHOT</version>
+        <version>3.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -172,16 +172,14 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
+            <version>${jackson.core.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
+            <groupId>tools.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.databind.version}</version>
         </dependency>
 
         <dependency>
@@ -265,15 +263,6 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <!--
-                <dependency>
-                    <groupId>gov.nih.ncats</groupId>
-                    <artifactId>gsrs-module-substances-api</artifactId>
-                    <version>${gsrs.substance.version}</version>
-                    <scope>compile</scope>
-                </dependency>
-        -->
-        <!-- applications-api DEPENDENCIES FOR Application EXPORT -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -308,15 +297,17 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
-            <version>4.11.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -326,7 +317,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-data-redis</artifactId>
-            <version>4.1.0</version>
         </dependency>
     </dependencies>
 

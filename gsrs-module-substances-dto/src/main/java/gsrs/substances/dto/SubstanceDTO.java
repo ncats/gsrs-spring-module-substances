@@ -1,11 +1,12 @@
 package gsrs.substances.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.ToStringSerializer;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
@@ -50,12 +51,16 @@ public class SubstanceDTO{
     @Builder.Default
     private SubstanceClass substanceClass = SubstanceClass.concept;
     @Setter(AccessLevel.NONE)
+    @JsonProperty("_names")
     private LazyFetchedCollection _names;
     @Setter(AccessLevel.NONE)
+    @JsonProperty("_codes")
     private LazyFetchedCollection _codes;
     @Setter(AccessLevel.NONE)
+    @JsonProperty("_references")
     private LazyFetchedCollection _references;
     @Setter(AccessLevel.NONE)
+    @JsonProperty("_modifications")
     private LazyFetchedCollection _modifications;
 
     @Builder.Default

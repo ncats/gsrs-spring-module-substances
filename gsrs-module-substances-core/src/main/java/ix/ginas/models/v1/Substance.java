@@ -37,10 +37,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.json.JsonMapper;
 
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -283,7 +284,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @OrderBy("name asc")
 //    @OrderColumn
     @EntityMapperOptions(linkoutInCompactView = true)
-    public List<Name> names = new ArrayList<Name>();
+    public List<Name> names = new ArrayList<>();
 
     // TOOD original schema has superfluous 
     // name = codes in the schema here and
@@ -292,12 +293,12 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-    public List<Code> codes = new ArrayList<Code>();
+    public List<Code> codes = new ArrayList<>();
 
 
     /**
      * Returns the codes which are classifications
-     * @return
+     * @return returns a list of Codes that are used to categorize substances
      */
     @JsonIgnore
     public List<Code> getClassifications(){
@@ -397,7 +398,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
 
     @Transient
-    protected transient ObjectMapper mapper = new ObjectMapper();
+    protected transient JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public static SubstanceBuilder builder(){
         return new SubstanceBuilder();

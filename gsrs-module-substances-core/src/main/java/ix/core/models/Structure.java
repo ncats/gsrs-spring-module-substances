@@ -1,12 +1,6 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
@@ -22,10 +16,20 @@ import ix.ginas.models.converters.TrimmedUUIDJavaType;
 import ix.ginas.models.generators.NullUUIDGeneratedValue;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.JavaType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
 import jakarta.persistence.*;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -70,25 +74,32 @@ public class Structure extends BaseModel {
     public static final String H_InChI_Key = "InChI_Key";
     public static final String H_EXACT_HASH = "EXACT_HASH";
     public static final String H_STEREO_INSENSITIVE_HASH = "STEREO_INSENSITIVE_HASH";
-    public static class StereoSerializer extends JsonSerializer<Stereo> {
+
+    public static class StereoSerializer extends ValueSerializer<Stereo> {
     	public StereoSerializer(){
     		super();
     	}
+
         @Override
-        public void serialize(Stereo value, JsonGenerator jgen, SerializerProvider provider)
-          throws IOException, JsonProcessingException {
+        public void serialize(Stereo value, JsonGenerator jgen, SerializationContext ctxt) throws JacksonException {
             jgen.writeString(value.stereoType);
         }
+
     }
-    public static class StereoDeserializer extends JsonDeserializer<Stereo> {
+
+    public static class StereoDeserializer extends ValueDeserializer<Stereo> {
+        @Transient
+        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     	 public StereoDeserializer(){
     		 super();
     	 }
+
         @Override
-        public Stereo deserialize(JsonParser jp, DeserializationContext ctxt)
-          throws IOException, JsonProcessingException {
-            JsonNode node = jp.getCodec().readTree(jp);
-            return new Stereo(node.asText());
+        public Stereo deserialize(JsonParser jp, DeserializationContext ctxt) {
+            JsonNode node = mapper.readTree(jp);
+            return new Stereo(node.asString());
         }
     }
    
@@ -174,12 +185,12 @@ public class Structure extends BaseModel {
     @Column(length = 128)
     public String digest; // digest checksum of the original structure
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String molfile;				
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String smiles;
@@ -237,7 +248,7 @@ public class Structure extends BaseModel {
     @Enumerated(EnumType.ORDINAL)
     public NYU atropisomerism = NYU.No;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     public String stereoComments;
     
@@ -262,7 +273,7 @@ public class Structure extends BaseModel {
             @Index(name="property_structure_id_index", columnList="ix_core_structure_id"),
             @Index(name="property_value_id_index", columnList="ix_core_value_id")}
     )
-    public List<Value> properties = new ArrayList<Value>();
+    public List<Value> properties = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.JsonDiff.class)
@@ -270,10 +281,7 @@ public class Structure extends BaseModel {
     @JoinTable(name="ix_core_structure_link", inverseJoinColumns = {
             @JoinColumn(name="ix_core_xref_id")
     })
-    public List<XRef> links = new ArrayList<XRef>();
-
-    @Transient
-    private static ObjectMapper mapper = new ObjectMapper();
+    public List<XRef> links = new ArrayList<>();
 
     public Integer count = 1; // moiety count?
     public Structure() {}
