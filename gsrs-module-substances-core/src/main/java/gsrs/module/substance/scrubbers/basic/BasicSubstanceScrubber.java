@@ -514,19 +514,11 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             log.trace("Before code delete");
             JSONArray testArray = dc.read("$['codes']");
             if(!testArray.isEmpty()) {
-                deleteCodes(dc, scrubberSettings.getRemoveCodesBySystemCodeSystemsToRemove());
+                deleteCodes(dc, scrubberSettings.getRemoveCodesBySystemCodeSystemsToRemove(), scrubberSettings.getRemoveCodesBySystemCodeSystemsToKeep());
             }
         }
 
         safeDelete(dc, "$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-/*
-        JSONArray testObject =dc.read("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-        if(testObject.isEmpty()) {
-            log.trace("About to delete access expression");
-            dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-        }
-*/
-
         if( scrubberSettings.removeStdNames) {
             log.trace("Removing std names");
             safeDelete(dc, "$..stdName");
@@ -878,7 +870,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     @SuppressWarnings("unchecked")
     public static boolean deleteCodes(
             DocumentContext dc,
-            List<String> codeSystems) {
+            List<String> codeSystemsToDelete,
+            List<String> codeSystemsToKeep) {
 
         Map<String, Object> root = dc.json();
 
@@ -889,13 +882,24 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
         List<Object> codes = (List<Object>) rawCodes;
 
-        return codes.removeIf(item -> {
-            if (!(item instanceof Map<?, ?> code)) {
-                return false;
-            }
+        if( codeSystemsToDelete != null && !codeSystemsToDelete.isEmpty()) {
+            return codes.removeIf(item -> {
+                if (!(item instanceof Map<?, ?> code)) {
+                    return false;
+                }
 
-            return codeSystems.contains(code.get("codeSystem"));
-        });
+                return codeSystemsToDelete.contains(code.get("codeSystem"));
+            });
+        }
+        if( codeSystemsToKeep != null && !codeSystemsToKeep.isEmpty()) {
+            return codes.removeIf(item -> {
+                if (!(item instanceof Map<?, ?> code)) {
+                    return false;
+                }
+                return !codeSystemsToKeep.contains(code.get("codeSystem"));
+            });
+        }
+        return false;
     }
     public static void main(String[] args) {
     	log.trace("main method");
