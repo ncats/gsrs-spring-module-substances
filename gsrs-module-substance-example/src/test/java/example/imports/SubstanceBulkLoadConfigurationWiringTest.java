@@ -10,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
+import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Map;
@@ -46,9 +47,11 @@ class SubstanceBulkLoadConfigurationWiringTest {
 
         assertEquals(1, beans.size());
         assertSame(persisterFactory, configuration.getRecordPersisterFactory());
-        assertNotNull(ReflectionTestUtils.getField(persisterFactory, "entityManager"));
 
         RecordPersister<?, ?> persister = persisterFactory.createPersisterFor(new ProcessingJob());
-        assertInstanceOf(SubstanceBulkLoadService.GinasSubstancePersister.class, persister);
+        Object target = AopTestUtils.getUltimateTargetObject(persister);
+        assertInstanceOf(SubstanceBulkLoadService.GinasSubstancePersister.class, target);
+        assertNotNull(ReflectionTestUtils.getField(target, "entityManager"));
+        assertNotNull(ReflectionTestUtils.getField(target, "substanceEntityService"));
     }
 }
