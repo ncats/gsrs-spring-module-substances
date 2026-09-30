@@ -284,7 +284,7 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
 
     @Test
     @WithMockUser(value = "admin", roles = "Admin")
-    public void registeredMolfileWithExplicitStereoHydrogensShouldFindItselfBySubstructureSearch() throws Exception {
+    public void registeredMolfileWithExplicitStereoHydrogensShouldFindItselfByExactSearch() throws Exception {
         registerStructureHashIndexer();
         String molfile = Files.readString(new ClassPathResource("molfiles/d8a979a7-f6b7-423a-be7b-c62e8651eb92.mol").getFile().toPath());
         UUID uuid = UUID.randomUUID();
@@ -307,21 +307,26 @@ public class StructureSearchITTest extends AbstractSubstanceJpaFullStackEntityTe
                 new FlexAndExactSearchFullStackTest.MockRedirectAttributes());
         ETag exactResult = (ETag) ((ResponseEntity) exactResults).getBody();
         assertEquals(1, exactResult.count);
+    }
 
-        MultiValueMap<String, String> queryMap = new LinkedMultiValueMap<>();
-        queryMap.put("type", Collections.singletonList("sub"));
-        queryMap.put("q", Collections.singletonList(molfile));
+    @Test
+    @WithMockUser(value = "admin", roles = "Admin")
+    public void registeredMolfileWithExplicitStereoHydrogensShouldFindItselfBySubstructureSearch() throws Exception {
+        registerStructureHashIndexer();
+        String molfile = Files.readString(new ClassPathResource("molfiles/d8a979a7-f6b7-423a-be7b-c62e8651eb92.mol").getFile().toPath());
+        UUID uuid = UUID.randomUUID();
 
-        Object results = substanceController.structureSearchPost(
-                queryMap,
-                new MockHttpServletRequest(),
-                new FlexAndExactSearchFullStackTest.MockRedirectAttributes());
-
-        assertNotNull(results);
-        ResponseEntity responseEntity = (ResponseEntity) results;
-        SearchResultContext result = (SearchResultContext) responseEntity.getBody();
-        result.getDeterminedFuture().get();
-        assertEquals(1, result.getCount());
+        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.executeWithoutResult(s -> {
+            new ChemicalSubstanceBuilder()
+                    .setStructureWithDefaultReference(molfile)
+                    .addName("Explicit stereo hydrogens")
+                    .setUUID(uuid)
+                    .buildJsonAnd(this::assertCreated);
+        });
+        StructureIndexer.ResultEnumeration result = indexer.substructure(molfile);
+        assertTrue(result.hasMoreElements());
+        assertEquals(uuid.toString(), result.nextElement().getId());
     }
 
     @Test
