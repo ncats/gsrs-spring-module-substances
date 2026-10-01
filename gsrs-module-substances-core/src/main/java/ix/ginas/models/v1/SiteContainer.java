@@ -47,6 +47,9 @@ public class SiteContainer extends GinasCommonSubData{
 	}
 	
 	public List<Site> getSites(){
+		if (sitesShortHand != null && !sitesShortHand.isBlank()) {
+			return parseShorthandRanges(sitesShortHand);
+		}
 		List<Site> sites=new ArrayList<>();
 		try {
 			sites = mapper.readValue(sitesJSON, new TypeReference<>() {
@@ -67,14 +70,10 @@ public class SiteContainer extends GinasCommonSubData{
                 String beforeShorthand = sitesShortHand;
 		if(sites!=null){
 			sitesShortHand=generateShorthand(sites);
-
-			List<Site> nlist = sites;
-			
-			//TODO: this used to be done as a normalizing step
-			// but it caused problems with POJODiff
-
-			sitesJSON=mapper.valueToTree(nlist).toString();
-			siteCount=nlist.size();
+			// Shorthand is lossless and range-compressed. Keep the legacy JSON
+			// column valid without duplicating the expanded site list.
+			sitesJSON="[]";
+			siteCount=sites.size();
 		}
 
                 //if something changed, set it to dirty
@@ -96,10 +95,10 @@ public class SiteContainer extends GinasCommonSubData{
 		return ModelUtils.shorthandNotationFor(sites);
 	}
 	
-	 @Override
-	   	@JsonIgnore
-	   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
-	   		return new ArrayList<GinasAccessReferenceControlled>();
-	   	}
+	@Override
+	@JsonIgnore
+	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
+		return new ArrayList<GinasAccessReferenceControlled>();
+	}
 
 }
