@@ -41,7 +41,7 @@ public class CodeUniquenessValidator extends AbstractValidatorPlugin<Substance> 
                 log.trace(String.format("skipping code of system %s and type: %s", cd.codeSystem, cd.type));
                 continue;
             }
-            List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByCodes_CodeAndCodes_CodeSystem(cd.code, cd.codeSystem);
+            List<SubstanceRepository.SubstanceSummary> sr = substanceRepository.findByCodes_CodeAndCodes_CodeSystemAndCodes_TypeIgnoreCase(cd.code, cd.codeSystem, "PRIMARY");
 
             if (sr != null && !sr.isEmpty()) {
                 log.trace("found some possible duplicates..");
