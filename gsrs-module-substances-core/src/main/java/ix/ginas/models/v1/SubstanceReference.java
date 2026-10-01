@@ -196,6 +196,7 @@ public class SubstanceReference extends GinasCommonSubData {
 
     @JsonIgnore
     public EntityUtils.Key getKeyForReferencedSubstance(){
-        return EntityUtils.Key.of(Substance.class, UUID.fromString(refuuid));
+        //todo: make sure this does not break anything!
+        return EntityUtils.Key.of(Substance.class, refuuid==null ? null : UUID.fromString(refuuid));
     }
 }
