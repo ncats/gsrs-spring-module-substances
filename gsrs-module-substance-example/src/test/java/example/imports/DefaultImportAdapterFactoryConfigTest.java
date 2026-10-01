@@ -1,5 +1,6 @@
 package example.imports;
 
+import gsrs.springUtils.AutowireHelper;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -59,7 +60,7 @@ class DefaultImportAdapterFactoryConfigTest extends AbstractSubstanceJpaEntityTe
         adapterConfig.put(substanceContext, blankSubstanceContextHashMap);
         adapterConfig.get(substanceContext).put("list", adapters);
         config.setImportAdapterFactories(adapterConfig);
-        ConfigBasedGsrsImportAdapterFactoryFactory factoryFactory = new ConfigBasedGsrsImportAdapterFactoryFactory();
+        ConfigBasedGsrsImportAdapterFactoryFactory factoryFactory = AutowireHelper.getInstance().autowireAndProxy( new ConfigBasedGsrsImportAdapterFactoryFactory());
         Field configField = factoryFactory.getClass().getDeclaredField("gsrsFactoryConfiguration"); //gsrs.imports.ConfigBasedGsrsImportAdapterFactoryFactory.
         configField.setAccessible(true);
         configField.set(factoryFactory, config);

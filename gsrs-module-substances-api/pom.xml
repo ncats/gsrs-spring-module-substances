@@ -66,7 +66,7 @@
         <dependency>
             <groupId>gov.nih.ncats</groupId>
             <artifactId>molwitch-cdk</artifactId>
-            <version>1.0.24</version>
+            <version>1.0.27</version>
         </dependency>
         <dependency>
             <groupId>gov.nih.ncats</groupId>
