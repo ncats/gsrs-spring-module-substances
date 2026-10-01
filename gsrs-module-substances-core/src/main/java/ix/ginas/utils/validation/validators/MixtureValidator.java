@@ -10,6 +10,7 @@ import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ import java.util.Set;
  * Created by katzelda on 5/14/18.
  */
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class MixtureValidator extends AbstractValidatorPlugin<Substance> {
     @Autowired
     private SubstanceRepository substanceRepository;

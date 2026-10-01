@@ -1,7 +1,7 @@
 package gsrs.module.substance.expanders.basic;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.core.EntityFetcher;
@@ -31,14 +31,13 @@ public class BasicRecordExpander implements RecordExpander<ix.ginas.models.v1.Su
     private boolean includeRelated = true;
     private boolean includeMediatorSubstances = true;
 
-    private Set<String> retrievalErrors = new HashSet<>();
+    private final Set<String> retrievalErrors = new HashSet<>();
 
     public void applySettings(JsonNode settings) {
-        if (!(settings instanceof ObjectNode)) {
+        if (!(settings instanceof ObjectNode objectNode)) {
             log.warn("in applySettings, settings parameter not of expected type (ObjectNode)");
             return;
         }
-        ObjectNode objectNode = (ObjectNode) settings;
         if (objectNode.has("includeDefinitionalItems")) {
             includeDefinitionalItems = objectNode.get("includeDefinitionalItems").asBoolean();
         }

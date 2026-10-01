@@ -3,14 +3,11 @@ import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.Test;
 
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
 
 @Slf4j
 public class TagUtilities{

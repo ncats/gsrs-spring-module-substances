@@ -87,11 +87,17 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
         assertNotNull(statistics, "statistics should be present after waitForCompletion");
         //depending on the order the bulk load might fail if the substance currently requires a related substance to be present
         //(for example alt def?)
-        assertEquals(90,statistics.totalFailedAndPersisted());
-        TransactionTemplate tx3 = new TransactionTemplate(transactionManager);
-        tx3.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-        tx3.executeWithoutResult(ignored ->
-                assertEquals(statistics.recordsPersistedSuccess.get(), substanceEntityService.count() - startCount.get()));
+        assertNotNull(statistics.totalRecords, "totalRecords should be populated when job is complete");
+        assertEquals(90L, statistics.totalRecords.getCount(), "rep90 fixture should report exact total record count");
+        assertEquals(0, statistics.recordsExtractedFailed.get(), "extraction failures should be zero for rep90");
+        assertEquals(0, statistics.recordsProcessedFailed.get(), "processing failures should be zero for rep90");
+        assertEquals(0, statistics.recordsPersistedFailed.get(), "persistence failures should be zero for rep90");
+        assertEquals(90, statistics.recordsPersistedSuccess.get(), "rep90 should persist all records");
+        assertEquals(90, statistics.totalFailedAndPersisted(), "all rep90 records should be accounted for");
+
+        long observedDelta = waitForPersistedDelta(startCount.get(), statistics.recordsPersistedSuccess.get(), TimeUnit.SECONDS.toMillis(20));
+        assertEquals(statistics.recordsPersistedSuccess.get(), observedDelta,
+                "persisted-success and count delta should match once transactions are flushed");
 
 
     }
@@ -108,5 +114,24 @@ public class LegacySubstanceJSONBulkLoadTest extends AbstractSubstanceJpaFullSta
         }
         fail("Timed out waiting for bulk load statistics for key: " + statKey);
         return null;
+    }
+
+    private long waitForPersistedDelta(long startCount, long expectedDelta, long timeoutMs) throws InterruptedException {
+        long deadline = System.currentTimeMillis() + timeoutMs;
+        long lastDelta = Long.MIN_VALUE;
+        while (System.currentTimeMillis() < deadline) {
+            TransactionTemplate tx = new TransactionTemplate(transactionManager);
+            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            Long delta = tx.execute(status -> substanceEntityService.count() - startCount);
+            if (delta != null) {
+                lastDelta = delta;
+                if (delta == expectedDelta) {
+                    return delta;
+                }
+            }
+            Thread.sleep(200);
+        }
+        fail("Timed out waiting for persisted delta " + expectedDelta + "; last observed=" + lastDelta);
+        return lastDelta;
     }
 }

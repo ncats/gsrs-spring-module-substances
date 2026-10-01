@@ -1,7 +1,7 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
@@ -17,6 +17,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -26,6 +27,7 @@ import java.util.Optional;
 @ExposesResourceFor(ProcessingJob.class)
 public class ProcessingJobEntityService extends AbstractGsrsEntityService<ProcessingJob, Long> {
     public static final String  CONTEXT = "jobs";
+
     @Autowired
     private ProcessingJobRepository processingJobRepository;
 
@@ -33,7 +35,8 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
     private KeywordRepository keywordRepository;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
 
     public ProcessingJobEntityService() {
         super(CONTEXT,  IdHelpers.NUMBER, "gsrs_exchange", "jobs.created", "jobs.updated");
@@ -42,17 +45,17 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
 
     @Override
     protected ProcessingJob fromNewJson(JsonNode json){
-        return objectMapper.convertValue(json, getEntityClass());
+        return mapper.convertValue(json, getEntityClass());
     }
 
     @Override
-    protected ProcessingJob fromUpdatedJson(JsonNode json) throws IOException {
-        return objectMapper.convertValue(json, getEntityClass());
+    protected ProcessingJob fromUpdatedJson(JsonNode json) {
+        return mapper.convertValue(json, getEntityClass());
     }
 
     @Override
     protected JsonNode toJson(ProcessingJob processingJob) throws IOException {
-        return objectMapper.valueToTree(processingJob);
+        return mapper.valueToTree(processingJob);
     }
 
     @Override

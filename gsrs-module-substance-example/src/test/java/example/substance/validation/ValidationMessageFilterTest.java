@@ -6,6 +6,7 @@ import gsrs.services.GroupService;
 import gsrs.services.PrivilegeService;
 import gsrs.springUtils.AutowireHelper;
 import gsrs.substances.tests.AbstractSubstanceJpaFullStackEntityTest;
+import gsrs.startertests.GsrsFullStackTest;
 import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.core.models.Role;
@@ -18,9 +19,11 @@ import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactoryConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.annotation.DirtiesContext;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -29,6 +32,8 @@ import static org.junit.Assert.*;
 
 @Slf4j
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
+@GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Tag("fullstack")
 public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     // SubstanceEntityServiceImpl extends AbstractGsrsEntityService.
@@ -126,7 +131,7 @@ public class ValidationMessageFilterTest extends AbstractSubstanceJpaFullStackEn
         or1.setRegex(Pattern.compile(testTemplate));
         or1.setRulePrivileges(Arrays.asList("Approve Records", "Configure System"));
         or1.setNewMessageType(ValidationMessage.MESSAGE_TYPE.ERROR);
-        pConf.setOverrideRules(List.of(or1));
+        pConf.setOverrideRules(Collections.singletonList(or1));
         pConf.setDefaultStrategy("ACCEPT_APPLY_ALL_WARNINGS");
 
         GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory = new GsrsProcessingStrategyFactory(groupService, pConf);

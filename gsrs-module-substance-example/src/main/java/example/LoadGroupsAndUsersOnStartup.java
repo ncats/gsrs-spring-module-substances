@@ -1,7 +1,7 @@
 package example;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.GroupRepository;
@@ -23,6 +23,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.*;
 import java.util.Arrays;
@@ -53,6 +54,10 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
 
     @Autowired
     private SubstanceEntityService substanceEntityService;
+
+    private JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
@@ -113,7 +118,7 @@ public class LoadGroupsAndUsersOnStartup implements ApplicationRunner {
                 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(pathToLoadFile))))) {
                     String line;
                     Pattern sep = Pattern.compile("\t");
-                    ObjectMapper mapper = new ObjectMapper();
+
                     int i = 0;
                     while ((line = reader.readLine()) != null) {
                         String[] cols = sep.split(line);

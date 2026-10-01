@@ -4,8 +4,8 @@ import gsrs.legacy.structureIndexer.StructureIndexerService;
 import gsrs.startertests.GsrsJpaTest;
 import ix.seqaln.service.SequenceIndexerService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.jpa.test.autoconfigure.TestEntityManager;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 @GsrsJpaTest
 public abstract class AbstractSubstanceJpaEntityTest extends AbstractSubstanceJpaEntityTestSuperClass {
@@ -14,14 +14,14 @@ public abstract class AbstractSubstanceJpaEntityTest extends AbstractSubstanceJp
     protected TestEntityManager entityManager;
 
 
-    @MockBean
+    @MockitoBean
     protected SequenceIndexerService mockSequenceIndexerService;
 
-    @MockBean
+    @MockitoBean
     protected StructureIndexerService mockStructureIndexerService;
 
     @Override
     protected EntityManagerFacade getEntityManagerFacade() {
-        return EntityManagerFacade.wrap(entityManager);
+        return EntityManagerFacade.wrap(entityManager.getEntityManager());
     }
 }

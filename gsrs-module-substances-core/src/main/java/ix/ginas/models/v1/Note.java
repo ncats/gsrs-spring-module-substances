@@ -5,8 +5,10 @@ import ix.core.models.ParentReference;
 import ix.ginas.models.CommonDataElementOfCollection;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.utils.JSONEntity;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,7 +38,7 @@ public class Note extends CommonDataElementOfCollection {
     }
 
     @JSONEntity(title = "Note")
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     public String note;
 

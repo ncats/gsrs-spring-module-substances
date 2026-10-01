@@ -1,8 +1,8 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.ginas.models.v1.Substance;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +13,6 @@ public class EmaSmsFhrUtils {
 
     public static String findCodeByCodeSystem (String codeSystem, Substance substance) {
         // Do we need to check if public?
-        boolean publicOnly = false;
         Optional<String> optionalCode = substance.getCodes()
                 .stream()
                 // .filter(cd -> !(publicOnly && !cd.isPublic()))
@@ -30,12 +29,14 @@ public class EmaSmsFhrUtils {
     }
 
 
-    private static final ObjectMapper mapper = new ObjectMapper();
+    private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public static String gsrsSubstanceToQuotedJson (Substance substance){
         try {
             return mapper.writeValueAsString(substance);
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

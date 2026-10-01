@@ -11,14 +11,15 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.test.context.support.WithMockUser;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 
 import example.GsrsModuleSubstanceApplication;
 import gsrs.cache.GsrsCache;
@@ -37,9 +38,11 @@ import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.validators.StandardNameDuplicateValidator;
+import tools.jackson.databind.json.JsonMapper;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @WithMockUser(username = "admin", roles = "Admin")
+@Tag("fullstack")
 public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFullStackEntityTest {
 
         @Autowired
@@ -62,9 +65,12 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         private static final String CONCEPT_WITH_STANDARD_NAME_TEMPLATE = "{\"uuid\": \"__UUID__\", \"substanceClass\": \"concept\", \"names\": [{\"name\": \"__NAME__\", \"stdName\": \"__STDNAME1__\", \"references\": [\"__REFERENCE_ID1__\"]}], \"references\": [{\"uuid\": \"__REFERENCE_ID1__\", \"citation\": \"Some Citatation __NAME1__\", \"docType\": \"WEBSITE\", \"publicDomain\": true}], \"access\": [\"protected\"]}";
 
-        
+        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
+
         @BeforeEach
-        public void clearIndexers() throws IOException {
+        public void clearIndexers() {
         	ValidatorConfig config = new DefaultValidatorConfig();
         	config.setNewObjClass(Substance.class);
         	factory.addValidator("substances", config);
@@ -241,7 +247,6 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
 
         public Substance loadSubstanceFromJsonString(String jsonText) {
                 Substance substance = null;
-                ObjectMapper mapper = new ObjectMapper();
                 JsonNode json = null;
                 try {
                         json = mapper.readTree(jsonText);
@@ -284,6 +289,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 name2.languages.add(new Keyword("en"));
                 name2.languages.add(new Keyword("fr"));
                 s1.names.add(name2);
+                s1.getOrGenerateUUID();
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
                 ValidationResponse<Substance> response = validator.validate(s1, null);
@@ -319,6 +325,7 @@ public class StandardNameDuplicateValidatorTest extends AbstractSubstanceJpaFull
                 name2.languages.add(new Keyword("en"));
                 name2.languages.add(new Keyword("fr"));
                 s1.names.add(name2);
+                s1.getOrGenerateUUID();
                 substanceRepository.saveAndFlush(s1);
                 cache.clearCache();
                 ValidationResponse<Substance> response = validator.validate(s1, null);

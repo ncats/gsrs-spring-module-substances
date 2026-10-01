@@ -10,16 +10,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import javax.annotation.PreDestroy;
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.annotation.PreDestroy;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import gsrs.security.canImportData;
 import org.slf4j.Logger;
@@ -33,10 +33,11 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ArrayNode;
 
 import gov.nih.ncats.common.executors.BlockingSubmitExecutor;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -48,7 +49,7 @@ import gsrs.module.substance.repository.ProcessingRecordRepository;
 import gsrs.module.substance.repository.XRefRepository;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.AdminService;
-import gsrs.security.hasAdminRole;
+
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import ix.core.EntityFetcher;
@@ -86,7 +87,7 @@ public class SubstanceBulkLoadService {
     private static final Logger TransformFailLogger = LoggerFactory.getLogger("transformFail");
     private static final Logger ExtractFailLogger = LoggerFactory.getLogger("extractFail");
 
-    private final static int NUMBER_OF_LOADING_THREADS=1;
+    private static final int NUMBER_OF_LOADING_THREADS=1;
 
     public static Logger getPersistFailureLogger(){
         return PersistFailLogger;
@@ -98,35 +99,36 @@ public class SubstanceBulkLoadService {
 
     private final Object jobLock = new Object();
 
-    private static final String KEY_PROCESS_QUEUE_SIZE = "PROCESS_QUEUE_SIZE";
     //Hack variable for resisting buildup
     //of extracted records not yet transformed
     private static Map<String,Long> queueStatistics = new ConcurrentHashMap<String,Long>();
     private static Map<String,Statistics> jobCacheStatistics = new ConcurrentHashMap<>();
 
-    private static ObjectMapper om = new ObjectMapper();
+    private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     private static int MAX_EXTRACTION_QUEUE = 100;
 
     private SubstanceBulkLoadServiceConfiguration configuration;
 
-    private Map<String, ExecutorService> executorServices = new ConcurrentHashMap<>();
+    private final Map<String, ExecutorService> executorServices = new ConcurrentHashMap<>();
 
-    private ProcessingJobRepository processingJobRepository;
+    private final ProcessingJobRepository processingJobRepository;
 
-    private PlatformTransactionManager transactionManager;
+    private final PlatformTransactionManager transactionManager;
 
-    private ConsoleFilterService consoleFilterService;
+    private final ConsoleFilterService consoleFilterService;
 
     private TaskExecutor taskExecutor;
 
-    private PayloadService payloadService;
+    private final PayloadService payloadService;
 
-    private AdminService adminService;
+    private final AdminService adminService;
 
-    private AuditConfig auditConfig;
+    private final AuditConfig auditConfig;
 
-    private PayloadRepository payloadRepository;
+    private final PayloadRepository payloadRepository;
 
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
@@ -159,32 +161,39 @@ public class SubstanceBulkLoadService {
         return getStatisticsForJob(jobId);
     }
 
-    private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats){
+    private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats, ProcessingJob.Status desiredStatus,
+                                                       String desiredMessage){
         synchronized (jobLock) {
             if(stats==null ) {
                 //log.info("skipping save because stats is null");
                 return null;
             }
-            if(!stats._isDone()) {
-                //log.info("skipping save of job in process");
-                return null;
-            }
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats));
+            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats, desiredStatus, desiredMessage));
         }
     }
 
-    private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats) {
+    private ProcessingJob saveJobInCurrentTransaction(long jobId, Statistics stats, ProcessingJob.Status desiredStatus,
+                                                      String desiredMessage) {
         ProcessingJob job = processingJobRepository.findById(jobId).get();
-        if (!stats._isDone()) {
-
-            job.message = "Loading data";
-            job.status = ProcessingJob.Status.RUNNING;
-        } else {
+        if (desiredStatus != null) {
+            log.trace("using supplied status in saveJobInSeparateTransaction");
+            job.status = desiredStatus;
+        } else if (stats._isDone()) {
+            log.trace("setting status to complete in saveJobInSeparateTransaction");
             job.status = ProcessingJob.Status.COMPLETE;
+        } else {
+            log.trace("setting status to running in saveJobInSeparateTransaction");
+            job.status = ProcessingJob.Status.RUNNING;
         }
-        job.statistics = om.valueToTree(stats).toString();
+
+        if (desiredMessage != null) {
+            job.message = desiredMessage;
+        } else if (!stats._isDone()) {
+            job.message = "Loading data";
+        }
+        job.statistics = mapper.valueToTree(stats).toString();
 
         job.setIsAllDirty();
         return processingJobRepository.saveAndFlush(job);
@@ -268,18 +277,15 @@ public class SubstanceBulkLoadService {
 
             @Override
             public void run() {
-                TransactionTemplate tx = new TransactionTemplate(transactionManager);
-                tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                tx.executeWithoutResult(ignore-> {
-                    TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
-                    tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                    ProcessingJob job = tx2.execute(s -> {
-                        ProcessingJob innerJob=processingJobRepository.findById(pp.jobId).get();
-                        EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
-                        //log.trace("JSON of Job retrieved: {}", wrapper.toInternalJson());
-                        return innerJob;
-                    });
-
+                TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
+                tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                ProcessingJob job = tx2.execute(s -> {
+                    ProcessingJob innerJob = processingJobRepository.findById(pp.jobId).get();
+                    EntityUtils.EntityWrapper wrapper = EntityUtils.EntityWrapper.of(innerJob);
+                    return innerJob;
+                });
+                log.trace("first call to saveJobInSeparateTransaction");
+                saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.RUNNING, null);
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
                 //katzelda 6/2019: IDE says we don't ever use the FilterSessions but we do it's just a sideeffect that gets used when we
@@ -301,14 +307,13 @@ public class SubstanceBulkLoadService {
                         storeStatisticsForJob(pp.key, stat);
                         log.debug(stat.toString());
                     }catch(IOException e){
-                        e.printStackTrace();
-                        //error figuring out estimate?
+                        log.error("error retrieving payload", e);
+                        saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.FAILED, null);
                     }
-
-                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
+                    log.trace("saveJobInSeparateTransaction with no status");
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), null, null);
 
                     BulkLoadServiceCallback callback = new BulkLoadServiceCallBackImpl(job);
-                   
 
                         try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
@@ -329,6 +334,7 @@ public class SubstanceBulkLoadService {
                                                 try {
                                                     auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
                                                 }finally{
+                                                    log.trace("saving job after one record because isPreserveOldEditInfo");
                                                     saveJobInSeparateTransaction(pp.jobId, pp.key);
                                                 }
                                             };
@@ -338,6 +344,7 @@ public class SubstanceBulkLoadService {
                                                 try{
                                                     factory.newWorkerFor(prg, configuration, parameters, callback).run();
                                                 }finally{
+                                                    log.trace("saving job after one record because NOT isPreserveOldEditInfo");
                                                     saveJobInSeparateTransaction(pp.jobId, pp.key);
                                                 }
                                             };
@@ -350,6 +357,7 @@ public class SubstanceBulkLoadService {
                                     stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
                                     storeStatisticsForJob(pp.key, stat);
                                     ExtractFailLogger.info("failed to extract record", e);
+                                    log.warn("Error processing record");
                                     // hack to keep iterator going...
                                     record = new Object();
                                 }
@@ -359,26 +367,28 @@ public class SubstanceBulkLoadService {
                             e.printStackTrace();
                             job.status =ProcessingJob.Status.FAILED;
                             job.message = e.getMessage();
-                            saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
+                            log.warn("IOExcepton processing record");
+                            saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.FAILED,
+                                    e.getMessage());
                             }
                 }
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
                     executorServices.remove(pp.key);
+                    log.trace("about to save job as COMPLETE");
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.COMPLETE, null);
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
-                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key));
+                    log.trace("about to save job as Interrupted");
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.STOPPED, "Interrupted");
                     e.printStackTrace();
                 }
-                });
-
             }
         };
 
        new Thread(r).start();
-
-
+        log.trace("after thread start");
         return pp;
     }
 
@@ -492,7 +502,7 @@ public class SubstanceBulkLoadService {
     private void saveJobInSeparateTransaction(long jobId, String statKey){
         Statistics stat = getStatisticsForJob(statKey);
         if(stat !=null){
-            saveJobInSeparateTransaction(jobId, stat);
+            saveJobInSeparateTransaction(jobId, stat, null, null);
         }
     }
     public void applyStatisticsChangeForJob(ProcessingJob job, Statistics.CHANGE change){
@@ -500,8 +510,8 @@ public class SubstanceBulkLoadService {
         if(stat !=null){
             stat.applyChange(change);
         }
-        saveJobInSeparateTransaction(job.id, stat);
     }
+
     public Statistics applyStatisticsChangeForJob(String jobTerm, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(jobTerm);
         if(stat !=null) {
@@ -576,7 +586,8 @@ public class SubstanceBulkLoadService {
                 }
                 //copy of rec to get the stats in a detached
 
-                processingRecordRepository.saveAndFlush(entityManager.contains(prec.rec)? prec.rec : entityManager.merge(prec.rec));
+                ProcessingRecord savedRecord = saveProcessingRecord(prec.rec);
+                prec.rec.id = savedRecord.id;
 
 
                 if (!worked){
@@ -591,6 +602,50 @@ public class SubstanceBulkLoadService {
                         + " record " + prec.rec.id);
                 throw t;
             }
+        }
+
+        private ProcessingRecord saveProcessingRecord(ProcessingRecord record) {
+            attachManagedJob(record);
+            ProcessingRecord recordToSave = record;
+
+            if (!entityManager.contains(record) && record.id != null) {
+                recordToSave = processingRecordRepository.findById(record.id)
+                        .map(managed -> copyProcessingRecordState(record, managed))
+                        .orElse(record);
+                attachManagedJob(recordToSave);
+            }
+
+            if (entityManager.contains(recordToSave)) {
+                entityManager.flush();
+                return recordToSave;
+            }
+
+            return processingRecordRepository.saveAndFlush(recordToSave);
+        }
+
+        private void attachManagedJob(ProcessingRecord record) {
+            if (record.job != null && record.job.id != null && !entityManager.contains(record.job)) {
+                record.job = entityManager.getReference(ProcessingJob.class, record.job.id);
+            }
+        }
+
+        private ProcessingRecord copyProcessingRecordState(ProcessingRecord source, ProcessingRecord target) {
+            target.start = source.start;
+            target.stop = source.stop;
+            target.name = source.name;
+            target.status = source.status;
+            target.message = source.message;
+            target.xref = source.xref;
+            target.job = source.job;
+
+            if (source.properties != target.properties) {
+                target.properties.clear();
+                if (source.properties != null) {
+                    target.properties.addAll(source.properties);
+                }
+            }
+
+            return target;
         }
 
 
@@ -619,7 +674,7 @@ public class SubstanceBulkLoadService {
             if (buff == null)
                 return null;
             String line=null;
-            ObjectMapper mapper = new ObjectMapper();
+
             while(true){
                 try {
                     line = buff.readLine();
@@ -634,7 +689,7 @@ public class SubstanceBulkLoadService {
                     //use static pattern so we don't recompile on every split call
                     //which is what String.split() does
                     String[] toks = TOKEN_SPLIT_PATTERN.split(line);
-                    if(toks ==null || toks.length <2){
+                    if(toks ==null || toks.length < 3){
                         continue;
                     }
 
@@ -676,7 +731,6 @@ public class SubstanceBulkLoadService {
                 return null;
 
             try {
-                ObjectMapper mapper = new ObjectMapper();
                 JsonNode tree = mapper.readTree(is);
                 is.close();
                 is = null;
@@ -713,7 +767,6 @@ public class SubstanceBulkLoadService {
         private static final String PROCESSING_PLUGIN_KEY = "ix.utils.Util.GinasRecordProcessorPlugin";
         private static final String DOC_TYPE_BATCH_IMPORT = "BATCH_IMPORT";
 
-        private ObjectMapper mapper = new ObjectMapper();
 
         /**
          * This method copied from GSRS 2.x Substance class that didn't belong in substance

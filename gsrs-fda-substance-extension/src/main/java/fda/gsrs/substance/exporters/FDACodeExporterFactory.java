@@ -1,8 +1,8 @@
 package fda.gsrs.substance.exporters;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.module.substance.repository.SubstanceRepository;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;

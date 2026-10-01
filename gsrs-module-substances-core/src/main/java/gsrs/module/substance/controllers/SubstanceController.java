@@ -20,17 +20,22 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.imageio.ImageIO;
-import javax.servlet.http.HttpServletRequest;
-import javax.validation.constraints.NotBlank;
+
+import gov.nih.ncats.molwitch.*;
+import gov.nih.ncats.structureIndexer.StructureIndexer;
+import ix.ginas.models.utils.MavenUtils;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.constraints.NotBlank;
 
 import gsrs.controller.*;
-import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.utils.FeatureUtils;
 import gsrs.module.substance.utils.ChemicalUtils;
 import gsrs.security.canApproveRecords;
@@ -39,6 +44,7 @@ import gsrs.service.AbstractGsrsEntityService;
 import ix.ginas.utils.validation.validators.StandardNameValidator;
 import org.freehep.graphicsio.svg.SVGGraphics2D;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.hateoas.server.ExposesResourceFor;
@@ -49,6 +55,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.MultiValueMap;
@@ -59,21 +66,16 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 
 import gov.fda.gsrs.ndsri.FeaturizeNitrosamine;
 import gov.fda.gsrs.ndsri.FeaturizeNitrosamine.FeatureResponse;
 import gov.nih.ncats.common.io.IOUtil;
-import gov.nih.ncats.molwitch.Atom;
-import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Bond.Stereo;
-import gov.nih.ncats.molwitch.Chemical;
-import gov.nih.ncats.molwitch.MolwitchException;
 import gov.nih.ncats.molwitch.io.CtTableCleaner;
 import gov.nih.ncats.molwitch.renderer.ChemicalRenderer;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
@@ -99,7 +101,6 @@ import gsrs.module.substance.utils.ImageInfo;
 import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.module.substance.utils.SubstanceMatchViewGenerator;
 import gsrs.repository.EditRepository;
-import gsrs.security.hasApproverRole;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
 import gsrs.services.PrincipalServiceImpl;
@@ -160,13 +161,11 @@ import lombok.extern.slf4j.Slf4j;
 @ExposesResourceFor(Substance.class)
 @GsrsRestApiController(context = SubstanceEntityServiceImpl.CONTEXT,  idHelper = IdHelpers.UUID)
 public class SubstanceController extends EtagLegacySearchEntityController<SubstanceController, Substance, UUID> {
-	
 
 	
 	@Autowired 
 	private SubstanceMatchViewGenerator matchViewGenerator;
 
-	
 	@Autowired
 	private ResultListRecordGenerator resultListRecordGenerator;
 	
@@ -180,6 +179,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     private ChemicalUtils chemicalUtils;
+
+    @Autowired
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper objectMapper;
 
     private static final int MAX_NAME_STANDARDIZATION_INPUT_LENGTH = 500;
 
@@ -652,7 +655,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         String qText = Optional.ofNullable(body.getFirst("qText")).orElse(null);
 
         SubstanceStructureSearchService.SanitizedSearchRequest sanitizedRequest = rb.build().sanitize();
-        log.trace("sanitizedRequest.getType(): {}", sanitizedRequest.getType());
 
         boolean isHashQuery = sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.EXACT
                 || sanitizedRequest.getType() == SubstanceStructureSearchService.StructureSearchType.FLEX
@@ -1000,8 +1002,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
-            ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
-            ObjectNode node = mapper.createObjectNode();
+            ObjectNode node = objectMapper.createObjectNode();
             try {
                 Structure struc = structureProcessor.taskFor(payload)
                         .components(moieties)
@@ -1023,18 +1024,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
 
 
-                ArrayNode an = mapper.createArrayNode();
+                ArrayNode an = objectMapper.createArrayNode();
                 for (Structure m : moieties) {
                     saveTempStructure(m);
-                    ObjectNode on = mapper.valueToTree(m);
+                    ObjectNode on = objectMapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
-                    JsonNode amt = mapper.valueToTree(c1);
+                    JsonNode amt = objectMapper.valueToTree(c1);
                     on.set("countAmount", amt);
                     an.add(on);
                 }
                 saveTempStructure(struc);
-                node.put("structure", mapper.valueToTree(struc));
-                node.put("moieties", an);
+                node.set("structure", objectMapper.valueToTree(struc));
+                node.set("moieties", an);
                 if( appendFeatures) {
                     log.trace("going to append nitrosamine features");
                     appendFeatureStuff(struc.toChemical(), node);
@@ -1049,7 +1050,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     saveTempStructure(struc);
                     su._structure = struc;
                 }
-                node.put("structuralUnits", mapper.valueToTree(o));
+                node.set("structuralUnits", objectMapper.valueToTree(o));
             } catch (Throwable e) {
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
@@ -1089,8 +1090,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
-            ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
-            ObjectNode node = mapper.createObjectNode();
+            ObjectNode node = objectMapper.createObjectNode();
             try {
                 Structure struc = structureProcessor.taskFor(payload)
                         .components(moieties)
@@ -1111,19 +1111,19 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     struc.molfile=simpStd.standardize(struc.molfile);
                 }
 
-                ArrayNode an = mapper.createArrayNode();
+                ArrayNode an = objectMapper.createArrayNode();
                 for (Structure m : moieties) {
                     saveTempStructure(m);
-                    ObjectNode on = mapper.valueToTree(m);
+                    ObjectNode on = objectMapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
-                    JsonNode amt = mapper.valueToTree(c1);
+                    JsonNode amt = objectMapper.valueToTree(c1);
                     on.set("countAmount", amt);
                     an.add(on);
                 }
                 //TODO: fill in calculation
                 //saveTempStructure(struc);
-                node.put("structure", mapper.valueToTree(struc));
-                node.put("moieties", an);
+                node.set("structure", objectMapper.valueToTree(struc));
+                node.set("moieties", an);
                 appendFeatureStuff(struc.toChemical(), node);
 
             } catch (Exception e) {
@@ -1194,6 +1194,31 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 error[0] = "error approving substance " + substance.getBestId() + ": " + e.getMessage();
                 return Optional.empty();
             }    	
+    }
+
+    @Override
+    @canEditPublicData
+    @PutGsrsRestApiMapping
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ResponseEntity<Object> updateEntity(@RequestBody JsonNode updatedEntityJson,
+                                               @RequestParam Map<String, String> queryParameters,
+                                               Principal principal) throws Exception {
+        if (getEntityService().isReadOnly()) {
+            log.warn("detected forbidden operation in updateEntity");
+            String message = "Please use the parent object to perform this operation";
+            return new ResponseEntity<>(message,
+                    this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        log.info("updating entity {}", getEntityService().getContext());
+        GsrsEntityService.UpdateResult<Substance> result = getEntityService().updateEntity(updatedEntityJson);
+        if (result.getStatus() == GsrsEntityService.UpdateResult.STATUS.NOT_FOUND) {
+            return this.getGsrsControllerConfiguration().handleNotFound(queryParameters);
+        }
+        if (result.getStatus() == GsrsEntityService.UpdateResult.STATUS.ERROR) {
+            return new ResponseEntity<>(result.getValidationResponse(),
+                    this.getGsrsControllerConfiguration().getHttpStatusFor(HttpStatus.BAD_REQUEST, queryParameters));
+        }
+        return new ResponseEntity<>(result.getUpdatedEntity(), HttpStatus.OK);
     }
 
     //@PreAuthorize("hasRole('SuperUpdate')")
@@ -1445,6 +1470,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
             return ByteWrapper.of(b);
         }, ByteWrapper.class));
+        if(bdat== null) {
+            log.warn("error generating image for {}", idOrSmiles);
+            return new ResponseEntity<>("No luck!",  HttpStatus.NOT_FOUND);
+        }
 
         HttpHeaders headers = new HttpHeaders();
 
@@ -1932,7 +1961,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
         if(!Structure.Optical.UNSPECIFIED.equals(struc.opticalActivity)
                 && struc.opticalActivity!=null){
-            if(struc.definedStereo>0){
+            if(struc.definedStereo!= null && struc.definedStereo>0){
                 if(Structure.Optical.PLUS_MINUS.equals(struc.opticalActivity)){
                     if(Structure.Stereo.EPIMERIC.equals(struc.stereoChemistry)
                             || Structure.Stereo.RACEMIC.equals(struc.stereoChemistry)
@@ -1979,17 +2008,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         log.trace("returning substance-specific comparator");
         return new ExportingSubstanceComparator();
     }
-    public List<Text> getHardcodedConfigsBackup() throws JsonProcessingException {
+    public List<Text> getHardcodedConfigsBackup() {
         List<Text> items = new ArrayList<>();
 
-        ObjectMapper mapper = new ObjectMapper();
         SpecificExporterSettings allDataSettings = new SpecificExporterSettings();
         allDataSettings.setExpanderSettings(JsonNodeFactory.instance.objectNode());
         allDataSettings.setScrubberSettings(JsonNodeFactory.instance.objectNode());
         allDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
         allDataSettings.setExporterKey("ALL_DATA");
         allDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
-        Text allItems = new Text("settings", mapper.writeValueAsString(allDataSettings));
+        Text allItems = new Text("settings", objectMapper.writeValueAsString(allDataSettings));
         allItems.id=0l;
         items.add(allItems);
 
@@ -2003,7 +2031,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         publicDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
         publicDataSettings.setExporterKey("PUBLIC_DATA_ONLY");
         publicDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
-        Text publicItems = new Text("settings", mapper.writeValueAsString(publicDataSettings));
+        Text publicItems = new Text("settings", objectMapper.writeValueAsString(publicDataSettings));
         publicItems.id=-1l;
         items.add(publicItems);
         return items;
@@ -2054,17 +2082,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     private void appendFeatureStuff(Chemical chemical, ObjectNode topLevelNode ) throws Exception {
         log.trace("in appendFeatureStuff");
-        ObjectMapper mapper = new ObjectMapper();
         List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(chemical);
-        ObjectNode allFeatures = mapper.createObjectNode();
-        ArrayNode featureArrayNode = mapper.createArrayNode();
+        ObjectNode allFeatures = objectMapper.createObjectNode();
+        ArrayNode featureArrayNode = objectMapper.createArrayNode();
         featureList.forEach(features ->{
-            ObjectNode oneSet = mapper.createObjectNode();
+            ObjectNode oneSet = objectMapper.createObjectNode();
             features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
             featureArrayNode.add(oneSet);
         });
-        allFeatures.put("nitrosamineAnalysisFeatures", featureArrayNode);
-        topLevelNode.put("featureList", allFeatures);
+        allFeatures.set("nitrosamineAnalysisFeatures", featureArrayNode);
+        topLevelNode.set("featureList", allFeatures);
     }
 
     public Structure stripSalts(Structure structure) throws IOException {
@@ -2183,4 +2210,58 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         JsonNode standardizeResult = validator.standardizeName(name, false);
         return new ResponseEntity<>(standardizeResult, HttpStatus.OK);
     }
+
+    @GetGsrsRestApiMapping(value={"/@molwitch-info", "/@molwitch_info" })
+    public ResponseEntity getMolwitchInfo( @RequestParam Map<String, String> queryParameters) throws Exception {
+        log.trace("starting in getMolwitchInfo");
+        Map<String, Map> info = new ConcurrentHashMap<>();
+        log.trace("to process molwitch");
+        Map<String, String> molwitchInfo = createClassInfoMap(MolWitch.class, "gov.nih.ncats", "molwitch");
+        info.put("molwitch", molwitchInfo);
+        Chemical sampleChemical = Chemical.parse("c1ccccc1");
+        log.trace("to process molwitch impl");
+        Map<String, String> molwitchImplInfo = createClassInfoMap(sampleChemical.getImpl().getClass(),
+                "gov.nih.ncats", "molwitch-cdk");
+        info.put("molwitch implementation", molwitchImplInfo);
+        log.trace("to process molwitch renderer");
+        Map<String, String> molwitchRenderInfo = createClassInfoMap(ChemicalRenderer.class, "gov.nih.ncats",
+                "molwitch-renderer");
+        info.put("molwitch renderer", molwitchRenderInfo);
+        log.trace("to process structure indexer");
+        Map<String, String> indexerInfo = createClassInfoMap(StructureIndexer.class, "gov.nih.ncats",
+                "structure-indexer");
+        info.put("structure indexer", indexerInfo);
+        return new ResponseEntity<>(info, HttpStatus.OK);
+    }
+
+    private Map createClassInfoMap(Class<?> classOfInterest, String groupId, String artifactId) {
+        Map<String, String> classInfoMap = new ConcurrentHashMap<>();
+        if(classOfInterest == null || classOfInterest.getPackage() == null) {
+            classInfoMap.put("error", "class or package not found!");
+            return classInfoMap;
+        }
+        classInfoMap.put("name", classOfInterest.getPackage().getName());
+        classInfoMap.put("title", classOfInterest.getPackage().getImplementationTitle() == null ? "[no title found]"
+                : classOfInterest.getPackage().getImplementationTitle());
+        classInfoMap.put("vendor", classOfInterest.getPackage().getImplementationVendor() == null ? "[no vendor info available]"
+                : classOfInterest.getPackage().getImplementationVendor());
+        classInfoMap.put("version", classOfInterest.getPackage().getImplementationVersion() == null
+                ? MavenUtils.getVersion(classOfInterest, groupId, artifactId) : classOfInterest.getPackage().getImplementationVersion());
+        return classInfoMap;
+    }
+
+    private String getVersionFromJar(Class<?> classOfInterest) {
+        // Replace YourClass.class with a class from the JAR you want to inspect
+        String jarPath = classOfInterest.getProtectionDomain().getCodeSource().getLocation().getPath();
+        JarFile jarFile = null;
+        try {
+            jarFile = new JarFile(jarPath);
+            Runtime.Version version  = jarFile.getVersion();
+            return version.toString();
+        } catch (IOException ex) {
+            log.error("Error reading JAR file");
+        }
+        return "error reading version";
+    }
+
 }

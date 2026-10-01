@@ -1,7 +1,7 @@
 package gsrs.module.substance.importers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.molwitch.io.ChemicalReader;
 import gov.nih.ncats.molwitch.io.ChemicalReaderFactory;
 import gsrs.dataexchange.model.MappingAction;

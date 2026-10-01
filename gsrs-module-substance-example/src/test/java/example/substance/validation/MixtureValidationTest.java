@@ -1,6 +1,6 @@
 package example.substance.validation;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.service.GsrsEntityService;
 import gsrs.startertests.TestGsrsValidatorFactory;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;

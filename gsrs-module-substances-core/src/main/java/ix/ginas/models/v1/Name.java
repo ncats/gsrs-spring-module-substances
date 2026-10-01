@@ -1,12 +1,8 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import gsrs.module.substance.utils.HtmlUtil;
-import gsrs.springUtils.StaticContextAccessor;
 import ix.core.SingleParent;
 import ix.core.models.*;
 import ix.ginas.models.CommonDataElementOfCollection;
@@ -18,8 +14,13 @@ import ix.ginas.models.serialization.KeywordListSerializer;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 import org.apache.commons.lang3.ObjectUtils;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+
 import java.util.*;
 
 @JSONEntity(title = "Name", isFinal = true)
@@ -123,12 +124,12 @@ public class Name extends CommonDataElementOfCollection {
     @Indexable(name="Name", suggest=true)
     public String name;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     @JsonIgnore
     public String fullName;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch= FetchType.EAGER)
     //@JsonView(BeanViews.JsonDiff.class)  commenting this out to make the stdName field easier to see
 	@Indexable(name="Standardized Name", suggest=true)
