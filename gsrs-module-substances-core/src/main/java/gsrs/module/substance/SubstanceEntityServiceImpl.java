@@ -2267,7 +2267,57 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
+    public CreationResult<Substance> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad) {
+        Optional<UUID> requestedUuid = readSubstanceUuid(newEntityJson);
+        if (requestedUuid.isPresent() && repository.existsById(requestedUuid.get())) {
+            ValidationResponse<Substance> response = new ValidationResponse<>();
+            response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "A substance with UUID \"%s\" already exists. Use an update request to change it.",
+                    requestedUuid.get()));
+            response.setValid(false);
+            return CreationResult.<Substance>builder()
+                    .created(false)
+                    .validationResponse(response)
+                    .build();
+        }
+        return super.createEntity(newEntityJson, partOfBatchLoad);
+    }
+
+    /**
+     * Reads the root substance UUID from the request JSON.
+     * Missing, blank or malformed values are treated as absent.
+     */
+    private static Optional<UUID> readSubstanceUuid(JsonNode json) {
+        if (json == null) {
+            return Optional.empty();
+        }
+        JsonNode uuidNode = json.get("uuid");
+        if (uuidNode == null || uuidNode.isNull()) {
+            return Optional.empty();
+        }
+        String text = uuidNode.asText();
+        if (text == null || !Util.isUUID(text.trim())) {
+            return Optional.empty();
+        }
+        return Optional.of(UUID.fromString(text.trim()));
+    }
+
+    private boolean isMissingUpdateTarget(JsonNode updatedEntityJson) {
+        Optional<UUID> uuid = readSubstanceUuid(updatedEntityJson);
+        return uuid.isEmpty() || !repository.existsById(uuid.get());
+    }
+
+    private static UpdateResult<Substance> notFoundUpdateResult() {
+        return UpdateResult.<Substance>builder()
+                .status(UpdateResult.STATUS.NOT_FOUND)
+                .build();
+    }
+
+    @Override
     public UpdateResult<Substance> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception {
+        if (isMissingUpdateTarget(updatedEntityJson)) {
+            return notFoundUpdateResult();
+        }
         ValidationResponse<Substance> validationResponse = null;
         if (!ignoreValidation) {
             validationResponse = validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_ALL());
@@ -2311,6 +2361,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
+        if (isMissingUpdateTarget(updatedEntityJson)) {
+            return notFoundUpdateResult();
+        }
         return performUpdateEntity(updatedEntityJson, null);
     }
 
@@ -2330,7 +2383,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 if (validationResponse != null) {
                     builder.validationResponse(validationResponse);
                 }
+                boolean[] targetFound = {false};
                 EntityUtils.EntityWrapper<Substance> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
+                        targetFound[0] = true;
                         EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
                         String oldJson = og.toFullJson();
                         builder.oldJson(oldJson);
@@ -2498,7 +2553,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             return Optional.of(saved); //Delete & Create
                         }
                     });
-                if(savedVersion ==null){
+                if(savedVersion ==null && !targetFound[0]){
+                    // The substance disappeared after the existence check; nothing was changed.
+                    builder.status(UpdateResult.STATUS.NOT_FOUND);
+                }else if(savedVersion ==null){
                     status.setRollbackOnly();
                 }else {
                     //IDK?
