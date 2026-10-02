@@ -14,7 +14,11 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.io.InputStream;
+import java.util.Spliterator;
+import java.util.Spliterators;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 @Slf4j
 public class GSRSJSONImportAdapter implements ImportAdapter<Substance> {
@@ -23,7 +27,71 @@ public class GSRSJSONImportAdapter implements ImportAdapter<Substance> {
     private PlatformTransactionManager platformTransactionManager;
 
     @Override
-    public Stream<Substance> parse(InputStream is, ObjectNode settings, JsonNode schema) {
+    public Stream<Substance> parse(
+            InputStream is,
+            ObjectNode settings,
+            JsonNode schema) {
+
+        SubstanceBulkLoadService.GinasDumpExtractor dumpExtractor =
+                new SubstanceBulkLoadService.GinasDumpExtractor(is);
+
+        Spliterator<Substance> spliterator =
+                new Spliterators.AbstractSpliterator<>(
+                        Long.MAX_VALUE,
+                        Spliterator.ORDERED | Spliterator.NONNULL) {
+
+                    private boolean finished;
+
+                    @Override
+                    public boolean tryAdvance(Consumer<? super Substance> action) {
+                        if (finished) {
+                            return false;
+                        }
+
+                        try {
+                            JsonNode record = dumpExtractor.getNextRecord();
+
+                            if (record == null) {
+                                finish();
+                                return false;
+                            }
+
+                            TransactionTemplate transaction =
+                                    new TransactionTemplate(platformTransactionManager);
+
+                            transaction.setPropagationBehavior(
+                                    TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+
+                            Substance substance = transaction.execute(
+                                    status -> convertJsonNode(record));
+
+                            if (substance == null) {
+                                throw new IllegalStateException(
+                                        "JSON record conversion returned null");
+                            }
+
+                            action.accept(substance);
+                            return true;
+                        } catch (Exception e) {
+                            finish();
+                            throw new RuntimeException(
+                                    "Error reading or converting a GSRS JSON record", e);
+                        }
+                    }
+
+                    private void finish() {
+                        if (!finished) {
+                            finished = true;
+                            dumpExtractor.close();
+                        }
+                    }
+                };
+
+        return StreamSupport.stream(spliterator, false)
+                .onClose(dumpExtractor::close);
+    }
+
+    public Stream<Substance> parse_old(InputStream is, ObjectNode settings, JsonNode schema) {
         Stream.Builder<Substance> newSubstanceStream= Stream.builder();
         SubstanceBulkLoadService.GinasDumpExtractor dumpExtractor = new SubstanceBulkLoadService.GinasDumpExtractor(is);
         try {
