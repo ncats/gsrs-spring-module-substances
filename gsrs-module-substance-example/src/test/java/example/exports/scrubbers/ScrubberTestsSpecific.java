@@ -2,6 +2,7 @@ package example.exports.scrubbers;
 
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
+import gsrs.module.substance.utils.ImageUtilities;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.core.models.Group;
 import ix.core.models.Keyword;
@@ -1251,6 +1252,102 @@ public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
         Optional<Substance> cleaned = scrubber.scrub(testConcept);
         Assertions.assertEquals(openName.stdName, cleaned.get().names.get(0).stdName);
+    }
+
+    /*
+    The substance has an image reference; we expect it to be removed
+     */
+    @Test
+    public void testRemoveImageRef(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Reference imageReference = new Reference();
+        imageReference.publicDomain=true;
+        imageReference.citation="some image";
+        imageReference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        imageReference.uploadedFile = "https://ourserver.company.com/files/mysteryFile.txt";
+
+        Name openName = new Name();
+        openName.name="Ouvert";
+        openName.languages.add(new Keyword("fr"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+
+        Code openCode = new Code();
+        openCode.code="1";
+        openCode.codeSystem="EINECS";
+        openCode.type="PRIMARY";
+        substanceBuilder.addCode(openCode);
+
+        Code lockedCode = new Code();
+        lockedCode.code="999";
+        lockedCode.codeSystem="confidential application";
+        lockedCode.type="PRIMARY";
+        substanceBuilder.addCode(lockedCode);
+        Substance testConcept = substanceBuilder.build();
+        testConcept.addReference(imageReference);
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.removeImageFileUrlsFromImageReferences = true;
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Reference processedImageRef= cleaned.get().references.stream().filter(r-> r.docType.equals(ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE)).findFirst().get();
+        Assertions.assertNull(processedImageRef.uploadedFile);
+    }
+
+    /*
+    The substance has an image reference; we expect it NOT to be removed
+    */
+    @Test
+    public void testRemoveImageRefFalse(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Reference imageReference = new Reference();
+        imageReference.publicDomain=true;
+        imageReference.citation="some image";
+        imageReference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        imageReference.uploadedFile = "https://ourserver.company.com/files/mysteryFile.txt";
+
+        Name openName = new Name();
+        openName.name="Ouvert";
+        openName.languages.add(new Keyword("fr"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+
+        Code openCode = new Code();
+        openCode.code="1";
+        openCode.codeSystem="EINECS";
+        openCode.type="PRIMARY";
+        substanceBuilder.addCode(openCode);
+
+        Code lockedCode = new Code();
+        lockedCode.code="999";
+        lockedCode.codeSystem="confidential application";
+        lockedCode.type="PRIMARY";
+        substanceBuilder.addCode(lockedCode);
+        Substance testConcept = substanceBuilder.build();
+        testConcept.addReference(imageReference);
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.removeImageFileUrlsFromImageReferences = false;
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Reference processedImageRef= cleaned.get().references.stream().filter(r-> r.docType.equals(ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE)).findFirst().get();
+        Assertions.assertNotNull(processedImageRef.uploadedFile);
     }
 
     private NucleicAcidSubstance createApprovedNA(String newApprovalId) {

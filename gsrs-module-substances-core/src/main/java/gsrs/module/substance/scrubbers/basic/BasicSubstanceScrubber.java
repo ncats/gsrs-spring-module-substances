@@ -22,6 +22,7 @@ import com.jayway.jsonpath.PathNotFoundException;
 import com.jayway.jsonpath.Predicate;
 
 import gov.nih.ncats.common.stream.StreamUtil;
+import gsrs.module.substance.utils.ImageUtilities;
 import ix.core.EntityFetcher;
 import ix.core.models.Group;
 import ix.core.models.Structure;
@@ -219,7 +220,6 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     						    .filter(uu->references.contains(uu))
     						    .collect(Collectors.toSet());
     		o.setReferenceUuids(refs);
-
     	});
     }
 
@@ -265,6 +265,16 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 log.trace("removed references");
             }
         });
+    }
+
+    private void handleImageRefs(Substance substance) {
+        if( scrubberSettings.removeImageFileUrlsFromImageReferences) {
+            substance.references.forEach(r->{
+                if(ImageUtilities.isImageReference(r)) {
+                    r.uploadedFile = null;
+                }
+            });
+        }
     }
 
     private Substance scrubAccess(Substance starting) throws IOException {
@@ -841,6 +851,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
                 //even null works
                 snew.status=scrubberSettings.getChangeAllStatusesNewStatusValue();
             }
+            handleImageRefs(snew);
             log.trace("successful completion of scrub");
             return Optional.of(snew);
         }

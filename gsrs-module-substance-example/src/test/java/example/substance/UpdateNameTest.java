@@ -23,8 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Tag("fullstack")
-public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
-
+public class UpdateNameTest extends AbstractSubstanceJpaEntityTest {
 
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
@@ -55,18 +54,18 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void updateChemicalStructureWithExistingNameOrg(){
-        UUID nameOrgUuid = UUID.randomUUID();
 
         Substance created = assertCreated(new SubstanceBuilder()
                 .asChemical()
                 .setStructureWithDefaultReference("CCO")
                 .addName("Chemical Name", n -> {
                     NameOrg org = new NameOrg();
-                    org.setUuid(nameOrgUuid);
                     org.nameOrg = "MyName org";
                     n.nameOrgs.add(org);
                 })
                 .buildJson());
+
+        UUID originalNameOrgUuid = created.names.get(0).nameOrgs.get(0).uuid;
 
         ChemicalSubstanceBuilder updateBuilder = SubstanceBuilder.from(created.toFullJsonNode());
         Substance updated = assertUpdated(updateBuilder
@@ -77,7 +76,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
         assertThat(actualNameOrgs.stream().map(no -> no.nameOrg).collect(Collectors.toList()),
                 contains("MyName org"));
-        assertEquals(nameOrgUuid, actualNameOrgs.get(0).getUuid());
+        assertEquals(originalNameOrgUuid, actualNameOrgs.get(0).getUuid());
     }
 
 

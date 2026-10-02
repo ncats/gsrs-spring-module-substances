@@ -151,6 +151,11 @@
         ]
       }
     },
+    "removeFileUrlsFromImageReferences": {
+      "comments": "Remove File URLs from IMAGE reference",
+      "title": "Remove File URLs that are probably specific to the original system",
+      "type": "boolean"
+    },
     "substanceReferenceCleanup": {
       "comments": "When selected, next criteria are used to process substance references",
       "type": "boolean",
