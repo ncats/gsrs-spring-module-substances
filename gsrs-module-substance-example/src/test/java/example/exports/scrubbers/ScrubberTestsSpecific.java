@@ -1255,10 +1255,10 @@ public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
     }
 
     /*
-    The substance has an image reference; we expect it to be removed
+    The substance has an image reference; we expect the file url to be removed
      */
     @Test
-    public void testRemoveImageRef(){
+    public void testRemoveFileUrlFromImageRef(){
 
         SubstanceBuilder substanceBuilder = new SubstanceBuilder();
         Reference publicReference = new Reference();
@@ -1306,7 +1306,7 @@ public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
     The substance has an image reference; we expect it NOT to be removed
     */
     @Test
-    public void testRemoveImageRefFalse(){
+    public void testDoNotRemoveFileUrlImageRef(){
 
         SubstanceBuilder substanceBuilder = new SubstanceBuilder();
         Reference publicReference = new Reference();
@@ -1348,6 +1348,67 @@ public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
         Optional<Substance> cleaned = scrubber.scrub(testConcept);
         Reference processedImageRef= cleaned.get().references.stream().filter(r-> r.docType.equals(ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE)).findFirst().get();
         Assertions.assertNotNull(processedImageRef.uploadedFile);
+    }
+
+    /*
+    The substance has an image reference; we expect the file url to be removed
+    */
+    @Test
+    public void testRemoveFileUrlFromImageRefAndRemoveOther(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Reference imageReference = new Reference();
+        imageReference.publicDomain=true;
+        imageReference.citation="some image";
+        imageReference.docType= ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE;
+        imageReference.uploadedFile = "https://ourserver.company.com/files/mysteryFile.txt";
+
+        String journaReferenceCitation ="Journal of Applied Chemical Information V. 11 2024 p 5";
+        Reference journalReference = new Reference();
+        journalReference.publicDomain=true;
+        journalReference.citation=journaReferenceCitation;
+        journalReference.docType= "Journal";
+
+        Name openName = new Name();
+        openName.name="Ouvert";
+        openName.languages.add(new Keyword("fr"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+        substanceBuilder.addReference(journalReference);
+        substanceBuilder.addReference(imageReference);
+
+        Code openCode = new Code();
+        openCode.code="1";
+        openCode.codeSystem="EINECS";
+        openCode.type="PRIMARY";
+        openCode.addReference(journalReference);
+        substanceBuilder.addCode(openCode);
+
+        Code lockedCode = new Code();
+        lockedCode.code="999";
+        lockedCode.codeSystem="confidential application";
+        lockedCode.type="PRIMARY";
+        substanceBuilder.addCode(lockedCode);
+        Substance testConcept = substanceBuilder.build();
+
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.removeImageFileUrlsFromImageReferences = true;
+        scrubberSettings.removeReferencesByCriteria = true;
+        scrubberSettings.removeReferencesByCriteriaCitationPatternsToRemove = ".*Journal.*";
+        scrubberSettings.removeReferencesByCriteriaExcludeReferenceByPattern = true;
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Reference processedImageRef= cleaned.get().references.stream().filter(r-> r.docType.equals(ImageUtilities.SUBSTANCE_IMAGE_REFERENCE_TYPE)).findFirst().get();
+        Assertions.assertNull(processedImageRef.uploadedFile);
+        Assertions.assertFalse(cleaned.get().references.stream().anyMatch(r->r.citation.equals(journaReferenceCitation)));
     }
 
     private NucleicAcidSubstance createApprovedNA(String newApprovalId) {

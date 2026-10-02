@@ -833,9 +833,8 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
 
             String cleanJson= restrictedJSONSimple(substanceJson);
             snew = SubstanceBuilder.from(cleanJson).build();
-            if(scrubberSettings.getSubstanceReferenceCleanup()) {
-                cleanUpReferences(snew);
-            }
+            cleanUpReferences(snew);
+            
             removeStaleReferences(snew);
             if( scrubberSettings.getApprovalIdCleanup()) {
                 scrubApprovalId(snew);
