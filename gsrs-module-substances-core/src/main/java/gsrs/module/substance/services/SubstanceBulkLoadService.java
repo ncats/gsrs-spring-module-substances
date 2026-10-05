@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
@@ -104,6 +105,9 @@ public class SubstanceBulkLoadService {
     }
 
     private final Object jobLock = new Object();
+
+    /** Set when the application context is closing so running loads stop instead of finishing as COMPLETE. */
+    private volatile boolean shuttingDown = false;
 
     private static final String KEY_PROCESS_QUEUE_SIZE = "PROCESS_QUEUE_SIZE";
 
@@ -217,9 +221,18 @@ public class SubstanceBulkLoadService {
         return processingJobRepository.saveAndFlush(job);
     }
 
+    private void saveStoppedJobQuietly(long jobId, String jobKey, String message) {
+        try {
+            saveJobInSeparateTransaction(jobId, getStatisticsForJob(jobKey), ProcessingJob.Status.STOPPED, message);
+        } catch (RuntimeException e) {
+            // the database may already be closing during shutdown
+            log.warn("Could not record stopped status for bulk load job {}: {}", jobId, e.getMessage());
+        }
+    }
+
     @PreDestroy
     public void onStop() {
-
+        shuttingDown = true;
         for(ExecutorService s : executorServices.values()){
             s.shutdownNow();
         }
@@ -299,6 +312,7 @@ public class SubstanceBulkLoadService {
 
             @Override
             public void run() {
+                boolean submissionStopped = false;
                 TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
                 tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 ProcessingJob job = tx2.execute(s -> {
@@ -347,6 +361,11 @@ public class SubstanceBulkLoadService {
                                     final PayloadExtractedRecord prg =
                                             new PayloadExtractedRecord(job, record, pp.key);
 
+                                    if (record != null && executorService.isShutdown()) {
+                                        // cancelled or server stopping: stop reading instead of rejecting every remaining record
+                                        submissionStopped = true;
+                                        break;
+                                    }
                                     if (record != null) {
                                         //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
                                         Runnable r;
@@ -374,6 +393,11 @@ public class SubstanceBulkLoadService {
                                         executorService.submit(() -> adminService.runAs(auth, r));
 
                                     }
+                                } catch (RejectedExecutionException e) {
+                                    // executor was shut down between the check above and submit()
+                                    log.warn("Bulk load {} stopped accepting records: {}", pp.key, e.getMessage());
+                                    submissionStopped = true;
+                                    break;
                                 } catch (Exception e) {
                                     Statistics stat = getStatisticsForJob(pp.key);
                                     stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
@@ -396,11 +420,24 @@ public class SubstanceBulkLoadService {
                 }
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
+                    executorServices.remove(pp.key);
+                    if (shuttingDown) {
+                        log.warn("Bulk load {} stopped because the server is shutting down", pp.key);
+                        saveStoppedJobQuietly(pp.jobId, pp.key, "Stopped because the server was shutting down");
+                        return;
+                    }
+                    // records persisted before a cancel are still reindexed so the search index matches the database
                     awaitAsyncIndexingQuiescence();
                     callback.reindexPersistedSubstances();
-                    executorServices.remove(pp.key);
-                    log.trace("about to save job as COMPLETE");
-                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.COMPLETE, null);
+                    Statistics finalStats = getStatisticsForJob(pp.key);
+                    boolean cancelled = submissionStopped || (finalStats != null && finalStats.cancelled);
+                    if (cancelled) {
+                        log.trace("about to save job as STOPPED (cancelled)");
+                        saveJobInSeparateTransaction(pp.jobId, finalStats, ProcessingJob.Status.STOPPED, "Cancelled");
+                    } else {
+                        log.trace("about to save job as COMPLETE");
+                        saveJobInSeparateTransaction(pp.jobId, finalStats, ProcessingJob.Status.COMPLETE, null);
+                    }
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
