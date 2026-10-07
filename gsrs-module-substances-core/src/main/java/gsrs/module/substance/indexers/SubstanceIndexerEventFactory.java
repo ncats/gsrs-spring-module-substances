@@ -27,6 +27,9 @@ import java.util.Optional;
  * <p>Using the update event therefore makes indexing idempotent per key and removes the
  * duplicate-document race entirely. The structure and sequence indexers both expose an
  * equivalent {@code onUpdate} handler, so they keep indexing newly created substances.
+ *
+ * <p>During a bulk load with deferred indexing ({@link BulkLoadIndexDeferral}) no index event is
+ * published for substances; the bulk load indexes them once after all its workers have finished.
  */
 @Component
 public class SubstanceIndexerEventFactory implements IndexerEventFactory {
@@ -37,7 +40,20 @@ public class SubstanceIndexerEventFactory implements IndexerEventFactory {
         if (key.isEmpty()) {
             return null;
         }
+        Object entity = entityWrapper.getValue();
+        if (BulkLoadIndexDeferral.deferIfActive(entity)) {
+            return new BulkLoadIndexDeferral.Deferred(((Substance) entity).getUuid());
+        }
         return new IndexUpdateEntityEvent(key.get(), Optional.of(entityWrapper));
+    }
+
+    @Override
+    public Object newUpdateEventFor(EntityUtils.EntityWrapper entityWrapper) {
+        Object entity = entityWrapper.getValue();
+        if (BulkLoadIndexDeferral.deferIfActive(entity)) {
+            return new BulkLoadIndexDeferral.Deferred(((Substance) entity).getUuid());
+        }
+        return IndexerEventFactory.super.newUpdateEventFor(entityWrapper);
     }
 
     @Override

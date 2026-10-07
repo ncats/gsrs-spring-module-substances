@@ -88,9 +88,35 @@ class SubstanceBulkLoadCancellationTest {
         assertEquals(4, f.recordsRead.get(), "3 records plus the end-of-file read");
     }
 
+    @Test
+    void progressSavesAreThrottledButFinalStatusIsStillSaved() throws Exception {
+        int records = 200;
+        Fixture f = new Fixture(records, false, 60_000L);
+        f.service.submit(f.parameters());
+
+        ProcessingJob.Status finalStatus = f.awaitFinalStatus();
+        assertEquals(ProcessingJob.Status.COMPLETE, finalStatus);
+        assertEquals(records + 1, f.recordsRead.get());
+        assertTrue(f.jobSaves.get() < 10,
+                "progress should be saved at most once per interval, but the job was saved " + f.jobSaves.get() + " times");
+    }
+
+    @Test
+    void zeroProgressIntervalKeepsSavingAfterEveryRecord() throws Exception {
+        int records = 20;
+        Fixture f = new Fixture(records, false, 0L);
+        f.service.submit(f.parameters());
+
+        ProcessingJob.Status finalStatus = f.awaitFinalStatus();
+        assertEquals(ProcessingJob.Status.COMPLETE, finalStatus);
+        assertTrue(f.jobSaves.get() >= records,
+                "expected a save per record, but the job was saved " + f.jobSaves.get() + " times");
+    }
+
     private static class Fixture {
         final CountDownLatch firstWorkerStarted = new CountDownLatch(1);
         final AtomicInteger recordsRead = new AtomicInteger();
+        final AtomicInteger jobSaves = new AtomicInteger();
         final AtomicReference<ProcessingJob.Status> lastFinalStatus = new AtomicReference<>();
         final CountDownLatch finalStatusSaved = new CountDownLatch(1);
         final SubstanceBulkLoadService service;
@@ -100,13 +126,18 @@ class SubstanceBulkLoadCancellationTest {
             this(RECORDS_IN_FILE, true);
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
         Fixture(int recordCount, boolean blockWorkers) throws Exception {
+            this(recordCount, blockWorkers, 0L);
+        }
+
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Fixture(int recordCount, boolean blockWorkers, long progressSaveIntervalMs) throws Exception {
             payload.id = UUID.randomUUID();
 
             ProcessingJob job = new ProcessingJob();
             ProcessingJobRepository jobRepository = mock(ProcessingJobRepository.class);
             when(jobRepository.saveAndFlush(any())).thenAnswer(inv -> {
+                jobSaves.incrementAndGet();
                 ProcessingJob saved = inv.getArgument(0);
                 if (saved.id == null) {
                     saved.id = 1L;
@@ -152,6 +183,7 @@ class SubstanceBulkLoadCancellationTest {
             when(configuration.getPersistRecordWorkerFactory(any())).thenReturn(workerFactory);
             when(configuration.getLoadingThreads()).thenReturn(1);
             when(configuration.getMaxQueueSize()).thenReturn(1);
+            when(configuration.getProgressSaveIntervalMs()).thenReturn(progressSaveIntervalMs);
 
             FilteredPrintStream filter = mock(FilteredPrintStream.class);
             when(filter.newFilter(any())).thenReturn(mock(FilteredPrintStream.FilterSession.class));

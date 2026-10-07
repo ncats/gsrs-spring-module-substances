@@ -62,6 +62,10 @@ public class PeptideInterpreter {
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
+			if (c == null) {
+				// parsing failed; skip this entry instead of letting an NPE fail the whole class initialization
+				continue;
+			}
 
 			contractPeptide(c);
 			for (Atom ma : c.getAtoms()) {

@@ -24,6 +24,15 @@ public class SubstanceBulkLoadServiceConfiguration {
     private int maxQueueSize=100;
     @Value("${ix.ginas.batch.loadingThreads:1}")
     private int loadingThreads=1;
+    /** Minimum milliseconds between per-record progress saves of the ProcessingJob row; 0 saves after every record. */
+    @Value("${ix.ginas.batch.progressSaveIntervalMs:2000}")
+    private long progressSaveIntervalMs=2000;
+    /**
+     * Index substances created or changed by a bulk load once, after all its workers finish,
+     * instead of with background index events while the load runs.
+     */
+    @Value("#{new Boolean('${ix.ginas.batch.deferIndexing:true}')}")
+    private boolean deferIndexing=true;
     @Value("#{new Boolean('${ix.ginas.batch.persist:true}')}")
     private boolean actuallyPersist=true;
     @Value("#{new Boolean('${ix.ginas.batch.validation:true}')}")

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,6 +19,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import gsrs.module.substance.indexers.BulkLoadIndexDeferral;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -305,6 +309,10 @@ public class SubstanceBulkLoadService {
                 BlockingSubmitExecutor.newFixedThreadPool(loadingThreads, queueSize);
 
         final PersistRecordWorkerFactory factory = configuration.getPersistRecordWorkerFactory(parameters);
+        final long progressSaveIntervalMs = Math.max(0L, configuration.getProgressSaveIntervalMs());
+        final AtomicLong lastProgressSave = new AtomicLong(0L);
+        final BulkLoadTimings timings = BulkLoadTimings.start(pp.key);
+        final boolean deferIndexing = configuration.isDeferIndexing();
 
         executorServices.put( pp.key, executorService);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -356,7 +364,9 @@ public class SubstanceBulkLoadService {
                             int count = 0;
                             do {
                                 try {
+                                    long readStart = System.nanoTime();
                                     record = extractorInstance.getNextRecord();
+                                    timings.add(BulkLoadTimings.Phase.READ, System.nanoTime() - readStart);
 
                                     final PayloadExtractedRecord prg =
                                             new PayloadExtractedRecord(job, record, pp.key);
@@ -376,7 +386,7 @@ public class SubstanceBulkLoadService {
                                                     auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
                                                 }finally{
                                                     log.trace("saving job after one record because isPreserveOldEditInfo");
-                                                    saveJobInSeparateTransaction(pp.jobId, pp.key);
+                                                    saveProgressThrottled(pp.jobId, pp.key, lastProgressSave, progressSaveIntervalMs);
                                                 }
                                             };
 
@@ -386,11 +396,27 @@ public class SubstanceBulkLoadService {
                                                     factory.newWorkerFor(prg, configuration, parameters, callback).run();
                                                 }finally{
                                                     log.trace("saving job after one record because NOT isPreserveOldEditInfo");
-                                                    saveJobInSeparateTransaction(pp.jobId, pp.key);
+                                                    saveProgressThrottled(pp.jobId, pp.key, lastProgressSave, progressSaveIntervalMs);
                                                 }
                                             };
                                         }
-                                        executorService.submit(() -> adminService.runAs(auth, r));
+                                        final Runnable work = r;
+                                        Runnable timed = () -> {
+                                            BulkLoadTimings previous = BulkLoadTimings.bind(pp.key);
+                                            try {
+                                                if (deferIndexing) {
+                                                    BulkLoadIndexDeferral.runDeferred(callback.deferredIndexIds, work);
+                                                } else {
+                                                    work.run();
+                                                }
+                                            } finally {
+                                                timings.recordDone();
+                                                BulkLoadTimings.restore(previous);
+                                            }
+                                        };
+                                        long submitStart = System.nanoTime();
+                                        executorService.submit(() -> adminService.runAs(auth, timed));
+                                        timings.add(BulkLoadTimings.Phase.SUBMIT_WAIT, System.nanoTime() - submitStart);
 
                                     }
                                 } catch (RejectedExecutionException e) {
@@ -423,12 +449,23 @@ public class SubstanceBulkLoadService {
                     executorServices.remove(pp.key);
                     if (shuttingDown) {
                         log.warn("Bulk load {} stopped because the server is shutting down", pp.key);
+                        if (!callback.deferredIndexIds.isEmpty()) {
+                            log.warn("Bulk load {}: {} loaded substances were not indexed because the server stopped; "
+                                    + "run a reindex after restart", pp.key, callback.deferredIndexIds.size());
+                        }
                         saveStoppedJobQuietly(pp.jobId, pp.key, "Stopped because the server was shutting down");
                         return;
                     }
+                    // the job counts may already read "done"; keep it RUNNING until the index is up to date
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.RUNNING,
+                            "Indexing loaded substances");
                     // records persisted before a cancel are still reindexed so the search index matches the database
+                    long waitStart = System.nanoTime();
                     awaitAsyncIndexingQuiescence();
+                    timings.add(BulkLoadTimings.Phase.WAIT_ASYNC_INDEX, System.nanoTime() - waitStart);
+                    long reindexStart = System.nanoTime();
                     callback.reindexPersistedSubstances();
+                    timings.add(BulkLoadTimings.Phase.FINAL_REINDEX, System.nanoTime() - reindexStart);
                     Statistics finalStats = getStatisticsForJob(pp.key);
                     boolean cancelled = submissionStopped || (finalStats != null && finalStats.cancelled);
                     if (cancelled) {
@@ -444,6 +481,8 @@ public class SubstanceBulkLoadService {
                     log.trace("about to save job as Interrupted");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.STOPPED, "Interrupted");
                     e.printStackTrace();
+                } finally {
+                    BulkLoadTimings.finish(pp.key);
                 }
             }
         };
@@ -471,6 +510,8 @@ public class SubstanceBulkLoadService {
 
         private final String jobKey;
         private final Set<UUID> persistedSubstanceIds = ConcurrentHashMap.newKeySet();
+        /** substances whose index events were deferred by {@link BulkLoadIndexDeferral} (created or changed by the load) */
+        final Set<UUID> deferredIndexIds = ConcurrentHashMap.newKeySet();
 
         public BulkLoadServiceCallBackImpl(String jobKey) {
             this.jobKey = jobKey;
@@ -533,7 +574,10 @@ public class SubstanceBulkLoadService {
         }
 
         void reindexPersistedSubstances() {
-            if (persistedSubstanceIds.isEmpty()) {
+            //substances changed by the load (e.g. related substances) are indexed too when indexing was deferred
+            Set<UUID> toReindex = new LinkedHashSet<>(persistedSubstanceIds);
+            toReindex.addAll(deferredIndexIds);
+            if (toReindex.isEmpty()) {
                 return;
             }
             SubstanceRepository substanceRepository =
@@ -547,7 +591,7 @@ public class SubstanceBulkLoadService {
             tx.setReadOnly(true);
 
             int reconciled = 0;
-            for (UUID substanceId : persistedSubstanceIds) {
+            for (UUID substanceId : toReindex) {
                 try {
                     //the event has to be published while the transaction - and therefore the
                     //Hibernate session - is still open. Every ReindexEntityEvent listener is a plain
@@ -567,17 +611,24 @@ public class SubstanceBulkLoadService {
                                     })
                                     .orElse(Boolean.FALSE));
                     if (!Boolean.TRUE.equals(published)) {
-                        log.warn("Substance {} was reported as persisted but is not in the database; "
-                                + "skipping index reconciliation", substanceId);
+                        if (persistedSubstanceIds.contains(substanceId)) {
+                            log.warn("Substance {} was reported as persisted but is not in the database; "
+                                    + "skipping index reconciliation", substanceId);
+                        }
+                        //a deferred id that is not in the database belongs to a record whose save rolled back
                         continue;
                     }
                     reconciled++;
+                    if (reconciled % 1000 == 0) {
+                        log.info("Bulk load index reconciliation: {} of {} substances indexed",
+                                reconciled, toReindex.size());
+                    }
                 } catch (Exception e) {
                     log.warn("Unable to reconcile index for substance " + substanceId, e);
                 }
             }
             log.info("Bulk load index reconciliation complete: {} of {} substances reindexed",
-                    reconciled, persistedSubstanceIds.size());
+                    reconciled, toReindex.size());
         }
     }
 
@@ -670,6 +721,24 @@ public class SubstanceBulkLoadService {
             saveJobInSeparateTransaction(jobId, stat, null, null);
         }
     }
+
+    /**
+     * Per-record progress save. Writing the ProcessingJob row after every record costs a separate
+     * transaction under a global lock, so it is limited to one save per interval; the final status
+     * is always saved explicitly when the job ends.
+     */
+    void saveProgressThrottled(long jobId, String statKey, AtomicLong lastSave, long intervalMs){
+        if(intervalMs > 0){
+            long now = System.currentTimeMillis();
+            long previous = lastSave.get();
+            if(now - previous < intervalMs || !lastSave.compareAndSet(previous, now)){
+                return;
+            }
+        }
+        long saveStart = System.nanoTime();
+        saveJobInSeparateTransaction(jobId, statKey);
+        BulkLoadTimings.record(BulkLoadTimings.Phase.JOB_PROGRESS_SAVE, saveStart);
+    }
     public void applyStatisticsChangeForJob(ProcessingJob job, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(job);
         if(stat !=null){
@@ -718,7 +787,13 @@ public class SubstanceBulkLoadService {
                 List<String> errors = new ArrayList<>();
                 if (prec.recordToPersist != null) {
                     try{
-                        GsrsEntityService.CreationResult result = substanceEntityService.createEntity(prec.recordToPersist,true);
+                        long createStart = System.nanoTime();
+                        GsrsEntityService.CreationResult result;
+                        try {
+                            result = substanceEntityService.createEntity(prec.recordToPersist,true);
+                        } finally {
+                            BulkLoadTimings.record(BulkLoadTimings.Phase.VALIDATE_AND_SAVE, createStart);
+                        }
                         worked= result.isCreated();
 
                         Throwable t = result.getThrowable();
@@ -751,7 +826,9 @@ public class SubstanceBulkLoadService {
                 }
                 //copy of rec to get the stats in a detached
 
+                long recordSaveStart = System.nanoTime();
                 ProcessingRecord savedRecord = saveProcessingRecord(prec.rec);
+                BulkLoadTimings.record(BulkLoadTimings.Phase.PROCESSING_RECORD_SAVE, recordSaveStart);
                 prec.rec.id = savedRecord.id;
 
 

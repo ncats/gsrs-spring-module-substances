@@ -1,6 +1,7 @@
 package ix.core.plugins;
 
 import gsrs.AuditConfig;
+import gsrs.module.substance.services.BulkLoadTimings;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import ix.core.processing.*;
@@ -45,7 +46,9 @@ public class SingleThreadedPersistRecordWorkerFactory implements PersistRecordWo
 
         @Override
         protected void doPersist(TransformedRecord tr) {
+            long lockWaitStart = System.nanoTime();
             synchronized (lock) {
+                BulkLoadTimings.record(BulkLoadTimings.Phase.PERSIST_LOCK_WAIT, lockWaitStart);
                 if(preserveOldAudit){
                     auditConfig.disableAuditingFor(()->{
                         tr.persists();
