@@ -62,6 +62,10 @@ public class PeptideInterpreter {
 			} catch (Exception e1) {
 				e1.printStackTrace();
 			}
+			if (c == null) {
+				// parsing failed; skip this entry instead of letting an NPE fail the whole class initialization
+				continue;
+			}
 
 			contractPeptide(c);
 			for (Atom ma : c.getAtoms()) {
@@ -727,6 +731,8 @@ public class PeptideInterpreter {
 		if(impMol.getAtomCount()>=1024){
 			throw new IllegalArgumentException("Too many atoms, does not support >= 1024");
 		}
+		// Modification labels only need to live until this molecule has been decoded.
+		ModificationNames modifications = new ModificationNames();
 		//System.out.println("Number of atoms:" + impMol.getAtomCount());
 		List<String> sequences1Let = new ArrayList<>();
 		Map<Integer,Integer> canonicalSequenceMap = new HashMap<>();
@@ -875,14 +881,9 @@ public class PeptideInterpreter {
 							smiles=decodePeptide(tf.toSmiles(),true);
 						}
 //						System.out.println("now smiles = " + smiles);
-						if(modFreq.get(smiles)==null){
-							modFreq.put(smiles, 1);
-						}else{
-							modFreq.put(smiles, modFreq.get(smiles)+1);
-						}
 						if(mod==6){
 							//TODO: make more robust cterm handling
-							String let = getModName(smiles);
+							String let = modifications.nameFor(smiles);
 							aalet=let;
 							if(patt==-1){
 								patt=aamap;
@@ -898,7 +899,7 @@ public class PeptideInterpreter {
 								}
 							}*/
 							//if()
-							String let = getModName(smiles);
+							String let = modifications.nameFor(smiles);
 							aalet=let;
 						}
 					}
@@ -920,7 +921,7 @@ public class PeptideInterpreter {
 						//TODO: should flag for bogus ring
 						//modMap.put(let,"???ring");
 					}else{
-						boolean mod = (modName.get(let)!=null);
+						boolean mod = (modifications.smilesFor(let)!=null);
 						if (!mod){
 						    Chirality chi1 =(chi.get(s));
 							Chirality chi2 =(let!=null)?(AAmapCHI.get(let)):Chirality.Parity_Either;
@@ -968,7 +969,7 @@ public class PeptideInterpreter {
 			String[] nmod=seq2.replaceAll("[^X|0-9]", "").replaceAll("(X[0-9][0-9]*)","$1,").split(",");
 			int pind=0;
 			for(String n:nmod){
-				String smi = PeptideInterpreter.modName.get(n);
+				String smi = modifications.smilesFor(n);
 				if(smi!=null){
 					int res = seq3.indexOf("X", pind);
 					pind=res+1;
@@ -1012,6 +1013,23 @@ public class PeptideInterpreter {
 		}
 		return prot;
 	}
+	static final class ModificationNames {
+		private final Map<String, String> names = new HashMap<>();
+		private final Map<String, String> smiles = new HashMap<>();
+
+		String nameFor(String value) {
+			return names.computeIfAbsent(value, key -> {
+				String label = "X" + (names.size() + 1);
+				smiles.put(label, key);
+				return label;
+			});
+		}
+
+		String smilesFor(String label) {
+			return smiles.get(label);
+		}
+	}
+
 	public static String getModName(String smiles){
 
 		String let = modMap.get(smiles);
