@@ -3,6 +3,7 @@ package gsrs.module.substance.controllers;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.services.ProcessingJobEntityService;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
+import gsrs.module.substance.services.BulkUploadPreflight;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.service.PayloadService;
@@ -19,6 +20,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.SimpleTransactionStatus;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -36,6 +38,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 @ExtendWith(MockitoExtension.class)
 class SubstanceLegacyBulkLoadControllerTest {
@@ -58,6 +62,8 @@ class SubstanceLegacyBulkLoadControllerTest {
     @Mock
     private PlatformTransactionManager platformTransactionManager;
 
+    @Mock
+    private BulkUploadPreflight bulkUploadPreflight;
     private SubstanceLegacyBulkLoadController controller;
 
     @BeforeEach
@@ -69,6 +75,23 @@ class SubstanceLegacyBulkLoadControllerTest {
         ReflectionTestUtils.setField(controller, "controllerConfiguration", controllerConfiguration);
         ReflectionTestUtils.setField(controller, "processingJobService", processingJobService);
         ReflectionTestUtils.setField(controller, "platformTransactionManager", platformTransactionManager);
+        ReflectionTestUtils.setField(controller, "bulkUploadPreflight", bulkUploadPreflight);
+    }
+
+    @Test
+    void oversizedUploadIsRejectedBeforeReadingBytesOrStartingATransaction() throws IOException {
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.getSize()).thenReturn(58_708_950L);
+        when(bulkUploadPreflight.rejectionFor(58_708_950L))
+                .thenReturn(Optional.of("Raise max_allowed_packet and refresh pooled connections"));
+
+        ResponseEntity<?> response = (ResponseEntity<?>) controller.handleFileUpload(
+                file, "JSON", Collections.emptyMap());
+
+        assertEquals(413, response.getStatusCode().value());
+        assertEquals(Map.of("message", "Raise max_allowed_packet and refresh pooled connections"), response.getBody());
+        verify(file, never()).getBytes();
+        verifyNoInteractions(payloadService, platformTransactionManager, substanceBulkLoadService);
     }
 
     @Test

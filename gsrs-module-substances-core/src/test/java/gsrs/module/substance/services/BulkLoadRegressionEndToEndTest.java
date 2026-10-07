@@ -62,6 +62,7 @@ class BulkLoadRegressionEndToEndTest {
 
         assertNotNull(config.ginasSubstancePersisterFactory());
         assertNotNull(config.substanceLobSchemaCompatibilityInitializer(dataSource));
+        assertNotNull(config.substanceNameLookup(dataSource));
     }
 
     @Test

@@ -3,6 +3,8 @@ package example.imports;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
+import gsrs.module.substance.services.BulkUploadPreflight;
+import gsrs.module.substance.controllers.SubstanceLegacyBulkLoadController;
 import ix.core.models.ProcessingJob;
 import ix.core.processing.GinasSubstancePersisterFactory;
 import ix.core.processing.RecordPersister;
@@ -53,5 +55,11 @@ class SubstanceBulkLoadConfigurationWiringTest {
         assertInstanceOf(SubstanceBulkLoadService.GinasSubstancePersister.class, target);
         assertNotNull(ReflectionTestUtils.getField(target, "entityManager"));
         assertNotNull(ReflectionTestUtils.getField(target, "substanceEntityService"));
+        BulkUploadPreflight preflight = applicationContext.getBean(BulkUploadPreflight.class);
+        assertNotNull(preflight);
+        assertNotNull(applicationContext.getBean("payloadUploadPreflightConfigurer"));
+        Object controller = AopTestUtils.getUltimateTargetObject(
+                applicationContext.getBean(SubstanceLegacyBulkLoadController.class));
+        assertSame(preflight, ReflectionTestUtils.getField(controller, "bulkUploadPreflight"));
     }
 }

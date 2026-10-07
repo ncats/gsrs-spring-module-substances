@@ -3,6 +3,7 @@ package gsrs.module.substance.controllers;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.services.ProcessingJobEntityService;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
+import gsrs.module.substance.services.BulkUploadPreflight;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.canImportData;
@@ -14,6 +15,7 @@ import ix.core.models.ProcessingJob;
 import ix.core.processing.PayloadProcessor;
 //import jdk.internal.net.http.common.Log;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,6 +60,8 @@ public class SubstanceLegacyBulkLoadController {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+    @Autowired
+    private BulkUploadPreflight bulkUploadPreflight;
 
 
     //@hasAdminRole
@@ -83,6 +87,11 @@ public class SubstanceLegacyBulkLoadController {
         }
         if (file.isEmpty()) {
             return controllerConfiguration.handleBadRequest("uploaded file is empty", queryParameters);
+        }
+        Optional<String> rejection = bulkUploadPreflight.rejectionFor(file.getSize());
+        if (rejection.isPresent()) {
+            log.warn("Bulk import upload rejected: {}", rejection.get());
+            return ResponseEntity.status(413).body(Map.of("message", rejection.get()));
         }
 
         final byte[] fileBytes = file.getBytes();

@@ -3,6 +3,8 @@ package gsrs.module.substance.services;
 import gov.nih.ncats.common.sneak.Sneak;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
+import gsrs.payload.LegacyPayloadConfiguration;
+import gsrs.module.substance.controllers.PayloadUploadPreflightInterceptor;
 import ix.core.interfaces.GsrsJsonMapper;
 import ix.core.processing.*;
 import ix.ginas.utils.validation.ValidatorFactory;
@@ -12,6 +14,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.unit.DataSize;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.sql.DataSource;
 import java.util.Collections;
@@ -27,6 +32,9 @@ public class SubstanceBulkLoadServiceConfiguration {
     /** Minimum milliseconds between per-record progress saves of the ProcessingJob row; 0 saves after every record. */
     @Value("${ix.ginas.batch.progressSaveIntervalMs:2000}")
     private long progressSaveIntervalMs=2000;
+    /** Prepare an indexed case-insensitive name lookup before opening bulk-load transactions. */
+    @Value("${ix.ginas.batch.indexNameLookups:true}")
+    private boolean indexNameLookups=true;
     /**
      * Index substances created or changed by a bulk load once, after all its workers finish,
      * instead of with background index events while the load runs.
@@ -82,6 +90,28 @@ public class SubstanceBulkLoadServiceConfiguration {
      @Bean
      public SubstanceLobSchemaCompatibilityInitializer substanceLobSchemaCompatibilityInitializer(DataSource dataSource) {
          return new SubstanceLobSchemaCompatibilityInitializer(dataSource);
+     }
+
+     @Bean
+     public SubstanceNameLookup substanceNameLookup(DataSource dataSource) {
+         return new SubstanceNameLookup(dataSource);
+     }
+
+     @Bean
+     public BulkUploadPreflight bulkUploadPreflight(
+             DataSource dataSource, LegacyPayloadConfiguration payloadConfiguration,
+             @Value("${ix.ginas.batch.maxUploadSize:100MB}") DataSize maxUploadSize) {
+         return new BulkUploadPreflight(dataSource, payloadConfiguration, maxUploadSize);
+     }
+
+     @Bean
+     public WebMvcConfigurer payloadUploadPreflightConfigurer(BulkUploadPreflight preflight) {
+         return new WebMvcConfigurer() {
+             @Override
+             public void addInterceptors(InterceptorRegistry registry) {
+                 registry.addInterceptor(new PayloadUploadPreflightInterceptor(preflight));
+             }
+         };
      }
 
      public RecordPersisterFactory getRecordPersisterFactory(){

@@ -150,6 +150,8 @@ public class SubstanceBulkLoadService {
     private ApplicationEventPublisher applicationEventPublisher;
     private ObjectProvider<SubstanceRepository> substanceRepositoryProvider;
 
+    @Autowired
+    private SubstanceNameLookup substanceNameLookup;
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
@@ -280,6 +282,9 @@ public class SubstanceBulkLoadService {
         SubstanceLobSchemaCompatibilityInitializer initializer = lobSchemaCompatibilityInitializerProvider.getIfAvailable();
         if (initializer != null) {
             initializer.ensureCompatibility();
+        }
+        if (configuration.isIndexNameLookups()) {
+            substanceNameLookup.ensureIndex();
         }
         // first see if this payload has already processed..
         final PayloadProcessor pp = new PayloadProcessor(parameters.getPayload());
