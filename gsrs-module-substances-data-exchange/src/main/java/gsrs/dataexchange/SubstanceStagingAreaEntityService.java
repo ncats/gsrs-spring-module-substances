@@ -298,8 +298,6 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
                 response.addValidationMessage(message);
                 if( appyAction!=null) {
                     appyAction.run();
-                } else {
-                    log.warn("in addMessage, appyAction is null");
                 }
             }
 
