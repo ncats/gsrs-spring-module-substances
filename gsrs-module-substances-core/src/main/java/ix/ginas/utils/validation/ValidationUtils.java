@@ -482,6 +482,66 @@ public class ValidationUtils {
         return candidates;
     }
 
+	public static boolean hasLayerNDefinitionalDuplicateCandidate(
+			Substance substance,
+			int layer,
+			DefHashCalcRequirements requirements) {
+
+		DefinitionalElements elements = requirements.getDefinitionalElementFactory()
+				.computeDefinitionalElementsFor(substance);
+
+		String query =
+				"root_definitional_hash_layer_" + (layer + 1) + ":"
+						+ elements.getDefinitionalHashLayers().get(layer)
+						+ " AND NOT root_uuid:\"^"
+						+ substance.getOrGenerateUUID()
+						+ "$\"";
+
+		SearchRequest request = new SearchRequest.Builder()
+				.kind(Substance.class)
+				.fdim(0)
+				.simpleSearchOnly(true)
+				.query(query)
+				.top(1)
+				.build();
+
+		TransactionTemplate transaction =
+				new TransactionTemplate(requirements.getPlatformTransactionManager());
+
+		return Boolean.TRUE.equals(transaction.execute(status -> {
+			try {
+				SearchResult result = requirements.getSubstanceLegacySearchService()
+						.search(request.getQuery(), request.getOptions());
+
+				clearGroupCacheBeforeSearchResultDeserialization();
+				result.waitForFinish();
+
+				return result.getMatches().stream()
+						.anyMatch(Substance.class::isInstance);
+			} catch (Exception e) {
+				log.error("Error checking for a definitional duplicate. Query: {}", query, e);
+				return false;
+			}
+		}));
+	}
+
+	public static boolean hasFullDefinitionalDuplicateCandidate(
+			Substance substance,
+			DefHashCalcRequirements requirements) {
+
+		DefinitionalElements elements = requirements.getDefinitionalElementFactory()
+				.computeDefinitionalElementsFor(substance);
+
+		int layer = elements.getDefinitionalHashLayers().size() - 1;
+		return hasLayerNDefinitionalDuplicateCandidate(substance, layer, requirements);
+	}
+
+	public static boolean hasLayer1DefinitionalDuplicateCandidate(
+			Substance substance,
+			DefHashCalcRequirements requirements) {
+
+		return hasLayerNDefinitionalDuplicateCandidate(substance, 0, requirements);
+	}
 
 	public static List<Substance> findSubstancesByCode(String codeSystem, String codeValue, PlatformTransactionManager transactionManager,
 													   SubstanceLegacySearchService searchService) {

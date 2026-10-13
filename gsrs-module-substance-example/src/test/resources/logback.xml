@@ -5,7 +5,8 @@
         </encoder>
     </appender>
 
-    
+    <logger name="ix.ginas.utils.validation.validators.SaltValidator"
+            level="TRACE"/>
     <root level="ERROR">
         <appender-ref ref="STDOUT" />
     </root>
