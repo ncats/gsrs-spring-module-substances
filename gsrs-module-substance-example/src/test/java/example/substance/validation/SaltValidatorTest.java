@@ -71,6 +71,12 @@ public class SaltValidatorTest {
                                                        List<Substance> fullMatches) {
         SaltValidator validator = newValidator();
         try (MockedStatic<ValidationUtils> validationUtils = mockStatic(ValidationUtils.class)) {
+            validationUtils.when(()->ValidationUtils.hasFullDefinitionalDuplicateCandidate(
+                            any(Substance.class), any(DefHashCalcRequirements.class)))
+                    .thenReturn(!fullMatches.isEmpty());
+            validationUtils.when(()->ValidationUtils.hasLayer1DefinitionalDuplicateCandidate(
+                    any(Substance.class), any(DefHashCalcRequirements.class)))
+                    .thenReturn(!layer1Matches.isEmpty());
             validationUtils.when(() -> ValidationUtils.findDefinitionaLayer1lDuplicateCandidates(
                             any(ChemicalSubstance.class), any(DefHashCalcRequirements.class)))
                     .thenReturn(layer1Matches);
