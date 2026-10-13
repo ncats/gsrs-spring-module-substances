@@ -16,6 +16,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.io.InputStream;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -25,6 +26,9 @@ public class GSRSJSONImportAdapter implements ImportAdapter<Substance> {
 
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
+
+    private final LongAdder getNextRecordNanos = new LongAdder();
+    private final LongAdder convertNanos = new LongAdder();
 
     @Override
     public Stream<Substance> parse(
@@ -49,7 +53,13 @@ public class GSRSJSONImportAdapter implements ImportAdapter<Substance> {
                         }
 
                         try {
-                            JsonNode record = dumpExtractor.getNextRecord();
+                            long startNanos = System.nanoTime();
+                            JsonNode record;
+                            try {
+                                record=dumpExtractor.getNextRecord();
+                            } finally {
+                                getNextRecordNanos.add(System.nanoTime() - startNanos);
+                            }
 
                             if (record == null) {
                                 finish();
@@ -63,7 +73,14 @@ public class GSRSJSONImportAdapter implements ImportAdapter<Substance> {
                                     TransactionDefinition.PROPAGATION_REQUIRES_NEW);
 
                             Substance substance = transaction.execute(
-                                    status -> convertJsonNode(record));
+                                    status -> {
+                                        long beforeConvert = System.nanoTime();
+                                        try {
+                                            return convertJsonNode(record);
+                                        } finally {
+                                            convertNanos.add(System.nanoTime() - beforeConvert);
+                                        }
+                                    });
 
                             if (substance == null) {
                                 throw new IllegalStateException(
