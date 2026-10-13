@@ -4,6 +4,7 @@ import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.ChemicalSubstanceDefinitionalElementImpl;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.definitional.DefinitionalElements;
+import gsrs.module.substance.definitional.NonSubstanceConceptDefintionalElementImplementation;
 import gsrs.module.substance.services.DefinitionalElementFactory;
 import ix.core.chem.InchiStandardizer;
 import ix.core.chem.InchiStructureHasher;
@@ -13,6 +14,7 @@ import ix.core.search.SearchOptions;
 import ix.core.search.SearchResult;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
+import ix.ginas.modelBuilders.SubstanceBuilder;
 import ix.ginas.models.v1.*;
 import ix.ginas.utils.validation.DefHashCalcRequirements;
 import ix.ginas.utils.validation.ValidationUtils;
@@ -173,6 +175,40 @@ public class SaltValidatorTest {
         assertEquals(1, optionsCaptor.getValue().getTop());
     }
 
+    @Test
+    void EmptyInputListResultsFalse(){
+
+        NonSubstanceConceptDefintionalElementImplementation elementCalc = new NonSubstanceConceptDefintionalElementImplementation();
+
+        DefinitionalElementFactory elementFactory =
+                mock(DefinitionalElementFactory.class);
+        SubstanceLegacySearchService searchService =
+                mock(SubstanceLegacySearchService.class);
+
+
+        PlatformTransactionManager transactionManager =
+                mock(PlatformTransactionManager.class);
+
+        SubstanceBuilder builder = new SubstanceBuilder();
+        builder.setDisplayName("Abstract Concept");
+        Substance target = builder.build();
+        List<DefinitionalElement> elements = new ArrayList<>();
+        elementCalc.computeDefinitionalElements(target, elements::add);
+
+        when(elementFactory.computeDefinitionalElementsFor(target))
+                .thenReturn( new DefinitionalElements(elements));
+        DefHashCalcRequirements requirements =
+                new DefHashCalcRequirements(
+                        elementFactory,
+                        searchService,
+                        transactionManager);
+
+        boolean found =
+                ValidationUtils.hasLayerNDefinitionalDuplicateCandidate(
+                        target, 0, requirements);
+
+        assertFalse(found);
+    }
 
     private ValidationResponse<Substance> validateSalt(ChemicalSubstance chemical,
                                                        List<Substance> layer1Matches,
