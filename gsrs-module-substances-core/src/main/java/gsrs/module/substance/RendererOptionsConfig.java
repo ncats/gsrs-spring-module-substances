@@ -1,28 +1,27 @@
 package gsrs.module.substance;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gov.nih.ncats.common.util.CachedSupplier;
-import gov.nih.ncats.molwitch.renderer.ARGBColor;
-import gov.nih.ncats.molwitch.renderer.ColorPalette;
 import gov.nih.ncats.molwitch.renderer.RendererOptions;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+/**
+ * Resolves the render options used when drawing chemical structures.
+ *
+ * <p>The options are looked up, in order, from {@code gsrs.renderers.selected} (the GSRS 2.x
+ * setting), from {@code substance.renderer.style} and finally from the built in defaults.  Named
+ * renderers, including any low level {@code RendererOptions} settings, are declared under
+ * {@code gsrs.renderers.list} in the HOCON configuration.
+ *
+ * <p>This used to additionally read a json file named by {@code substance.renderer.configPath};
+ * that external file is no longer supported and its contents are now declared directly in the
+ * configuration instead.
+ */
 @Configuration
 @Data
 @Slf4j
@@ -33,8 +32,6 @@ public class RendererOptionsConfig {
 	GSRSRendererConfiguration rendererConf;
 	
 	
-    @Value("${substance.renderer.configPath:#{null}}")
-    private String rendererOptionsJsonFilePath;
     @Value("${substance.renderer.style:#{null}}")
     private String style;
     //this was the way to specify it in GSRS 2.x.  if this is in the conf then we use it
@@ -80,19 +77,6 @@ public class RendererOptionsConfig {
         	FullRenderOptions opt = rendererConf.getFullRendererOptionsByName(style).orElse(null);
             if(opt !=null){
                 return opt;
-            }
-        }
-        if(rendererOptionsJsonFilePath !=null) {
-            ObjectMapper mapper = new ObjectMapper();
-            Resource optionsJson = new ClassPathResource(rendererOptionsJsonFilePath);
-            if(optionsJson !=null) {
-                try (InputStream in = optionsJson.getInputStream()) {
-                	RendererOptions options= RendererOptions.createFromMap((Map<String, ?>) mapper.readValue(in, Map.class));
-                	
-                    return FullRenderOptions.builder().options(options).build();
-                } catch (IOException e) {
-                    log.error("Error deserializing renderer options");
-                }
             }
         }
         return FullRenderOptions.builder().options(new RendererOptions()).build();

@@ -27,11 +27,9 @@ public class CodeProcessorTest {
     @Test
     public void CodeProcessorConstructorTest() throws IOException {
 
-        Map<String, String> innerFileMap = new HashMap<>();
-        innerFileMap.put("filename", "codeSystem.json");
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("class", "gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator");
-        configMap.put("json", innerFileMap);
+        configMap.put("codeSystems", java.util.Collections.singletonMap("MERCK INDEX", "https://www.rsc.org/Merck-Index/monograph/mono$CODE$"));
         CodeProcessor processor = new CodeProcessor(configMap);
         CodeSystemMeta meta = null;
         CodeSystemUrlGenerator generator = processor.codeSystemData;
@@ -41,11 +39,9 @@ public class CodeProcessorTest {
     @Test
     public void CodeProcessorGeneratorTest() throws IOException {
 
-        Map<String, String> innerFileMap = new HashMap<>();
-        innerFileMap.put("filename", "codeSystem.json");
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("class", "gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator");
-        configMap.put("json", innerFileMap);
+        configMap.put("codeSystems", java.util.Collections.singletonMap("MERCK INDEX", "https://www.rsc.org/Merck-Index/monograph/mono$CODE$"));
         CodeProcessor processor = new CodeProcessor(configMap);
         CodeSystemUrlGenerator generator = processor.codeSystemData;
         assertNotNull(generator);
@@ -54,11 +50,9 @@ public class CodeProcessorTest {
     @Test
     public void CodeProcessorResolutionTest() throws IOException, EntityProcessor.FailProcessingException {
 
-        Map<String, String> innerFileMap = new HashMap<>();
-        innerFileMap.put("filename", "codeSystem.json");
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("class", "gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator");
-        configMap.put("json", innerFileMap);
+        configMap.put("codeSystems", java.util.Collections.singletonMap("MERCK INDEX", "https://www.rsc.org/Merck-Index/monograph/mono$CODE$"));
         CodeProcessor processor = new CodeProcessor(configMap);
 
         Code casCode = new Code();
@@ -73,11 +67,9 @@ public class CodeProcessorTest {
     @Test
     public void CodeProcessorResolutionNoneTest() throws IOException, EntityProcessor.FailProcessingException {
 
-        Map<String, String> innerFileMap = new HashMap<>();
-        innerFileMap.put("filename", "codeSystem.json");
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("class", "gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator");
-        configMap.put("json", innerFileMap);
+        configMap.put("codeSystems", java.util.Collections.singletonMap("MERCK INDEX", "https://www.rsc.org/Merck-Index/monograph/mono$CODE$"));
         CodeProcessor processor = new CodeProcessor(configMap);
 
         Code testCode = new Code();
@@ -95,11 +87,9 @@ public class CodeProcessorTest {
     @Test
     public void CodeProcessorTextTest() throws IOException, EntityProcessor.FailProcessingException {
 
-        Map<String, String> innerFileMap = new HashMap<>();
-        innerFileMap.put("filename", "codeSystem.json");
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("class", "gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator");
-        configMap.put("json", innerFileMap);
+        configMap.put("codeSystems", java.util.Collections.singletonMap("EVMPD", "https://www.google.com/?q=EVMPD:$CODETEXT$"));
         CodeProcessor processor = new CodeProcessor(configMap);
 
         Code testCode = new Code();

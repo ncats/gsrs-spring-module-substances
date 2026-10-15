@@ -1,22 +1,13 @@
 package gsrs.module.substance.datasource;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import org.springframework.core.io.UrlResource;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import gsrs.module.substance.processors.CodeSystemUrlGenerator;
 import ix.ginas.models.v1.Code;
@@ -26,54 +17,36 @@ import lombok.extern.slf4j.Slf4j;
 public class DefaultCodeSystemUrlGenerator implements DataSet<CodeSystemMeta>, CodeSystemUrlGenerator {
 
 /*
-    1) Put a file such as "codeSystem.json" in the resources folder and/or the classpath.
-       The JSON looks like this:
-       [{"codeSystem":"XYZ","url":"http://some.url.com/$CODE$"},  {...}]
-    2) Configure like so:
+    Configure the list of known code systems directly in your HOCON configuration as the
+    processor's "parameters" block.  For example:
+
     gsrs.entityProcessors.list.CodeProcessor = {
-        "class":"ix.ginas.models.v1.Substance",
+        "entityClassName":"ix.ginas.models.v1.Code",
         "processor":"gsrs.module.substance.processors.CodeProcessor",
         "order": 1000,
-        "with": {
+        "parameters": {
             "class":"gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator",
-            "json":{
-                "filename": "codeSystem.json"
+            "codeSystems": {
+                "XYZ": "http://some.url.com/$CODE$",
+                ...
             }
         }
     }
+
+    Each entry maps a code system name to the URL template used for its codes.  The URL
+    template may contain "$CODE$" (replaced with the code value) and "$CODETEXT$" (replaced
+    with the code text).  The code system name is the key, so it must be unique; names are
+    matched case-insensitively.  No external configuration file is read; the data comes
+    exclusively from the module's parameters.
 */
 
-
-	// This ensures that the url is parsable from classpath protocol even
-	// if there's no registered handler for classpath
-	private static URL getUrl(String fname) throws MalformedURLException {
-		if(fname.startsWith("classpath:")) {
-			return DefaultCodeSystemUrlGenerator.class.getClassLoader().getResource(fname.split(":")[1]);	
-		}
-		return new URL(fname);
-	}
-	
     @JsonIgnore
     private final Map<String, CodeSystemMeta> map = new LinkedHashMap<>();
 
     @JsonCreator
-    public DefaultCodeSystemUrlGenerator(@JsonProperty("codeSystems") Map<String, Map<String, String>> codeSystems,
-                                         @JsonProperty("filename") String filename) throws IOException {
-        if (filename != null) {
-            if (!filename.contains(":")) {
-                filename = "classpath:" + filename;
-            }
-            codeSystems = new LinkedHashMap<String, Map<String, String>>();
-            try (InputStream is = new UrlResource(getUrl(filename)).getInputStream();) {
-                ObjectMapper mapper = new ObjectMapper();
-                for (JsonNode item : mapper.readTree(is)) {
-                    Map<String, String> itemMap = mapper.convertValue(item, new TypeReference<Map<String, String>>(){});
-                    codeSystems.put(itemMap.get("codeSystem"), itemMap);
-                }
-            }
-        }
-        for (Map<String, String> entry : codeSystems.values()) {
-            CodeSystemMeta csmap = new CodeSystemMeta(entry.get("codeSystem"), entry.get("url"));
+    public DefaultCodeSystemUrlGenerator(@JsonProperty("codeSystems") Map<String, String> codeSystems) {
+        for (Map.Entry<String, String> entry : codeSystems.entrySet()) {
+            CodeSystemMeta csmap = new CodeSystemMeta(entry.getKey(), entry.getValue());
             map.put(csmap.codeSystem.toLowerCase(), csmap);
         }
     }

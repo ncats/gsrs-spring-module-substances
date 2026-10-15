@@ -1,8 +1,10 @@
 package gsrs.module.substance.processors;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
+import java.util.HashMap;
 import java.util.Map;
 
 import java.util.Optional;
@@ -16,30 +18,44 @@ import org.springframework.context.annotation.Configuration;
 public class CodeProcessor implements EntityProcessor<Code> {
 
 	public CodeSystemUrlGenerator codeSystemData;
-	
+
+	/**
+	 * Builds the processor from this entity processor's "parameters" block.  The block has exactly
+	 * two attributes:
+	 *
+	 * <ul>
+	 *   <li>{@code class} - the name of the {@link CodeSystemUrlGenerator} implementation to use.</li>
+	 *   <li>{@code codeSystems} - the code system data handed to that implementation.  It is a
+	 *     map of code system name to URL template, for example
+	 *     {@code "MERCK INDEX" -> "https://merckindex.rsc.org/monographs/$CODE$"}.</li>
+	 * </ul>
+	 *
+	 * The data no longer comes from an external configuration file; it is declared directly in the
+	 * HOCON configuration.  For example:
+	 *
+	 * <pre>
+	 * gsrs.entityProcessors.list.CodeProcessor = {
+	 *   "entityClassName" : "ix.ginas.models.v1.Code",
+	 *   "processor" : "gsrs.module.substance.processors.CodeProcessor",
+	 *   "order" : 1800,
+	 *   "parameters" : {
+	 *     "class" : "gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator",
+	 *     "codeSystems" : {
+	 *       "XYZ" : "http://some.url.com/$CODE$"
+	 *     }
+	 *   }
+	 * }
+	 * </pre>
+	 *
+	 * The delegating {@link JsonCreator} is required because entity processors declared with
+	 * "parameters" are built by Jackson ({@code ObjectMapper.convertValue}) rather than by a direct
+	 * constructor call.  A delegating creator hands the whole parameter map to this constructor and
+	 * bypasses Jackson's unknown-property handling.
+	 */
+	@JsonCreator(mode = JsonCreator.Mode.DELEGATING)
 	public CodeProcessor(Map with){
         log.debug("starting in CodeProcessor constructor");
 		try{
-			// It used to be that the codeSystem.json file was found by
-			// looking for the root config JSON found under ix.codeSystemUrlGenerator
-			// Which had both a "class" specified (for the kind of CodeSystemUrlGenerator
-			// to use) and a "json" property which contained the raw JSON to deserialize
-			// the CodeSystemUrlGenerator with. This gave some flexibility (perhaps too much flexibility)
-			// to how a CodeSystemUrlGenerator could be made. In practice it was always instantiating
-			// a DefaultCodeSystemUrlGenerator which really just used a filename.
-			
-			//String key = "ix.codeSystemUrlGenerator.class";
-			//String classname = Play.application().configuration().getString(key);
-			//if(classname ==null){
-			//	System.out.println("config =\n" + Play.application().configuration().asMap());
-			//	throw new IllegalStateException("could not find " + key + " in config file");
-			//}
-			//Class<?> cls = IOUtil.getGinasClassLoader().loadClass(classname);
-			//codeSystemData = (CodeSystemUrlGenerator) ConfigHelper.readFromJson("ix.codeSystemUrlGenerator.json", cls);
-
-			//Now, instead, just read these properties from the "with" part of then entity processor initializer.
-			//It may still be a bit too abstract for practical purposes, but it's not too bad
-			
 			String key = "class";
 			String classname = (String)with.get(key);
             log.trace("classname: " + classname);
@@ -49,11 +65,13 @@ public class CodeProcessor implements EntityProcessor<Code> {
 			}
 			Class<?> cls = CodeProcessor.class.getClassLoader().loadClass(classname);
             log.trace("loaded class named " + classname + ": " + cls);
-			if(with.get("json")!=null){
-				Object jsonObj=with.get("json");
+			if(with.get("codeSystems")!=null){
+				// The generator takes the code system data under a single "codeSystems" property, so
+				// wrap it to keep the "class" attribute out of the deserialization.
+				Map<String, Object> generatorParameters = new HashMap<>();
+				generatorParameters.put("codeSystems", with.get("codeSystems"));
 				ObjectMapper mapper = new ObjectMapper();
-				//convert from the 
-        		codeSystemData = (CodeSystemUrlGenerator) mapper.convertValue(jsonObj, cls);
+        		codeSystemData = (CodeSystemUrlGenerator) mapper.convertValue(generatorParameters, cls);
 			}
 		}catch(Exception e){
             log.error("Error in CodeProcessor constructor: ", e);
