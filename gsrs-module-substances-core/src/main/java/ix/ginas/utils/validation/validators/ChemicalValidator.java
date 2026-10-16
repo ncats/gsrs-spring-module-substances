@@ -333,9 +333,39 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                         .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:[%s]", p.toString());
                 callback.addMessage(mes);
             }
+        } catch (LinkageError e) {
+            // PeptideInterpreter's static setup failed once (e.g. JVM CodeCache full); the JVM will not retry it
+            // until restart. This check only adds an optional warning, so skip it instead of failing the save.
+            if (PEPTIDE_CHECK_UNAVAILABLE_LOGGED.compareAndSet(false, true)) {
+                log.error("Possible-peptide check disabled: PeptideInterpreter could not be initialized. "
+                        + "Restart the server (and raise -XX:ReservedCodeCacheSize if the CodeCache was full).", e);
+            }
         } catch (Exception e) {
+            if (isClassInitFailure(e)) {
+                if (PEPTIDE_CHECK_UNAVAILABLE_LOGGED.compareAndSet(false, true)) {
+                    log.error("Possible-peptide check disabled: PeptideInterpreter could not be initialized. "
+                            + "Restart the server (and raise -XX:ReservedCodeCacheSize if the CodeCache was full).", e);
+                }
+                return;
+            }
             log.warn("Error in validatePossiblePeptide: {}", e.getMessage());
         }
+    }
+
+    private static final java.util.concurrent.atomic.AtomicBoolean PEPTIDE_CHECK_UNAVAILABLE_LOGGED =
+            new java.util.concurrent.atomic.AtomicBoolean(false);
+
+    private static boolean isClassInitFailure(Throwable t) {
+        for (Throwable c = t; c != null; c = c.getCause()) {
+            if (c instanceof LinkageError
+                    || (c.getMessage() != null && c.getMessage().contains("Could not initialize class"))) {
+                return true;
+            }
+            if (c.getCause() == c) {
+                break;
+            }
+        }
+        return false;
     }
 
     private void validateChemicalStructure(

@@ -100,51 +100,42 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
 
     @Override
     public ValidationResponse<Substance> validate(Substance substance) {
+        if(!initializedValidator) {
+            initValidator();
+            initializedValidator=true;
+        }
+        UUID originalUuid = substance.uuid;
+        boolean ignoreMessageAboutUuid = originalUuid != null;
+        ValidationResponse<Substance> response = new ValidationResponse<>(substance);
+        // Temporarily clear the UUID for validation, but never lose the incoming identity.
         try {
-            if(!initializedValidator) {
-                initValidator();
-                initializedValidator=true;
-            }
-            //need to remove the UUID or errors occur on the deserialization process within validation
-            UUID originalUuid=null;
-            boolean ignoreMessageAboutUuid=false;
-            if( substance.uuid!=null){
-                originalUuid=substance.uuid;
-                ignoreMessageAboutUuid=true;
-            }
             substance.uuid=null;
             Validator<Substance> validator = validatorFactory.getSync().createValidatorFor(substance, null,
                     validationMethodType, ValidatorCategory.CATEGORY_ALL());
 
-            ValidationResponse<Substance> response = new ValidationResponse<>(substance);
             ValidatorCallback callback = createCallbackFor(substance, response, validationMethodType);
             validator.validate(substance, null, callback);
             callback.complete();
-            //ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode(), ValidatorCategory.);
-            //treat one validator separately
-            DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
-            AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
-            ValidationResponse<Substance> response2 = definitionalDependencyValidator.validate(substance, null);
+        } finally {
             substance.uuid=originalUuid;
-            log.trace("adding messages from DefinitionalDependencyValidator");
-            boolean finalIgnoreMessageAboutUuid = ignoreMessageAboutUuid;
-            GsrsProcessingStrategy strategy= gsrsProcessingStrategyFactory.createNewStrategy(PROCESS_STRATEGY);
-            response.getValidationMessages().forEach(m->{
-
-                if(!(finalIgnoreMessageAboutUuid && m.getMessage().startsWith("Substance has no UUID, will generate uuid"))){
-                    if( strategy instanceof AbstractProcessingStrategy abstractProcessingStrategy
-                            && m instanceof GinasProcessingMessage processingMessage) {
-                            abstractProcessingStrategy.overrideMessage(processingMessage);
-                    }
-                    response2.addValidationMessage(m);
-                }
-            });
-            response2.setNewObject(response.getNewObject());
-            return response2;
-        } catch (Exception ex) {
-            log.warn("Error validating substance", ex);
         }
-        return null;
+        DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
+        AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
+        ValidationResponse<Substance> response2 = definitionalDependencyValidator.validate(substance, null);
+        log.trace("adding messages from DefinitionalDependencyValidator");
+        GsrsProcessingStrategy strategy= gsrsProcessingStrategyFactory.createNewStrategy(PROCESS_STRATEGY);
+        response.getValidationMessages().forEach(m->{
+
+            if(!(ignoreMessageAboutUuid && m.getMessage().startsWith("Substance has no UUID, will generate uuid"))){
+                if( strategy instanceof AbstractProcessingStrategy abstractProcessingStrategy
+                        && m instanceof GinasProcessingMessage processingMessage) {
+                        abstractProcessingStrategy.overrideMessage(processingMessage);
+                }
+                response2.addValidationMessage(m);
+            }
+        });
+        response2.setNewObject(response.getNewObject());
+        return response2;
     }
 
     @Override

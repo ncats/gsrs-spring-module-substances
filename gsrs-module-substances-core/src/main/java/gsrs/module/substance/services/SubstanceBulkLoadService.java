@@ -10,10 +10,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+import java.util.Optional;
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+
+import gsrs.module.substance.indexers.BulkLoadIndexDeferral;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
@@ -24,8 +32,11 @@ import jakarta.persistence.PersistenceContext;
 import gsrs.security.canImportData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -45,6 +56,7 @@ import gsrs.AuditConfig;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.module.substance.SubstanceEntityService;
 import gsrs.module.substance.repository.ProcessingJobRepository;
+import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.module.substance.repository.ProcessingRecordRepository;
 import gsrs.module.substance.repository.XRefRepository;
 import gsrs.repository.PayloadRepository;
@@ -52,7 +64,7 @@ import gsrs.security.AdminService;
 
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
-import ix.core.EntityFetcher;
+import gsrs.events.ReindexEntityEvent;
 import ix.core.models.Keyword;
 import ix.core.models.Payload;
 import ix.core.models.ProcessingJob;
@@ -72,6 +84,7 @@ import ix.core.util.FilteredPrintStream;
 import ix.core.util.Filters;
 import ix.core.validator.ValidationMessage;
 import ix.ginas.models.v1.Reference;
+import ix.ginas.models.v1.Substance;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -87,8 +100,6 @@ public class SubstanceBulkLoadService {
     private static final Logger TransformFailLogger = LoggerFactory.getLogger("transformFail");
     private static final Logger ExtractFailLogger = LoggerFactory.getLogger("extractFail");
 
-    private static final int NUMBER_OF_LOADING_THREADS=1;
-
     public static Logger getPersistFailureLogger(){
         return PersistFailLogger;
     }
@@ -99,6 +110,14 @@ public class SubstanceBulkLoadService {
 
     private final Object jobLock = new Object();
 
+    /** Set when the application context is closing so running loads stop instead of finishing as COMPLETE. */
+    private volatile boolean shuttingDown = false;
+
+    private static final String KEY_PROCESS_QUEUE_SIZE = "PROCESS_QUEUE_SIZE";
+
+    private static final long INDEX_QUIESCENCE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(30);
+    private static final long INDEX_QUIESCENCE_POLL_MS = 250L;
+    private static final int INDEX_QUIESCENCE_STABLE_SAMPLES = 8;
     //Hack variable for resisting buildup
     //of extracted records not yet transformed
     private static Map<String,Long> queueStatistics = new ConcurrentHashMap<String,Long>();
@@ -107,8 +126,6 @@ public class SubstanceBulkLoadService {
     private static final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
-
-    private static int MAX_EXTRACTION_QUEUE = 100;
 
     private SubstanceBulkLoadServiceConfiguration configuration;
 
@@ -128,8 +145,13 @@ public class SubstanceBulkLoadService {
 
     private final AuditConfig auditConfig;
 
-    private final PayloadRepository payloadRepository;
+    private PayloadRepository payloadRepository;
+    private ObjectProvider<SubstanceLobSchemaCompatibilityInitializer> lobSchemaCompatibilityInitializerProvider;
+    private ApplicationEventPublisher applicationEventPublisher;
+    private ObjectProvider<SubstanceRepository> substanceRepositoryProvider;
 
+    @Autowired
+    private SubstanceNameLookup substanceNameLookup;
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
@@ -144,7 +166,10 @@ public class SubstanceBulkLoadService {
             AdminService adminService,
             AuditConfig auditConfig,
             PayloadRepository payloadRepository,
-            TaskExecutor taskExecutor
+            TaskExecutor taskExecutor,
+            ObjectProvider<SubstanceLobSchemaCompatibilityInitializer> lobSchemaCompatibilityInitializerProvider,
+            ApplicationEventPublisher applicationEventPublisher,
+            ObjectProvider<SubstanceRepository> substanceRepositoryProvider
             ) {
         this.configuration = configuration;
         this.processingJobRepository = processingJobRepository;
@@ -155,6 +180,9 @@ public class SubstanceBulkLoadService {
         this.auditConfig = auditConfig;
         this.payloadRepository = payloadRepository;
         this.taskExecutor = taskExecutor;
+        this.lobSchemaCompatibilityInitializerProvider = lobSchemaCompatibilityInitializerProvider;
+        this.applicationEventPublisher = applicationEventPublisher;
+        this.substanceRepositoryProvider = substanceRepositoryProvider;
     }
 
     public Statistics getStatisticsFor(String jobId){
@@ -199,9 +227,18 @@ public class SubstanceBulkLoadService {
         return processingJobRepository.saveAndFlush(job);
     }
 
+    private void saveStoppedJobQuietly(long jobId, String jobKey, String message) {
+        try {
+            saveJobInSeparateTransaction(jobId, getStatisticsForJob(jobKey), ProcessingJob.Status.STOPPED, message);
+        } catch (RuntimeException e) {
+            // the database may already be closing during shutdown
+            log.warn("Could not record stopped status for bulk load job {}: {}", jobId, e.getMessage());
+        }
+    }
+
     @PreDestroy
     public void onStop() {
-
+        shuttingDown = true;
         for(ExecutorService s : executorServices.values()){
             s.shutdownNow();
         }
@@ -242,11 +279,15 @@ public class SubstanceBulkLoadService {
     //@hasAdminRole
     @canImportData
     public PayloadProcessor submit(SubstanceBulkLoadParameters parameters) {
+        SubstanceLobSchemaCompatibilityInitializer initializer = lobSchemaCompatibilityInitializerProvider.getIfAvailable();
+        if (initializer != null) {
+            initializer.ensureCompatibility();
+        }
+        if (configuration.isIndexNameLookups()) {
+            substanceNameLookup.ensureIndex();
+        }
         // first see if this payload has already processed..
-
-
         final PayloadProcessor pp = new PayloadProcessor(parameters.getPayload());
-
 
 
         TransactionTemplate tx = new TransactionTemplate(transactionManager);
@@ -267,9 +308,16 @@ public class SubstanceBulkLoadService {
         storeStatisticsForJob(pp.key, new Statistics());
 
 
-        final ExecutorService executorService = BlockingSubmitExecutor.newFixedThreadPool(NUMBER_OF_LOADING_THREADS, MAX_EXTRACTION_QUEUE);
+        int loadingThreads = Math.max(1, configuration.getLoadingThreads());
+        int queueSize = Math.max(loadingThreads, configuration.getMaxQueueSize());
+        final ExecutorService executorService =
+                BlockingSubmitExecutor.newFixedThreadPool(loadingThreads, queueSize);
 
         final PersistRecordWorkerFactory factory = configuration.getPersistRecordWorkerFactory(parameters);
+        final long progressSaveIntervalMs = Math.max(0L, configuration.getProgressSaveIntervalMs());
+        final AtomicLong lastProgressSave = new AtomicLong(0L);
+        final BulkLoadTimings timings = BulkLoadTimings.start(pp.key);
+        final boolean deferIndexing = configuration.isDeferIndexing();
 
         executorServices.put( pp.key, executorService);
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -277,6 +325,7 @@ public class SubstanceBulkLoadService {
 
             @Override
             public void run() {
+                boolean submissionStopped = false;
                 TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
                 tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 ProcessingJob job = tx2.execute(s -> {
@@ -286,6 +335,7 @@ public class SubstanceBulkLoadService {
                 });
                 log.trace("first call to saveJobInSeparateTransaction");
                 saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.RUNNING, null);
+                BulkLoadServiceCallBackImpl callback = new BulkLoadServiceCallBackImpl(pp.key);
                 FilteredPrintStream.Filter filterOutJChem = Filters.filterOutClasses(Pattern.compile("chemaxon\\..*|lychi\\..*"));
 
                 //katzelda 6/2019: IDE says we don't ever use the FilterSessions but we do it's just a sideeffect that gets used when we
@@ -313,18 +363,24 @@ public class SubstanceBulkLoadService {
                     log.trace("saveJobInSeparateTransaction with no status");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), null, null);
 
-                    BulkLoadServiceCallback callback = new BulkLoadServiceCallBackImpl(job);
-
                         try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
                             Object record;
                             int count = 0;
                             do {
                                 try {
+                                    long readStart = System.nanoTime();
                                     record = extractorInstance.getNextRecord();
+                                    timings.add(BulkLoadTimings.Phase.READ, System.nanoTime() - readStart);
 
-                                    final PayloadExtractedRecord prg = new PayloadExtractedRecord(job, record);
+                                    final PayloadExtractedRecord prg =
+                                            new PayloadExtractedRecord(job, record, pp.key);
 
+                                    if (record != null && executorService.isShutdown()) {
+                                        // cancelled or server stopping: stop reading instead of rejecting every remaining record
+                                        submissionStopped = true;
+                                        break;
+                                    }
                                     if (record != null) {
                                         //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
                                         Runnable r;
@@ -335,7 +391,7 @@ public class SubstanceBulkLoadService {
                                                     auditConfig.disableAuditingFor(factory.newWorkerFor(prg, configuration, parameters, callback));
                                                 }finally{
                                                     log.trace("saving job after one record because isPreserveOldEditInfo");
-                                                    saveJobInSeparateTransaction(pp.jobId, pp.key);
+                                                    saveProgressThrottled(pp.jobId, pp.key, lastProgressSave, progressSaveIntervalMs);
                                                 }
                                             };
 
@@ -345,13 +401,34 @@ public class SubstanceBulkLoadService {
                                                     factory.newWorkerFor(prg, configuration, parameters, callback).run();
                                                 }finally{
                                                     log.trace("saving job after one record because NOT isPreserveOldEditInfo");
-                                                    saveJobInSeparateTransaction(pp.jobId, pp.key);
+                                                    saveProgressThrottled(pp.jobId, pp.key, lastProgressSave, progressSaveIntervalMs);
                                                 }
                                             };
                                         }
-                                        executorService.submit(() -> adminService.runAs(auth, r));
+                                        final Runnable work = r;
+                                        Runnable timed = () -> {
+                                            BulkLoadTimings previous = BulkLoadTimings.bind(pp.key);
+                                            try {
+                                                if (deferIndexing) {
+                                                    BulkLoadIndexDeferral.runDeferred(callback.deferredIndexIds, work);
+                                                } else {
+                                                    work.run();
+                                                }
+                                            } finally {
+                                                timings.recordDone();
+                                                BulkLoadTimings.restore(previous);
+                                            }
+                                        };
+                                        long submitStart = System.nanoTime();
+                                        executorService.submit(() -> adminService.runAs(auth, timed));
+                                        timings.add(BulkLoadTimings.Phase.SUBMIT_WAIT, System.nanoTime() - submitStart);
 
                                     }
+                                } catch (RejectedExecutionException e) {
+                                    // executor was shut down between the check above and submit()
+                                    log.warn("Bulk load {} stopped accepting records: {}", pp.key, e.getMessage());
+                                    submissionStopped = true;
+                                    break;
                                 } catch (Exception e) {
                                     Statistics stat = getStatisticsForJob(pp.key);
                                     stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
@@ -375,14 +452,42 @@ public class SubstanceBulkLoadService {
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
                     executorServices.remove(pp.key);
-                    log.trace("about to save job as COMPLETE");
-                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.COMPLETE, null);
+                    if (shuttingDown) {
+                        log.warn("Bulk load {} stopped because the server is shutting down", pp.key);
+                        if (!callback.deferredIndexIds.isEmpty()) {
+                            log.warn("Bulk load {}: {} loaded substances were not indexed because the server stopped; "
+                                    + "run a reindex after restart", pp.key, callback.deferredIndexIds.size());
+                        }
+                        saveStoppedJobQuietly(pp.jobId, pp.key, "Stopped because the server was shutting down");
+                        return;
+                    }
+                    // the job counts may already read "done"; keep it RUNNING until the index is up to date
+                    saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.RUNNING,
+                            "Indexing loaded substances");
+                    // records persisted before a cancel are still reindexed so the search index matches the database
+                    long waitStart = System.nanoTime();
+                    awaitAsyncIndexingQuiescence();
+                    timings.add(BulkLoadTimings.Phase.WAIT_ASYNC_INDEX, System.nanoTime() - waitStart);
+                    long reindexStart = System.nanoTime();
+                    callback.reindexPersistedSubstances();
+                    timings.add(BulkLoadTimings.Phase.FINAL_REINDEX, System.nanoTime() - reindexStart);
+                    Statistics finalStats = getStatisticsForJob(pp.key);
+                    boolean cancelled = submissionStopped || (finalStats != null && finalStats.cancelled);
+                    if (cancelled) {
+                        log.trace("about to save job as STOPPED (cancelled)");
+                        saveJobInSeparateTransaction(pp.jobId, finalStats, ProcessingJob.Status.STOPPED, "Cancelled");
+                    } else {
+                        log.trace("about to save job as COMPLETE");
+                        saveJobInSeparateTransaction(pp.jobId, finalStats, ProcessingJob.Status.COMPLETE, null);
+                    }
                 } catch (InterruptedException e) {
                     job.status =ProcessingJob.Status.STOPPED;
                     job.message="Interrupted";
                     log.trace("about to save job as Interrupted");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.STOPPED, "Interrupted");
                     e.printStackTrace();
+                } finally {
+                    BulkLoadTimings.finish(pp.key);
                 }
             }
         };
@@ -395,7 +500,7 @@ public class SubstanceBulkLoadService {
     public interface BulkLoadServiceCallback{
         void save(Object o);
         void updateJobIfNecessary(ProcessingJob job);
-        void persistedSuccess();
+        void persistedSuccess(Object persistedRecord);
         void persistedFailure();
 
         void extractionSuccess();
@@ -408,12 +513,13 @@ public class SubstanceBulkLoadService {
 
     public class BulkLoadServiceCallBackImpl implements BulkLoadServiceCallback{
 
-        private ProcessingJob job;
-        
-        
+        private final String jobKey;
+        private final Set<UUID> persistedSubstanceIds = ConcurrentHashMap.newKeySet();
+        /** substances whose index events were deferred by {@link BulkLoadIndexDeferral} (created or changed by the load) */
+        final Set<UUID> deferredIndexIds = ConcurrentHashMap.newKeySet();
 
-        public BulkLoadServiceCallBackImpl(ProcessingJob job) {
-            this.job = job;
+        public BulkLoadServiceCallBackImpl(String jobKey) {
+            this.jobKey = jobKey;
         }
 
         @Override
@@ -426,50 +532,165 @@ public class SubstanceBulkLoadService {
         	
         }
         
-        private void resyncJob() {
-        	try {
-        		Keyword tester=job.keys.stream().findAny().orElse(null);
-        		log.trace(tester.toString());
-        	}catch(Exception e) {
-        		job=EntityFetcher.ofPojo(job).getIfPossible().orElse(job);
-        	}
-        }
-        
-
         @Override
-        public void persistedSuccess() {
-        	resyncJob() ;
-            applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PE_GOOD);
+        public void persistedSuccess(Object persistedRecord) {
+            String persistedUuid = persistedUuid(persistedRecord);
+            if (persistedUuid != null) {
+                persistedSubstanceIds.add(UUID.fromString(persistedUuid));
+            }
+            applyStatisticsChangeForJob(jobKey, Statistics.CHANGE.ADD_PE_GOOD);
+        }
+
+        private String persistedUuid(Object persistedRecord) {
+            if (persistedRecord instanceof JsonNode json) {
+                JsonNode uuidNode = json.get("uuid");
+                return uuidNode == null || uuidNode.isNull() ? null : uuidNode.asText();
+            }
+            if (persistedRecord instanceof com.fasterxml.jackson.databind.JsonNode json) {
+                com.fasterxml.jackson.databind.JsonNode uuidNode = json.get("uuid");
+                return uuidNode == null || uuidNode.isNull() ? null : uuidNode.asText();
+            }
+            return null;
         }
 
         @Override
         public void persistedFailure() {
-        	resyncJob();
-            applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PE_BAD);
+            applyStatisticsChangeForJob(jobKey, Statistics.CHANGE.ADD_PE_BAD);
         }
 
         @Override
         public void extractionSuccess() {
-        	resyncJob();
-            applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_EX_GOOD);
+            applyStatisticsChangeForJob(jobKey, Statistics.CHANGE.ADD_EX_GOOD);
         }
 
         @Override
         public void extractionFailure() {
-        	resyncJob();
-            applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_EX_BAD);
+            applyStatisticsChangeForJob(jobKey, Statistics.CHANGE.ADD_EX_BAD);
         }
 
         @Override
         public void processedSuccess() {
-        	resyncJob();
-            applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PR_GOOD);
+            applyStatisticsChangeForJob(jobKey, Statistics.CHANGE.ADD_PR_GOOD);
         }
 
         @Override
         public void processedFailure() {
-        	resyncJob();
-            applyStatisticsChangeForJob(job, Statistics.CHANGE.ADD_PR_BAD);
+            applyStatisticsChangeForJob(jobKey, Statistics.CHANGE.ADD_PR_BAD);
+        }
+
+        void reindexPersistedSubstances() {
+            //substances changed by the load (e.g. related substances) are indexed too when indexing was deferred
+            Set<UUID> toReindex = new LinkedHashSet<>(persistedSubstanceIds);
+            toReindex.addAll(deferredIndexIds);
+            if (toReindex.isEmpty()) {
+                return;
+            }
+            SubstanceRepository substanceRepository =
+                    substanceRepositoryProvider == null ? null : substanceRepositoryProvider.getIfAvailable();
+            if (substanceRepository == null) {
+                log.warn("No SubstanceRepository available; skipping bulk load index reconciliation");
+                return;
+            }
+            TransactionTemplate tx = new TransactionTemplate(transactionManager);
+            tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+            tx.setReadOnly(true);
+
+            int reconciled = 0;
+            for (UUID substanceId : toReindex) {
+                try {
+                    //the event has to be published while the transaction - and therefore the
+                    //Hibernate session - is still open. Every ReindexEntityEvent listener is a plain
+                    //synchronous @EventListener, so the indexers walk the substance graph inside this
+                    //call. Publishing after the transaction closed would hand them a detached entity
+                    //and lazy collections such as codes/names/references would throw
+                    //LazyInitializationException.
+                    Boolean published = tx.execute(status ->
+                            substanceRepository.findById(substanceId)
+                                    .map(substance -> {
+                                        EntityUtils.EntityWrapper<?> wrapper =
+                                                EntityUtils.EntityWrapper.of(substance);
+                                        applicationEventPublisher.publishEvent(
+                                                new ReindexEntityEvent(UUID.randomUUID(),
+                                                        wrapper.getKey(), Optional.of(wrapper), true));
+                                        return Boolean.TRUE;
+                                    })
+                                    .orElse(Boolean.FALSE));
+                    if (!Boolean.TRUE.equals(published)) {
+                        if (persistedSubstanceIds.contains(substanceId)) {
+                            log.warn("Substance {} was reported as persisted but is not in the database; "
+                                    + "skipping index reconciliation", substanceId);
+                        }
+                        //a deferred id that is not in the database belongs to a record whose save rolled back
+                        continue;
+                    }
+                    reconciled++;
+                    if (reconciled % 1000 == 0) {
+                        log.info("Bulk load index reconciliation: {} of {} substances indexed",
+                                reconciled, toReindex.size());
+                    }
+                } catch (Exception e) {
+                    log.warn("Unable to reconcile index for substance " + substanceId, e);
+                }
+            }
+            log.info("Bulk load index reconciliation complete: {} of {} substances reindexed",
+                    reconciled, toReindex.size());
+        }
+    }
+
+    /**
+     * Index create/update events are published asynchronously, so they can still be queued or
+     * running after every bulk load worker has finished. Reconciling before they drain would let a
+     * late create event append a second document for a substance that was just reconciled.
+     * <p>
+     * A create event indexes with a separate {@code remove} then {@code add} call, while an update
+     * event performs an atomic delete-and-add under a per-key lock. Interleaving those for the same
+     * substance is what leaves duplicate documents behind, so the final reconciliation has to wait
+     * until no asynchronous indexing work remains.
+     */
+    void awaitAsyncIndexingQuiescence() {
+        ThreadPoolExecutor pool = asyncIndexingPool();
+        if (pool == null) {
+            //we cannot observe the executor, so fall back to a fixed grace period
+            sleepQuietly(INDEX_QUIESCENCE_POLL_MS * INDEX_QUIESCENCE_STABLE_SAMPLES);
+            return;
+        }
+        long deadline = System.currentTimeMillis() + INDEX_QUIESCENCE_TIMEOUT_MS;
+        int stableSamples = 0;
+        while (System.currentTimeMillis() < deadline) {
+            if (pool.getActiveCount() == 0 && pool.getQueue().isEmpty()) {
+                if (++stableSamples >= INDEX_QUIESCENCE_STABLE_SAMPLES) {
+                    return;
+                }
+            } else {
+                stableSamples = 0;
+            }
+            if (!sleepQuietly(INDEX_QUIESCENCE_POLL_MS)) {
+                return;
+            }
+        }
+        log.warn("Timed out waiting for asynchronous indexing to settle; "
+                + "index reconciliation may be incomplete");
+    }
+
+    private ThreadPoolExecutor asyncIndexingPool() {
+        if (taskExecutor instanceof ThreadPoolTaskExecutor threadPoolTaskExecutor) {
+            try {
+                return threadPoolTaskExecutor.getThreadPoolExecutor();
+            } catch (IllegalStateException e) {
+                //executor has not been initialized
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private boolean sleepQuietly(long millis) {
+        try {
+            Thread.sleep(millis);
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
         }
     }
 
@@ -504,6 +725,24 @@ public class SubstanceBulkLoadService {
         if(stat !=null){
             saveJobInSeparateTransaction(jobId, stat, null, null);
         }
+    }
+
+    /**
+     * Per-record progress save. Writing the ProcessingJob row after every record costs a separate
+     * transaction under a global lock, so it is limited to one save per interval; the final status
+     * is always saved explicitly when the job ends.
+     */
+    void saveProgressThrottled(long jobId, String statKey, AtomicLong lastSave, long intervalMs){
+        if(intervalMs > 0){
+            long now = System.currentTimeMillis();
+            long previous = lastSave.get();
+            if(now - previous < intervalMs || !lastSave.compareAndSet(previous, now)){
+                return;
+            }
+        }
+        long saveStart = System.nanoTime();
+        saveJobInSeparateTransaction(jobId, statKey);
+        BulkLoadTimings.record(BulkLoadTimings.Phase.JOB_PROGRESS_SAVE, saveStart);
     }
     public void applyStatisticsChangeForJob(ProcessingJob job, Statistics.CHANGE change){
         Statistics stat = getStatisticsForJob(job);
@@ -553,7 +792,13 @@ public class SubstanceBulkLoadService {
                 List<String> errors = new ArrayList<>();
                 if (prec.recordToPersist != null) {
                     try{
-                        GsrsEntityService.CreationResult result = substanceEntityService.createEntity(prec.recordToPersist,true);
+                        long createStart = System.nanoTime();
+                        GsrsEntityService.CreationResult result;
+                        try {
+                            result = substanceEntityService.createEntity(prec.recordToPersist,true);
+                        } finally {
+                            BulkLoadTimings.record(BulkLoadTimings.Phase.VALIDATE_AND_SAVE, createStart);
+                        }
                         worked= result.isCreated();
 
                         Throwable t = result.getThrowable();
@@ -586,7 +831,9 @@ public class SubstanceBulkLoadService {
                 }
                 //copy of rec to get the stats in a detached
 
+                long recordSaveStart = System.nanoTime();
                 ProcessingRecord savedRecord = saveProcessingRecord(prec.rec);
+                BulkLoadTimings.record(BulkLoadTimings.Phase.PROCESSING_RECORD_SAVE, recordSaveStart);
                 prec.rec.id = savedRecord.id;
 
 
