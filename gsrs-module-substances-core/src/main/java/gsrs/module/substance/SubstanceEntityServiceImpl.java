@@ -138,6 +138,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
+    private final ThreadLocal<Boolean> batchCreate = new ThreadLocal<>();
+
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
@@ -192,8 +194,20 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected Substance fromNewJson(JsonNode json) throws IOException {
-        return JsonSubstanceFactory.makeSubstance(json);
-
+        Substance substance = JsonSubstanceFactory.makeSubstance(json);
+        if (Boolean.TRUE.equals(batchCreate.get()) && substance instanceof ChemicalSubstance chemical) {
+            JsonNode moieties = json.get("moieties");
+            if (moieties != null && moieties.isArray()) {
+                for (int i = 0; i < moieties.size(); i++) {
+                    JsonNode uuid = moieties.get(i).get("uuid");
+                    if (uuid != null && !uuid.isNull()) {
+                        // The flattened moiety deserializer otherwise generates this identity.
+                        chemical.getMoieties().get(i).uuid = UUID.fromString(uuid.asText());
+                    }
+                }
+            }
+        }
+        return substance;
     }
 
     @Override
@@ -350,6 +364,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             return;
         }
         substance.version = "1";
+        if (Boolean.TRUE.equals(batchCreate.get())) {
+            BulkImportPersistableGraph.prepare(substance, getEntityManager());
+            return;
+        }
         if (substance.modifications != null) {
             substance.modifications.uuid = null;
         }
@@ -2280,7 +2298,17 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                     .validationResponse(response)
                     .build();
         }
-        return super.createEntity(newEntityJson, partOfBatchLoad);
+        Boolean previous = batchCreate.get();
+        batchCreate.set(partOfBatchLoad);
+        try {
+            return super.createEntity(newEntityJson, partOfBatchLoad);
+        } finally {
+            if (previous == null) {
+                batchCreate.remove();
+            } else {
+                batchCreate.set(previous);
+            }
+        }
     }
 
     /**
