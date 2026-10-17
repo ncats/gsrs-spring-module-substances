@@ -28,7 +28,7 @@ import lombok.Data;
 		"removeElementsIfNoExportablePublicRefElementsToRemove", "removeCodesBySystem",
 		"removeCodesBySystemCodeSystemsToRemove", "removeCodesBySystemCodeSystemsToKeep", "removeReferencesByCriteria",
 		"removeReferencesByCriteriaReferenceTypesToRemove", "removeReferencesByCriteriaCitationPatternsToRemove",
-		"removeReferencesByCriteriaExcludeReferenceByPattern", "substanceReferenceCleanup",
+		"removeReferencesByCriteriaExcludeReferenceByPattern", "removeFileUrlsFromImageReferences", "substanceReferenceCleanup",
 		"substanceReferenceCleanupActionForDefinitionalDependentScrubbedSubstanceReferences",
 		"substanceReferenceCleanupActionForRelationalScrubbedSubstanceReferences", "removeNotes", "removeChangeReason",
 		"approvalIdCleanup", "approvalIdCleanupRemoveApprovalId", "approvalIdCleanupCopyApprovalIdToCode",
@@ -160,6 +160,14 @@ public class BasicSubstanceScrubberParameters {
 	 */
 	@JsonProperty("removeReferencesByCriteriaExcludeReferenceByPattern")
 	public Boolean removeReferencesByCriteriaExcludeReferenceByPattern = false;
+	/**
+	 * Remove File URLs from Image References
+	 * <p>
+	 *
+	 *
+	 */
+	@JsonProperty("removeFileUrlsFromImageReferences")
+	public Boolean removeImageFileUrlsFromImageReferences = false;
 	/**
 	 * Substance Reference Cleanup
 	 * <p>
