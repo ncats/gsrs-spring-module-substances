@@ -1,27 +1,23 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonDeserializer;
 import ix.core.models.VIntArray;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.ValueDeserializer;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class IntArrayDeserializer extends JsonDeserializer<VIntArray> {
+public class IntArrayDeserializer extends ValueDeserializer<VIntArray> {
     public IntArrayDeserializer () { }
 
-    public VIntArray deserialize
-        (JsonParser parser, DeserializationContext ctx)
-        throws IOException, JsonProcessingException {
-
+    public VIntArray deserialize (JsonParser parser, DeserializationContext ctx)
+    {
         VIntArray array = null;
-        JsonToken token = parser.getCurrentToken();
+        JsonToken token = parser.currentToken();
         if (JsonToken.START_ARRAY == token) {
-            List<Integer> list = new ArrayList<Integer>();
+            List<Integer> list = new ArrayList<>();
             while ((token = parser.nextToken()) != JsonToken.END_ARRAY) {
                 if (token == JsonToken.VALUE_NUMBER_INT) {
                     list.add(parser.getIntValue());

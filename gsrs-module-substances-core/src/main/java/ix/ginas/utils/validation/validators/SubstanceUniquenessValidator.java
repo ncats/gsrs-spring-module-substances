@@ -58,6 +58,9 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 		if (fullMatches.size() > 0) {
 			for (int i = 0; i < fullMatches.size(); i++) {
 				Substance possibleMatch = fullMatches.get(i);
+				if (isSameSubstance(testSubstance, possibleMatch)) {
+					continue;
+				}
 				GinasProcessingMessage mes = GinasProcessingMessage.ERROR_MESSAGE("Substance %s (ID: %s) appears to be a full duplicate",
 								possibleMatch.getName(), possibleMatch.uuid);
                 mes.addLink(ValidationUtils.createSubstanceLink(possibleMatch.asSubstanceReference()));
@@ -71,6 +74,9 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 			if (matches.size() > 0) {
 				for (int i = 0; i < matches.size(); i++) {
 					Substance possibleMatch = matches.get(i);
+					if (isSameSubstance(testSubstance, possibleMatch)) {
+						continue;
+					}
 					log.debug("in SubstanceUniquenessValidator before message creation");
 					GinasProcessingMessage mes = GinasProcessingMessage.WARNING_MESSAGE("Substance %s (ID: %s) is a possible duplicate",
 									possibleMatch.getName(), possibleMatch.uuid);
@@ -80,6 +86,13 @@ public class SubstanceUniquenessValidator extends AbstractValidatorPlugin<Substa
 				}
 			}
 		}
+	}
+
+	private boolean isSameSubstance(Substance testSubstance, Substance possibleMatch) {
+		return testSubstance != null
+				&& possibleMatch != null
+				&& testSubstance.getUuid() != null
+				&& testSubstance.getUuid().equals(possibleMatch.getUuid());
 	}
 
 }

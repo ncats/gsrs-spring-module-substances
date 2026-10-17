@@ -6,6 +6,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.*;
 
@@ -19,9 +21,13 @@ public class ExportDirTest {
 
     private  ExportDir<MyMetaData> exportDir;
 
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+
     @Before
     public void setup(){
-        exportDir = new ExportDir(tmpDir.getRoot(), MyMetaData.class);
+        exportDir = new ExportDir(tmpDir.getRoot(), MyMetaData.class, mapper);
     }
     @Test
     public void putAndGetFileWithMetaData() throws IOException{

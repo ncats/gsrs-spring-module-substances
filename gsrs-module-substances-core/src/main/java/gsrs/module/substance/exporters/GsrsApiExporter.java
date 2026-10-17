@@ -1,6 +1,5 @@
 package gsrs.module.substance.exporters;
 
-import com.fasterxml.jackson.databind.ObjectWriter;
 import ix.core.controllers.EntityFactory;
 import ix.core.validator.ValidationResponse;
 import ix.ginas.exporters.Exporter;
@@ -34,10 +33,10 @@ public class GsrsApiExporter implements Exporter<Substance> {
     private final boolean validate;
     private final String newAuditor;
     private final String changeReason;
-    private final ObjectWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
+    private final EntityFactory.EntityMapper.EntityWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
     private final Pattern AUDIT_PAT = Pattern.compile("edBy\":\"[^\"]*\"");
 
-    public GsrsApiExporter(OutputStream out, RestTemplate restTemplate, Map<String, String> headers, boolean allowedExport,  boolean validate, String newAuditor, String changeReason) throws IOException {
+    public GsrsApiExporter(OutputStream out, RestTemplate restTemplate, Map<String, String> headers, boolean allowedExport,  boolean validate, String newAuditor, String changeReason) {
         Objects.requireNonNull(out);
         this.out = new BufferedWriter(new OutputStreamWriter(out));
         Objects.requireNonNull(restTemplate);
@@ -52,7 +51,7 @@ public class GsrsApiExporter implements Exporter<Substance> {
         this.validate = validate;
         this.newAuditor = newAuditor != null ? "edBy\":\"" + newAuditor + "\"" : null;
         this.changeReason = changeReason;
-        log.debug("BaseUrl: " + restTemplate.getUriTemplateHandler().expand("/") + " Headers: " + h.toString());
+        log.debug("BaseUrl: " + restTemplate.getUriTemplateHandler().expand("/") + " Headers: " + h);
     }
 
     private HttpEntity<String> makeRequest(Substance obj) throws Exception {
@@ -60,7 +59,7 @@ public class GsrsApiExporter implements Exporter<Substance> {
         if (newAuditor != null) {
             jsonStr = AUDIT_PAT.matcher(jsonStr).replaceAll(newAuditor);
         }
-        HttpEntity<String> request = new HttpEntity<String>(jsonStr, headers);
+        HttpEntity<String> request = new HttpEntity<>(jsonStr, headers);
         if (validate) {
             @SuppressWarnings("unchecked")
             ValidationResponse<Substance> vr = restTemplate.postForObject("/@validate", request, ValidationResponse.class);

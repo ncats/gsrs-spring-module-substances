@@ -1,6 +1,6 @@
 package ix.ginas.modelBuilders;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import ix.core.controllers.EntityFactory;
 import ix.core.models.Group;
 import ix.core.models.Keyword;
@@ -365,7 +365,8 @@ public abstract class AbstractSubstanceBuilder<S extends Substance, T extends Ab
     }
 	
 	public JsonNode buildJson(){
-		return EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().valueToTree(this.build());
+        JsonNode jsonNode  = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().valueToTree(this.build());
+		return jsonNode;
 	}
 	
 	public void buildJsonAnd(Consumer<JsonNode> c){

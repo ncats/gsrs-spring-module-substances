@@ -1,6 +1,6 @@
 package example.substance.processor;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.junit.TimeTraveller;
 import gsrs.module.substance.processors.LegacyAuditInfoProcessor;

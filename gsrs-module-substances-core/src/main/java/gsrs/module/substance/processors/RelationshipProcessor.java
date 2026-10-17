@@ -79,6 +79,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	@Override
 	public void prePersist(Relationship thisRelationship) {
 	    if(!enabled.get().get()) return;
+	    if(!thisRelationship.isGenerator()) return;
 	    
 	    if (thisRelationship.isAutomaticInvertible()) {
 	        TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
@@ -108,6 +109,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	@Override
 	public void preUpdate(Relationship obj) {
 	    if(!enabled.get().get()) return;
+	    if(!obj.isGenerator()) return;
 	    
 	    //if this is a one-way relationship, then
 	    //we need to remove any potentially previous inverted form
@@ -155,6 +157,7 @@ public class RelationshipProcessor implements EntityProcessor<Relationship> {
 	@Override
 	public void preRemove(Relationship obj) {
 	    if(!enabled.get().get()) return;
+	    if(!obj.isGenerator()) return;
 	    if (obj.isAutomaticInvertible()) {
 	    	//direct call only when the relationship is invertible
 	    	remove(obj);

@@ -4,6 +4,8 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.definitional.DefinitionalElements;
 import gsrs.module.substance.repository.ReferenceRepository;
+import gsrs.services.GroupService;
+import gsrs.springUtils.StaticContextAccessor;
 
 import ix.core.models.*;
 import ix.core.search.SearchOptions;
@@ -34,6 +36,14 @@ public class ValidationUtils {
 
 
 	private static final String VALIDATION_CONF = "validation.conf";
+
+    private static void clearGroupCacheBeforeSearchResultDeserialization() {
+        try {
+            StaticContextAccessor.getBean(GroupService.class).clearCache();
+        } catch (Exception e) {
+            log.trace("Unable to clear GroupService cache before search result deserialization", e);
+        }
+    }
 
 	public static interface ValidationRule<K>{
 		public GinasProcessingMessage validate(K obj);
@@ -445,6 +455,7 @@ public class ValidationUtils {
                     SearchResult sr = defHashCalcRequirements.getSubstanceLegacySearchService().search(request.getQuery(), options);
                     
                     //this might not be necessary anymore
+                    clearGroupCacheBeforeSearchResultDeserialization();
                     sr.waitForFinish();
                     
                     List<Object> fut = sr.getMatches();
@@ -471,6 +482,66 @@ public class ValidationUtils {
         return candidates;
     }
 
+	public static boolean hasLayerNDefinitionalDuplicateCandidate(
+			Substance substance,
+			int layer,
+			DefHashCalcRequirements requirements) {
+
+		DefinitionalElements elements = requirements.getDefinitionalElementFactory()
+				.computeDefinitionalElementsFor(substance);
+
+		String query =
+				"root_definitional_hash_layer_" + (layer + 1) + ":"
+						+ elements.getDefinitionalHashLayers().get(layer)
+						+ " AND NOT root_uuid:\"^"
+						+ substance.getOrGenerateUUID()
+						+ "$\"";
+
+		SearchRequest request = new SearchRequest.Builder()
+				.kind(Substance.class)
+				.fdim(0)
+				.simpleSearchOnly(true)
+				.query(query)
+				.top(1)
+				.build();
+
+		TransactionTemplate transaction =
+				new TransactionTemplate(requirements.getPlatformTransactionManager());
+
+		return Boolean.TRUE.equals(transaction.execute(status -> {
+			try {
+				SearchResult result = requirements.getSubstanceLegacySearchService()
+						.search(request.getQuery(), request.getOptions());
+
+				clearGroupCacheBeforeSearchResultDeserialization();
+				result.waitForFinish();
+
+				return result.getMatches().stream()
+						.anyMatch(Substance.class::isInstance);
+			} catch (Exception e) {
+				log.error("Error checking for a definitional duplicate. Query: {}", query, e);
+				return false;
+			}
+		}));
+	}
+
+	public static boolean hasFullDefinitionalDuplicateCandidate(
+			Substance substance,
+			DefHashCalcRequirements requirements) {
+
+		DefinitionalElements elements = requirements.getDefinitionalElementFactory()
+				.computeDefinitionalElementsFor(substance);
+
+		int layer = elements.getDefinitionalHashLayers().size() - 1;
+		return hasLayerNDefinitionalDuplicateCandidate(substance, layer, requirements);
+	}
+
+	public static boolean hasLayer1DefinitionalDuplicateCandidate(
+			Substance substance,
+			DefHashCalcRequirements requirements) {
+
+		return hasLayerNDefinitionalDuplicateCandidate(substance, 0, requirements);
+	}
 
 	public static List<Substance> findSubstancesByCode(String codeSystem, String codeValue, PlatformTransactionManager transactionManager,
 													   SubstanceLegacySearchService searchService) {
@@ -497,6 +568,7 @@ public class ValidationUtils {
 					SearchResult sr = searchService.search(request.getQuery(), options);
 
 					//this might not be necessary anymore
+                    clearGroupCacheBeforeSearchResultDeserialization();
 					sr.waitForFinish();
 
 					List<Object> fut = sr.getMatches();
@@ -542,6 +614,7 @@ public class ValidationUtils {
 					SearchResult sr = searchService.search(request.getQuery(), options);
 
 					//this might not be necessary anymore
+                    clearGroupCacheBeforeSearchResultDeserialization();
 					sr.waitForFinish();
 
 					List<Object> fut = sr.getMatches();

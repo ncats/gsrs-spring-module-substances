@@ -115,7 +115,10 @@ public class Chem {
      */
 	public static boolean isProblem(Chemical c){
 		boolean problem = false;
-		
+		if( c.hasQueryAtoms() || c.bonds().anyMatch(b->b.isQueryBond())) {
+            log.info("structure has query feature(s)");
+            return true;
+        }
 		try{
             String o=c.toSd();
 		}catch(Exception e){

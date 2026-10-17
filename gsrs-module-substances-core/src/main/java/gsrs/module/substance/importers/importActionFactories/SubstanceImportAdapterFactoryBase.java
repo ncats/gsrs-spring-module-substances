@@ -1,13 +1,13 @@
 package gsrs.module.substance.importers.importActionFactories;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import gsrs.dataexchange.model.MappingAction;
 import gsrs.dataexchange.model.MappingActionFactory;
 import gsrs.importer.ImportFieldMetadata;
@@ -156,9 +156,11 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         adapterSettings.get("actions").forEach(js -> {
             String actionName = js.get("actionName").asText();
             JsonNode actionParameters = js.get(ACTION_PARAMETERS);
-            ObjectMapper mapper = new ObjectMapper();
-            //log.trace("about to call convertValue");
-            Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                    .disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                    .build();
+
+            //log.trace("about to call convertValue");Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
             //log.trace("Finished call to convertValue");
             MappingAction<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> action = null;
             try {
@@ -176,6 +178,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
                 log.trace("mappingActionFactory: " + mappingActionFactory);
                 if (mappingActionFactory != null) {
                     AutowireHelper.getInstance().autowireAndProxy(mappingActionFactory);
+                    Map<String, Object> params = mapper.convertValue(actionParameters, new TypeReference<Map<String, Object>>() {});
                     action = mappingActionFactory.create(params);
                     actions.add(action);
                 } else {
@@ -210,7 +213,9 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
                 log.trace(" handling actionName: {}; class: {}", actionName, actionClass.getName());
                 MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext> mappingActionFactory;
                 try {
-                    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    //old way.  mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+                    // as of Jackson 3, mappers are configured as builders
+
                     mappingActionFactory = (MappingActionFactory<AbstractSubstanceBuilder, PropertyBasedDataRecordContext>) mapper.convertValue(fia,
                             actionClass);
 

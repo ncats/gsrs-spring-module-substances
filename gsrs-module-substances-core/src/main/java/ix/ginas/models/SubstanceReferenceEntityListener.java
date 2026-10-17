@@ -8,7 +8,7 @@ import ix.ginas.models.v1.SubstanceReference;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.persistence.PostLoad;
+import jakarta.persistence.PostLoad;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;

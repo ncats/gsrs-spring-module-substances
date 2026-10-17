@@ -1,7 +1,7 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
 import gsrs.events.AbstractEntityUpdatedEvent;
@@ -28,6 +28,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,7 +52,8 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     private NameRepository repository;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
 
     @Autowired
     private GroupService groupRepository;
@@ -110,7 +112,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     protected Name fromNewJson(JsonNode json) throws IOException {
-        return objectMapper.convertValue(json, Name.class);
+        return mapper.convertValue(json, Name.class);
 
     }
 
@@ -173,7 +175,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
     @Override
     protected Name fromUpdatedJson(JsonNode json) throws IOException {
         //TODO should we make any edits to remove fields?
-        return objectMapper.convertValue(json, Name.class);
+        return mapper.convertValue(json, Name.class);
     }
 
 
@@ -189,7 +191,7 @@ public class NameEntityService extends AbstractGsrsEntityService<Name, UUID> {
 
     @Override
     protected JsonNode toJson(Name controlledVocabulary) throws IOException {
-        return objectMapper.valueToTree(controlledVocabulary);
+        return mapper.valueToTree(controlledVocabulary);
     }
 
     @Override

@@ -90,4 +90,11 @@ public class ChemicalSubstanceStructureHashIndexValueMaker implements IndexValue
         
     }
 
+    public static void addHashes(Structure structure, String prefix, Consumer<IndexableValue> consumer) {
+        if (structure == null) {
+            return;
+        }
+        addHashes(structure.getStereoInsensitiveHash(), structure.getExactHash(), prefix, consumer);
+    }
+
 }

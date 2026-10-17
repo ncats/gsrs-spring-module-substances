@@ -9,7 +9,7 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.utils.pojopatch.PojoDiff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.when;
 //@DataJpaTest
 public class NameRemoveTest extends AbstractSubstanceJpaEntityTest {
-	@MockBean
+	@MockitoBean
 	public PrincipalServiceImpl mockRepository;
 
 	Map<String, Principal> cache = new HashMap<>();
