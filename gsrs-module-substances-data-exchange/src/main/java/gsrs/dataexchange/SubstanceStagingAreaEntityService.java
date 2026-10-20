@@ -96,7 +96,8 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         validatorFactory = ENTITY_SERVICE_INITIALIZATION_GROUP.add(()->validatorFactoryService.newFactory("substances"));
     }
 
-    private final ValidatorConfig.METHOD_TYPE validationMethodType = ValidatorConfig.METHOD_TYPE.STAGING;
+    private final ValidatorConfig.METHOD_TYPE configurationMethodType = ValidatorConfig.METHOD_TYPE.STAGING;
+    private final ValidatorConfig.METHOD_TYPE validationMethodType = ValidatorConfig.METHOD_TYPE.BATCH;
 
     @Override
     public ValidationResponse<Substance> validate(Substance substance) {
@@ -114,7 +115,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             }
             substance.uuid=null;
             Validator<Substance> validator = validatorFactory.getSync().createValidatorFor(substance, null,
-                    validationMethodType, ValidatorCategory.CATEGORY_ALL());
+                    configurationMethodType, validationMethodType, ValidatorCategory.CATEGORY_ALL());
 
             ValidationResponse<Substance> response = new ValidationResponse<>(substance);
             ValidatorCallback callback = createCallbackFor(substance, response, validationMethodType);
