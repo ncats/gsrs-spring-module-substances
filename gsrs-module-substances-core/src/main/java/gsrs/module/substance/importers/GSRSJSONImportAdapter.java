@@ -108,33 +108,6 @@ public class GSRSJSONImportAdapter implements ImportAdapter<Substance> {
                 .onClose(dumpExtractor::close);
     }
 
-    public Stream<Substance> parse_old(InputStream is, ObjectNode settings, JsonNode schema) {
-        Stream.Builder<Substance> newSubstanceStream= Stream.builder();
-        SubstanceBulkLoadService.GinasDumpExtractor dumpExtractor = new SubstanceBulkLoadService.GinasDumpExtractor(is);
-        try {
-            JsonNode currentRecord = dumpExtractor.getNextRecord();
-            while(currentRecord!= null) {
-
-                log.trace("About to convert JSON to substance");
-                JsonNode finalCurrentRecord= currentRecord;
-                TransactionTemplate txManageConversion = new TransactionTemplate(platformTransactionManager);
-                txManageConversion.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-                Substance converted=txManageConversion.execute(t-> convertJsonNode(finalCurrentRecord));
-
-                log.trace("converted JSON to substance with ID {}.  It has {} names", converted.getUuid(), converted.names.size());
-                JsonNode jsonNode= converted.toFullJsonNode();
-                log.trace("converted to a JSON node of type {}", jsonNode.getNodeType());
-                newSubstanceStream.add(converted);
-                currentRecord = dumpExtractor.getNextRecord();
-            }
-
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        return newSubstanceStream.build();
-    }
-
     private Substance convertJsonNode(JsonNode node){
         Substance substance= JsonSubstanceFactory.makeSubstance(node);
         return JsonEntityUtil.fixOwners(substance, true);

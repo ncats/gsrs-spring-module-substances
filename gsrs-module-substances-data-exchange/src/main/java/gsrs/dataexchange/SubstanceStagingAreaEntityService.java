@@ -96,7 +96,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         validatorFactory = ENTITY_SERVICE_INITIALIZATION_GROUP.add(()->validatorFactoryService.newFactory("substances"));
     }
 
-    private final ValidatorConfig.METHOD_TYPE validationMethodType = ValidatorConfig.METHOD_TYPE.BATCH;
+    private final ValidatorConfig.METHOD_TYPE validationMethodType = ValidatorConfig.METHOD_TYPE.STAGING;
 
     @Override
     public ValidationResponse<Substance> validate(Substance substance) {
