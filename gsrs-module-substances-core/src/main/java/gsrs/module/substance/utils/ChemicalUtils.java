@@ -5,15 +5,11 @@ import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.StructureHandlingConfiguration;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -132,31 +128,26 @@ public class ChemicalUtils {
 
     @PostConstruct
     private void setUpSalts() {
-        if( structureHandlingConfiguration.getSaltFilePath() == null ) {
+        Map<String, String> configuredSaltData = structureHandlingConfiguration.getSaltData();
+        if( configuredSaltData == null ) {
             log.warn("ChemicalUtils - setUpSalts not initialized");
             return;
         }
-        log.trace("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
+        log.trace("in setUpSalts, structureHandlingConfiguration.getSaltData() has {} entries", configuredSaltData.size());
         saltData = new HashMap<>();
         saltFirstPartData = new HashMap<>();
         int inChIKeyLength = 27;
         try {
-            String path = structureHandlingConfiguration.getSaltFilePath();
-            log.info("Trying to read salt file at path: " + path);
-            File file = new ClassPathResource(path).getFile();
-            Assert.assertTrue("input salt data file must exist! The path was: " + path, file.exists());
-            List<String> lines = Files.readAllLines(file.toPath());
-            for (String line : lines) {
-                if (line.matches(".*\\w.*")) {
-                    String[] lineParts = line.split("\\t");
-                    if(lineParts[0].length() != inChIKeyLength) {
-                        log.info("salt file lines '{}' skipped", lineParts[0]);
-                        continue;
-                    }
-                    saltData.put(lineParts[0], lineParts[1]);
-                    String stereoInsensitive =lineParts[0].split("\\-")[0];
-                    saltFirstPartData.put(stereoInsensitive, lineParts[1]);
+            // The salt data is supplied through configuration; no external file is read.
+            for (Map.Entry<String, String> entry : configuredSaltData.entrySet()) {
+                String inchiKey = entry.getKey();
+                if (inchiKey == null || inchiKey.length() != inChIKeyLength) {
+                    log.info("salt data entry '{}' skipped", inchiKey);
+                    continue;
                 }
+                saltData.put(inchiKey, entry.getValue());
+                String stereoInsensitive = inchiKey.split("\\-")[0];
+                saltFirstPartData.put(stereoInsensitive, entry.getValue());
             }
         }
         catch (Exception ex){

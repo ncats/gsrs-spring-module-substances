@@ -1,5 +1,9 @@
 package example.chem;
 
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigObject;
+import com.typesafe.config.ConfigValue;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.StructureHandlingConfiguration;
 import gsrs.module.substance.controllers.SubstanceController;
@@ -18,6 +22,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
 @Slf4j
@@ -29,13 +35,28 @@ class SaltRemovalTest {
     @BeforeAll
     static void setUpChemistryHelpers() {
         StructureHandlingConfiguration configuration = new StructureHandlingConfiguration();
-        configuration.setSaltFilePath("salt_data_public.tsv");
+        configuration.setSaltData(saltDataFromConfiguration());
 
         chemicalUtils = new ChemicalUtils();
         ReflectionTestUtils.setField(chemicalUtils, "structureHandlingConfiguration", configuration);
         ReflectionTestUtils.invokeMethod(chemicalUtils, "setUpSalts");
 
         structureProcessor = new StructureProcessor(new InchiStandardizer(), new InchiStructureHasher());
+    }
+
+    /**
+     * The salt data now comes from configuration rather than from an external file, so load it
+     * from the same defaults that the application uses.
+     */
+    private static Map<String, String> saltDataFromConfiguration() {
+        Map<String, String> saltData = new HashMap<>();
+        Config config = ConfigFactory.parseResources("salt-data.conf").resolve();
+        ConfigObject saltObject = config.getObject("gsrs.substance.structures.salt-data");
+        for (Map.Entry<String, ConfigValue> entry : saltObject.entrySet()) {
+            saltData.put(entry.getKey(), entry.getValue().unwrapped().toString());
+        }
+        Assertions.assertFalse(saltData.isEmpty(), "salt data defaults must not be empty");
+        return saltData;
     }
 
     @Test

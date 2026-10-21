@@ -3,7 +3,6 @@ package example.substance.datasource;
 import gsrs.module.substance.datasource.CodeSystemMeta;
 import gsrs.module.substance.datasource.DefaultCodeSystemUrlGenerator;
 import ix.ginas.models.v1.Code;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -25,50 +24,41 @@ public class DefaultCodeSystemUrlGeneratorTest {
 
 
    @Test
-    public void DefaultCodeSystemUrlGeneratorConstructorTest() throws IOException {
+    public void DefaultCodeSystemUrlGeneratorConstructorTest() {
         String codeSystemForTest = "PubChem";
         String codeUrlForTest = "https://pubchem.ncbi.nlm.nih.gov/compound/$CODE$";
 
-        Map<String, String> configEntry = new HashMap<>();
-        configEntry.put("codeSystem", codeSystemForTest);
-        configEntry.put("url", codeUrlForTest);
-        Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
-        configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put(codeSystemForTest, codeUrlForTest);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
         Map map = generator.getMap();
 
         assertTrue(map.size() >0);
     }
 
     @Test
-    public void DefaultCodeSystemUrlGeneratorConstructorMetaTest() throws IOException {
+    public void DefaultCodeSystemUrlGeneratorConstructorMetaTest() {
         String codeSystemForTest = "PubChem";
         String codeUrlForTest = "https://pubchem.ncbi.nlm.nih.gov/compound/$CODE$";
 
-        Map<String, String> configEntry = new HashMap<>();
-        configEntry.put("codeSystem", codeSystemForTest);
-        configEntry.put("url", codeUrlForTest);
-        Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
-        configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put(codeSystemForTest, codeUrlForTest);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
         CodeSystemMeta meta = generator.fetch(codeSystemForTest);
 
         assertNotNull(meta);
     }
 
     @Test
-    public void DefaultCodeSystemUrlGeneratorGenerationTest() throws IOException {
+    public void DefaultCodeSystemUrlGeneratorGenerationTest() {
         String codeSystemForTest = "PubChem";
         String codeUrlForTest = "https://pubchem.ncbi.nlm.nih.gov/compound/$CODE$";
         String codeValueForTest = "5288826";
         String expectedUrl = "https://pubchem.ncbi.nlm.nih.gov/compound/5288826";
 
-        Map<String, String> configEntry = new HashMap<>();
-        configEntry.put("codeSystem", codeSystemForTest);
-        configEntry.put("url", codeUrlForTest);
-        Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
-        configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put(codeSystemForTest, codeUrlForTest);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
         Code code = new Code();
         code.code = codeValueForTest;
         code.codeSystem = codeSystemForTest;
@@ -78,18 +68,15 @@ public class DefaultCodeSystemUrlGeneratorTest {
     }
 
     @Test
-    public void DefaultCodeSystemUrlGeneratorGenerationLowercaseTest() throws IOException {
+    public void DefaultCodeSystemUrlGeneratorGenerationLowercaseTest() {
         String codeSystemForTest = "DRUGBANK";
         String codeUrlForTest = "http://www.drugbank.ca/drugs/$CODE$";
         String codeValueForTest = "a5b2c8d8e2f6";
         String expectedUrl = "http://www.drugbank.ca/drugs/a5b2c8d8e2f6";
 
-        Map<String, String> configEntry = new HashMap<>();
-        configEntry.put("codeSystem", codeSystemForTest);
-        configEntry.put("url", codeUrlForTest);
-        Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
-        configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put(codeSystemForTest, codeUrlForTest);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
         Code code = new Code();
         code.code = codeValueForTest;
         code.codeSystem = codeSystemForTest;
@@ -100,19 +87,16 @@ public class DefaultCodeSystemUrlGeneratorTest {
 
 
     @Test
-    public void DefaultCodeSystemUrlGeneratorGenerationCodeTextTest() throws IOException {
+    public void DefaultCodeSystemUrlGeneratorGenerationCodeTextTest() {
         String codeSystemForTest = "BLAHSYSTEM";
         String codeUrlForTest = "http://www.blah.com/drugs/$CODETEXT$";
         String codeValueForTest = "a5b2c8d8e2f6";
         String codeTextForTest ="othervalue";
         String expectedUrl = "http://www.blah.com/drugs/othervalue";
 
-        Map<String, String> configEntry = new HashMap<>();
-        configEntry.put("codeSystem", codeSystemForTest);
-        configEntry.put("url", codeUrlForTest);
-        Map<String, Map<String, String>> configMap = new HashMap<String, Map<String, String>>();
-        configMap.put("0", configEntry);
-        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap, null);
+        Map<String, String> configMap = new HashMap<>();
+        configMap.put(codeSystemForTest, codeUrlForTest);
+        DefaultCodeSystemUrlGenerator generator = new DefaultCodeSystemUrlGenerator(configMap);
         Code code = new Code();
         code.code = codeValueForTest;
         code.codeSystem = codeSystemForTest;

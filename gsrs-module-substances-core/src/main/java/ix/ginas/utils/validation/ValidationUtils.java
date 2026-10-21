@@ -33,8 +33,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 public class ValidationUtils {
 
 
-	private static final String VALIDATION_CONF = "validation.conf";
-
 	public static interface ValidationRule<K>{
 		public GinasProcessingMessage validate(K obj);
 	}

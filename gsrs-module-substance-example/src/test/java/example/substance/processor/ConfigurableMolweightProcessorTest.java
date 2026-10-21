@@ -4,11 +4,11 @@ import gsrs.module.substance.processors.ConfigurableMolweightProcessor;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Property;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.core.io.ClassPathResource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -18,10 +18,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 public class ConfigurableMolweightProcessorTest {
 
-    private static final String ATOMIC_WEIGHT_DATA_FILE = "atomicweightdataodd.csv";
-
     @Test
-    public void testSimpleMwCalc() throws IOException {
+    public void testSimpleMwCalc() {
         ConfigurableMolweightProcessor processor = processor("intrinsic", 2, null);
         ChemicalSubstance chemical = chemicalWithStructure("c1ccccc1");
 
@@ -33,7 +31,7 @@ public class ConfigurableMolweightProcessorTest {
     }
 
     @Test
-    public void testSimpleMwCalc2() throws IOException {
+    public void testSimpleMwCalc2() {
         ConfigurableMolweightProcessor processor = processor("intrinsic", 2, null);
         ChemicalSubstance chemical = chemicalWithStructure("c1c([81Br])cccc1");
 
@@ -45,7 +43,7 @@ public class ConfigurableMolweightProcessorTest {
     }
 
     @Test
-    public void testSimpleMwCalcProperty() throws IOException {
+    public void testSimpleMwCalcProperty() {
         String propertyName = "customMw";
 
         ConfigurableMolweightProcessor processor = processor("property", 3, propertyName);
@@ -62,7 +60,7 @@ public class ConfigurableMolweightProcessorTest {
     }
 
     @Test
-    public void testComplexMwCalcProperty() throws IOException {
+    public void testComplexMwCalcProperty() {
         String propertyName = "OrganizationalMolecularWeight";
 
         ConfigurableMolweightProcessor processor = processor("property", 3, propertyName);
@@ -79,10 +77,9 @@ public class ConfigurableMolweightProcessorTest {
                 "Molecular weight calculation must be accurate");
     }
 
-    private ConfigurableMolweightProcessor processor(String persistenceMode, int decimalDigits, String propertyName)
-            throws IOException {
+    private ConfigurableMolweightProcessor processor(String persistenceMode, int decimalDigits, String propertyName) {
         Map<String, Object> configValues = new HashMap<>();
-        configValues.put("atomWeightFilePath", atomicWeightFilePath());
+        configValues.put("atomicWeights", atomicWeightEntries());
         configValues.put("persistenceMode", persistenceMode);
         configValues.put("decimalDigits", decimalDigits);
         if (propertyName != null) {
@@ -91,8 +88,26 @@ public class ConfigurableMolweightProcessorTest {
         return new ConfigurableMolweightProcessor(configValues);
     }
 
-    private String atomicWeightFilePath() throws IOException {
-        return new ClassPathResource(ATOMIC_WEIGHT_DATA_FILE).getFile().getAbsolutePath();
+    /**
+     * The atomic weights that used to be supplied by the "atomicweightdataodd.csv" file, now
+     * supplied inline through configuration.  Note that these deliberately differ from the real
+     * values for carbon and bromine-81, matching the test data that the assertions expect.
+     */
+    private List<Map<String, Object>> atomicWeightEntries() {
+        List<Map<String, Object>> entries = new ArrayList<>();
+        entries.add(atomicWeightEntry("C", null, 12.511));
+        entries.add(atomicWeightEntry("Br", 81, 280.916290563));
+        return entries;
+    }
+
+    private Map<String, Object> atomicWeightEntry(String symbol, Integer massNumber, Double value) {
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("symbol", symbol);
+        if (massNumber != null) {
+            entry.put("massNumber", massNumber);
+        }
+        entry.put("value", value);
+        return entry;
     }
 
     private ChemicalSubstance chemicalWithStructure(String structure) {
