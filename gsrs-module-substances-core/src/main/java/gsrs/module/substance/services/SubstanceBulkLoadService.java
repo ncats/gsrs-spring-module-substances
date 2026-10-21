@@ -109,6 +109,7 @@ public class SubstanceBulkLoadService {
             .build();
 
     private static int MAX_EXTRACTION_QUEUE = 100;
+    private static final long BULK_LOAD_PROGRESS_LOG_INTERVAL_MS = 30_000L;
 
     private SubstanceBulkLoadServiceConfiguration configuration;
 
@@ -277,6 +278,7 @@ public class SubstanceBulkLoadService {
 
             @Override
             public void run() {
+                long processingStartedAt = 0L;
                 TransactionTemplate tx2 = new TransactionTemplate(transactionManager);
                 tx2.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
                 ProcessingJob job = tx2.execute(s -> {
@@ -317,6 +319,9 @@ public class SubstanceBulkLoadService {
 
                         try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
+                            getStatisticsForJob(pp.key).markProcessingStarted();
+                            processingStartedAt = TimeUtil.getCurrentTimeMillis();
+                            long lastProgressLogAt = processingStartedAt;
                             Object record;
                             int count = 0;
                             do {
@@ -329,6 +334,11 @@ public class SubstanceBulkLoadService {
                                         //we have to duplicate the newWorkerFor call to avoid the variable mess of effectively final Runnables
                                         Runnable r;
                                         count++;
+                                        long now = TimeUtil.getCurrentTimeMillis();
+                                        if (count % 100 == 0 || now - lastProgressLogAt >= BULK_LOAD_PROGRESS_LOG_INTERVAL_MS) {
+                                            logBulkLoadProgress(pp.key, processingStartedAt, now);
+                                            lastProgressLogAt = now;
+                                        }
                                         if (parameters.isPreserveOldEditInfo()) {
                                             r = () -> {
                                                 try {
@@ -375,6 +385,9 @@ public class SubstanceBulkLoadService {
                 try {
                     executorService.awaitTermination(2, TimeUnit.DAYS);
                     executorServices.remove(pp.key);
+                    if (processingStartedAt > 0L) {
+                        logBulkLoadProgress(pp.key, processingStartedAt, TimeUtil.getCurrentTimeMillis());
+                    }
                     log.trace("about to save job as COMPLETE");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.COMPLETE, null);
                 } catch (InterruptedException e) {
@@ -476,6 +489,28 @@ public class SubstanceBulkLoadService {
     public Statistics getStatisticsForJob(String jobTerm){
         return jobCacheStatistics.get(jobTerm);
     }
+
+    private void logBulkLoadProgress(String jobKey, long processingStartedAt, long now) {
+        Statistics statistics = getStatisticsForJob(jobKey);
+        if (statistics == null) {
+            log.debug("Bulk load statistics unavailable; cannot calculate processing rate or estimated total time");
+            return;
+        }
+
+        long elapsedMillis = Math.max(now - processingStartedAt, 1L);
+        long completedRecords = statistics.totalFailedAndPersisted();
+        double averageRecordsPerSecond = completedRecords * 1_000.0 / elapsedMillis;
+        long remainingMillis = statistics.getEstimatedTimeLeft(now);
+        String estimatedTotalTimeMillis = remainingMillis < 0
+                ? "unknown"
+                : Long.toString(remainingMillis > Long.MAX_VALUE - elapsedMillis
+                        ? Long.MAX_VALUE
+                        : elapsedMillis + remainingMillis);
+
+        log.debug("*********************Bulk load average rate: {} records/second; estimated total time: {} ms ({} records completed)",
+                averageRecordsPerSecond, estimatedTotalTimeMillis, completedRecords+ "*********************************");
+    }
+
     public Statistics getStatisticsForJob(ProcessingJob pj){
     	
     	String k=pj.getKeyMatching(ProcessingJobUtils.LEGACY_PLUGIN_LABEL_KEY);

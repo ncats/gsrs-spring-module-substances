@@ -20,7 +20,7 @@ public class Statistics implements Serializable{
     public AtomicInteger recordsProcessedFailed=new AtomicInteger();
     public AtomicInteger recordsPersistedFailed=new AtomicInteger();
 
-    private long start=TimeUtil.getCurrentTimeMillis();
+    private volatile long start=TimeUtil.getCurrentTimeMillis();
 
     public enum CHANGE{	ADD_EX_GOOD,
         ADD_EX_BAD,
@@ -94,18 +94,32 @@ public class Statistics implements Serializable{
         return this.getAverageTimeToPersistMS(TimeUtil.getCurrentTimeMillis());
     }
 
+    public void markProcessingStarted() {
+        start = TimeUtil.getCurrentTimeMillis();
+    }
+
     public long getEstimatedTimeLeft(){
-        long totalDone= totalFailedAndPersisted();
-        long total=1;
-        if(this.totalRecords!=null){
-            total = this.totalRecords.getCount();
+        return getEstimatedTimeLeft(TimeUtil.getCurrentTimeMillis());
+    }
+
+    public long getEstimatedTimeLeft(long currentTimeMillis){
+        if(totalRecords == null || totalRecords.getType() == Estimate.TYPE.UNKNOWN){
+            return -1;
         }
 
-        long totalRemaining=total-totalDone;
-        long timeSoFar= TimeUtil.getCurrentTimeMillis()-start;
+        long totalDone= totalFailedAndPersisted();
+        if(totalDone == 0){
+            return -1;
+        }
 
-        double avg=timeSoFar/Math.max(totalDone,1);
-        return (long) (totalRemaining*avg);
+        long totalRemaining = Math.max(totalRecords.getCount() - totalDone, 0);
+        if(totalRemaining == 0){
+            return 0;
+        }
+
+        long timeSoFar = Math.max(currentTimeMillis - start, 0);
+        double estimate = (double) totalRemaining * timeSoFar / totalDone;
+        return estimate >= Long.MAX_VALUE ? Long.MAX_VALUE : (long) Math.ceil(estimate);
     }
 
     public double getAverageTimeToPersistMS(long end){
