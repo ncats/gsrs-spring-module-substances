@@ -121,7 +121,6 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             ValidatorCallback callback = createCallbackFor(substance, response, validationMethodType);
             validator.validate(substance, null, callback);
             callback.complete();
-            //ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode(), ValidatorCategory.);
             //treat one validator separately
             DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
             AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
