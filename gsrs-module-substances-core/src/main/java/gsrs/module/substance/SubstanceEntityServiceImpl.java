@@ -138,6 +138,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
 
+    private final ThreadLocal<Boolean> batchCreate = new ThreadLocal<>();
+
     @Autowired
     private GsrsValidatorFactory validatorFactoryService;
 
@@ -192,8 +194,20 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected Substance fromNewJson(JsonNode json) throws IOException {
-        return JsonSubstanceFactory.makeSubstance(json);
-
+        Substance substance = JsonSubstanceFactory.makeSubstance(json);
+        if (Boolean.TRUE.equals(batchCreate.get()) && substance instanceof ChemicalSubstance chemical) {
+            JsonNode moieties = json.get("moieties");
+            if (moieties != null && moieties.isArray()) {
+                for (int i = 0; i < moieties.size(); i++) {
+                    JsonNode uuid = moieties.get(i).get("uuid");
+                    if (uuid != null && !uuid.isNull()) {
+                        // The flattened moiety deserializer otherwise generates this identity.
+                        chemical.getMoieties().get(i).uuid = UUID.fromString(uuid.asText());
+                    }
+                }
+            }
+        }
+        return substance;
     }
 
     @Override
@@ -350,6 +364,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             return;
         }
         substance.version = "1";
+        if (Boolean.TRUE.equals(batchCreate.get())) {
+            BulkImportPersistableGraph.prepare(substance, getEntityManager());
+            return;
+        }
         if (substance.modifications != null) {
             substance.modifications.uuid = null;
         }
@@ -1245,15 +1263,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             return null;
         }
         if (existingModifications == null) {
-            updatedModifications.agentModifications = reconcileManagedAgentModifications(
-                    updatedModifications.agentModifications, Collections.emptyMap(), existingOwnedAmounts,
-                    existingOwnedSubstanceReferences, updatedModifications);
-            updatedModifications.physicalModifications = reconcileManagedPhysicalModifications(
-                    updatedModifications.physicalModifications, Collections.emptyMap(), existingPhysicalParameters,
-                    existingPhysicalParameterLists, existingPhysicalParameterAmounts, updatedModifications);
-            updatedModifications.structuralModifications = reconcileManagedStructuralModifications(
-                    updatedModifications.structuralModifications, Collections.emptyMap(), existingOwnedAmounts,
-                    existingOwnedSubstanceReferences, updatedModifications);
+            resetModificationGraphIds(updatedModifications);
             assignModificationOwners(updatedModifications);
             return updatedModifications;
         }
@@ -2275,7 +2285,67 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
+    public CreationResult<Substance> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad) {
+        Optional<UUID> requestedUuid = readSubstanceUuid(newEntityJson);
+        if (requestedUuid.isPresent() && repository.existsById(requestedUuid.get())) {
+            ValidationResponse<Substance> response = new ValidationResponse<>();
+            response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "A substance with UUID \"%s\" already exists. Use an update request to change it.",
+                    requestedUuid.get()));
+            response.setValid(false);
+            return CreationResult.<Substance>builder()
+                    .created(false)
+                    .validationResponse(response)
+                    .build();
+        }
+        Boolean previous = batchCreate.get();
+        batchCreate.set(partOfBatchLoad);
+        try {
+            return super.createEntity(newEntityJson, partOfBatchLoad);
+        } finally {
+            if (previous == null) {
+                batchCreate.remove();
+            } else {
+                batchCreate.set(previous);
+            }
+        }
+    }
+
+    /**
+     * Reads the root substance UUID from the request JSON.
+     * Missing, blank or malformed values are treated as absent.
+     */
+    private static Optional<UUID> readSubstanceUuid(JsonNode json) {
+        if (json == null) {
+            return Optional.empty();
+        }
+        JsonNode uuidNode = json.get("uuid");
+        if (uuidNode == null || uuidNode.isNull()) {
+            return Optional.empty();
+        }
+        String text = uuidNode.asText();
+        if (text == null || !Util.isUUID(text.trim())) {
+            return Optional.empty();
+        }
+        return Optional.of(UUID.fromString(text.trim()));
+    }
+
+    private boolean isMissingUpdateTarget(JsonNode updatedEntityJson) {
+        Optional<UUID> uuid = readSubstanceUuid(updatedEntityJson);
+        return uuid.isEmpty() || !repository.existsById(uuid.get());
+    }
+
+    private static UpdateResult<Substance> notFoundUpdateResult() {
+        return UpdateResult.<Substance>builder()
+                .status(UpdateResult.STATUS.NOT_FOUND)
+                .build();
+    }
+
+    @Override
     public UpdateResult<Substance> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception {
+        if (isMissingUpdateTarget(updatedEntityJson)) {
+            return notFoundUpdateResult();
+        }
         ValidationResponse<Substance> validationResponse = null;
         if (!ignoreValidation) {
             validationResponse = validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_ALL());
@@ -2319,6 +2389,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
+        if (isMissingUpdateTarget(updatedEntityJson)) {
+            return notFoundUpdateResult();
+        }
         return performUpdateEntity(updatedEntityJson, null);
     }
 
@@ -2338,7 +2411,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 if (validationResponse != null) {
                     builder.validationResponse(validationResponse);
                 }
+                boolean[] targetFound = {false};
                 EntityUtils.EntityWrapper<Substance> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
+                        targetFound[0] = true;
                         EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
                         String oldJson = og.toFullJson();
                         builder.oldJson(oldJson);
@@ -2506,7 +2581,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             return Optional.of(saved); //Delete & Create
                         }
                     });
-                if(savedVersion ==null){
+                if(savedVersion ==null && !targetFound[0]){
+                    // The substance disappeared after the existence check; nothing was changed.
+                    builder.status(UpdateResult.STATUS.NOT_FOUND);
+                }else if(savedVersion ==null){
                     status.setRollbackOnly();
                 }else {
                     //IDK?

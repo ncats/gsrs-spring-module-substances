@@ -3,6 +3,7 @@ package gsrs.module.substance.controllers;
 import gsrs.controller.GsrsControllerConfiguration;
 import gsrs.module.substance.services.ProcessingJobEntityService;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
+import gsrs.module.substance.services.BulkUploadPreflight;
 import gsrs.payload.PayloadController;
 import gsrs.repository.PayloadRepository;
 import gsrs.security.canImportData;
@@ -14,6 +15,7 @@ import ix.core.models.ProcessingJob;
 import ix.core.processing.PayloadProcessor;
 //import jdk.internal.net.http.common.Log;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +26,21 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @RestController
 @Slf4j
 public class SubstanceLegacyBulkLoadController {
+    private static final long UPLOAD_RESERVED_JOB_ID = -1L;
+    private final Map<String, Long> uploadHashToJobId = new ConcurrentHashMap<>();
+    private final Object duplicateUploadLock = new Object();
 
     @Autowired
     private PayloadService payloadService;
@@ -51,6 +60,8 @@ public class SubstanceLegacyBulkLoadController {
     @Autowired
     private PlatformTransactionManager platformTransactionManager;
 
+    @Autowired
+    private BulkUploadPreflight bulkUploadPreflight;
 
 
     //@hasAdminRole
@@ -71,73 +82,102 @@ public class SubstanceLegacyBulkLoadController {
     public Object handleFileUpload(@RequestParam("file-name") MultipartFile file,
                                                    @RequestParam("file-type") String type,
                                                    @RequestParam Map<String, String> queryParameters) throws IOException {
-        try {
+        if (!"JSON".equals(type)) {
+            return controllerConfiguration.handleBadRequest("invalid file type:" + type, queryParameters);
+        }
+        if (file.isEmpty()) {
+            return controllerConfiguration.handleBadRequest("uploaded file is empty", queryParameters);
+        }
+        Optional<String> rejection = bulkUploadPreflight.rejectionFor(file.getSize());
+        if (rejection.isPresent()) {
+            log.warn("Bulk import upload rejected: {}", rejection.get());
+            return ResponseEntity.status(413).body(Map.of("message", rejection.get()));
+        }
 
-
-            //legacy GSRS 2.x only supported JSON we turned of sd support in this method at some point
-            //between 2.0 and 2.7 instead waiting for the new importer in 3.x to be written in a more robust way.
-            if (!"JSON".equals(type)) {
-                return controllerConfiguration.handleBadRequest("invalid file type:" + type, queryParameters);
+        final byte[] fileBytes = file.getBytes();
+        final String uploadHash = sha256(fileBytes);
+        synchronized (duplicateUploadLock) {
+            Long existingJobId = uploadHashToJobId.get(uploadHash);
+            if (isDuplicateUploadInProgress(existingJobId)) {
+                return controllerConfiguration.handleBadRequest("duplicate bulk import request is already in progress", queryParameters);
             }
-            //the payload needsto be created in a separate transaction so we can reference it
-            //in other transactions in a multithreaded way
+            uploadHashToJobId.put(uploadHash, UPLOAD_RESERVED_JOB_ID);
+        }
 
-
-            /*TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
-            transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            UUID payloadId = transactionTemplate.execute(status -> {
-                try {
-                    return payloadService.createPayload(file.getOriginalFilename(), PayloadController.predictMimeTypeFromFile(file),
-                            file.getBytes(), PayloadService.PayloadPersistType.TEMP).id;
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            });
-
-                Payload payload = payloadRepository.findById(payloadId).get();
-                //Beta UI sets this to true only if checked otherwise it's passed in as false
-                boolean preserveAuditInfo = Boolean.parseBoolean(queryParameters.getOrDefault("preserve-audit", "false"));
-
-                PayloadProcessor processor = substanceBulkLoadService.submit(
-                        SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
-                                .payload(payload)
-                                .preserveOldEditInfo(preserveAuditInfo)
-                                .build());
-            log.trace("processor.jobId: {}",  processor.jobId);
-            return processingJobService.get(processor.jobId).get();*/
+        boolean jobCreated = false;
+        try {
             TransactionTemplate transactionTemplate = new TransactionTemplate(platformTransactionManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
             UUID payloadId = transactionTemplate.execute(status -> {
                 try {
                     return payloadService.createPayload(file.getOriginalFilename(), PayloadController.predictMimeTypeFromFile(file),
-                            file.getBytes(), PayloadService.PayloadPersistType.TEMP).id;
+                            fileBytes, PayloadService.PayloadPersistType.PERM).id;
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
             });
 
-            Payload payload = payloadRepository.findById(payloadId).get();
+            Payload payload = payloadRepository.findById(payloadId)
+                    .orElseThrow(() -> new NoSuchElementException("payload not found after upload: " + payloadId));
             log.trace("fetched payload {}", payload.id);
-            //Beta UI sets this to true only if checked otherwise it's passed in as false
             boolean preserveAuditInfo = Boolean.parseBoolean(queryParameters.getOrDefault("preserve-audit", "false"));
 
-            PayloadProcessor processor =
-                     substanceBulkLoadService.submit(
-                            SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
-                                    .payload(payload)
-                                    .preserveOldEditInfo(preserveAuditInfo)
-                                    .build());
+            PayloadProcessor processor = substanceBulkLoadService.submit(
+                    SubstanceBulkLoadService.SubstanceBulkLoadParameters.builder()
+                            .payload(payload)
+                            .preserveOldEditInfo(preserveAuditInfo)
+                            .build());
+            synchronized (duplicateUploadLock) {
+                uploadHashToJobId.put(uploadHash, processor.jobId);
+            }
+            jobCreated = true;
 
             log.trace("bulk service has been submitted");
             transactionTemplate = new TransactionTemplate(platformTransactionManager);
             transactionTemplate.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            return transactionTemplate.execute(s->{
-               return processingJobService.get(processor.jobId).get();
-            });
+            return transactionTemplate.execute(s -> processingJobService.get(processor.jobId)
+                    .orElseThrow(() -> new NoSuchElementException("processing job not found: " + processor.jobId)));
+        } finally {
+            if (!jobCreated) {
+                synchronized (duplicateUploadLock) {
+                    Long currentJobId = uploadHashToJobId.get(uploadHash);
+                    if (currentJobId != null && currentJobId == UPLOAD_RESERVED_JOB_ID) {
+                        uploadHashToJobId.remove(uploadHash);
+                    }
+                }
+            }
+        }
+    }
 
-        }catch(Throwable t){
-            t.printStackTrace();
-            throw t;
+    private boolean isDuplicateUploadInProgress(Long existingJobId) {
+        if (existingJobId == null) {
+            return false;
+        }
+        if (existingJobId == UPLOAD_RESERVED_JOB_ID) {
+            return true;
+        }
+        Optional<ProcessingJob> existingJob = processingJobService.get(existingJobId);
+        if (!existingJob.isPresent()) {
+            return false;
+        }
+        ProcessingJob.Status status = existingJob.get().status;
+        return status == null
+                || (status != ProcessingJob.Status.COMPLETE
+                && status != ProcessingJob.Status.FAILED
+                && status != ProcessingJob.Status.STOPPED);
+    }
+
+    private String sha256(byte[] contents) {
+        try {
+            byte[] digest = MessageDigest.getInstance("SHA-256").digest(contents);
+            StringBuilder result = new StringBuilder(digest.length * 2);
+            for (byte value : digest) {
+                result.append(Character.forDigit((value >>> 4) & 0xF, 16));
+                result.append(Character.forDigit(value & 0xF, 16));
+            }
+            return result.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 must be available in the Java runtime", e);
         }
     }
 }
