@@ -89,10 +89,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     @PostConstruct
     private void initValidator(){
         //need this in a post construct so the validator factory service is injected
-        //This is added to the initization Group so that we can reset this in tests
-
-        //This cache might be unncessary as of now the call to newFactory isn't cached
-        //by tests where the return value could change over time?  but keep it here anyway for now...
+        //This is added to the initialization Group so that we can reset this in tests
         validatorFactory = ENTITY_SERVICE_INITIALIZATION_GROUP.add(()->validatorFactoryService.newFactory("substances"));
     }
 
@@ -256,21 +253,6 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         log.trace("finishing synchronizeEntity");
     }
 
-
-    /*private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
-
-        try {
-            Field ieField = EntityUtils.EntityWrapper.class.getField("ei");
-            ieField.setAccessible(true);
-            EntityUtils.EntityInfo ei = (EntityUtils.EntityInfo) ieField.get(wrapper);
-            Field kindField = ei.getClass().getField("kind");
-            kindField.setAccessible(true);
-            kindField.set(ei, desiredKind);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            log.error("Error accessing fields", e);
-        }
-    }
-*/
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, DefaultValidatorConfig.METHOD_TYPE type) {
         return new ValidatorCallback() {
             @Override
