@@ -16,6 +16,7 @@ import ix.core.processing.PayloadProcessor;
 //import jdk.internal.net.http.common.Log;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.CacheControl;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,11 +69,11 @@ public class SubstanceLegacyBulkLoadController {
     @canRunTasks
     @GetMapping("/api/v1/admin/{id}")
     public Object getLoadStatus(@PathVariable("id") String id, @RequestParam Map<String, String> queryParameters){
-        Optional<ProcessingJob> jobs = processingJobService.flexLookup(id);
+        Optional<ProcessingJob> jobs = processingJobService.getLoadStatus(id);
         if(!jobs.isPresent()){
             return controllerConfiguration.handleNotFound(queryParameters);
         }
-        return jobs.get();
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(jobs.get());
     }
 
     ///admin/load

@@ -3,12 +3,16 @@ package gsrs.module.substance.services;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+
+import ix.core.stats.Estimate;
 
 /**
  * Measures where a bulk load spends its time so a slow load can be diagnosed from the log
@@ -47,7 +51,9 @@ public final class BulkLoadTimings {
     }
 
     private final String jobKey;
-    private final long startNanos = System.nanoTime();
+    private volatile long startNanos = System.nanoTime();
+    private volatile long startedAtMillis = System.currentTimeMillis();
+    private volatile Estimate totalRecords;
     private final EnumMap<Phase, LongAdder> nanos = new EnumMap<>(Phase.class);
     private final EnumMap<Phase, LongAdder> counts = new EnumMap<>(Phase.class);
     private final LongAdder recordsDone = new LongAdder();
@@ -76,8 +82,21 @@ public final class BulkLoadTimings {
     public static void finish(String jobKey) {
         BulkLoadTimings t = jobKey == null ? null : BY_JOB.remove(jobKey);
         if (t != null) {
-            TIMING_LOG.info("Bulk load {} FINISHED: {}", jobKey, t.summary());
+            TIMING_LOG.info("Bulk load {} TIMING SUMMARY (not a completion-status confirmation): {}",
+                    jobKey, t.summary());
         }
+    }
+
+    public void markProcessingStarted() {
+        startedAtMillis = System.currentTimeMillis();
+        startNanos = System.nanoTime();
+        lastReportNanos.set(startNanos);
+        recordsAtLastReport.set(recordsDone.sum());
+        TIMING_LOG.info("Bulk load {} started at {}", jobKey, Instant.ofEpochMilli(startedAtMillis));
+    }
+
+    public void setTotalRecords(Estimate totalRecords) {
+        this.totalRecords = totalRecords;
     }
 
     /** Binds the job's timings to the current worker thread; returns the previous binding. */
@@ -141,11 +160,16 @@ public final class BulkLoadTimings {
 
     public String summary() {
         long done = recordsDone.sum();
-        double elapsedMin = (System.nanoTime() - startNanos) / 60_000_000_000d;
+        long elapsedNanos = Math.max(System.nanoTime() - startNanos, 0L);
+        double elapsedSeconds = elapsedNanos / 1_000_000_000d;
+        double averageRecordsPerSecond = elapsedSeconds > 0 ? done / elapsedSeconds : 0;
         StringBuilder sb = new StringBuilder();
-        sb.append("records=").append(done)
-          .append(" elapsed=").append(String.format("%.1f", elapsedMin)).append("min")
-          .append(" avg=").append(elapsedMin > 0 ? Math.round(done / elapsedMin) : 0).append(" records/min");
+        sb.append("startedAt=").append(Instant.ofEpochMilli(startedAtMillis))
+          .append(" running=").append(Duration.ofNanos(elapsedNanos))
+          .append(" records=").append(done)
+          .append(" average=").append(String.format("%.2f", averageRecordsPerSecond)).append(" records/sec")
+          .append(" estimatedTotal=").append(estimatedTotalDuration(elapsedNanos, done))
+          .append(" timeLeft=").append(estimatedTimeLeft(elapsedNanos, done));
         for (Phase p : Phase.values()) {
             long n = counts.get(p).sum();
             if (n == 0) {
@@ -157,5 +181,44 @@ public final class BulkLoadTimings {
               .append(" n=").append(n);
         }
         return sb.toString();
+    }
+
+    private String estimatedTotalDuration(long elapsedNanos, long recordsDone) {
+        Estimate estimate = totalRecords;
+        if (!hasUsableEstimate(estimate)) {
+            return "unknown";
+        }
+        if (recordsDone == 0) {
+            return estimate.getCount() == 0 ? Duration.ZERO.toString() : "unknown";
+        }
+        long totalNanos = estimatedNanos(elapsedNanos, Math.max(estimate.getCount(), recordsDone), recordsDone);
+        return Duration.ofNanos(totalNanos).toString();
+    }
+
+    private String estimatedTimeLeft(long elapsedNanos, long recordsDone) {
+        Estimate estimate = totalRecords;
+        if (!hasUsableEstimate(estimate)) {
+            return "unknown";
+        }
+        long remainingRecords = Math.max(estimate.getCount() - recordsDone, 0L);
+        if (remainingRecords == 0) {
+            return Duration.ZERO.toString();
+        }
+        if (recordsDone == 0) {
+            return "unknown";
+        }
+        return Duration.ofNanos(estimatedNanos(elapsedNanos, remainingRecords, recordsDone)).toString();
+    }
+
+    private boolean hasUsableEstimate(Estimate estimate) {
+        return estimate != null
+                && estimate.getCount() >= 0
+                && (estimate.getType() == Estimate.TYPE.EXACT
+                || estimate.getType() == Estimate.TYPE.APPROXIMATE);
+    }
+
+    private long estimatedNanos(long elapsedNanos, long recordCount, long recordsDone) {
+        double estimate = (double) elapsedNanos * recordCount / recordsDone;
+        return estimate >= Long.MAX_VALUE ? Long.MAX_VALUE : (long) Math.ceil(estimate);
     }
 }

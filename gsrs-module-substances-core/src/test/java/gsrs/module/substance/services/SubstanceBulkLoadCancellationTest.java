@@ -113,11 +113,21 @@ class SubstanceBulkLoadCancellationTest {
                 "expected a save per record, but the job was saved " + f.jobSaves.get() + " times");
     }
 
+    @Test
+    void failureSavingCompletionShouldMarkTheJobFailedInsteadOfLeavingItRunning() throws Exception {
+        Fixture f = new Fixture(3, false, 0L, true);
+        f.service.submit(f.parameters());
+
+        assertEquals(ProcessingJob.Status.FAILED, f.awaitFinalStatus());
+        assertTrue(f.lastFinalMessage.get().contains("completion write failed"));
+    }
+
     private static class Fixture {
         final CountDownLatch firstWorkerStarted = new CountDownLatch(1);
         final AtomicInteger recordsRead = new AtomicInteger();
         final AtomicInteger jobSaves = new AtomicInteger();
         final AtomicReference<ProcessingJob.Status> lastFinalStatus = new AtomicReference<>();
+        final AtomicReference<String> lastFinalMessage = new AtomicReference<>();
         final CountDownLatch finalStatusSaved = new CountDownLatch(1);
         final SubstanceBulkLoadService service;
         final Payload payload = new Payload();
@@ -132,6 +142,12 @@ class SubstanceBulkLoadCancellationTest {
 
         @SuppressWarnings({"unchecked", "rawtypes"})
         Fixture(int recordCount, boolean blockWorkers, long progressSaveIntervalMs) throws Exception {
+            this(recordCount, blockWorkers, progressSaveIntervalMs, false);
+        }
+
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Fixture(int recordCount, boolean blockWorkers, long progressSaveIntervalMs,
+                boolean failCompletion) throws Exception {
             payload.id = UUID.randomUUID();
 
             ProcessingJob job = new ProcessingJob();
@@ -142,8 +158,12 @@ class SubstanceBulkLoadCancellationTest {
                 if (saved.id == null) {
                     saved.id = 1L;
                 }
-                if (saved.status == ProcessingJob.Status.STOPPED || saved.status == ProcessingJob.Status.COMPLETE) {
+                if (failCompletion && saved.status == ProcessingJob.Status.COMPLETE) {
+                    throw new IllegalStateException("completion write failed");
+                }
+                if (saved.status.isInFinalState()) {
                     lastFinalStatus.set(saved.status);
+                    lastFinalMessage.set(saved.message);
                 }
                 return saved;
             });

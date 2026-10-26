@@ -1,6 +1,7 @@
 package ix.core.stats;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import gov.nih.ncats.common.util.TimeUtil;
 
 import java.io.Serializable;
@@ -20,7 +21,9 @@ public class Statistics implements Serializable{
     public AtomicInteger recordsProcessedFailed=new AtomicInteger();
     public AtomicInteger recordsPersistedFailed=new AtomicInteger();
 
+    @JsonProperty("start")
     private volatile long start=TimeUtil.getCurrentTimeMillis();
+    private volatile Long stop;
 
     public enum CHANGE{	ADD_EX_GOOD,
         ADD_EX_BAD,
@@ -96,6 +99,15 @@ public class Statistics implements Serializable{
 
     public void markProcessingStarted() {
         start = TimeUtil.getCurrentTimeMillis();
+        stop = null;
+    }
+
+    public Long getStop() {
+        return stop;
+    }
+
+    public void setStop(Long stop) {
+        this.stop = stop;
     }
 
     public long getEstimatedTimeLeft(){
@@ -103,18 +115,23 @@ public class Statistics implements Serializable{
     }
 
     public long getEstimatedTimeLeft(long currentTimeMillis){
-        if(totalRecords == null || totalRecords.getType() == Estimate.TYPE.UNKNOWN){
+        if (stop != null) {
+            return 0;
+        }
+        if(totalRecords == null
+                || totalRecords.getCount() < 0
+                || (totalRecords.getType() != Estimate.TYPE.EXACT
+                && totalRecords.getType() != Estimate.TYPE.APPROXIMATE)){
             return -1;
         }
 
         long totalDone= totalFailedAndPersisted();
-        if(totalDone == 0){
-            return -1;
-        }
-
         long totalRemaining = Math.max(totalRecords.getCount() - totalDone, 0);
         if(totalRemaining == 0){
             return 0;
+        }
+        if(totalDone == 0){
+            return -1;
         }
 
         long timeSoFar = Math.max(currentTimeMillis - start, 0);
@@ -124,10 +141,12 @@ public class Statistics implements Serializable{
 
     public double getAverageTimeToPersistMS(long end){
         long totalPersist=recordsPersistedSuccess.get();
-        if(totalPersist==0){
-            totalPersist=1;
+        if(totalPersist == 0){
+            return 0;
         }
-        return (end-start)/(totalPersist + 0.0);
+        Long stoppedAt = stop;
+        long effectiveEnd = stoppedAt == null ? end : Math.min(end, stoppedAt);
+        return Math.max(effectiveEnd - start, 0) / (totalPersist + 0.0);
     }
 
     public void applyChange(CHANGE c){

@@ -207,17 +207,17 @@ public class ProcessingJob extends LongBaseModel {
     	//TODO move this to controller
         SubstanceBulkLoadService loadService = StaticContextAccessor.getBean(SubstanceBulkLoadService.class);
     	Statistics stats= loadService.getStatisticsForJob(this);
-    	if(stats !=null){
-    	    return stats;
-        }
-        if(this.statistics!=null){
+        if(stats == null && this.statistics!=null){
             try {
-                return om.readValue(statistics, Statistics.class);
+                stats = om.readValue(statistics, Statistics.class);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
-        return null;
+        if (stats != null && status != null && status.isInFinalState() && stop != null) {
+            stats.setStop(stop);
+        }
+        return stats;
     }
     
     @JsonIgnore

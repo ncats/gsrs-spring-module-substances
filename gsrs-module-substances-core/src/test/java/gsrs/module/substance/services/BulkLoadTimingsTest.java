@@ -1,5 +1,6 @@
 package gsrs.module.substance.services;
 
+import ix.core.stats.Estimate;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -53,5 +54,35 @@ class BulkLoadTimingsTest {
         BulkLoadTimings.restore(none);
         BulkLoadTimings.finish("job-outer");
         BulkLoadTimings.finish("job-inner");
+    }
+
+    @Test
+    void summaryIncludesStartElapsedRateAndEstimateMetrics() {
+        BulkLoadTimings timings = BulkLoadTimings.start("job-metrics");
+        timings.setTotalRecords(new Estimate(2, Estimate.TYPE.EXACT));
+        timings.markProcessingStarted();
+        timings.recordDone();
+
+        String summary = timings.summary();
+
+        assertTrue(summary.contains("startedAt="));
+        assertTrue(summary.contains("running="));
+        assertTrue(summary.contains("average="));
+        assertTrue(summary.contains("records/sec"));
+        assertTrue(summary.contains("estimatedTotal=PT"));
+        assertTrue(summary.contains("timeLeft=PT"));
+        BulkLoadTimings.finish("job-metrics");
+    }
+
+    @Test
+    void unknownOrNotStartedEstimatesDoNotReportAnEta() {
+        BulkLoadTimings timings = BulkLoadTimings.start("job-unknown");
+        timings.setTotalRecords(new Estimate(10, Estimate.TYPE.UNKNOWN));
+
+        String summary = timings.summary();
+
+        assertTrue(summary.contains("estimatedTotal=unknown"));
+        assertTrue(summary.contains("timeLeft=unknown"));
+        BulkLoadTimings.finish("job-unknown");
     }
 }

@@ -79,6 +79,21 @@ class SubstanceLegacyBulkLoadControllerTest {
     }
 
     @Test
+    void statusPollingShouldReturnFreshJobWithoutAllowingResponseCaching() {
+        ProcessingJob job = new ProcessingJob();
+        job.status = ProcessingJob.Status.COMPLETE;
+        job.stop = 3_000L;
+        when(processingJobService.getLoadStatus("job-key")).thenReturn(Optional.of(job));
+
+        ResponseEntity<?> response = (ResponseEntity<?>) controller.getLoadStatus(
+                "job-key", Collections.emptyMap());
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals("no-store", response.getHeaders().getCacheControl());
+        assertSame(job, response.getBody());
+    }
+
+    @Test
     void oversizedUploadIsRejectedBeforeReadingBytesOrStartingATransaction() throws IOException {
         MultipartFile file = mock(MultipartFile.class);
         when(file.getSize()).thenReturn(58_708_950L);
@@ -140,6 +155,7 @@ class SubstanceLegacyBulkLoadControllerTest {
         assertSame(runningJob, firstResult);
         assertEquals(duplicateResponse, secondResult);
         verify(substanceBulkLoadService, times(1)).submit(any());
+        verify(processingJobService, never()).getLoadStatus(anyString());
     }
 
     private void stubTransactions() {

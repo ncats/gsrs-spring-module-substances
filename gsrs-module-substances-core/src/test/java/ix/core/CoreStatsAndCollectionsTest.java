@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.processing.GinasDumpRecordExtractorFactory;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
@@ -89,6 +91,56 @@ class CoreStatsAndCollectionsTest {
         long processingStart = getLongField(statistics, "start");
 
         assertEquals(1_000L, statistics.getEstimatedTimeLeft(processingStart + 1_000L));
+    }
+
+    @Test
+    void estimatedTimeLeftShouldHandleZeroWorkAndNonPointEstimates() {
+        Statistics statistics = new Statistics();
+        statistics.totalRecords = new Estimate(0, Estimate.TYPE.EXACT);
+        assertEquals(0L, statistics.getEstimatedTimeLeft());
+
+        statistics.totalRecords = new Estimate(5, Estimate.TYPE.UPPER_BOUND);
+        assertEquals(-1L, statistics.getEstimatedTimeLeft());
+    }
+
+    @Test
+    void averageTimeToPersistShouldBeZeroWhenNoRecordsWerePersisted() {
+        Statistics statistics = new Statistics();
+
+        assertEquals(0.0, statistics.getAverageTimeToPersistMS(System.currentTimeMillis()), 0.0001);
+    }
+
+    @Test
+    void finishedStatisticsShouldFreezeRateAndRemainingTimeAcrossSerialization() throws Exception {
+        Statistics statistics = new Statistics();
+        setLongField(statistics, "start", 1_000L);
+        statistics.recordsPersistedSuccess.set(2);
+        statistics.totalRecords = new Estimate(5, Estimate.TYPE.EXACT);
+
+        assertEquals(500.0, statistics.getAverageTimeToPersistMS(2_000L), 0.0001);
+        assertEquals(1_000.0, statistics.getAverageTimeToPersistMS(3_000L), 0.0001);
+
+        statistics.setStop(3_000L);
+        assertEquals(1_000.0, statistics.getAverageTimeToPersistMS(10_000L), 0.0001);
+        assertEquals(0L, statistics.getEstimatedTimeLeft(10_000L));
+
+        ObjectMapper mapper = new ObjectMapper()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        Statistics restored = mapper.readValue(mapper.writeValueAsString(statistics), Statistics.class);
+        assertEquals(3_000L, restored.getStop());
+        assertEquals(1_000L, getLongField(restored, "start"));
+        assertEquals(1_000.0, restored.getAverageTimeToPersistMS(20_000L), 0.0001);
+        assertEquals(0L, restored.getEstimatedTimeLeft(20_000L));
+    }
+
+    @Test
+    void restartingProcessingShouldResetTheFinishedClock() {
+        Statistics statistics = new Statistics();
+        statistics.setStop(3_000L);
+
+        statistics.markProcessingStarted();
+
+        assertNull(statistics.getStop());
     }
 
     @Test

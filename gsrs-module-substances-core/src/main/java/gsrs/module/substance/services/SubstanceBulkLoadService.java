@@ -192,13 +192,17 @@ public class SubstanceBulkLoadService {
     private ProcessingJob saveJobInSeparateTransaction(long jobId, Statistics stats, ProcessingJob.Status desiredStatus,
                                                        String desiredMessage){
         synchronized (jobLock) {
-            if(stats==null ) {
-                //log.info("skipping save because stats is null");
-                return null;
-            }
             TransactionTemplate tx = new TransactionTemplate(transactionManager);
             tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
-            return tx.execute(status -> saveJobInCurrentTransaction(jobId, stats, desiredStatus, desiredMessage));
+            ProcessingJob saved = tx.execute(status ->
+                    saveJobInCurrentTransaction(jobId, stats, desiredStatus, desiredMessage));
+            if (saved == null) {
+                throw new IllegalStateException("No processing job returned after saving job " + jobId);
+            }
+            if (desiredStatus != null && desiredStatus.isInFinalState()) {
+                log.info("Bulk load job {} committed status={} stop={}", jobId, saved.status, saved.stop);
+            }
+            return saved;
         }
     }
 
@@ -208,20 +212,36 @@ public class SubstanceBulkLoadService {
         if (desiredStatus != null) {
             log.trace("using supplied status in saveJobInSeparateTransaction");
             job.status = desiredStatus;
-        } else if (stats._isDone()) {
-            log.trace("setting status to complete in saveJobInSeparateTransaction");
-            job.status = ProcessingJob.Status.COMPLETE;
-        } else {
+        } else if (job.status == null || !job.status.isInFinalState()) {
             log.trace("setting status to running in saveJobInSeparateTransaction");
             job.status = ProcessingJob.Status.RUNNING;
         }
 
+        // Record counts can finish before final indexing; only a terminal status stops the clock.
+        if (job.status.isInFinalState()) {
+            if (job.stop == null) {
+                job.stop = TimeUtil.getCurrentTimeMillis();
+            }
+        } else {
+            job.stop = null;
+        }
+        if (stats != null) {
+            stats.setStop(job.stop);
+        }
+
         if (desiredMessage != null) {
             job.message = desiredMessage;
-        } else if (!stats._isDone()) {
+        } else if (job.status == ProcessingJob.Status.COMPLETE) {
+            job.message = "Loading and indexing complete";
+        } else if (!job.status.isInFinalState() && (stats == null || !stats._isDone())) {
             job.message = "Loading data";
         }
-        job.statistics = mapper.valueToTree(stats).toString();
+        if (stats != null) {
+            job.statistics = mapper.valueToTree(stats).toString();
+        } else {
+            log.warn("Bulk load job {} has no cached statistics; saving status {} without replacing stored statistics",
+                    jobId, job.status);
+        }
 
         job.setIsAllDirty();
         return processingJobRepository.saveAndFlush(job);
@@ -353,6 +373,7 @@ public class SubstanceBulkLoadService {
                             stat = new Statistics();
                         }
                         stat.totalRecords = es;
+                        timings.setTotalRecords(es);
                         stat.applyChange(Statistics.CHANGE.EXPLICIT_CHANGE);
                         storeStatisticsForJob(pp.key, stat);
                         log.debug(stat.toString());
@@ -363,6 +384,11 @@ public class SubstanceBulkLoadService {
                     log.trace("saveJobInSeparateTransaction with no status");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), null, null);
 
+                    Statistics statistics = getStatisticsForJob(pp.key);
+                    if (statistics != null) {
+                        statistics.markProcessingStarted();
+                    }
+                    timings.markProcessingStarted();
                         try (InputStream in = payloadService.getPayloadAsInputStream(tmpPayload).get();
                              RecordExtractor extractorInstance = configuration.getRecordExtractorFactory().createNewExtractorFor(in)) {
                             Object record;
@@ -433,6 +459,7 @@ public class SubstanceBulkLoadService {
                                     Statistics stat = getStatisticsForJob(pp.key);
                                     stat.applyChange(Statistics.CHANGE.ADD_EX_BAD);
                                     storeStatisticsForJob(pp.key, stat);
+                                    timings.recordDone();
                                     ExtractFailLogger.info("failed to extract record", e);
                                     log.warn("Error processing record");
                                     // hack to keep iterator going...
@@ -486,6 +513,16 @@ public class SubstanceBulkLoadService {
                     log.trace("about to save job as Interrupted");
                     saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key), ProcessingJob.Status.STOPPED, "Interrupted");
                     e.printStackTrace();
+                } catch (RuntimeException e) {
+                    log.error("Bulk load {} finalization failed for job {}", pp.key, pp.jobId, e);
+                    try {
+                        saveJobInSeparateTransaction(pp.jobId, getStatisticsForJob(pp.key),
+                                ProcessingJob.Status.FAILED, "Bulk load finalization failed: " + e.getMessage());
+                    } catch (RuntimeException statusFailure) {
+                        e.addSuppressed(statusFailure);
+                        log.error("Could not persist FAILED status for bulk load job {}", pp.jobId, statusFailure);
+                    }
+                    throw e;
                 } finally {
                     BulkLoadTimings.finish(pp.key);
                 }
