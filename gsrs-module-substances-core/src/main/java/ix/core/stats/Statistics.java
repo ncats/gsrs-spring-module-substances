@@ -1,6 +1,7 @@
 package ix.core.stats;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import gov.nih.ncats.common.util.TimeUtil;
 
 import java.io.Serializable;
@@ -20,7 +21,9 @@ public class Statistics implements Serializable{
     public AtomicInteger recordsProcessedFailed=new AtomicInteger();
     public AtomicInteger recordsPersistedFailed=new AtomicInteger();
 
-    private long start=TimeUtil.getCurrentTimeMillis();
+    @JsonProperty("start")
+    private volatile long start=TimeUtil.getCurrentTimeMillis();
+    private volatile Long stop;
 
     public enum CHANGE{	ADD_EX_GOOD,
         ADD_EX_BAD,
@@ -94,26 +97,56 @@ public class Statistics implements Serializable{
         return this.getAverageTimeToPersistMS(TimeUtil.getCurrentTimeMillis());
     }
 
+    public void markProcessingStarted() {
+        start = TimeUtil.getCurrentTimeMillis();
+        stop = null;
+    }
+
+    public Long getStop() {
+        return stop;
+    }
+
+    public void setStop(Long stop) {
+        this.stop = stop;
+    }
+
     public long getEstimatedTimeLeft(){
-        long totalDone= totalFailedAndPersisted();
-        long total=1;
-        if(this.totalRecords!=null){
-            total = this.totalRecords.getCount();
+        return getEstimatedTimeLeft(TimeUtil.getCurrentTimeMillis());
+    }
+
+    public long getEstimatedTimeLeft(long currentTimeMillis){
+        if (stop != null) {
+            return 0;
+        }
+        if(totalRecords == null
+                || totalRecords.getCount() < 0
+                || (totalRecords.getType() != Estimate.TYPE.EXACT
+                && totalRecords.getType() != Estimate.TYPE.APPROXIMATE)){
+            return -1;
         }
 
-        long totalRemaining=total-totalDone;
-        long timeSoFar= TimeUtil.getCurrentTimeMillis()-start;
+        long totalDone= totalFailedAndPersisted();
+        long totalRemaining = Math.max(totalRecords.getCount() - totalDone, 0);
+        if(totalRemaining == 0){
+            return 0;
+        }
+        if(totalDone == 0){
+            return -1;
+        }
 
-        double avg=timeSoFar/Math.max(totalDone,1);
-        return (long) (totalRemaining*avg);
+        long timeSoFar = Math.max(currentTimeMillis - start, 0);
+        double estimate = (double) totalRemaining * timeSoFar / totalDone;
+        return estimate >= Long.MAX_VALUE ? Long.MAX_VALUE : (long) Math.ceil(estimate);
     }
 
     public double getAverageTimeToPersistMS(long end){
         long totalPersist=recordsPersistedSuccess.get();
-        if(totalPersist==0){
-            totalPersist=1;
+        if(totalPersist == 0){
+            return 0;
         }
-        return (end-start)/(totalPersist + 0.0);
+        Long stoppedAt = stop;
+        long effectiveEnd = stoppedAt == null ? end : Math.min(end, stoppedAt);
+        return Math.max(effectiveEnd - start, 0) / (totalPersist + 0.0);
     }
 
     public void applyChange(CHANGE c){
