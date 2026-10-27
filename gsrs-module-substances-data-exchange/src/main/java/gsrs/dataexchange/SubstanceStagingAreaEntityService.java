@@ -89,10 +89,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     @PostConstruct
     private void initValidator(){
         //need this in a post construct so the validator factory service is injected
-        //This is added to the initization Group so that we can reset this in tests
-
-        //This cache might be unncessary as of now the call to newFactory isn't cached
-        //by tests where the return value could change over time?  but keep it here anyway for now...
+        //This is added to the initialization Group so that we can reset this in tests
         validatorFactory = ENTITY_SERVICE_INITIALIZATION_GROUP.add(()->validatorFactoryService.newFactory("substances"));
     }
 
@@ -100,42 +97,51 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
 
     @Override
     public ValidationResponse<Substance> validate(Substance substance) {
-        if(!initializedValidator) {
-            initValidator();
-            initializedValidator=true;
-        }
-        UUID originalUuid = substance.uuid;
-        boolean ignoreMessageAboutUuid = originalUuid != null;
-        ValidationResponse<Substance> response = new ValidationResponse<>(substance);
-        // Temporarily clear the UUID for validation, but never lose the incoming identity.
         try {
+            if(!initializedValidator) {
+                initValidator();
+                initializedValidator=true;
+            }
+            //need to remove the UUID or errors occur on the deserialization process within validation
+            UUID originalUuid=null;
+            boolean ignoreMessageAboutUuid=false;
+            if( substance.uuid!=null){
+                originalUuid=substance.uuid;
+                ignoreMessageAboutUuid=true;
+            }
             substance.uuid=null;
             Validator<Substance> validator = validatorFactory.getSync().createValidatorFor(substance, null,
-                    validationMethodType, ValidatorCategory.CATEGORY_ALL());
+                    ValidatorFactory.ValidationContext.stagingWithBatchBehavior(),
+                    ValidatorCategory.CATEGORY_ALL());
 
+            ValidationResponse<Substance> response = new ValidationResponse<>(substance);
             ValidatorCallback callback = createCallbackFor(substance, response, validationMethodType);
             validator.validate(substance, null, callback);
             callback.complete();
-        } finally {
+            //treat one validator separately
+            DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
+            AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
+            ValidationResponse<Substance> response2 = definitionalDependencyValidator.validate(substance, null);
             substance.uuid=originalUuid;
-        }
-        DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
-        AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
-        ValidationResponse<Substance> response2 = definitionalDependencyValidator.validate(substance, null);
-        log.trace("adding messages from DefinitionalDependencyValidator");
-        GsrsProcessingStrategy strategy= gsrsProcessingStrategyFactory.createNewStrategy(PROCESS_STRATEGY);
-        response.getValidationMessages().forEach(m->{
+            log.trace("adding messages from DefinitionalDependencyValidator");
+            boolean finalIgnoreMessageAboutUuid = ignoreMessageAboutUuid;
+            GsrsProcessingStrategy strategy= gsrsProcessingStrategyFactory.createNewStrategy(PROCESS_STRATEGY);
+            response.getValidationMessages().forEach(m->{
 
-            if(!(ignoreMessageAboutUuid && m.getMessage().startsWith("Substance has no UUID, will generate uuid"))){
-                if( strategy instanceof AbstractProcessingStrategy abstractProcessingStrategy
-                        && m instanceof GinasProcessingMessage processingMessage) {
-                        abstractProcessingStrategy.overrideMessage(processingMessage);
+                if(!(finalIgnoreMessageAboutUuid && m.getMessage().startsWith("Substance has no UUID, will generate uuid"))){
+                    if( strategy instanceof AbstractProcessingStrategy abstractProcessingStrategy
+                            && m instanceof GinasProcessingMessage processingMessage) {
+                            abstractProcessingStrategy.overrideMessage(processingMessage);
+                    }
+                    response2.addValidationMessage(m);
                 }
-                response2.addValidationMessage(m);
-            }
-        });
-        response2.setNewObject(response.getNewObject());
-        return response2;
+            });
+            response2.setNewObject(response.getNewObject());
+            return response2;
+        } catch (Exception ex) {
+            log.warn("Error validating substance", ex);
+        }
+        return null;
     }
 
     @Override
@@ -247,21 +253,6 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         log.trace("finishing synchronizeEntity");
     }
 
-
-    /*private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
-
-        try {
-            Field ieField = EntityUtils.EntityWrapper.class.getField("ei");
-            ieField.setAccessible(true);
-            EntityUtils.EntityInfo ei = (EntityUtils.EntityInfo) ieField.get(wrapper);
-            Field kindField = ei.getClass().getField("kind");
-            kindField.setAccessible(true);
-            kindField.set(ei, desiredKind);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            log.error("Error accessing fields", e);
-        }
-    }
-*/
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, DefaultValidatorConfig.METHOD_TYPE type) {
         return new ValidatorCallback() {
             @Override
