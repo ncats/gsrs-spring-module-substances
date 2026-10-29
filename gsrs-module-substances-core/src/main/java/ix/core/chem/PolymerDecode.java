@@ -420,9 +420,20 @@ public class PolymerDecode {
 				}
 			}
 		}
-		return polyconst;
+
+		return polyconst.stream().sorted(byMW).collect(Collectors.toCollection(TreeSet::new));
 	}
 
+
+	Comparator<Chemical> byLabel = Comparator.comparing(
+			(sru) ->sru.getProperty("subScript"),
+			Comparator.nullsLast(Comparator.naturalOrder())
+	);
+
+	static Comparator<Chemical> byMW = Comparator.comparing(
+			(chem) -> chem.getMass(),
+			Comparator.nullsLast(Comparator.naturalOrder())
+	);
 
 	static List<StructuralUnit> removeGarbage(Collection<StructuralUnit> sunitsb){
 		List<StructuralUnit> sunits = new ArrayList<StructuralUnit>(sunitsb);

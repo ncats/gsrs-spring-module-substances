@@ -1050,7 +1050,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     saveTempStructure(struc);
                     su._structure = struc;
                 }
-                List<PolymerDecode.StructuralUnit> sorted = o.stream().sorted(byLabel).toList();
+                List<PolymerDecode.StructuralUnit> sorted = o.stream().sorted(byMW).toList();
                 node.set("structuralUnits", objectMapper.valueToTree(sorted));
             } catch (Throwable e) {
                 e.printStackTrace();
@@ -1072,6 +1072,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             Comparator.nullsLast(Comparator.naturalOrder())
     );
 
+    Comparator<PolymerDecode.StructuralUnit> byMW = Comparator.comparing(
+            (sru) -> {
+                try {
+                    return Chemical.parseMol(sru.structure).getMass();
+                } catch (IOException e) {
+                    return 0.0;
+                }
+            },
+            Comparator.nullsLast(Comparator.naturalOrder())
+    );
 
     @PostGsrsRestApiMapping("/interpretFeatures")
     @PreAuthorize("isAuthenticated()")
