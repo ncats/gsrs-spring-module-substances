@@ -2,7 +2,6 @@ package gsrs.module.substance.importers.importActionFactories;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
@@ -206,7 +205,7 @@ public class SubstanceImportAdapterFactoryBase implements ImportAdapterFactory<S
         registry.clear();
         if(fileImportActions !=null && fileImportActions.size() >0) {
             log.trace("config-specific init");
-            ObjectMapper mapper = new ObjectMapper();
+            JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
             fileImportActions.forEach(fia->{
                 String actionName =fia.getActionName();
                 Class actionClass =fia.getActionClass();
@@ -450,15 +449,15 @@ todo: add a table of example input/output values
         log.trace("in resolveParametersMap. rec properties: ");
         rec.getProperties().forEach(p->log.trace("property: {}; value: {}", p, rec.getProperty(p)));
         inputMap.keySet().forEach(k->log.trace("key: {}, val: {}", k, inputMap.get(k)));
-        ObjectMapper om = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         Map<String, Object> newMap;
-        JsonNode jsn = om.valueToTree(inputMap);
+        JsonNode jsn = mapper.valueToTree(inputMap);
         String json = resolveParameter(rec, jsn.toString(), s -> {
-            String m = om.valueToTree(s).toString();
+            String m = mapper.valueToTree(s).toString();
             return m.substring(1, m.length() - 1);
         });
         try {
-            newMap = (Map<String, Object>) (om.readValue(json, LinkedHashMap.class));
+            newMap = (Map<String, Object>) (mapper.readValue(json, LinkedHashMap.class));
             return newMap;
         } catch (Exception ex) {
             log.error("Error in resolveParametersMap ",  ex);

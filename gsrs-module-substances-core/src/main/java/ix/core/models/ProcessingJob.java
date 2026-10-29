@@ -3,8 +3,7 @@ package ix.core.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
@@ -98,7 +97,9 @@ public class ProcessingJob extends LongBaseModel {
     public Date lastUpdate; // here
     @Transient
     @JsonIgnore
-    private static ObjectMapper om = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public ProcessingJob () {
     }
@@ -152,7 +153,7 @@ public class ProcessingJob extends LongBaseModel {
     @JsonProperty("statistics")
     public Map getStatisticsForAPI () {
         try {
-			return om.readValue(om.valueToTree(getStatistics())+"",Map.class);
+			return mapper.readValue(mapper.valueToTree(getStatistics())+"",Map.class);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -211,11 +212,7 @@ public class ProcessingJob extends LongBaseModel {
     	    return stats;
         }
         if(this.statistics!=null){
-            try {
-                return om.readValue(statistics, Statistics.class);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+           return mapper.readValue(statistics, Statistics.class);
         }
         return null;
     }
