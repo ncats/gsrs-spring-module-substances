@@ -1,7 +1,6 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.services.SubstanceSequenceFileSupportService;
 import gsrs.sequence.SequenceFileSupport;
@@ -112,7 +111,7 @@ public class ProteinSubstance extends Substance implements GinasSubstanceDefinit
 		return temp;
 	}
 
-	public ProteinSubstance copy() throws JsonProcessingException {
+	public ProteinSubstance copy() {
 		log.trace("in ProteinSubstance.copy method");
 			return EntityUtils.EntityWrapper.of(this).getClone();
 	}
