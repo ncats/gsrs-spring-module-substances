@@ -1,13 +1,14 @@
 package ix.core.chem;
 
-
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
 import ix.core.models.Structure;
 
+import java.awt.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 
@@ -28,10 +29,7 @@ public class PolymerDecode {
 	private static final String SRU_BLOCK = "SRU-BLOCK";
 	private static final int RGROUP_PLACEHOLDER = 2;
 
-
 	static String pseudoString = "A";
-
-
 
 	public static Chemical getDiagram(Chemical c, Collection<StructuralUnit> sunitsb){
 		List<StructuralUnit> sunits = new ArrayList<StructuralUnit>(sunitsb);
@@ -83,15 +81,7 @@ public class PolymerDecode {
 		ca.setAtomCoordinates(AtomCoordinates.valueOf(avgPt[0], avgPt[1], avgPt[2]));
 		return ca;
 	}
-	//	public static void makeRgroup(Atom ca, int id){
-//		Chemical c = cfac.createChemical();
-//		ChemicalAtom cab = c.addAtom(pseudoString);
-//		ca.setAtomNo(RGROUP_PLACEHOLDER);
-//		c.removeAtom(cab);
-//		ca.setRgroupIndex(id);
-////		ca.setRgroupInd();
-//
-//	}
+
 	public static Set<StructuralUnit> DecomposePolymerSU(Chemical c){
 		Set<Chemical> chems = DecomposePolymer(c);
 		Set<StructuralUnit> sunits = new LinkedHashSet<StructuralUnit>();
@@ -107,6 +97,7 @@ public class PolymerDecode {
 		}
 		return sunits;
 	}
+
 	public static Collection<StructuralUnit>  DecomposePolymerSU(String mol, boolean canonicalize) throws IOException {
 		return DecomposePolymerSU(Chemical.parse(mol), canonicalize);
 	}
@@ -130,9 +121,7 @@ public class PolymerDecode {
 	 */
 	public static Set<Chemical> DecomposePolymer(Chemical c) {
 		boolean debugPrint = false;
-		//System.out.println(c.getSGroupCount());
 		Chemical c2 = c.copy();
-		//System.out.println(c2.getSGroupCount());
 		c2.setAtomMapToPosition();
 		Set<Chemical> polyconst = new LinkedHashSet<>();
 		int attachType = 1;
@@ -155,8 +144,6 @@ public class PolymerDecode {
 			}
 		}
 
-
-
 		while(componentIter.hasNext()){
 			Chemical c3 = componentIter.next();
 			Set<Atom> mat = new HashSet<>();
@@ -175,26 +162,6 @@ public class PolymerDecode {
 					.filter(sg -> includeTypes.contains(sg.getType()))
 					.collect(Collectors.toList())) {
 
-					/*
-
-
-	public final static int TYPE_COPOLYMER=5;
-	public final static int TYPE_CROSSLINK=6;
-
-	public final static int TYPE_MULTIPLE=1;
-
-	public final static int TYPE_SRU=2;
-
-					 */
-//					case ChemicalGroup.TYPE_SUPERATOM:
-//					case ChemicalGroup.TYPE_FORMULATION:
-//					case ChemicalGroup.TYPE_GENERIC:
-//					case ChemicalGroup.TYPE_COMPONENT:
-//					case ChemicalGroup.TYPE_ANY:
-//					case ChemicalGroup.TYPE_MONOMER:
-//					case ChemicalGroup.TYPE_DATA:
-//						break;
-//					basic:
 				Set<Integer> amapSet = sg.getAtoms()
 						.map(Atom::getAtomToAtomMap)
 						.filter(OptionalInt::isPresent)
@@ -202,11 +169,6 @@ public class PolymerDecode {
 						.boxed()
 						.collect(Collectors.toCollection(LinkedHashSet::new));
 
-//						for(Atom ca:sg.getAtoms().collect(Collectors.toList())){
-//							amapSet.add(ca.getAtomMap());
-//						}
-				//System.out.println(amapSet);
-				//System.out.println("OK");
 				int satt = attachType;
 				debugPrint=true;
 
@@ -214,17 +176,7 @@ public class PolymerDecode {
 				Map<Atom, Atom> newOldMap = new HashMap<>();
 
 				Set<Atom> badAtoms = sg.getOutsideNeighbors().collect(Collectors.toSet());
-				//System.out.println(out.length);
 
-
-				//The outside neighbors of group
-//						Set<Atom> badAtoms = new HashSet<>();
-//						Map<Atom, Atom> newOldMap = new HashMap<>();
-//						if (out != null) {
-//							for (ChemicalAtom o : out) {
-//								badAtoms.add(o);
-//							}
-//						}
 				//add atoms from sg to this new molecule
 				ChemicalBuilder sub = new ChemicalBuilder();
 				for (Atom ca : sg.getAtoms().collect(Collectors.toList())) {
@@ -260,8 +212,6 @@ public class PolymerDecode {
 				for (Atom ca : sg.getAtoms().collect(Collectors.toList())) {
 					Atom nAtom1 = newOldMap.get(ca);
 					//now look for details about border atoms
-//						for (ChemicalAtom ca : c3.getAtomArray()) {
-//							ChemicalAtom nAtom1 = newOldMap.get(ca);
 					//if the atom is part of the group
 					if (nAtom1 != null) {
 						//for each bond
@@ -369,12 +319,6 @@ public class PolymerDecode {
 
 			for (Chemical m3 : c3.getConnectedComponents()) {
 
-//				try {
-////					System.out.println("Smarts is:" + m3.toSmarts());
-//				} catch (IOException e) {
-//					// TODO Auto-generated catch block
-//					e.printStackTrace();
-//				}
 				String type = PolymerDecode.MOIETY;
 
 				String s = m3.atoms().map(Atom::getAtomToAtomMap)
@@ -492,7 +436,6 @@ public class PolymerDecode {
 		return sunits;
 	}
 	static boolean standardizeFragments(Collection<StructuralUnit> sunits){
-		//List<StructuralUnit> sunits = new ArrayList<StructuralUnit>(sunitsb);
 		boolean changed=false;
 		for(StructuralUnit su:sunits){
 			if(su.type.equals(PolymerDecode.SRU_RANDOM)){
@@ -536,7 +479,6 @@ public class PolymerDecode {
 	 */
 	static List<StructuralUnit> canonicalize(Collection<StructuralUnit> sunitsb, boolean rename){
 		List<StructuralUnit> sunits = removeGarbage(new ArrayList<StructuralUnit>(sunitsb));
-		//List<StructuralUnit> toRemove = new ArrayList<StructuralUnit>();
 		StructuralUnitComparator suc = new StructuralUnitComparator();
 
 		Collections.sort(sunits,suc);
@@ -566,7 +508,6 @@ public class PolymerDecode {
 				for(String s:lstr){
 					nlist.add(locCanonicalGroup.get(s));
 				}
-				//su.attachmentMap.remove(rgroup);
 				nmap.put(locCanonicalGroup.get(rgroup), nlist);
 			}
 			su.attachmentMap=nmap;
@@ -601,14 +542,12 @@ public class PolymerDecode {
 					ca.setAlias("_R" + ca.getRGroupIndex().getAsInt());
 					ca.setAtomicNumber(RGROUP_PLACEHOLDER); //helium by basic
 					//katzelda 7/2019 : commented out setting it 2x
-//						ca.setAtomMap(rnew);
 					ca.setAtomToAtomMap(rnew);
 				}
 
 			}
 			try {
 				su.updateStrutureMol(frag.toMol());
-				//su.structure=frag.export(Chemical.FORMAT_SMARTS);
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
@@ -715,15 +654,18 @@ public class PolymerDecode {
 
 		return sunits;
 	}
+
 	public static String getRGroupLabel(int i){
 		return "R" + (i+1);
 	}
+
 	public static String getNextAvailableLetter(Set<String> used){
 		for(int i=1;true;i++){
 			String lab = toName(i);
 			if(!used.contains(lab))return lab;
 		}
 	}
+
 	public static String toName(int number) {
 		StringBuilder sb = new StringBuilder();
 		while (number-- > 0) {
@@ -806,28 +748,6 @@ public class PolymerDecode {
 
 	}
 
-	//from old chemical interface PseudoInchi
-	/*
-	@Override
-	public String encode(Chemical c1) throws Exception {
-		Chemical c=c1.cloneChemical();
-		//change all to helium
-		boolean pseudo=false;
-		for(ChemicalAtom ca : c.getAtomArray()){
-			if(ca.isQueryAtom()){
-				//System.out.println("OH");
-				ca.setAtomNo(2);
-				ca.setIsotope(6);
-				pseudo=true;
-			}
-		}
-		String exp =c.export(Chemical.FORMAT_STDINCHIKEY);
-		//if(pseudo)
-		//	System.out.println(c.export(Chemical.FORMAT_SMILES));
-		return exp;
-	}
-	 */
-
 	private static String encodePseudoInchiKey(Chemical c) throws IOException{
 		Chemical chemicalToUse = Chem.RemoveQueryFeaturesForPseudoInChI(c);
 		return chemicalToUse.toInchi().getKey();
@@ -842,7 +762,6 @@ public class PolymerDecode {
 		public Map<String,List<String>> attachmentMap;
 		public List<Integer> amap= new ArrayList<Integer>();
 		public int attachmentCount=0;
-		//public Amount amount=new Amount();
 		public Amount amount=null;
 		public Structure _structure;
 
@@ -881,7 +800,6 @@ public class PolymerDecode {
 				}
 			}
 			String myamap = ch.getProperty("amap").replace("[", "").replace("]", "");
-			//List<Integer> amap = new ArrayList<Integer>();
 			for(String mmap:myamap.split(",")){
 				amap.add(Integer.parseInt(mmap.trim())-1);
 			}

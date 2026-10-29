@@ -1050,7 +1050,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     saveTempStructure(struc);
                     su._structure = struc;
                 }
-                node.set("structuralUnits", objectMapper.valueToTree(o));
+                List<PolymerDecode.StructuralUnit> sorted = o.stream().sorted(byLabel).toList();
+                node.set("structuralUnits", objectMapper.valueToTree(sorted));
             } catch (Throwable e) {
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
@@ -1065,6 +1066,12 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
     }
+
+    Comparator<PolymerDecode.StructuralUnit> byLabel = Comparator.comparing(
+            (sru) ->sru.label,
+            Comparator.nullsLast(Comparator.naturalOrder())
+    );
+
 
     @PostGsrsRestApiMapping("/interpretFeatures")
     @PreAuthorize("isAuthenticated()")

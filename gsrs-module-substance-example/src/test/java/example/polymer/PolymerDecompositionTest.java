@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PolymerDecompositionTest {
 
@@ -24,5 +23,9 @@ public class PolymerDecompositionTest {
         Chemical polymer = Chemical.parse(polymerMolfile);
         Set<PolymerDecode.StructuralUnit> SRUs = PolymerDecode.DecomposePolymerSU(polymer);
         assertFalse(SRUs.isEmpty());
+        SRUs.forEach( sru->{
+            System.out.printf("SRU label: %s%n",
+                    sru.label );
+        });
     }
 }
