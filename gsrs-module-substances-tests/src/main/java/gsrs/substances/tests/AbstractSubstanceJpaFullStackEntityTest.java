@@ -6,7 +6,7 @@ import gsrs.startertests.GsrsFullStackTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.DirtiesContext;
 
-import javax.persistence.EntityManager;
+import jakarta.persistence.EntityManager;
 
 //@SpringBootTest(classes = {GsrsModuleSubstanceApplication.class})
 //@SpringBootTest

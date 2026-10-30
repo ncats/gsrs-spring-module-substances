@@ -1,7 +1,7 @@
 package gsrs.dataexchange;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.util.CachedSupplierGroup;
 import gsrs.GsrsFactoryConfiguration;
@@ -28,12 +28,15 @@ import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.JsonSubstanceFactory;
 import ix.ginas.utils.validation.ValidatorFactory;
+import ix.ginas.utils.validation.strategy.AbstractProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategy;
+import ix.ginas.utils.validation.strategy.GsrsProcessingStrategyFactory;
 import ix.ginas.utils.validation.validators.DefinitionalDependencyValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -58,10 +61,18 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     @Autowired
     private GsrsFactoryConfiguration gsrsFactoryConfiguration;
 
+    @Autowired
+    private GsrsProcessingStrategyFactory gsrsProcessingStrategyFactory;
+
+    @Autowired
+    ExplicitMatchableExtractorFactory explicitMatchableExtractorFactory;
+
     @Override
     public Class<Substance> getEntityClass() {
         return Substance.class;
     }
+
+    private final static String PROCESS_STRATEGY = "ACCEPT_APPLY_ALL";
 
     @Override
     public Substance parse(JsonNode json) {
@@ -78,10 +89,7 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
     @PostConstruct
     private void initValidator(){
         //need this in a post construct so the validator factory service is injected
-        //This is added to the initization Group so that we can reset this in tests
-
-        //This cache might be unncessary as of now the call to newFactory isn't cached
-        //by tests where the return value could change over time?  but keep it here anyway for now...
+        //This is added to the initialization Group so that we can reset this in tests
         validatorFactory = ENTITY_SERVICE_INITIALIZATION_GROUP.add(()->validatorFactoryService.newFactory("substances"));
     }
 
@@ -103,13 +111,13 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             }
             substance.uuid=null;
             Validator<Substance> validator = validatorFactory.getSync().createValidatorFor(substance, null,
-                    validationMethodType, ValidatorCategory.CATEGORY_ALL());
+                    ValidatorFactory.ValidationContext.stagingWithBatchBehavior(),
+                    ValidatorCategory.CATEGORY_ALL());
 
             ValidationResponse<Substance> response = new ValidationResponse<>(substance);
             ValidatorCallback callback = createCallbackFor(substance, response, validationMethodType);
             validator.validate(substance, null, callback);
             callback.complete();
-            //ValidationResponse<Substance> response = substanceEntityService.validateEntity((substance).toFullJsonNode(), ValidatorCategory.);
             //treat one validator separately
             DefinitionalDependencyValidator definitionalDependencyValidator = new DefinitionalDependencyValidator();
             AutowireHelper.getInstance().autowire(definitionalDependencyValidator);
@@ -117,8 +125,14 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             substance.uuid=originalUuid;
             log.trace("adding messages from DefinitionalDependencyValidator");
             boolean finalIgnoreMessageAboutUuid = ignoreMessageAboutUuid;
+            GsrsProcessingStrategy strategy= gsrsProcessingStrategyFactory.createNewStrategy(PROCESS_STRATEGY);
             response.getValidationMessages().forEach(m->{
+
                 if(!(finalIgnoreMessageAboutUuid && m.getMessage().startsWith("Substance has no UUID, will generate uuid"))){
+                    if( strategy instanceof AbstractProcessingStrategy abstractProcessingStrategy
+                            && m instanceof GinasProcessingMessage processingMessage) {
+                            abstractProcessingStrategy.overrideMessage(processingMessage);
+                    }
                     response2.addValidationMessage(m);
                 }
             });
@@ -144,10 +158,9 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
             log.trace("other type of substance");
         }
         List<MatchableKeyValueTuple> allMatchables = new ArrayList<>();
-        ExplicitMatchableExtractorFactory factory = new ExplicitMatchableExtractorFactory();
-        factory.setGsrsFactoryConfiguration(gsrsFactoryConfiguration);
-        factory=AutowireHelper.getInstance().autowireAndProxy(factory);
-        factory.createExtractorFor(Substance.class).extract(substance, allMatchables::add);
+        explicitMatchableExtractorFactory
+                .createExtractorFor(Substance.class)
+                .extract(substance, allMatchables::add);
         return allMatchables;
     }
 
@@ -240,21 +253,6 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
         log.trace("finishing synchronizeEntity");
     }
 
-
-    /*private void hackySetKind(EntityUtils.EntityWrapper wrapper, String desiredKind) {
-
-        try {
-            Field ieField = EntityUtils.EntityWrapper.class.getField("ei");
-            ieField.setAccessible(true);
-            EntityUtils.EntityInfo ei = (EntityUtils.EntityInfo) ieField.get(wrapper);
-            Field kindField = ei.getClass().getField("kind");
-            kindField.setAccessible(true);
-            kindField.set(ei, desiredKind);
-        } catch (IllegalAccessException | NoSuchFieldException e) {
-            log.error("Error accessing fields", e);
-        }
-    }
-*/
     protected <T> ValidatorCallback createCallbackFor(T object, ValidationResponse<T> response, DefaultValidatorConfig.METHOD_TYPE type) {
         return new ValidatorCallback() {
             @Override
@@ -282,8 +280,6 @@ public class SubstanceStagingAreaEntityService implements StagingAreaEntityServi
                 response.addValidationMessage(message);
                 if( appyAction!=null) {
                     appyAction.run();
-                } else {
-                    log.warn("in addMessage, appyAction is null");
                 }
             }
 

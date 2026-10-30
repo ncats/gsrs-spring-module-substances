@@ -14,6 +14,10 @@ public class FeatureUtils {
     public static List<Map<String, String>> calculateFeatures(Chemical chemical) throws Exception{
 
         try {
+            if(chemical.hasQueryAtoms() || chemical.bonds().anyMatch(b->b.isQueryBond())) {
+                log.info("structure has query feature(s); will skip nitrosamine analysis");
+                return new ArrayList<>();
+            }
             Optional<FeatureResponse> response = FeaturizeNitrosamine.forMostPotentNitrosamine(chemical);
             List<Map<String,String>> maps = new ArrayList<>();
             if( response.isPresent()){

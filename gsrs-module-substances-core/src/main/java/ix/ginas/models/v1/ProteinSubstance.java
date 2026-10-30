@@ -1,7 +1,6 @@
 package ix.ginas.models.v1;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.services.SubstanceSequenceFileSupportService;
 import gsrs.sequence.SequenceFileSupport;
@@ -13,7 +12,7 @@ import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasSubstanceDefinitionAccess;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -112,7 +111,7 @@ public class ProteinSubstance extends Substance implements GinasSubstanceDefinit
 		return temp;
 	}
 
-	public ProteinSubstance copy() throws JsonProcessingException {
+	public ProteinSubstance copy() {
 		log.trace("in ProteinSubstance.copy method");
 			return EntityUtils.EntityWrapper.of(this).getClone();
 	}

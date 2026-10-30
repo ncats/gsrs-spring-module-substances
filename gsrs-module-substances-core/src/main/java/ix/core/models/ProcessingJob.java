@@ -3,8 +3,7 @@ package ix.core.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
@@ -16,9 +15,11 @@ import ix.core.processing.RecordExtractorFactory;
 import ix.core.processing.RecordPersister;
 import ix.core.processing.RecordPersisterFactory;
 import ix.core.stats.Statistics;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedBy;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.IOException;
 import java.util.*;
 
@@ -71,11 +72,11 @@ public class ProcessingJob extends LongBaseModel {
     @Column(name="job_stop")
     public Long stop;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     public String message;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     @JsonView(BeanViews.Private.class)
     public String statistics;
@@ -96,7 +97,9 @@ public class ProcessingJob extends LongBaseModel {
     public Date lastUpdate; // here
     @Transient
     @JsonIgnore
-    private static ObjectMapper om = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public ProcessingJob () {
     }
@@ -150,7 +153,7 @@ public class ProcessingJob extends LongBaseModel {
     @JsonProperty("statistics")
     public Map getStatisticsForAPI () {
         try {
-			return om.readValue(om.valueToTree(getStatistics())+"",Map.class);
+			return mapper.readValue(mapper.valueToTree(getStatistics())+"",Map.class);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -209,11 +212,7 @@ public class ProcessingJob extends LongBaseModel {
     	    return stats;
         }
         if(this.statistics!=null){
-            try {
-                return om.readValue(statistics, Statistics.class);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+           return mapper.readValue(statistics, Statistics.class);
         }
         return null;
     }

@@ -4,8 +4,10 @@ import gsrs.validator.DefaultValidatorConfig;
 import gsrs.validator.ValidatorConfig;
 import ix.ginas.models.v1.Substance;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class SubstanceValidatorConfig extends DefaultValidatorConfig {
 
     private Substance.SubstanceClass substanceClass;

@@ -1,11 +1,12 @@
 package ix.core.processing;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
 import ix.core.models.ProcessingRecord;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.Serializable;
 
@@ -14,7 +15,10 @@ public class TransformedRecord<K, V> implements Serializable {
     public final ProcessingRecord rec;
     final K theRecord;
 
-    private static ObjectMapper MAPPER = new ObjectMapper();
+    private static JsonMapper MAPPER = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+
     private SubstanceBulkLoadService.BulkLoadServiceCallback bulkLoadServiceCallBack;
 
     private SubstanceBulkLoadServiceConfiguration config;

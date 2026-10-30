@@ -80,16 +80,6 @@ public class LoaderTest1 extends AbstractSubstanceJpaFullStackEntityTest
         return count.get();
     }
 
-    /*private void substructureSearchShouldWaitAndLaterPagesShouldReturn(String structureToSearch) throws IOException, AssertionError{
-        RestSession restSession = session.newRestSession();
-        RestSubstanceSubstanceSearcher searcher = restSession.searcher();
-        SubstanceSearcher.SearchRequestOptions opts = new SubstanceSearcher.SearchRequestOptions(structureToSearch);
-
-        opts.setRows(2);
-    	SearchResult results =searcher.structureSearch(opts).getSomeResults(searcher, new ObjectMapper(), 6).get();
-
-    	assertFalse("6th page on substructure search should have 2 entries", results.getUuids().isEmpty());
-    }*/
     @Test
     @WithMockUser(username = "admin", roles = "Admin")
     public void loadAsAdmin() throws Exception {

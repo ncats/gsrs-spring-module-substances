@@ -102,7 +102,7 @@ public class PolymerDecode {
 	}
 	public static Collection<StructuralUnit>  DecomposePolymerSU(Chemical c, boolean canonicalize) {
 		Collection<StructuralUnit> sunits=DecomposePolymerSU(c);
-		if(canonicalize){
+		if(canonicalize && !(c.hasQueryAtoms() || c.bonds().anyMatch(b->b.isQueryBond()))){
 			sunits=canonicalize(sunits,false);
 		}
 		return sunits;
@@ -388,12 +388,9 @@ public class PolymerDecode {
 					Integer rGroup = needNewPseudo.get(ca.getAtomToAtomMap().orElse(0));
 					AtomCoordinates coords=needNewPseudoCoords.get(ca.getAtomToAtomMap().orElse(0));
 
-
-//					System.out.println("Atom is:" + ca.getAtomicNumber() + " or " + ca.getSymbol());
-
 					boolean isR=false;
 					//rgroup because it's a star atom or query
-					if((ca.getSymbol().equals("*") || ca.getSymbol().equals("A")  || ca.getSymbol().equals("R"))){
+					if((ca.getSymbol()!= null && (ca.getSymbol().equals("*") || ca.getSymbol().equals("A")  || ca.getSymbol().equals("R")))){
 						isR=true;
 						connectcount++;
 					}
@@ -404,7 +401,6 @@ public class PolymerDecode {
 
 						ca.setAlias("_R" + ca.getRGroupIndex().getAsInt());
 						ca.setAtomicNumber(PolymerDecode.RGROUP_PLACEHOLDER); //helium by basic
-//						System.out.println("Q:" + ca.getAtomicNumber() + " for count:" + connectcount);
 						String rgroups = m3.getProperty("rgroups");
 						if(rgroups==null || rgroups.equals("")){
 							rgroups="";

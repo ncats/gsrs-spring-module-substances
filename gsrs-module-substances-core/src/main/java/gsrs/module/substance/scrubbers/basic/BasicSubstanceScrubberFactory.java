@@ -1,8 +1,7 @@
 package gsrs.module.substance.scrubbers.basic;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
 import ix.ginas.exporters.RecordScrubber;
@@ -12,6 +11,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.FileCopyUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -22,12 +22,15 @@ import java.util.Optional;
 public class BasicSubstanceScrubberFactory implements RecordScrubberFactory<Substance> {
     private final static String JSONSchema = getSchemaString();
 
+    private final static JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
+
     private static CachedSupplier<JsonNode> schemaSupplier = CachedSupplier.of(()->{
-        ObjectMapper mapper =new ObjectMapper();
         try {
             JsonNode schemaNode=mapper.readTree(JSONSchema);
             return schemaNode;
-        } catch (JsonProcessingException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return null;//todo: alternate return?
@@ -36,7 +39,7 @@ public class BasicSubstanceScrubberFactory implements RecordScrubberFactory<Subs
     @Override
     public RecordScrubber<Substance> createScrubber(JsonNode settings) {
         log.trace("in BasicSubstanceScrubberFactory.createScrubber");
-        BasicSubstanceScrubberParameters settingsObject = (new ObjectMapper()).convertValue(settings, BasicSubstanceScrubberParameters.class);
+        BasicSubstanceScrubberParameters settingsObject = mapper.convertValue(settings, BasicSubstanceScrubberParameters.class);
         log.trace(" settingsObject: {}", (settingsObject==null || settings.size()==0 ? "null" : "not null"));
 
         if(settingsObject==null){

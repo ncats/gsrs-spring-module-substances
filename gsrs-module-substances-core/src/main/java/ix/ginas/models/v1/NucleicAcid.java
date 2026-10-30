@@ -9,7 +9,7 @@ import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.utils.JSONConstants;
 import ix.ginas.models.utils.JSONEntity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.*;
 
 @JSONEntity(title = "Nucleic Acid", isFinal = true)

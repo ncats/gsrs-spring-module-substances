@@ -18,26 +18,31 @@ import gsrs.service.PayloadService;
 import ix.seqaln.service.SequenceIndexerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.*;
+import org.springframework.http.HttpInputMessage;
+import org.springframework.http.HttpOutputMessage;
+import org.springframework.http.MediaType;
+import org.springframework.http.converter.AbstractHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverters;
+import org.springframework.util.StreamUtils;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@Configuration
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+
+@AutoConfiguration
 @EnableConfigurationProperties
-//@EnableEurekaClient
 @EnableGsrsAkka
 @EnableGsrsJpaEntities
 @EnableGsrsApi
 @Import({SubstanceCoreConfiguration.class,
         MolwitchLoader.class
 })
-//@Import({StructureProcessingConfiguration.class, SubstanceEntityService.class,
-//        NucleicAcidSubstanceRepository.class, ComponentRepository.class,
-//        NameRepository.class, ProteinSubstanceRepository.class, ReferenceRepository.class,
-//         StructureRepository.class, SubunitRepository.class, ValueRepository.class,
-//        ETagRepository.class
-//})
 public class GsrsSubstanceModuleAutoConfiguration {
 
     @Autowired
@@ -177,5 +182,50 @@ public class GsrsSubstanceModuleAutoConfiguration {
     @ConditionalOnMissingBean(EntityManagerSubstanceKeyResolver.class)
     public EntityManagerSubstanceKeyResolver entityManagerSubstanceKeyResolverService(){
         return new EntityManagerSubstanceKeyResolver();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "gsrsJsonStringRequestBodyWebMvcConfigurer")
+    public WebMvcConfigurer gsrsJsonStringRequestBodyWebMvcConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void configureMessageConverters(HttpMessageConverters.ServerBuilder builder) {
+                builder.configureMessageConvertersList(converters ->
+                        converters.add(0, new JsonStringRequestBodyHttpMessageConverter()));
+            }
+        };
+    }
+
+    static final class JsonStringRequestBodyHttpMessageConverter extends AbstractHttpMessageConverter<String> {
+        private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+        private static final MediaType APPLICATION_JSON_SUFFIX = MediaType.parseMediaType("application/*+json");
+
+        JsonStringRequestBodyHttpMessageConverter() {
+            super(DEFAULT_CHARSET, MediaType.APPLICATION_JSON, APPLICATION_JSON_SUFFIX);
+        }
+
+        @Override
+        public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+            return false;
+        }
+
+        @Override
+        protected boolean supports(Class<?> clazz) {
+            return String.class == clazz;
+        }
+
+        @Override
+        protected String readInternal(Class<? extends String> clazz, HttpInputMessage inputMessage) throws IOException {
+            MediaType contentType = inputMessage.getHeaders().getContentType();
+            Charset charset = contentType != null && contentType.getCharset() != null
+                    ? contentType.getCharset()
+                    : DEFAULT_CHARSET;
+            return StreamUtils.copyToString(inputMessage.getBody(), charset);
+        }
+
+        @Override
+        protected void writeInternal(String value, HttpOutputMessage outputMessage) {
+            throw new UnsupportedOperationException("This converter only supports request-body reads.");
+        }
     }
 }

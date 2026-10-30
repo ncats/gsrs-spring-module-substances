@@ -1,10 +1,11 @@
 package gsrs.module.substance.indexers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
 
+import gsrs.module.substance.utils.Jackson3Runtime;
 import gsrs.module.substance.utils.SplitFunction;
 import gsrs.module.substance.utils.UniqueFunction;
 
@@ -12,7 +13,6 @@ import io.burt.jmespath.JmesPath;
 import io.burt.jmespath.Expression;
 import io.burt.jmespath.RuntimeConfiguration;
 import io.burt.jmespath.function.FunctionRegistry;
-import io.burt.jmespath.jackson.JacksonRuntime;
 
 import ix.core.controllers.EntityFactory;
 import ix.core.search.text.IndexValueMaker;
@@ -35,8 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
 
-    private List<IndexExpression> expressions = new ArrayList<IndexExpression>();
-    private final ObjectWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
+    private List<IndexExpression> expressions = new ArrayList<>();
+    private final EntityFactory.EntityMapper.EntityWriter writer = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
 
     private class IndexExpression {
         private final String index;
@@ -51,15 +51,15 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
 
         public IndexExpression(Map<String, String> m) {
             FunctionRegistry customFunctions = FunctionRegistry.defaultRegistry().extend(
-                                                           new SplitFunction(),
-                                                           new UniqueFunction());
+                    new SplitFunction(),
+                    new UniqueFunction());
             RuntimeConfiguration configuration = new RuntimeConfiguration.Builder()
-                                       .withFunctionRegistry(customFunctions)
-                                       .build();
-            JmesPath<JsonNode> jmespath = new JacksonRuntime(configuration);
+                    .withFunctionRegistry(customFunctions)
+                    .build();
+            JmesPath<JsonNode> jmespath = new Jackson3Runtime(configuration);
             this.type = m.getOrDefault("type", "String");
             this.ranges = Arrays.asList(m.getOrDefault("ranges", "").split(" "));
-            this.expression = (Expression<JsonNode>) jmespath.compile(m.get("expression"));
+            this.expression = jmespath.compile(m.get("expression"));
             this.regex = Pattern.compile(m.getOrDefault("regex", ""));
             this.replacement = m.getOrDefault("replacement", "$1");
             this.format = m.get("format");
@@ -81,30 +81,33 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
                 JsonNode results = expression.search(tree);
                 log.debug("Results: " + results.toString());
                 if (!results.isArray()) {
-                    results = (JsonNode) new ObjectMapper().createArrayNode().add(results);
+                    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                            .build();
+                    results = mapper.createArrayNode().add(results);
                 }
-                for(JsonNode result: (ArrayNode)results){
+                for(JsonNode result: results){
                     if (result.isValueNode() && ! result.isNull()) {
                         if (result.isDouble() || "Double".equals(type)) {
                             if (ranges != null && !ranges.isEmpty()) {
-                                log.debug("Index: " + index + " FacetDoubleValue: " + result.asText());
+                                log.debug("Index: " + index + " FacetDoubleValue: " + result.asString());
                                 iv = IndexableValue.simpleFacetDoubleValue(index, result.asDouble(),
-                                    ranges.stream().mapToDouble(Double::valueOf).toArray());
+                                        ranges.stream().mapToDouble(Double::valueOf).toArray());
                             } else {
-                                log.debug("Index: " + index + " DoubleValue: " + result.asText());
+                                log.debug("Index: " + index + " DoubleValue: " + result.asString());
                                 iv = IndexableValue.simpleDoubleValue(index, result.asDouble());
                             }
                         } else if (result.isNumber() || "Long".equals(type)) {
                             if (ranges != null && !ranges.isEmpty()) {
-                                log.debug("Index: " + index + " FacetLongValue: " + result.asText());
+                                log.debug("Index: " + index + " FacetLongValue: " + result.asString());
                                 iv = IndexableValue.simpleFacetLongValue(index, result.asLong(),
-                                    ranges.stream().mapToLong(Long::valueOf).toArray());
+                                        ranges.stream().mapToLong(Long::valueOf).toArray());
                             } else {
-                                log.debug("Index: " + index + " LongValue: " + result.asText());
+                                log.debug("Index: " + index + " LongValue: " + result.asString());
                                 iv = IndexableValue.simpleLongValue(index, result.asLong());
                             }
                         } else {
-                            String value = result.asText(null);
+                            String value = result.asString(null);
                             if (!regex.pattern().isEmpty()) {
                                 log.debug("Index: " + index + " Value before regex: " + value);
                                 value = regex.matcher(value).replaceAll(replacement);
@@ -148,7 +151,9 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
 
     @Override
     public void createIndexableValues(Substance substance, Consumer<IndexableValue> consumer) {
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         try {
             JsonNode tree = mapper.readTree(writer.writeValueAsString(substance));
             updateReferences(tree);
@@ -174,15 +179,15 @@ public class JmespathIndexValueMaker implements IndexValueMaker<Substance> {
         ArrayNode references = (ArrayNode)tree.at("/references");
         Map<String, Integer> refMap = new HashMap<>();
         for (int i = 0; i < references.size(); i++) {
-            refMap.put(references.get(i).get("uuid").textValue(), i);
+            refMap.put(references.get(i).get("uuid").stringValue(), i);
         }
         for (JsonNode refsNode: tree.findValues("references")) {
             if (refsNode.isArray()) {
                 ArrayNode refs = (ArrayNode) refsNode;
                 for (int i = 0; i < refs.size(); i++) {
                     JsonNode ref = refs.get(i);
-                    if (ref.isTextual()) {
-                        Integer index = refMap.get(ref.asText());
+                    if (ref.isString()) {
+                        Integer index = refMap.get(ref.asString());
                         if(index !=null) {
                             refs.set(i, references.get(index));
                         }

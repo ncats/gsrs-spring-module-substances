@@ -1,13 +1,11 @@
 package ix.ginas.modelBuilders;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import ix.core.controllers.EntityFactory;
 import ix.ginas.models.v1.*;
 import ix.ginas.models.v1.Substance.SubstanceClass;
-import ix.ginas.models.v1.Substance.SubstanceDefinitionLevel;
-import ix.ginas.models.v1.Substance.SubstanceDefinitionType;
 import ix.ginas.utils.JsonSubstanceFactory;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,7 +15,7 @@ import java.util.function.Supplier;
 //public SubstanceBuilder
 public class SubstanceBuilder extends AbstractSubstanceBuilder<Substance, SubstanceBuilder> {
 
-	private static final ObjectMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER();
+	private static final JsonMapper mapper = EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().jsonMapper();
 
 	@Override
 	protected Substance.SubstanceClass getSubstanceClass() {

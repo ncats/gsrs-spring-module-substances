@@ -1,7 +1,5 @@
 package example.cv;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import example.GsrsModuleSubstanceApplication;
 import gsrs.security.UserRoleConfiguration;
 import gsrs.services.GroupService;
@@ -32,6 +30,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
 import java.util.List;
@@ -57,8 +57,9 @@ public class FragmentCVTest extends AbstractSubstanceJpaFullStackEntityTest {
         String fileName = "cv_na.sugar.test.json";
         ClassPathResource fileResource =new ClassPathResource("/testJSON/" + fileName);
         String naSugarVocabSource= FileUtils.readFileToString(fileResource.getFile());
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
         ControlledVocabulary naSugarVocab = mapper.readValue(naSugarVocabSource, FragmentControlledVocabulary.class);
 
         ValidationResponse<ControlledVocabulary> response = new ValidationResponse<>(naSugarVocab);

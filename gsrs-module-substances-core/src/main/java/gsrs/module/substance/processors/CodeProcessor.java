@@ -1,6 +1,5 @@
 package gsrs.module.substance.processors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.EntityProcessor;
 import ix.ginas.models.v1.Code;
 import java.util.Map;
@@ -9,6 +8,7 @@ import java.util.Optional;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.json.JsonMapper;
 
 @Slf4j
 @Configuration
@@ -51,7 +51,7 @@ public class CodeProcessor implements EntityProcessor<Code> {
             log.trace("loaded class named " + classname + ": " + cls);
 			if(with.get("json")!=null){
 				Object jsonObj=with.get("json");
-				ObjectMapper mapper = new ObjectMapper();
+				JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 				//convert from the 
         		codeSystemData = (CodeSystemUrlGenerator) mapper.convertValue(jsonObj, cls);
 			}
