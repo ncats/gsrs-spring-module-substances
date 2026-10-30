@@ -31,6 +31,8 @@ public class PolymerDecode {
 
 	static String pseudoString = "A";
 
+	private static String SortType = "byUsage";
+
 	public static Chemical getDiagram(Chemical c, Collection<StructuralUnit> sunitsb){
 		List<StructuralUnit> sunits = new ArrayList<StructuralUnit>(sunitsb);
 		ChemicalBuilder c2= new ChemicalBuilder();
@@ -421,19 +423,31 @@ public class PolymerDecode {
 			}
 		}
 
-		return polyconst.stream().sorted(byMW).collect(Collectors.toCollection(TreeSet::new));
+		if( SortType.equalsIgnoreCase("ByUsage")) {
+			return polyconst.stream().sorted(byUsage).collect(Collectors.toCollection(TreeSet::new));
+		} else if( SortType.equalsIgnoreCase("byMW")) {
+			return polyconst.stream().sorted(byMW).collect(Collectors.toCollection(TreeSet::new));
+		} else if(SortType.equalsIgnoreCase("ByLabel")) {
+			return polyconst.stream().sorted(byLabel).collect(Collectors.toCollection(TreeSet::new));
+		}
+		return polyconst;
 	}
 
 
-	Comparator<Chemical> byLabel = Comparator.comparing(
-			(sru) ->sru.getProperty("subScript"),
+	static Comparator<Chemical> byLabel = Comparator.comparing(
+			sru->sru.getProperty("subScript"),
 			Comparator.nullsLast(Comparator.naturalOrder())
 	);
 
 	static Comparator<Chemical> byMW = Comparator.comparing(
-			(chem) -> chem.getMass(),
+			Chemical::getMass,
 			Comparator.nullsLast(Comparator.naturalOrder())
 	);
+
+	static Comparator<Chemical> byUsage = Comparator.comparing(
+			(Chemical chem) -> chem.getProperty("component"),
+				Comparator.nullsLast(Comparator.reverseOrder())
+	).thenComparingDouble(chem-> chem.getMass());
 
 	static List<StructuralUnit> removeGarbage(Collection<StructuralUnit> sunitsb){
 		List<StructuralUnit> sunits = new ArrayList<StructuralUnit>(sunitsb);
