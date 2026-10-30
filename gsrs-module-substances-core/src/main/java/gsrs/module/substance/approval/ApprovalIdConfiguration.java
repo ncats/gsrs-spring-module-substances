@@ -1,6 +1,5 @@
 package gsrs.module.substance.approval;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.PrincipalRepository;
 import ix.ginas.utils.DefaultApprovalIDGenerator;
@@ -10,6 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,7 +43,7 @@ public class ApprovalIdConfiguration {
             //no generator specified use basic
             return new DefaultApprovalIDGenerator("GID", 8,true, "GID-");
         }
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
         if(parameters ==null){
             return (SubstanceApprovalIdGenerator) mapper.convertValue(Collections.emptyMap(), generatorClass);

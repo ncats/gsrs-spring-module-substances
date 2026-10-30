@@ -6,8 +6,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
-import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.JsonNodeFactory;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
@@ -17,17 +17,17 @@ import io.burt.jmespath.JmesPathType;
 import io.burt.jmespath.RuntimeConfiguration;
 
 public class Jackson3Runtime extends BaseRuntime<JsonNode> {
-    private final ObjectMapper jsonParser;
+    private final JsonMapper jsonParser;
 
     public Jackson3Runtime() {
         this(RuntimeConfiguration.defaultConfiguration());
     }
 
     public Jackson3Runtime(RuntimeConfiguration configuration) {
-        this(configuration, new ObjectMapper());
+        this(configuration, JsonMapper.builderWithJackson2Defaults().build());
     }
 
-    public Jackson3Runtime(RuntimeConfiguration configuration, ObjectMapper jsonParser) {
+    public Jackson3Runtime(RuntimeConfiguration configuration, JsonMapper jsonParser) {
         super(configuration);
         this.jsonParser = jsonParser;
     }
