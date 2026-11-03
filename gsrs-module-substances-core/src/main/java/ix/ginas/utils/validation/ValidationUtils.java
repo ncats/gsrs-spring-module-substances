@@ -45,6 +45,38 @@ public class ValidationUtils {
         }
     }
 
+    private static boolean hasNoSuchElementCause(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof NoSuchElementException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static <T> List<T> safeMatches(SearchResult searchResult, Class<T> type, String queryContext) {
+        List<T> matches = new ArrayList<>();
+        List<?> rawMatches = searchResult.getMatches();
+        for (int i = 0; i < rawMatches.size(); i++) {
+            Object item;
+            try {
+                item = rawMatches.get(i);
+            } catch (RuntimeException e) {
+                if (hasNoSuchElementCause(e)) {
+                    log.warn("Skipping stale search match at index {} while processing query [{}]", i, queryContext);
+                    continue;
+                }
+                throw e;
+            }
+            if (type.isInstance(item)) {
+                matches.add(type.cast(item));
+            }
+        }
+        return matches;
+    }
+
 	public static interface ValidationRule<K>{
 		public GinasProcessingMessage validate(K obj);
 	}

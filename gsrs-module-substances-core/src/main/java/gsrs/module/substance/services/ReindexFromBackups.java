@@ -186,10 +186,12 @@ public class ReindexFromBackups implements ReindexService{
                                                     // TP: actually, for subunits you need to index them even though there is no controller
                                                     // however, you could argue there SHOULD be a controller for them
                                                     if (seen.add(keyString)) {
-                                                        //is this a good idea ?
-                                                        ReindexEntityEvent event = new ReindexEntityEvent(reindexId, key,Optional.of(wrapped), false);
-                                                        eventConsumer.accept(event);
-                                                    }
+                                                        // Backups may outlive a rolled-back or deleted database row.
+                                                        // Only index the current database entity, and update by key so
+                                                        // retries cannot append another document.
+                                                            currentEntityReindexEvent(reindexId, key)
+                                                                    .ifPresent(eventConsumer);
+                                                        }
                                                 } catch (Throwable t) {
                                                     log.warn("indexing error handling:" + wrapped, t);
                                                 }
@@ -230,6 +232,11 @@ public class ReindexFromBackups implements ReindexService{
             log.warn("Reindexing inturrupted", e);
         }
 
+    }
+
+    Optional<ReindexEntityEvent> currentEntityReindexEvent(UUID reindexId, EntityUtils.Key key) {
+        return key.fetch().map(currentEntity ->
+                new ReindexEntityEvent(reindexId, key, Optional.of(currentEntity), true));
     }
 
     @EventListener(EndReindexEvent.class)

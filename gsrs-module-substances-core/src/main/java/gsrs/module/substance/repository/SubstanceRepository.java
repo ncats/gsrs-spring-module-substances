@@ -1,6 +1,7 @@
 package gsrs.module.substance.repository;
 
 import gsrs.module.substance.utils.HtmlUtil;
+import gsrs.module.substance.services.SubstanceNameLookup;
 import gsrs.repository.GsrsVersionedRepository;
 import gsrs.springUtils.StaticContextAccessor;
 import ix.core.models.Keyword;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -55,7 +57,25 @@ public interface SubstanceRepository extends GsrsVersionedRepository<Substance, 
 
     Optional<SubstanceSummary> findSummaryByUuid(UUID uuid);
 
-    List<SubstanceSummary> findByNames_NameIgnoreCase(String name);
+    default List<SubstanceSummary> findByNames_NameIgnoreCase(String name) {
+        SubstanceNameLookup lookup = StaticContextAccessor.getBean(SubstanceNameLookup.class);
+        if (!lookup.isReady()) {
+            return findByNames_NameIgnoreCaseUnindexed(name);
+        }
+        List<UUID> ids = lookup.findOwnerIds(name);
+        List<SubstanceSummary> matches = new ArrayList<>();
+        // Keep IN queries below the limits of every supported database.
+        for (int start = 0; start < ids.size(); start += 500) {
+            matches.addAll(findNameLookupSummaries(ids.subList(start, Math.min(start + 500, ids.size()))));
+        }
+        return matches;
+    }
+
+    @Query("select s from Substance s join s.names n where upper(n.name) = upper(?1)")
+    List<SubstanceSummary> findByNames_NameIgnoreCaseUnindexed(String name);
+
+    @Query("select s from Substance s where s.uuid in ?1")
+    List<SubstanceSummary> findNameLookupSummaries(List<UUID> ids);
 
     //use an explicit query to prevent Hibernate from inserting a call to UPPER() which
     // slows down processing on some RDBMSs

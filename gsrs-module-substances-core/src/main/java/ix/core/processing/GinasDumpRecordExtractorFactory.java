@@ -42,7 +42,7 @@ public class GinasDumpRecordExtractorFactory implements RecordExtractorFactory<J
 
 
         }catch(IOException e){
-
+            return new Estimate(count, Estimate.TYPE.UNKNOWN);
         }
         return new Estimate(count, Estimate.TYPE.EXACT);
     }

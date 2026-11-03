@@ -13,7 +13,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @Tag("fullstack")
@@ -21,6 +20,8 @@ public class CreateChemicalWithClientSuppliedStructureIdsTest extends AbstractSu
 
     private static final UUID CLIENT_STRUCTURE_ID = UUID.fromString("6bdc786d-809e-4da4-b635-5077970e61a9");
     private static final UUID CLIENT_MOIETY_STRUCTURE_ID = UUID.fromString("b75478e8-b7bb-4d92-8ab3-994b51bdb708");
+    private static final UUID CLIENT_MOIETY_UUID = UUID.fromString("074671f9-91d6-443d-8398-521dcc601d55");
+    private static final UUID CLIENT_COUNT_UUID = UUID.fromString("d3041133-204b-42ee-af57-5356f6f979ce");
 
     private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
@@ -109,6 +110,7 @@ public class CreateChemicalWithClientSuppliedStructureIdsTest extends AbstractSu
                       "_inchiKey": "VIZYFHZVBGCOAH-UHFFFAOYSA-N",
                       "hash": "VIZYFHZVBGCOAH_UHFFFAOYSA_N",
                       "countAmount": {
+                        "uuid": "d3041133-204b-42ee-af57-5356f6f979ce",
                         "deprecated": false,
                         "type": "MOL RATIO",
                         "average": 1,
@@ -116,7 +118,7 @@ public class CreateChemicalWithClientSuppliedStructureIdsTest extends AbstractSu
                         "references": [],
                         "access": []
                       },
-                      "uuid": "b75478e8-b7bb-4d92-8ab3-994b51bdb708"
+                      "uuid": "074671f9-91d6-443d-8398-521dcc601d55"
                     }
                   ],
                   "notes": []
@@ -127,11 +129,21 @@ public class CreateChemicalWithClientSuppliedStructureIdsTest extends AbstractSu
 
         assertNotNull(created);
         assertNotNull(created.getStructure());
-        assertNotEquals(CLIENT_STRUCTURE_ID, created.getStructure().id);
+        assertEquals(CLIENT_STRUCTURE_ID, created.getStructure().id);
         assertEquals(1, created.getMoieties().size());
 
         Moiety moiety = created.getMoieties().get(0);
         assertNotNull(moiety.structure);
-        assertNotEquals(CLIENT_MOIETY_STRUCTURE_ID, moiety.structure.id);
+        assertEquals(CLIENT_MOIETY_STRUCTURE_ID, moiety.structure.id);
+        assertEquals(CLIENT_MOIETY_UUID, moiety.uuid);
+        assertEquals(CLIENT_COUNT_UUID, moiety.getCountAmount().uuid);
+        UUID substanceId = created.uuid;
+        entityManager.flush();
+        entityManager.clear();
+        ChemicalSubstance reloaded = (ChemicalSubstance) substanceRepository.findById(substanceId).orElseThrow();
+        assertEquals(CLIENT_STRUCTURE_ID, reloaded.getStructure().id);
+        assertEquals(CLIENT_MOIETY_STRUCTURE_ID, reloaded.getMoieties().get(0).structure.id);
+        assertEquals(CLIENT_MOIETY_UUID, reloaded.getMoieties().get(0).uuid);
+        assertEquals(CLIENT_COUNT_UUID, reloaded.getMoieties().get(0).getCountAmount().uuid);
     }
 }

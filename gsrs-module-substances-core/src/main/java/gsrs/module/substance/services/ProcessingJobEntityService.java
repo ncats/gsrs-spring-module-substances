@@ -1,5 +1,8 @@
 package gsrs.module.substance.services;
 
+import gsrs.DefaultDataSourceConfig;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.databind.JsonNode;
 import gsrs.controller.IdHelpers;
@@ -17,6 +20,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -33,6 +38,9 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
 
     @Autowired
     private KeywordRepository keywordRepository;
+
+    @PersistenceContext(unitName = DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
+    private EntityManager entityManager;
 
     @Autowired
     @Qualifier("legacyJsonMapper")
@@ -64,8 +72,28 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<ProcessingJob> get(Long id) {
-        return processingJobRepository.findById(id);
+        return processingJobRepository.findById(id).map(this::initializeJob);
+    }
+
+    private ProcessingJob initializeJob(ProcessingJob job) {
+        // The upload/status response is serialized after the service transaction closes.
+        job.keys.size();
+        return job;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public Optional<ProcessingJob> getLoadStatus(String jobKey) {
+        Optional<ProcessingJob> jobByKey = flexLookup(jobKey);
+        if (jobByKey.isEmpty() && jobKey.matches("[0-9]{1,18}")) {
+            jobByKey = processingJobRepository.findById(Long.parseLong(jobKey));
+        }
+        return jobByKey.map(job -> {
+            // Polling must not combine a cached job entity with live in-memory statistics.
+            entityManager.refresh(job);
+            return initializeJob(job);
+        });
     }
 
     @Override

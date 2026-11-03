@@ -546,6 +546,10 @@ public class PeptideInterpreterTest{
     @ParameterizedTest
     @MethodSource("peptideData")
     public void assertSequenceIntepretedCorrectly(String smiles, String expectedSequence) throws Exception{
+        int modificationNames = PeptideInterpreter.modName.size();
+        int modificationStructures = PeptideInterpreter.modMap.size();
+        int modificationFrequencies = PeptideInterpreter.modFreq.size();
+        int modificationNumber = PeptideInterpreter.modNumber;
         PeptideInterpreter.Protein p = PeptideInterpreter.getAminoAcidSequence(smiles);
         
         List<PeptideInterpreter.Protein.Subunit> subunits = p.getSubunits();
@@ -557,5 +561,9 @@ public class PeptideInterpreterTest{
             t=t.substring(0,t.length()-1);
         }
         assertEquals(expectedSequence, t);
+        assertEquals(modificationNames, PeptideInterpreter.modName.size());
+        assertEquals(modificationStructures, PeptideInterpreter.modMap.size());
+        assertEquals(modificationFrequencies, PeptideInterpreter.modFreq.size());
+        assertEquals(modificationNumber, PeptideInterpreter.modNumber);
     }
 }
