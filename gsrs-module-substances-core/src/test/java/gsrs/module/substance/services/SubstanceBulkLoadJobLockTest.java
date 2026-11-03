@@ -36,6 +36,7 @@ class SubstanceBulkLoadJobLockTest {
                 mock(PayloadRepository.class),
                 mock(TaskExecutor.class),
                 mock(ObjectProvider.class),
+                mock(ObjectProvider.class),
                 mock(ApplicationEventPublisher.class),
                 mock(ObjectProvider.class));
 

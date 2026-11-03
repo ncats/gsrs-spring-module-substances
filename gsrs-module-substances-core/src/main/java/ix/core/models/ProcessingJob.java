@@ -82,12 +82,12 @@ public class ProcessingJob extends LongBaseModel {
     @JsonView(BeanViews.Private.class)
     public String statistics;
 
-    @OneToOne(cascade=CascadeType.ALL)
+    @ManyToOne
     @JsonView(BeanViews.Full.class)
     @CreatedBy
     public Principal owner;
     
-    @OneToOne(cascade=CascadeType.ALL)
+    @ManyToOne
     @JsonView(BeanViews.Full.class)
     public Payload payload;
     

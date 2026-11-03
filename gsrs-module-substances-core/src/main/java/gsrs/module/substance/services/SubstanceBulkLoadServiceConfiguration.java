@@ -93,6 +93,11 @@ public class SubstanceBulkLoadServiceConfiguration {
      }
 
      @Bean
+     public ProcessingJobRelationshipSchemaInitializer processingJobRelationshipSchemaInitializer(DataSource dataSource) {
+         return new ProcessingJobRelationshipSchemaInitializer(dataSource);
+     }
+
+     @Bean
      public SubstanceNameLookup substanceNameLookup(DataSource dataSource) {
          return new SubstanceNameLookup(dataSource);
      }

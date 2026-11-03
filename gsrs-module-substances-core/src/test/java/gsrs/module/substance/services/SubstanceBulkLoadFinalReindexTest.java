@@ -185,6 +185,7 @@ class SubstanceBulkLoadFinalReindexTest {
                 mock(PayloadRepository.class),
                 taskExecutor,
                 mock(ObjectProvider.class),
+                mock(ObjectProvider.class),
                 publisher,
                 substanceRepositoryProvider);
     }

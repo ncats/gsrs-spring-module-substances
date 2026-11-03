@@ -147,6 +147,7 @@ public class SubstanceBulkLoadService {
 
     private PayloadRepository payloadRepository;
     private ObjectProvider<SubstanceLobSchemaCompatibilityInitializer> lobSchemaCompatibilityInitializerProvider;
+    private ObjectProvider<ProcessingJobRelationshipSchemaInitializer> processingJobRelationshipSchemaInitializerProvider;
     private ApplicationEventPublisher applicationEventPublisher;
     private ObjectProvider<SubstanceRepository> substanceRepositoryProvider;
 
@@ -168,6 +169,7 @@ public class SubstanceBulkLoadService {
             PayloadRepository payloadRepository,
             TaskExecutor taskExecutor,
             ObjectProvider<SubstanceLobSchemaCompatibilityInitializer> lobSchemaCompatibilityInitializerProvider,
+            ObjectProvider<ProcessingJobRelationshipSchemaInitializer> processingJobRelationshipSchemaInitializerProvider,
             ApplicationEventPublisher applicationEventPublisher,
             ObjectProvider<SubstanceRepository> substanceRepositoryProvider
             ) {
@@ -181,6 +183,7 @@ public class SubstanceBulkLoadService {
         this.payloadRepository = payloadRepository;
         this.taskExecutor = taskExecutor;
         this.lobSchemaCompatibilityInitializerProvider = lobSchemaCompatibilityInitializerProvider;
+        this.processingJobRelationshipSchemaInitializerProvider = processingJobRelationshipSchemaInitializerProvider;
         this.applicationEventPublisher = applicationEventPublisher;
         this.substanceRepositoryProvider = substanceRepositoryProvider;
     }
@@ -302,6 +305,11 @@ public class SubstanceBulkLoadService {
         SubstanceLobSchemaCompatibilityInitializer initializer = lobSchemaCompatibilityInitializerProvider.getIfAvailable();
         if (initializer != null) {
             initializer.ensureCompatibility();
+        }
+        ProcessingJobRelationshipSchemaInitializer jobSchemaInitializer =
+                processingJobRelationshipSchemaInitializerProvider.getIfAvailable();
+        if (jobSchemaInitializer != null) {
+            jobSchemaInitializer.ensureCompatibility();
         }
         if (configuration.isIndexNameLookups()) {
             substanceNameLookup.ensureIndex();
