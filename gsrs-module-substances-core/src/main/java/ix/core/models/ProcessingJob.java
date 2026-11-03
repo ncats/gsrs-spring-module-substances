@@ -3,8 +3,8 @@ package ix.core.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.json.JsonMapper;
 import gov.nih.ncats.common.util.TimeUtil;
 import gsrs.model.GsrsApiAction;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
@@ -21,7 +21,6 @@ import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedBy;
 
 import jakarta.persistence.*;
-import java.io.IOException;
 import java.util.*;
 
 @Entity
@@ -32,10 +31,10 @@ import java.util.*;
 public class ProcessingJob extends LongBaseModel {
 
 
-	private static final String EXTRACTOR_KEYWORD = "EXTRACTOR";
-	private static final String TRANSFORM_KEYWORD = "TRANSFORM";
-	private static final String PERSISTER_KEYWORD = "PERSISTER";
-	
+    private static final String EXTRACTOR_KEYWORD = "EXTRACTOR";
+    private static final String TRANSFORM_KEYWORD = "TRANSFORM";
+    private static final String PERSISTER_KEYWORD = "PERSISTER";
+
     public enum Status {
         COMPLETE, RUNNING, NOT_RUN, FAILED, PENDING, STOPPED, UNKNOWN;
 
@@ -66,17 +65,17 @@ public class ProcessingJob extends LongBaseModel {
 
     @Indexable(facet=true, name="Job Status")
     public Status status = Status.PENDING;
-    
+
     @Column(name="job_start")
     public Long start;
-    
+
     @Column(name="job_stop")
     public Long stop;
 
     @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     public String message;
-    
+
     @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch=FetchType.EAGER)
     @JsonView(BeanViews.Private.class)
@@ -86,19 +85,21 @@ public class ProcessingJob extends LongBaseModel {
     @JsonView(BeanViews.Full.class)
     @CreatedBy
     public Principal owner;
-    
+
     @OneToOne(cascade=CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
     public Payload payload;
-    
+
     @Version
     public Long version;
-    
-    
+
+
     public Date lastUpdate; // here
     @Transient
     @JsonIgnore
-    private static ObjectMapper om = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public ProcessingJob () {
     }
@@ -147,22 +148,22 @@ public class ProcessingJob extends LongBaseModel {
 
     }
 
-    
+
     @JsonView(BeanViews.Compact.class)
     @JsonProperty("statistics")
     public Map getStatisticsForAPI () {
         try {
-			return om.readValue(om.valueToTree(getStatistics())+"",Map.class);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+            return mapper.readValue(mapper.valueToTree(getStatistics())+"",Map.class);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return null;
     }
-    
+
     public String getKeyMatching(String label){
         populateKeywordMapsIfNeeded();
         Keyword keyword = keywordLabelMap.get(label);
-    	return keyword ==null ? null : keyword.getValue();
+        return keyword ==null ? null : keyword.getValue();
     }
     public boolean hasKey(String term){
         populateKeywordMapsIfNeeded();
@@ -188,15 +189,15 @@ public class ProcessingJob extends LongBaseModel {
         HashMap<String,Keyword> tKeywordLabelMap = new HashMap<>();
         HashMap<String,Keyword> tkeywordTermMap = new HashMap<>();
 
-        
+
         for (Keyword k : keys) {
-        	tKeywordLabelMap.put(k.label, k);
+            tKeywordLabelMap.put(k.label, k);
             tkeywordTermMap.put(k.term, k);
         }
-        
+
         this.keywordLabelMap=tKeywordLabelMap;
         this.keywordTermMap=tkeywordTermMap;
-        
+
 
     }
 
@@ -204,14 +205,14 @@ public class ProcessingJob extends LongBaseModel {
 //    @JsonProperty("_statistics")
     public Statistics getStatistics(){
         //we persist only at the end so lets  check the in memory map first and only fetch from db if it's not in memory.
-    	//TODO move this to controller
+        //TODO move this to controller
         SubstanceBulkLoadService loadService = StaticContextAccessor.getBean(SubstanceBulkLoadService.class);
-    	Statistics stats= loadService.getStatisticsForJob(this);
+        Statistics stats= loadService.getStatisticsForJob(this);
         if(stats == null && this.statistics!=null){
             try {
-                stats = om.readValue(statistics, Statistics.class);
-            } catch (IOException e) {
-                e.printStackTrace();
+                stats = mapper.readValue(statistics, Statistics.class);
+            } catch (JacksonException e) {
+                throw new IllegalStateException("Unable to read statistics for processing job " + id, e);
             }
         }
         if (stats != null && status != null && status.isInFinalState() && stop != null) {
@@ -219,64 +220,64 @@ public class ProcessingJob extends LongBaseModel {
         }
         return stats;
     }
-    
+
     @JsonIgnore
     public Date _getStartAsDate(){
-    	return new Date(start);
+        return new Date(start);
     }
-    
+
     @JsonIgnore
     public Date _getStoppedAsDate(){
-    	if(stop==null)return null;
-    	return new Date(stop);
+        if(stop==null)return null;
+        return new Date(stop);
     }
-    
+
     @JsonIgnore
     public Long _getDurationAsMs(){
-    	if(stop!=null){
-    		return stop-start;
-    	}
-    	return TimeUtil.getCurrentTimeMillis()-start;
+        if(stop!=null){
+            return stop-start;
+        }
+        return TimeUtil.getCurrentTimeMillis()-start;
     }
-    
+
     public String getName(){
-    	if(payload!=null){
-    		return "Import batch file \"" + payload.name + "\"";
-    	}else{
-    		return "Unnamed Batch";
-    	}
+        if(payload!=null){
+            return "Import batch file \"" + payload.name + "\"";
+        }else{
+            return "Unnamed Batch";
+        }
     }
 
     @JsonIgnore
-	public RecordPersister getPersister() {
-    	RecordPersister rec = RecordPersister
-				.getInstanceOfPersister(this
-						.getKeyMatching(PERSISTER_KEYWORD));
-		return rec;
-	}
+    public RecordPersister getPersister() {
+        RecordPersister rec = RecordPersister
+                .getInstanceOfPersister(this
+                        .getKeyMatching(PERSISTER_KEYWORD));
+        return rec;
+    }
 
     @JsonIgnore
-	public RecordExtractor getExtractor() {
-		RecordExtractor rec = RecordExtractor
-				.getInstanceOfExtractor(this
-						.getKeyMatching(EXTRACTOR_KEYWORD));
-		return rec;
-	}
+    public RecordExtractor getExtractor() {
+        RecordExtractor rec = RecordExtractor
+                .getInstanceOfExtractor(this
+                        .getKeyMatching(EXTRACTOR_KEYWORD));
+        return rec;
+    }
 
 
     @JsonIgnore
-	public void setExtractor(RecordExtractorFactory extractor) {
-		this.addKeyword(new Keyword(EXTRACTOR_KEYWORD, extractor.getExtractorName()));
-	}
-    
+    public void setExtractor(RecordExtractorFactory extractor) {
+        this.addKeyword(new Keyword(EXTRACTOR_KEYWORD, extractor.getExtractorName()));
+    }
+
     @JsonIgnore
-	public void setPersister(RecordPersisterFactory persister) {
-		this.addKeyword(new Keyword(PERSISTER_KEYWORD, persister.getPersisterName()));
-	}
-    
+    public void setPersister(RecordPersisterFactory persister) {
+        this.addKeyword(new Keyword(PERSISTER_KEYWORD, persister.getPersisterName()));
+    }
+
     @PreUpdate
     @PrePersist
     private void updateTime(){
-    	lastUpdate=new Date();
+        lastUpdate=new Date();
     }
 }
