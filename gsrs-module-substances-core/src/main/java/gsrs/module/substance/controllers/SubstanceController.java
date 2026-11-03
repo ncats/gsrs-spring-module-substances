@@ -182,7 +182,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
     @Autowired
     @Qualifier("legacyJsonMapper")
-    private JsonMapper objectMapper;
+    private JsonMapper jsonMapper;
 
     private static final int MAX_NAME_STANDARDIZATION_INPUT_LENGTH = 500;
 
@@ -1002,7 +1002,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
-            ObjectNode node = objectMapper.createObjectNode();
+            ObjectNode node = jsonMapper.createObjectNode();
             try {
                 Structure struc = structureProcessor.taskFor(payload)
                         .components(moieties)
@@ -1024,17 +1024,17 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 }
 
 
-                ArrayNode an = objectMapper.createArrayNode();
+                ArrayNode an = jsonMapper.createArrayNode();
                 for (Structure m : moieties) {
                     saveTempStructure(m);
-                    ObjectNode on = objectMapper.valueToTree(m);
+                    ObjectNode on = jsonMapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
-                    JsonNode amt = objectMapper.valueToTree(c1);
+                    JsonNode amt = jsonMapper.valueToTree(c1);
                     on.set("countAmount", amt);
                     an.add(on);
                 }
                 saveTempStructure(struc);
-                node.set("structure", objectMapper.valueToTree(struc));
+                node.set("structure", jsonMapper.valueToTree(struc));
                 node.set("moieties", an);
                 if( appendFeatures) {
                     log.trace("going to append nitrosamine features");
@@ -1050,7 +1050,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     saveTempStructure(struc);
                     su._structure = struc;
                 }
-                node.set("structuralUnits", objectMapper.valueToTree(o));
+                node.set("structuralUnits", jsonMapper.valueToTree(o));
             } catch (Throwable e) {
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
@@ -1090,7 +1090,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         try {
             String payload = ChemCleaner.getCleanMolfile(mol);
             List<Structure> moieties = new ArrayList<>();
-            ObjectNode node = objectMapper.createObjectNode();
+            ObjectNode node = jsonMapper.createObjectNode();
             try {
                 Structure struc = structureProcessor.taskFor(payload)
                         .components(moieties)
@@ -1111,18 +1111,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     struc.molfile=simpStd.standardize(struc.molfile);
                 }
 
-                ArrayNode an = objectMapper.createArrayNode();
+                ArrayNode an = jsonMapper.createArrayNode();
                 for (Structure m : moieties) {
                     saveTempStructure(m);
-                    ObjectNode on = objectMapper.valueToTree(m);
+                    ObjectNode on = jsonMapper.valueToTree(m);
                     Amount c1 = Moiety.intToAmount(m.count);
-                    JsonNode amt = objectMapper.valueToTree(c1);
+                    JsonNode amt = jsonMapper.valueToTree(c1);
                     on.set("countAmount", amt);
                     an.add(on);
                 }
                 //TODO: fill in calculation
                 //saveTempStructure(struc);
-                node.set("structure", objectMapper.valueToTree(struc));
+                node.set("structure", jsonMapper.valueToTree(struc));
                 node.set("moieties", an);
                 appendFeatureStuff(struc.toChemical(), node);
 
@@ -2017,7 +2017,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         allDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
         allDataSettings.setExporterKey("ALL_DATA");
         allDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
-        Text allItems = new Text("settings", objectMapper.writeValueAsString(allDataSettings));
+        Text allItems = new Text("settings", jsonMapper.writeValueAsString(allDataSettings));
         allItems.id=0l;
         items.add(allItems);
 
@@ -2031,7 +2031,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         publicDataSettings.setExporterSettings(JsonNodeFactory.instance.objectNode());
         publicDataSettings.setExporterKey("PUBLIC_DATA_ONLY");
         publicDataSettings.setEntityClass("ix.ginas.models.v1.Substance");
-        Text publicItems = new Text("settings", objectMapper.writeValueAsString(publicDataSettings));
+        Text publicItems = new Text("settings", jsonMapper.writeValueAsString(publicDataSettings));
         publicItems.id=-1l;
         items.add(publicItems);
         return items;
@@ -2083,10 +2083,10 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     private void appendFeatureStuff(Chemical chemical, ObjectNode topLevelNode ) throws Exception {
         log.trace("in appendFeatureStuff");
         List<Map<String, String>> featureList = FeatureUtils.calculateFeatures(chemical);
-        ObjectNode allFeatures = objectMapper.createObjectNode();
-        ArrayNode featureArrayNode = objectMapper.createArrayNode();
+        ObjectNode allFeatures = jsonMapper.createObjectNode();
+        ArrayNode featureArrayNode = jsonMapper.createArrayNode();
         featureList.forEach(features ->{
-            ObjectNode oneSet = objectMapper.createObjectNode();
+            ObjectNode oneSet = jsonMapper.createObjectNode();
             features.entrySet().forEach(f-> oneSet.put(f.getKey(), f.getValue()));
             featureArrayNode.add(oneSet);
         });

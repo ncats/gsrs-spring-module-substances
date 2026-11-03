@@ -1,6 +1,5 @@
 package example.chem;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.definitional.ChemicalSubstanceDefinitionalElementImpl;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gsrs.module.substance.definitional.MixtureDefinitionalElementImpl;
@@ -19,6 +18,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -46,8 +46,8 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
                 "    \"stereochemistry\": \"RACEMIC\"\n" +
                 "}\n" +
                 "";
-        ObjectMapper om = new ObjectMapper();
-        Structure rawStructure = om.readValue(structureJson, Structure.class);
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        Structure rawStructure = mapper.readValue(structureJson, Structure.class);
         Structure instrumentedStructure =structureProcessor.instrument(rawStructure.toChemical(), true);
         GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(instrumentedStructure);
 
@@ -78,8 +78,8 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
                 "    \"stereochemistry\": \"UNKNOWN\"\n" +
                 "}\n" +
                 "";
-        ObjectMapper om = new ObjectMapper();
-        Structure rawStructure = om.readValue(structureJson, Structure.class);
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        Structure rawStructure = mapper.readValue(structureJson, Structure.class);
         Structure instrumentedStructure =structureProcessor.instrument(rawStructure.toChemical(), true);
         GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(instrumentedStructure);
         ginasChemicalStructure.setStereoChemistry(Structure.Stereo.UNKNOWN);
@@ -112,8 +112,8 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
                 "    \"stereochemistry\": \"MIXED\"\n" +
                 "}\n" +
                 "";
-        ObjectMapper om = new ObjectMapper();
-        Structure rawStructure = om.readValue(structureJson, Structure.class);
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        Structure rawStructure = mapper.readValue(structureJson, Structure.class);
         Structure instrumentedStructure =structureProcessor.instrument(rawStructure.toChemical(), true);
         GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(instrumentedStructure);
 
@@ -227,8 +227,8 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
                 "    \"stereochemistry\": \"RACEMIC\"\n" +
                 "}\n" +
                 "";
-        ObjectMapper om = new ObjectMapper();
-        Structure rawStructure = om.readValue(structureJson, Structure.class);
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        Structure rawStructure = mapper.readValue(structureJson, Structure.class);
         Structure instrumentedStructure =structureProcessor.instrument(rawStructure.toChemical(), true);
         GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(instrumentedStructure);
 
@@ -251,8 +251,7 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
-    public void testTwoChemicalsDefPropertiesNotEqual() throws Exception {
-        String opticalActivityKey="structure.properties.opticalActivity";
+    public void testTwoChemicalsDefPropertiesNotEqual()  {
         String structureJson = "{\n" +
                 "    \"opticalActivity\": \"UNSPECIFIED\",\n" +
                 "    \"molfile\": \"\\n  ACCLDraw07282209012D\\n\\n  5  4  0  0  0  0  0  0  0  0999 V2000\\n   10.5000   -8.5938    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   11.5229   -8.0032    0.0000 C   0  0  3  0  0  0  0  0  0  0  0  0\\n   11.5229   -6.8217    0.0000 Cl  0  0  0  0  0  0  0  0  0  0  0  0\\n   12.5460   -8.5939    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n   13.5692   -8.0032    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\\n  1  2  1  0  0  0  0\\n  2  3  1  0  0  0  0\\n  2  4  1  0  0  0  0\\n  4  5  1  0  0  0  0\\nM  END\",\n" +
@@ -265,8 +264,8 @@ public class DefHashCalcTest extends AbstractSubstanceJpaEntityTest {
                 "    \"stereochemistry\": \"RACEMIC\"\n" +
                 "}\n" +
                 "";
-        ObjectMapper om = new ObjectMapper();
-        Structure rawStructure = om.readValue(structureJson, Structure.class);
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
+        Structure rawStructure = mapper.readValue(structureJson, Structure.class);
         Structure instrumentedStructure =structureProcessor.instrument(rawStructure.toChemical(), true);
         GinasChemicalStructure ginasChemicalStructure = new GinasChemicalStructure(instrumentedStructure);
 
