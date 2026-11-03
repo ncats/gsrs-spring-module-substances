@@ -456,7 +456,9 @@ public class PolymerDecode {
 	static Comparator<StructuralUnit> byUsageStructuralUnit = Comparator.comparing(
 			(StructuralUnit unit) -> getSortValueForComponent(unit.type),
 			Comparator.nullsLast(Comparator.naturalOrder())
-	).thenComparingDouble(unit2-> unit2.getChemical().getMass());
+	).thenComparing(
+			Comparator.comparingDouble( (StructuralUnit unit2)-> unit2.getChemical().getMass())
+					.reversed());
 
 	static int getSortValueForComponent(String componentType) {
 		if( componentType!= null && componentType.toUpperCase().startsWith("SRU")) {

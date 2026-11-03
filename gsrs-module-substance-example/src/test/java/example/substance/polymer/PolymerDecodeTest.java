@@ -8,10 +8,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -86,13 +83,13 @@ public class PolymerDecodeTest {
         File inputFile = new File(filePath);
         String mol = Files.readString(inputFile.toPath());
         ReflectionTestUtils.setField(PolymerDecode.class, "SortType", "ByMw");
-        Set<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol));
+        Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse( srus.isEmpty());
 
 
         System.out.println("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
-            System.out.printf("type: %s%n", unit.type);
+            System.out.printf("type: %s, label: %s%n", unit.type, unit.label);
             Chemical chem = Chemical.parseMol(unit.structure);
 
             System.out.printf("mw: %f %n", chem.getMass());
@@ -105,13 +102,13 @@ public class PolymerDecodeTest {
         File inputFile = new File(filePath);
         String mol = Files.readString(inputFile.toPath());
         ReflectionTestUtils.setField(PolymerDecode.class, "SortType", "ByUsage");
-        Set<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol));
+        Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse( srus.isEmpty());
 
 
         System.out.println("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
-            System.out.printf("type: %s%n", unit.type);
+            System.out.printf("type: %s, label: %s, mwt: %f %n", unit.type, unit.label, Chemical.parseMol(unit.structure).getMass());
             Chemical chem = Chemical.parseMol(unit.structure);
 
             System.out.printf("mw: %f %n", chem.getMass());
@@ -124,7 +121,7 @@ public class PolymerDecodeTest {
         File inputFile = new File(filePath);
         String mol = Files.readString(inputFile.toPath());
         ReflectionTestUtils.setField(PolymerDecode.class, "SortType", "ByLabel");
-        Set<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol));
+        Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse(srus.isEmpty());
 
         System.out.println("number of structural units = " + srus.size());
