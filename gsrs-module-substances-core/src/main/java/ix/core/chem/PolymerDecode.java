@@ -3,6 +3,7 @@ package ix.core.chem;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
 import ix.core.models.Structure;
+import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import java.util.stream.Collectors;
  *
  *
  */
+@Slf4j
 public class PolymerDecode {
 	private static final String FRAGMENT = "FRAGMENT";
 	private static final String MOIETY = "MOIETY";
@@ -92,11 +94,26 @@ public class PolymerDecode {
 		}
 		return sunits;
 	}
-	public static Collection<StructuralUnit>  DecomposePolymerSU(Chemical c, boolean canonicalize) {
+	public static Collection<StructuralUnit> DecomposePolymerSU(Chemical c, boolean canonicalize) {
 		Collection<StructuralUnit> sunits=DecomposePolymerSU(c);
 		if(canonicalize && !(c.hasQueryAtoms() || c.bonds().anyMatch(b->b.isQueryBond()))){
 			sunits=canonicalize(sunits,false);
 		}
+		if( SortType.equalsIgnoreCase("ByUsage")) {
+			SortedSet<StructuralUnit> result = new TreeSet<>(byUsageStructuralUnit);
+			result.addAll(sunits);
+			return result;
+		} else if( SortType.equalsIgnoreCase("byMW")) {
+			SortedSet<StructuralUnit> result = new TreeSet<>(byMWStructuralUnit);
+			result.addAll(sunits);
+			return result;
+		} else if(SortType.equalsIgnoreCase("ByLabel")) {
+			SortedSet<StructuralUnit> result = new TreeSet<>(byLabelStructuralUnit);
+			result.addAll(sunits);
+			return result;
+		}
+
+		sunits.forEach(unit-> log.trace("unit type: {}", unit.type));
 		return sunits;
 	}
 
@@ -422,35 +439,43 @@ public class PolymerDecode {
 				}
 			}
 		}
-
-		if( SortType.equalsIgnoreCase("ByUsage")) {
-			return polyconst.stream().sorted(byUsage).collect(Collectors.toCollection(TreeSet::new));
-		} else if( SortType.equalsIgnoreCase("byMW")) {
-			return polyconst.stream().sorted(byMW).collect(Collectors.toCollection(TreeSet::new));
-		} else if(SortType.equalsIgnoreCase("ByLabel")) {
-			return polyconst.stream().sorted(byLabel).collect(Collectors.toCollection(TreeSet::new));
-		}
 		return polyconst;
 	}
 
-
-	static Comparator<Chemical> byLabel = Comparator.comparing(
-			sru->sru.getProperty("subScript"),
+	static Comparator<StructuralUnit> byLabelStructuralUnit = Comparator.comparing(
+			sru->sru.type,
 			Comparator.nullsLast(Comparator.naturalOrder())
 	);
 
-	static Comparator<Chemical> byMW = Comparator.comparing(
-			Chemical::getMass,
+
+	static Comparator<StructuralUnit> byMWStructuralUnit = Comparator.comparing(
+			c-> c.getChemical().getMass(),
 			Comparator.nullsLast(Comparator.naturalOrder())
 	);
 
-	static Comparator<Chemical> byUsage = Comparator.comparing(
-			(Chemical chem) -> chem.getProperty("component"),
-				Comparator.nullsLast(Comparator.reverseOrder())
-	).thenComparingDouble(chem-> chem.getMass());
+	static Comparator<StructuralUnit> byUsageStructuralUnit = Comparator.comparing(
+			(StructuralUnit unit) -> getSortValueForComponent(unit.type),
+			Comparator.nullsLast(Comparator.naturalOrder())
+	).thenComparingDouble(unit2-> unit2.getChemical().getMass());
 
+	static int getSortValueForComponent(String componentType) {
+		if( componentType!= null && componentType.toUpperCase().startsWith("SRU")) {
+			log.debug("getSortValueForComponent identified SRU");
+			return 0;
+		}
+		if(componentType!=null && componentType.equalsIgnoreCase(PolymerDecode.MOIETY)) {
+			log.debug("getSortValueForComponent identified moiety");
+			return 2;
+		}
+		if( componentType.equalsIgnoreCase("END_GROUP")) {
+			log.debug("getSortValueForComponent identified END_GROUP");
+			return 3;
+		}
+		log.warn("getSortValueForComponent found unexpected componentType {}", componentType);
+		return 1;
+	}
 	static List<StructuralUnit> removeGarbage(Collection<StructuralUnit> sunitsb){
-		List<StructuralUnit> sunits = new ArrayList<StructuralUnit>(sunitsb);
+		List<StructuralUnit> sunits = new ArrayList<>(sunitsb);
 		List<StructuralUnit> toRemove = new ArrayList<StructuralUnit>();
 		for(StructuralUnit su : sunits){
 			if(su.type.equals(PolymerDecode.GARBAGE)){

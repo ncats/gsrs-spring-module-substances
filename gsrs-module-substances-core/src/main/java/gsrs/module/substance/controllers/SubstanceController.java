@@ -1049,9 +1049,9 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     Structure struc = structureProcessor.instrument(su.structure, null, false);
                     saveTempStructure(struc);
                     su._structure = struc;
+                    log.trace("SRU type {}; mwt: {}", su.type, struc.getMwt());
                 }
-                List<PolymerDecode.StructuralUnit> sorted = o.stream().sorted(byMW).toList();
-                node.set("structuralUnits", objectMapper.valueToTree(sorted));
+                node.set("structuralUnits", objectMapper.valueToTree(o));
             } catch (Throwable e) {
                 e.printStackTrace();
                 log.error("Can't enumerate polymer", e);
@@ -1066,22 +1066,6 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         }
 
     }
-
-    Comparator<PolymerDecode.StructuralUnit> byLabel = Comparator.comparing(
-            (sru) ->sru.label,
-            Comparator.nullsLast(Comparator.naturalOrder())
-    );
-
-    Comparator<PolymerDecode.StructuralUnit> byMW = Comparator.comparing(
-            (sru) -> {
-                try {
-                    return Chemical.parseMol(sru.structure).getMass();
-                } catch (IOException e) {
-                    return 0.0;
-                }
-            },
-            Comparator.nullsLast(Comparator.naturalOrder())
-    );
 
     @PostGsrsRestApiMapping("/interpretFeatures")
     @PreAuthorize("isAuthenticated()")
@@ -1878,7 +1862,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 if(alias.startsWith("_R")){
                     ca.setRGroup(Integer.parseInt(alias.replace("_R", "")));
                     r= true;
-                }else if(alias.startsWith("R")){
+                }else if(alias.startsWith("R") && alias.length()>1){
                     ca.setRGroup(Integer.parseInt(alias.replace("R", "")));
                     r= true;
                 }
