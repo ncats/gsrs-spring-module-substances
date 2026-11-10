@@ -4,14 +4,14 @@ import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.molwitch.*;
 import ix.core.models.Structure;
 import lombok.extern.slf4j.Slf4j;
+import gsrs.springUtils.StaticContextAccessor;
+import org.springframework.core.env.Environment;
 
-import java.awt.*;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
-
 
 /**
  * This will decompose a polymer into its constituents
@@ -33,7 +33,7 @@ public class PolymerDecode {
 
 	static String pseudoString = "A";
 
-	private static String SortType = "byUsage";
+	private static String DefaultSortType = "byUsage";
 
 	public static Chemical getDiagram(Chemical c, Collection<StructuralUnit> sunitsb){
 		List<StructuralUnit> sunits = new ArrayList<StructuralUnit>(sunitsb);
@@ -99,15 +99,19 @@ public class PolymerDecode {
 		if(canonicalize && !(c.hasQueryAtoms() || c.bonds().anyMatch(b->b.isQueryBond()))){
 			sunits=canonicalize(sunits,false);
 		}
-		if( SortType.equalsIgnoreCase("ByUsage")) {
+		Environment environment = StaticContextAccessor.getBean(Environment.class);
+		String sortType = environment == null
+				? "byUsage"
+				: environment.getProperty("ix.ginas.polymer.sortType", DefaultSortType);
+		if( sortType.equalsIgnoreCase("ByUsage")) {
 			SortedSet<StructuralUnit> result = new TreeSet<>(byUsageStructuralUnit);
 			result.addAll(sunits);
 			return result;
-		} else if( SortType.equalsIgnoreCase("byMW")) {
+		} else if( sortType.equalsIgnoreCase("byMW")) {
 			SortedSet<StructuralUnit> result = new TreeSet<>(byMWStructuralUnit);
 			result.addAll(sunits);
 			return result;
-		} else if(SortType.equalsIgnoreCase("ByLabel")) {
+		} else if(sortType.equalsIgnoreCase("ByLabel")) {
 			SortedSet<StructuralUnit> result = new TreeSet<>(byLabelStructuralUnit);
 			result.addAll(sunits);
 			return result;
@@ -443,7 +447,8 @@ public class PolymerDecode {
 	}
 
 	static Comparator<StructuralUnit> byLabelStructuralUnit = Comparator.comparing(
-			sru->sru.type,
+
+			sru->sru.label,
 			Comparator.nullsLast(Comparator.naturalOrder())
 	);
 

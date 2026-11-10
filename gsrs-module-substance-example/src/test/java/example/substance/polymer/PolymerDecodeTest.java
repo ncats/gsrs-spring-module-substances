@@ -82,7 +82,7 @@ public class PolymerDecodeTest {
         String filePath = "D:\\temp projects\\ncats\\polymer_molfile_from.dammika.mol";
         File inputFile = new File(filePath);
         String mol = Files.readString(inputFile.toPath());
-        ReflectionTestUtils.setField(PolymerDecode.class, "SortType", "ByMw");
+        ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByMw");
         Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse( srus.isEmpty());
 
@@ -101,7 +101,7 @@ public class PolymerDecodeTest {
         String filePath = "D:\\temp projects\\ncats\\polymer_molfile_from.dammika.mol";
         File inputFile = new File(filePath);
         String mol = Files.readString(inputFile.toPath());
-        ReflectionTestUtils.setField(PolymerDecode.class, "SortType", "ByUsage");
+        ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByUsage");
         Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse( srus.isEmpty());
 
@@ -120,13 +120,13 @@ public class PolymerDecodeTest {
         String filePath = "D:\\temp projects\\ncats\\polymer_molfile_from.dammika.mol";
         File inputFile = new File(filePath);
         String mol = Files.readString(inputFile.toPath());
-        ReflectionTestUtils.setField(PolymerDecode.class, "SortType", "ByLabel");
+        ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByLabel");
         Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse(srus.isEmpty());
 
         System.out.println("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
-            System.out.printf("type: %s%n", unit.type);
+            System.out.printf("type: %s, label: %s %n", unit.type, unit.label);
             Chemical chem = Chemical.parseMol(unit.structure);
 
             System.out.printf("mw: %f %n", chem.getMass());
