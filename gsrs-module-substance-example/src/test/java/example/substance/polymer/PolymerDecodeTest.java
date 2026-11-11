@@ -50,12 +50,6 @@ public class PolymerDecodeTest {
         assertEquals(Arrays.asList(0), map.get("GARBAGE").get(0).amap);
         assertEquals(Arrays.asList(2), map.get("END_GROUP").get(0).amap);
 
-//        System.out.println("number of strucrual units = " + srus.size());
-//        for(PolymerDecode.StructuralUnit unit : srus){
-//            System.out.println(unit.amap);
-//            System.out.println(unit.type);
-//            System.out.println(unit.structure);
-//        }
     }
 
 

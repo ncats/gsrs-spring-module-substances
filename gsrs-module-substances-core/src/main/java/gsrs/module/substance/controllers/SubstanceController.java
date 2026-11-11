@@ -31,6 +31,9 @@ import javax.imageio.ImageIO;
 
 import gov.nih.ncats.molwitch.*;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
+import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
+import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
+import gsrs.security.canEditData;
 import ix.ginas.models.utils.MavenUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
@@ -938,13 +941,11 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Optional.ofNullable(body.getFirst("fdim")).map(s->Integer.parseInt(s)).ifPresent(c->rb.fdim(c));
         Optional.ofNullable(body.getFirst("field")).ifPresent(c->rb.field(c));
         Optional.ofNullable(body.getFirst("seqType")).ifPresent(c->rb.seqType(c));
-//        Optional.ofNullable(body.getFirst("searchType")).map(s->SequenceSearchType.valueOf(s)).ifPresent(c->rb.searchType(c));
         Optional.ofNullable(body.getFirst("order")).ifPresent(c->rb.order(c));
 
 
 
         //TODO: TP: I'm not sure these are actually used, may want to remove all mentions entirely
-//        Optional.ofNullable(body.getFirst("identity")).map(s->Double.parseDouble(s)).ifPresent(c->rb.identity(c));
         Optional.ofNullable(body.getFirst("type")).map(s->SequenceIndexer.CutoffType.valueOfOrDefault(s)).ifPresent(c->rb.type(c));
 
 
@@ -2232,6 +2233,18 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 "structure-indexer");
         info.put("structure indexer", indexerInfo);
         return new ResponseEntity<>(info, HttpStatus.OK);
+    }
+
+    @canEditData
+    @PostGsrsRestApiMapping("/resetUuids")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ResponseEntity<Object> resetUuidsInEntity(@RequestBody JsonNode substanceJson,
+                                               @RequestParam Map<String, String> queryParameters) {
+        Substance substance = JsonSubstanceFactory.makeSubstance(substanceJson);
+        BasicSubstanceScrubberParameters parameters = new BasicSubstanceScrubberParameters();
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(parameters);
+        Substance reset = scrubber.reassignUuids(substance);
+        return new ResponseEntity<>(reset, HttpStatus.OK);
     }
 
     private Map createClassInfoMap(Class<?> classOfInterest, String groupId, String artifactId) {

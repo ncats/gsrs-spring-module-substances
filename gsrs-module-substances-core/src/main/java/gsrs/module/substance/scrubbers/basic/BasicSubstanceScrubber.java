@@ -547,7 +547,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return false;
     }
 
-    private Substance reassignUuids(Substance substance) {
+    public Substance reassignUuids(Substance substance) {
         log.trace("starting reassignUuids");
         Map<UUID,UUID> oldToNewUUIDMap = new HashMap<>();
         substance.uuid=oldToNewUUIDMap.computeIfAbsent(substance.uuid, (k)->UUID.randomUUID());
