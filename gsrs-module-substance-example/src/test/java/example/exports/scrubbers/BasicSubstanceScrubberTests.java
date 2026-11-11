@@ -12,10 +12,18 @@ import ix.core.models.Principal;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.models.v1.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.test.context.support.WithMockUser;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
 import java.util.*;
 
 @WithMockUser(username = "admin", roles = "Admin")
@@ -1370,7 +1378,43 @@ public class BasicSubstanceScrubberTests extends AbstractSubstanceJpaEntityTest 
 
         Assertions.assertEquals(parentUuid.toString(), child.structurallyDiverse.parentSubstance.refuuid);
     }
-    
+
+    @Test
+    void testVerifyClearingOfNumericIDs() throws IOException {
+        String testJsonFile ="testJSON//fb420412-9f7e-4ad2-9305-f02ad80a7287.json";
+        File resource=new ClassPathResource(testJsonFile).getFile();
+        String substanceJson = FileUtils.readFileToString(resource, Charset.defaultCharset());
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
+        JsonNode substanceNode = mapper.readTree(substanceJson);
+        JsonNode propertiesBefore  = substanceNode
+                .path("structure")
+                .path("properties");
+        Assertions.assertTrue(
+                propertiesBefore.isArray(),
+                "Parsed JSON must contain the expected properties object"
+        );
+
+        Assertions.assertTrue(
+                propertiesBefore.get(0).has("id"),
+                "Parsed JSON must contain a numeric id before scrubbing"
+        );
+        BasicSubstanceScrubber.removeNumericIds(substanceNode);
+        JsonNode propertiesAfter  = substanceNode
+                .path("structure")
+                .path("properties");
+        Assertions.assertTrue(
+                propertiesAfter.isArray(),
+                "Scrubbing must preserve the properties object"
+        );
+
+        Assertions.assertTrue(
+                propertiesAfter.path("id").isMissingNode(),
+                "Numeric id field must be removed"
+        );
+    }
+
     private void predicateUsageAssertionHelper(List<?> predicate) {
         System.out.println(predicate.toString());
     }

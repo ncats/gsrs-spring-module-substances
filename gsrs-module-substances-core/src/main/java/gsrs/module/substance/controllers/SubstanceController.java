@@ -2243,8 +2243,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         Substance substance = JsonSubstanceFactory.makeSubstance(substanceJson);
         BasicSubstanceScrubberParameters parameters = new BasicSubstanceScrubberParameters();
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(parameters);
-        Substance reset = scrubber.reassignUuids(substance);
-        return new ResponseEntity<>(reset, HttpStatus.OK);
+        Substance substanceWithReassignedUuids = scrubber.reassignUuids(substance);
+
+        if(queryParameters.get("keepStructureIds") == null || !queryParameters.get("keepStructureIds").equalsIgnoreCase("FALSE") ) {
+            JsonNode copy = EntityFactory.EntityMapper
+                .FULL_ENTITY_MAPPER()
+                .valueToTree(substanceWithReassignedUuids);
+            BasicSubstanceScrubber.removeNumericIds(copy);
+            return new ResponseEntity<>(copy, HttpStatus.OK);
+        }
+        return new ResponseEntity<>(substanceWithReassignedUuids, HttpStatus.OK);
     }
 
     private Map createClassInfoMap(Class<?> classOfInterest, String groupId, String artifactId) {

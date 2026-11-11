@@ -1,0 +1,369 @@
+{
+  "created": 1786398930333,
+  "createdBy": "ADMIN",
+  "lastEdited": 1786398930333,
+  "lastEditedBy": "ADMIN",
+  "deprecated": false,
+  "uuid": "fb420412-9f7e-4ad2-9305-f02ad80a7287",
+  "definitionType": "PRIMARY",
+  "definitionLevel": "COMPLETE",
+  "substanceClass": "chemical",
+  "status": "approved",
+  "version": "7",
+  "approvedBy": "FDA_SRS",
+  "names": [
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "7b97e6d6-6e4b-4798-aa2c-16c766280690",
+      "name": "N-(14-METHYL-3,6,9,12-TETRAKIS(2-METHYLALLYL)-3,6,9,12-TETRAAZAPENTADEC-14-EN-1-YL)NONAN-1-AMIDE",
+      "stdName": "N-(14-METHYL-3,6,9,12-TETRAKIS(2-METHYLALLYL)-3,6,9,12-TETRAAZAPENTADEC-14-EN-1-YL)NONAN-1-AMIDE",
+      "type": "sys",
+      "domains": [],
+      "languages": [
+        "en"
+      ],
+      "nameJurisdiction": [],
+      "nameOrgs": [],
+      "preferred": false,
+      "displayName": false,
+      "references": [
+        "14a7310b-7b86-46b7-92f4-72e61f00b870",
+        "37059cd2-6dc4-4617-9788-fd9c2c6b8bce"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "5966cc42-484a-4292-aa0a-770fa91daeca",
+      "name": "N-[14-Methyl-3,6,9,12-tetrakis(2-methyl-2-propen-1-yl)-3,6,9,12-tetraazapentadec-14-en-1-yl]nonanamide",
+      "stdName": "N-(14-METHYL-3,6,9,12-TETRAKIS(2-METHYL-2-PROPEN-1-YL)-3,6,9,12-TETRAAZAPENTADEC-14-EN-1-YL)NONANAMIDE",
+      "type": "sys",
+      "domains": [],
+      "languages": [
+        "en"
+      ],
+      "nameJurisdiction": [],
+      "nameOrgs": [],
+      "preferred": false,
+      "displayName": true,
+      "references": [
+        "dfa2694f-4d26-4643-8327-11d59423f7ea"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "04773d47-a10a-4ee8-b1de-7c3f7c6ddc77",
+      "name": "Nonanamide, N-[14-methyl-3,6,9,12-tetrakis(2-methyl-2-propen-1-yl)-3,6,9,12-tetraazapentadec-14-en-1-yl]-",
+      "stdName": "NONANAMIDE, N-(14-METHYL-3,6,9,12-TETRAKIS(2-METHYL-2-PROPEN-1-YL)-3,6,9,12-TETRAAZAPENTADEC-14-EN-1-YL)-",
+      "type": "sys",
+      "domains": [],
+      "languages": [
+        "en"
+      ],
+      "nameJurisdiction": [],
+      "nameOrgs": [],
+      "preferred": false,
+      "displayName": false,
+      "references": [
+        "dfa2694f-4d26-4643-8327-11d59423f7ea"
+      ],
+      "access": []
+    }
+  ],
+  "codes": [
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "273e406f-3e62-47b5-bf0a-2dcd73d2176b",
+      "codeSystem": "FDA UNII",
+      "code": "N7KV5GRY3M",
+      "type": "PRIMARY",
+      "_isClassification": false,
+      "references": [
+        "dfa2694f-4d26-4643-8327-11d59423f7ea"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930336,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930336,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "aaf6c44c-1268-4fc6-bfa0-5fb1fbb8b03c",
+      "codeSystem": "ECHA",
+      "code": "309-006-0",
+      "type": "PRIMARY",
+      "url": "https://chem.echa.europa.eu/100.099.042",
+      "_isClassification": false,
+      "references": [
+        "ea7e0382-ef92-4ab8-a923-95a03306d16e"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "c2f23ceb-3681-562b-c53d-5922a5ed92fd",
+      "codeSystem": "EPA CompTox",
+      "code": "DTXSID70244196",
+      "type": "PRIMARY",
+      "url": "https://comptox.epa.gov/dashboard/chemical/details/DTXSID70244196",
+      "_isClassification": false,
+      "references": [
+        "93b1b905-4337-0b8e-db38-d72b403966b7"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "d329ed59-e302-401d-8ec8-5c47f28b18e7",
+      "codeSystem": "PUBCHEM",
+      "code": "113521",
+      "type": "PRIMARY",
+      "url": "https://pubchem.ncbi.nlm.nih.gov/compound/113521",
+      "_isClassification": false,
+      "references": [
+        "ea7e0382-ef92-4ab8-a923-95a03306d16e"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930336,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930336,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "f979811d-b755-4493-aac6-6748c3689ed8",
+      "codeSystem": "CAS",
+      "code": "99670-32-3",
+      "type": "PRIMARY",
+      "url": "https://commonchemistry.cas.org/detail?cas_rn=99670-32-3",
+      "_isClassification": false,
+      "references": [
+        "ea7e0382-ef92-4ab8-a923-95a03306d16e",
+        "dfa2694f-4d26-4643-8327-11d59423f7ea"
+      ],
+      "access": []
+    }
+  ],
+  "notes": [],
+  "properties": [],
+  "relationships": [],
+  "references": [
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "14a7310b-7b86-46b7-92f4-72e61f00b870",
+      "citation": "CHEMID",
+      "docType": "FDA_SRS",
+      "publicDomain": true,
+      "tags": [
+        "NOMEN"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "37059cd2-6dc4-4617-9788-fd9c2c6b8bce",
+      "citation": "EPA",
+      "docType": "EPA",
+      "publicDomain": true,
+      "tags": [
+        "NOMEN"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "93b1b905-4337-0b8e-db38-d72b403966b7",
+      "citation": "WEBSITE",
+      "docType": "WEBSITE",
+      "publicDomain": true,
+      "tags": [
+        "NOMEN",
+        "PUBLIC_DOMAIN_RELEASE"
+      ],
+      "url": "https://comptox.epa.gov/dashboard/dsstoxdb/results?utf8=%E2%9C%93&search=99670-32-3",
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "dfa2694f-4d26-4643-8327-11d59423f7ea",
+      "citation": "STN",
+      "docType": "STN (SCIFINDER)",
+      "publicDomain": true,
+      "tags": [
+        "PUBLIC_DOMAIN_RELEASE"
+      ],
+      "access": []
+    },
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930337,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "ea7e0382-ef92-4ab8-a923-95a03306d16e",
+      "citation": "SRS CODE IMPORT",
+      "docType": "FDA_SRS",
+      "documentDate": 1493408158000,
+      "publicDomain": true,
+      "tags": [
+        "NOMEN"
+      ],
+      "access": []
+    }
+  ],
+  "approvalID": "N7KV5GRY3M",
+  "tags": [],
+  "structure": {
+    "id": "8b546981-f16b-4a9c-8c7a-7b30cb9c00e9",
+    "created": 1786398930334,
+    "lastEdited": 1786398930339,
+    "deprecated": false,
+    "digest": "2a9619e78930e2d80f9d2147adbc53a68e0fb274",
+    "molfile": "N-[14-Methyl-3,6,9,12-tetrakis(2-methyl-2-propen-1-yl)-3,6,9,12-tetraazapenta...\n   JSDraw207142615152D\n\n 43 42  0  0  0  0              0 V2000\n   28.3011   -8.3151    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   27.5211   -9.6660    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   27.5211   -6.9640    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   29.8611   -8.3151    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   28.3011  -11.0170    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   25.9611   -6.9640    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   30.6411   -6.9640    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   27.5211  -12.3680    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   25.1811   -5.6130    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   32.2011   -6.9640    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   29.8611   -5.6130    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   28.3011  -13.7191    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   25.9611  -12.3680    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   25.9611   -4.2620    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   23.6211   -5.6130    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   29.8611  -13.7191    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   25.1811  -13.7191    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   25.1811   -2.9111    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   22.8411   -6.9640    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   30.6411  -15.0700    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   25.9611  -15.0700    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   23.6211  -13.7191    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   25.9611   -1.5600    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   23.6211   -2.9111    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   23.6211   -8.3151    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   21.2811   -6.9640    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   32.2011  -15.0700    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   29.8611  -16.4210    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   32.9811  -13.7191    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   30.6411  -17.7719    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   34.5411  -13.7191    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   32.2011  -17.7719    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   29.8611  -19.1231    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   35.3211  -12.3680    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   36.8811  -12.3680    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   34.5411  -11.0170    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   37.6611  -11.0170    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   39.2211  -11.0170    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   40.0011   -9.6660    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   41.5611   -9.6660    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   42.3411   -8.3151    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   43.9011   -8.3151    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   44.6811   -6.9640    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\n  1  3  1  0  0  0  0\n  1  4  1  0  0  0  0\n  2  5  1  0  0  0  0\n  3  6  1  0  0  0  0\n  4  7  1  0  0  0  0\n  5  8  1  0  0  0  0\n  6  9  1  0  0  0  0\n  7 10  1  0  0  0  0\n  7 11  2  0  0  0  0\n  8 12  1  0  0  0  0\n  8 13  1  0  0  0  0\n  9 14  1  0  0  0  0\n  9 15  1  0  0  0  0\n 12 16  1  0  0  0  0\n 13 17  1  0  0  0  0\n 14 18  1  0  0  0  0\n 15 19  1  0  0  0  0\n 16 20  1  0  0  0  0\n 17 21  1  0  0  0  0\n 17 22  2  0  0  0  0\n 18 23  1  0  0  0  0\n 18 24  2  0  0  0  0\n 19 25  1  0  0  0  0\n 19 26  2  0  0  0  0\n 20 27  1  0  0  0  0\n 20 28  1  0  0  0  0\n 27 29  1  0  0  0  0\n 28 30  1  0  0  0  0\n 29 31  1  0  0  0  0\n 30 32  1  0  0  0  0\n 30 33  2  0  0  0  0\n 31 34  1  0  0  0  0\n 34 35  1  0  0  0  0\n 34 36  2  0  0  0  0\n 35 37  1  0  0  0  0\n 37 38  1  0  0  0  0\n 38 39  1  0  0  0  0\n 39 40  1  0  0  0  0\n 40 41  1  0  0  0  0\n 41 42  1  0  0  0  0\n 42 43  1  0  0  0  0\nM  END",
+    "smiles": "CCCCCCCCC(=O)NCCN(CCN(CCN(CCN(CC(=C)C)CC(=C)C)CC(=C)C)CC(=C)C)CC(=C)C",
+    "formula": "C37H69N5O",
+    "opticalActivity": "NONE",
+    "atropisomerism": "No",
+    "stereoCenters": 0,
+    "definedStereo": 0,
+    "ezCenters": 0,
+    "charge": 0,
+    "mwt": 599.9781,
+    "properties": [
+      {
+        "id": 486236,
+        "label": "InChI_Key",
+        "term": "QZLFJNMNTNWCEG-UHFFFAOYSA-N"
+      },
+      {
+        "id": 486237,
+        "label": "EXACT_HASH",
+        "term": "QZLFJNMNTNWCEG_UHFFFAOYSA_N"
+      },
+      {
+        "id": 486238,
+        "label": "STEREO_INSENSITIVE_HASH",
+        "term": "QZLFJNMNTNWCEG"
+      }
+    ],
+    "links": [],
+    "count": 1,
+    "createdBy": "ADMIN",
+    "lastEditedBy": "ADMIN",
+    "stereochemistry": "ACHIRAL",
+    "access": [],
+    "references": [
+      "14a7310b-7b86-46b7-92f4-72e61f00b870",
+      "dfa2694f-4d26-4643-8327-11d59423f7ea"
+    ],
+    "_inchiKey": "QZLFJNMNTNWCEG-UHFFFAOYSA-N",
+    "_inchi": "InChI=1S/C37H69N5O/c1-12-13-14-15-16-17-18-37(43)38-19-20-39(27-32(2)3)21-22-40(28-33(4)5)23-24-41(29-34(6)7)25-26-42(30-35(8)9)31-36(10)11/h2,4,6,8,10,12-31H2,1,3,5,7,9,11H3,(H,38,43)",
+    "hash": "QZLFJNMNTNWCEG_UHFFFAOYSA_N"
+  },
+  "moieties": [
+    {
+      "created": 1786398930337,
+      "createdBy": "ADMIN",
+      "lastEdited": 1786398930340,
+      "lastEditedBy": "ADMIN",
+      "deprecated": false,
+      "uuid": "2bb2ee1b-7bb4-4c2b-bf9f-9f5a3c19afd9",
+      "id": "2bb2ee1b-7bb4-4c2b-bf9f-9f5a3c19afd9",
+      "digest": "2698d13a41a6f529f72d260282c25b1178a1285a",
+      "molfile": "\n  Marvin  01132102222D          \n\n 43 42  0  0  0  0            999 V2000\n    5.0199    5.8524    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    5.7269    6.2706    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    6.4380    5.8524    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    7.1491    6.2706    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    7.8603    5.8524    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    8.5714    6.2706    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.2826    5.8524    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.9938    6.2706    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   10.7049    5.8524    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   10.7049    5.0199    0.0000 O   0  0  0  0  0  0  0  0  0  0  0  0\n   11.4160    6.2706    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   11.4160    7.1073    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   12.1272    7.5256    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   12.1272    8.3623    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   11.4160    8.7806    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   10.7049    8.3623    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.9938    8.7806    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    9.9938    9.6173    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.2826   10.0355    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.2826   10.8723    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n    9.9938   11.2905    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.9938   12.1272    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   10.7049   12.5455    0.0000 N   0  0  0  0  0  0  0  0  0  0  0  0\n   11.4160   12.1272    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   12.1272   12.5455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   12.1272   13.3822    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   12.8383   12.1272    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   10.7049   13.3822    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   11.4160   13.8005    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   11.4160   14.6372    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   12.1272   13.3822    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    8.5714   11.2905    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    8.5714   12.1272    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    7.8603   12.5455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.2826   12.5455    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    9.2826    8.3623    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    8.5714    8.7806    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    7.8603    8.3623    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    8.5714    9.6173    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   12.8383    8.7806    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   13.5495    8.3623    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   13.5495    7.5256    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n   14.2607    8.7806    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0  0  0  0\n  2  3  1  0  0  0  0\n  3  4  1  0  0  0  0\n  4  5  1  0  0  0  0\n  5  6  1  0  0  0  0\n  6  7  1  0  0  0  0\n  7  8  1  0  0  0  0\n  8  9  1  0  0  0  0\n 10  9  2  0  0  0  0\n 11  9  1  0  0  0  0\n 12 11  1  0  0  0  0\n 13 12  1  0  0  0  0\n 14 13  1  0  0  0  0\n 15 14  1  0  0  0  0\n 40 14  1  0  0  0  0\n 16 15  1  0  0  0  0\n 17 16  1  0  0  0  0\n 18 17  1  0  0  0  0\n 36 17  1  0  0  0  0\n 19 18  1  0  0  0  0\n 20 19  1  0  0  0  0\n 21 20  1  0  0  0  0\n 32 20  1  0  0  0  0\n 22 21  1  0  0  0  0\n 23 22  1  0  0  0  0\n 24 23  1  0  0  0  0\n 28 23  1  0  0  0  0\n 25 24  1  0  0  0  0\n 26 25  1  0  0  0  0\n 27 25  2  0  0  0  0\n 29 28  1  0  0  0  0\n 30 29  1  0  0  0  0\n 31 29  2  0  0  0  0\n 33 32  1  0  0  0  0\n 34 33  1  0  0  0  0\n 35 33  2  0  0  0  0\n 37 36  1  0  0  0  0\n 38 37  1  0  0  0  0\n 39 37  2  0  0  0  0\n 41 40  1  0  0  0  0\n 42 41  1  0  0  0  0\n 43 41  2  0  0  0  0\nM  END",
+      "smiles": "CCCCCCCCC(=O)NCCN(CCN(CCN(CCN(CC(=C)C)CC(=C)C)CC(=C)C)CC(=C)C)CC(=C)C",
+      "formula": "C37H69N5O",
+      "opticalActivity": "NONE",
+      "atropisomerism": "No",
+      "stereoCenters": 0,
+      "definedStereo": 0,
+      "ezCenters": 0,
+      "charge": 0,
+      "mwt": 599.9781,
+      "properties": [
+        {
+          "id": 486239,
+          "label": "InChI_Key",
+          "term": "QZLFJNMNTNWCEG-UHFFFAOYSA-N"
+        },
+        {
+          "id": 486240,
+          "label": "EXACT_HASH",
+          "term": "QZLFJNMNTNWCEG_UHFFFAOYSA_N"
+        },
+        {
+          "id": 486241,
+          "label": "STEREO_INSENSITIVE_HASH",
+          "term": "QZLFJNMNTNWCEG"
+        }
+      ],
+      "links": [],
+      "count": 1,
+      "stereochemistry": "ACHIRAL",
+      "access": [],
+      "references": [],
+      "_inchiKey": "QZLFJNMNTNWCEG-UHFFFAOYSA-N",
+      "_inchi": "InChI=1S/C37H69N5O/c1-12-13-14-15-16-17-18-37(43)38-19-20-39(27-32(2)3)21-22-40(28-33(4)5)23-24-41(29-34(6)7)25-26-42(30-35(8)9)31-36(10)11/h2,4,6,8,10,12-31H2,1,3,5,7,9,11H3,(H,38,43)",
+      "hash": "QZLFJNMNTNWCEG_UHFFFAOYSA_N",
+      "countAmount": {
+        "created": 1786398930337,
+        "createdBy": "ADMIN",
+        "lastEdited": 1786398930337,
+        "lastEditedBy": "ADMIN",
+        "deprecated": false,
+        "uuid": "96b54478-7148-48c0-ab92-af4284ecc8f6",
+        "type": "MOL RATIO",
+        "average": 1,
+        "units": "MOL RATIO",
+        "references": [],
+        "access": []
+      }
+    }
+  ],
+  "_name": "N-[14-Methyl-3,6,9,12-tetrakis(2-methyl-2-propen-1-yl)-3,6,9,12-tetraazapentadec-14-en-1-yl]nonanamide",
+  "_approvalIDDisplay": "N7KV5GRY3M",
+  "access": [],
+  "_self": "https://gsrs.ncats.nih.gov/api/v1/substances(fb420412-9f7e-4ad2-9305-f02ad80a7287)?view=full"
+}

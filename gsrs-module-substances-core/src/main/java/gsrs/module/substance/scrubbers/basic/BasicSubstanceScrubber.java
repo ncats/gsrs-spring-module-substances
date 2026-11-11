@@ -49,6 +49,8 @@ import ix.ginas.models.v1.SubstanceReference;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /*
 Note: as of 22 September, most of this class is commented out and a quick and dirty implementation is in place.
@@ -903,5 +905,20 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
     }
     public static void main(String[] args) {
     	log.trace("main method");
+    }
+
+    public static void removeNumericIds(JsonNode node) {
+        if (node instanceof ObjectNode object) {
+            JsonNode id = object.get("id");
+            if (id != null && id.isIntegralNumber()) {
+                object.remove("id");
+            }
+        }
+
+        if (node.isContainer()) {
+            for (JsonNode child : node) {
+                removeNumericIds(child);
+            }
+        }
     }
 }
