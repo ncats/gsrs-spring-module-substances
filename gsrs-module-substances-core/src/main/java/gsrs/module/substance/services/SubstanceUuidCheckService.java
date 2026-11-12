@@ -149,7 +149,7 @@ public class SubstanceUuidCheckService {
             if( mixtureSubstance.mixture.components != null  && !mixtureSubstance.mixture.components.isEmpty()) {
                 for(Component component : mixtureSubstance.mixture.components) {
                     if( component.uuid != null && uuidExists(Component.class, component.uuid))  {
-                        log.trace("mixture componenet uuid exists");
+                        log.trace("mixture component uuid exists");
                         return true;
                     }
                 }
@@ -164,7 +164,7 @@ public class SubstanceUuidCheckService {
                     && !specifiedSubstanceGroup1Substance.specifiedSubstance.constituents.isEmpty()) {
                 for(SpecifiedSubstanceComponent constituent : specifiedSubstanceGroup1Substance.specifiedSubstance.constituents) {
                     if( constituent.uuid != null && uuidExists(SpecifiedSubstanceComponent.class, constituent.uuid))  {
-                        log.trace("SSG1 componenet uuid exists");
+                        log.trace("SSG1 component uuid exists");
                         return true;
                     }
                 }
