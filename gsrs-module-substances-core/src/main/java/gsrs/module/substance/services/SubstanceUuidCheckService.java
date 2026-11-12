@@ -4,12 +4,17 @@ import gsrs.module.substance.repository.*;
 import ix.ginas.models.v1.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 
 
 @Service
@@ -42,6 +47,7 @@ public class SubstanceUuidCheckService {
     ModificationRepository modificationRepository;
 
     public boolean doesAnyUuidExist(Substance substance) {
+        Objects.requireNonNull(substance, "substance must not be null");
         // Check supplied entity UUIDs against the database.
         if( substance.uuid != null && substanceRepository.existsById(substance.uuid)) {
           log.trace("substance uuid exists");
@@ -55,7 +61,7 @@ public class SubstanceUuidCheckService {
                 }
                 if( name.nameOrgs != null && !name.nameOrgs.isEmpty()) {
                     for(NameOrg org : name.nameOrgs) {
-                        if( org.uuid != null && entityManager.find(NameOrg.class, org.uuid) != null )  {
+                        if( org.uuid != null && uuidExists(NameOrg.class, org.uuid) )  {
                             log.trace("name org exists");
                             return true;
                         }
@@ -76,7 +82,7 @@ public class SubstanceUuidCheckService {
         if(substance.notes != null &&!substance.notes.isEmpty()) {
             for(Note note: substance.notes) {
                 log.trace("going to look up note.uuid {}", note.uuid);
-                if(note.uuid != null && entityManager.find(Note.class, note.uuid)!=null) {
+                if(note.uuid != null && uuidExists(Note.class, note.uuid)) {
                     log.trace("note UUID exists");
                     return true;
                 }
@@ -91,14 +97,14 @@ public class SubstanceUuidCheckService {
             }
             if(chemicalSubstance.getMoieties() != null && !chemicalSubstance.getMoieties().isEmpty()) {
                 for(Moiety moiety : chemicalSubstance.getMoieties()) {
-                    if( moiety.uuid != null && entityManager.find(Moiety.class, moiety.uuid.toString()) != null ) {
+                    if( moiety.uuid != null && uuidExists(Moiety.class, moiety.uuid) ) {
                         log.trace("chemical moiety ID exists");
                         return true;
                     }
                 }
             }
         } else if( substance instanceof PolymerSubstance polymerSubstance) {
-            if( polymerSubstance.polymer.uuid != null && entityManager.find(Polymer.class, polymerSubstance.polymer.uuid)!=null) {
+            if( polymerSubstance.polymer.uuid != null && uuidExists(Polymer.class, polymerSubstance.polymer.uuid)) {
                 log.trace("polymer UUID exists");
                 return true;
             }
@@ -113,36 +119,36 @@ public class SubstanceUuidCheckService {
                 return true;
             }
             if(polymerSubstance.polymer.classification != null
-                    && entityManager.find(PolymerClassification.class, polymerSubstance.polymer.classification.uuid)!=null ) {
+                    && uuidExists(PolymerClassification.class, polymerSubstance.polymer.classification.uuid) ) {
                 log.trace("polymer classification uuid exists");
                 return true;
             }
         } else if( substance instanceof ProteinSubstance proteinSubstance) {
-            if( proteinSubstance.protein.uuid != null && entityManager.find(Protein.class, proteinSubstance.protein.uuid)!=null) {
+            if( proteinSubstance.protein.uuid != null && uuidExists(Protein.class, proteinSubstance.protein.uuid)) {
                 log.trace("protein UUID exists");
                 return true;
             }
         } else if( substance instanceof StructurallyDiverseSubstance structurallyDiverseSubstance) {
             if( structurallyDiverseSubstance.structurallyDiverse.uuid != null
-                    && entityManager.find(StructurallyDiverse.class, structurallyDiverseSubstance.structurallyDiverse.uuid)!=null) {
+                    && uuidExists(StructurallyDiverse.class, structurallyDiverseSubstance.structurallyDiverse.uuid)) {
                 log.trace("str div UUID exists");
                 return true;
             }
         } else if( substance instanceof NucleicAcidSubstance nucleicAcidSubstance) {
             if( nucleicAcidSubstance.nucleicAcid.uuid != null
-                    && entityManager.find(NucleicAcid.class, nucleicAcidSubstance.nucleicAcid.uuid)!=null) {
+                    && uuidExists(NucleicAcid.class, nucleicAcidSubstance.nucleicAcid.uuid)) {
                 log.trace("nucleic acid UUID exists");
                 return true;
             }
         } else if( substance instanceof MixtureSubstance mixtureSubstance) {
             if( mixtureSubstance.mixture.uuid != null
-                    && entityManager.find(Mixture.class, mixtureSubstance.mixture.uuid)!=null) {
+                    && uuidExists(Mixture.class, mixtureSubstance.mixture.uuid)) {
                 log.trace("mixture UUID exists");
                 return true;
             }
             if( mixtureSubstance.mixture.components != null  && !mixtureSubstance.mixture.components.isEmpty()) {
                 for(Component component : mixtureSubstance.mixture.components) {
-                    if( component.uuid != null && entityManager.find(Component.class, component.uuid)!=null)  {
+                    if( component.uuid != null && uuidExists(Component.class, component.uuid))  {
                         log.trace("mixture componenet uuid exists");
                         return true;
                     }
@@ -150,14 +156,14 @@ public class SubstanceUuidCheckService {
             }
         } else if( substance instanceof SpecifiedSubstanceGroup1Substance specifiedSubstanceGroup1Substance) {
             if( specifiedSubstanceGroup1Substance.specifiedSubstance.uuid != null
-                    && entityManager.find(SpecifiedSubstanceGroup1.class, specifiedSubstanceGroup1Substance.specifiedSubstance.uuid)!=null) {
+                    && uuidExists(SpecifiedSubstanceGroup1.class, specifiedSubstanceGroup1Substance.specifiedSubstance.uuid)) {
                 log.trace("specified substance UUID exists");
                 return true;
             }
             if( specifiedSubstanceGroup1Substance.specifiedSubstance.constituents != null
                     && !specifiedSubstanceGroup1Substance.specifiedSubstance.constituents.isEmpty()) {
                 for(SpecifiedSubstanceComponent constituent : specifiedSubstanceGroup1Substance.specifiedSubstance.constituents) {
-                    if( constituent.uuid != null && entityManager.find(SpecifiedSubstanceComponent.class, constituent.uuid)!=null)  {
+                    if( constituent.uuid != null && uuidExists(SpecifiedSubstanceComponent.class, constituent.uuid))  {
                         log.trace("SSG1 componenet uuid exists");
                         return true;
                     }
@@ -172,7 +178,7 @@ public class SubstanceUuidCheckService {
                     return true;
                 }
                 if( relationship.relatedSubstance != null && relationship.relatedSubstance.uuid != null
-                    && entityManager.find(SubstanceReference.class, relationship.relatedSubstance.uuid) != null) {
+                    && uuidExists(SubstanceReference.class, relationship.relatedSubstance.uuid)) {
                     log.trace("substance ref id exists");
                     return true;
                 }
@@ -190,21 +196,22 @@ public class SubstanceUuidCheckService {
 
         if( substance.properties != null ) {
             for( Property property : substance.properties) {
-                if( property.uuid != null && entityManager.find(Property.class, property.uuid) != null){
+                if( property.uuid != null && uuidExists(Property.class, property.uuid)){
                     log.trace("property exists");
                     return true;
                 }
                 if( property.getValue() != null &&  property.getValue().uuid != null
-                        && entityManager.find(Amount.class, property.getValue().uuid) != null) {
+                        && uuidExists(Amount.class, property.getValue().uuid)) {
                     log.trace("property value exists");
                     return true;
                 }
                 if(anyParameterExists(property.getParameters())) {
                     log.trace("property parameter uuid exists");
+                    return true;
                 }
 
                 if( property.getReferencedSubstance() != null && property.getReferencedSubstance().uuid != null
-                    && entityManager.find(SubstanceReference.class, property.getReferencedSubstance().uuid) != null ) {
+                    && uuidExists(SubstanceReference.class, property.getReferencedSubstance().uuid) ) {
                     log.trace("property substance ref uuid exists");
                     return true;
                 }
@@ -218,34 +225,54 @@ public class SubstanceUuidCheckService {
             }
 
             for (PhysicalModification physicalModification : substance.modifications.physicalModifications) {
-                if (physicalModification.uuid != null && entityManager.find(PhysicalModification.class, physicalModification.uuid) != null) {
+                if (physicalModification.uuid != null && uuidExists(PhysicalModification.class, physicalModification.uuid)) {
                     log.trace("physical modifications ID exists");
                     return true;
                 }
                 if (physicalModification.parameters != null && !physicalModification.parameters.isEmpty()) {
                     for (PhysicalParameter physicalParameter : physicalModification.parameters) {
-                        if (physicalParameter.uuid != null && entityManager.find(PhysicalParameter.class, physicalParameter.uuid) != null) {
+                        if (physicalParameter.uuid != null && uuidExists(PhysicalParameter.class, physicalParameter.uuid)) {
                             log.trace("physical parameter exists");
                             return true;
                         }
                     }
                 }
 
-                for (AgentModification agentModification : substance.modifications.agentModifications) {
-                    log.trace("going to look up agentModification.uuid {}", agentModification.uuid);
-                    if (agentModification.uuid != null && entityManager.find(AgentModification.class, agentModification.uuid) != null) {
-                        log.trace("agent modification UUID exists");
-                        return true;
-                    }
-                    if( agentModification.agentSubstance.uuid != null
-                            && entityManager.find(SubstanceReference.class, agentModification.agentSubstance.uuid) != null) {
-                        log.trace("agent modification referenced substance UUID exists");
-                        return true;
-                    }
+            }
+
+            for (AgentModification agentModification : substance.modifications.agentModifications) {
+                log.trace("going to look up agentModification.uuid {}", agentModification.uuid);
+                if (agentModification.uuid != null && uuidExists(AgentModification.class, agentModification.uuid)) {
+                    log.trace("agent modification UUID exists");
+                    return true;
+                }
+                if( agentModification.agentSubstance != null && agentModification.agentSubstance.uuid != null
+                        && uuidExists(SubstanceReference.class, agentModification.agentSubstance.uuid)) {
+                    log.trace("agent modification referenced substance UUID exists");
+                    return true;
                 }
             }
         }
         return false;
+    }
+
+    /**
+     * Select a scalar so Hibernate does not hydrate the entity or fetch its associations.
+     * Match the UUID attribute explicitly: Moiety's primary key is innerUuid, not uuid.
+     */
+    private <T> boolean uuidExists(Class<T> entityType, UUID uuid) {
+        if (uuid == null) {
+            return false;
+        }
+        CriteriaBuilder builder = entityManager.getCriteriaBuilder();
+        CriteriaQuery<Integer> query = builder.createQuery(Integer.class);
+        Root<T> root = query.from(entityType);
+        query.select(builder.literal(1))
+                .where(builder.equal(root.get("uuid"), uuid));
+        return !entityManager.createQuery(query)
+                .setMaxResults(1)
+                .getResultList()
+                .isEmpty();
     }
 
     private boolean anyParameterExists(List<Parameter> parameters) {
@@ -253,7 +280,7 @@ public class SubstanceUuidCheckService {
             return false;
         }
         for( Parameter parameter : parameters) {
-            if(parameter.uuid != null && entityManager.find(Parameter.class, parameter.uuid) != null) {
+            if(parameter.uuid != null && uuidExists(Parameter.class, parameter.uuid)) {
                 return true;
             }
         }
