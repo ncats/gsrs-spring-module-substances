@@ -33,6 +33,7 @@ import gov.nih.ncats.molwitch.*;
 import gov.nih.ncats.structureIndexer.StructureIndexer;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
 import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
+import gsrs.module.substance.services.SubstanceUuidCheckService;
 import gsrs.security.canEditData;
 import ix.ginas.models.utils.MavenUtils;
 import jakarta.servlet.http.HttpServletRequest;
@@ -2253,6 +2254,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
             return new ResponseEntity<>(copy, HttpStatus.OK);
         }
         return new ResponseEntity<>(substanceWithReassignedUuids, HttpStatus.OK);
+    }
+
+    @PostGsrsRestApiMapping("/hasDuplicateUuid")
+    public ResponseEntity<Object> entityHasDuplicateUuid(@RequestBody JsonNode substanceJson,
+                                                     @RequestParam Map<String, String> queryParameters) {
+        Substance substance = JsonSubstanceFactory.makeSubstance(substanceJson);
+        SubstanceUuidCheckService checkService = new SubstanceUuidCheckService();
+        AutowireHelper.getInstance().autowireAndProxy(checkService);
+        Boolean hasDuplicate = checkService.doesAnyUuidExist(substance);
+        return new ResponseEntity<>(hasDuplicate, HttpStatus.OK);
     }
 
     private Map createClassInfoMap(Class<?> classOfInterest, String groupId, String artifactId) {
