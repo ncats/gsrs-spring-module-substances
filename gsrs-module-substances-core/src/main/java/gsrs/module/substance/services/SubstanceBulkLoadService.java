@@ -583,6 +583,7 @@ public class SubstanceBulkLoadService {
                 JsonNode uuidNode = json.get("uuid");
                 return uuidNode == null || uuidNode.isNull() ? null : uuidNode.asText();
             }
+            // __aw__ should we even allow jackson 2? or throw an error it is ?
             if (persistedRecord instanceof com.fasterxml.jackson.databind.JsonNode json) {
                 com.fasterxml.jackson.databind.JsonNode uuidNode = json.get("uuid");
                 return uuidNode == null || uuidNode.isNull() ? null : uuidNode.asText();

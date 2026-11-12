@@ -6,10 +6,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
 import ix.core.processing.GinasDumpRecordExtractorFactory;
 import ix.core.stats.Estimate;
 import ix.core.stats.Statistics;
@@ -18,6 +16,7 @@ import ix.core.util.SemaphoreCounter;
 import ix.ginas.models.v1.DisulfideLink;
 import ix.ginas.models.v1.Site;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -124,8 +123,14 @@ class CoreStatsAndCollectionsTest {
         assertEquals(1_000.0, statistics.getAverageTimeToPersistMS(10_000L), 0.0001);
         assertEquals(0L, statistics.getEstimatedTimeLeft(10_000L));
 
-        ObjectMapper mapper = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        ObjectMapper mapper =
+        // new ObjectMapper()
+        //        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        JsonMapper.builder()
+                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .build();
+
+
         Statistics restored = mapper.readValue(mapper.writeValueAsString(statistics), Statistics.class);
         assertEquals(3_000L, restored.getStop());
         assertEquals(1_000L, getLongField(restored, "start"));
