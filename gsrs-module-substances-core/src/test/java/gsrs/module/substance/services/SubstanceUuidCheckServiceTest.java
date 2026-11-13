@@ -91,7 +91,7 @@ class SubstanceUuidCheckServiceTest {
         StructuralModification structuralModification = new StructuralModification();
         structuralModification.uuid = UUID.randomUUID();
         substance.modifications.structuralModifications.add(structuralModification);
-        expectUuidQuery(AgentModification.class, structuralModification.uuid, true);
+        expectUuidQuery(StructuralModification.class, structuralModification.uuid, true);
 
         assertTrue(service.doesAnyUuidExist(substance));
     }
