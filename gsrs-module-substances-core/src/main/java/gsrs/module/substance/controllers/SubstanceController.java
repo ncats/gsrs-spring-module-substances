@@ -1839,20 +1839,8 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
 
 
     public static boolean hasRGroups(Chemical c){
-//		return c.atoms()
-//				.filter(a-> a.getRGroupIndex().isPresent()).findAny().isPresent();
-
-//		else{
-//			//r=true;
-//			if(ca.getAlias().startsWith("_")){
-//				ca.setRgroupIndex(Integer.parseInt(ca.getAlias().replace("_R", "")));
-//				ca.setAlias(ca.getAlias().replace("_",""));
-//				r= true;
-//			}
-//		}
         boolean r=false;
 
-        
         for(Atom ca:c.getAtoms()){
             if(ca.getRGroupIndex().isPresent()){
                 r= true;

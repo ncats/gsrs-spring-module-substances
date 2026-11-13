@@ -85,6 +85,18 @@ class SubstanceUuidCheckServiceTest {
     }
 
     @Test
+    void structuralModification() {
+        Substance substance = new Substance();
+        substance.modifications = new Modifications();
+        StructuralModification structuralModification = new StructuralModification();
+        structuralModification.uuid = UUID.randomUUID();
+        substance.modifications.structuralModifications.add(structuralModification);
+        expectUuidQuery(AgentModification.class, structuralModification.uuid, true);
+
+        assertTrue(service.doesAnyUuidExist(substance));
+    }
+
+    @Test
     void moietyChecksUuidAttributeRatherThanStringPrimaryKey() {
         ChemicalSubstance substance = new ChemicalSubstance();
         Moiety moiety = new Moiety();

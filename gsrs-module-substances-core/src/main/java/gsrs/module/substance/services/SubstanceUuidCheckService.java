@@ -224,6 +224,19 @@ public class SubstanceUuidCheckService {
                 return true;
             }
 
+            for (AgentModification agentModification : substance.modifications.agentModifications) {
+                log.trace("going to look up agentModification.uuid {}", agentModification.uuid);
+                if (agentModification.uuid != null && uuidExists(AgentModification.class, agentModification.uuid)) {
+                    log.trace("agent modification UUID exists");
+                    return true;
+                }
+                if( agentModification.agentSubstance != null && agentModification.agentSubstance.uuid != null
+                        && uuidExists(SubstanceReference.class, agentModification.agentSubstance.uuid)) {
+                    log.trace("agent modification referenced substance UUID exists");
+                    return true;
+                }
+            }
+
             for (PhysicalModification physicalModification : substance.modifications.physicalModifications) {
                 if (physicalModification.uuid != null && uuidExists(PhysicalModification.class, physicalModification.uuid)) {
                     log.trace("physical modifications ID exists");
@@ -237,21 +250,20 @@ public class SubstanceUuidCheckService {
                         }
                     }
                 }
-
             }
 
-            for (AgentModification agentModification : substance.modifications.agentModifications) {
-                log.trace("going to look up agentModification.uuid {}", agentModification.uuid);
-                if (agentModification.uuid != null && uuidExists(AgentModification.class, agentModification.uuid)) {
-                    log.trace("agent modification UUID exists");
+            for( StructuralModification structuralModification : substance.modifications.structuralModifications) {
+                if(structuralModification.uuid != null && uuidExists(StructuralModification.class, structuralModification.uuid)) {
+                    log.trace("structural modification UUID exists");
                     return true;
                 }
-                if( agentModification.agentSubstance != null && agentModification.agentSubstance.uuid != null
-                        && uuidExists(SubstanceReference.class, agentModification.agentSubstance.uuid)) {
-                    log.trace("agent modification referenced substance UUID exists");
+                if(structuralModification.molecularFragment != null && structuralModification.molecularFragment.uuid != null
+                    && uuidExists(SubstanceReference.class, structuralModification.molecularFragment.uuid)) {
+                    log.trace("str mod ref substance exists");
                     return true;
                 }
             }
+
         }
         return false;
     }
