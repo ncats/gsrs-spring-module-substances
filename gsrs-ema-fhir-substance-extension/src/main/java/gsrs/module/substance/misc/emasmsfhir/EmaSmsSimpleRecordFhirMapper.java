@@ -1,13 +1,12 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.models.Keyword;
 import ix.ginas.models.v1.Name;
 import ix.ginas.models.v1.Substance;
 import org.hl7.fhir.r5.model.BooleanType;
 import org.hl7.fhir.r5.model.StringType;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +31,7 @@ public class EmaSmsSimpleRecordFhirMapper {
         FIELD_MAP.put("ecListNumber", "EC_List/Number");
     }
 
-    ObjectMapper mapper = new ObjectMapper();
+    JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 
     public EmaSmsSimpleRecord generateEmaSmsSimpleRecordFromSubstance(Substance substance) {
         EmaSmsSimpleRecord emaSmsSimpleRecord = new EmaSmsSimpleRecord();

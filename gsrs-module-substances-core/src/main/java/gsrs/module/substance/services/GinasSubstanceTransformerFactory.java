@@ -1,6 +1,6 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import ix.core.processing.RecordTransformFactory;
 import ix.core.processing.RecordTransformer;
 

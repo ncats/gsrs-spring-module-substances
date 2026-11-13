@@ -9,6 +9,7 @@ import ix.ginas.modelBuilders.AbstractSubstanceBuilder;
 import ix.ginas.modelBuilders.ProteinSubstanceBuilder;
 import ix.ginas.models.v1.Subunit;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -17,6 +18,7 @@ import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolvePar
 
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class ProteinSequenceExtractorActionFactory extends BaseActionFactory {
 
     private String subunitDelimiter;

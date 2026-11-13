@@ -1,6 +1,5 @@
 package gsrs.module.substance.indexers;
 
-import gov.nih.ncats.common.stream.StreamUtil;
 import gov.nih.ncats.molwitch.search.MolSearcher;
 import gov.nih.ncats.molwitch.search.MolSearcherFactory;
 import ix.core.search.text.IndexValueMaker;
@@ -16,19 +15,17 @@ import java.util.function.Consumer;
 @Slf4j
 public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
 
-    public static final String FACET_NAME_FULL ="Structure Facet";
+    public static final String FACET_NAME_FULL ="Structural Feature";
 
     private final String DEFAULT_CONFIG_DATA = "nitro_[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]€nitroso_[NX2]=[OX1]";
 
     List<SmartsIndexable> indexables = new ArrayList<>();
 
+    private String facetName = FACET_NAME_FULL;
+
     private boolean setupComplete=false;
 
     public final static String NAME_TO_VALUE_DELIM = "₠";
-
-    //private String SET_TO_SET_DELIM = "¥";
-
-    //private String VALUE_TO_VALUE_DELIM = "€";
 
     private void completeSetup(){
         log.trace("completeSetup indexables size: {}", indexables.size());
@@ -87,8 +84,8 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
                     }
                 }
                 if( foundMatchWithCurrentIdea) {
-                    log.trace("chemical matches smarts with name {}", i.getName());
-                    consumer.accept(IndexableValue.simpleFacetStringValue(FACET_NAME_FULL, i.getName()));
+                    log.trace("chemical matches smarts with name {}. Will create facet with name {}", i.getName(), facetName);
+                    consumer.accept(IndexableValue.simpleFacetStringValue(facetName, i.getName()));
 
                 }
                 log.trace("after indexing");
@@ -115,5 +112,9 @@ public class SmartsIndexValueMaker implements IndexValueMaker<Substance> {
             }
         }
         log.trace("indexables has {} items", indexables.size());
+    }
+
+    public void setFacetName(String facetName) {
+        this.facetName = facetName;
     }
 }

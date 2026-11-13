@@ -1,6 +1,5 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
 import ix.ncats.resolvers.Resolver;
@@ -9,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 import java.util.Objects;
@@ -23,7 +23,7 @@ public class StructureResolverService {
 
     private CachedSupplier<List<Resolver>> resolvers = CachedSupplier.of(
             ()-> {
-                ObjectMapper mapper = new ObjectMapper();
+                JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
                 return structureResolverServiceConfiguration.getImplementations()
                         .stream().map(c -> {
                             Resolver resolver = null;

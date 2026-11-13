@@ -1,7 +1,7 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Qualifier;
+import tools.jackson.databind.JsonNode;
 import gsrs.DefaultDataSourceConfig;
 import gsrs.controller.IdHelpers;
 import gsrs.events.AbstractEntityCreatedEvent;
@@ -32,8 +32,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,7 +63,8 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     private CodeRepository repository;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    @Qualifier("legacyJsonMapper")
+    private JsonMapper mapper;
 
     @Autowired
     private GroupService groupService;
@@ -71,10 +74,6 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
     private EntityManager entityManager;
-
-//    @Autowired
-//    private CvSearchService searchService;
-
 
     @Override
     public Class<Code> getEntityClass() {
@@ -123,7 +122,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @Override
     protected Code fromNewJson(JsonNode json) throws IOException {
-        return objectMapper.convertValue(json, Code.class);
+        return mapper.convertValue(json, Code.class);
 
     }
 
@@ -177,7 +176,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
     @Override
     protected Code fromUpdatedJson(JsonNode json) throws IOException {
         //TODO should we make any edits to remove fields?
-        return objectMapper.convertValue(json, Code.class);
+        return mapper.convertValue(json, Code.class);
     }
 
 
@@ -193,7 +192,7 @@ public class CodeEntityService extends AbstractGsrsEntityService<Code, UUID> {
 
     @Override
     protected JsonNode toJson(Code controlledVocabulary) throws IOException {
-        return objectMapper.valueToTree(controlledVocabulary);
+        return mapper.valueToTree(controlledVocabulary);
     }
 
     @Override

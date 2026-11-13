@@ -34,16 +34,20 @@ public interface SubstanceSequenceSearchService {
     class SequenceSearchRequest{
         private String q;
         private SequenceIndexer.CutoffType type;
-        private Double cutoff = 0.8D;
-        private Integer top = 10;
-        private Integer skip=0;
-        private Integer fdim = 10;
         private String field;
+        private String order;
+        @Builder.Default
+        private Double cutoff = 0.8D;
+        @Builder.Default
+        private Integer top = 10;
+        @Builder.Default
+        private Integer skip=0;
+        @Builder.Default
+        private Integer fdim = 10;
+        @Builder.Default
         private String seqType = "Protein";
 //        private double identity = 0.5D;
 //        private SequenceSearchType searchType = SequenceSearchType.GLOBAL;
-        private String order;
-       
 
         public SanitizedSequenceSearchRequest sanitize() throws IOException {
             return new SanitizedSequenceSearchRequest(this);
@@ -69,8 +73,8 @@ public interface SubstanceSequenceSearchService {
             this.type = unsanitized.type == null? SequenceIndexer.CutoffType.SUB: unsanitized.type;
             this.cutoff = sanitizeCutOff(unsanitized.cutoff, 0.8D);
             this.top = sanitizeNumber(unsanitized.top, 10);
-            this.skip = sanitizeNumber(unsanitized.top, 0);
-            this.fdim = sanitizeNumber(unsanitized.top, 10);
+            this.skip = sanitizeNumber(unsanitized.skip, 0);
+            this.fdim = sanitizeNumber(unsanitized.fdim, 10);
             this.field = unsanitized.field;
             this.seqType = unsanitized.seqType ==null? "Protein" : unsanitized.seqType;
 //            this.identity = Math.min(1, Math.max(identity, 0.5D));

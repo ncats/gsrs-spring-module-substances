@@ -54,6 +54,42 @@ cd /path/to/gsrs-spring-module-substances
 ./mvnw -pl gsrs-module-substance-example -am -Pfull-test-suite clean test
 ```
 
+### Temporary Hibernate 6 test quarantine (opt-in)
+
+Use profile `quarantine-hibernate-id` only as a temporary unblocker when the known Hibernate assigned-id test regressions are failing.
+
+- It is test-only (does not change runtime artifacts)
+- It intentionally skips a known failing subset, so do not treat it as full release confidence
+
+Windows PowerShell:
+
+```powershell
+cd C:\Users\kassahungb\IdeaProjects\gsrs-spring-module-substances
+.\mvnw.cmd -pl gsrs-module-substance-example -Pquarantine-hibernate-id test
+```
+
+With full suite profile:
+
+```powershell
+cd C:\Users\kassahungb\IdeaProjects\gsrs-spring-module-substances
+.\mvnw.cmd -pl gsrs-module-substance-example -Pfull-test-suite,quarantine-hibernate-id test
+```
+
+Unix/macOS:
+
+```bash
+cd /path/to/gsrs-spring-module-substances
+./mvnw -pl gsrs-module-substance-example -Pquarantine-hibernate-id test
+```
+
+Quick decision table:
+
+| Goal | Command profile(s) | Use when | Avoid when |
+| --- | --- | --- | --- |
+| Normal validation (preferred) | none (default) | You want full confidence and can address failing tests | Known Hibernate assigned-id regression tests are currently blocking the team |
+| Temporary unblocker | `quarantine-hibernate-id` | You need progress while the known Hibernate assigned-id tests are being fixed | Final release validation / sign-off |
+| Broad coverage + temporary unblocker | `full-test-suite,quarantine-hibernate-id` | You need wider suite signal while still bypassing the known failing subset | Final release validation / sign-off |
+
 Quick post-run summary (Unix/macOS):
 
 ```bash

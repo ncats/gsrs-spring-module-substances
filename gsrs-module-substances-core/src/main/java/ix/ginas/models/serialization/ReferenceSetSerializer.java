@@ -1,22 +1,20 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import ix.core.models.Keyword;
 import ix.ginas.models.GinasCommonSubData;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
-import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class ReferenceSetSerializer extends JsonSerializer<Set<Keyword>> {
+public class ReferenceSetSerializer extends ValueSerializer<Set<Keyword>> {
     public ReferenceSetSerializer () {}
 
-    public void serialize (Set<Keyword> list, JsonGenerator jgen,
-                           SerializerProvider provider)
-        throws IOException, JsonProcessingException {
+    @Override
+    public void serialize(Set<Keyword> list, JsonGenerator jgen, SerializationContext ctxt) throws JacksonException {
         Set<String> refs = new LinkedHashSet<String>();
         for (Keyword val : list) {
             if (GinasCommonSubData.REFERENCE.equals(val.label) || val.label==null) {
@@ -24,7 +22,7 @@ public class ReferenceSetSerializer extends JsonSerializer<Set<Keyword>> {
                 refs.add(kw.term);
             }
         }
-        provider.defaultSerializeValue(refs, jgen);
-    }    
+        ctxt.writeValue(jgen, refs);
+    }
 }
 	

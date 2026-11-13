@@ -23,7 +23,7 @@ public interface NameRepository extends GsrsVersionedRepository<Name, UUID> {
     List<Name> findByNameIgnoreCase(String name);
 
     //hibernate query will not convert uuid into a string so we have to concatenate it with empty string for this to work.
-    @Query("select s from Name s where CONCAT(s.uuid, '') like ?1%")
+    @Query("select s from Name s where SUBSTRING(s.uuid, 1, 8) = ?1")
     List<Name> findByUuidStartingWith(String partialUUID);
 
     @Query("select n.uuid from Name n")

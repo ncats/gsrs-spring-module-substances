@@ -150,7 +150,7 @@ Exception Details:
             try {
                 r.amount = EntityUtils.EntityWrapper.of(other.amount).getClone();
                 r.amount.uuid = null;
-            } catch (JsonProcessingException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }

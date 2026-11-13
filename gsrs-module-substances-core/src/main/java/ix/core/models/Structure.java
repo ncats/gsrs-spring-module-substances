@@ -1,12 +1,6 @@
 package ix.core.models;
 
 import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import gov.nih.ncats.common.util.TimeUtil;
 import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
@@ -18,18 +12,28 @@ import ix.core.chem.Chem;
 import ix.core.chem.ChemCleaner;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.models.converters.StereoConverter;
+import ix.ginas.models.converters.TrimmedUUIDJavaType;
+import ix.ginas.models.generators.NullUUIDGeneratedValue;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.GenericGenerator;
-import org.hibernate.annotations.Type;
+import org.hibernate.annotations.JavaType;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.databind.*;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.json.JsonMapper;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-//@MappedSuperclass
 @Entity
 @Inheritance
 @DiscriminatorValue("DEF")
@@ -39,10 +43,10 @@ public class Structure extends BaseModel {
 
 
     @Id
-    @GenericGenerator(name = "NullUUIDGenerator", strategy = "ix.ginas.models.generators.NullUUIDGenerator")
-    @GeneratedValue(generator = "NullUUIDGenerator")
-    //maintain backwards compatibility with old GSRS store it as varchar(40) by basic hibernate will store uuids as binary
-    @Type(type = "uuid-char" )
+    @NullUUIDGeneratedValue
+    @GeneratedValue
+    // Maintain backwards compatibility with legacy GSRS varchar UUID storage.
+    @JavaType(TrimmedUUIDJavaType.class)
     @Column(length =40, updatable = false)
     public UUID id;
 
@@ -70,25 +74,32 @@ public class Structure extends BaseModel {
     public static final String H_InChI_Key = "InChI_Key";
     public static final String H_EXACT_HASH = "EXACT_HASH";
     public static final String H_STEREO_INSENSITIVE_HASH = "STEREO_INSENSITIVE_HASH";
-    public static class StereoSerializer extends JsonSerializer<Stereo> {
+
+    public static class StereoSerializer extends ValueSerializer<Stereo> {
     	public StereoSerializer(){
     		super();
     	}
+
         @Override
-        public void serialize(Stereo value, JsonGenerator jgen, SerializerProvider provider)
-          throws IOException, JsonProcessingException {
+        public void serialize(Stereo value, JsonGenerator jgen, SerializationContext ctxt) throws JacksonException {
             jgen.writeString(value.stereoType);
         }
+
     }
-    public static class StereoDeserializer extends JsonDeserializer<Stereo> {
+
+    public static class StereoDeserializer extends ValueDeserializer<Stereo> {
+        @Transient
+        private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+                .build();
     	 public StereoDeserializer(){
     		 super();
     	 }
+
         @Override
-        public Stereo deserialize(JsonParser jp, DeserializationContext ctxt)
-          throws IOException, JsonProcessingException {
-            JsonNode node = jp.getCodec().readTree(jp);
-            return new Stereo(node.asText());
+        public Stereo deserialize(JsonParser jp, DeserializationContext ctxt) {
+            JsonNode node = mapper.readTree(jp);
+            return new Stereo(node.asString());
         }
     }
    
@@ -174,12 +185,12 @@ public class Structure extends BaseModel {
     @Column(length = 128)
     public String digest; // digest checksum of the original structure
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String molfile;				
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     @Indexable(indexed = false)
     public String smiles;
@@ -187,32 +198,16 @@ public class Structure extends BaseModel {
     @Indexable(name = "Molecular Formula", facet = true)
     public String formula;
 
-//    @JsonProperty("_formulaHTML")
-//    public String getHtmlFormula() {
-//        if (formula == null) {
-//            return "";
-//        }
-//        String HTMLFormula = formula.replaceAll("([a-zA-Z])([0-9]+)", "$1<sub>$2</sub>");
-//        if (charge != null && charge != 0 && !HTMLFormula.contains(".")) {
-//            String sCharge = Integer.toString(charge);
-//            String sSign = "+";
-//            if (charge < 0) {
-//                sCharge = sCharge.substring(1);
-//                sSign = "-";
-//            }
-//            if ("1".equals(sCharge)) {
-//                sCharge = "";
-//            }
-//            HTMLFormula = HTMLFormula + "<sup>" + sCharge + sSign + "</sup>";
-//        }
-//        return HTMLFormula;
-//    }
-
     public void updateStructureFields(Structure other){
         if(other !=null) {
-            this.properties.clear();
-
-            this.properties = new ArrayList(other.properties); //add properties
+            if (this.properties == null) {
+                this.properties = new ArrayList<Value>();
+            } else {
+                this.properties.clear();
+            }
+            if (other.properties != null) {
+                this.properties.addAll(other.properties);
+            }
             this.ezCenters = other.ezCenters;
             this.definedStereo = other.definedStereo;
             this.charge = other.charge;
@@ -253,7 +248,7 @@ public class Structure extends BaseModel {
     @Enumerated(EnumType.ORDINAL)
     public NYU atropisomerism = NYU.No;
     
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Basic(fetch = FetchType.EAGER)
     public String stereoComments;
     
@@ -278,7 +273,7 @@ public class Structure extends BaseModel {
             @Index(name="property_structure_id_index", columnList="ix_core_structure_id"),
             @Index(name="property_value_id_index", columnList="ix_core_value_id")}
     )
-    public List<Value> properties = new ArrayList<Value>();
+    public List<Value> properties = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL)
     @JsonView(BeanViews.JsonDiff.class)
@@ -286,10 +281,7 @@ public class Structure extends BaseModel {
     @JoinTable(name="ix_core_structure_link", inverseJoinColumns = {
             @JoinColumn(name="ix_core_xref_id")
     })
-    public List<XRef> links = new ArrayList<XRef>();
-
-    @Transient
-    private static ObjectMapper mapper = new ObjectMapper();
+    public List<XRef> links = new ArrayList<>();
 
     public Integer count = 1; // moiety count?
     public Structure() {}
@@ -316,7 +308,6 @@ public class Structure extends BaseModel {
         if(atropisomerism==null){
             atropisomerism= NYU.No;
         }
-//        System.out.println("before = "+ this.molfile);
         //GSRS-1515 clean up structure
         if(this.molfile !=null && !this.molfile.trim().isEmpty()){
             try {
@@ -326,7 +317,6 @@ public class Structure extends BaseModel {
                 //don't update it
             }
         }
-//        System.out.println("after = "+ this.molfile);
     }
 
 
@@ -377,21 +367,6 @@ public class Structure extends BaseModel {
 		return id.toString();
 	}
 
-    //TODO katzelda Feb 2021 : this is done elsewhere in the springboot
-//	@Override
-//	public void forceUpdate() {
-//		lastEdited=new Date();
-//		super.save();
-//	}
-//
-//	@Override
-//	public boolean tryUpdate() {
-//		long ov=version;
-//		super.save();
-//		return ov!=version;
-//	}
-
-
     public void setId(UUID newid){
         if(this.id==null){
             this.id=newid;
@@ -407,28 +382,6 @@ public class Structure extends BaseModel {
      * or not easily accessible due to some transient state.
      * @return
      */
-    /*
-    @JsonIgnore
-    public Structure getDisplayStructure(){
-    	Structure sfetch = StructureFactory.getStructure(this.id);
-    	
-    	if(sfetch==null || !sfetch.version.equals(this.version)){
-    		try{
-	    		Structure s= EntityWrapper.of(this).getClone();
-	    		s.id = Util.sha1UUID(s.molfile+":" + s.digest);
-	    		StructureFactory.saveTempStructure(s);
-	    		return s;
-    		}catch(Exception e){
-    			log.error("Error saving display structure" , e);
-    			StructureFactory.saveTempStructure(this);
-    			return this;
-    		}
-    	}
-    	return this;
-    	
-    }
-    */
-
     @JsonIgnore
     @Transient
     public Chemical toChemical() {
@@ -458,7 +411,6 @@ public class Structure extends BaseModel {
     	}
     }
 
-
     @JsonIgnore
     @Transient
     public String getInChIKeyAndThrow() throws Exception{
@@ -474,11 +426,6 @@ public class Structure extends BaseModel {
         log.trace("in getInChIKeysAndThrow(), stereoChemistry: {}, opticalActivity: {}", this.stereoChemistry, this.opticalActivity);
         try {
 
-//        if( this.stereoChemistry == null || !(this.stereoChemistry.toString().equalsIgnoreCase(Stereo.EPIMERIC.toString())
-//            || this.stereoChemistry.toString().equalsIgnoreCase(Stereo.RACEMIC.toString() ))) {
-//            //handle non-epimers
-//            return Collections.singletonList(getInChIKey());
-//        }
             if( this.opticalActivity != Optical.PLUS_MINUS || this.definedStereo.intValue() == 0) {
                 return Collections.singletonList(getInChIKey());
             }

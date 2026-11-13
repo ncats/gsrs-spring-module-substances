@@ -21,6 +21,7 @@ import java.util.*;
 @WithMockUser(username = "admin", roles = "Admin")
 public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
 
+    private final String CONFIDENTIAL_CODE_SYSTEM ="confidential application";
     @Test
     /*
     Substance has 2 names; one 'locked' one open.
@@ -226,7 +227,7 @@ public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
 
         Code lockedCode = new Code();
         lockedCode.code="999";
-        lockedCode.codeSystem="confidential application";
+        lockedCode.codeSystem=CONFIDENTIAL_CODE_SYSTEM;
         lockedCode.type="PRIMARY";
         lockedCode.setAccess(Collections.singleton(new Group("confidential")));
         substanceBuilder.addCode(lockedCode);
@@ -239,6 +240,123 @@ public class ScrubberTestsSpecific extends AbstractSubstanceJpaEntityTest {
         Optional<Substance> cleaned = scrubber.scrub(testConcept);
         Assertions.assertEquals(1, cleaned.get().codes.size());
         Assertions.assertEquals(openCode.code, cleaned.get().codes.get(0).code);
+    }
+
+    @Test
+    /*
+    Substance has 2 codes; one of CodeSystem EINACS the other of "confidential application"
+    Expect to remove only the "confidential application" code
+     */
+    public void testRemoveSpecificCode(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Name openName = new Name();
+        openName.name="Ouvert";
+        openName.languages.add(new Keyword("fr"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+
+        Code openCode = new Code();
+        openCode.code="1";
+        openCode.codeSystem="EINECS";
+        openCode.type="PRIMARY";
+        substanceBuilder.addCode(openCode);
+
+        Code lockedCode = new Code();
+        lockedCode.code="999";
+        lockedCode.codeSystem="confidential application";
+        lockedCode.type="PRIMARY";
+        substanceBuilder.addCode(lockedCode);
+        Substance testConcept = substanceBuilder.build();
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveCodesBySystem(true);
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList(CONFIDENTIAL_CODE_SYSTEM));
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Assertions.assertEquals(1, cleaned.get().codes.size());
+        Assertions.assertEquals(openCode.code, cleaned.get().codes.get(0).code);
+    }
+
+    @Test
+    /*
+    Substance has 2 codes; one of CodeSystem EINACS the other of "confidential application"
+    Expect to remove only the "confidential application" code
+     */
+    public void testRemoveSpecificCodeThatDoesNotExist(){
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Name openName = new Name();
+        openName.name="Ouvert";
+        openName.languages.add(new Keyword("fr"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+
+        Code openCode = new Code();
+        openCode.code="1";
+        openCode.codeSystem="EINECS";
+        openCode.type="PRIMARY";
+        substanceBuilder.addCode(openCode);
+
+        Code lockedCode = new Code();
+        lockedCode.code="999";
+        lockedCode.codeSystem="almost confidential application";
+        lockedCode.type="PRIMARY";
+        substanceBuilder.addCode(lockedCode);
+        Substance testConcept = substanceBuilder.build();
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveCodesBySystem(true);
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList(CONFIDENTIAL_CODE_SYSTEM));
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Assertions.assertEquals(2, cleaned.get().codes.size());
+    }
+
+    @Test
+    /*
+    Input substance contains no codes; output will contain no codes
+     */
+    public void testRemoveNoCode(){
+
+        SubstanceBuilder substanceBuilder = new SubstanceBuilder();
+        Reference publicReference = new Reference();
+        publicReference.publicDomain=true;
+        publicReference.citation="something public";
+        publicReference.docType="OTHER";
+        publicReference.makePublicReleaseReference();
+
+        Name openName = new Name();
+        openName.name="Open";
+        openName.languages.add(new Keyword("en"));
+        openName.addReference(publicReference);
+        substanceBuilder.addName(openName);
+        substanceBuilder.addReference(publicReference);
+
+        Substance testConcept = substanceBuilder.build();
+
+        BasicSubstanceScrubberParameters scrubberSettings = new BasicSubstanceScrubberParameters();
+        scrubberSettings.setRemoveCodesBySystem(true);
+        scrubberSettings.setRemoveCodesBySystemCodeSystemsToRemove(Collections.singletonList(CONFIDENTIAL_CODE_SYSTEM));
+
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(scrubberSettings);
+        Optional<Substance> cleaned = scrubber.scrub(testConcept);
+        Assertions.assertEquals(0, cleaned.get().codes.size());
     }
 
     @Test

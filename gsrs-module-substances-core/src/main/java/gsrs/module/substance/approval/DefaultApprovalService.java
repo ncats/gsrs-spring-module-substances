@@ -1,12 +1,10 @@
 package gsrs.module.substance.approval;
 
 import gov.nih.ncats.common.util.TimeUtil;
-import gsrs.controller.GetGsrsRestApiMapping;
 import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.repository.PrincipalRepository;
 import gsrs.security.GsrsSecurityUtils;
 import gsrs.security.canApproveRecords;
-import gsrs.security.hasApproverRole;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.models.v1.SubstanceReference;
 import ix.ginas.utils.SubstanceApprovalIdGenerator;

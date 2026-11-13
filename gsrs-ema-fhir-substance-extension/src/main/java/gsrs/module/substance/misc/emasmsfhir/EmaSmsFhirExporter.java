@@ -1,16 +1,11 @@
 package gsrs.module.substance.misc.emasmsfhir;
 
 import ca.uhn.fhir.context.FhirContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import ix.core.controllers.EntityFactory;
+import tools.jackson.databind.JsonNode;
 import ix.ginas.exporters.Exporter;
 import ix.ginas.exporters.ExporterFactory;
-import ix.ginas.models.v1.Code;
 import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 
 import java.io.BufferedWriter;
 import java.io.IOException;

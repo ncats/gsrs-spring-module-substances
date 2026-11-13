@@ -1,6 +1,6 @@
 package gsrs.module.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.service.GsrsEntityService;
 import ix.ginas.models.v1.Substance;
 import org.springframework.data.domain.Page;

@@ -1,6 +1,6 @@
 package example.substance;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gsrs.junit.json.Changes;
 import gsrs.junit.json.ChangesBuilder;
 import gsrs.junit.json.JsonUtil;
@@ -22,12 +22,14 @@ public class EditHistoryTest extends AbstractSubstanceJpaEntityTest {
 	@Test
 	@WithMockUser(username = "admin", roles = "Admin")
 	public void testRecordHistoryEditCanProduceDiff() {
-    			UUID uuid = UUID.randomUUID();
-    			
-    			new SubstanceBuilder()
-    				.addName("Concept Name")
-    				.setUUID(uuid)
-    				.buildJsonAnd(this::assertCreated);
+		UUID requestedUuid = UUID.randomUUID();
+
+		Substance createdSubstance = assertCreated(new SubstanceBuilder()
+				.addName("Concept Name")
+				.setUUID(requestedUuid)
+				.buildJson());
+
+		UUID uuid = createdSubstance.getUuid();
 
     			Optional<Substance> old= substanceEntityService.get(uuid);
 

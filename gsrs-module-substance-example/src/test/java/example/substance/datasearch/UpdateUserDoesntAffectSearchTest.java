@@ -32,6 +32,7 @@ import static org.junit.Assert.assertEquals;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @WithMockUser(username = "admin", roles = "Admin")
 @GsrsFullStackTest(dirtyMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@Tag("fullstack")
 public class UpdateUserDoesntAffectSearchTest extends AbstractSubstanceJpaFullStackEntityTest {
 
     @Autowired
