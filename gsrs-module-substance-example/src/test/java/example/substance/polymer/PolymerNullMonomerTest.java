@@ -137,6 +137,5 @@ public class PolymerNullMonomerTest {
             e.printStackTrace();
         }
         Assertions.assertNotNull(refs);
-
     }
 }
