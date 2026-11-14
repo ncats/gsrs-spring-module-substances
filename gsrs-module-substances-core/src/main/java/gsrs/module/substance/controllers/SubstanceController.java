@@ -2234,7 +2234,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(parameters);
         Substance substanceWithReassignedUuids = scrubber.reassignUuids(substance);
 
-        if(queryParameters.get("keepStructureIds") == null || !queryParameters.get("keepStructureIds").equalsIgnoreCase("FALSE") ) {
+        if(queryParameters.get("keepNumericIds") == null || !queryParameters.get("keepNumericIds").equalsIgnoreCase("FALSE") ) {
             JsonNode copy = EntityFactory.EntityMapper
                 .FULL_ENTITY_MAPPER()
                 .valueToTree(substanceWithReassignedUuids);
