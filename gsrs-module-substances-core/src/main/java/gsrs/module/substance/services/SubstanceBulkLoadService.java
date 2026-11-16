@@ -312,7 +312,7 @@ public class SubstanceBulkLoadService {
             jobSchemaInitializer.ensureCompatibility();
         }
         if (configuration.isIndexNameLookups()) {
-            substanceNameLookup.ensureIndex();
+            substanceNameLookup.initialize();
         }
         // first see if this payload has already processed..
         final PayloadProcessor pp = new PayloadProcessor(parameters.getPayload());

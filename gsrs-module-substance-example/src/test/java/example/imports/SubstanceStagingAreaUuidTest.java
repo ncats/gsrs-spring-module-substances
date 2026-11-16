@@ -3,7 +3,6 @@ package example.imports;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.dataexchange.SubstanceStagingAreaEntityService;
 import gsrs.springUtils.AutowireHelper;
-import gsrs.validator.ValidatorConfig;
 import ix.core.validator.ValidationResponse;
 import ix.core.validator.Validator;
 import ix.core.validator.ValidatorCallback;
@@ -38,7 +37,8 @@ class SubstanceStagingAreaUuidTest {
         ReflectionTestUtils.setField(service, "validatorFactory", CachedSupplier.of(() -> factory));
         ReflectionTestUtils.setField(service, "initializedValidator", true);
         when(factory.createValidatorFor(any(Substance.class), isNull(),
-                eq(ValidatorConfig.METHOD_TYPE.BATCH), any(ValidatorCategory.class))).thenReturn(validator);
+                eq(ValidatorFactory.ValidationContext.stagingWithBatchBehavior()),
+                any(ValidatorCategory.class))).thenReturn(validator);
         GsrsProcessingStrategyFactory strategies = mock(GsrsProcessingStrategyFactory.class);
         when(strategies.createNewStrategy(anyString())).thenReturn(mock(GsrsProcessingStrategy.class));
         ReflectionTestUtils.setField(service, "gsrsProcessingStrategyFactory", strategies);
@@ -87,7 +87,8 @@ class SubstanceStagingAreaUuidTest {
         substance.uuid = incomingUuid;
         IllegalStateException failure = new IllegalStateException("Validator creation failed");
         when(factory.createValidatorFor(any(Substance.class), isNull(),
-                eq(ValidatorConfig.METHOD_TYPE.BATCH), any(ValidatorCategory.class))).thenThrow(failure);
+                eq(ValidatorFactory.ValidationContext.stagingWithBatchBehavior()),
+                any(ValidatorCategory.class))).thenThrow(failure);
 
         assertSame(failure, assertThrows(IllegalStateException.class, () -> service.validate(substance)));
         assertEquals(incomingUuid, substance.uuid);

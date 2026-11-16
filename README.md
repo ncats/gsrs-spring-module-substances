@@ -25,36 +25,37 @@ having to make people track down those repositories, we provide sample jars that
 ## Bulk import name-lookup indexing
 
 Case-insensitive duplicate-name validation uses `UPPER(name)`. A plain index on
-`name` does not generally accelerate that query, so validation can get slower as
-the names table grows. Before a bulk import, the loader prepares an indexed,
-database-generated `name_upper_prefix` column on `ix_ginas_name`. Searches use its
-first 128 uppercase characters to narrow candidates, then compare the full name
-with the original `UPPER(name)` predicate. Long names and prefix collisions still
-receive a full comparison; duplicate checking is not disabled.
+`name` does not generally accelerate that expression. Oracle and PostgreSQL can
+use a function-based index on `UPPER(name)` for `ix_ginas_name`; the lookup still
+compares the complete name.
 
-`ix.ginas.batch.indexNameLookups=true` is the default. The first import requires
-`ALTER TABLE` and `CREATE INDEX` privileges and may pause while the database builds
-the column/index for existing rows. Preparation happens before worker transactions
-start. Later imports reuse the schema, including after restarting the application.
-Generated columns remain current when names are inserted or edited.
+`ix.ginas.batch.indexNameLookups=true` is the default. The application only
+checks for the index before a bulk import; it does not create or alter database
+objects for this lookup. After approval, a DBA can review and run the applicable
+script in the substance schema:
 
-For DBA-managed schemas, provision the column using the appropriate definition:
+- Oracle: `gsrs-module-substances-core/src/main/resources/db/manual-migrations/substance-name-upper-oracle.sql`
+- PostgreSQL: `gsrs-module-substances-core/src/main/resources/db/manual-migrations/substance-name-upper-postgresql.sql`
 
-| Database | Column definition in `ALTER TABLE ix_ginas_name ADD ...` |
-| --- | --- |
-| PostgreSQL 12+ | `COLUMN name_upper_prefix VARCHAR(128) GENERATED ALWAYS AS (SUBSTRING(UPPER(name), 1, 128)) STORED` |
-| Oracle | `(name_upper_prefix GENERATED ALWAYS AS (SUBSTR(UPPER(name), 1, 128)) VIRTUAL)` |
-| MySQL 5.7+ / MariaDB 10.2+ | `COLUMN name_upper_prefix VARCHAR(128) GENERATED ALWAYS AS (SUBSTRING(UPPER(name), 1, 128)) STORED` |
-| SQL Server | `name_upper_prefix AS (CAST(SUBSTRING(UPPER(name), 1, 128) AS NVARCHAR(128))) PERSISTED` |
-| H2 | `COLUMN name_upper_prefix VARCHAR(128) GENERATED ALWAYS AS (SUBSTRING(UPPER(name), 1, 128))` |
+Scripts create `ix_ginas_name_upper` and should be run once after checking for
+existing indexes. Plan index creation around the size and locking requirements
+of the production table. If the named index is absent, the import logs a warning
+and uses the original lookup; initialization is retried on a later import.
 
-Then create `ix_ginas_name_upper_prefix` on `ix_ginas_name(name_upper_prefix)`.
-Use a maintenance window when preparing large production tables. Schema errors
-stop submission explicitly instead of silently falling back to a slow query.
+On other databases, including MySQL and MariaDB, this optimization is not enabled;
+the original case-insensitive lookup is used and this feature does not alter the
+schema. If a prior version created `name_upper_prefix`, this version no longer
+uses or changes that column or its index; a DBA may remove those legacy objects
+separately if they are no longer needed.
 
 To retain the original lookup, set `ix.ginas.batch.indexNameLookups=false` and
-restart. This does not remove the generated column or index. Loading-thread,
-validation, audit, and indexing-deferral settings are unchanged.
+restart. This does not remove an existing function-based index, and the database
+optimizer may still use it for the original query.
+
+This change only removes DDL from name-lookup initialization; it does not change
+Hibernate's `DB_DDL_AUTO_SUBSTANCES=update` setting or other bulk-import schema
+compatibility initializers. Those may make independent schema changes and need
+separate review if all database DDL requires approval.
 
 ## Bulk upload database limits
 

@@ -32,7 +32,7 @@ public class SubstanceBulkLoadServiceConfiguration {
     /** Minimum milliseconds between per-record progress saves of the ProcessingJob row; 0 saves after every record. */
     @Value("${ix.ginas.batch.progressSaveIntervalMs:2000}")
     private long progressSaveIntervalMs=2000;
-    /** Prepare an indexed case-insensitive name lookup before opening bulk-load transactions. */
+    /** Enable Oracle/PostgreSQL name lookup when its administrator-provisioned index exists. */
     @Value("${ix.ginas.batch.indexNameLookups:true}")
     private boolean indexNameLookups=true;
     /**

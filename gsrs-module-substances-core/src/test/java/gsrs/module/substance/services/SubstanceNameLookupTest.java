@@ -11,19 +11,23 @@ import org.hibernate.cfg.Configuration;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class SubstanceNameLookupTest {
     @Test
-    void lookupUsesAnIndexAndPreservesFullCaseInsensitiveMatchingAsTheTableGrows() throws Exception {
+    void unsupportedDatabaseUsesTheOriginalLookupWithoutChangingTheTable() throws Exception {
         JdbcDataSource source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1");
         try (Connection connection = source.getConnection()) {
@@ -40,14 +44,15 @@ class SubstanceNameLookupTest {
 
             SubstanceNameLookup lookup = new SubstanceNameLookup(source);
             assertFalse(lookup.isReady());
-            lookup.ensureIndex();
-            lookup.ensureIndex();
-            assertTrue(lookup.isReady());
+            lookup.initialize();
+            lookup.initialize();
+            assertFalse(lookup.isReady());
 
             assertEquals(List.of(owner), matches(connection, "mixed CASE"));
             assertEquals(List.of(owner), matches(connection, longName.toUpperCase()));
             assertTrue(matches(connection, "missing name").isEmpty());
-            assertIndexUsed(connection, "mixed case");
+            assertFalse(hasColumn(connection, "name_upper_prefix"));
+            assertFalse(hasIndex(connection, SubstanceNameLookup.INDEX));
 
             try (SessionFactory factory = new Configuration()
                     .addAnnotatedClass(NameLookupRow.class)
@@ -56,6 +61,7 @@ class SubstanceNameLookupTest {
                     .buildSessionFactory();
                  EntityManager manager = factory.createEntityManager()) {
                 ReflectionTestUtils.setField(lookup, "entityManager", manager);
+                ReflectionTestUtils.setField(lookup, "lookupSql", SubstanceNameLookup.lookupSql());
                 assertEquals(List.of(owner), lookup.findOwnerIds("mixed CASE"));
                 manager.getTransaction().begin();
                 UUID newOwner = UUID.randomUUID();
@@ -73,37 +79,73 @@ class SubstanceNameLookupTest {
             }
             assertTrue(matches(connection, "mixed case").isEmpty());
             assertEquals(List.of(owner), matches(connection, "RENAMED"));
-            assertIndexUsed(connection, "renamed");
 
             SubstanceNameLookup afterRestart = new SubstanceNameLookup(source);
-            afterRestart.ensureIndex();
-            assertTrue(afterRestart.isReady());
-            try (Statement statement = connection.createStatement()) {
-                statement.execute("DROP ALL OBJECTS");
+            afterRestart.initialize();
+            assertFalse(afterRestart.isReady());
+            assertFalse(hasColumn(connection, "name_upper_prefix"));
+            assertFalse(hasIndex(connection, SubstanceNameLookup.INDEX));
+        }
+    }
+
+    @Test
+    void functionBasedIndexIsLimitedToOracleAndPostgreSQL() {
+        for (String product : List.of("PostgreSQL", "Oracle")) {
+            assertTrue(SubstanceNameLookup.supportsIndex(product), product);
+            assertTrue(SubstanceNameLookup.lookupSql().contains("UPPER(name) = UPPER(?1)"), product);
+        }
+        for (String product : List.of("MySQL", "MariaDB", "Microsoft SQL Server", "H2", "unsupported")) {
+            assertFalse(SubstanceNameLookup.supportsIndex(product), product);
+        }
+    }
+
+    @Test
+    void supportedDatabasesInspectIndexWithoutExecutingDdl() throws Exception {
+        for (String product : List.of("Oracle", "PostgreSQL")) {
+            for (boolean indexExists : List.of(false, true)) {
+                DataSource source = mock(DataSource.class);
+                Connection connection = mock(Connection.class);
+                DatabaseMetaData metadata = mock(DatabaseMetaData.class);
+                ResultSet tables = mock(ResultSet.class);
+                ResultSet indexes = mock(ResultSet.class);
+                when(source.getConnection()).thenReturn(connection);
+                when(connection.getMetaData()).thenReturn(metadata);
+                when(metadata.getDatabaseProductName()).thenReturn(product);
+                when(metadata.getTables(null, null, SubstanceNameLookup.TABLE, new String[]{"TABLE"}))
+                        .thenReturn(tables);
+                when(tables.next()).thenReturn(true, false);
+                when(tables.getString("TABLE_NAME")).thenReturn(SubstanceNameLookup.TABLE);
+                when(metadata.getIndexInfo(null, null, SubstanceNameLookup.TABLE, false, false))
+                        .thenReturn(indexes);
+                when(indexes.next()).thenReturn(indexExists, false);
+                when(indexes.getString("INDEX_NAME")).thenReturn(SubstanceNameLookup.INDEX);
+
+                SubstanceNameLookup lookup = new SubstanceNameLookup(source);
+                lookup.initialize();
+
+                assertEquals(indexExists, lookup.isReady(), product);
+                verify(connection, never()).createStatement();
+                verify(connection, never()).prepareStatement(anyString());
+                verify(connection, never()).commit();
             }
         }
     }
 
     @Test
-    void generatedColumnSyntaxCoversSupportedDatabases() {
-        for (String product : List.of("PostgreSQL", "Oracle", "MySQL", "MariaDB", "Microsoft SQL Server", "H2")) {
-            String ddl = SubstanceNameLookup.columnDdl(product);
-            assertNotNull(ddl, product);
-            assertTrue(ddl.contains(SubstanceNameLookup.COLUMN), product);
-            assertTrue(SubstanceNameLookup.lookupSql(product).contains("UPPER(name) = UPPER(?2)"), product);
-        }
-        assertTrue(SubstanceNameLookup.columnDdl("Oracle").contains("SUBSTR(UPPER(name), 1, 128)"));
-        assertTrue(SubstanceNameLookup.columnDdl("Microsoft SQL Server").endsWith("PERSISTED"));
-        assertTrue(SubstanceNameLookup.columnDdl("MySQL").endsWith("STORED"));
-        assertNull(SubstanceNameLookup.columnDdl("unsupported"));
+    void metadataErrorsAreReported() throws Exception {
+        DataSource source = mock(DataSource.class);
+        when(source.getConnection()).thenThrow(new SQLException("connection unavailable"));
+        SubstanceNameLookup lookup = new SubstanceNameLookup(source);
+        assertThrows(IllegalStateException.class, lookup::initialize);
+        assertFalse(lookup.isReady());
     }
 
     @Test
-    void schemaErrorsAreNotHidden() throws Exception {
+    void unsupportedDatabaseLeavesLookupUninitialized() throws Exception {
         JdbcDataSource source = new JdbcDataSource();
         source.setURL("jdbc:h2:mem:" + UUID.randomUUID());
         SubstanceNameLookup lookup = new SubstanceNameLookup(source);
-        assertThrows(IllegalStateException.class, lookup::ensureIndex);
+        assertDoesNotThrow(lookup::initialize);
         assertFalse(lookup.isReady());
         assertThrows(IllegalStateException.class, () -> lookup.findOwnerIds("test"));
     }
@@ -118,10 +160,9 @@ class SubstanceNameLookupTest {
     }
 
     private static List<UUID> matches(Connection connection, String name) throws Exception {
-        String sql = SubstanceNameLookup.lookupSql("H2").replace("?1", "?").replace("?2", "?");
+        String sql = SubstanceNameLookup.lookupSql().replace("?1", "?");
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             statement.setString(1, name);
-            statement.setString(2, name);
             List<UUID> matches = new ArrayList<>();
             try (ResultSet rows = statement.executeQuery()) {
                 while (rows.next()) {
@@ -132,18 +173,27 @@ class SubstanceNameLookupTest {
         }
     }
 
-    private static void assertIndexUsed(Connection connection, String name) throws Exception {
-        String sql = SubstanceNameLookup.lookupSql("H2").replace("?1", "?").replace("?2", "?");
-        try (PreparedStatement statement = connection.prepareStatement("EXPLAIN " + sql)) {
-            statement.setString(1, name);
-            statement.setString(2, name);
-            try (ResultSet rows = statement.executeQuery()) {
-                assertTrue(rows.next());
-                String plan = rows.getString(1);
-                assertTrue(plan.toLowerCase().contains(SubstanceNameLookup.INDEX), plan);
+    private static boolean hasColumn(Connection connection, String columnName) throws Exception {
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null, "IX_GINAS_NAME", null)) {
+            while (columns.next()) {
+                if (columnName.equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
+                    return true;
+                }
             }
         }
+        return false;
+    }
 
+    private static boolean hasIndex(Connection connection, String indexName) throws Exception {
+        try (ResultSet indexes = connection.getMetaData()
+                .getIndexInfo(null, null, "IX_GINAS_NAME", false, false)) {
+            while (indexes.next()) {
+                if (indexName.equalsIgnoreCase(indexes.getString("INDEX_NAME"))) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     @Entity
