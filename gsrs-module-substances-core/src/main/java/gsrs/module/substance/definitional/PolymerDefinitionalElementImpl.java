@@ -42,9 +42,8 @@ public class PolymerDefinitionalElementImpl implements DefinitionalElementImplem
         Polymer polymer = polymerSubstance.polymer;
         if (polymer != null) {
 
-
             for (Material monomer : polymerSubstance.polymer.monomers) {
-                if (monomer.monomerSubstance != null) {
+                if (monomer.monomerSubstance != null && monomer.defining) {
                     DefinitionalElement monomerElement = DefinitionalElement.of("polymer.monomer.monomerSubstance.refuuid",
                             monomer.monomerSubstance.refuuid, 1);
                     consumer.accept(monomerElement);
