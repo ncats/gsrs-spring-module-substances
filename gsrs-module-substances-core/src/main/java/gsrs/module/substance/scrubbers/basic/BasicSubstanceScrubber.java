@@ -398,7 +398,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
        	return Optional.ofNullable(starting);
     }
     
-    private Substance scrubApprovalId(Substance substance) {
+    public Substance scrubApprovalId(Substance substance) {
         String approvalId = substance.getApprovalID();
         log.trace("in scrubApprovalId, approvalId: {}", approvalId);
         if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCleanupApprovalIdCodeSystem()!= null

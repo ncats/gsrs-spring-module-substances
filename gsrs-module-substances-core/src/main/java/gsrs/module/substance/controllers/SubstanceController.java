@@ -2231,10 +2231,16 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                                                @RequestParam Map<String, String> queryParameters) {
         Substance substance = JsonSubstanceFactory.makeSubstance(substanceJson);
         BasicSubstanceScrubberParameters parameters = new BasicSubstanceScrubberParameters();
+        parameters.setApprovalIdCleanupRemoveApprovalId(true);
         BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(parameters);
         Substance substanceWithReassignedUuids = scrubber.reassignUuids(substance);
 
-        if(queryParameters.get("keepNumericIds") == null || !queryParameters.get("keepNumericIds").equalsIgnoreCase("FALSE") ) {
+        if(queryParameters.get("keepApprovalID") == null || queryParameters.get("keepApprovalID").equalsIgnoreCase("FALSE")) {
+            substanceWithReassignedUuids = scrubber.scrubApprovalId(substanceWithReassignedUuids);
+            log.trace("scrubbed out approval ID");
+        }
+
+        if(queryParameters.get("keepNumericIds") == null || queryParameters.get("keepNumericIds").equalsIgnoreCase("FALSE") ) {
             JsonNode copy = EntityFactory.EntityMapper
                 .FULL_ENTITY_MAPPER()
                 .valueToTree(substanceWithReassignedUuids);
