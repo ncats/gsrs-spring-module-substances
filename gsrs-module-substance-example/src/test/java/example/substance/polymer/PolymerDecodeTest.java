@@ -3,7 +3,7 @@ package example.substance.polymer;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.chem.PolymerDecode;
 
-
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@Slf4j
 class PolymerDecodeTest {
 
     @Test
@@ -51,13 +52,12 @@ class PolymerDecodeTest {
         assertEquals(Arrays.asList(0), map.get("GARBAGE").get(0).amap);
         assertEquals(Arrays.asList(2), map.get("END_GROUP").get(0).amap);
 
-        System.out.println("number of structural units = " + srus.size());
+        log.trace("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
-            System.out.println(unit.amap);
-            System.out.println(unit.type);
+            log.trace(unit.type);
             Chemical chem = Chemical.parseMol(unit.structure);
 
-            System.out.println(chem.getMass());
+            log.trace("chem.getMass: {}", chem.getMass());
         }
     }
 
@@ -70,13 +70,13 @@ class PolymerDecodeTest {
         Set<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol));
         assertFalse( srus.isEmpty());
 
-        System.out.println("number of structural units = " + srus.size());
+        log.trace("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
-            System.out.println(unit.amap);
-            System.out.println(unit.type);
+            log.trace("unit.amap: {}", unit.amap);
+            log.trace(unit.type);
             Chemical chem = Chemical.parseMol(unit.structure);
 
-            System.out.println(chem.getMass());
+            log.trace("chem.getMass(): {}", chem.getMass());
         }
     }
 
@@ -90,7 +90,7 @@ class PolymerDecodeTest {
         assertFalse( srus.isEmpty());
 
 
-        System.out.println("number of structural units = " + srus.size());
+        log.trace("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
             System.out.printf("type: %s, label: %s%n", unit.type, unit.label);
             Chemical chem = Chemical.parseMol(unit.structure);
@@ -109,7 +109,7 @@ class PolymerDecodeTest {
         assertFalse( srus.isEmpty());
 
 
-        System.out.println("number of structural units = " + srus.size());
+        log.trace("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
             System.out.printf("type: %s, label: %s, mwt: %f %n", unit.type, unit.label, Chemical.parseMol(unit.structure).getMass());
             Chemical chem = Chemical.parseMol(unit.structure);
@@ -127,7 +127,7 @@ class PolymerDecodeTest {
         Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse(srus.isEmpty());
 
-        System.out.println("number of structural units = " + srus.size());
+        log.trace("number of structural units = " + srus.size());
         for (PolymerDecode.StructuralUnit unit : srus) {
             System.out.printf("type: %s, label: %s %n", unit.type, unit.label);
             Chemical chem = Chemical.parseMol(unit.structure);
