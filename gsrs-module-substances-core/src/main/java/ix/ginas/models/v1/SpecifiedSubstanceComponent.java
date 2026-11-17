@@ -1,6 +1,6 @@
 package ix.ginas.models.v1;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Inheritance

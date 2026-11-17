@@ -1,6 +1,5 @@
 package example.chem;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import ix.core.models.Structure;
 import ix.ginas.utils.ChemUtils;
 
@@ -8,6 +7,8 @@ import ix.ginas.utils.ChemUtils;
 
 import java.util.ArrayList;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class ChiralFlagFixerTest {
@@ -26,7 +27,7 @@ public class ChiralFlagFixerTest {
 				"    \"stereochemistry\": \"ABSOLUTE\"\n" + 
 				"}\n" + 
 				"";
-		ObjectMapper om = new ObjectMapper();
+		JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
 		Structure s = om.readValue(structureJson, Structure.class);
 		ChemUtils.fixChiralFlag(s, new ArrayList<>());
 		assertEquals(s.molfile.split("\n")[3], " 10 10  0  0  1  0              0 V2000");
@@ -45,7 +46,7 @@ public class ChiralFlagFixerTest {
 				"    \"count\": 1,\n" + 
 				"    \"stereochemistry\": \"RACEMIC\"\n" + 
 				"  }";
-		ObjectMapper om = new ObjectMapper();
+		JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
 		Structure s = om.readValue(structureJson, Structure.class);
 		ChemUtils.fixChiralFlag(s, new ArrayList<>());
 		assertEquals(s.molfile.split("\n")[3], " 11 11  0  0  0  0              0 V2000");
@@ -64,7 +65,7 @@ public class ChiralFlagFixerTest {
 				"    \"count\": 1,\n" + 
 				"    \"stereochemistry\": \"RACEMIC\"\n" + 
 				"  }";
-		ObjectMapper om = new ObjectMapper();
+		JsonMapper om = JsonMapper.builderWithJackson2Defaults().build();
 		Structure s = om.readValue(structureJson, Structure.class);
 		ChemUtils.fixChiralFlag(s, new ArrayList<>());
 		assertEquals(s.molfile.split("\n")[3], " 11 11  0  0  0  0              0 V2000");

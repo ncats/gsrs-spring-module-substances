@@ -1,7 +1,5 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gsrs.module.substance.definitional.DefinitionalElement;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.springUtils.AutowireHelper;
@@ -11,6 +9,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,7 +27,7 @@ public class ConfigBasedDefinitionalElementConfiguration{
 
     private CachedSupplier<List<DefinitionalElementImplementation>> cachedInstances = CachedSupplier.runOnce(()->{
        List<DefinitionalElementImplementation> list = new ArrayList<>();
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
        for(DefinitionalElementImplementationConfig config : implementations){
            DefinitionalElementImplementation implementation;
            if(config.getParameters() ==null){

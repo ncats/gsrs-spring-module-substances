@@ -1,7 +1,6 @@
 package ix.ginas.utils.validation.validators;
 
 import gov.nih.ncats.molwitch.Chemical;
-import gsrs.module.substance.controllers.SubstanceLegacySearchService;
 import gsrs.module.substance.repository.ReferenceRepository;
 import ix.core.chem.StructureProcessor;
 import ix.core.models.Structure;
@@ -13,14 +12,12 @@ import ix.ginas.utils.validation.PeptideInterpreter;
 import ix.ginas.utils.validation.ValidationUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.hateoas.server.EntityLinks;
-import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
 
 /**
  * Created by katzelda on 5/14/18.
@@ -37,9 +34,24 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
 
     private boolean allowV3000Molfiles = false;
 
-    private final String V3000_MOLFILE_MARKER = "M  V30";
-    private final String V3000_MOLFILE_MARKER2 = "V3000";
+    private boolean allowAtomLists = false;
 
+    private static final String V3000_MOLFILE_MARKER = "M  V30";
+    private static final String V3000_MOLFILE_MARKER2 = "V3000";
+
+    private static final String ATOM_LIST_SIGN = "M  ALS ";
+
+    private enum ChemicalClassification {
+        MULTI_ATOM_CHEMICAL,
+        ZERO_ATOM_CHEMICAL,
+        INVALID_OR_NON_CHEMICAL
+    }
+
+    private record ProcessedStructure(
+        Structure rootStructure,
+        List<Moiety> moieties) {
+        }
+    
     public ReferenceRepository getReferenceRepository() {
         return referenceRepository;
     }
@@ -55,233 +67,11 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
     public void setStructureProcessor(StructureProcessor structureProcessor) {
         this.structureProcessor = structureProcessor;
     }
-    
-    @Override
-    public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory c) {
-        if(ValidatorCategory.CATEGORY_DEFINITION().equals(c) || ValidatorCategory.CATEGORY_ALL().equals(c)) {
-            return true;
-        }else {
-            return false;
-        }
-    }
-
-    @Override
-    public void validate(Substance s, Substance objold, ValidatorCallback callback) {
-        log.trace("starting in validate");
-        ChemicalSubstance cs = (ChemicalSubstance)s;
-
-        if (cs.getStructure() == null) {
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "Chemical substance must have a chemical structure"));
-            return;
-        }
-
-        if (!allow0AtomStructures
-                && cs.getStructure().toChemical().getAtomCount() == 0
-                && !substanceIs0AtomChemical(objold)) {
-            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                    "Chemical substance must have a chemical structure with one or more atoms"));
-            return;
-        }
-
-        if( !allowV3000Molfiles) {
-            //for some reason, when this is run from a unit test with CDK as the molwitch implementation, the original
-            // V3000 molfile appears in the SMILES field
-            if( (cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER) && cs.getStructure().molfile.contains(V3000_MOLFILE_MARKER2))
-                || (cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER) && cs.getStructure().smiles.contains(V3000_MOLFILE_MARKER2))) {
-                log.info("V3000 molfile detected");
-                callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
-                        "GSRS does not currently support V3000 molfiles. Use another program to convert the structure to an earlier format."));
-                return;
-            }
-        }
-
-        String payload = cs.getStructure().molfile;
-        if (payload != null) {
-
-            try {
-                ix.ginas.utils.validation.PeptideInterpreter.Protein p = PeptideInterpreter
-                        .getAminoAcidSequence(cs.getStructure().molfile);
-                if (p != null && !p.getSubunits().isEmpty()
-                        && p.getSubunits().get(0).getSequence().length() > 2) {
-                    GinasProcessingMessage mes = GinasProcessingMessage
-                            .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:[%s]", p.toString());
-                    callback.addMessage(mes);
-                }
-            } catch (Exception e) {
-
-            }
-
-
-            List<Moiety> moietiesForSub = new ArrayList<Moiety>();
-
-
-            List<Structure> moieties = new ArrayList<Structure>();
-						//computed, idealized structure info.
-            Structure struc = structureProcessor.instrument(payload, moieties, true); 
-
-            if(!payload.contains("M  END")){
-                //not a mol convert it
-                //struc is already standardized
-                callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(
-                        "Structure should always be specified as mol file converting to format to mol automatically").appliableChange(true),
-                        () -> {
-                    try {
-                        cs.setStructure(cs.getStructure().copy());
-                        cs.getStructure().molfile = struc.molfile;
-                    }catch(Exception e){
-                        e.printStackTrace();
-                        callback.addMessage(new ExceptionValidationMessage(e));
-                    }
-
-                } );
-
-            }
-
-            //GSRS-914 verify valid atoms
-            verifyValidAtoms(()->struc.toChemical(), callback);
-            for (Structure m : moieties) {
-                Moiety m2 = new Moiety();
-                m2.structure = new GinasChemicalStructure(m);
-                m2.setCount(m.count);
-                moietiesForSub.add(m2);
-            }
-
-            //GSRS-1648 deduplicate messages in moieties
-            DeduplicateCallback deduplicateCallback = new DeduplicateCallback(callback);
-            if (cs.moieties != null
-            		&& !cs.moieties.isEmpty()
-                    && cs.moieties.size() != moietiesForSub.size()) {
-
-                GinasProcessingMessage mes = GinasProcessingMessage
-                        .INFO_MESSAGE("Incorrect number of moieties")
-                        .appliableChange(true);
-                callback.addMessage(mes, ()-> cs.moieties = moietiesForSub);
-
-
-            }else if (cs.moieties == null
-            		|| cs.moieties.isEmpty()) {
-
-                GinasProcessingMessage mes = GinasProcessingMessage
-                        .INFO_MESSAGE("No moieties found in submission. They will be generated automatically.")
-                        .appliableChange(true);
-                callback.addMessage(mes, ()-> cs.moieties = moietiesForSub);
-            } else {
-                for (Moiety m : cs.moieties) {
-                    Structure struc2 = structureProcessor.instrument(
-                            m.structure.molfile, null, true); // don't
-                    // standardize
-
-                    validateChemicalStructure(m.structure, struc2, deduplicateCallback);
-                }
-            }
-            validateChemicalStructure(cs.getStructure(), struc, deduplicateCallback);
-
-            ChemUtils.fixChiralFlag(cs.getStructure(), callback);
-            
-            // check on Racemic stereochemistry October 2020 MAM
-            ChemUtils.checkRacemicStereo(cs.getStructure(), callback);
-
-//            ChemUtils.checkChargeBalance(cs.structure, gpm);
-            if (cs.getStructure().charge != 0) {
-                GinasProcessingMessage mes = GinasProcessingMessage
-                        .WARNING_MESSAGE("Structure is not charged balanced, net charge of: %s", cs.getStructure().charge);
-                callback.addMessage(mes);
-            }
-
-            ValidationUtils.validateReference(s,cs.getStructure(), callback, ValidationUtils.ReferenceAction.FAIL, referenceRepository);
-
-            //validateStructureDuplicates(cs, callback);
-        } else {
-            callback.addMessage(GinasProcessingMessage
-                    .ERROR_MESSAGE("Chemical substance must have a valid chemical structure"));
-
-        }
-
-    }
-
-    private void verifyValidAtoms(Supplier<Chemical> chemical, ValidatorCallback callback) {
-//        for(ChemicalAtom a : chemical.getAtomArray()){
-//            if("Ac".equals(a.getSymbol())){
-//                System.out.println(a.getSymbol() + "  atno = " + a.getAtomNo() +"  query = " + a.isQueryAtom() + "  " + a.isRgroupAtom());
-//
-//            }
-//            if(!a.isQueryAtom() & !a.isRgroupAtom()){
-//                int atomNo = a.getAtomNo();
-//                if(atomNo < 1 && atomNo > 110){
-//                    callback.addMessage(GinasProcessingMessage
-//                            .ERROR_MESSAGE("Chemical substance must have a valid atoms found atom symol '" +a.getSymbol()   + "' atomic number " + atomNo));
-//                }
-//            }
-//        }
-        //TODO noop for now pushed to 2.3.7 until we find out more for GSRS-914
-    }
-
-    private void validateChemicalStructure(
-            GinasChemicalStructure oldstr, Structure newstr,
-            ValidatorCallback callback) {
-        List<GinasProcessingMessage> gpm = new ArrayList<GinasProcessingMessage>();
-//
-//        String oldhash = null;
-//        String newhash = null;
-        // oldhash = oldstr.getExactHash();
-        // newhash = newstr.getExactHash();
-        // // Should always use the calculated pieces
-        // // TODO: Come back to this and allow for SOME things to be overloaded
-        // if (true || !newhash.equals(oldhash)) {
-        
-        GinasProcessingMessage mes = GinasProcessingMessage
-                .INFO_MESSAGE("Recomputing structure hash");
-//                .appliableChange(true);
-        Structure struc2 = new GinasChemicalStructure(newstr);
-        oldstr.updateStructureFields(struc2);
-        
-        // }
-        if (oldstr.digest == null) {
-            oldstr.digest = newstr.digest;
-        }
-        if (oldstr.smiles == null) {
-            oldstr.smiles = newstr.smiles;
-        }
-        if (oldstr.ezCenters == null) {
-            oldstr.ezCenters = newstr.ezCenters;
-        }
-        if (oldstr.definedStereo == null) {
-            oldstr.definedStereo = newstr.definedStereo;
-        }
-        if (oldstr.stereoCenters == null) {
-            oldstr.stereoCenters = newstr.stereoCenters;
-        }
-        if (oldstr.mwt == null) {
-            oldstr.mwt = newstr.mwt;
-        }
-        if (oldstr.formula == null) {
-            oldstr.formula = newstr.formula;
-        }
-        if (oldstr.charge == null) {
-            oldstr.charge = newstr.charge;
-        }
-        if (oldstr.opticalActivity == null) {
-			oldstr.opticalActivity = newstr.opticalActivity;
-		}
-		if (oldstr.stereoChemistry == null) {
-			oldstr.stereoChemistry = newstr.stereoChemistry;
-		}
-
-        ChemUtils.checkValance(newstr, callback);
-
-        ChemUtils.fix0Stereo(oldstr, gpm);
-
-        gpm.forEach(m -> {
-            callback.addMessage(m);
-            // System.out.println(m);
-        });
-    }
 
     private static class DeduplicateCallback implements ValidatorCallback {
-        private ValidatorCallback delegate;
-        private Set<String> warningMessages = new HashSet<>();
-        private Set<String> errorMessages = new HashSet<>();
+        private final ValidatorCallback delegate;
+        private final Set<String> warningMessages = new HashSet<>();
+        private final Set<String> errorMessages = new HashSet<>();
 
         public DeduplicateCallback(ValidatorCallback delegate) {
             this.delegate = delegate;
@@ -298,7 +88,6 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
                 case ERROR: return errorMessages;
                 case WARNING: return warningMessages;
                 default: return null;
-
             }
         }
 
@@ -327,14 +116,88 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         }
     }
 
-		private boolean substanceIs0AtomChemical(Substance s) {
-			if( s==null) {
-				return false;
-			}
-			ChemicalSubstance chem = (ChemicalSubstance) s;
-			return chem.toChemical().getAtomCount() == 0;
-		}
-		
+    @Override
+    public void validate(Substance substance, Substance oldSubstance, ValidatorCallback callback) {
+
+        ChemicalSubstance chemical = (ChemicalSubstance) substance;
+
+        if (!validateRequiredStructure(chemical, oldSubstance, callback)) {
+            return;
+        }
+
+        if (!validateSupportedMolfileFeatures(chemical, callback)) {
+            return;
+        }
+
+        ProcessedStructure processed =
+                processStructure(chemical,callback);
+
+        if (processed == null) {
+            return;
+        }
+
+        validatePossiblePeptide(chemical, callback);
+        DeduplicateCallback deduplicateCallback = new DeduplicateCallback(callback);
+
+        reconcileMoieties(
+                chemical,
+                oldSubstance,
+                processed,
+                deduplicateCallback);
+
+        validateChemicalStructure(
+                chemical.getStructure(),
+                processed.rootStructure(),
+                deduplicateCallback);
+
+        ChemUtils.fixChiralFlag(chemical.getStructure(), callback);
+        ChemUtils.checkRacemicStereo(chemical.getStructure(), callback);
+
+        validateCharge(chemical, callback);
+
+        ValidationUtils.validateReference(
+                chemical,
+                chemical.getStructure(),
+                callback,
+                ValidationUtils.ReferenceAction.FAIL,
+                referenceRepository);
+
+    }
+        private boolean validateRequiredStructure(
+            ChemicalSubstance cs,
+            Substance oldSubstance,
+            ValidatorCallback callback) {
+
+        if (cs.getStructure() == null) {
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "Chemical substance must have a chemical structure"));
+            return false;
+        }
+
+        if (!allow0AtomStructures
+                && classifySubstanceByNumberOfAtoms(cs) == ChemicalClassification.ZERO_ATOM_CHEMICAL &&
+                classifySubstanceByNumberOfAtoms(oldSubstance) != ChemicalClassification.ZERO_ATOM_CHEMICAL) {
+
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "Chemical substance must have a chemical structure with one or more atoms"));
+            return false;
+        }
+
+        if (cs.getStructure().molfile == null) {
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "Chemical substance must have a valid chemical structure"));
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean supportsCategory(Substance news, Substance olds, ValidatorCategory category) {
+        return ValidatorCategory.CATEGORY_DEFINITION().equals(category)
+            || ValidatorCategory.CATEGORY_ALL().equals(category);
+    }
+
 	public boolean isAllow0AtomStructures() {
 		return allow0AtomStructures;
 	}
@@ -351,4 +214,287 @@ public class ChemicalValidator extends AbstractValidatorPlugin<Substance> {
         this.allowV3000Molfiles = allowV3000Molfiles;
     }
 
+    public boolean isAllowAtomLists() {
+        return allowAtomLists;
+    }
+
+    public void setAllowAtomLists(boolean allowAtomLists) {
+        this.allowAtomLists = allowAtomLists;
+    }
+
+
+    public boolean hasAtomLists(Structure structure) {
+        if(structure.molfile == null || structure.molfile.length() ==0 ) return false;
+
+        if(!structure.molfile.contains(ATOM_LIST_SIGN)) return false;
+
+        String[] molfileLines = structure.molfile.split(("\\n"));
+
+        if( molfileLines.length  >= 4) {
+            int firstValuePoint = structure.molfile.indexOf(molfileLines[3] + molfileLines[3].length());
+            if( structure.molfile.indexOf(molfileLines[3]) > firstValuePoint) {
+                return true;
+            }
+        }
+        return true;
+    }
+
+    public boolean hasQueryFeatures(Structure structure) {
+        Chemical structureAsChemical =structure.toChemical();
+        if( structureAsChemical == null)return true;
+        return StructureProcessor.hasQueryFeatures(structureAsChemical);
+    }
+
+    private ChemicalClassification classifySubstanceByNumberOfAtoms(Substance substance) {
+        if( ! (substance instanceof ChemicalSubstance chemicalSubstance)) {
+            log.trace("previous substance was other than a Chemical");
+            return ChemicalClassification.INVALID_OR_NON_CHEMICAL;
+        }
+        if(chemicalSubstance.getStructure() == null ) {
+            log.trace("no structure found in chemical substance!");
+            return ChemicalClassification.INVALID_OR_NON_CHEMICAL;
+        }
+        Chemical chemical = chemicalSubstance.getStructure().toChemical();
+        if( chemical == null ){
+            log.info("no valid Chemical found");
+            return ChemicalClassification.INVALID_OR_NON_CHEMICAL;
+        }
+        return chemical.getAtomCount() == 0 ? ChemicalClassification.ZERO_ATOM_CHEMICAL : ChemicalClassification.MULTI_ATOM_CHEMICAL;
+    }
+
+    private boolean validateSupportedMolfileFeatures(
+        ChemicalSubstance cs,
+        ValidatorCallback callback) {
+        Structure structure = cs.getStructure();
+
+        if (!allowV3000Molfiles && isV3000(cs)) {
+            log.info("V3000 molfile detected");
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "GSRS does not currently support V3000 molfiles. " +
+                    "Use another program to convert the structure to an earlier format."));
+            return false;
+        }
+
+        if (!allowAtomLists && hasAtomLists(structure)) {
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "Atom lists are not allowed for registration"));
+            return false;//atom lists prevent some future processing...
+        }
+        if (hasQueryFeatures(structure)) {
+            callback.addMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "This chemical contains query features that are not alloweed in database structures "));
+        }
+
+        return true;
+    }
+
+    private boolean isV3000(ChemicalSubstance chemical) {
+        Structure structure = chemical.getStructure();
+
+        return containsV3000Markers(structure.molfile)
+                || containsV3000Markers(structure.smiles);
+    }
+
+    private boolean containsV3000Markers(String value) {
+        return value != null
+                && value.contains(V3000_MOLFILE_MARKER)
+                && value.contains(V3000_MOLFILE_MARKER2);
+    }
+
+    private ProcessedStructure processStructure(ChemicalSubstance cs, ValidatorCallback callback) {
+        String payload = cs.getStructure().molfile;
+
+        List<Structure> computedMoieties = new ArrayList<>();
+
+        Structure computedRoot =structureProcessor.instrument(payload, computedMoieties, true);
+        suggestMolfileConversion(cs, computedRoot,callback);
+
+        List<Moiety> moieties = computedMoieties.stream()
+            .map(this::toMoiety)
+            .toList();
+
+        return new ProcessedStructure(computedRoot, moieties);
+    }
+
+    private Moiety toMoiety(Structure structure ){
+            Moiety moiety = new Moiety();
+            moiety.structure = new GinasChemicalStructure(structure);
+            moiety.setCount(structure.count);
+            return moiety;
+    }
+
+    private void validatePossiblePeptide(ChemicalSubstance chemical,  ValidatorCallback callback) {
+        try {
+            ix.ginas.utils.validation.PeptideInterpreter.Protein p = PeptideInterpreter
+                    .getAminoAcidSequence(chemical.getStructure().molfile);
+            if (p != null && !p.getSubunits().isEmpty()
+                    && p.getSubunits().get(0).getSequence().length() > 2) {
+                GinasProcessingMessage mes = GinasProcessingMessage
+                        .WARNING_MESSAGE("Substance may be represented as protein as well. Sequence:[%s]", p.toString());
+                callback.addMessage(mes);
+            }
+        } catch (Exception e) {
+            log.warn("Error in validatePossiblePeptide: {}", e.getMessage());
+        }
+    }
+
+    private void validateChemicalStructure(
+            GinasChemicalStructure oldstr, Structure newstr,
+            ValidatorCallback callback) {
+        List<GinasProcessingMessage> gpm = new ArrayList<>();
+
+        GinasProcessingMessage mes = GinasProcessingMessage
+                .INFO_MESSAGE("Recomputing structure hash");
+        callback.addMessage(mes);
+        Structure struc2 = new GinasChemicalStructure(newstr);
+        oldstr.updateStructureFields(struc2);
+
+        if (oldstr.digest == null) {
+            oldstr.digest = newstr.digest;
+        }
+        if (oldstr.smiles == null) {
+            oldstr.smiles = newstr.smiles;
+        }
+        if (oldstr.ezCenters == null) {
+            oldstr.ezCenters = newstr.ezCenters;
+        }
+        if (oldstr.definedStereo == null) {
+            oldstr.definedStereo = newstr.definedStereo;
+        }
+        if (oldstr.stereoCenters == null) {
+            oldstr.stereoCenters = newstr.stereoCenters;
+        }
+        if (oldstr.mwt == null) {
+            oldstr.mwt = newstr.mwt;
+        }
+        if (oldstr.formula == null) {
+            oldstr.formula = newstr.formula;
+        }
+        if (oldstr.charge == null) {
+            oldstr.charge = newstr.charge;
+        }
+        if (oldstr.opticalActivity == null) {
+            oldstr.opticalActivity = newstr.opticalActivity;
+        }
+        if (oldstr.stereoChemistry == null) {
+            oldstr.stereoChemistry = newstr.stereoChemistry;
+        }
+
+        ChemUtils.checkValance(newstr, callback);
+
+        ChemUtils.fix0Stereo(oldstr, gpm);
+
+        gpm.forEach(m -> {
+            callback.addMessage(m);
+        });
+    }
+
+    private void reconcileMoieties(
+        ChemicalSubstance cs,
+        Substance oldSubstance,
+        ProcessedStructure processed,
+        ValidatorCallback callback) {
+            List<Moiety> computedMoieties = processed.moieties();
+            if (rootStructureMolfileChanged(cs, oldSubstance)) {
+                preserveRootMolfileForSingleMoiety(
+                    cs.getStructure().molfile,
+                    computedMoieties);
+
+                    callback.addMessage(
+                    GinasProcessingMessage
+                    .INFO_MESSAGE(
+                        "Chemical structure changed. " +
+                    "Moieties will be regenerated from the submitted structure.")
+                        .appliableChange(true),
+                    () -> cs.moieties = computedMoieties);
+
+                    return;
+            }
+
+            if (cs.moieties == null || cs.moieties.isEmpty()) {
+                callback.addMessage(
+                    GinasProcessingMessage
+                    .INFO_MESSAGE(
+                    "No moieties found in submission. They will be generated automatically.")
+                    .appliableChange(true),
+                () -> cs.moieties = computedMoieties);
+                return;
+            }
+            if (cs.moieties.size() != computedMoieties.size()) {
+                callback.addMessage(
+                    GinasProcessingMessage
+                    .INFO_MESSAGE("Incorrect number of moieties")
+                    .appliableChange(true),
+                        () -> cs.moieties = computedMoieties);
+                return;
+            }
+            validateExistingMoieties(
+                cs.moieties,
+                    callback);
+    }
+
+    private boolean rootStructureMolfileChanged(ChemicalSubstance updated, Substance oldSubstance) {
+        if (!(oldSubstance instanceof ChemicalSubstance oldChemical)) {
+            return false;
+        }
+        String oldMolfile = oldChemical.getStructure() == null ? null : oldChemical.getStructure().molfile;
+        String updatedMolfile = updated.getStructure() == null ? null : updated.getStructure().molfile;
+        return !Objects.equals(oldMolfile, updatedMolfile);
+    }
+
+    private void validateExistingMoieties(
+            List<Moiety> moieties,
+            ValidatorCallback callback) {
+
+        for (Moiety moiety : moieties) {
+            Structure computed =
+                    structureProcessor.instrument(
+                            moiety.structure.molfile,
+                            null,
+                            true);
+
+            validateChemicalStructure(
+                    moiety.structure,
+                    computed,
+                    callback);
+        }
+    }
+
+    private void preserveRootMolfileForSingleMoiety(String rootMolfile, List<Moiety> moietiesForSub) {
+        if (rootMolfile == null || moietiesForSub == null || moietiesForSub.size() != 1) {
+            return;
+        }
+        Moiety moiety = moietiesForSub.get(0);
+        if (moiety != null && moiety.structure != null) {
+            moiety.structure.molfile = rootMolfile;
+        }
+    }
+
+    private void validateCharge(ChemicalSubstance chemicalSubstance, ValidatorCallback callback) {
+        if (chemicalSubstance.getStructure().charge != 0) {
+            GinasProcessingMessage mes = GinasProcessingMessage
+                    .WARNING_MESSAGE("Structure is not charged balanced, net charge of: %s", chemicalSubstance.getStructure().charge);
+            callback.addMessage(mes);
+        }
+
+    }
+
+    private void suggestMolfileConversion(
+        ChemicalSubstance chemicalSubstance, Structure processed, ValidatorCallback callback) {
+        if(!chemicalSubstance.getStructure().molfile.contains("M  END")){
+            //not a mol convert it
+            //struc is already standardized
+            callback.addMessage(GinasProcessingMessage.WARNING_MESSAGE(
+                            "Structure should always be specified as mol file converting to format to mol automatically").appliableChange(true),
+                    () -> {
+                        try {
+                            chemicalSubstance.setStructure(chemicalSubstance.getStructure().copy());
+                            chemicalSubstance.getStructure().molfile = processed.molfile;
+                        }catch(Exception e){
+                            e.printStackTrace();
+                            callback.addMessage(new ExceptionValidationMessage(e));
+                        }
+                    } );
+        }
+    }
 }

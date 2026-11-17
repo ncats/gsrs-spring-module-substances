@@ -6,12 +6,14 @@ import ix.core.validator.ValidatorCallback;
 import ix.ginas.models.v1.Substance;
 import ix.ginas.utils.validation.AbstractValidatorPlugin;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.*;
 
 @Slf4j
 @Data
+@EqualsAndHashCode(callSuper=false)
 public class TagsValidator extends AbstractValidatorPlugin<Substance> {
     /**
      * <h1>Tags Validator</h1>

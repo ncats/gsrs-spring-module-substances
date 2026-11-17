@@ -14,33 +14,34 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import javax.persistence.CascadeType;
-import javax.persistence.Column;
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
-import javax.persistence.Index;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
-import javax.persistence.OneToOne;
-import javax.persistence.OrderBy;
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
-import javax.persistence.Table;
-import javax.persistence.Transient;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Index;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.annotation.JsonView;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.json.JsonMapper;
 
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.TimeUtil;
@@ -283,7 +284,7 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @OrderBy("name asc")
 //    @OrderColumn
     @EntityMapperOptions(linkoutInCompactView = true)
-    public List<Name> names = new ArrayList<Name>();
+    public List<Name> names = new ArrayList<>();
 
     // TOOD original schema has superfluous 
     // name = codes in the schema here and
@@ -292,12 +293,12 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL)
     @JsonView(BeanViews.Full.class)
     @EntityMapperOptions(linkoutInCompactView = true)
-    public List<Code> codes = new ArrayList<Code>();
+    public List<Code> codes = new ArrayList<>();
 
 
     /**
      * Returns the codes which are classifications
-     * @return
+     * @return returns a list of Codes that are used to categorize substances
      */
     @JsonIgnore
     public List<Code> getClassifications(){
@@ -397,7 +398,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
 
 
     @Transient
-    protected transient ObjectMapper mapper = new ObjectMapper();
+    protected transient JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+            .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+            .build();
 
     public static SubstanceBuilder builder(){
         return new SubstanceBuilder();
@@ -666,6 +669,9 @@ public class Substance extends GinasCommonData implements ValidationMessageHolde
      */
     @JsonIgnore
     public SubstanceReference getParentSubstanceReference() {
+        if (!SubstanceClass.concept.equals(this.substanceClass)) {
+            return null;
+        }
         for (Relationship r : relationships) {
             //flipped type equality check to avoid NPE GSRS-1439
             if ("SUBSTANCE->SUB_CONCEPT".equals(r.type)) {

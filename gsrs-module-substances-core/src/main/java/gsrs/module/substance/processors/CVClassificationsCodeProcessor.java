@@ -1,6 +1,5 @@
 package gsrs.module.substance.processors;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gsrs.cv.api.ControlledVocabularyApi;
 import gsrs.cv.api.GsrsControlledVocabularyDTO;
@@ -23,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * This EntityProcessor will create a Classifications comments string
@@ -96,7 +96,7 @@ public class CVClassificationsCodeProcessor implements EntityProcessor<Code> {
     }
 
     public void setConfig(Map<String, Object> m) {
-        this.config = new ObjectMapper().convertValue(m, CVClassificationsCodeProcessorConfig.class);
+        this.config = JsonMapper.builderWithJackson2Defaults().build().convertValue(m, CVClassificationsCodeProcessorConfig.class);
     }
 
     private void addCvDomainIfNeeded() {

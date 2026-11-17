@@ -1,18 +1,16 @@
 package ix.ginas.models.serialization;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
 import ix.core.models.VIntArray;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueSerializer;
 
-import java.io.IOException;
-
-public class IntArraySerializer extends JsonSerializer<VIntArray> {
+public class IntArraySerializer extends ValueSerializer<VIntArray> {
     public IntArraySerializer () {}
-    public void serialize (VIntArray array, JsonGenerator jgen,
-                           SerializerProvider provider)
-        throws IOException, JsonProcessingException {
+
+    @Override
+    public void serialize(VIntArray array, JsonGenerator jgen, SerializationContext ctxt) throws JacksonException {
         if (array != null) {
             int[] ary = array.getArray();
             jgen.writeStartArray();
@@ -24,4 +22,5 @@ public class IntArraySerializer extends JsonSerializer<VIntArray> {
             jgen.writeNull();
         }
     }
+
 }

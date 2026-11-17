@@ -13,6 +13,7 @@ import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.GinasChemicalStructure;
 import ix.ginas.models.v1.Moiety;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,6 +24,7 @@ import java.util.Map;
 import static gsrs.module.substance.importers.SDFImportAdapterFactory.resolveParametersMap;
 
 @Data
+@EqualsAndHashCode(callSuper=false)
 @Slf4j
 public class StructureExtractorActionFactory extends BaseActionFactory {
     private String actionName;

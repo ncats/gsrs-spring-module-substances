@@ -1,6 +1,6 @@
 package gsrs.module.substance.exporters;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.validator.GinasProcessingMessage;
 import ix.ginas.exporters.Exporter;

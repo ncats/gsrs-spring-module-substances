@@ -1,10 +1,9 @@
 package gsrs.module.substance.standardizer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -94,7 +93,7 @@ public class NameStandardizerConfiguration {
     }
 
     private NameStandardizer buildStandardizer(Map<String, Object> config, Map<String, Object> parameters) throws InstantiationException, IllegalAccessException, NoSuchMethodException, ClassNotFoundException {
-        ObjectMapper mapper = new ObjectMapper();
+        JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
         Class standardizerClass = HtmlNameStandardizer.class;
         if (config != null) {
             if (config.containsKey("standardizerClass")) {

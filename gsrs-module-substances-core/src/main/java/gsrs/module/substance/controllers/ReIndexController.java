@@ -13,7 +13,7 @@ import org.springframework.hateoas.server.ExposesResourceFor;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import javax.persistence.Id;
+import jakarta.persistence.Id;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;

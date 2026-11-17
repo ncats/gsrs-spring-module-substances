@@ -3,28 +3,30 @@ package ix.ginas.models.v1;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Lob;
-import javax.persistence.Table;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import tools.jackson.core.type.TypeReference;
 
 import ix.core.util.ModelUtils;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonSubData;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 @SuppressWarnings("serial")
 @Entity
 @Table(name="ix_ginas_site_lob")
 public class SiteContainer extends GinasCommonSubData{
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@JsonIgnore
 	String sitesShortHand;
-	@Lob
+	@JdbcTypeCode(SqlTypes.LONG32VARCHAR)
 	@JsonIgnore
 	@Column(name="sites_json")
 	String sitesJSON;	
@@ -33,18 +35,22 @@ public class SiteContainer extends GinasCommonSubData{
 		
 	String siteType;
 
-	public SiteContainer() {};
+	public SiteContainer() {}
+
+	@Transient
+	private transient final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.build();
 
 	public SiteContainer(String type){
 		this.siteType=type;
 	}
 	
 	public List<Site> getSites(){
-		ObjectMapper om = new ObjectMapper();
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		List<Site> sites=new ArrayList<Site>();
+		List<Site> sites=new ArrayList<>();
 		try {
-			sites = om.readValue(sitesJSON, new TypeReference<List<Site>>(){});
+			sites = mapper.readValue(sitesJSON, new TypeReference<>() {
+			});
 		} catch (Exception e) {
 			e.printStackTrace();
 		} 
@@ -61,17 +67,13 @@ public class SiteContainer extends GinasCommonSubData{
                 String beforeShorthand = sitesShortHand;
 		if(sites!=null){
 			sitesShortHand=generateShorthand(sites);
-			
-			ObjectMapper om = new ObjectMapper();
-			
+
 			List<Site> nlist = sites;
 			
 			//TODO: this used to be done as a normalizing step
 			// but it caused problems with POJODiff
-//			List<Site> nlist=parseShorthandRanges(sitesShortHand);
-			
-			
-			sitesJSON=om.valueToTree(nlist).toString();
+
+			sitesJSON=mapper.valueToTree(nlist).toString();
 			siteCount=nlist.size();
 		}
 
@@ -97,9 +99,7 @@ public class SiteContainer extends GinasCommonSubData{
 	 @Override
 	   	@JsonIgnore
 	   	public List<GinasAccessReferenceControlled> getAllChildrenCapableOfHavingReferences() {
-	   		List<GinasAccessReferenceControlled> temp = new ArrayList<GinasAccessReferenceControlled>();
-
-	   		return temp;
+	   		return new ArrayList<GinasAccessReferenceControlled>();
 	   	}
 
 }

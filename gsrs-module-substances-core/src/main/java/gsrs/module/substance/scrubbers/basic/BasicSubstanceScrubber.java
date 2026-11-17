@@ -49,6 +49,8 @@ import ix.ginas.models.v1.SubstanceReference;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.minidev.json.JSONArray;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /*
 Note: as of 22 September, most of this class is commented out and a quick and dirty implementation is in place.
@@ -396,7 +398,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
        	return Optional.ofNullable(starting);
     }
     
-    private Substance scrubApprovalId(Substance substance) {
+    public Substance scrubApprovalId(Substance substance) {
         String approvalId = substance.getApprovalID();
         log.trace("in scrubApprovalId, approvalId: {}", approvalId);
         if(approvalId!=null && approvalId.length()>0 && this.scrubberSettings.getApprovalIdCleanupApprovalIdCodeSystem()!= null
@@ -514,19 +516,11 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
             log.trace("Before code delete");
             JSONArray testArray = dc.read("$['codes']");
             if(!testArray.isEmpty()) {
-                dc.delete("$['codes'][?]", codeSystemPredicate);
+                deleteCodes(dc, scrubberSettings.getRemoveCodesBySystemCodeSystemsToRemove(), scrubberSettings.getRemoveCodesBySystemCodeSystemsToKeep());
             }
         }
 
         safeDelete(dc, "$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-/*
-        JSONArray testObject =dc.read("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-        if(testObject.isEmpty()) {
-            log.trace("About to delete access expression");
-            dc.delete("$..[?(@.access[0]===\"" + TO_DELETE + "\")]");
-        }
-*/
-
         if( scrubberSettings.removeStdNames) {
             log.trace("Removing std names");
             safeDelete(dc, "$..stdName");
@@ -555,7 +549,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         return false;
     }
 
-    private Substance reassignUuids(Substance substance) {
+    public Substance reassignUuids(Substance substance) {
         log.trace("starting reassignUuids");
         Map<UUID,UUID> oldToNewUUIDMap = new HashMap<>();
         substance.uuid=oldToNewUUIDMap.computeIfAbsent(substance.uuid, (k)->UUID.randomUUID());
@@ -854,6 +848,7 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
         catch (Exception ex) {
             log.warn("error processing record; Will return empty", ex);
+            ex.printStackTrace();
         }
         return Optional.empty();
     }
@@ -874,7 +869,56 @@ public class BasicSubstanceScrubber implements RecordScrubber<Substance> {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    public static boolean deleteCodes(
+            DocumentContext dc,
+            List<String> codeSystemsToDelete,
+            List<String> codeSystemsToKeep) {
+
+        Map<String, Object> root = dc.json();
+
+        Object codesValue = root.get("codes");
+        if (!(codesValue instanceof List<?> rawCodes)) {
+            return false;
+        }
+
+        List<Object> codes = (List<Object>) rawCodes;
+
+        if( codeSystemsToDelete != null && !codeSystemsToDelete.isEmpty()) {
+            return codes.removeIf(item -> {
+                if (!(item instanceof Map<?, ?> code)) {
+                    return false;
+                }
+
+                return codeSystemsToDelete.contains(code.get("codeSystem"));
+            });
+        }
+        if( codeSystemsToKeep != null && !codeSystemsToKeep.isEmpty()) {
+            return codes.removeIf(item -> {
+                if (!(item instanceof Map<?, ?> code)) {
+                    return false;
+                }
+                return !codeSystemsToKeep.contains(code.get("codeSystem"));
+            });
+        }
+        return false;
+    }
     public static void main(String[] args) {
     	log.trace("main method");
+    }
+
+    public static void removeNumericIds(JsonNode node) {
+        if (node instanceof ObjectNode object) {
+            JsonNode id = object.get("id");
+            if (id != null && id.isIntegralNumber()) {
+                object.remove("id");
+            }
+        }
+
+        if (node.isContainer()) {
+            for (JsonNode child : node) {
+                removeNumericIds(child);
+            }
+        }
     }
 }

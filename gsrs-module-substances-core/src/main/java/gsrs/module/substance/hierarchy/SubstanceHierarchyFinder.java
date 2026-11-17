@@ -1,7 +1,6 @@
 package gsrs.module.substance.hierarchy;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import gov.nih.ncats.common.Tuple;
 import gov.nih.ncats.common.util.CachedSupplier;
 import gov.nih.ncats.common.yield.Yield;
@@ -21,6 +20,7 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -68,13 +68,12 @@ public class SubstanceHierarchyFinder {
 	private GsrsSearchService<Substance> gsrsSearchService;
 
 	private CachedSupplier<List<HierarchyFinder>> hfinders=CachedSupplier.of(()->{
-		ObjectMapper mapper = new ObjectMapper();
+		JsonMapper mapper = JsonMapper.builderWithJackson2Defaults().build();
 		List<SubstanceHierarchyFinder.HierarchyFinder> l = finderConfig.getRecipes().stream()
 				.map(m-> mapper.convertValue(m, HierarchyFinderRecipe.class))
 				.map(r-> {
 					try{
 						HierarchyFinder finder = r.makeFinder();
-//						finder= AutowireHelper.getInstance().autowireAndProxy(finder);
 						return finder;
 					}catch(Exception e){
 						throw new RuntimeException(e);

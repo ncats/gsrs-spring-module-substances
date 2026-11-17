@@ -1,22 +1,19 @@
 package gsrs.module.substance.services;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import gov.nih.ncats.common.Tuple;
-import gsrs.DefaultDataSourceConfig;
 import gsrs.EntityPersistAdapter;
 import gsrs.module.substance.processors.RelationshipProcessor;
 import gsrs.module.substance.processors.RemoveInverseRelationshipEvent;
@@ -30,10 +27,13 @@ import ix.core.models.Keyword;
 import ix.core.util.EntityUtils;
 import ix.core.util.EntityUtils.Key;
 import ix.ginas.modelBuilders.SubstanceBuilder;
+import ix.ginas.models.EmbeddedKeywordList;
 import ix.ginas.models.utils.RelationshipUtil;
+import ix.ginas.models.v1.Amount;
 import ix.ginas.models.v1.Reference;
 import ix.ginas.models.v1.Relationship;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.models.v1.SubstanceReference;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -46,20 +46,199 @@ public class RelationshipService {
     @Autowired
     private SubstanceRepository substanceRepository;
 
-//    @Autowired
-    @PersistenceContext(unitName =  DefaultDataSourceConfig.NAME_ENTITY_MANAGER)
-    private EntityManager entityManager;
-
     @Autowired
     private EntityPersistAdapter entityPersistAdapter;
-    
+
+    private static final class ReverseRelationshipLookup {
+        private final Relationship relationship;
+        private final boolean ambiguous;
+
+        private ReverseRelationshipLookup(Relationship relationship, boolean ambiguous) {
+            this.relationship = relationship;
+            this.ambiguous = ambiguous;
+        }
+
+        private static ReverseRelationshipLookup found(Relationship relationship) {
+            return new ReverseRelationshipLookup(relationship, false);
+        }
+
+        private static ReverseRelationshipLookup notFound() {
+            return new ReverseRelationshipLookup(null, false);
+        }
+
+        private static ReverseRelationshipLookup ambiguous() {
+            return new ReverseRelationshipLookup(null, true);
+        }
+
+        private Optional<Relationship> relationship() {
+            return Optional.ofNullable(relationship);
+        }
+
+        private boolean isAmbiguous() {
+            return ambiguous;
+        }
+    }
+
+    private Reference copyReferenceForInverseRelationship(Reference original) {
+        Reference copy = new Reference();
+        copy.citation = original.citation;
+        copy.docType = original.docType;
+        copy.documentDate = copyDate(original.documentDate);
+        copy.publicDomain = original.publicDomain;
+        copy.tags = original.tags == null ? new EmbeddedKeywordList() : new EmbeddedKeywordList(original.tags);
+        copy.uploadedFile = original.uploadedFile;
+        copy.id = original.id;
+        copy.url = original.url;
+        copy.deprecated = original.deprecated;
+        copy.setCreated(copyDate(original.getCreated()));
+        copy.setLastEdited(copyDate(original.getLastEdited()));
+        copy.createdBy = original.createdBy;
+        copy.lastEditedBy = original.lastEditedBy;
+        copy.setAccess(new LinkedHashSet<>(original.getAccess()));
+        return copy;
+    }
+
+    private Date copyDate(Date date) {
+        return date == null ? null : new Date(date.getTime());
+    }
+
+    private boolean isInverseRelationshipCurrent(Relationship existingInverse,
+                                                 Relationship expectedInverse,
+                                                 Substance inverseOwner,
+                                                 Relationship sourceRelationship,
+                                                 Substance sourceOwner) {
+        if (!Objects.equals(existingInverse.type, expectedInverse.type)
+                || !Objects.equals(existingInverse.comments, expectedInverse.comments)
+                || !Objects.equals(existingInverse.qualification, expectedInverse.qualification)
+                || !Objects.equals(existingInverse.interactionType, expectedInverse.interactionType)
+                || !sameAmount(existingInverse.amount, expectedInverse.amount)
+                || !sameSubstanceReference(existingInverse.mediatorSubstance, expectedInverse.mediatorSubstance)
+                || !sameGroups(existingInverse.getAccess(), expectedInverse.getAccess())) {
+            return false;
+        }
+        if (sourceOwner != null && sourceOwner.getUuid() != null) {
+            if (existingInverse.relatedSubstance == null
+                    || !Objects.equals(existingInverse.relatedSubstance.refuuid, sourceOwner.getUuid().toString())) {
+                return false;
+            }
+        }
+        List<String> existingRefs = nonSystemReferenceFingerprints(existingInverse, inverseOwner);
+        List<String> sourceRefs = nonSystemReferenceFingerprints(sourceRelationship, sourceOwner);
+        return existingRefs != null && sourceRefs != null && existingRefs.equals(sourceRefs);
+    }
+
+    private boolean sameAmount(Amount a, Amount b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return Objects.equals(a.type, b.type)
+                && Objects.equals(a.average, b.average)
+                && Objects.equals(a.highLimit, b.highLimit)
+                && Objects.equals(a.high, b.high)
+                && Objects.equals(a.lowLimit, b.lowLimit)
+                && Objects.equals(a.low, b.low)
+                && Objects.equals(a.units, b.units)
+                && Objects.equals(a.nonNumericValue, b.nonNumericValue)
+                && Objects.equals(a.approvalID, b.approvalID);
+    }
+
+    private boolean sameSubstanceReference(SubstanceReference a, SubstanceReference b) {
+        if (a == null || b == null) {
+            return a == b;
+        }
+        return Objects.equals(a.refuuid, b.refuuid)
+                && Objects.equals(a.refPname, b.refPname)
+                && Objects.equals(a.approvalID, b.approvalID)
+                && Objects.equals(a.substanceClass, b.substanceClass);
+    }
+
+    private boolean sameGroups(Set<?> a, Set<?> b) {
+        return groupFingerprints(a).equals(groupFingerprints(b));
+    }
+
+    private List<String> groupFingerprints(Set<?> groups) {
+        if (groups == null || groups.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return groups.stream()
+                .map(String::valueOf)
+                .sorted()
+                .collect(Collectors.toList());
+    }
+
+    private List<String> nonSystemReferenceFingerprints(Relationship relationship, Substance owner) {
+        if (relationship == null || owner == null) {
+            return Collections.emptyList();
+        }
+        List<String> refs = new ArrayList<>();
+        for (Keyword keyword : relationship.getReferences()) {
+            Reference ref = owner.getReferenceByUUID(keyword.getValue());
+            if (ref == null) {
+                return null;
+            }
+            if (!"SYSTEM".equals(ref.docType)) {
+                refs.add(referenceFingerprint(ref));
+            }
+        }
+        Collections.sort(refs);
+        return refs;
+    }
+
+    private String referenceFingerprint(Reference ref) {
+        return String.join("|",
+                nullSafe(ref.citation),
+                nullSafe(ref.docType),
+                ref.documentDate == null ? "" : String.valueOf(ref.documentDate.getTime()),
+                String.valueOf(ref.publicDomain),
+                keywordFingerprints(ref.tags).toString(),
+                nullSafe(ref.uploadedFile),
+                nullSafe(ref.id),
+                nullSafe(ref.url),
+                groupFingerprints(ref.getAccess()).toString());
+    }
+
+    private List<String> keywordFingerprints(Iterable<Keyword> keywords) {
+        if (keywords == null) {
+            return Collections.emptyList();
+        }
+        List<String> values = new ArrayList<>();
+        for (Keyword keyword : keywords) {
+            values.add(nullSafe(keyword.label) + "=" + nullSafe(keyword.term));
+        }
+        Collections.sort(values);
+        return values;
+    }
+
+    private String nullSafe(String value) {
+        return value == null ? "" : value;
+    }
+
+    private boolean isOwnedBy(Relationship relationship, UUID ownerUuid) {
+        if (relationship == null || ownerUuid == null) {
+            return false;
+        }
+        Substance owner = relationship.fetchOwner();
+        return owner != null && Objects.equals(owner.getUuid(), ownerUuid);
+    }
+
+    private boolean referencesSubstance(Relationship relationship, UUID substanceUuid) {
+        return relationship != null
+                && relationship.relatedSubstance != null
+                && substanceUuid != null
+                && Objects.equals(relationship.relatedSubstance.refuuid, substanceUuid.toString());
+    }
+
     private Optional<Relationship> findReverseRelationship(RemoveInverseRelationshipEvent event){
 
 
 
+        UUID expectedInverseOwner = UUID.fromString(event.getRelatedSubstanceRefId());
+        UUID expectedInverseReference = UUID.fromString(event.getSubstanceRefIdOfRemovedRelationship());
         Optional<Relationship> opt = relationshipRepository.findByOriginatorUuid(event.getRelationshipOriginatorIdToRemove().toString())
                 .stream()
                 .filter(r-> !event.getRelationshipIdThatWasRemoved().equals(r.uuid))
+                .filter(r -> isOwnedBy(r, expectedInverseOwner))
+                .filter(r -> referencesSubstance(r, expectedInverseReference))
                 .findAny();
 
         if(opt.isPresent()){
@@ -87,22 +266,40 @@ public class RelationshipService {
         return Optional.empty();
     }
 
-    private Optional<Relationship> findReverseRelationship(UpdateInverseRelationshipEvent event){
+    private ReverseRelationshipLookup findReverseRelationship(UpdateInverseRelationshipEvent event){
 
-        Substance owner = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated()).get().fetchOwner();
+        Optional<Relationship> updatedRelationshipOpt = relationshipRepository.findById(event.getRelationshipIdThatWasUpdated());
+        if (!updatedRelationshipOpt.isPresent()) {
+            return ReverseRelationshipLookup.notFound();
+        }
+        Relationship updatedRelationship = updatedRelationshipOpt.get();
+        Substance owner = updatedRelationship.fetchOwner();
 
 
-        Optional<Relationship> opt = relationshipRepository.findByOriginatorUuid(event.getOriginatorUUID().toString())
+        List<Relationship> originatorCandidates = relationshipRepository.findByOriginatorUuid(event.getOriginatorUUID().toString())
                 .stream()
                 .filter(r-> !event.getRelationshipIdThatWasUpdated().equals(r.uuid))
-                .findAny();
+                .filter(r -> referencesSubstance(r, event.getSubstanceIdThatWasUpdated()))
+                .collect(Collectors.toList());
+        List<Relationship> exactOwnerOriginatorCandidates = originatorCandidates.stream()
+                .filter(r -> isOwnedBy(r, event.getSubstanceIdToUpdate()))
+                .collect(Collectors.toList());
 
-        if(opt.isPresent()){
-            return opt;
+        if(exactOwnerOriginatorCandidates.size() == 1){
+            return ReverseRelationshipLookup.found(exactOwnerOriginatorCandidates.get(0));
         }
-        Optional<String> oldType = findOldType(event, owner);
-        if(!oldType.isPresent()){
-            return Optional.empty();
+        if(exactOwnerOriginatorCandidates.size() > 1){
+            return ReverseRelationshipLookup.ambiguous();
+        }
+        if(originatorCandidates.size() == 1){
+            return ReverseRelationshipLookup.found(originatorCandidates.get(0));
+        }
+        if(originatorCandidates.size() > 1){
+            return ReverseRelationshipLookup.ambiguous();
+        }
+        String typeToReverse = findOldType(event, owner).orElse(updatedRelationship.type);
+        if(typeToReverse == null){
+            return ReverseRelationshipLookup.notFound();
         }
         //GSRS-860 sometimes when grabbing substance json from public data
         //and loading it on local system and then making edits without pulling latest version from GSRS
@@ -113,17 +310,20 @@ public class RelationshipService {
             List<Relationship> relationships = relatedSubstance.get().relationships;
             if(relationships !=null){
                 List<Relationship> candidates = relationships.stream()
-                        .filter(r->event.getRelationshipIdThatWasUpdated().equals(r.relatedSubstance.refuuid))
-                        .filter(r -> r.isAutomaticInvertible() && RelationshipUtil.reverseRelationship(oldType.get()).equals(r.type))
+                        .filter(r->referencesSubstance(r, event.getSubstanceIdThatWasUpdated()))
+                        .filter(r -> r.isAutomaticInvertible() && RelationshipUtil.reverseRelationship(typeToReverse).equals(r.type))
                         .collect(Collectors.toList());
                 if(candidates.size() ==1){
-                    return Optional.of(candidates.get(0));
+                    return ReverseRelationshipLookup.found(candidates.get(0));
                 }
-                //It's a bigger deal to accidentally delete a relationship you're not sure about, so don't do it if
-                //there's some ambiguity
+                if(candidates.size() > 1){
+                    return ReverseRelationshipLookup.ambiguous();
+                }
+                //Do not synthesize another inverse relationship when the existing reciprocal rows
+                //are already ambiguous.
             }
         }
-        return Optional.empty();
+        return ReverseRelationshipLookup.notFound();
     }
 
     //TODO: This needs tests, it is unlikely to work as consistently as desired
@@ -145,11 +345,11 @@ public class RelationshipService {
      * @return
      */
     private Optional<String> findOldType(UpdateInverseRelationshipEvent event, Substance owner) {
-        
+
         try {
-        	Edit edit = editRepository.findFirstByKeyOrderByCreatedDesc(owner.fetchKey()).orElse(null);
-        	if(edit==null)return Optional.empty();
-        	Relationship oldRelationship = SubstanceBuilder.from(edit.newValue).build()
+            Edit edit = editRepository.findFirstByKeyOrderByCreatedDesc(owner.fetchKey()).orElse(null);
+            if(edit==null)return Optional.empty();
+            Relationship oldRelationship = SubstanceBuilder.from(edit.newValue).build()
                     .relationships.stream()
                     .filter(r-> r.uuid.equals(event.getRelationshipIdThatWasUpdated()))
                     .findAny()
@@ -161,18 +361,24 @@ public class RelationshipService {
     }
 
     public void updateInverseRelationshipFor(UpdateInverseRelationshipEvent event){
-        Optional<Relationship> opt=Optional.empty();
+        ReverseRelationshipLookup lookup = ReverseRelationshipLookup.notFound();
         try {
-            opt = findReverseRelationship(event);
+            lookup = findReverseRelationship(event);
         }catch(Exception e) {
             log.warn("Trouble finding inverted relationship", e);
         }
+        Optional<Relationship> opt = lookup.relationship();
         if(!opt.isPresent()) {
-        	//if no suitable inverted form is found to be updated, chances are that
-        	//there was no suitable inverse yet. This can happen if the data was loaded
-        	//in a particular order sometimes, or more likely when a non-invertible
-        	//relationship is changed to be invertible. In such cases we need to treat
-        	//this update event like it's a creation event and make the inverse
+            if (lookup.isAmbiguous()) {
+                log.warn("Not updating inverse relationship for {} because multiple reciprocal relationships matched",
+                        event.getRelationshipIdThatWasUpdated());
+                return;
+            }
+            //if no suitable inverted form is found to be updated, chances are that
+            //there was no suitable inverse yet. This can happen if the data was loaded
+            //in a particular order sometimes, or more likely when a non-invertible
+            //relationship is changed to be invertible. In such cases we need to treat
+            //this update event like it's a creation event and make the inverse
             createNewInverseRelationshipFor(event.toCreateEvent());
             return;
         }
@@ -194,7 +400,7 @@ public class RelationshipService {
             if(!osub2.uuid.toString().equals(updatedInverseRelationship.relatedSubstance.refuuid)) {
                 //remove the previous relationship
                 RelationshipProcessor.doWithoutEventTracking(()->{
-                    relationshipRepository.delete(toUpdate);    
+                    relationshipRepository.delete(toUpdate);
                 });
                 osub2.removeRelationship(toUpdate);
                 osub2.forceUpdate();
@@ -212,31 +418,35 @@ public class RelationshipService {
             //so it's not much of a performance hit to do it inside the loop
 
             Relationship inverse = updatedInverseRelationship.fetchInverseRelationship();
+            Substance otherSubstance = updatedInverseRelationship.fetchOwner();
+            if (isInverseRelationshipCurrent(r1, inverse, osub2, updatedInverseRelationship, otherSubstance)) {
+                return Optional.empty();
+            }
 
             List<Reference> refsToRemove = new ArrayList<>();
 
             //TODO: fix this to remove the actual references from the substance
-            Set<Keyword> keepRefs= r1.getReferences()
-                    .stream()
-                    .map(r->osub2.getReferenceByUUID(r.term))
-                    .map(r-> Tuple.of("SYSTEM".equals(r.docType),r))
-                    .filter(t->{
-                        if(!t.k()){
-                            Reference toRemove=t.v();
-                            long dependencies=toRemove.getElementsReferencing()
-                                    .stream()
-                                    .map(elm-> EntityUtils.EntityWrapper.of(elm))
-                                    .filter(ew->!r1.uuid.equals(ew.getId().orElse(null)))
-                                    .count();
-                            if(dependencies<=0){
-                                refsToRemove.add(toRemove);
-                            }
-                        }
-                        return t.k();
-                    })
-                    .map(t->t.v())
-                    .map(ref->ref.asKeyword())
-                    .collect(Collectors.toSet());
+            Set<Keyword> keepRefs = new LinkedHashSet<>();
+            for (Keyword relationshipReference : r1.getReferences()) {
+                Reference existingRef = osub2.getReferenceByUUID(relationshipReference.term);
+                if (existingRef == null) {
+                    log.warn("Removing dangling reference {} from inverse relationship {} on substance {}",
+                            relationshipReference.term, r1.uuid, osub2.uuid);
+                    continue;
+                }
+                if ("SYSTEM".equals(existingRef.docType)) {
+                    keepRefs.add(existingRef.asKeyword());
+                    continue;
+                }
+                long dependencies = existingRef.getElementsReferencing()
+                        .stream()
+                        .map(elm -> EntityUtils.EntityWrapper.of(elm))
+                        .filter(ew -> !r1.uuid.equals(ew.getId().orElse(null)))
+                        .count();
+                if (dependencies <= 0) {
+                    refsToRemove.add(existingRef);
+                }
+            }
 
 
             r1.setComments(inverse.comments);
@@ -261,7 +471,7 @@ public class RelationshipService {
 
             r1.setReferences(keepRefs);
             r1.setAccess(inverse.getAccess()); //Should take care of access problem
-            
+
             r1.setIsDirty("type");
             r1.setIsDirty("access");
             r1.setIsDirty("mediatorSubstance");
@@ -269,34 +479,30 @@ public class RelationshipService {
             r1.setIsDirty("qualification");
             r1.setIsDirty("comments");
             r1.setIsDirty("amount");
-            
+
             osub2.references.removeAll(refsToRemove);
             osub2.setIsDirty("references");
             osub2.setIsDirty("relationships");
-           
-            
-            Substance otherSubstance = updatedInverseRelationship.fetchOwner();
+
+
             for (Keyword k : updatedInverseRelationship.getReferences()) {
 
                 Reference ref = otherSubstance.getReferenceByUUID(k.getValue());
+                if (ref == null) {
+                    log.warn("Skipping dangling source reference {} while updating inverse relationship {} on substance {}",
+                            k.getValue(), r1.uuid, osub2.uuid);
+                    continue;
+                }
                 if("SYSTEM".equals(ref.docType)){
                     continue;
                 }
 
-                if(ref!=null){
-                    try {
-                        Reference newRef = EntityUtils.EntityWrapper.of(ref).getClone();
-                        newRef.uuid =null;
-                        r1.addReference(newRef, osub2);
-                        this.entityManager.merge(newRef);
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
-                }
+                Reference newRef = copyReferenceForInverseRelationship(ref);
+                r1.addReference(newRef, osub2);
             }
             osub2.forceUpdate();
             Substance osub3=RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(osub2));
-            
+
             return Optional.of(osub3);
         });
     }
@@ -313,8 +519,6 @@ public class RelationshipService {
         final Substance osub = r1.fetchOwner();
         if (osub != null) {
             entityPersistAdapter.performChangeOn(osub, osub2 -> {
-//									System.out.println("Okay, going to delete the inverse");
-
                 Relationship rem = null;
                 for (Relationship r : osub2.relationships) {
                     if (r.uuid.equals(r1.uuid)) {
@@ -325,13 +529,12 @@ public class RelationshipService {
                     // We never want this to trigger an event
                     Relationship rrem=rem;
                     RelationshipProcessor.doWithoutEventTracking(()->{
-                        relationshipRepository.delete(rrem);    
+                        relationshipRepository.delete(rrem);
                     });
                     osub2.removeRelationship(rem);
                 }
                 osub2.forceUpdate();
                 substanceRepository.saveAndFlush(osub2);
-//									System.out.println("Inverse should be deleted now");
                 return Optional.of(osub2);
             });
         }
@@ -341,85 +544,78 @@ public class RelationshipService {
     public void createNewInverseRelationshipFor(TryToCreateInverseRelationshipEvent event) {
         if (event.getFromSubstance() == null) {
             //TODO: Look into this
-           return;
+            return;
         }
         Key mkey = EntityUtils.Key.of(Substance.class, event.getFromSubstance());
-        
+
         //we are making a new relationship with from -> to.
         //this event means we already have a to -> from relationship.
         //Due to transaction issues we can't actually check yet that we can make this relationship
         //when we make the event:
         // 1. this "from" substance might not exist yet
         // 2. the "from" substance might already have this relationship and we didn't know
-            EntityUtils.EntityWrapper<?> change = entityPersistAdapter.change(
-                    // TP 10/02/2021 : this form of key instantiation below is more dangerous
-                    // because we TYPICALLY make keys from their "actual" classes, not their root
-                    // classes. So things may be inconsistent. In the future, we could change how the
-                    // EntityWrapper.getKey() method works to return a root key sometimes,
-                    // or change the way the change operation works to use the root-level key,
-                    // but for consistently we should get keys in a similar way every time
-                    // TODO: change the event to have the Keys rather than just the IDs
-                    
-                    mkey
-                    ,
-                    s -> {
-                        Substance newSub = (Substance) s;
-                        Optional<Relationship> byId = relationshipRepository.findById(event.getRelationshipIdToInvert());
-                        if(!byId.isPresent()){
-                            return Optional.empty();
+        EntityUtils.EntityWrapper<?> change = entityPersistAdapter.change(
+                // TP 10/02/2021 : this form of key instantiation below is more dangerous
+                // because we TYPICALLY make keys from their "actual" classes, not their root
+                // classes. So things may be inconsistent. In the future, we could change how the
+                // EntityWrapper.getKey() method works to return a root key sometimes,
+                // or change the way the change operation works to use the root-level key,
+                // but for consistently we should get keys in a similar way every time
+                // TODO: change the event to have the Keys rather than just the IDs
+
+                mkey
+                ,
+                s -> {
+                    Substance newSub = (Substance) s;
+                    Optional<Relationship> byId = relationshipRepository.findById(event.getRelationshipIdToInvert());
+                    if(!byId.isPresent()){
+                        return Optional.empty();
+                    }
+                    Relationship obj = byId.get();
+                    if(!obj.isAutomaticInvertible()){
+                        return Optional.empty();
+                    }
+                    Relationship r = obj.fetchInverseRelationship();
+                    r.originatorUuid = event.getRelationshipIdToInvert().toString();
+                    Optional<Substance> otherSubstanceOpt = substanceRepository.findById(event.getToSubstance());
+                    if(!otherSubstanceOpt.isPresent()){
+                        return Optional.empty();
+                    }
+
+                    Substance otherSubstance = otherSubstanceOpt.get();
+                    r.relatedSubstance = otherSubstance.asSubstanceReference();
+
+                    if (!event.getCreationMode().shouldAdd(r, newSub, otherSubstance)) {
+                        return Optional.empty();
+                    }
+                    Reference ref1 = Reference.SYSTEM_GENERATED();
+                    ref1.citation = "Generated from relationship on:'" + r.relatedSubstance.refPname + "'";
+
+                    r.addReference(ref1, newSub);
+                    newSub.addRelationship(r);
+                    //GSRS-736 copy over references
+                    //with new UUIDs
+
+                    for (Keyword kw : obj.getReferences()) {
+                        Reference origRef = obj.fetchOwner().getReferenceByUUID(kw.getValue());
+                        if (origRef == null) {
+                            log.warn("Skipping dangling source reference {} while creating inverse relationship {} on substance {}",
+                                    kw.getValue(), r.uuid, newSub.uuid);
+                            continue;
                         }
-                        Relationship obj = byId.get();
-                        if(!obj.isAutomaticInvertible()){
-                            return Optional.empty();
-                        }                    
-                        Relationship r = obj.fetchInverseRelationship();
-                        r.originatorUuid = event.getRelationshipIdToInvert().toString();
-                        Optional<Substance> otherSubstanceOpt = substanceRepository.findById(event.getToSubstance());
-                        if(!otherSubstanceOpt.isPresent()){
-                            return Optional.empty();
-                        }
+                        Reference newRef = copyReferenceForInverseRelationship(origRef);
+                        r.addReference(newRef, newSub);
+                    }
 
-                        Substance otherSubstance = otherSubstanceOpt.get();
-                        r.relatedSubstance = otherSubstance.asSubstanceReference();
+                    if (newSub != null) {
+                        // TODO: Are we sure about this? This feels like a hack to make something
+                        // behave as it used to in Play, but I think it's brittle. [TP]
+                        newSub.updateVersion();
+                        Substance upSub=newSub;
+                        newSub = RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
+                    }
+                    return Optional.ofNullable(newSub);
 
-                        if (!event.getCreationMode().shouldAdd(r, newSub, otherSubstance)) {
-                            return Optional.empty();
-                        }
-                        Reference ref1 = Reference.SYSTEM_GENERATED();
-                        ref1.citation = "Generated from relationship on:'" + r.relatedSubstance.refPname + "'";
-
-
-                        r.addReference(ref1, newSub);
-                        newSub.addRelationship(r);
-                        //GSRS-736 copy over references
-                        //with new UUIDs
-
-                        for (Keyword kw : obj.getReferences()) {
-                            Reference origRef = obj.fetchOwner().getReferenceByUUID(kw.getValue());
-                            try {
-                                Reference newRef = EntityUtils.EntityWrapper.of(origRef).getClone();
-                                newRef.uuid = null; //blank out UUID so it generates a new one on save
-                                r.addReference(newRef, newSub);
-                            } catch (JsonProcessingException e) {
-                                e.printStackTrace();
-                            }
-                        }
-
-                        if (newSub != null) {
-                            // TODO: Are we sure about this? This feels like a hack to make something
-                            // behave as it used to in Play, but I think it's brittle. [TP]
-                            newSub.updateVersion();
-//                            relationshipRepository.save(r);
-                            Substance upSub=newSub;
-                            newSub = RelationshipProcessor.doWithoutEventTracking(()->substanceRepository.saveAndFlush(upSub));
-                            
-                        }
-                        return Optional.ofNullable(newSub);
-
-                    });
-
-        }
-
-
-
+                });
+    }
 }
