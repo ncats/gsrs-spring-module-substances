@@ -2,22 +2,25 @@ package example.substance.polymer;
 
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.chem.PolymerDecode;
+
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.test.util.ReflectionTestUtils;
 
-
+import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.nio.file.Files;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PolymerDecodeTest {
+@Slf4j
+class PolymerDecodeTest {
 
     @Test
-    public void sruWithAstrickShouldBeCountedAsGarbageNotEndGroup() throws IOException {
+    void sruWithAstrickShouldBeCountedAsGarbageNotEndGroup() throws IOException {
         String mol = "\n" +
                 "   JSDraw210231917082D\n" +
                 "\n" +
@@ -34,12 +37,11 @@ public class PolymerDecodeTest {
                 "M  SDI   1  4   14.0920   -7.6382   14.0920   -4.7262\n" +
                 "M  SDI   1  4   14.8720   -4.7262   14.8720   -7.6382\n" +
                 "M  END";
-        
-        
+
 
         Set<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol));
         assertEquals(3, srus.size());
-        Map<String, List<PolymerDecode.StructuralUnit>> map = srus.stream().collect(Collectors.groupingBy(s-> s.type));
+        Map<String, List<PolymerDecode.StructuralUnit>> map = srus.stream().collect(Collectors.groupingBy(s -> s.type));
 
         assertEquals(3, map.size());
         assertEquals(1, map.get("SRU-BLOCK").size());
@@ -50,7 +52,87 @@ public class PolymerDecodeTest {
         assertEquals(Arrays.asList(0), map.get("GARBAGE").get(0).amap);
         assertEquals(Arrays.asList(2), map.get("END_GROUP").get(0).amap);
 
+        log.trace("number of structural units = " + srus.size());
+        for (PolymerDecode.StructuralUnit unit : srus) {
+            log.trace(unit.type);
+            Chemical chem = Chemical.parseMol(unit.structure);
+
+            log.trace("chem.getMass: {}", chem.getMass());
+        }
     }
 
+    @Test
+    void sruSortedDefault() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
 
+        Set<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol));
+        assertFalse( srus.isEmpty());
+
+        log.trace("number of structural units = " + srus.size());
+        for (PolymerDecode.StructuralUnit unit : srus) {
+            log.trace("unit.amap: {}", unit.amap);
+            log.trace(unit.type);
+            Chemical chem = Chemical.parseMol(unit.structure);
+
+            log.trace("chem.getMass(): {}", chem.getMass());
+        }
+    }
+
+    @Test
+    void sruSortedMw() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
+        ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByMw");
+        Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
+        assertFalse( srus.isEmpty());
+
+
+        log.trace("number of structural units = " + srus.size());
+        for (PolymerDecode.StructuralUnit unit : srus) {
+            System.out.printf("type: %s, label: %s%n", unit.type, unit.label);
+            Chemical chem = Chemical.parseMol(unit.structure);
+
+            System.out.printf("mw: %f %n", chem.getMass());
+        }
+    }
+
+    @Test
+    void sruSortedExplicitlyByUsage() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
+        ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByUsage");
+        Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
+        assertFalse( srus.isEmpty());
+
+
+        log.trace("number of structural units = " + srus.size());
+        for (PolymerDecode.StructuralUnit unit : srus) {
+            System.out.printf("type: %s, label: %s, mwt: %f %n", unit.type, unit.label, Chemical.parseMol(unit.structure).getMass());
+            Chemical chem = Chemical.parseMol(unit.structure);
+
+            System.out.printf("mw: %f %n", chem.getMass());
+        }
+    }
+
+    @Test
+    void sruSortedExplicitlyByLabel() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
+        ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByLabel");
+        Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
+        assertFalse(srus.isEmpty());
+
+        log.trace("number of structural units = " + srus.size());
+        for (PolymerDecode.StructuralUnit unit : srus) {
+            System.out.printf("type: %s, label: %s %n", unit.type, unit.label);
+            Chemical chem = Chemical.parseMol(unit.structure);
+
+            System.out.printf("mw: %f %n", chem.getMass());
+        }
+    }
 }

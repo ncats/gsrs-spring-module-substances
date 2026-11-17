@@ -1051,6 +1051,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                     Structure struc = structureProcessor.instrument(su.structure, null, false);
                     saveTempStructure(struc);
                     su._structure = struc;
+                    log.trace("SRU type {}; mwt: {}", su.type, struc.getMwt());
                 }
                 node.set("structuralUnits", jsonMapper.valueToTree(o));
             } catch (Throwable e) {
@@ -1851,7 +1852,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
                 if(alias.startsWith("_R")){
                     ca.setRGroup(Integer.parseInt(alias.replace("_R", "")));
                     r= true;
-                }else if(alias.startsWith("R")){
+                }else if(alias.startsWith("R") && alias.length()>1){
                     ca.setRGroup(Integer.parseInt(alias.replace("R", "")));
                     r= true;
                 }
