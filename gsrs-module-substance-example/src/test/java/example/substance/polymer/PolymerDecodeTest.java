@@ -2,7 +2,10 @@ package example.substance.polymer;
 
 import gov.nih.ncats.molwitch.Chemical;
 import ix.core.chem.PolymerDecode;
+
+
 import org.junit.jupiter.api.Test;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.io.File;
@@ -13,10 +16,10 @@ import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class PolymerDecodeTest {
+class PolymerDecodeTest {
 
     @Test
-    public void sruWithAstrickShouldBeCountedAsGarbageNotEndGroup() throws IOException {
+    void sruWithAstrickShouldBeCountedAsGarbageNotEndGroup() throws IOException {
         String mol = "\n" +
                 "   JSDraw210231917082D\n" +
                 "\n" +
@@ -59,10 +62,10 @@ public class PolymerDecodeTest {
     }
 
     @Test
-    public void sruSortedDefault() throws IOException {
-        String filePath = "D:\\temp projects\\ncats\\polymer_molfile_from.dammika.mol";
-        File inputFile = new File(filePath);
-        String mol = Files.readString(inputFile.toPath());
+    void sruSortedDefault() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
 
         Set<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol));
         assertFalse( srus.isEmpty());
@@ -78,10 +81,10 @@ public class PolymerDecodeTest {
     }
 
     @Test
-    public void sruSortedMw() throws IOException {
-        String filePath = "D:\\temp projects\\ncats\\polymer_molfile_from.dammika.mol";
-        File inputFile = new File(filePath);
-        String mol = Files.readString(inputFile.toPath());
+    void sruSortedMw() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
         ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByMw");
         Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse( srus.isEmpty());
@@ -97,10 +100,10 @@ public class PolymerDecodeTest {
     }
 
     @Test
-    public void sruSortedExplicitlyByUsage() throws IOException {
-        String filePath = "D:\\temp projects\\ncats\\polymer_molfile_from.dammika.mol";
-        File inputFile = new File(filePath);
-        String mol = Files.readString(inputFile.toPath());
+    void sruSortedExplicitlyByUsage() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
         ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByUsage");
         Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse( srus.isEmpty());
@@ -116,10 +119,10 @@ public class PolymerDecodeTest {
     }
 
     @Test
-    public void sruSortedExplicitlyByLabel() throws IOException {
-        String filePath = "D:\\temp projects\\ncats\\polymer_molfile_from.dammika.mol";
-        File inputFile = new File(filePath);
-        String mol = Files.readString(inputFile.toPath());
+    void sruSortedExplicitlyByLabel() throws IOException {
+        String dataFileName = "Truxihyaluronate_Sodium.mol";
+        File proteinFile = new ClassPathResource("molfiles/" + dataFileName).getFile();
+        String mol = Files.readString(proteinFile.toPath());
         ReflectionTestUtils.setField(PolymerDecode.class, "DefaultSortType", "ByLabel");
         Collection<PolymerDecode.StructuralUnit> srus = PolymerDecode.DecomposePolymerSU(Chemical.parse(mol), true);
         assertFalse(srus.isEmpty());
