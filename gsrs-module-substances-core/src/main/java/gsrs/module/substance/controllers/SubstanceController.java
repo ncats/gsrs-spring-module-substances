@@ -2225,7 +2225,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
     }
 
     @canEditData
-    @PostGsrsRestApiMapping("/resetUuids")
+    @PostGsrsRestApiMapping("/@resetUuids")
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ResponseEntity<Object> resetUuidsInEntity(@RequestBody JsonNode substanceJson,
                                                @RequestParam Map<String, String> queryParameters) {
@@ -2244,7 +2244,7 @@ public class SubstanceController extends EtagLegacySearchEntityController<Substa
         return new ResponseEntity<>(substanceWithReassignedUuids, HttpStatus.OK);
     }
 
-    @PostGsrsRestApiMapping("/hasDuplicateUuid")
+    @PostGsrsRestApiMapping("/@hasDuplicateUuid")
     public ResponseEntity<Object> entityHasDuplicateUuid(@RequestBody JsonNode substanceJson,
                                                      @RequestParam Map<String, String> queryParameters) {
         Substance substance = JsonSubstanceFactory.makeSubstance(substanceJson);
