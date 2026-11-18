@@ -1,6 +1,7 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
 import gsrs.module.substance.repository.KeywordRepository;
 import gsrs.module.substance.repository.ProcessingJobRepository;
 import gsrs.springUtils.StaticContextAccessor;
@@ -111,7 +112,7 @@ class ProcessingJobResponseSerializationTest {
                     .thenReturn(loadService);
             // No statistics cache: verify the persisted snapshot also freezes after a restart.
             ObjectMapper mapper = new ObjectMapper();
-            com.fasterxml.jackson.databind.JsonNode json = mapper.readTree(mapper.writeValueAsString(response));
+            JsonNode json = mapper.readTree(mapper.writeValueAsString(response));
             assertEquals(status, json.get("status").asText());
             assertEquals("job-key", json.get("keys").get(0).get("term").asText());
             if (stop != null) {

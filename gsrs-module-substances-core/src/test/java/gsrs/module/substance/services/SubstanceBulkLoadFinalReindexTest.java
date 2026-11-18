@@ -1,6 +1,6 @@
 package gsrs.module.substance.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import gsrs.AuditConfig;
 import gsrs.events.ReindexEntityEvent;
 import gsrs.module.substance.repository.ProcessingJobRepository;
