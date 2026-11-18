@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import gsrs.repository.*;
 import jakarta.persistence.EntityManager;
 
 import gsrs.scheduler.GsrsSchedulerTaskPropertiesConfiguration;
@@ -60,11 +61,6 @@ import gsrs.module.substance.repository.SubstanceRepository;
 import gsrs.payload.LegacyPayloadConfiguration;
 import gsrs.payload.LegacyPayloadService;
 import gsrs.payload.PayloadController;
-import gsrs.repository.ETagRepository;
-import gsrs.repository.EditRepository;
-import gsrs.repository.FileDataRepository;
-import gsrs.repository.GroupRepository;
-import gsrs.repository.PayloadRepository;
 import gsrs.service.ExportService;
 import gsrs.service.GsrsEntityService;
 import gsrs.service.PayloadService;
@@ -235,6 +231,8 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
     @Autowired
     protected GroupRepository groupRepository;
 
+    @Autowired
+    protected PrincipalRepository principalRepository;
 
     @Autowired
     protected PlatformTransactionManager transactionManager;
@@ -280,13 +278,15 @@ public abstract class AbstractSubstanceJpaEntityTestSuperClass extends AbstractG
         if(createAdminUserOnInit) {
             TransactionTemplate transactionTemplate = new TransactionTemplate(transactionManager);
             transactionTemplate.executeWithoutResult(s -> {
-                List<Role> roleList =PrivilegeService.instance().getAllRoleNames().stream().map(r->Role.of(r)).collect(Collectors.toList());
-                Role[] roles = roleList.toArray(new Role[]{});
-                createUser("admin", roles);
-
-                //some  integration tests will make validation messages which will get assigned an "admin" access group
-                groupRepository.saveAndFlush(new Group("admin"));
-
+                if(principalRepository.findDistinctByUsernameIgnoreCase("admin") == null) {
+                    List<Role> roleList = PrivilegeService.instance().getAllRoleNames().stream().map(r -> Role.of(r)).collect(Collectors.toList());
+                    Role[] roles = roleList.toArray(new Role[]{});
+                    createUser("admin", roles);
+                }
+                if( groupRepository.findByName("admin") == null ){
+                    //some  integration tests will make validation messages which will get assigned an "admin" access group
+                    groupRepository.saveAndFlush(new Group("admin"));
+                }
             });
         }
     }
