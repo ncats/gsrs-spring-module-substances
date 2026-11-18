@@ -1,8 +1,5 @@
 package example.substance;
 
-// __GETANEH__ please review 
-// Alex went with springBoot3x version
-
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.ChemicalSubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
@@ -67,6 +64,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
                     n.nameOrgs.add(org);
                 })
                 .buildJson());
+        UUID persistedNameOrgUuid = created.getAllNames().get(0).nameOrgs.get(0).getUuid();
 
         ChemicalSubstanceBuilder updateBuilder = SubstanceBuilder.from(created.toFullJsonNode());
         Substance updated = assertUpdated(updateBuilder
@@ -77,7 +75,7 @@ public class UpdateNameTest  extends AbstractSubstanceJpaEntityTest {
 
         assertThat(actualNameOrgs.stream().map(no -> no.nameOrg).collect(Collectors.toList()),
                 contains("MyName org"));
-        assertEquals(nameOrgUuid, actualNameOrgs.get(0).getUuid());
+        assertEquals(persistedNameOrgUuid, actualNameOrgs.get(0).getUuid());
     }
 
 
