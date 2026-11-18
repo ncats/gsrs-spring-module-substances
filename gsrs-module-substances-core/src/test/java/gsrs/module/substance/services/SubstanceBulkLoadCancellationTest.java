@@ -231,6 +231,7 @@ class SubstanceBulkLoadCancellationTest {
                     payloadRepository,
                     mock(TaskExecutor.class),
                     mock(ObjectProvider.class),
+                    mock(ObjectProvider.class),
                     mock(ApplicationEventPublisher.class),
                     repositoryProvider);
         }

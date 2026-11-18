@@ -132,6 +132,9 @@ public class ReindexFromBackups implements ReindexService{
         //This is hard-coded to 4 for now. It may be able to use the 
         //common forkjoin pool, but there are reasons to suspect that
         //can overwhelm the application.
+        TransactionTemplate entityReindexTx = new TransactionTemplate(transactionManager);
+        entityReindexTx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        entityReindexTx.setReadOnly(true);
         ForkJoinPool customThreadPool = new ForkJoinPool(4);
         try {
             customThreadPool.submit(
@@ -188,10 +191,10 @@ public class ReindexFromBackups implements ReindexService{
                                                     if (seen.add(keyString)) {
                                                         // Backups may outlive a rolled-back or deleted database row.
                                                         // Only index the current database entity, and update by key so
-                                                        // retries cannot append another document.
-                                                            currentEntityReindexEvent(reindexId, key)
-                                                                    .ifPresent(eventConsumer);
-                                                        }
+                                                        // retries cannot append another document. Publish synchronously
+                                                        // inside this worker's transaction so lazy entity fields remain available.
+                                                        publishCurrentEntityReindexEvent(reindexId, key, entityReindexTx);
+                                                    }
                                                 } catch (Throwable t) {
                                                     log.warn("indexing error handling:" + wrapped, t);
                                                 }
@@ -237,6 +240,12 @@ public class ReindexFromBackups implements ReindexService{
     Optional<ReindexEntityEvent> currentEntityReindexEvent(UUID reindexId, EntityUtils.Key key) {
         return key.fetch().map(currentEntity ->
                 new ReindexEntityEvent(reindexId, key, Optional.of(currentEntity), true));
+    }
+
+    void publishCurrentEntityReindexEvent(UUID reindexId, EntityUtils.Key key,
+                                          TransactionTemplate transactionTemplate) {
+        transactionTemplate.executeWithoutResult(status ->
+                currentEntityReindexEvent(reindexId, key).ifPresent(eventPublisher::publishEvent));
     }
 
     @EventListener(EndReindexEvent.class)

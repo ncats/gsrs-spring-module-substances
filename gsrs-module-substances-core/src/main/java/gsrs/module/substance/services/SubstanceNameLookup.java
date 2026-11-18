@@ -10,21 +10,17 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
 /**
- * An indexed, database-normalized candidate lookup for case-insensitive name searches.
- * The full comparison still uses UPPER(name); the prefix only narrows the candidates.
+ * An indexed lookup for case-insensitive name searches on Oracle and PostgreSQL.
  */
 @Slf4j
 public class SubstanceNameLookup {
     static final String TABLE = "ix_ginas_name";
-    static final String COLUMN = "name_upper_prefix";
-    static final String INDEX = "ix_ginas_name_upper_prefix";
-    private static final int PREFIX_LENGTH = 128;
+    static final String INDEX = "ix_ginas_name_upper";
 
     private final DataSource dataSource;
     private volatile String lookupSql;
@@ -42,19 +38,19 @@ public class SubstanceNameLookup {
 
     /**
      * Called before the import opens any worker transactions, not during validation.
-     * Generated columns also cover existing rows and stay current after ordinary edits.
+     * Only inspects the schema; index creation is handled by an administrator.
      */
-    public synchronized void ensureIndex() {
+    public synchronized void initialize() {
         if (isReady()) {
             return;
         }
         try (Connection connection = dataSource.getConnection()) {
             DatabaseMetaData metadata = connection.getMetaData();
             String product = metadata.getDatabaseProductName();
-            String columnDdl = columnDdl(product);
-            if (columnDdl == null) {
-                throw new IllegalStateException("Indexed name lookup is not supported for " + product
-                        + "; set ix.ginas.batch.indexNameLookups=false to use the original lookup");
+            if (!supportsIndex(product)) {
+                log.info("Indexed case-insensitive name lookup is not enabled for {}; using the original lookup",
+                        product);
+                return;
             }
             String schema = connection.getSchema();
             String catalog = connection.getCatalog();
@@ -62,21 +58,16 @@ public class SubstanceNameLookup {
             if (table == null) {
                 throw new IllegalStateException("Cannot prepare indexed name lookup: " + TABLE + " was not found");
             }
-            if (!hasColumn(metadata, catalog, schema, table)) {
-                execute(connection, columnDdl);
-            }
             if (!hasIndex(metadata, catalog, schema, table)) {
-                execute(connection, "CREATE INDEX " + INDEX + " ON " + TABLE + " (" + COLUMN + ")");
+                log.warn("Index {} was not found on {}; using the original lookup. "
+                        + "An administrator can run the appropriate manual name-lookup index script.",
+                        INDEX, TABLE);
+                return;
             }
-            if (!connection.getAutoCommit()) {
-                connection.commit();
-            }
-            lookupSql = lookupSql(product);
-            log.info("Case-insensitive substance name lookups now use {} on {}", INDEX, product);
+            lookupSql = lookupSql();
+            log.info("Case-insensitive substance name lookup is enabled with index {} on {}", INDEX, product);
         } catch (SQLException e) {
-            throw new IllegalStateException("Unable to prepare indexed substance name lookup. "
-                    + "The database account needs schema-alter permissions, or an administrator must "
-                    + "create the generated column and index before importing.", e);
+            throw new IllegalStateException("Unable to inspect the index for substance name lookup", e);
         }
     }
 
@@ -89,42 +80,16 @@ public class SubstanceNameLookup {
         return entityManager.unwrap(Session.class).createNativeQuery(sql, UUID.class)
                 .addSynchronizedQuerySpace(TABLE)
                 .setParameter(1, name)
-                .setParameter(2, name)
                 .getResultList();
     }
 
-    static String lookupSql(String product) {
-        String prefix = prefixExpression(product, "?1");
+    static String lookupSql() {
         return "SELECT DISTINCT owner_uuid FROM " + TABLE
-                + " WHERE " + COLUMN + " = " + prefix
-                + " AND UPPER(name) = UPPER(?2) AND owner_uuid IS NOT NULL";
+                + " WHERE UPPER(name) = UPPER(?1) AND owner_uuid IS NOT NULL";
     }
-
-    static String columnDdl(String product) {
+    static boolean supportsIndex(String product) {
         String database = product.toLowerCase(Locale.ROOT);
-        String expression = prefixExpression(product, "name");
-        if (database.contains("oracle")) {
-            return "ALTER TABLE " + TABLE + " ADD (" + COLUMN
-                    + " GENERATED ALWAYS AS (" + expression + ") VIRTUAL)";
-        }
-        if (database.contains("microsoft") || database.contains("sql server")) {
-            return "ALTER TABLE " + TABLE + " ADD " + COLUMN
-                    + " AS (CAST(" + expression + " AS NVARCHAR(" + PREFIX_LENGTH + "))) PERSISTED";
-        }
-        if (database.contains("postgresql") || database.contains("mysql") || database.contains("mariadb")) {
-            return "ALTER TABLE " + TABLE + " ADD COLUMN " + COLUMN + " VARCHAR(" + PREFIX_LENGTH
-                    + ") GENERATED ALWAYS AS (" + expression + ") STORED";
-        }
-        if (database.equals("h2")) {
-            return "ALTER TABLE " + TABLE + " ADD COLUMN " + COLUMN + " VARCHAR(" + PREFIX_LENGTH
-                    + ") GENERATED ALWAYS AS (" + expression + ")";
-        }
-        return null;
-    }
-
-    private static String prefixExpression(String product, String value) {
-        String function = product.toLowerCase(Locale.ROOT).contains("oracle") ? "SUBSTR" : "SUBSTRING";
-        return function + "(UPPER(" + value + "), 1, " + PREFIX_LENGTH + ")";
+        return database.contains("oracle") || database.contains("postgresql");
     }
 
     private static String existingTable(DatabaseMetaData metadata, String catalog, String schema) throws SQLException {
@@ -140,18 +105,6 @@ public class SubstanceNameLookup {
         return null;
     }
 
-    private static boolean hasColumn(DatabaseMetaData metadata, String catalog, String schema,
-                                     String table) throws SQLException {
-        try (ResultSet columns = metadata.getColumns(catalog, schema, table, null)) {
-            while (columns.next()) {
-                if (COLUMN.equalsIgnoreCase(columns.getString("COLUMN_NAME"))) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
     private static boolean hasIndex(DatabaseMetaData metadata, String catalog, String schema,
                                     String table) throws SQLException {
         try (ResultSet indexes = metadata.getIndexInfo(catalog, schema, table, false, false)) {
@@ -162,11 +115,5 @@ public class SubstanceNameLookup {
             }
         }
         return false;
-    }
-
-    private static void execute(Connection connection, String ddl) throws SQLException {
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(ddl);
-        }
     }
 }

@@ -77,6 +77,14 @@ public class ProcessingJobEntityService extends AbstractGsrsEntityService<Proces
         return processingJobRepository.findById(id).map(this::initializeJob);
     }
 
+    /**
+     * Initializes {@code job.keys} before returning the job because the response
+     * is serialized outside the transactional context, where lazy loading is no
+     * longer available.
+     *
+     * @param job the processing job
+     * @return the initialized job
+     */
     private ProcessingJob initializeJob(ProcessingJob job) {
         // The upload/status response is serialized after the service transaction closes.
         job.keys.size();
