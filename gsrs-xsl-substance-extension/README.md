@@ -38,7 +38,6 @@ The XslExporter can be used for the exporting of the substances using XSL templa
 ```
 ix.ginas.export.exporterfactories.substances.list.FhirR5 = {
     # __aw__ tested 
-
     "exporterFactoryClass": "gsrs.module.substance.exporters.XslExporterFactory",
     "order": 3400,
     "parameters": {
@@ -57,6 +56,7 @@ ix.ginas.export.exporterfactories.substances.list.FhirR5 = {
     }
 }
 ix.ginas.export.exporterfactories.substances.list.Gsrsp = {
+    // __aw__ tested
     "exporterFactoryClass": "gsrs.module.substance.exporters.XslExporterFactory",
     "order": 2100,
     "parameters": {
@@ -83,6 +83,9 @@ The XslImporteAdapter can be used for the importing of the substances using XSL 
 
 ```
 gsrs.importAdapterFactories.substances.list.GSRSPImportAdapterFactory = {
+    # __aw__ attempted testing, but not sure this is working yet? 
+    # it triees to use the fhir xsl and doesn't seem to handle 
+    # decompression.  
     "adapterName": "GSRSP JSON Adapter",
     "importAdapterFactoryClass": "gsrs.module.substance.importers.XslImportAdapterFactory",
     "stagingAreaServiceClass": "gsrs.stagingarea.service.DefaultStagingAreaService",
@@ -136,6 +139,25 @@ gsrs.entityProcessors.list.SubstanceReferenceProcessor = {
         ]
     }
 }
+
+# __aw__ Codex suggests that the codeSystemPatterns should be a map
+
+# gsrs.entityProcessors.list.SubstanceReferenceProcessor = {
+#     "entityClassName" = "ix.ginas.models.v1.SubstanceReference",
+#     "processor" = "gsrs.module.substance.processors.SubstanceReferenceProcessor",
+#     "order" = 2400,
+#     "with" = {
+#         "codeSystemPatterns" = {
+#             "unii" = {
+#                 "pattern" = "^[0-9A-Z]{10}$"
+#                 "codeSystem" = "FDA UNII"
+#             }
+#         }
+#     }
+# }
+
+
+
 ```
 
 ### gsrs.module.substance.tasks.UpdateEntityTaskInitializer
