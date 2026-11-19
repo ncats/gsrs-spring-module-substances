@@ -1,110 +1,135 @@
-# gsrs-spring-module-substances
-GSRS Spring Boot Module for Substances
+# gsrs-ep-substance-extension
+GSRS extension Module for Substances
 
-This is the GSRS 3 module for working with IDMP Substances as specified by the ISO 11238 Substance Model.
+This is the GSRS 3 extension module for working with IDMP Substances as specified by the ISO 11238 Substance Model.
 
-## To install With FDA Extension modules
-The FDA extension and example modules in this Repository are not yet in Maven Central and so rather than
-having to make people track down those repositories, we provide sample jars that can be installed into your local maven repository.
+## Installing the GSRS extension Module
 
-###To install the extra jars in Unix
+Simply run:
 ```
-./installExtraJars.sh 
+./mvnw clean -U install -DskipTests
 ```
 
-###To install the extra jars in Windows
+## Modules
+
+### gsrs.module.substance.exporters.XslExporterFactory
+The XslExporter can be used for the exporting of the substances using XSL template.
+
+#### Dependencies
+* net.sf.saxon.Saxon-HE
+
+#### Configuration
 
 ```
-./installExtraJars.cmd 
+ix.ginas.export.exporterfactories.substances.list.FhirR5 = {
+    "exporterFactoryClass": "gsrs.module.substance.exporters.XslExporterFactory",
+    "order": 3400,
+    "parameters": {
+        "format": {
+            "extension": "fhir.r5.json",
+            "displayName": "FHIR R5 JSON File"
+        },
+        "templateFile": "export-gsrs-fhir-json.xsl",
+        "header": "{\"resourceType\":\"Bundle\",\"type\":\"collection\",\"entry\": [{\"resource\":",
+        "footer": "}}]}",
+        "delimiter": "},{\"resource\":",
+        "shouldCompress": false
+    }
+}
+ix.ginas.export.exporterfactories.substances.list.Gsrsp = {
+    "exporterFactoryClass": "gsrs.module.substance.exporters.XslExporterFactory",
+    "order": 2100,
+    "parameters": {
+        "format": {
+            "extension": "gsrsp",
+            "displayName": "GSRS portable, gzipped JSON (.gsrs)"
+        },
+        "templateFile": "export-gsrsp.xsl",
+        "header": "\t\t",
+        "footer": "",
+        "delimiter": "\n\t\t",
+        "shouldCompress": true
+    }
+}
 ```
 
-## Additional documentation
+### gsrs.module.substance.importers.XslImportAdapterFactory
+The XslImporteAdapter can be used for the importing of the substances using XSL template.
 
-- Test refactoring and stabilization status: [`TEST_REFACTORING_STATUS.md`](./TEST_REFACTORING_STATUS.md)
+#### Dependencies
+* net.sf.saxon.Saxon-HE
 
-## Running tests (team standard)
+#### Configuration
 
-Always run tests from the repository root and use the Maven wrapper so all contributors use the same Maven version.
+```
+gsrs.importAdapterFactories.substances.list.GSRSPImportAdapterFactory = {
+    "adapterName": "GSRSP JSON Adapter",
+    "importAdapterFactoryClass": "gsrs.module.substance.importers.XslImportAdapterFactory",
+    "stagingAreaServiceClass": "gsrs.stagingarea.service.DefaultStagingAreaService",
+    "entityServiceClass" :"gsrs.dataexchange.SubstanceStagingAreaEntityService",
+    "description" : "Portable GSRSP JSON file importer",
+    "supportedFileExtensions": [
+        "gsrsp",
+        "gz"
+    ],
+    "parameters": {
+        "templateFile": "import-gsrsp.xsl",
+        "delimiter": "\n\t\t"
+    }
+}
 
-### Full test suite for `gsrs-module-substance-example`
-
-Note: this suite can take a while and produces very verbose chemistry/FHIR logs. Let it finish, then use the quick summary commands below to confirm totals.
-
-Windows PowerShell:
-
-```powershell
-cd C:\Users\kassahungb\IdeaProjects\gsrs-spring-module-substances
-.\mvnw.cmd -pl gsrs-module-substance-example -am -Pfull-test-suite clean test
+gsrs.importAdapterFactories.substances.list.FhirR5ImportAdapterFactory = {
+    "adapterName": "GSRS FHIR R5 JSON Adapter",
+    "importAdapterFactoryClass": "gsrs.module.substance.importers.XslImportAdapterFactory",
+    "stagingAreaServiceClass": "gsrs.stagingarea.service.DefaultStagingAreaService",
+    "entityServiceClass" :"gsrs.dataexchange.SubstanceStagingAreaEntityService",
+    "description" : "GSRS FHIR R5 JSON file importer",
+    "supportedFileExtensions": [
+        "json"
+    ],
+    "parameters": {
+        "templateFile": "import-gsrs-fhir-json.xsl",
+        "header": "{\"resourceType\":\"Bundle\",\"type\":\"collection\",\"entry\": [{\"resource\":",
+        "footer": "}}]}",
+        "delimiter": "},{\"resource\":"
+    }
+}
 ```
 
-Quick post-run summary (Windows PowerShell):
+### gsrs.module.substance.processors.SubstanceReferenceProcessor
+The SubstanceReferenceProcessor can be used to fix broken substance references after substances import from external GSRS system.
 
-```powershell
-$r = "C:\Users\kassahungb\IdeaProjects\gsrs-spring-module-substances\gsrs-module-substance-example\target\surefire-reports"
-$xmls = Get-ChildItem $r -Filter "TEST-*.xml"
-$tot = @{tests=0; failures=0; errors=0; skipped=0}
-foreach($f in $xmls){ [xml]$x = Get-Content $f.FullName; $s = $x.testsuite; $tot.tests += [int]$s.tests; $tot.failures += [int]$s.failures; $tot.errors += [int]$s.errors; $tot.skipped += [int]$s.skipped }
-"TOTAL tests=$($tot.tests) failures=$($tot.failures) errors=$($tot.errors) skipped=$($tot.skipped)"
+#### Configuration
+
+```
+gsrs.entityProcessors.list.SubstanceReferenceProcessor = {
+    "entityClassName" = "ix.ginas.models.v1.SubstanceReference",
+    "processor" = "gsrs.module.substance.processors.SubstanceReferenceProcessor",
+    "order" = 2400,
+    "with" = {
+        "codeSystemPatterns" : [
+            {"pattern": "^[0-9A-Z]{10}$", "codeSystem": "FDA UNII"}
+        ]
+    }
+}
 ```
 
-Unix/macOS:
+### gsrs.module.substance.tasks.UpdateEntityTaskInitializer
+The UpdateEntityTaskInitializer task can be used for updating attributes from any Entity class in the GSRS
+The optional parameter "query" can be used for granular selection of the objects.
+The optional parameter "resetFields" can be used to nullify specified fields before invoking the "preUpdate" method.
 
-```bash
-cd /path/to/gsrs-spring-module-substances
-./mvnw -pl gsrs-module-substance-example -am -Pfull-test-suite clean test
+#### Configuration
+
 ```
-
-### Temporary Hibernate 6 test quarantine (opt-in)
-
-Use profile `quarantine-hibernate-id` only as a temporary unblocker when the known Hibernate assigned-id test regressions are failing.
-
-- It is test-only (does not change runtime artifacts)
-- It intentionally skips a known failing subset, so do not treat it as full release confidence
-
-Windows PowerShell:
-
-```powershell
-cd C:\Users\kassahungb\IdeaProjects\gsrs-spring-module-substances
-.\mvnw.cmd -pl gsrs-module-substance-example -Pquarantine-hibernate-id test
+gsrs.scheduled-tasks.list.UpdateEntityTaskInitializer = {
+    "scheduledTaskClass" : "gsrs.module.substance.tasks.UpdateEntityTaskInitializer",
+    "order": 2000,
+    "parameters" : {
+        "entityClass": "ix.ginas.models.v1.Code",
+        "query": "select uuid from Code where codeSystem = 'CAS'",
+        "resetFields": ["url"],
+        "autorun": false
+    }
+}
 ```
-
-With full suite profile:
-
-```powershell
-cd C:\Users\kassahungb\IdeaProjects\gsrs-spring-module-substances
-.\mvnw.cmd -pl gsrs-module-substance-example -Pfull-test-suite,quarantine-hibernate-id test
-```
-
-Unix/macOS:
-
-```bash
-cd /path/to/gsrs-spring-module-substances
-./mvnw -pl gsrs-module-substance-example -Pquarantine-hibernate-id test
-```
-
-Quick decision table:
-
-| Goal | Command profile(s) | Use when | Avoid when |
-| --- | --- | --- | --- |
-| Normal validation (preferred) | none (default) | You want full confidence and can address failing tests | Known Hibernate assigned-id regression tests are currently blocking the team |
-| Temporary unblocker | `quarantine-hibernate-id` | You need progress while the known Hibernate assigned-id tests are being fixed | Final release validation / sign-off |
-| Broad coverage + temporary unblocker | `full-test-suite,quarantine-hibernate-id` | You need wider suite signal while still bypassing the known failing subset | Final release validation / sign-off |
-
-Quick post-run summary (Unix/macOS):
-
-```bash
-grep -h '<testsuite ' gsrs-module-substance-example/target/surefire-reports/TEST-*.xml \
-| awk -F'"' '{for(i=1;i<=NF;i++){if($i=="tests")t+=$(i+1); if($i=="failures")f+=$(i+1); if($i=="errors")e+=$(i+1); if($i=="skipped")s+=$(i+1)}} END{printf("TOTAL tests=%d failures=%d errors=%d skipped=%d\n",t,f,e,s)}'
-```
-
-### Quick diagnostics if output shows `Tests run: 0`
-
-Windows PowerShell:
-
-```powershell
-cd C:\Users\kassahungb\IdeaProjects\gsrs-spring-module-substances
-.\mvnw.cmd -v
-.\mvnw.cmd -q help:active-profiles
-.\mvnw.cmd -pl gsrs-module-substance-example -Pfull-test-suite -X test 2>&1 | Select-String -Pattern "Using.*Provider|surefire|junit|testng|skipTests|maven.test.skip"
-```
-

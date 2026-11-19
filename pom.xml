@@ -15,6 +15,7 @@
         <module>gsrs-ncats-substance-extension</module>
         <module>gsrs-module-substances-data-exchange</module>
         <module>gsrs-ema-fhir-substance-extension</module>
+        <module>gsrs-xsl-substance-extension</module>
     </modules>
     <dependencies>
         <dependency>
