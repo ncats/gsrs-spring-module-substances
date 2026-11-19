@@ -42,6 +42,11 @@ import java.util.stream.Stream;
 
 import javax.xml.transform.stream.StreamSource;
 
+
+// __aw__  Used AI to troubleshoot here. Got it to work but it should be verified. 
+// Please compare to original in gsrs-ep-substance-extension
+
+
 /**
  * Import adapter that uses an XSL 3.0 template to transform custom XML or JSON
  * input into GSRS-formatted JSON, then converts the resulting JSON records into

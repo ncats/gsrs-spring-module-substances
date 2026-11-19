@@ -30,7 +30,6 @@ public class XslExporter implements Exporter<Substance> {
                     .jsonMapper()
                     .writer();
 
-    // private final ObjectWriter writer =  EntityFactory.EntityMapper.FULL_ENTITY_MAPPER().writer();
     private int row=0;
 
     public XslExporter(OutputStream out, String templateFile, String header, String footer, String delimiter)

@@ -23,9 +23,9 @@
     </licenses>
     <developers>
         <developer>
-            <id>peryeata</id>
-            <name>Tyler Peryea</name>
-            <email>tyler.peryea@fda.hhs.gov</email>
+            <id>SomeId</id>
+            <name></name>
+            <email></email>
             <roles>
                 <role>architect</role>
                 <role>developer</role>
