@@ -6,7 +6,6 @@ import org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfigur
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
-import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 /**
  * Test Spring Boot application configuration for testing the substances module.
  * This class provides the necessary Spring Boot context for integration tests
@@ -14,8 +13,7 @@ import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfigurat
  */
 @SpringBootApplication(exclude = {
         DataJpaRepositoriesAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class,
-        DataRedisAutoConfiguration.class
+        HibernateJpaAutoConfiguration.class
 })
 @ComponentScan(basePackages = {
         "gsrs.module.substance.misc.emasmsfhir"
