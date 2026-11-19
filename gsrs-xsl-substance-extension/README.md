@@ -130,6 +130,9 @@ The SubstanceReferenceProcessor can be used to fix broken substance references a
 
 ```
 gsrs.entityProcessors.list.SubstanceReferenceProcessor = {
+    # __aw__ attempted testing, but not sure how to test this. 
+
+
     "entityClassName" = "ix.ginas.models.v1.SubstanceReference",
     "processor" = "gsrs.module.substance.processors.SubstanceReferenceProcessor",
     "order" = 2400,
@@ -169,6 +172,8 @@ The optional parameter "resetFields" can be used to nullify specified fields bef
 
 ```
 gsrs.scheduled-tasks.list.UpdateEntityTaskInitializer = {
+
+    # __aw__ tested
     "scheduledTaskClass" : "gsrs.module.substance.tasks.UpdateEntityTaskInitializer",
     "order": 2000,
     "parameters" : {
