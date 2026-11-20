@@ -6,6 +6,7 @@ import ix.ginas.models.v1.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.test.util.AopTestUtils;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -39,12 +40,13 @@ class BulkCreateNestedUuidTest extends AbstractSubstanceJpaEntityTest {
                 UUID.randomUUID(), UUID.randomUUID()));
     }
 
-    @Test
-    void bulkCreatePreservesOwnedGraphAndReferenceLinksAfterReload() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void createPreservesOwnedGraphAndReferenceLinksAfterReload(boolean batch) throws Exception {
         assertEquals(SubstanceEntityServiceImpl.class,
                 AopTestUtils.getUltimateTargetObject(substanceEntityService).getClass());
         ObjectNode json = payload();
-        Substance created = ensurePass(substanceEntityService.createEntity(json, true));
+        Substance created = ensurePass(substanceEntityService.createEntity(json, batch));
         UUID root = created.uuid;
         entityManager.flush();
         entityManager.clear();
@@ -124,14 +126,15 @@ class BulkCreateNestedUuidTest extends AbstractSubstanceJpaEntityTest {
         assertTrue(substanceRepository.existsById(saved.uuid));
     }
 
-    @Test
-    void bulkCreateGeneratesMissingChildUuids() throws Exception {
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void createGeneratesMissingChildUuids(boolean batch) throws Exception {
         ObjectNode json = payload();
         ((ObjectNode) json.at("/names/0")).remove("uuid");
         ((ObjectNode) json.at("/codes/0")).remove("uuid");
         ((ObjectNode) json.at("/references/0")).remove("uuid");
         ((ObjectNode) json.at("/names/0")).remove("references");
-        Substance created = ensurePass(substanceEntityService.createEntity(json, true));
+        Substance created = ensurePass(substanceEntityService.createEntity(json, batch));
         entityManager.flush();
         entityManager.clear();
         Substance saved = substanceRepository.findById(created.uuid).orElseThrow();
@@ -226,15 +229,16 @@ class BulkCreateNestedUuidTest extends AbstractSubstanceJpaEntityTest {
     }
 
     @Test
-    void ordinaryCreateStillReplacesNestedIdsAndRemapsReferenceLinks() throws Exception {
-        ensurePass(substanceEntityService.createEntity(payload(), true));
-        ObjectNode json = payload();
-        Substance saved = ensurePass(substanceEntityService.createEntity(json, false));
-        assertNotEquals(json.at("/names/0/uuid").asText(), saved.names.get(0).uuid.toString());
-        assertNotEquals(json.at("/references/0/uuid").asText(), saved.references.get(0).uuid.toString());
-        assertNotEquals(json.at("/codes/0/uuid").asText(), saved.codes.get(0).uuid.toString());
-        assertTrue(saved.names.get(0).getReferences().stream()
-                .anyMatch(k -> saved.references.get(0).uuid.toString().equals(k.term)));
+    void ordinaryCreateRejectsExistingNameOrgUuid() throws Exception {
+        ObjectNode first = payload();
+        Substance original = ensurePass(substanceEntityService.createEntity(first, false));
+        ObjectNode second = payload();
+        UUID nameOrgUuid = original.names.get(0).nameOrgs.get(0).getUuid();
+        ((ObjectNode) second.at("/names/0/nameOrgs/0")).put("uuid", nameOrgUuid.toString());
+        RuntimeException failure = assertThrows(RuntimeException.class,
+                () -> substanceEntityService.createEntity(second, false));
+        assertTrue(failure.getMessage().contains(nameOrgUuid.toString()));
+        assertFalse(substanceRepository.existsById(UUID.fromString(second.get("uuid").asText())));
     }
 
     private void assertId(JsonNode expected, UUID actual) {

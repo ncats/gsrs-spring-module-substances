@@ -12,8 +12,8 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 /**
- * Prepares new, owned import records without replacing their incoming identities.
- * Only persist cascades are followed: referenced users, groups and parents are not imports.
+ * Prepares owned records for creation without replacing their incoming UUIDs.
+ * Only persist cascades are followed: referenced users, groups and parents are not new records.
  */
 final class BulkImportPersistableGraph {
     private BulkImportPersistableGraph() {
@@ -39,7 +39,7 @@ final class BulkImportPersistableGraph {
                 if (identities.putIfAbsent(key, moiety) != null
                         || entityManager.createQuery("select count(m) from Moiety m where m.uuid = :uuid", Long.class)
                         .setParameter("uuid", moiety.uuid).getSingleResult() != 0) {
-                    throw new EntityExistsException("Bulk import UUID already exists: Moiety " + moiety.uuid);
+                    throw new EntityExistsException("UUID already exists: Moiety " + moiety.uuid);
                 }
             }
             for (SingularAttribute<?, ?> attribute : type.getSingularAttributes()) {
@@ -64,7 +64,7 @@ final class BulkImportPersistableGraph {
                         String key = identityType.getJavaType().getName() + ":" + id;
                         if (identities.putIfAbsent(key, entity) != null
                                 || entityManager.find(type.getJavaType(), id) != null) {
-                            throw new EntityExistsException("Bulk import UUID already exists: "
+                            throw new EntityExistsException("UUID already exists: "
                                     + type.getName() + " " + id);
                         }
                     }

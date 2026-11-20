@@ -5,6 +5,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
+import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubber;
+import gsrs.module.substance.scrubbers.basic.BasicSubstanceScrubberParameters;
 import gsrs.substances.tests.AbstractSubstanceJpaEntityTest;
 import ix.ginas.modelBuilders.SpecifiedSubstanceGroup1SubstanceBuilder;
 import ix.ginas.modelBuilders.SubstanceBuilder;
@@ -16,6 +18,7 @@ import ix.ginas.models.v1.SpecifiedSubstanceGroup1;
 import ix.ginas.models.v1.SpecifiedSubstanceGroup1Substance;
 import ix.ginas.models.v1.StructuralModification;
 import ix.ginas.models.v1.Substance;
+import ix.ginas.utils.JsonSubstanceFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -100,7 +103,7 @@ public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTe
     }
 
     @Test
-    void createCopiedProteinWithStructuralModificationAmountResetsOwnedChildIds() throws Exception {
+    void createCopiedProteinWithStructuralModificationAmountAfterReassigningOwnedIds() throws Exception {
         Substance fragment = assertCreated(new SubstanceBuilder()
                 .addName("Protein copy structural fragment")
                 .buildJson());
@@ -115,13 +118,17 @@ public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTe
 
         ProteinSubstance original = (ProteinSubstance) assertCreated(createJson);
         String originalNameReference = original.names.get(0).getReferences().iterator().next().term;
-        ObjectNode copiedCreateJson = (ObjectNode) original.toFullJsonNode();
-        copiedCreateJson.remove("uuid");
+        BasicSubstanceScrubber scrubber = new BasicSubstanceScrubber(new BasicSubstanceScrubberParameters());
+        Substance copy = scrubber.reassignUuids(JsonSubstanceFactory.makeSubstance(original.toFullJsonNode()));
+        copy.relationships.forEach(relationship -> relationship.originatorUuid = null);
+        ObjectNode copiedCreateJson = (ObjectNode) copy.toFullJsonNode();
+        BasicSubstanceScrubber.removeNumericIds(copiedCreateJson);
         ((ObjectNode) copiedCreateJson.at("/names/0")).put("name",
                 "Copied protein with structural modification");
         ObjectNode structuralModification = (ObjectNode) structuralModificationWithAmountJson();
-        structuralModification.set("molecularFragment",
-                copiedCreateJson.at("/relationships/0/relatedSubstance").deepCopy());
+        ObjectNode fragmentReference = (ObjectNode) copiedCreateJson.at("/relationships/0/relatedSubstance").deepCopy();
+        fragmentReference.remove("uuid");
+        structuralModification.set("molecularFragment", fragmentReference);
         ((ArrayNode) copiedCreateJson.at("/modifications/structuralModifications"))
                 .add(structuralModification);
 
@@ -129,6 +136,7 @@ public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTe
         StructuralModification modification = copied.modifications.structuralModifications.get(0);
 
         assertEquals("Copied protein with structural modification", copied.names.get(0).name);
+        assertNotEquals(original.protein.getUuid(), copied.protein.getUuid());
         assertNotEquals(original.names.get(0).getUuid(), copied.names.get(0).getUuid());
         String copiedNameReference = copied.names.get(0).getReferences().iterator().next().term;
         Set<String> copiedReferenceUuids = copied.references.stream()
