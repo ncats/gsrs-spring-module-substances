@@ -59,7 +59,7 @@ public class TransformedRecord<K, V> implements Serializable {
         }
         if(persisted) {
             try {
-            bulkLoadServiceCallBack.persistedSuccess();
+            bulkLoadServiceCallBack.persistedSuccess(recordToPersist);
             }catch(Exception e) {
                 e.printStackTrace();
             }

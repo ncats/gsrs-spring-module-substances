@@ -5,14 +5,16 @@ import gov.nih.ncats.molwitch.Bond;
 import gov.nih.ncats.molwitch.Chemical;
 import gsrs.module.substance.StructureHandlingConfiguration;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Assert;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -127,43 +129,60 @@ public class ChemicalUtils {
     @Autowired
     private StructureHandlingConfiguration structureHandlingConfiguration;
 
-    private Map<String, String> saltData;
-    private Map<String, String> saltFirstPartData;
+    private Map<String, String> saltData = new HashMap<>();
+    private Map<String, String> saltFirstPartData = new HashMap<>();
 
     @PostConstruct
     private void setUpSalts() {
-        if( structureHandlingConfiguration.getSaltFilePath() == null ) {
+        String path = structureHandlingConfiguration == null ? null : structureHandlingConfiguration.getSaltFilePath();
+        if (path == null || path.isBlank()) {
             log.warn("ChemicalUtils - setUpSalts not initialized");
             return;
         }
-        log.trace("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", structureHandlingConfiguration.getSaltFilePath());
+        log.trace("in setUpSalts, structureHandlingConfiguration.getSaltFilePath(): {}", path);
         saltData = new HashMap<>();
         saltFirstPartData = new HashMap<>();
         int inChIKeyLength = 27;
         try {
-            String path = structureHandlingConfiguration.getSaltFilePath();
-            log.info("Trying to read salt file at path: " + path);
+            log.info("Trying to read salt file at path: {}", path);
             File file = new File(path);
-            Assert.assertTrue("input salt data file must exist! The path was: " + path, file.exists());
-            List<String> lines = Files.readAllLines(file.toPath());
-            for (String line : lines) {
-                if (line.matches(".*\\w.*")) {
-                    String[] lineParts = line.split("\\t");
-                    if(lineParts[0].length() != inChIKeyLength) {
-                        log.info("salt file lines '{}' skipped", lineParts[0]);
-                        continue;
+            if (file.exists()) {
+                List<String> lines = Files.readAllLines(file.toPath());
+                for (String line : lines) {
+                    addSaltLine(line, inChIKeyLength);
+                }
+            } else {
+                ClassPathResource classPathResource = new ClassPathResource(path);
+                if (!classPathResource.exists()) {
+                    log.error("Salt data file not found in filesystem or classpath. path={}", path);
+                    return;
+                }
+                try (InputStream inputStream = classPathResource.getInputStream();
+                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        addSaltLine(line, inChIKeyLength);
                     }
-                    saltData.put(lineParts[0], lineParts[1]);
-                    String stereoInsensitive =lineParts[0].split("\\-")[0];
-                    saltFirstPartData.put(stereoInsensitive, lineParts[1]);
                 }
             }
-        }
-        catch (Exception ex){
+        } catch (IOException ex) {
             log.error("Error loading salt data {}", ex.getMessage());
-            ex.printStackTrace();
         }
         log.warn("completed loading of salt data -- {} records", saltData.keySet().size());
+    }
+
+    private void addSaltLine(String line, int inChIKeyLength) {
+        if (line == null || !line.matches(".*\\w.*")) {
+            return;
+        }
+        String[] lineParts = line.split("\\t");
+        if (lineParts.length < 2 || lineParts[0].length() != inChIKeyLength) {
+            log.info("salt file line '{}' skipped", lineParts.length > 0 ? lineParts[0] : line);
+            return;
+        }
+        saltData.put(lineParts[0], lineParts[1]);
+        String stereoInsensitive = lineParts[0].split("\\-")[0];
+        saltFirstPartData.put(stereoInsensitive, lineParts[1]);
     }
 
     public static class MetalicNature{

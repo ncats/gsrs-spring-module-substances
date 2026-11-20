@@ -28,7 +28,6 @@ import ix.core.util.LogUtil;
 import ix.core.validator.*;
 import ix.ginas.models.GinasAccessReferenceControlled;
 import ix.ginas.models.GinasCommonData;
-import ix.ginas.models.GinasCommonSubData;
 import ix.ginas.models.v1.Linkage;
 import ix.ginas.models.v1.ChemicalSubstance;
 import ix.ginas.models.v1.Amount;
@@ -192,8 +191,20 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     protected Substance fromNewJson(JsonNode json) throws IOException {
-        return JsonSubstanceFactory.makeSubstance(json);
-
+        Substance substance = JsonSubstanceFactory.makeSubstance(json);
+        if (substance instanceof ChemicalSubstance chemical) {
+            JsonNode moieties = json.get("moieties");
+            if (moieties != null && moieties.isArray()) {
+                for (int i = 0; i < moieties.size(); i++) {
+                    JsonNode uuid = moieties.get(i).get("uuid");
+                    if (uuid != null && !uuid.isNull()) {
+                        // The flattened moiety deserializer otherwise generates this identity.
+                        chemical.getMoieties().get(i).uuid = UUID.fromString(uuid.asText());
+                    }
+                }
+            }
+        }
+        return substance;
     }
 
     @Override
@@ -350,160 +361,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             return;
         }
         substance.version = "1";
-        if (substance.modifications != null) {
-            substance.modifications.uuid = null;
-        }
-        resetSubstanceOwnedGraphIds(substance);
-        if (substance instanceof ChemicalSubstance chemicalSubstance) {
-            resetChemicalGraphIds(chemicalSubstance);
-        }
-        if (substance instanceof MixtureSubstance mixtureSubstance) {
-            resetMixtureGraphIds(mixtureSubstance.mixture);
-        }
-        if (substance instanceof ProteinSubstance proteinSubstance) {
-            resetProteinGraphIds(proteinSubstance.protein);
-        }
-        if (substance instanceof PolymerSubstance polymerSubstance) {
-            resetPolymerGraphIds(polymerSubstance.polymer);
-        }
-        if (substance instanceof StructurallyDiverseSubstance structurallyDiverseSubstance) {
-            resetStructurallyDiverseGraphIds(structurallyDiverseSubstance.structurallyDiverse);
-        }
-        if (substance instanceof SpecifiedSubstanceGroup1Substance specifiedSubstanceGroup1Substance) {
-            resetSpecifiedSubstanceGraphIds(specifiedSubstanceGroup1Substance.specifiedSubstance);
-        }
-        if (substance instanceof NucleicAcidSubstance nucleicAcidSubstance) {
-            resetNucleicAcidGraphIds(nucleicAcidSubstance.nucleicAcid);
-        }
-    }
-
-    private void resetSubstanceOwnedGraphIds(Substance substance) {
-        if (substance.names != null) {
-            for (Name name : substance.names) {
-                if (name == null) {
-                    continue;
-                }
-                name.uuid = null;
-                if (name.nameOrgs != null) {
-                    for (NameOrg nameOrg : name.nameOrgs) {
-                        if (nameOrg != null) {
-                            nameOrg.uuid = null;
-                        }
-                    }
-                }
-            }
-        }
-        if (substance.codes != null) {
-            for (Code code : substance.codes) {
-                if (code != null) {
-                    code.uuid = null;
-                }
-            }
-        }
-        if (substance.notes != null) {
-            for (Note note : substance.notes) {
-                if (note != null) {
-                    note.uuid = null;
-                }
-            }
-        }
-        resetPropertyGraphIds(substance.properties);
-        resetRelationshipGraphIds(substance.relationships);
-        remapReferenceKeywords(substance, resetReferenceGraphIds(substance.references));
-        resetModificationGraphIds(substance.modifications);
-    }
-
-    private Map<String, String> resetReferenceGraphIds(List<Reference> references) {
-        Map<String, String> replacements = new LinkedHashMap<>();
-        if (references == null) {
-            return replacements;
-        }
-        for (Reference reference : references) {
-            if (reference == null || reference.uuid == null) {
-                continue;
-            }
-            UUID replacement = UUID.randomUUID();
-            replacements.put(reference.uuid.toString(), replacement.toString());
-            reference.uuid = replacement;
-        }
-        return replacements;
-    }
-
-    private void remapReferenceKeywords(Substance substance, Map<String, String> replacements) {
-        if (substance == null || replacements.isEmpty()) {
-            return;
-        }
-        for (GinasAccessReferenceControlled child : substance.getAllChildrenCapableOfHavingReferences()) {
-            if (child == null || child.getReferences() == null || child.getReferences().isEmpty()) {
-                continue;
-            }
-            Set<Keyword> remappedReferences = new LinkedHashSet<>();
-            boolean changed = false;
-            for (Keyword keyword : child.getReferences()) {
-                if (keyword == null) {
-                    continue;
-                }
-                String replacement = shouldRemapReferenceKeyword(keyword)
-                        ? replacements.get(keyword.term)
-                        : null;
-                if (replacement == null) {
-                    remappedReferences.add(keyword);
-                    continue;
-                }
-                remappedReferences.add(new Keyword(keyword.label, replacement));
-                changed = true;
-            }
-            if (changed) {
-                child.setReferences(remappedReferences);
-            }
-        }
-    }
-
-    private boolean shouldRemapReferenceKeyword(Keyword keyword) {
-        return keyword != null
-                && keyword.term != null
-                && (keyword.label == null || GinasCommonSubData.REFERENCE.equals(keyword.label));
-    }
-
-    private void resetPropertyGraphIds(List<Property> properties) {
-        if (properties == null) {
-            return;
-        }
-        for (Property property : properties) {
-            if (property == null) {
-                continue;
-            }
-            property.uuid = null;
-            resetAmountIds(property.getValue());
-            resetSubstanceReferenceIds(property.getReferencedSubstance());
-            if (property.getParameters() == null) {
-                continue;
-            }
-            for (Parameter parameter : property.getParameters()) {
-                if (parameter == null) {
-                    continue;
-                }
-                parameter.uuid = null;
-                resetAmountIds(parameter.value);
-                resetSubstanceReferenceIds(parameter.referencedSubstance);
-            }
-        }
-    }
-
-    private void resetRelationshipGraphIds(List<Relationship> relationships) {
-        if (relationships == null) {
-            return;
-        }
-        for (Relationship relationship : relationships) {
-            if (relationship == null) {
-                continue;
-            }
-            relationship.uuid = null;
-            relationship.originatorUuid = null;
-            resetAmountIds(relationship.amount);
-            resetSubstanceReferenceIds(relationship.relatedSubstance);
-            resetSubstanceReferenceIds(relationship.mediatorSubstance);
-        }
+        BulkImportPersistableGraph.prepare(substance, getEntityManager());
     }
 
     private void resetModificationGraphIds(Modifications modifications) {
@@ -1245,15 +1103,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
             return null;
         }
         if (existingModifications == null) {
-            updatedModifications.agentModifications = reconcileManagedAgentModifications(
-                    updatedModifications.agentModifications, Collections.emptyMap(), existingOwnedAmounts,
-                    existingOwnedSubstanceReferences, updatedModifications);
-            updatedModifications.physicalModifications = reconcileManagedPhysicalModifications(
-                    updatedModifications.physicalModifications, Collections.emptyMap(), existingPhysicalParameters,
-                    existingPhysicalParameterLists, existingPhysicalParameterAmounts, updatedModifications);
-            updatedModifications.structuralModifications = reconcileManagedStructuralModifications(
-                    updatedModifications.structuralModifications, Collections.emptyMap(), existingOwnedAmounts,
-                    existingOwnedSubstanceReferences, updatedModifications);
+            resetModificationGraphIds(updatedModifications);
             assignModificationOwners(updatedModifications);
             return updatedModifications;
         }
@@ -2275,7 +2125,57 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
 
     @Override
+    public CreationResult<Substance> createEntity(JsonNode newEntityJson, boolean partOfBatchLoad) {
+        Optional<UUID> requestedUuid = readSubstanceUuid(newEntityJson);
+        if (requestedUuid.isPresent() && repository.existsById(requestedUuid.get())) {
+            ValidationResponse<Substance> response = new ValidationResponse<>();
+            response.addValidationMessage(GinasProcessingMessage.ERROR_MESSAGE(
+                    "A substance with UUID \"%s\" already exists. Use an update request to change it.",
+                    requestedUuid.get()));
+            response.setValid(false);
+            return CreationResult.<Substance>builder()
+                    .created(false)
+                    .validationResponse(response)
+                    .build();
+        }
+        return super.createEntity(newEntityJson, partOfBatchLoad);
+    }
+
+    /**
+     * Reads the root substance UUID from the request JSON.
+     * Missing, blank or malformed values are treated as absent.
+     */
+    private static Optional<UUID> readSubstanceUuid(JsonNode json) {
+        if (json == null) {
+            return Optional.empty();
+        }
+        JsonNode uuidNode = json.get("uuid");
+        if (uuidNode == null || uuidNode.isNull()) {
+            return Optional.empty();
+        }
+        String text = uuidNode.asText();
+        if (text == null || !Util.isUUID(text.trim())) {
+            return Optional.empty();
+        }
+        return Optional.of(UUID.fromString(text.trim()));
+    }
+
+    private boolean isMissingUpdateTarget(JsonNode updatedEntityJson) {
+        Optional<UUID> uuid = readSubstanceUuid(updatedEntityJson);
+        return uuid.isEmpty() || !repository.existsById(uuid.get());
+    }
+
+    private static UpdateResult<Substance> notFoundUpdateResult() {
+        return UpdateResult.<Substance>builder()
+                .status(UpdateResult.STATUS.NOT_FOUND)
+                .build();
+    }
+
+    @Override
     public UpdateResult<Substance> updateEntity(JsonNode updatedEntityJson, boolean ignoreValidation) throws Exception {
+        if (isMissingUpdateTarget(updatedEntityJson)) {
+            return notFoundUpdateResult();
+        }
         ValidationResponse<Substance> validationResponse = null;
         if (!ignoreValidation) {
             validationResponse = validateEntity(updatedEntityJson, ValidatorCategory.CATEGORY_ALL());
@@ -2319,6 +2219,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     @Override
     public UpdateResult<Substance> updateEntityWithoutValidation(JsonNode updatedEntityJson) {
+        if (isMissingUpdateTarget(updatedEntityJson)) {
+            return notFoundUpdateResult();
+        }
         return performUpdateEntity(updatedEntityJson, null);
     }
 
@@ -2338,7 +2241,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 if (validationResponse != null) {
                     builder.validationResponse(validationResponse);
                 }
+                boolean[] targetFound = {false};
                 EntityUtils.EntityWrapper<Substance> savedVersion = entityPersistAdapter.change(oKey, oldEntity -> {
+                        targetFound[0] = true;
                         EntityUtils.EntityWrapper<Substance> og = EntityUtils.EntityWrapper.of(oldEntity);
                         String oldJson = og.toFullJson();
                         builder.oldJson(oldJson);
@@ -2506,7 +2411,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                             return Optional.of(saved); //Delete & Create
                         }
                     });
-                if(savedVersion ==null){
+                if(savedVersion ==null && !targetFound[0]){
+                    // The substance disappeared after the existence check; nothing was changed.
+                    builder.status(UpdateResult.STATUS.NOT_FOUND);
+                }else if(savedVersion ==null){
                     status.setRollbackOnly();
                 }else {
                     //IDK?
