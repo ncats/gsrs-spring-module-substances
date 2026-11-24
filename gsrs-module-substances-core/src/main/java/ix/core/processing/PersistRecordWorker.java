@@ -1,5 +1,6 @@
 package ix.core.processing;
 
+import gsrs.module.substance.services.BulkLoadTimings;
 import gsrs.module.substance.services.GinasSubstanceTransformerFactory;
 import gsrs.module.substance.services.SubstanceBulkLoadService;
 import gsrs.module.substance.services.SubstanceBulkLoadServiceConfiguration;
@@ -36,7 +37,13 @@ public abstract class PersistRecordWorker implements Runnable {
                 callback.extractionSuccess();
                 }catch(Exception e) {}    
 
-            Object trans = transformerFactory.createTransformerFor().transform(prg, rec);
+            long transformStart = System.nanoTime();
+            Object trans;
+            try {
+                trans = transformerFactory.createTransformerFor().transform(prg, rec);
+            } finally {
+                BulkLoadTimings.record(BulkLoadTimings.Phase.TRANSFORM, transformStart);
+            }
 
             if (trans == null) {
                 throw new IllegalStateException("Transform error");

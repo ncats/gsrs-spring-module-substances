@@ -1,6 +1,5 @@
 package ix.ginas.models.utils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import ix.core.models.Group;
 import ix.core.util.EntityUtils;
 import ix.ginas.models.v1.Relationship;
