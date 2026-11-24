@@ -17,9 +17,9 @@
       UUIDv4 strings, so references inside a single imported document stay consistent.
     -->
 
-    <xsl:param name="raw-input" as="xs:string" required="yes"/>
+    <xsl:param name="input" as="xs:string" required="yes"/>
 
-    <xsl:variable name="json-doc" select="fn:json-to-xml($raw-input)"/>
+    <xsl:variable name="json-doc" select="fn:json-to-xml($input)"/>
     <xsl:variable name="root" select="$json-doc/fn:map"/>
 
     <xsl:function name="local:int-to-hex" as="xs:string">

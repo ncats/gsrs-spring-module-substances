@@ -8,19 +8,23 @@
 
     <xsl:output method="json" encoding="UTF-8"/>
 
-    <xsl:param name="json-input" as="xs:string" required="yes"/>
+    <xsl:param name="input" as="xs:string" required="yes"/>
 
-    <xsl:variable name="json-doc" select="fn:json-to-xml($json-input)"/>
+    <xsl:variable name="json-doc" select="fn:json-to-xml($input)"/>
 
     <xsl:variable name="cv-base-url" as="xs:string"
                   select="'https://gsrs.ncats.nih.gov/api/v1/vocabularies/'"/>
 
     <xsl:function name="local:epoch-to-iso" as="xs:string">
         <xsl:param name="epoch-ms" as="xs:string"/>
-        <xsl:sequence select="fn:format-dateTime(
-            xs:dateTime('1970-01-01T00:00:00Z')
-                + xs:dayTimeDuration(concat('PT', xs:string(xs:integer(number($epoch-ms) div 1000)), 'S')),
-            '[Y0001]-[M01]-[D01]T[H01]:[m01]:[s01]Z')"/>
+        <!-- An absent or non-numeric timestamp has no instant to render, and
+             casting NaN to an integer is an error rather than an empty date. -->
+        <xsl:sequence select="if ($epoch-ms castable as xs:double)
+            then fn:format-dateTime(
+                xs:dateTime('1970-01-01T00:00:00Z')
+                    + xs:dayTimeDuration(concat('PT', xs:string(xs:integer(number($epoch-ms) div 1000)), 'S')),
+                '[Y0001]-[M01]-[D01]T[H01]:[m01]:[s01]Z')
+            else ''"/>
     </xsl:function>
 
     <xsl:template match="/">
@@ -42,8 +46,12 @@
                 <fn:string key="id"><xsl:value-of select="$uuid"/></fn:string>
 
                 <fn:map key="meta">
-                    <fn:string key="versionId"><xsl:value-of select="$version"/></fn:string>
-                    <fn:string key="lastUpdated"><xsl:value-of select="$lastEdited"/></fn:string>
+                    <xsl:if test="$version">
+                        <fn:string key="versionId"><xsl:value-of select="$version"/></fn:string>
+                    </xsl:if>
+                    <xsl:if test="$lastEdited">
+                        <fn:string key="lastUpdated"><xsl:value-of select="$lastEdited"/></fn:string>
+                    </xsl:if>
                 </fn:map>
 
                 <fn:array key="contained">
@@ -54,8 +62,12 @@
                                 <fn:string key="reference">#</fn:string>
                             </fn:map>
                         </fn:array>
-                        <fn:string key="occurredDateTime"><xsl:value-of select="$created"/></fn:string>
-                        <fn:string key="recorded"><xsl:value-of select="$lastEdited"/></fn:string>
+                        <xsl:if test="$created">
+                            <fn:string key="occurredDateTime"><xsl:value-of select="$created"/></fn:string>
+                        </xsl:if>
+                        <xsl:if test="$lastEdited">
+                            <fn:string key="recorded"><xsl:value-of select="$lastEdited"/></fn:string>
+                        </xsl:if>
                         <xsl:if test="$approvedBy">
                             <fn:array key="agent">
                                 <fn:map>
@@ -531,7 +543,18 @@
                                 </fn:array>
                             </fn:map>
 
-                            <fn:boolean key="preferred"><xsl:value-of select="fn:boolean[@key='displayName']/text()"/></fn:boolean>
+                            <!-- ``xml-to-json`` only accepts ``true`` and ``false``
+                                 in a boolean element, so a name that omits
+                                 ``displayName`` has to render ``false`` rather
+                                 than an empty element. -->
+                            <xsl:choose>
+                                <xsl:when test="fn:boolean[@key='displayName']/text() = 'true'">
+                                    <fn:boolean key="preferred">true</fn:boolean>
+                                </xsl:when>
+                                <xsl:otherwise>
+                                    <fn:boolean key="preferred">false</fn:boolean>
+                                </xsl:otherwise>
+                            </xsl:choose>
 
                             <xsl:if test="fn:array[@key='languages']/fn:string">
                                 <fn:array key="language">
@@ -941,10 +964,12 @@
                                     </fn:map>
                                 </xsl:if>
                                 <xsl:if test="$m/fn:string[@key='uuid']/text()">
-                                    <fn:map key="identifier">
-                                        <fn:string key="system">urn:ietf:rfc:3986</fn:string>
-                                        <fn:string key="value"><xsl:value-of select="concat('urn:uuid:', $m/fn:string[@key='uuid']/text())"/></fn:string>
-                                    </fn:map>
+                                    <fn:array key="identifier">
+                                        <fn:map>
+                                            <fn:string key="system">urn:ietf:rfc:3986</fn:string>
+                                            <fn:string key="value"><xsl:value-of select="concat('urn:uuid:', $m/fn:string[@key='uuid']/text())"/></fn:string>
+                                        </fn:map>
+                                    </fn:array>
                                 </xsl:if>
                                 <xsl:if test="$formula">
                                     <fn:string key="name"><xsl:value-of select="$formula"/></fn:string>

@@ -8,9 +8,9 @@
 
     <xsl:output method="json" encoding="UTF-8" indent="yes"/>
 
-    <xsl:param name="raw-input" as="xs:string" required="yes"/>
+    <xsl:param name="input" as="xs:string" required="yes"/>
 
-    <xsl:variable name="json-doc" select="fn:json-to-xml($raw-input)"/>
+    <xsl:variable name="json-doc" select="fn:json-to-xml($input)"/>
     <xsl:variable name="root" select="$json-doc/fn:map"/>
 
     <xsl:variable name="cv-base-url" as="xs:string"
@@ -55,6 +55,7 @@
             exists($root/fn:array[@key='contained']/fn:map[fn:string[@key='resourceType']='SubstanceNucleicAcid'][concat('#', fn:string[@key='id']/text()) = $naRef]) or
             exists($root/fn:array[@key='contained']/fn:map[fn:string[@key='resourceType']='SubstancePolymer'][concat('#', fn:string[@key='id']/text()) = $polyRef]) or
             exists($root/fn:map[@key='sourceMaterial']) or
+            exists($root/fn:array[@key='moiety']/fn:map) or
             exists($root/fn:array[@key='relationship']/fn:map[starts-with(fn:map[@key='type']/fn:array[@key='coding']/fn:map/fn:string[@key='code']/text(), 'MIXTURE_COMPONENT_') or
                 starts-with(fn:map[@key='type']/fn:array[@key='coding']/fn:map/fn:string[@key='display']/text(), 'MIXTURE_COMPONENT_')]) or
             exists($root/fn:array[@key='relationship']/fn:map[starts-with(fn:map[@key='type']/fn:array[@key='coding']/fn:map/fn:string[@key='code']/text(), 'SSG1_CONSTITUENT_') or
@@ -82,6 +83,20 @@
 
         <xsl:if test="$root/fn:map[@key='meta']/fn:string[@key='lastUpdated']">
             <fn:number key="lastEdited"><xsl:value-of select="local:iso-to-epoch(string($root/fn:map[@key='meta']/fn:string[@key='lastUpdated']))"/></fn:number>
+        </xsl:if>
+
+        <!-- The export records the creation instant on the Provenance resource,
+             so read it back from there; without it a second export pass would
+             have no creation date to render. -->
+        <!--suppress CheckEmptyScriptTag-->
+        <xsl:variable name="created" select="
+            ($root/fn:array[@key='contained']/fn:map
+                [fn:string[@key='resourceType']='Provenance']
+                /fn:string[@key='occurredDateTime']
+                [. castable as xs:dateTime], ())[1]
+        "/>
+        <xsl:if test="$created">
+            <fn:number key="created"><xsl:value-of select="local:iso-to-epoch(string($created))"/></fn:number>
         </xsl:if>
 
         <xsl:call-template name="names"/>
@@ -195,21 +210,25 @@
                             </fn:array>
                         </xsl:if>
                         <xsl:variable name="sourceRefs" select="fn:array[@key='source']/fn:map/fn:string[@key='reference']/text()"/>
+                        <!-- A name with no sources inherits the reference-level
+                             access of the substance, so it is not restricted on
+                             its own account. -->
                         <xsl:variable name="isUnrestricted" select="
-                            some $ref in $sourceRefs
+                            empty($sourceRefs) or
+                            (some $ref in $sourceRefs
                             satisfies (
                                 let $docRef := $root/fn:array[@key='contained']/fn:map[
                                     fn:string[@key='resourceType'] = 'DocumentReference'
                                     and concat('#', fn:string[@key='id']/text()) = $ref
                                 ]
                                 return $docRef/fn:array[@key='securityLabel']/fn:map[1]/fn:array[@key='coding']/fn:map[1]/fn:string[@key='display']/text() = 'Unrestricted'
-                            )
+                            ))
                         "/>
-                        <fn:array key="access">
-                            <xsl:if test="not($isUnrestricted)">
+                        <xsl:if test="not($isUnrestricted)">
+                            <fn:array key="access">
                                 <fn:string>protected</fn:string>
-                            </xsl:if>
-                        </fn:array>
+                            </fn:array>
+                        </xsl:if>
                     </fn:map>
                 </xsl:for-each>
             </fn:array>
@@ -252,6 +271,15 @@
             <fn:map key="structure">
                 <xsl:if test="$structure/fn:string[@key='molecularFormula']/text()">
                     <fn:string key="formula"><xsl:value-of select="$structure/fn:string[@key='molecularFormula']/text()"/></fn:string>
+                </xsl:if>
+                <!-- The molecular weight is rendered both on the resource and on
+                     its structure; either one is enough to restore it. -->
+                <xsl:variable name="mwt" select="
+                    ($structure/fn:map[@key='molecularWeight']/fn:map[@key='amount']/fn:number[@key='value'],
+                     $root/fn:array[@key='molecularWeight']/fn:map/fn:map[@key='amount']/fn:number[@key='value'])[1]
+                "/>
+                <xsl:if test="$mwt">
+                    <fn:number key="mwt"><xsl:value-of select="$mwt"/></fn:number>
                 </xsl:if>
                 <xsl:if test="$structure/fn:array[@key='representation']/fn:map/fn:string[@key='representation']/text()">
                     <xsl:for-each select="$structure/fn:array[@key='representation']/fn:map">
@@ -404,7 +432,7 @@
     <xsl:template name="notes">
         <xsl:if test="$root/fn:array[@key='note']/fn:map/fn:string[@key='text']/text()">
             <fn:array key="notes">
-                <xsl:for-each select="$root/fn:array[@key='note']/fn:map[fncstring[@key='text']/text()]">
+                <xsl:for-each select="$root/fn:array[@key='note']/fn:map[fn:string[@key='text']/text()]">
                     <fn:map>
                         <fn:string key="note"><xsl:value-of select="fn:string[@key='text']/text()"/></fn:string>
                     </fn:map>

@@ -1,8 +1,9 @@
 package gsrs.module.substance.importers;
 
-import tools.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import gsrs.imports.ImportAdapter;
+import gsrs.module.substance.utils.XslParameterUtils;
 import gsrs.module.substance.importers.importActionFactories.SubstanceImportAdapterFactoryBase;
 import gsrs.springUtils.AutowireHelper;
 
@@ -11,7 +12,9 @@ import ix.ginas.models.v1.Substance;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Factory for creating {@link XslImportAdapter} instances.
@@ -31,6 +34,9 @@ public class XslImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
     private String header = "";
     private String footer = "";
     private String delimiter = "";
+    private Map<String, String> xslParameters = new LinkedHashMap<>();
+    private Map<String, String> xslNamespaces = new LinkedHashMap<>();
+    private Map<String, String> codeSystemMappings = new LinkedHashMap<>();
     private List<String> extensions = Arrays.asList("xml", "json");
 
     protected Class stagingAreaService;
@@ -94,6 +100,49 @@ public class XslImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         this.delimiter = delimiter;
     }
 
+    /**
+     * Sets the additional parameters passed to the XSL template on every record.
+     *
+     * @param xslParameters map of template parameter names to their values
+     */
+    public void setXslParameters(Map<String, String> xslParameters) {
+        this.xslParameters = xslParameters;
+    }
+
+    public Map<String, String> getXslParameters() {
+        return xslParameters;
+    }
+
+    /**
+     * Sets the namespace prefix mappings used to resolve prefixed parameter names.
+     *
+     * @param xslNamespaces mapping of namespace prefixes to namespace URIs
+     */
+    public void setXslNamespaces(Map<String, String> xslNamespaces) {
+        this.xslNamespaces = xslNamespaces;
+    }
+
+    public Map<String, String> getXslNamespaces() {
+        return xslNamespaces;
+    }
+
+    /**
+     * Sets the code system name remapping applied to the imported records.
+     *
+     * <p>Each entry maps a code system name found in the input to the name it
+     * must have after import. For example {@code {"UNII": "FDA UNII"}} rewrites
+     * every code whose code system is {@code UNII} to {@code FDA UNII}.</p>
+     *
+     * @param codeSystemMappings mapping of input code system names to their replacements
+     */
+    public void setCodeSystemMappings(Map<String, String> codeSystemMappings) {
+        this.codeSystemMappings = codeSystemMappings;
+    }
+
+    public Map<String, String> getCodeSystemMappings() {
+        return codeSystemMappings;
+    }
+
     @Override
     public List<String> getSupportedFileExtensions() {
         return this.extensions;
@@ -113,6 +162,13 @@ public class XslImportAdapterFactory extends SubstanceImportAdapterFactoryBase {
         importAdapter.setHeader(header);
         importAdapter.setFooter(footer);
         importAdapter.setDelimiter(delimiter);
+        importAdapter.setXslParameters(XslParameterUtils.merge(
+            xslParameters,
+            XslParameterUtils.fromSettings(adapterSettings)));
+        importAdapter.setXslNamespaces(XslParameterUtils.merge(
+            xslNamespaces,
+            XslParameterUtils.namespacesFromSettings(adapterSettings)));
+        importAdapter.setCodeSystemMappings(codeSystemMappings);
         AutowireHelper.getInstance().autowire(importAdapter);
         return importAdapter;
     }
