@@ -6,6 +6,7 @@ import gsrs.scheduledTasks.SchedulerPlugin;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.UUID;
 
 public class ReindexTaskInitializer extends ScheduledTaskInitializer {
@@ -19,7 +20,8 @@ public class ReindexTaskInitializer extends ScheduledTaskInitializer {
         try {
             reindexService.execute(uuid, l);
         } catch (IOException e) {
-            e.printStackTrace();
+            l.message("Reindex failed: " + e.getMessage());
+            throw new UncheckedIOException(e);
         }
 
 	}
