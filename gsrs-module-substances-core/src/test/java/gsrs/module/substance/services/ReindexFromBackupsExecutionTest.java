@@ -24,7 +24,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -140,6 +144,73 @@ class ReindexFromBackupsExecutionTest {
                 assertThrows(IOException.class, () -> service.execute(UUID.randomUUID(), listener)));
 
         assertTrue(error.getMessage().contains("1 backups"));
+        verify(publisher).publishEvent(any(EndReindexEvent.class));
+        assertCleanedUp();
+    }
+
+    @Test
+    void interruptionLetsActiveWritesFinishAndSkipsRemainingWork() throws Exception {
+        service = spy(service);
+        ReflectionTestUtils.setField(service, "batchSize", 1);
+        when(idQuery.getResultList()).thenReturn(List.of(1L, 2L, 3L));
+        BackupEntity backup = new BackupEntity();
+        backup.data = new byte[0];
+        when(repository.findAllById(any())).thenReturn(List.of(backup));
+        CountDownLatch writing = new CountDownLatch(1);
+        CountDownLatch releaseWrite = new CountDownLatch(1);
+        CountDownLatch stopping = new CountDownLatch(1);
+        AtomicBoolean workerInterrupted = new AtomicBoolean();
+        AtomicBoolean callerInterruptPreserved = new AtomicBoolean();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        doAnswer(invocation -> {
+            writing.countDown();
+            try {
+                releaseWrite.await();
+            } catch (InterruptedException e) {
+                workerInterrupted.set(true);
+                throw e;
+            }
+            workerInterrupted.set(Thread.currentThread().isInterrupted());
+            return null;
+        }).when(service).reindexBackup(any(), any(), any());
+        doAnswer(invocation -> {
+            if (((String) invocation.getArgument(0)).startsWith("Stopping reindex:")) {
+                stopping.countDown();
+            }
+            return null;
+        }).when(listener).message(anyString());
+        Thread caller = new Thread(() -> {
+            try {
+                service.execute(UUID.randomUUID(), listener);
+            } catch (Throwable e) {
+                failure.set(e);
+            } finally {
+                callerInterruptPreserved.set(Thread.currentThread().isInterrupted());
+            }
+        }, "reindex-cancellation-test");
+        caller.start();
+        try {
+            assertTrue(writing.await(5, TimeUnit.SECONDS));
+            caller.interrupt();
+            assertTrue(stopping.await(5, TimeUnit.SECONDS));
+            assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+                while (caller.isAlive() && caller.getState() != Thread.State.TIMED_WAITING) {
+                    Thread.sleep(1);
+                }
+            });
+            assertTrue(caller.isAlive(), "Caller must wait for the active writer");
+            verify(publisher, never()).publishEvent(any(EndReindexEvent.class));
+        } finally {
+            releaseWrite.countDown();
+            caller.join(5000);
+        }
+        assertFalse(caller.isAlive());
+        assertFalse(workerInterrupted.get(), "An interrupted NIO write can close the shared Lucene writer");
+        assertTrue(callerInterruptPreserved.get());
+        assertInstanceOf(IOException.class, failure.get());
+        verify(repository, times(1)).findAllById(any());
+        // One processed backup plus two skipped backups balance the lifecycle.
+        verify(publisher, times(3)).publishEvent(any(IncrementReindexEvent.class));
         verify(publisher).publishEvent(any(EndReindexEvent.class));
         assertCleanedUp();
     }

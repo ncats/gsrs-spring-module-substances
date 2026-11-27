@@ -35,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Rebuilds the indexes from backup keys, using current database entities. */
@@ -95,6 +96,8 @@ public class ReindexFromBackups implements ReindexService {
                 "select b.id from BackupEntity b order by b.id", Long.class).getResultList());
         Set<String> seen = ConcurrentHashMap.newKeySet();
         AtomicLong failures = new AtomicLong();
+        AtomicLong accounted = new AtomicLong();
+        AtomicBoolean stopping = new AtomicBoolean();
         CountDownLatch endLatch = new CountDownLatch(1);
         latchMap.put(reindexId, endLatch);
         listenerMap.put(reindexId, new TaskProgress(listener, ids.size()));
@@ -107,6 +110,9 @@ public class ReindexFromBackups implements ReindexService {
                         BeginReindexEvent.IndexBehavior.WIPE_ALL_INDEXES, Collections.emptyList()));
                 log.info("Reindex {} starting with {} backups, batch size {}", reindexId, ids.size(), batchSize);
                 for (int offset = 0; offset < ids.size(); offset += batchSize) {
+                    if (stopping.get()) {
+                        break;
+                    }
                     List<Long> batchIds = ids.subList(offset, Math.min(offset + batchSize, ids.size()));
                     List<BackupEntity> backups = readTx.execute(status -> {
                         List<BackupEntity> batch = backupRepository.findAllById(batchIds);
@@ -116,6 +122,9 @@ public class ReindexFromBackups implements ReindexService {
                         return batch;
                     });
                     backups.parallelStream().forEach(backup -> {
+                        if (stopping.get()) {
+                            return;
+                        }
                         try {
                             // One context per backup reuses entities loaded for its
                             // root when indexing children. No enclosing transaction
@@ -125,14 +134,30 @@ public class ReindexFromBackups implements ReindexService {
                             failures.incrementAndGet();
                             log.warn("Reindex {} failed for backup {}", reindexId, backup.getRefid(), e);
                         }
+                        accounted.incrementAndGet();
                         eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
                     });
                     // Removed backups must not leave the completion count stuck.
                     for (int missing = backups.size(); missing < batchIds.size(); missing++) {
+                        accounted.incrementAndGet();
                         eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
                     }
                     log.info("Reindex {} processed {} of {} backups; failed backups: {}",
-                            reindexId, offset + batchIds.size(), ids.size(), failures.get());
+                            reindexId, accounted.get(), ids.size(), failures.get());
+                }
+                if (stopping.get()) {
+                    // Workers have left the parallel stream, so no index writes
+                    // remain. Balance the lifecycle counter for skipped backups
+                    // to release maintenance mode, without reporting them indexed.
+                    long skipped = ids.size() - accounted.get();
+                    listenerMap.remove(reindexId);
+                    for (long i = 0; i < skipped; i++) {
+                        eventPublisher.publishEvent(new IncrementReindexEvent(reindexId));
+                    }
+                    log.warn("Reindex {} stopped after {} backups; skipped {} backups",
+                            reindexId, accounted.get(), skipped);
+                    listener.message("Reindex stopped after " + accounted.get()
+                            + " backups; skipped " + skipped + " backups");
                 }
             }).get();
             // Listeners are synchronous, so a missing event after workers finish
@@ -144,14 +169,33 @@ public class ReindexFromBackups implements ReindexService {
                 throw new IOException("Reindex failed for " + failures.get() + " backups; see the log");
             }
         } catch (InterruptedException e) {
+            stopping.set(true);
+            log.warn("Reindex {} interrupted; waiting for active records to finish safely", reindexId);
+            listener.message("Stopping reindex: waiting for active records to finish safely");
             Thread.currentThread().interrupt();
             throw new IOException("Reindex interrupted: " + reindexId, e);
         } catch (ExecutionException e) {
+            stopping.set(true);
             throw new IOException("Reindex worker failed: " + reindexId, e.getCause());
         } finally {
-            pool.shutdownNow();
+            // Interrupting Lucene's NIO file writes can close its shared writer
+            // (ClosedByInterruptException), breaking searches and other workers.
+            // Stop cooperatively and wait before dropping run state or returning.
+            pool.shutdown();
+            boolean interrupted = Thread.interrupted();
+            while (!pool.isTerminated()) {
+                try {
+                    pool.awaitTermination(1, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    stopping.set(true);
+                    interrupted = true;
+                }
+            }
             latchMap.remove(reindexId);
             listenerMap.remove(reindexId);
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
