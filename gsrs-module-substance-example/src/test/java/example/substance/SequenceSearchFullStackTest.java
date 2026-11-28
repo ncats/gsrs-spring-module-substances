@@ -5,11 +5,7 @@ import tools.jackson.databind.JsonNode;
 import example.GsrsModuleSubstanceApplication;
 import gov.nih.ncats.common.stream.StreamUtil;
 import gsrs.module.substance.indexers.SubstanceDefinitionalHashIndexer;
-import gsrs.module.substance.processors.ReferenceProcessor;
 import gsrs.module.substance.processors.RelationEventListener;
-import gsrs.module.substance.processors.RelationshipProcessor;
-import gsrs.module.substance.processors.SubstanceProcessor;
-import gsrs.module.substance.services.RelationshipService;
 import gsrs.repository.EditRepository;
 import gsrs.startertests.TestEntityProcessorFactory;
 import gsrs.startertests.TestGsrsValidatorFactory;
@@ -28,6 +24,7 @@ import ix.seqaln.SequenceIndexer.ResultEnumeration;
 import ix.seqaln.service.SequenceIndexerService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -39,7 +36,6 @@ import org.springframework.scheduling.annotation.AsyncConfigurer;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -49,12 +45,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
 @SpringBootTest(classes = GsrsModuleSubstanceApplication.class)
 @ActiveProfiles("test")
@@ -63,6 +64,15 @@ import static org.junit.Assert.assertTrue;
 @WithMockUser(username = "admin", roles="Admin")
 @Slf4j
 public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackEntityTest {
+
+    @BeforeEach
+    void runIndexingTasksInline() {
+        Configuration.indexingExecutor = Runnable::run;
+        doAnswer(invocation -> {
+            ((Runnable) invocation.getArgument(0)).run();
+            return null;
+        }).when(mockTaskExecutor).execute(any(Runnable.class));
+    }
 
     @Autowired
     private TestIndexValueMakerFactory testIndexValueMakerFactory;
@@ -76,6 +86,8 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     @TestConfiguration
     @EnableAsync
     public static class Configuration implements AsyncConfigurer{
+
+        static volatile Executor indexingExecutor = Runnable::run;
 
         List<Runner> runs = new ArrayList<Runner>();
 
@@ -97,7 +109,7 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
         @Override
         public Executor getAsyncExecutor() {
-            return Runnable::run;
+            return task -> indexingExecutor.execute(task);
         }
 
 
@@ -109,20 +121,11 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
 
 
     @Autowired
-    private Configuration conf;
-
-    @Autowired
     private TestEntityProcessorFactory testEntityProcessorFactory;
 
     @Autowired
     private TestGsrsValidatorFactory testGsrsValidatorFactory;
 
-    @MockitoSpyBean
-    private SubstanceProcessor substanceProcessor;
-    @MockitoSpyBean
-    private RelationshipProcessor relationshipProcessor;
-    @MockitoSpyBean
-    private ReferenceProcessor referenceProcessor;
 
     @Autowired
     private EditRepository editRepository;
@@ -130,14 +133,11 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     @Autowired
     SequenceIndexerService seqIndexer;
 
-    @MockitoSpyBean
-    private RelationshipService relationshipService;
 
 
     @Override
     protected Substance assertCreatedAPI(JsonNode json) {
         Substance s= super.assertCreatedAPI(json);
-        conf.flush();
         return s;
 
     }
@@ -145,8 +145,51 @@ public class SequenceSearchFullStackTest  extends AbstractSubstanceJpaFullStackE
     @Override
     protected Substance assertUpdatedAPI(JsonNode json) {
         Substance s= super.assertUpdatedAPI(json);
-        conf.flush();
         return s;
+    }
+
+    @Test
+    public void proteinSequenceUpdateIsSearchableAfterAsyncCommit() throws Exception {
+        ExecutorService workers = Executors.newSingleThreadExecutor();
+        AtomicInteger dispatched = new AtomicInteger();
+        try {
+            Executor asyncExecutor = task -> {
+                dispatched.incrementAndGet();
+                workers.execute(task);
+            };
+            Configuration.indexingExecutor = asyncExecutor;
+            doAnswer(invocation -> {
+                asyncExecutor.execute((Runnable) invocation.getArgument(0));
+                return null;
+            }).when(mockTaskExecutor).execute(any(Runnable.class));
+
+            String oldSequence = "ACDEFGHIJKLMN";
+            String newSequence = "TTTTTTTTTTATCGHHHH";
+            ProteinSubstance protein = new SubstanceBuilder().asProtein()
+                    .addName("Async sequence update")
+                    .addSubunitWithDefaultReference(oldSequence).build();
+            ProteinSubstance created = (ProteinSubstance) assertCreatedAPI(protein.toFullJsonNode());
+            workers.submit(() -> {}).get(30, TimeUnit.SECONDS);
+            assertTrue("The test must dispatch indexing onto another thread", dispatched.get() > 0);
+            ProteinSubstance saved = getProteinSubstance(created.getUuid());
+            UUID subunitId = firstProteinSubunitUuid(saved);
+            assertEquals(1, countResultsForSubunit(getGlobalResults(oldSequence, "protein"), subunitId));
+
+            saved.protein.subunits.get(0).sequence = newSequence;
+            assertUpdatedAPI(saved.toFullJsonNode());
+            workers.submit(() -> {}).get(30, TimeUnit.SECONDS);
+
+            assertEquals("The sequence edit must be persisted", newSequence,
+                    getProteinSubstance(created.getUuid()).protein.subunits.get(0).sequence);
+            assertEquals("The old sequence must leave the index", 0,
+                    countResultsForSubunit(getGlobalResults(oldSequence, "protein"), subunitId));
+            assertEquals("The new sequence must enter the index", 1,
+                    countResultsForSubunit(getGlobalResults(newSequence, "protein"), subunitId));
+        } finally {
+            Configuration.indexingExecutor = Runnable::run;
+            workers.shutdown();
+            assertTrue("Indexing workers must finish", workers.awaitTermination(30, TimeUnit.SECONDS));
+        }
     }
 
     @Test

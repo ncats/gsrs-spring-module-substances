@@ -774,6 +774,13 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         return !sameJson(persistedModifications, updatedModifications);
     }
 
+    private boolean hasProteinDefinitionChange(Substance persisted, Substance updated) {
+        return persisted instanceof ProteinSubstance oldProtein
+                && updated instanceof ProteinSubstance newProtein
+                && oldProtein.protein != null && newProtein.protein != null
+                && !sameJsonWithoutAudit(oldProtein.protein, newProtein.protein);
+    }
+
     private void normalizeEmptyModificationsForDiff(Substance persisted, Substance updated) {
         if (persisted == null || updated == null
                 || !isEmptyModifications(persisted.modifications)
@@ -802,7 +809,7 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         }
         if (persisted instanceof ProteinSubstance persistedProteinSubstance
                 && updated instanceof ProteinSubstance updatedProteinSubstance
-                && sameJson(persistedProteinSubstance.protein, updatedProteinSubstance.protein)) {
+                && sameJsonWithoutAudit(persistedProteinSubstance.protein, updatedProteinSubstance.protein)) {
             updatedProteinSubstance.setProtein(persistedProteinSubstance.protein);
         }
         if (persisted instanceof MixtureSubstance persistedMixtureSubstance
@@ -832,6 +839,14 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
 
     private boolean sameJson(Object persisted, Object updated) {
         return Objects.equals(mapper.valueToTree(persisted), mapper.valueToTree(updated));
+    }
+
+    private boolean sameJsonWithoutAudit(Object persisted, Object updated) {
+        JsonNode oldJson = mapper.valueToTree(persisted);
+        JsonNode newJson = mapper.valueToTree(updated);
+        scrubServerManagedAuditFields(oldJson);
+        scrubServerManagedAuditFields(newJson);
+        return Objects.equals(oldJson, newJson);
     }
 
     private boolean sameMoietyCollectionForDiff(List<Moiety> persistedMoieties, List<Moiety> updatedMoieties) {
@@ -896,6 +911,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 ? (updatedChemical.getMoieties() == null ? null : new ArrayList<>(updatedChemical.getMoieties()))
                 : null;
         Modifications replacementModifications = updated.modifications;
+        Protein replacementProtein = updated instanceof ProteinSubstance updatedProteinSubstance
+                ? updatedProteinSubstance.protein : null;
         SpecifiedSubstanceGroup1 existingSpecifiedSubstance = managed instanceof SpecifiedSubstanceGroup1Substance managedSsg1
                 ? managedSsg1.specifiedSubstance
                 : null;
@@ -1021,6 +1038,10 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                 replacedSsg1.specifiedSubstance = existingSpecifiedSubstance;
             }
             if (preserveProtein && replaced instanceof ProteinSubstance replacedProteinSubstance) {
+                // Preserve managed identities, not stale sequence values. Keeping
+                // the old Protein without reconciling its children silently loses
+                // subunit edits when the replacement path handles modifications.
+                reconcileManagedProtein(replacementProtein, existingProtein);
                 replacedProteinSubstance.setProtein(existingProtein);
             }
             if (preserveMixture && replaced instanceof MixtureSubstance replacedMixtureSubstance) {
@@ -1070,6 +1091,87 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
         } finally {
             entityManager.setFlushMode(previousFlushMode);
         }
+    }
+
+    private void reconcileManagedProtein(Protein updated, Protein managed) throws IOException {
+        if (updated == null || updated == managed) {
+            return;
+        }
+        if (sameJsonWithoutAudit(managed, updated)) {
+            return;
+        }
+        List<OtherLinks> existingLinks = managed.otherLinks;
+        Map<UUID, OtherLinks> existingLinksByUuid = mapByUuid(existingLinks);
+        Glycosylation existingGlycosylation = managed.glycosylation;
+        JsonNode updatedJson = mapper.valueToTree(updated);
+        scrubServerManagedAuditFields(updatedJson);
+        if (updatedJson instanceof ObjectNode objectNode) {
+            objectNode.remove("subunits");
+            objectNode.remove("otherLinks");
+            objectNode.remove("glycosylation");
+        }
+        mapper.readerForUpdating(managed).readValue(updatedJson);
+        reconcileManagedProteinSubunits(updated, managed);
+        managed.otherLinks = replaceListContents(existingLinks,
+                reconcileManagedDirtyChildren(updated.otherLinks, existingLinksByUuid, link -> {}));
+        if (existingGlycosylation != null && updated.glycosylation != null
+                && Objects.equals(existingGlycosylation.getUuid(), updated.glycosylation.getUuid())) {
+            boolean glycosylationChanged = !sameJsonWithoutAudit(existingGlycosylation, updated.glycosylation);
+            if (glycosylationChanged) {
+                JsonNode glycosylationJson = mapper.valueToTree(updated.glycosylation);
+                scrubServerManagedAuditFields(glycosylationJson);
+                mapper.readerForUpdating(existingGlycosylation).readValue(glycosylationJson);
+                existingGlycosylation.forceUpdate();
+            }
+            managed.glycosylation = existingGlycosylation;
+        } else {
+            managed.glycosylation = updated.glycosylation;
+        }
+        managed.forceUpdate();
+    }
+
+    private void reconcileManagedProteinSubunits(Protein updated, Protein managed) throws IOException {
+        if (updated == null || updated == managed) {
+            return;
+        }
+        List<Subunit> existingSubunits = managed.subunits;
+        List<Subunit> reconciled = reconcileManagedDirtyChildren(updated.subunits,
+                mapByUuid(existingSubunits), subunit -> subunit.setParent(managed));
+        managed.setSubunits(replaceListContents(existingSubunits, reconciled));
+    }
+
+    private <T extends GinasCommonData> List<T> reconcileManagedDirtyChildren(List<T> updated,
+            Map<UUID, T> existingByUuid, java.util.function.Consumer<T> ownerSetter) throws IOException {
+        List<T> reconciled = updated == null ? null : new ArrayList<>();
+        if (updated != null) {
+            for (T child : updated) {
+                if (child == null) {
+                    continue;
+                }
+                T target = child.getUuid() == null ? null : existingByUuid.get(child.getUuid());
+                if (target == null) {
+                    target = child;
+                } else if (target != child && !sameJsonWithoutAudit(target, child)) {
+                    JsonNode childJson = mapper.valueToTree(child);
+                    scrubServerManagedAuditFields(childJson);
+                    mapper.readerForUpdating(target).readValue(childJson);
+                    target.forceUpdate();
+                }
+                ownerSetter.accept(target);
+                reconciled.add(target);
+            }
+        }
+        Set<UUID> retained = reconciled == null ? Collections.emptySet()
+                : reconciled.stream().map(GinasCommonData::getUuid).collect(Collectors.toSet());
+        for (Map.Entry<UUID, T> entry : existingByUuid.entrySet()) {
+            if (!retained.contains(entry.getKey())
+                    && EntityUtils.EntityWrapper.of(entry.getValue()).isExplicitDeletable()) {
+                // Match patch-based deletion semantics for owned children. Their
+                // removal events also remove obsolete subunit sequence documents.
+                getEntityManager().remove(entry.getValue());
+            }
+        }
+        return reconciled;
     }
 
     private void setManagedModifications(Substance substance, Modifications modifications) {
@@ -2259,7 +2361,9 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                         boolean usePojoPatch = sameSubstanceClass;
                         boolean chemicalDefinitionChange = hasChemicalDefinitionChange(oldEntity, updatedEntity);
                         boolean modificationsChange = hasModificationsChange(oldEntity, updatedEntity);
-                        boolean useReplacementUpdate = chemicalDefinitionChange || rootMolfileChange || modificationsChange;
+                        boolean proteinDefinitionChange = hasProteinDefinitionChange(oldEntity, updatedEntity);
+                        boolean useReplacementUpdate = chemicalDefinitionChange || rootMolfileChange
+                                || modificationsChange || proteinDefinitionChange;
                         if (usePojoPatch && useReplacementUpdate) {
                             usePojoPatch = false;
                         }
@@ -2353,10 +2457,8 @@ public class SubstanceEntityServiceImpl extends AbstractGsrsEntityService<Substa
                                 return Optional.empty();
                             }
                         } else {
-                            // NON POJOPATCH: for true chemical definition changes, merge the
-                            // updated graph directly so the root structure row is updated in
-                            // place. For the remaining cases, keep the legacy delete-and-save
-                            // behavior.
+                            // Reconcile definition/modification edits into managed
+                            // entities. Type changes retain the legacy delete-and-save path.
 
                             Substance oldValue = (Substance) oWrap.getValue();
                             normalizeUpdatedEntityForReplacement(oldValue, updatedEntity);

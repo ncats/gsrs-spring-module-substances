@@ -34,6 +34,89 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @WithMockUser(username = "admin", roles = "Admin")
 public class UpdatePhysicalModificationTest extends AbstractSubstanceJpaEntityTest {
 
+    @Test
+    void nameAndReasonEditPreserveExistingModifiedProtein() throws Exception {
+        ObjectNode createJson = (ObjectNode) new SubstanceBuilder().asProtein()
+                .addName("Protein metadata original")
+                .addSubunitWithDefaultReference("ACDEFGHIK").buildJson();
+        createJson.set("modifications", emptyModificationsJson());
+        ((ArrayNode) createJson.at("/modifications/physicalModifications")).add(physicalModificationJson());
+        ProteinSubstance created = (ProteinSubstance) assertCreated(createJson);
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        updateJson.put("changeReason", "Correct the protein name");
+        ((ObjectNode) updateJson.at("/names/0")).put("name", "Protein metadata corrected");
+
+        assertUpdated(updateJson);
+        entityManager.flush();
+        entityManager.clear();
+        ProteinSubstance reopened = (ProteinSubstance) substanceRepository.findById(created.getUuid()).orElseThrow();
+        assertEquals("Correct the protein name", reopened.changeReason);
+        assertEquals("Protein metadata corrected", reopened.names.get(0).name);
+        assertEquals("ACDEFGHIK", reopened.protein.subunits.get(0).sequence);
+        assertEquals(1, reopened.modifications.physicalModifications.size());
+    }
+
+    @Test
+    void proteinSequenceAndChangeReasonPersistTogether() throws Exception {
+        assertProteinSequenceEditPersists(false);
+    }
+
+    @Test
+    void proteinSequenceAndChangeReasonPersistWhenModificationsAlsoChange() throws Exception {
+        assertProteinSequenceEditPersists(true);
+    }
+
+    @Test
+    void proteinSequenceAndChangeReasonPersistWithExistingModifications() throws Exception {
+        assertProteinSequenceEditPersists(false, true);
+    }
+
+    private void assertProteinSequenceEditPersists(boolean changeModifications) throws Exception {
+        assertProteinSequenceEditPersists(changeModifications, false);
+    }
+
+    private void assertProteinSequenceEditPersists(boolean changeModifications, boolean existingModifications) throws Exception {
+        ObjectNode createJson = (ObjectNode) new SubstanceBuilder().asProtein()
+                .addName("Protein sequence persistence")
+                .addSubunitWithDefaultReference("ACDEFGHIK").buildJson();
+        createJson.set("modifications", emptyModificationsJson());
+        if (existingModifications) {
+            ((ArrayNode) createJson.at("/modifications/physicalModifications")).add(physicalModificationJson());
+        }
+        ProteinSubstance created = (ProteinSubstance) assertCreated(createJson);
+        java.util.UUID substanceId = created.getUuid();
+        java.util.UUID proteinId = created.protein.getUuid();
+        java.util.UUID subunitId = created.protein.subunits.get(0).getUuid();
+        java.util.Date proteinCreated = created.protein.created;
+        java.util.Date subunitCreated = created.protein.subunits.get(0).created;
+        ObjectNode updateJson = (ObjectNode) created.toFullJsonNode();
+        updateJson.put("changeReason", "Correct the protein sequence");
+        ((ObjectNode) updateJson.get("protein")).put("sequenceOrigin", "SYNTHETIC");
+        ((ObjectNode) updateJson.at("/protein/subunits/0")).put("sequence", "TTTTTTTTTTATCGHHHH");
+        if (changeModifications) {
+            ((ArrayNode) updateJson.at("/modifications/physicalModifications")).add(physicalModificationJson());
+        }
+
+        assertEquals("TTTTTTTTTTATCGHHHH", updateJson.at("/protein/subunits/0/sequence").asText());
+        ProteinSubstance returned = (ProteinSubstance) assertUpdated(updateJson);
+        assertEquals("TTTTTTTTTTATCGHHHH", returned.protein.subunits.get(0).sequence,
+                "The save response must contain the edited sequence");
+        entityManager.flush();
+        entityManager.clear();
+        ProteinSubstance reopened = (ProteinSubstance) substanceRepository.findById(substanceId).orElseThrow();
+        assertEquals("Correct the protein sequence", reopened.changeReason);
+        assertEquals("TTTTTTTTTTATCGHHHH", reopened.protein.subunits.get(0).sequence);
+        assertEquals("SYNTHETIC", reopened.protein.sequenceOrigin);
+        assertEquals(proteinId, reopened.protein.getUuid());
+        assertEquals(subunitId, reopened.protein.subunits.get(0).getUuid());
+        assertEquals(proteinCreated, reopened.protein.created);
+        assertEquals(subunitCreated, reopened.protein.subunits.get(0).created);
+        if (changeModifications || existingModifications) {
+            assertEquals((changeModifications ? 1 : 0) + (existingModifications ? 1 : 0),
+                    reopened.modifications.physicalModifications.size());
+        }
+    }
+
     private final JsonMapper mapper = JsonMapper.builderWithJackson2Defaults()
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
             .build();
